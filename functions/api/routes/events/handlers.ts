@@ -204,10 +204,20 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
-          category: normalizeCategory(e.category),
+          category: normalizeCategory(e.category) ?? "internal",
           seasonId: e.seasonId ? Number(e.seasonId) : null,
           isDeleted: Number(e.isDeleted || 0),
-          recurringException: e.recurringException ? Number(e.recurringException) : null
+          recurringException: e.recurringException ? Number(e.recurringException) : null,
+          contentDraft: null,
+          gcalEventId: null,
+          createdAt: null,
+          updatedAt: null,
+          revisionOf: null,
+          publishedAt: null,
+          recurringGroupId: null,
+          rrule: null,
+          zulipStream: null,
+          zulipTopic: null
         }));
 
         return { status: 200 as const, body: { events } };
@@ -281,9 +291,20 @@ export const eventHandlers = {
         isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
         isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
         status: e.status ?? "published",
-        category: normalizeCategory(e.category),
+        category: normalizeCategory(e.category) ?? "internal",
         meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null,
-        locationAddress: e.location ? (locationMap[e.location] || null) : null
+        locationAddress: e.location ? (locationMap[e.location] || null) : null,
+        contentDraft: null,
+        gcalEventId: null,
+        recurringException: null,
+        createdAt: null,
+        updatedAt: null,
+        revisionOf: null,
+        publishedAt: null,
+        recurringGroupId: null,
+        rrule: null,
+        zulipStream: null,
+        zulipTopic: null
       }));
 
       return { status: 200 as const, body: { events } };
@@ -397,7 +418,18 @@ export const eventHandlers = {
             isPotluck: row.isPotluck ?? 0,
             isVolunteer: row.isVolunteer ?? 0,
             meetingNotes: (user && user.role !== "unverified") ? row.meetingNotes : null,
-            locationAddress: locationAddress
+            locationAddress: locationAddress,
+            contentDraft: null,
+            gcalEventId: null,
+            recurringException: null,
+            createdAt: null,
+            updatedAt: null,
+            revisionOf: null,
+            publishedAt: null,
+            recurringGroupId: null,
+            rrule: null,
+            zulipStream: null,
+            zulipTopic: null
           },
           isEditor: user?.role === "admin"
         }
@@ -488,8 +520,19 @@ export const eventHandlers = {
         isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
         isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
         status: e.status ?? "published",
-        category: normalizeCategory(e.category),
-        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null
+        category: normalizeCategory(e.category) ?? "internal",
+        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null,
+        contentDraft: null,
+        gcalEventId: null,
+        recurringException: null,
+        createdAt: null,
+        updatedAt: null,
+        revisionOf: null,
+        publishedAt: null,
+        recurringGroupId: null,
+        rrule: null,
+        zulipStream: null,
+        zulipTopic: null
       }));
 
       const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
@@ -563,7 +606,18 @@ export const eventHandlers = {
             isVolunteer: (rowData.isVolunteer ?? rowData.isVolunteer ?? 0) as number,
             status: (rowData.status ?? "published") as string,
             category: normalizeCategory(rowData.category as string) ?? "internal",
-            meetingNotes: (rowData.meetingNotes ?? rowData.meetingNotes ?? null) as string | null
+            meetingNotes: (rowData.meetingNotes ?? rowData.meetingNotes ?? null) as string | null,
+            contentDraft: null,
+            gcalEventId: null,
+            recurringException: null,
+            createdAt: null,
+            updatedAt: null,
+            revisionOf: null,
+            publishedAt: null,
+            recurringGroupId: null,
+            rrule: null,
+            zulipStream: null,
+            zulipTopic: null
           }
         }
       };

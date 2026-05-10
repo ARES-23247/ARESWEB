@@ -9,7 +9,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 				<div>
 					<label htmlFor="pe-first-name" className={labelClass}>First Name (Hidden)</label>
 					<form.Field name="firstName">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-first-name"
 								name={field.name}
@@ -25,7 +25,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 				<div>
 					<label htmlFor="pe-last-name" className={labelClass}>Last Name (Hidden)</label>
 					<form.Field name="lastName">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-last-name"
 								name={field.name}
@@ -42,9 +42,9 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 					<label htmlFor="pe-nickname" className={labelClass}>Nickname (Public Display Name)</label>
 					<form.Field
 						name="nickname"
-						validators={{ onChange: ({ value }: any) => !value ? "Nickname is required" : undefined }}
+						validators={{ onChange: ({ value }) => !value ? "Nickname is required" : undefined }}
 					>
-						{(field: any) => (
+						{(field) => (
 							<>
 								<input
 									id="pe-nickname"
@@ -65,7 +65,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 				<div>
 					<label htmlFor="pe-pronouns" className={labelClass}>Pronouns</label>
 					<form.Field name="pronouns">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-pronouns"
 								name={field.name}
@@ -83,7 +83,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 				<div>
 					<label htmlFor="pe-email" className={labelClass}>Email Address</label>
 					<form.Field name="email">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-email"
 								name={field.name}
@@ -100,7 +100,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 			<div>
 				<label htmlFor="pe-bio" className={labelClass}>Bio</label>
 				<form.Field name="bio">
-					{(field: any) => (
+					{(field) => (
 						<textarea
 							id="pe-bio"
 							name={field.name}
@@ -116,7 +116,7 @@ export function IdentityForm({ form, isMinor, inputClass, labelClass, sectionCla
 			<div>
 				<label htmlFor="pe-funfact" className={labelClass}>Fun Fact</label>
 				<form.Field name="funFact">
-					{(field: any) => (
+					{(field) => (
 						<input
 							id="pe-funfact"
 							name={field.name}

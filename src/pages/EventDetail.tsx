@@ -1,4 +1,4 @@
-﻿import { useParams, Link } from "@tanstack/react-router";
+import { useParams, Link } from "@tanstack/react-router";
 import { format, isBefore } from "date-fns";
 import { motion } from "framer-motion";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
@@ -42,7 +42,6 @@ export default function EventDetail() {
   if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Event Record Erased or Unfound.</div>;
 
   const isPast = isBefore(new Date(event.dateStart), new Date());
-  const locationAddress = event.locationAddress;
   
   const handleSaveToCalendar = () => {
     if (event) {
@@ -87,7 +86,7 @@ export default function EventDetail() {
           startDate: event.dateStart ?? undefined,
           endDate: event.dateEnd ?? undefined,
           locationName: event.location ?? undefined,
-          locationAddress: locationAddress ?? event.location ?? undefined,
+          locationAddress: event.location ?? undefined,
         }}
       />
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
@@ -148,7 +147,7 @@ export default function EventDetail() {
               <p className="flex items-center gap-2">
                 <span className="text-white">Location:</span>{" "}
                 <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(locationAddress || (event.location.includes("â€”") ? event.location.split("â€”").pop()!.trim() : event.location))}`}
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 decoration-ares-bronze/50 hover:text-white hover:decoration-white transition-colors"

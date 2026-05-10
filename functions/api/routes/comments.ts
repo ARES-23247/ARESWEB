@@ -54,14 +54,16 @@ commentsRouter.openapi(listCommentsRoute, async (c) => {
     avatar: r.avatar || null,
     content: String(r.content),
     createdAt: String(r.createdAt),
-    updatedAt: String(r.createdAt)
+    updatedAt: String(r.updatedAt || r.createdAt),
+    targetType,
+    targetId
   }));
 
   return c.json({
     comments,
     authenticated: !!user,
     role: user?.role || null
-  });
+  }, 200);
 });
 
 commentsRouter.openapi(submitCommentRoute, async (c) => {
@@ -136,7 +138,7 @@ commentsRouter.openapi(submitCommentRoute, async (c) => {
     }
   }
 
-  return c.json({ success: true });
+  return c.json({ success: true }, 200);
 });
 
 commentsRouter.openapi(updateCommentRoute, async (c) => {
@@ -186,7 +188,7 @@ commentsRouter.openapi(updateCommentRoute, async (c) => {
     })());
   }
 
-  return c.json({ success: true });
+  return c.json({ success: true }, 200);
 });
 
 commentsRouter.openapi(deleteCommentRoute, async (c) => {
@@ -226,7 +228,7 @@ commentsRouter.openapi(deleteCommentRoute, async (c) => {
     })());
   }
 
-  return c.json({ success: true });
+  return c.json({ success: true }, 200);
 });
 
 export default commentsRouter;

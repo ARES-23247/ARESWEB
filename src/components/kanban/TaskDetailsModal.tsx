@@ -505,9 +505,9 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         {/* Footer */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-t border-white/5 bg-white/5">
           <div className="flex items-center gap-4 text-[10px] text-ares-gray font-mono">
-            <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
+            <span>Created {new Date(task.createdAt || 0).toLocaleDateString()}</span>
             {task.creatorName && <span>by {task.creatorName}</span>}
-            <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
+            <span>Updated {new Date(task.updatedAt || 0).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center gap-3">
             {confirmDelete ? (

@@ -232,10 +232,10 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_type: 'task',
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
+          sourceType: 'task',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
         }),
       });
 
@@ -263,10 +263,10 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_type: 'task',
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
+          sourceType: 'task',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
         }),
       });
 
@@ -292,9 +292,9 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
         }),
       });
 
@@ -320,10 +320,10 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_type: 'invalid',
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
+          sourceType: 'invalid',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
         }),
       });
 
@@ -352,11 +352,11 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_type: 'task',
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
-          link_type: 'dependency',
+          sourceType: 'task',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
+          linkType: 'dependency',
         }),
       });
 
@@ -490,10 +490,10 @@ describe('Entities Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_type: 'task',
-          source_id: 'task-1',
-          target_type: 'doc',
-          target_id: 'doc-1',
+          sourceType: 'task',
+          sourceId: 'task-1',
+          targetType: 'doc',
+          targetId: 'doc-1',
         }),
       });
 

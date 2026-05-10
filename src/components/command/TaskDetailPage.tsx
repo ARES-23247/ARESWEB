@@ -295,9 +295,9 @@ export default function TaskDetailPage() {
         {/* Metadata + Actions */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-4 text-[10px] text-ares-gray font-mono">
-            {task && <span>Created {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+            {task && <span>Created {new Date(task.createdAt || 0).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
             {task?.creatorName && <span>by <span className="text-marble">{task.creatorName}</span></span>}
-            {task && <span>Last updated {new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+            {task && <span>Last updated {new Date(task.updatedAt || 0).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
           </div>
           <div>
             {confirmDelete ? (

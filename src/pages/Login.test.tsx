@@ -60,11 +60,13 @@ describe("Login Page", () => {
 
   it("calls (signIn as any).oauth2 with Zulip provider when Zulip button clicked", async () => {
     const { signIn } = await import("@/utils/auth-client");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked((signIn as any).oauth2).mockResolvedValue({ data: null, error: null });
 
     render(<Login />);
     fireEvent.click(screen.getByRole("button", { name: /sign in with zulip/i }));
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((signIn as any).oauth2).toHaveBeenCalledWith({
       providerId: "zulip",
       callbackURL: "/dashboard",

@@ -19,7 +19,7 @@ export const kanbanStore = new Store<KanbanState>({
 
 export const kanbanActions = {
   updateUser: (userId: string, data: Partial<UserPresence>) => {
-    kanbanStore.setState((state) => ({
+    kanbanStore.setState((state: KanbanState) => ({
       ...state,
       activeUsers: {
         ...state.activeUsers,
@@ -33,7 +33,7 @@ export const kanbanActions = {
   },
 
   removeUser: (userId: string) => {
-    kanbanStore.setState((state) => {
+    kanbanStore.setState((state: KanbanState) => {
       const nextUsers = { ...state.activeUsers };
       delete nextUsers[userId];
       return {
@@ -44,13 +44,13 @@ export const kanbanActions = {
   },
 
   clearStaleUsers: (timeoutMs: number = 60000) => {
-    kanbanStore.setState((state) => {
+    kanbanStore.setState((state: KanbanState) => {
       const now = Date.now();
       const nextUsers = { ...state.activeUsers };
       let changed = false;
 
       for (const [id, user] of Object.entries(nextUsers)) {
-        if (now - user.lastSeen > timeoutMs) {
+        if (now - (user as UserPresence).lastSeen > timeoutMs) {
           delete nextUsers[id];
           changed = true;
         }

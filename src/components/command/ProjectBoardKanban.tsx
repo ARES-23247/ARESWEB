@@ -130,8 +130,8 @@ export default function ProjectBoardKanban({
         columns={COLUMNS}
         columnConfig={statusConfig as unknown as Record<string, import("../kanban/GenericKanbanBoard").KanbanColumnConfig>}
         getId={(task) => String(task.id)}
-        getStatus={(task) => task.status}
-        getSortOrder={(task) => task.sortOrder}
+        getStatus={(task) => task.status || "todo"}
+        getSortOrder={(task) => task.sortOrder || 0}
         onReorder={onReorder}
         isLoading={isLoading}
         headerContent={headerContent}

@@ -36,8 +36,11 @@ export interface ProfileData {
 	studentsEmail?: string;
 }
 
+import { ReactFormExtendedApi } from "@tanstack/react-form";
+
 export interface ProfileFormSubComponentProps extends ProfileStylingProps {
-	form: any;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	form: ReactFormExtendedApi<ProfileData, any, any, any, any, any, any, any, any, any, any, any>;
 	isMinor: boolean;
 }
 

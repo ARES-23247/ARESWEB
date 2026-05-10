@@ -20,7 +20,7 @@ communicationsRouter.openapi(getStatsRoute, async (c) => {
     const users = await db.select({ email: schema.user.email }).from(schema.user).all();
 
     const activeMembers = users.filter((m) => m.email);
-    return c.json({ activeUsers: activeMembers.length });
+    return c.json({ activeUsers: activeMembers.length }, 200);
 });
 
 // Send mass email
@@ -92,7 +92,7 @@ communicationsRouter.openapi(sendMassEmailRoute, async (c) => {
       success: true,
       message: "Emails dispatched successfully",
       recipientCount: sentCount
-    });
+    }, 200);
 });
 
 export default communicationsRouter;

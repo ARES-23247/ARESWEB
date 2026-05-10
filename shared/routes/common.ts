@@ -135,7 +135,7 @@ export const openApiStandardErrors = {
     },
     description: "Internal Server Error - Server-side error occurred",
   },
-} as const;
+};
 
 export const standardErrors = openApiStandardErrors;
 
@@ -155,4 +155,4 @@ export const standardErrorsWithAuth = {
   ...standardErrors,
   401: standardErrors[401],
   403: standardErrors[403],
-} as const;
+};

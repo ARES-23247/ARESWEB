@@ -47,6 +47,8 @@ seasonsRouter.openapi(listSeasonsRoute, async (c) => {
       albumCover: schema.seasons.albumCover,
       status: schema.seasons.status,
       isDeleted: schema.seasons.isDeleted,
+      createdAt: schema.seasons.createdAt,
+      updatedAt: schema.seasons.updatedAt,
     })
     .from(schema.seasons)
     .where(
@@ -64,9 +66,12 @@ seasonsRouter.openapi(listSeasonsRoute, async (c) => {
     endYear: Number(r.endYear ?? Number(r.startYear) + 1),
     isDeleted: Number(r.isDeleted ?? 0),
     status: r.status as string | null | undefined,
+    createdAt: r.createdAt as string,
+    updatedAt: r.updatedAt as string,
   }));
 
-  return c.json({ seasons }, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.json({ seasons } as any, 200);
 });
 
 seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
@@ -85,6 +90,8 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
       albumCover: schema.seasons.albumCover,
       status: schema.seasons.status,
       isDeleted: schema.seasons.isDeleted,
+      createdAt: schema.seasons.createdAt,
+      updatedAt: schema.seasons.updatedAt,
     })
     .from(schema.seasons)
     .orderBy(desc(schema.seasons.startYear))
@@ -96,9 +103,12 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
     endYear: Number(r.endYear ?? Number(r.startYear) + 1),
     isDeleted: Number(r.isDeleted ?? 0),
     status: r.status as string | null | undefined,
+    createdAt: r.createdAt as string,
+    updatedAt: r.updatedAt as string,
   }));
 
-  return c.json({ seasons }, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.json({ seasons } as any, 200);
 });
 
 seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
@@ -120,6 +130,8 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
       albumCover: schema.seasons.albumCover,
       status: schema.seasons.status,
       isDeleted: schema.seasons.isDeleted,
+      createdAt: schema.seasons.createdAt,
+      updatedAt: schema.seasons.updatedAt,
     })
     .from(schema.seasons)
     .where(eq(schema.seasons.startYear, year))
@@ -135,9 +147,12 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
     endYear: Number(row.endYear ?? Number(row.startYear) + 1),
     isDeleted: Number(row.isDeleted ?? 0),
     status: row.status as string | null | undefined,
+    createdAt: row.createdAt as string,
+    updatedAt: row.updatedAt as string,
   };
 
-  return c.json({ season }, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.json({ season } as any, 200);
 });
 
 seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
@@ -164,6 +179,8 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
         albumCover: schema.seasons.albumCover,
         status: schema.seasons.status,
         isDeleted: schema.seasons.isDeleted,
+        createdAt: schema.seasons.createdAt,
+        updatedAt: schema.seasons.updatedAt,
       })
       .from(schema.seasons)
       .where(eq(schema.seasons.startYear, yearNum))
@@ -260,9 +277,12 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
     endYear: Number(seasonRow.endYear ?? Number(seasonRow.startYear) + 1),
     isDeleted: Number(seasonRow.isDeleted ?? 0),
     status: seasonRow.status as string | null | undefined,
+    createdAt: seasonRow.createdAt as string,
+    updatedAt: seasonRow.updatedAt as string,
   };
 
-  return c.json({ season, awards, events, posts, outreach }, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.json({ season, awards, events, posts, outreach } as any, 200);
 });
 
 seasonsRouter.openapi(saveSeasonRoute, async (c) => {

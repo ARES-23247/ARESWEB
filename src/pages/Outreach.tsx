@@ -6,14 +6,14 @@ import Turnstile from "../components/Turnstile";
 import { useSubmitInquiry, useGetPublicOutreach } from "../api";
 
 interface OutreachLog {
-  id: string;
+  id: number;
   title: string;
   date: string;
   location: string | null;
   studentsCount: number;
-  hoursLogged: number;
-  reachCount: number;
-  description: string | null;
+  hours: number;
+  peopleReached: number;
+  impactSummary: string | null;
 }
 
 // SEC-AST: Extract raw text from Tiptap ProseMirror JSON AST to prevent raw JSON from rendering
@@ -91,8 +91,8 @@ export default function Outreach() {
   const logs: OutreachLog[] = (logsRes?.logs || []) as OutreachLog[];
 
   const totals = logs.reduce((acc: { hours: number; reach: number; events: number }, l: OutreachLog) => ({
-    hours: acc.hours + (l.hoursLogged || 0),
-    reach: acc.reach + (l.reachCount || 0),
+    hours: acc.hours + (l.hours || 0),
+    reach: acc.reach + (l.peopleReached || 0),
     events: acc.events + 1
   }), { hours: 0, reach: 0, events: 0 });
 
@@ -204,13 +204,13 @@ export default function Outreach() {
                      <span>{new Date(log.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <h3 className="text-2xl font-black text-white mb-3 group-hover:text-ares-gold transition-colors">{log.title}</h3>
-                  <p className="text-marble leading-relaxed max-w-2xl">{extractTextFromAst(log.description)}</p>
+                  <p className="text-marble leading-relaxed max-w-2xl">{extractTextFromAst(log.impactSummary)}</p>
                 </div>
                 
                 <div className="flex items-center gap-4">
                   <div className="px-6 py-4 bg-ares-red text-white ares-cut-lg text-center shadow-lg shadow-ares-red/20 font-bold">
                     <div className="text-xs font-black uppercase tracking-widest mb-1 opacity-80">Impact</div>
-                    <div className="text-3xl font-black">{log.reachCount || 0}</div>
+                    <div className="text-3xl font-black">{log.peopleReached || 0}</div>
                   </div>
                 </div>
               </motion.div>

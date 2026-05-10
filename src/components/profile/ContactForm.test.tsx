@@ -15,6 +15,7 @@ const defaultProfile: ProfileData = {
 
 // Create a mock TanStack Form-like object
 const createMockForm = (profile: ProfileData) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Field: ({ name, children }: { name: keyof ProfileData; children: (field: any) => React.ReactNode }) => {
     const field = {
       name,
@@ -23,6 +24,7 @@ const createMockForm = (profile: ProfileData) => ({
         meta: { errors: [] }
       },
       handleBlur: vi.fn(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       handleChange: (val: any) => {
         mockSetProfile((prev: ProfileData) => ({ ...prev, [name]: val }));
       }
@@ -32,6 +34,7 @@ const createMockForm = (profile: ProfileData) => ({
 });
 
 const defaultProps = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: createMockForm(defaultProfile) as unknown as any,
   isMinor: false,
   inputClass: "w-full bg-white/5 border border-white/10 px-4 py-2 text-white",
@@ -116,6 +119,7 @@ describe("ContactForm Component", () => {
 
   it("initializes with existing phone value", () => {
     const customProfile = { ...defaultProfile, phone: "(555) 123-4567" };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props = { ...defaultProps, form: createMockForm(customProfile) as any };
     render(<ContactForm {...props} />);
     const phoneInput = screen.getByLabelText("Phone") as HTMLInputElement;
@@ -124,6 +128,7 @@ describe("ContactForm Component", () => {
 
   it("initializes with existing contact email value", () => {
     const customProfile = { ...defaultProfile, contactEmail: "existing@example.com" };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props = { ...defaultProps, form: createMockForm(customProfile) as any };
     render(<ContactForm {...props} />);
     const emailInput = screen.getByLabelText("Contact Email") as HTMLInputElement;

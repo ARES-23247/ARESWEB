@@ -7,7 +7,6 @@ import { useGetAwards, useSaveAward, useDeleteAward } from "../api";
 import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { awardFormSchema, type AwardFormPayload } from "@shared/routes/awards";
 
 import SeasonPicker from "./SeasonPicker";
@@ -26,7 +25,6 @@ export default function AwardEditor() {
   const [isAdding, setIsAdding] = useState(false);
 
   const form = useForm({
-    validatorAdapter: zodValidator(),
     defaultValues: {
       year: new Date().getFullYear(),
       title: "",
@@ -34,8 +32,8 @@ export default function AwardEditor() {
       imageUrl: "",
       description: "",
       seasonId: null as number | null
-    },
-    onSubmit: async ({ value }: { value: any }) => {
+    } as AwardFormPayload,
+    onSubmit: async ({ value }) => {
       const payload: AwardFormPayload = {
         ...value,
         year: typeof value.year === "number" ? value.year : Number(value.year) || new Date().getFullYear(),
@@ -48,7 +46,7 @@ export default function AwardEditor() {
         }
       });
     }
-  } as any);
+  });
 
   // Season ID handled via form.Subscribe
 
@@ -108,7 +106,7 @@ export default function AwardEditor() {
               <form.Field
                 name="title"
                 validators={{
-                  onChange: awardFormSchema.shape.title as any,
+                  onChange: awardFormSchema.shape.title,
                 }}
               >
                 {(field) => (
@@ -116,10 +114,10 @@ export default function AwardEditor() {
                     id="award-title"
                     label="Award Title"
                     name={field.name}
-                    value={field.state.value as any}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as any}
+                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="e.g. Excellence in Engineering"
                     focusColor="ares-gold"
                     fullWidth
@@ -130,7 +128,7 @@ export default function AwardEditor() {
               <form.Field
                 name="year"
                 validators={{
-                  onChange: awardFormSchema.shape.year as any,
+                  onChange: awardFormSchema.shape.year,
                 }}
               >
                 {(field) => (
@@ -139,10 +137,10 @@ export default function AwardEditor() {
                     type="number"
                     label="Year"
                     name={field.name}
-                    value={field.state.value as any}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(Number(e.target.value))}
-                    error={field.state.meta.errors?.[0] as any}
+                    error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-gold"
                   />
                 )}
@@ -151,7 +149,7 @@ export default function AwardEditor() {
               <form.Field
                 name="eventName"
                 validators={{
-                  onChange: awardFormSchema.shape.eventName as any,
+                  onChange: awardFormSchema.shape.eventName,
                 }}
               >
                 {(field) => (
@@ -159,7 +157,7 @@ export default function AwardEditor() {
                     id="award-eventName"
                     label="Event Name"
                     name={field.name}
-                    value={(field.state.value as any) || ""}
+                    value={field.state.value || ""}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="e.g. West Virginia State Championship"
@@ -171,7 +169,7 @@ export default function AwardEditor() {
               <form.Field name="seasonId">
                 {(field) => (
                   <SeasonPicker 
-                    value={(field.state.value as any) || ""} 
+                    value={field.state.value || ""} 
                     onChange={(val) => field.handleChange(val === "" ? null : Number(val))} 
                   />
                 )}
@@ -183,7 +181,7 @@ export default function AwardEditor() {
                     id="award-imageUrl"
                     label="Image URL (Optional)"
                     name={field.name}
-                    value={(field.state.value as any) || ""}
+                    value={field.state.value || ""}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="https://..."
@@ -199,7 +197,7 @@ export default function AwardEditor() {
                     id="award-desc"
                     label="Description"
                     name={field.name}
-                    value={(field.state.value as any) || ""}
+                    value={field.state.value || ""}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Tell the story of how we won..."

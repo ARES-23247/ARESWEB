@@ -9,6 +9,7 @@ interface SeasonPickerProps {
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
   const { data: rawSeasons } = useGetSeasons();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const seasons = (rawSeasons?.seasons || []) as any[];
 
   return (

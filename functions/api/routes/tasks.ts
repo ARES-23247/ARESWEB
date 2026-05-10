@@ -116,7 +116,8 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
       };
     });
 
-    return c.json({ tasks: formattedTasks }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ tasks: formattedTasks } as any, 200);
   }
 );
 
@@ -213,7 +214,8 @@ tasksRouter.openapi(createTaskRoute, async (c) => {
       assigneeName: null,
     };
 
-    return c.json({ success: true, task: createdTask }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true, task: createdTask } as any, 200);
   }
 );
 
@@ -233,7 +235,8 @@ tasksRouter.openapi(reorderTasksRoute, async (c) => {
         .run()
     ));
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
   }
 );
 
@@ -351,7 +354,8 @@ tasksRouter.openapi(updateTaskRoute, async (c) => {
       createdAt: new Date().toISOString(),
     }).run();
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
   }
 );
 
@@ -393,7 +397,8 @@ tasksRouter.openapi(deleteTaskRoute, async (c) => {
       createdAt: new Date().toISOString(),
     }).run();
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
   }
 );
 

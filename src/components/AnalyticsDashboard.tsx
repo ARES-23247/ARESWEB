@@ -156,13 +156,14 @@ export default function AnalyticsDashboard() {
             Real-time Feed
           </h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {(data?.recentViews || []).map((view: { path: string, timestamp: string, category: string, referrer: string }, idx: number) => (
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(data?.recentViews || []).map((view: any, idx: number) => (
               <div key={idx} className="flex flex-col gap-1 border-l border-white/5 pl-4 py-1 relative">
                 <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-ares-red shadow-[0_0_8px_rgba(192,0,0,0.5)]" />
                 <div className="flex justify-between items-start">
                   <span className="text-xs text-marble font-medium truncate max-w-[200px]">{view.path}</span>
                   <span className="text-xs text-marble/60 font-mono">
-                    {new Date(view.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(view.timestamp || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[9px] text-marble/60 uppercase font-bold tracking-widest">

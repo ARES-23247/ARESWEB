@@ -3,7 +3,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 import { titleField, slugField, descriptionField, MAX_INPUT_LENGTHS } from "../validation/constants";
 import { selectPostSchema, selectPostHistorySchema } from "../db/schema-zod";
-import { createResponseSchema, toCamelCaseResponse } from "../db/schema-openapi";
+import { toCamelCaseResponse } from "../db/schema-openapi";
 
 // Define a more specific schema for Tiptap AST nodes
 const tiptapNodeSchema: z.ZodType<{

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, MapPin, Users, Calendar, Trophy, GraduationCap, Wrench } from "lucide-react";
+import { ArrowRight, MapPin, Users, Calendar, Trophy, GraduationCap } from "lucide-react";
 import SEO from "../components/SEO";
 import FAQSchema, { LOCAL_ROBOTICS_FAQS } from "../components/FAQSchema";
 import ReviewSchema, { ARES_REVIEWS } from "../components/ReviewSchema";
@@ -69,7 +69,7 @@ export default function LocationMorgantown() {
               </div>
               <h3 className="text-xl font-bold text-white mb-3">FIRST Tech Challenge</h3>
               <p className="text-marble/70 leading-relaxed">
-                Compete in the world's premier middle and high school robotics competition. Design, build, and program robots to compete in tournaments throughout West Virginia and beyond.
+                Compete in the world&apos;s premier middle and high school robotics competition. Design, build, and program robots to compete in tournaments throughout West Virginia and beyond.
               </p>
             </div>
             <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-gold/50 transition-all">
@@ -139,7 +139,7 @@ export default function LocationMorgantown() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-ares-gold mt-1">✓</span>
-                  <span>Make a lasting impact in Morgantown's community</span>
+                  <span>Make a lasting impact in Morgantown&apos;s community</span>
                 </li>
               </ul>
             </div>
@@ -174,7 +174,7 @@ export default function LocationMorgantown() {
             ))}
           </div>
           <p className="text-marble/60 text-center mt-8">
-            Don't see your area listed? Contact us — we're always looking to expand our reach!
+            Don&apos;t see your area listed? Contact us — we&apos;re always looking to expand our reach!
           </p>
         </div>
       </section>
@@ -186,7 +186,7 @@ export default function LocationMorgantown() {
             Ready to Start Your <span className="text-ares-red">Robotics Journey?</span>
           </h2>
           <p className="text-marble/80 text-lg mb-10 max-w-2xl mx-auto">
-            Join ARES 23247 and become part of Morgantown's most exciting robotics team.
+            Join ARES 23247 and become part of Morgantown&apos;s most exciting robotics team.
             No experience necessary — just bring your curiosity and determination.
           </p>
           <Link

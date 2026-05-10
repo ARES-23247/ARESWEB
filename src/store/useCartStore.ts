@@ -24,12 +24,12 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
-      addItem: (product, quantity = 1) => {
-        set((state) => {
-          const existingItem = state.items.find((i) => i.product.id === product.id);
+      addItem: (product: Product, quantity = 1) => {
+        set((state: CartState) => {
+          const existingItem = state.items.find((i: CartItem) => i.product.id === product.id);
           if (existingItem) {
             return {
-              items: state.items.map((i) =>
+              items: state.items.map((i: CartItem) =>
                 i.product.id === product.id
                   ? { ...i, quantity: i.quantity + quantity }
                   : i
@@ -40,29 +40,29 @@ export const useCartStore = create<CartState>()(
           return { items: [...state.items, { product, quantity }], isOpen: true };
         });
       },
-      removeItem: (productId) => {
-        set((state) => ({
-          items: state.items.filter((i) => i.product.id !== productId),
+      removeItem: (productId: string) => {
+        set((state: CartState) => ({
+          items: state.items.filter((i: CartItem) => i.product.id !== productId),
         }));
       },
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) {
           get().removeItem(productId);
           return;
         }
-        set((state) => ({
-          items: state.items.map((i) =>
+        set((state: CartState) => ({
+          items: state.items.map((i: CartItem) =>
             i.product.id === productId ? { ...i, quantity } : i
           ),
         }));
       },
-      clearCart: () => set({ items: [] }),
-      setIsOpen: (isOpen) => set({ isOpen }),
+      clearCart: () => set({ items: [] } as Partial<CartState>),
+      setIsOpen: (isOpen: boolean) => set({ isOpen } as Partial<CartState>),
       getCartTotal: () => {
-        return get().items.reduce((total, item) => total + item.product.priceCents * item.quantity, 0);
+        return get().items.reduce((total: number, item: CartItem) => total + item.product.priceCents * item.quantity, 0);
       },
       getCartCount: () => {
-        return get().items.reduce((count, item) => count + item.quantity, 0);
+        return get().items.reduce((count: number, item: CartItem) => count + item.quantity, 0);
       },
     }),
     {

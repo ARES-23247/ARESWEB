@@ -138,7 +138,7 @@ export default function Seasons() {
             {isLoadingAwards ? (
               [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 ares-cut animate-pulse" />)
             ) : awards.length > 0 ? (
-              awards.map((award: any, idx: number) => (
+              awards.map((award: Award, idx: number) => (
                 <motion.div
                   key={award.id}
                   initial={{ opacity: 0, y: 30 }}

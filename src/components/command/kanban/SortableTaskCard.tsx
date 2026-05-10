@@ -95,7 +95,7 @@ export function SortableTaskCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 flex-wrap">
           {task.priority !== "normal" && (
-            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${priorityBadge[task.priority] || priorityBadge.normal}`}>
+            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${priorityBadge[task.priority || "normal"] || priorityBadge.normal}`}>
               {task.priority}
             </span>
           )}

@@ -15,7 +15,10 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
         <div className="md:col-span-1">
           <label htmlFor="pe-tshirt" className={labelClass}>T-Shirt Size</label>
           <form.Field name="tshirtSize">
-            {(field: any) => (
+            {(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              field: any
+            ) => (
               <select
                 id="pe-tshirt"
                 name={field.name}
@@ -40,7 +43,10 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
         <div className="md:col-span-1">
           <label htmlFor="pe-ec-name" className={labelClass}>Emergency Contact Name</label>
           <form.Field name="emergencyContactName">
-            {(field: any) => (
+            {(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              field: any
+            ) => (
               <input
                 id="pe-ec-name"
                 name={field.name}
@@ -56,7 +62,10 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
         <div className="md:col-span-1">
           <label htmlFor="pe-ec-phone" className={labelClass}>Emergency Contact Phone</label>
           <form.Field name="emergencyContactPhone">
-            {(field: any) => (
+            {(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              field: any
+            ) => (
               <input
                 id="pe-ec-phone"
                 name={field.name}

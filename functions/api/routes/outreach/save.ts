@@ -1,4 +1,4 @@
-﻿import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSessionUser, logAuditAction, getDb, type AppEnv } from "../../middleware";
@@ -19,10 +19,10 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
         title: validatedData.title,
         date: validatedData.date,
         location: validatedData.location || null,
-        hours: validatedData.hoursLogged,
-        peopleReached: validatedData.reachCount,
+        hours: validatedData.hours,
+        peopleReached: validatedData.peopleReached,
         studentsCount: validatedData.studentsCount,
-        impactSummary: validatedData.description || null,
+        impactSummary: validatedData.impactSummary || null,
         isMentoring: validatedData.isMentoring ? 1 : 0,
         mentoredTeamNumber: validatedData.mentoredTeamNumber || null,
         seasonId: validatedData.seasonId || null,
@@ -39,10 +39,10 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
         title: validatedData.title,
         date: validatedData.date,
         location: validatedData.location || null,
-        hours: validatedData.hoursLogged,
-        peopleReached: validatedData.reachCount,
+        hours: validatedData.hours,
+        peopleReached: validatedData.peopleReached,
         studentsCount: validatedData.studentsCount,
-        impactSummary: validatedData.description || null,
+        impactSummary: validatedData.impactSummary || null,
         isMentoring: validatedData.isMentoring ? 1 : 0,
         mentoredTeamNumber: validatedData.mentoredTeamNumber || null,
         seasonId: validatedData.seasonId || null,

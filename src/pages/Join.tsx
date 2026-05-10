@@ -49,7 +49,7 @@ export default function Join() {
 			additional: "",
 			turnstileToken: "",
 		},
-		// @ts-expect-error
+		// @ts-expect-error - zodValidator generic type mismatch with form schema
     validatorAdapter: zodValidator(),
 		onSubmit: async ({ value }) => {
 			setSubmitStatus("idle");
@@ -291,6 +291,7 @@ export default function Join() {
 												<form.Field 
 													name="school"
 													validators={{
+														// eslint-disable-next-line @typescript-eslint/no-explicit-any
 														onChangeListenTo: ["role" as any],
 														onChange: ({ value, fieldApi }) => {
 															if (role === "student" && !value) return "School is required";
@@ -335,6 +336,7 @@ export default function Join() {
 																name={field.name}
 																value={field.state.value}
 																onBlur={field.handleBlur}
+																// eslint-disable-next-line @typescript-eslint/no-explicit-any
 																onChange={(e) => field.handleChange(e.target.value as any)}
 																className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer"
 																required

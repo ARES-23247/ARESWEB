@@ -54,7 +54,7 @@ locationsRouter.openapi(listLocationsRoute, async (c) => {
         id: schema.locations.id,
         name: schema.locations.name,
         address: schema.locations.address,
-        maps_url: schema.locations.mapsUrl,
+        mapsUrl: schema.locations.mapsUrl,
         isDeleted: schema.locations.isDeleted
       })
       .from(schema.locations)
@@ -77,7 +77,7 @@ locationsRouter.openapi(adminListLocationsRoute, async (c) => {
         id: schema.locations.id,
         name: schema.locations.name,
         address: schema.locations.address,
-        maps_url: schema.locations.mapsUrl,
+        mapsUrl: schema.locations.mapsUrl,
         isDeleted: schema.locations.isDeleted
       })
       .from(schema.locations)

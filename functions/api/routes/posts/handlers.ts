@@ -1,4 +1,4 @@
-import { getSessionUser, getDb, ensureAdmin, validateLength, MAX_INPUT_LENGTHS, logAuditAction, getSocialConfig, extractAstText } from "../../middleware";
+import { getSessionUser, getDb, validateLength, MAX_INPUT_LENGTHS, logAuditAction, getSocialConfig, extractAstText } from "../../middleware";
 import { getStandardDate } from "../../../utils/content";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
@@ -453,7 +453,6 @@ export const postHandlers = {
           return { status: 404 as const, body: { error: "Post not found" } };
         }
 
-        const user = await getSessionUser(c);
 
         // Create shadow revision for history
         await captureHistory(c, body.slug, existing);

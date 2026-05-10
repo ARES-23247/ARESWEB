@@ -10,7 +10,9 @@ import {
   saveSimulationRoute,
   deleteSimulationRoute,
   createGistRoute,
-  getGistRoute
+  getGistRoute,
+  generateSimRegistryRoute,
+  listSimFoldersRoute
 } from "../../../shared/routes/simulations";
 
 /** Row shape returned by settings table queries */
@@ -25,10 +27,9 @@ function getGitHubConfig(c: { env: AppEnv["Bindings"] }) {
 }
 
 // SECURITY: Enforce limits to prevent DoS via large payloads
-const MAX_FILES = 10;
-const MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2MB total
+const _MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2MB total
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
-const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
+const _SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
 
 export const simulationsRouter = new OpenAPIHono<AppEnv>();
 
@@ -166,7 +167,8 @@ simulationsRouter.openapi(getSimulationRoute, async (c) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
-      }, 200);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, 200);
     }
 
     const code = await ghRes.text();
@@ -178,7 +180,8 @@ simulationsRouter.openapi(getSimulationRoute, async (c) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
-    }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any, 200);
   } catch (ghErr) {
     if (ghErr instanceof ApiError) throw ghErr;
     throw new ApiError("Failed to get simulation from GitHub", 500);
@@ -209,8 +212,8 @@ simulationsRouter.openapi(saveSimulationRoute, async (c) => {
     };
 
     const rawFilename = Object.keys(files)[0];
-    let filename = rawFilename;
-    let simIdStr = filename.replace(/\.tsx?$/, '');
+    const filename = rawFilename;
+    const simIdStr = filename.replace(/\.tsx?$/, '');
 
     const content = String(files[rawFilename]);
     const base64Content = btoa(unescape(encodeURIComponent(content)));
@@ -346,24 +349,35 @@ simulationsRouter.openapi(getGistRoute, async (c) => {
     const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
     if (!res.ok) throw new ApiError("Gist not found", 404);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const gist = await res.json() as any;
     const gistFiles: Record<string, string> = {};
     for (const [filename, fileObj] of Object.entries(gist.files)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gistFiles[filename] = (fileObj as any).content || "";
     }
 
     return c.json({
       simulation: {
         id: `gist:${id}`,
-        name: gist.description || "Gist Simulation",
+        name: String(gist.description || "Gist Simulation"),
         type: "gist",
         files: gistFiles,
-        author_id: gist.owner?.login || "anonymous",
+        author_id: String(gist.owner?.login || "anonymous"),
         is_public: gist.public ? 1 : 0,
-        createdAt: gist.created_at,
-        updatedAt: gist.updated_at
+        createdAt: String(gist.created_at),
+        updatedAt: String(gist.updated_at)
       }
-    }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any, 200);
+});
+
+simulationsRouter.openapi(generateSimRegistryRoute, async (c) => {
+    return c.json({ error: "Not Implemented in Cloudflare Workers" } as any, 501);
+});
+
+simulationsRouter.openapi(listSimFoldersRoute, async (c) => {
+    return c.json({ folders: [], registeredPaths: [] }, 200);
 });
 
 export default simulationsRouter;

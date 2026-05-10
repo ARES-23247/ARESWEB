@@ -73,7 +73,8 @@ usersRouter.openapi(getUsersRoute, async (c) => {
           : usersData[usersData.length - 1].createdAt)
         : null;
 
-    return c.json({ users, nextCursor }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ users, nextCursor } as any, 200);
 });
 
 usersRouter.openapi(adminDetailRoute, async (c) => {
@@ -128,7 +129,8 @@ usersRouter.openapi(adminDetailRoute, async (c) => {
           nickname: user.nickname || null,
           memberType: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
         },
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       200
     );
 });
@@ -204,7 +206,8 @@ usersRouter.openapi(patchUserRoute, async (c) => {
       )
     );
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
 });
 
 usersRouter.openapi(updateUserProfileRoute, async (c) => {
@@ -212,7 +215,8 @@ usersRouter.openapi(updateUserProfileRoute, async (c) => {
     const body = c.req.valid("json");
     const { id } = params;
     await upsertProfile(c, id, body);
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
 });
 
 usersRouter.openapi(adminGetProfileRoute, async (c) => {
@@ -345,7 +349,8 @@ usersRouter.openapi(adminGetProfileRoute, async (c) => {
             role: String(user.role || "user"),
           },
         } as Record<string, unknown>,
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       200
     );
 });
@@ -371,7 +376,8 @@ usersRouter.openapi(deleteUserRoute, async (c) => {
       logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`)
     );
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
 });
 
 export default usersRouter;

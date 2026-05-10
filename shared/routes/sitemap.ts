@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const getSitemapRoute = createRoute({
   method: "get",
-  path: "/",
+  path: "/sitemap.xml",
   tags: ["seo"],
   summary: "Get dynamic sitemap",
   responses: {

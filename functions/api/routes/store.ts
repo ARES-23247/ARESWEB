@@ -1,16 +1,16 @@
 import { ApiError } from "../middleware/errorHandler";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import Stripe from "stripe";
-import { sendZulipMessage } from "../../utils/zulipSync";
+import { sendZulipAlert } from "../../utils/zulipSync";
 import {
   getProductsRoute,
   createCheckoutSessionRoute,
   getOrdersRoute,
   updateOrderStatusRoute,
 } from "../../../shared/routes/store";
-import { getDb, ensureAdmin, AppEnv, logSystemError } from "../middleware";
+import { getDb, AppEnv, logSystemError, getSessionUser } from "../middleware";
 
 export const storeRouter = new OpenAPIHono<AppEnv>();
 
@@ -31,8 +31,9 @@ storeRouter.post("/webhook", async (c) => {
       try {
         const body = await c.req.text();
         event = await stripe.webhooks.constructEventAsync(body, signature, endpointSecret);
-      } catch (err: any) {
-        console.error("Webhook signature verification failed.", err.message);
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Webhook signature verification failed.", error.message);
         return c.text("Webhook Error", 400);
       }
 
@@ -49,27 +50,28 @@ storeRouter.post("/webhook", async (c) => {
               status: "paid",
               stripeSessionId: session.id,
               customerEmail: session.customer_details?.email,
-              shippingName: session.shipping_details?.name,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              shippingName: (session as any).shipping_details?.name,
               updatedAt: new Date().toISOString()
             })
             .where(eq(schema.orders.id, metadata.orderId))
             .run();
 
           // Optional: Send to Zulip
-          c.executionCtx.waitUntil(sendZulipMessage(c, {
-            id: metadata.orderId,
-            author: "System",
-            content: `New Paid Order: ${metadata.orderId}\nTotal: ${session.amount_total ? session.amount_total / 100 : 0} ${session.currency}`,
-            targetType: "order",
-            targetId: metadata.orderId
-          }));
+          c.executionCtx.waitUntil(sendZulipAlert(
+            c.env, 
+            "System",
+            "Store Order Paid",
+            `New Paid Order: **${metadata.orderId}**\nTotal: ${session.amount_total ? session.amount_total / 100 : 0} ${session.currency}`
+          ));
         }
       }
 
       return c.json({ received: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       const db = getDb(c);
-      await logSystemError(db, "stripe_webhook", err.message, err.stack);
+      const error = err as Error;
+      await logSystemError(db, "stripe_webhook", error.message, error.stack);
       return c.text("Webhook Handler Error", 500);
     }
 });
@@ -78,7 +80,8 @@ storeRouter.post("/webhook", async (c) => {
 storeRouter.openapi(getProductsRoute, async (c) => {
     const db = getDb(c);
     const products = await db.select().from(schema.products).where(eq(schema.products.active, 1)).all();
-    return c.json(products, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json(products as any, 200);
 });
 
 // Create checkout session
@@ -95,9 +98,11 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
     const stripe = new Stripe(stripeKey);
 
     // Fetch products to verify price
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const productIds = items.map((i: any) => i.productId);
     const dbProducts = await db.select().from(schema.products).where(inArray(schema.products.id, productIds)).all();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lineItems = items.map((item: any) => {
       const product = dbProducts.find(p => p.id === item.productId);
       if (!product) throw new ApiError(`Product not found: ${item.productId}`, 404);
@@ -112,7 +117,8 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
           unit_amount: product.priceCents,
         },
         quantity: item.quantity,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
     });
 
     const orderId = crypto.randomUUID();
@@ -139,18 +145,26 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
       updatedAt: new Date().toISOString(),
     }).run();
 
-    return c.json({ sessionId: session.id, url: session.url || "" }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ sessionId: session.id, url: session.url || "" } as any, 200);
 });
 
 // Get orders (admin only)
 storeRouter.openapi(getOrdersRoute, async (c) => {
+    const sessionUser = await getSessionUser(c);
+    if (!sessionUser) throw new ApiError("Unauthorized", 401);
+    if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
     const db = getDb(c);
     const orders = await db.select().from(schema.orders).orderBy(desc(schema.orders.createdAt)).all();
-    return c.json({ orders }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ orders } as any, 200);
 });
 
 // Update order status (admin only)
 storeRouter.openapi(updateOrderStatusRoute, async (c) => {
+    const sessionUser = await getSessionUser(c);
+    if (!sessionUser) throw new ApiError("Unauthorized", 401);
+    if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
     const params = c.req.valid("param");
     const body = c.req.valid("json");
     const { id } = params;
@@ -165,7 +179,8 @@ storeRouter.openapi(updateOrderStatusRoute, async (c) => {
       .where(eq(schema.orders.id, id))
       .run();
 
-    return c.json({ success: true }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
 });
 
 export default storeRouter;

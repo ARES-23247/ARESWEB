@@ -26,7 +26,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 			<div>
 				<label htmlFor="pe-member-type" className={labelClass}>Member Type</label>
 				<form.Field name="memberType">
-					{(field: any) => (
+					{(field) => (
 						<select
 							id="pe-member-type"
 							name={field.name}
@@ -50,7 +50,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 					<div>
 						<label htmlFor="pe-parents-name" className={labelClass}>Parent&apos;s Name</label>
 						<form.Field name="parentsName">
-							{(field: any) => (
+							{(field) => (
 								<input
 									id="pe-parents-name"
 									name={field.name}
@@ -66,7 +66,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 					<div>
 						<label htmlFor="pe-parents-email" className={labelClass}>Parent&apos;s Email</label>
 						<form.Field name="parentsEmail">
-							{(field: any) => (
+							{(field) => (
 								<input
 									id="pe-parents-email"
 									name={field.name}
@@ -88,7 +88,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 					<div>
 						<label htmlFor="pe-students-name" className={labelClass}>Student&apos;s Name</label>
 						<form.Field name="studentsName">
-							{(field: any) => (
+							{(field) => (
 								<input
 									id="pe-students-name"
 									name={field.name}
@@ -104,7 +104,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 					<div>
 						<label htmlFor="pe-students-email" className={labelClass}>Student&apos;s Email</label>
 						<form.Field name="studentsEmail">
-							{(field: any) => (
+							{(field) => (
 								<input
 									id="pe-students-email"
 									name={field.name}
@@ -123,7 +123,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 			<div>
 				<span className={labelClass}>Subteams (select all that apply)</span>
 				<form.Field name="subteams">
-					{(field: any) => (
+					{(field) => (
 						<div className="flex flex-wrap gap-2">
 							{SUBTEAM_OPTIONS.map((team: string) => (
 								<button
@@ -143,7 +143,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 				<div>
 					<label htmlFor="pe-grade" className={labelClass}>Grade / Graduation Year</label>
 					<form.Field name="gradeYear">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-grade"
 								name={field.name}
@@ -161,7 +161,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 				<div>
 					<label htmlFor="pe-role" className={labelClass}>Leadership Role</label>
 					<form.Field name="leadershipRole">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-role"
 								name={field.name}
@@ -177,7 +177,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 				<div>
 					<label htmlFor="pe-rookie" className={labelClass}>Rookie Year</label>
 					<form.Field name="rookieYear">
-						{(field: any) => (
+						{(field) => (
 							<input
 								id="pe-rookie"
 								name={field.name}
@@ -192,7 +192,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<Pr
 				</div>
 			</div>
 			<form.Field name="showOnAbout">
-				{(field: any) => (
+				{(field) => (
 					<div className="flex items-center gap-3 mt-4 text-sm text-marble">
 						<input
 							type="checkbox"

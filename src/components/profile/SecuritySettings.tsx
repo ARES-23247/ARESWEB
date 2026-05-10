@@ -56,13 +56,16 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const start2FASetup = async () => {
     setError("");
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (authClient as any).twoFactor.enable({
         password: "" // Some versions require a password check even if empty
       });
       if (error) throw new Error(error.message);
       if (data) {
         // SEC-WR-10: Validate TOTP URI format before storing in state
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const validUri = validateTotpUri((data as any).totpURI);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setTwoFactorData({ qrCode: validUri, secret: (data as any).secret });
         setIsSettingUp2FA(true);
       }
@@ -74,6 +77,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const verifyAndEnable2FA = async () => {
     setError("");
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (authClient as any).twoFactor.verifyTotp({
         code: otpCode
       });
@@ -93,6 +97,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
     if (!confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) return;
     setError("");
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (authClient as any).twoFactor.disable({
         password: ""
       });
@@ -140,18 +145,21 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       <div className="bg-obsidian/50 border border-white/10 p-4 ares-cut-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <div className={`p-2 rounded-full ${(session?.user as any)?.twoFactorEnabled ? "bg-ares-gold/10 text-ares-gold" : "bg-black/40 text-marble/60"}`}>
               <Key size={20} />
             </div>
             <div>
               <p className="text-sm font-bold text-white">Two-Factor Authentication (2FA)</p>
               <p className="text-xs text-marble/50">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(session?.user as any)?.twoFactorEnabled 
                   ? "Active: Your account is protected with TOTP." 
                   : "Inactive: Add an extra layer of security to your account."}
               </p>
             </div>
           </div>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {!(session?.user as any)?.twoFactorEnabled ? (
             <button 
               onClick={start2FASetup}

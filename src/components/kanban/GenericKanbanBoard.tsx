@@ -138,7 +138,7 @@ export function GenericKanbanBoard<T>({
     setLocalItems((prev) => {
       return prev.map(item => {
         if (item.id === String(active.id)) {
-          return { ...item, status: overContainer };
+          return { ...item, status: overContainer as string };
         }
         return item;
       });

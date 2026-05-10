@@ -124,19 +124,6 @@ function url(path = ''): string {
   return `https://aresfirst.org${path}`;
 }
 
-/**
- * Generate a random integer
- */
-function randomInt(min = 0, max = 100): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/**
- * Pick a random value from an array
- */
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 // ============================================================================
 // EVENT FIXTURES

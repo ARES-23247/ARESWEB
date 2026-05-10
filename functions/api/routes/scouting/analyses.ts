@@ -35,11 +35,15 @@ analysesRouter.openapi(listScoutingAnalysesRoute, async (c) => {
   // Transform camelCase database results to snake_case API format
   const transformed = results.map((r) => ({
     id: r.id,
-    team_number: r.teamNumber ?? 0,
-    event_key: r.eventKey ?? "",
-    analysis_json: r.markdown,
-    created_at: r.createdAt ?? "",
-    updated_at: r.createdAt ?? "",
+    seasonKey: r.seasonKey,
+    eventKey: r.eventKey,
+    teamNumber: r.teamNumber,
+    mode: r.mode,
+    model: r.model,
+    markdown: r.markdown,
+    tokensUsed: r.tokensUsed,
+    createdBy: r.createdBy,
+    createdAt: r.createdAt,
   })) as ScoutingAnalysisResponse[];
 
   return c.json(transformed, 200);

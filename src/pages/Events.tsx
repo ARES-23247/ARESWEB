@@ -1,12 +1,13 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { addMonths, subMonths, format, addHours, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import SEO from "../components/SEO";
-import { useGetEvents, type EventItem as _ApiEventItem } from "../api";
+import { useGetEvents } from "../api";
 import { EventItem } from "../components/events/EventCard";
 
 import { EventCard } from "../components/events/EventCard";
+import { extractAstText } from "../utils/tiptap";
 import CompetitionBanner from "../components/CompetitionBanner";
 import { useEventFilters } from "../hooks/useEventFilters";
 import { MonthViewGrid } from "../components/calendar/MonthViewGrid";
@@ -31,8 +32,7 @@ export default function Events() {
         title: e.title || "Untitled Event",
         dateStart: e.dateStart,
         dateEnd: e.dateEnd || null,
-        location: e.location || null,
-        locationAddress: e.locationAddress,
+        location: (e.location as string) || null,
         description: e.description || "",
         coverImage: e.coverImage || null,
         tbaEventKey: e.tbaEventKey || null,
@@ -56,23 +56,8 @@ export default function Events() {
         type = e.category;
       }
 
-      // Extract plain text from Tiptap ProseMirror JSON AST if description is JSON
-      let description = e.description || "";
-      if (description.startsWith("{")) {
-        try {
-          const ast = JSON.parse(description);
-          const extractText = (node: Record<string, unknown>): string => {
-            if (node.type === "text" && typeof node.text === "string") return node.text;
-            if (Array.isArray(node.content)) {
-              return (node.content as Record<string, unknown>[]).map(extractText).join("");
-            }
-            return "";
-          };
-          description = extractText(ast).trim();
-        } catch {
-          // Not valid JSON â€” use raw string as-is
-        }
-      }
+      // Use shared utility for Tiptap AST parsing
+      const description = extractAstText(e.description);
 
       return {
         id: e.id,
@@ -80,7 +65,7 @@ export default function Events() {
         start,
         end,
         description,
-        location: e.location || "",
+        location: (e.location as string) || "",
         type,
         isException: e.recurringException === 1
       };

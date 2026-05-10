@@ -18,11 +18,11 @@ authRouter.openapi(authCheckRoute, async (c) => {
     user: {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || "ARES User",
       role: user.role,
       image: user.image || null,
     }
-  });
+  }, 200);
 });
 
 // ── GET /api/auth/emergency-clear — force clear poisoned cookies ───────
@@ -56,7 +56,8 @@ authRouter.openapi(testLoginRoute, async (c) => {
       id: schema.user.id,
       name: schema.user.name,
       email: schema.user.email,
-      role: schema.user.role
+      role: schema.user.role,
+      image: schema.user.image
     })
     .from(schema.user)
     .where(eq(schema.user.id, userId))
@@ -106,9 +107,10 @@ authRouter.openapi(testLoginRoute, async (c) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        image: user.image || null,
       },
       sessionToken: signedToken,
-    });
+    }, 200);
 
     const isSecure = c.req.url.startsWith('https://');
     const cookieDomain = isSecure ? undefined : 'localhost';

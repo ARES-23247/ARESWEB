@@ -12,10 +12,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { AppEnv } from '../../api/middleware';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

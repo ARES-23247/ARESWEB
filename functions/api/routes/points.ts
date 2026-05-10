@@ -1,16 +1,23 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq, sum, desc, and, ne, gte } from "drizzle-orm";
+import { eq, sum, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, getSessionUser, ensureAdmin, getDb, ApiError } from "../middleware";
-import { getUserPointsRoute, addPointsRoute, getPointsLeaderboardRoute } from "../../../shared/routes/points";
+import { AppEnv, getSessionUser, ensureAdmin, ensureAuth, getDb, ApiError } from "../middleware";
+import { getPointsBalanceRoute, awardPointsRoute, getPointsLeaderboardRoute, getPointsHistoryRoute } from "../../../shared/routes/points";
 
 export const pointsRouter = new OpenAPIHono<AppEnv>();
 
-pointsRouter.use("/add", ensureAdmin);
+pointsRouter.use("/balance/*", ensureAuth);
+pointsRouter.use("/history/*", ensureAuth);
 
 // Get user points
-pointsRouter.openapi(getUserPointsRoute, async (c) => {
+pointsRouter.openapi(getPointsBalanceRoute, async (c) => {
   const { user_id: userId } = c.req.valid("param");
+  const sessionUser = await getSessionUser(c);
+  if (!sessionUser) throw new ApiError("Unauthorized", 401);
+  if (sessionUser.id !== userId && sessionUser.role !== "admin") {
+    throw new ApiError("Forbidden", 403);
+  }
+
   const db = getDb(c);
 
   const result = await db
@@ -23,12 +30,44 @@ pointsRouter.openapi(getUserPointsRoute, async (c) => {
 
   return c.json({
     userId,
-    pointsBalance: Number(result?.total || 0)
-  });
+    balance: Number(result?.total || 0)
+  }, 200);
+});
+
+// Get user points history
+pointsRouter.openapi(getPointsHistoryRoute, async (c) => {
+  const { user_id: userId } = c.req.valid("param");
+  
+  // Note: ensureAuth handles login check.
+  // We should also check if the user is requesting their own history, or if they are admin.
+  const sessionUser = await getSessionUser(c);
+  if (!sessionUser) throw new ApiError("Unauthorized", 401);
+  if (sessionUser.id !== userId && sessionUser.role !== "admin") {
+    throw new ApiError("Forbidden", 403);
+  }
+
+  const db = getDb(c);
+  const history = await db
+    .select()
+    .from(schema.pointsLedger)
+    .where(eq(schema.pointsLedger.userId, userId))
+    .orderBy(desc(schema.pointsLedger.createdAt))
+    .all();
+
+  const formattedHistory = history.map((item) => ({
+    id: item.id,
+    userId: item.userId,
+    pointsDelta: item.pointsDelta,
+    reason: item.reason,
+    createdBy: item.createdBy,
+    createdAt: item.createdAt,
+  }));
+
+  return c.json(formattedHistory, 200);
 });
 
 // Add points (admin only)
-pointsRouter.openapi(addPointsRoute, async (c) => {
+pointsRouter.openapi(awardPointsRoute, async (c) => {
   const sessionUser = await getSessionUser(c);
   if (!sessionUser) throw new ApiError("Unauthorized", 401);
   if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
@@ -46,7 +85,7 @@ pointsRouter.openapi(addPointsRoute, async (c) => {
     createdBy: sessionUser.id
   }).run();
 
-  return c.json({ success: true, transactionId: id } as const, 201);
+  return c.json({ success: true, transactionId: id }, 201);
 });
 
 // Get leaderboard
@@ -79,7 +118,7 @@ pointsRouter.openapi(getPointsLeaderboardRoute, async (c) => {
     avatar: r.avatar || null
   }));
 
-  return c.json({ leaderboard } as const);
+  return c.json({ leaderboard }, 200);
 });
 
 export default pointsRouter;

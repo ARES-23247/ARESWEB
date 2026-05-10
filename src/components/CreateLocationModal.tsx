@@ -5,9 +5,8 @@ import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { locationSchema } from "@shared/routes/locations";
-import { z } from "zod";
 import { useSaveLocation } from "../api";
+
 
 interface CreateLocationModalProps {
   isOpen: boolean;
@@ -44,7 +43,8 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   }, [form]);
 
   const saveMutation = useSaveLocation({
-    onSuccess: (res) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSuccess: (res: any) => {
       if (res.success) {
         toast.success("Venue record synchronized.");
 
@@ -92,7 +92,8 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   const onFormSubmit = () => {
     setErrorMsg("");
     const formValue = form.state.values;
-    saveMutation.mutate({ ...formValue, id: undefined });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    saveMutation.mutate({ ...formValue, id: undefined } as any);
   };
 
   return (
@@ -148,10 +149,11 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
 
                 <div className="flex flex-col gap-4">
                   <div>
-                    <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
+                    <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. {'\'Mars Workspace\''}) *</label>
                     <form.Field
                       name="name"
-                      children={(field) => (
+                    >
+                      {(field) => (
                         <>
                           <input
                             id="venue_name"
@@ -168,14 +170,15 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
                           )}
                         </>
                       )}
-                    />
+                    </form.Field>
                   </div>
 
                   <div className="relative">
                     <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
                     <form.Field
                       name="address"
-                      children={(field) => (
+                    >
+                      {(field) => (
                         <>
                           <div className="relative">
                             <input
@@ -196,7 +199,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
                           )}
                         </>
                       )}
-                    />
+                    </form.Field>
 
                     {suggestions.length > 0 && (
                       <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">

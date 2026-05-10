@@ -7,10 +7,10 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
-import { socialQueueSchema } from "@shared/routes/socialQueue";
+import { socialQueueApiSchema } from "@shared/routes/socialQueue";
 
 // Infer TypeScript types from Zod schemas
-export type SocialQueuePost = z.infer<typeof socialQueueSchema>;
+export type SocialQueuePost = z.infer<typeof socialQueueApiSchema>;
 
 export interface SocialQueueListResponse {
   posts: SocialQueuePost[];

@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, getSessionUser, getDb } from "../middleware";
 import {
@@ -8,6 +8,8 @@ import {
   markNotificationReadRoute,
   markAllNotificationsReadRoute,
   deleteNotificationRoute,
+  getPendingCountsRoute,
+  getDashboardActionItemsRoute,
 } from "../../../shared/routes/notifications";
 import { ApiError } from "../middleware/errorHandler";
 
@@ -40,8 +42,8 @@ notificationsRouter.openapi(getNotificationsRoute, async (c) => {
     message: n.message,
     link: n.link || null,
     priority: n.priority || "normal",
-    is_read: n.isRead ? 1 : 0,
-    created_at: n.createdAt || new Date().toISOString(),
+    isRead: n.isRead ? 1 : 0,
+    createdAt: n.createdAt || new Date().toISOString(),
   }));
 
   return c.json({ notifications }, 200);
@@ -88,6 +90,62 @@ notificationsRouter.openapi(deleteNotificationRoute, async (c) => {
     .run();
 
   return c.json({ success: true }, 200);
+});
+
+// Pending counts
+notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
+  const db = getDb(c);
+  // Example logic for pending counts based on status fields
+  const inquiriesCount = await db.select({ count: sql<number>`count(*)` }).from(schema.inquiries).where(eq(schema.inquiries.status, 'pending')).get();
+  const postsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.posts).where(eq(schema.posts.status, 'draft')).get();
+  const eventsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.events).where(eq(schema.events.status, 'draft')).get();
+  const docsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.docs).where(eq(schema.docs.status, 'draft')).get();
+
+  return c.json({
+    inquiries: inquiriesCount?.count || 0,
+    posts: postsCount?.count || 0,
+    events: eventsCount?.count || 0,
+    docs: docsCount?.count || 0,
+  }, 200);
+});
+
+// Dashboard action items
+notificationsRouter.openapi(getDashboardActionItemsRoute, async (c) => {
+  const db = getDb(c);
+
+  const pendingInquiries = await db.select().from(schema.inquiries).where(eq(schema.inquiries.status, 'pending')).limit(10).all();
+  const pendingPosts = await db.select().from(schema.posts).where(eq(schema.posts.status, 'draft')).limit(10).all();
+  const pendingEvents = await db.select().from(schema.events).where(eq(schema.events.status, 'draft')).limit(10).all();
+  const pendingDocs = await db.select().from(schema.docs).where(eq(schema.docs.status, 'draft')).limit(10).all();
+
+  return c.json({
+    inquiries: pendingInquiries.map(i => ({
+      id: i.id,
+      type: i.type,
+      name: i.name,
+      email: i.email,
+      status: i.status || 'pending',
+      createdAt: i.createdAt || new Date().toISOString(),
+    })),
+    posts: pendingPosts.map(p => ({
+      id: p.slug,
+      title: p.title,
+      authorName: p.author || 'Unknown',
+      createdAt: p.updatedAt || new Date().toISOString(),
+    })),
+    events: pendingEvents.map(e => ({
+      id: e.id,
+      title: e.title,
+      dateStart: e.dateStart,
+      createdAt: e.updatedAt || new Date().toISOString(),
+    })),
+    docs: pendingDocs.map(d => ({
+      slug: d.slug,
+      title: d.title,
+      category: d.category,
+      updatedAt: d.updatedAt || new Date().toISOString(),
+    })),
+  }, 200);
 });
 
 export default notificationsRouter;

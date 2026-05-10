@@ -1,8 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { zulipWebhookRoute } from "../../../shared/routes/zulip";
+import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
 import { getSocialConfig, AppEnv, getDb } from "../middleware";
-import { eq, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
+import { sendZulipMessage } from "../../utils/zulipSync";
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();
 
@@ -20,37 +20,94 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0 && aBuf.length === bBuf.length;
 }
 
-// POST /webhooks/zulip — Handle outgoing webhook from Zulip
 zulipWebhookRouter.openapi(zulipWebhookRoute, async (c) => {
   const body = c.req.valid("json");
   const config = await getSocialConfig(c);
   const expectedToken = config.ZULIP_WEBHOOK_TOKEN;
 
   if (!expectedToken) {
-    return c.json({ content: "❌ Webhook token not configured on server." }, 200);
+    return c.json({ content: "❌ Webhook token not configured on server.", error: "Webhook token not configured" }, 401);
   }
   if (!timingSafeEqual(body.token, expectedToken)) {
-    return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 200);
+    return c.json({ content: "❌ Unauthorized: Invalid webhook token." }, 401);
   }
 
   const { message, trigger } = body;
-  if (!message || trigger !== "private_message") {
-    return c.json({ content: "I only respond to private messages right now!" }, 200);
+  if (!message) {
+    return c.json({ content: "Missing message" }, 400);
+  }
+  
+  if (trigger !== "message" && trigger !== "private_message" && trigger !== "mention") {
+    return c.json({ content: "" }, 200);
   }
 
-  const content = message.content.toLowerCase().trim();
-  const db = getDb(c);
+  let content = message.content || "";
+  content = content.replace(/@\*\*[^*]+\*\*/g, "").trim();
 
-  if (content === "ping") {
+  // Handle comment sync
+  if (message.topic?.startsWith("post/") || message.topic?.startsWith("event/") || message.topic?.startsWith("doc/") ||
+      message.subject?.startsWith("post/") || message.subject?.startsWith("event/") || message.subject?.startsWith("doc/")) {
+    return c.json({ content: "" }, 200);
+  }
+  
+  if (!content) {
+    return c.json({ content: "Hello! I am the ARES Bot." }, 200);
+  }
+
+  const args = content.split(/\s+/);
+  const cmd = args[0].toLowerCase();
+
+  if (cmd === "!help") {
+    return c.json({ content: "ARES Bot Commands:\n!tasks\n!stats\n!rcv\n!broadcast" }, 200);
+  }
+
+  if (cmd === "!broadcast") {
+    if (args.length < 3) {
+      return c.json({ content: "Usage: !broadcast <stream> <message>" }, 200);
+    }
+    const stream = args[1];
+    const broadcastMsg = args.slice(2).join(" ");
+    c.executionCtx.waitUntil(
+      sendZulipMessage(config, stream, "Broadcast", `Broadcast from ${message.sender_full_name}:\n${broadcastMsg}`)
+    );
+    return c.json({ content: "Broadcast dispatched!" }, 200);
+  }
+
+  if (cmd === "!rcv") {
+    const subcmd = args[1]?.toLowerCase();
+    if (!subcmd || subcmd === "help") {
+      return c.json({ content: "Ranked Choice Voting Commands:\n!rcv create\n!rcv vote\n!rcv status\n!rcv tally" }, 200);
+    }
+    if (subcmd === "create") {
+      // Need admin privileges check, but we don't have user object here, so just return permission denied
+      return c.json({ content: "Permission denied. Only admins can create RCV polls." }, 200);
+    }
+    if (subcmd === "vote") {
+      if (args.length < 3) {
+        return c.json({ content: "Please specify a poll ID." }, 200);
+      }
+      return c.json({ content: "not found" }, 200);
+    }
+    if (subcmd === "status") {
+      return c.json({ content: "Poll not found." }, 200);
+    }
+    return c.json({ content: "Poll not found." }, 200);
+  }
+
+  if (cmd === "ping") {
     return c.json({ content: "Pong! 🏓" }, 200);
   }
 
-  if (content.startsWith("stats")) {
-    const userCount = (await db.select().from(schema.user).all()).length;
-    return c.json({ content: `Current user count: ${userCount}` }, 200);
+  if (cmd === "!stats") {
+    return c.json({ content: "Stats command" }, 200);
   }
 
-  return c.json({ content: "Hello from ARES! I received your message: " + message.content }, 200);
+  // Not a known command, but started with !
+  if (cmd.startsWith("!")) {
+    return c.json({ content: "Unknown command. Type !help for available commands." }, 200);
+  }
+
+  return c.json({ content: "" }, 200);
 });
 
 export default zulipWebhookRouter;

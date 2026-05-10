@@ -64,10 +64,12 @@ export function useUpdateMe(
     onSuccess: (data, variables, context) => {
       console.log("[Profile:updateMe] Mutation successful");
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (options?.onSuccess as any)?.(data, variables, context);
     },
     onError: (error, variables, context) => {
       console.error("[Profile:updateMe] Mutation failed:", error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (options?.onError as any)?.(error, variables, context);
     }
   });
@@ -87,9 +89,11 @@ export function useUpdateAvatar(
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (options?.onSuccess as any)?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (options?.onError as any)?.(error, variables, context);
     }
   });

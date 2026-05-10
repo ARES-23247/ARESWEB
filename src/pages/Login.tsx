@@ -11,6 +11,7 @@ export default function Login() {
     setErrorMessage(null);
     try {
       if (provider === "zulip") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (signIn as any).oauth2({ providerId: "zulip", callbackURL: "/dashboard" });
         if (error) throw error;
         return;

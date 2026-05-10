@@ -1,4 +1,6 @@
 import { useParams, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
@@ -10,10 +12,6 @@ import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 import SeasonPicker from "./SeasonPicker";
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-import { eventSchema, EventPayload } from "@shared/schemas/eventSchema";
-import { useQuery } from "@tanstack/react-query";
-import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { useModal } from "../contexts/ModalContext";
 import { DEFAULT_coverImage } from "../utils/constants";
@@ -29,7 +27,7 @@ import ZulipThread from "./ZulipThread";
 import { CreateLocationModal } from "./CreateLocationModal";
 import { LocationCombobox } from "./LocationCombobox";
 
-function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string | unknown, roomId?: string | null }) {
+function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string, roomId?: string | null }) {
   const navigate = useNavigate();
   // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const modal = useModal();
@@ -139,9 +137,11 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         form.setFieldValue("tbaEventKey", event.tbaEventKey || "");
         form.setFieldValue("isPotluck", event.isPotluck === 1);
         form.setFieldValue("isVolunteer", event.isVolunteer === 1);
-        form.setFieldValue("publishedAt", (event as unknown as Record<string, unknown>).publishedAt as string || "");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        form.setFieldValue("publishedAt", (event as any).publishedAt || "");
         form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
-        form.setFieldValue("socials", ((eventRes as unknown as Record<string, unknown>).socials as Record<string, boolean> || {}) as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        form.setFieldValue("socials", ((eventRes as any).socials || {}) as any);
 
         // Parse rrule
         let parsedFreq = "";
@@ -238,8 +238,10 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : formValue.description;
     const payload = { ...formValue, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
     if (editId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateMutation.mutate({ id: editId, body: payload as any });
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       saveMutation.mutate(payload as any);
     }
   };
@@ -337,7 +339,10 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   placeholder="State Championship"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as unknown as string}</p>
+                  <>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as any}</p>
+                  </>
                 )}
               </>
             )}
@@ -349,7 +354,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
               <CoverAssetPicker
                 coverImage={coverImage || DEFAULT_coverImage}
                 isUploading={isUploading}
-                onUrlChange={(url) => form.setFieldValue("coverImage", url as any)}
+                onUrlChange={(url) => form.setFieldValue("coverImage", url as string)}
                 onLibraryClick={() => setIsCoverPickerOpen(true)}
                 onFileChange={handleFileUpload}
               />
@@ -400,7 +405,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         <div className="flex-1">
           <form.Field name="seasonId">
             {(field) => (
-              <SeasonPicker value={(field.state.value as any) || ""} onChange={(val) => field.handleChange(val ? Number(val) : (undefined as any))} />
+              <SeasonPicker value={field.state.value || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
             )}
           </form.Field>
         </div>
@@ -440,7 +445,10 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as unknown as string}</p>
+                  <>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as any}</p>
+                  </>
                 )}
               </>
             )}
@@ -554,7 +562,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <EventPotluckVolunteerFlags
         isPotluck={form.state.values.isPotluck || false}
         isVolunteer={form.state.values.isVolunteer || false}
-        onChange={(field, val) => form.setFieldValue(field as "isPotluck" | "isVolunteer", val as boolean)}
+        onChange={(field, val) => form.setFieldValue(field as "isPotluck" | "isVolunteer", val)}
       />
 
       <div>
@@ -618,7 +626,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 <SocialSyndicationGrid
                   availableSocials={availableSocials}
                   socials={socials as Record<string, boolean>}
-                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val as any)}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
                   isEdit={!!editId}
                 />
               )}
@@ -670,8 +679,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   );
 }
 
-export default function EventEditor({ userRole }: { userRole?: string | unknown }) {
-  const { editId } = useParams({ strict: false }) as Record<string, string>;
+export default function EventEditor({ userRole }: { userRole?: string }) {
+  const { editId } = useParams({ strict: false });
 
   const [draftId] = useState(() => `draft_event_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
   const roomId = editId ? `event_${editId}` : draftId;

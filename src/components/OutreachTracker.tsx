@@ -13,14 +13,14 @@ import { z } from "zod";
 
 // Schema for validation
 const outreachSchema = z.object({
-  id: z.string(),
+  id: z.number().nullable().optional(),
   title: z.string().min(1, "Title is required"),
   date: z.string(),
   location: z.string().nullable().optional(),
   studentsCount: z.number().min(0),
-  hoursLogged: z.number().min(0),
-  reachCount: z.number().min(0),
-  description: z.string().nullable().optional(),
+  hours: z.number().min(0),
+  peopleReached: z.number().min(0),
+  impactSummary: z.string().nullable().optional(),
   isMentoring: z.boolean().optional(),
   mentoredTeamNumber: z.string().nullable().optional(),
   seasonId: z.number().nullable().optional(),
@@ -30,40 +30,40 @@ const outreachSchema = z.object({
 });
 
 interface OutreachLog {
-  id: string;
+  id: number;
   title: string;
   date: string;
   location: string | null;
-  studentsCount: number;
-  hoursLogged: number;
-  reachCount: number;
-  description: string | null;
-  isMentoring?: boolean;
+  studentsCount: number | null;
+  hours: number | null;
+  peopleReached: number | null;
+  impactSummary: string | null;
+  isMentoring?: number | null;
   mentoredTeamNumber?: string | null;
   seasonId?: number | null;
   isDynamic?: boolean;
   eventId?: string | null;
-  mentorCount?: number;
-  mentorHours?: number;
+  mentorCount?: number | null;
+  mentorHours?: number | null;
 }
 
 import { useGetAdminOutreach, useSaveOutreach, useDeleteOutreach, useGetSeasons } from "../api";
 
 export default function OutreachTracker() {
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [_editingId, setEditingId] = useState<string | null>(null);
   const [activeSeasonTab, setActiveSeasonTab] = useState<string>("all");
 
   const form = useForm({
     defaultValues: {
-      id: null as string | null,
+      id: null as number | null,
       title: "",
       date: new Date().toISOString().split('T')[0],
       location: "",
       studentsCount: 0,
-      hoursLogged: 0,
-      reachCount: 0,
-      description: "",
+      hours: 0,
+      peopleReached: 0,
+      impactSummary: "",
       isMentoring: false,
       mentoredTeamNumber: "",
       seasonId: null as number | null,
@@ -75,9 +75,9 @@ export default function OutreachTracker() {
       const submitData: Record<string, unknown> = {
         ...value,
         studentsCount: value.studentsCount || 0,
-        hoursLogged: value.hoursLogged || 0,
-        reachCount: value.reachCount || 0,
-        description: value.description === "" ? null : value.description,
+        hours: value.hours || 0,
+        peopleReached: value.peopleReached || 0,
+        impactSummary: value.impactSummary === "" ? null : value.impactSummary,
         location: value.location === "" ? null : value.location,
         mentoredTeamNumber: value.mentoredTeamNumber === "" ? null : value.mentoredTeamNumber,
       };
@@ -102,10 +102,10 @@ export default function OutreachTracker() {
 
   const { data: rawSeasonsData } = useGetSeasons();
 
-  const allLogs: OutreachLog[] = useMemo(() => rawOutreachData?.logs || [], [rawOutreachData]);
+  const allLogs: OutreachLog[] = useMemo(() => (rawOutreachData?.logs || []) as unknown as OutreachLog[], [rawOutreachData]);
 
   interface SeasonInfo { startYear: number; endYear: number; challengeName: string; }
-  const seasons: SeasonInfo[] = useMemo(() => (rawSeasonsData?.seasons || []) as any[], [rawSeasonsData]);
+  const seasons: SeasonInfo[] = useMemo(() => (rawSeasonsData?.seasons || []) as unknown as SeasonInfo[], [rawSeasonsData]);
   
   const seasonTabs = useMemo(() => {
     const usedSeasons = new Set(allLogs.map(l => l.seasonId).filter(Boolean));
@@ -135,10 +135,10 @@ export default function OutreachTracker() {
   };
 
   const totals = useMemo(() => logs.reduce((acc, l) => ({
-    hours: acc.hours + (l.hoursLogged || 0),
-    mentoringHours: acc.mentoringHours + (l.isMentoring ? (l.hoursLogged || 0) : 0),
+    hours: acc.hours + (l.hours || 0),
+    mentoringHours: acc.mentoringHours + (l.isMentoring ? (l.hours || 0) : 0),
     mentorHours: acc.mentorHours + (l.mentorHours || 0),
-    reach: acc.reach + (l.reachCount || 0),
+    reach: acc.reach + (l.peopleReached || 0),
     students: acc.students + (l.studentsCount || 0),
     mentors: acc.mentors + (l.mentorCount || 0),
     events: acc.events + 1
@@ -233,9 +233,9 @@ export default function OutreachTracker() {
               </form.Field>
 
               <form.Field
-                name="reachCount"
+                name="peopleReached"
                 validators={{
-                  onChange: outreachSchema.shape.reachCount,
+                  onChange: outreachSchema.shape.peopleReached,
                 }}
               >
                 {(field) => (
@@ -254,9 +254,9 @@ export default function OutreachTracker() {
               </form.Field>
 
               <form.Field
-                name="hoursLogged"
+                name="hours"
                 validators={{
-                  onChange: outreachSchema.shape.hoursLogged,
+                  onChange: outreachSchema.shape.hours,
                 }}
               >
                 {(field) => (
@@ -329,7 +329,7 @@ export default function OutreachTracker() {
                 )}
               </form.Field>
 
-              <form.Field name="description">
+              <form.Field name="impactSummary">
                 {(field) => (
                   <DashboardTextarea
                     id="outreach-desc"
@@ -468,7 +468,7 @@ export default function OutreachTracker() {
               <p className="text-marble/50 text-sm line-clamp-2">
                 {(() => {
                   try {
-                    const ast = JSON.parse(log.description || "");
+                    const ast = JSON.parse(log.impactSummary || "");
                     if (ast && ast.type === "doc") {
                       const extract = (node: unknown): string => {
                         if (typeof node !== "object" || !node) return "";
@@ -482,7 +482,7 @@ export default function OutreachTracker() {
                   } catch {
                     // Ignore parse errors to return raw string
                   }
-                  return log.description;
+                  return log.impactSummary;
                 })()}
               </p>
             </div>
@@ -490,11 +490,11 @@ export default function OutreachTracker() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-gold uppercase tracking-tighter">Reach</span>
-                <span className="text-lg font-black text-white">{log.reachCount || 0}</span>
+                <span className="text-lg font-black text-white">{log.peopleReached || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
-                <span className="text-lg font-black text-white">{(log.hoursLogged || 0).toFixed(1)}</span>
+                <span className="text-lg font-black text-white">{(log.hours || 0).toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-red uppercase tracking-tighter">Students</span>
@@ -522,22 +522,22 @@ export default function OutreachTracker() {
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => {
-                    setEditingId(log.id);
+                    setEditingId(log.id.toString());
                     setIsAdding(true);
                     form.setFieldValue("id", (log.isDynamic && !log.eventId) ? null : log.id);
                     form.setFieldValue("title", log.title);
                     form.setFieldValue("date", log.date.split('T')[0]);
                     form.setFieldValue("location", log.location || "");
                     form.setFieldValue("studentsCount", log.studentsCount || 0);
-                    form.setFieldValue("hoursLogged", log.hoursLogged || 0);
-                    form.setFieldValue("reachCount", log.reachCount || 0);
-                    form.setFieldValue("description", log.description || "");
+                    form.setFieldValue("hours", log.hours || 0);
+                    form.setFieldValue("peopleReached", log.peopleReached || 0);
+                    form.setFieldValue("impactSummary", log.impactSummary || "");
                     form.setFieldValue("isMentoring", !!log.isMentoring);
                     form.setFieldValue("mentoredTeamNumber", log.mentoredTeamNumber || "");
                     form.setFieldValue("seasonId", log.seasonId || null);
                     form.setFieldValue("mentorCount", log.mentorCount || 0);
                     form.setFieldValue("mentorHours", log.mentorHours || 0);
-                    form.setFieldValue("eventId", log.isDynamic ? (log.eventId || log.id) : null);
+                    form.setFieldValue("eventId", log.isDynamic ? (log.eventId || log.id.toString()) : null);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   title="Edit this impact record"
@@ -547,7 +547,7 @@ export default function OutreachTracker() {
                 </button>
                 {(!log.isDynamic || log.eventId) && (
                   <button
-                    onClick={() => handleDelete(log.id)}
+                    onClick={() => handleDelete(log.id.toString())}
                     title="Purge this impact record"
                     className="p-3 text-marble/60 hover:text-ares-red transition-colors bg-white/5 ares-cut"
                   >

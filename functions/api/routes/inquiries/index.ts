@@ -1,7 +1,6 @@
 import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { z } from "zod";
 
 import { AppEnv, ensureAdmin, turnstileMiddleware, persistentRateLimitMiddleware, getSocialConfig, logAuditAction, getDb, type SocialConfig } from "../../middleware";
 import { ApiError } from "../../middleware/errorHandler";
@@ -205,6 +204,7 @@ async function fetchInquiries(db: DrizzleDB, limit: number, offset: number, filt
 const METADATA_WHITELIST = ['level', 'org', 'message', 'event_type', 'date', 'topic', 'position', 'subteam'];
 
 async function decryptAndMaskInquiries(results: unknown[], secret: string, maskPII: boolean) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Promise.all(results.map(async (r: any) => {
     let name = String(r.name);
     let email = String(r.email);
@@ -244,7 +244,7 @@ async function decryptAndMaskInquiries(results: unknown[], secret: string, maskP
       metadata: metadata || null,
       status: r.status,
       createdAt: String(r.createdAt),
-      zulip_message_id: r.zulip_message_id,
+      zulipMessageId: r.zulip_message_id,
       notes: r.notes
     };
   }));
@@ -328,7 +328,7 @@ async function processInquiryInBackground(
   name: string,
   email: string,
   id: string,
-  metadata: unknown
+  _metadata: unknown
 ) {
   const baseUrl = new URL(c.req.url).origin;
 

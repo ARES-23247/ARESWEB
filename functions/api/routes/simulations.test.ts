@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for simulations route handlers
  *
  * Tests simulation management endpoints including auth, admin checks,
@@ -21,7 +21,7 @@ vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn(),
+    getSessionUser: vi.fn(() => globalThis.__mockSessionUser),
     ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
       const user = globalThis.__mockSessionUser;
       if (!user) {

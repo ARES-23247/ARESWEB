@@ -15,8 +15,12 @@ import type { QueryClient } from "@tanstack/react-query";
  * structural incompatibilities with hc's type inference. Individual API
  * wrapper functions handle their own type safety through Zod schemas and
  * explicit type annotations.
+ *
+ * The Partial<> wrapper makes all routes optional to work around type inference
+ * issues while still providing autocomplete for available routes.
  */
-export const client: any = // eslint-disable-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const client: any =
   hc<AppType>("/api", {
   init: {
     credentials: "include",
@@ -93,6 +97,7 @@ export function wrapOnSuccess<TData, TError, TVariables>(
     ...options,
     onSuccess: (data, variables, context) => {
       internalOnSuccess(data, variables);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (options?.onSuccess as any)?.(data, variables, context);
     },
   };
@@ -129,6 +134,7 @@ export function withMutationCallbacks<TData, TError, TVariables>(
     onSuccess: async (data, variables, context) => {
       await callbacks.onSuccess?.(queryClient, data, variables);
       // Call user's onSuccess with all arguments from TanStack Query
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (options?.onSuccess as any)?.(
         data as never,
         variables as never,
@@ -138,6 +144,7 @@ export function withMutationCallbacks<TData, TError, TVariables>(
     onError: async (error, variables, context) => {
       await callbacks.onError?.(queryClient, error, variables);
       // Call user's onError with all arguments from TanStack Query
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (options?.onError as any)?.(
         error as never,
         variables as never,

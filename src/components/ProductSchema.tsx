@@ -1,18 +1,10 @@
 import { Helmet } from 'react-helmet-async';
 import { siteConfig } from "../site.config";
 
-export interface StoreProduct {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  imageUrl: string | null;
-  category: string | null;
-  stock: number;
-}
+import { Product } from '@shared/routes/store';
 
 interface ProductSchemaProps {
-  products: StoreProduct[];
+  products: Product[];
 }
 
 /**
@@ -30,9 +22,10 @@ export default function ProductSchema({ products }: ProductSchemaProps) {
       "@type": "Offer",
       "url": `${siteConfig.urls.base}/store`,
       "priceCurrency": "USD",
-      "price": product.price,
+      "price": product.priceCents / 100,
+      // eslint-disable-next-line react-hooks/purity
       "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
-      "availability": product.stock > 0
+      "availability": (product.stockCount ?? 0) > 0
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       "seller": {
@@ -53,7 +46,7 @@ export default function ProductSchema({ products }: ProductSchemaProps) {
         }
       }
     },
-    "category": product.category || "Robotics Team Merchandise",
+    "category": "Robotics Team Merchandise",
     "brand": {
       "@type": "Organization",
       "name": "ARES 23247",

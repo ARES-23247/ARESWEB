@@ -1,19 +1,9 @@
 import { Helmet } from 'react-helmet-async';
 import { siteConfig } from "../site.config";
-
-// Match the actual API type from sponsors
-export interface ApiSponsor {
-  id: string;
-  name: string;
-  tier: "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
-  logoUrl: string | null;
-  websiteUrl: string | null;
-  isActive: number;
-  createdAt?: string | null;
-}
+import type { Sponsor } from "../api";
 
 interface SponsorSchemaProps {
-  sponsors: ApiSponsor[];
+  sponsors: Sponsor[];
 }
 
 /**

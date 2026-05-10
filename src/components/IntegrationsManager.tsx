@@ -46,6 +46,7 @@ export default function IntegrationsManager() {
   // Form submission handled in form definition
 
   const handleChange = (key: string, value: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     form.setFieldValue(key as any, value);
   };
 

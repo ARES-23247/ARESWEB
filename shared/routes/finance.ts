@@ -35,7 +35,10 @@ export const TransactionTypeSchema = z.enum(["income", "expense"]);
 /**
  * Sponsorship pipeline response schema - derived from Drizzle
  */
-export const SponsorshipPipelineSchema = selectSponsorshipPipelineSchema;
+export const SponsorshipPipelineSchema = selectSponsorshipPipelineSchema.extend({
+  status: SponsorshipStatusSchema,
+  createdAt: z.string().nullable().optional(),
+});
 
 /**
  * Finance transaction response schema - derived from Drizzle

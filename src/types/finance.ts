@@ -10,6 +10,7 @@ export interface PipelineItem {
   seasonId?: number | null;
   zulipMessageId?: string | null;
   assignees?: string[];
+  createdAt?: string | null;
 }
 
 export interface TransactionItem {

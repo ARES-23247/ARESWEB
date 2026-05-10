@@ -57,11 +57,11 @@ const columns = [
   columnHelper.accessor("status", {
     header: "Status",
     cell: info => {
-      const s = info.getValue();
-      const config = statusConfig[s] || { bg: "bg-ares-gray/20", text: "text-ares-gray" };
+      const s = info.getValue() || "backlog";
+      const config = statusConfig[s as keyof typeof statusConfig] || { bg: "bg-ares-gray/20", text: "text-ares-gray", label: s };
       return (
         <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${config.bg} ${config.text}`}>
-          {config.label || s}
+          {config.label}
         </span>
       );
     },
@@ -69,8 +69,8 @@ const columns = [
   columnHelper.accessor("priority", {
     header: "Priority",
     cell: info => {
-      const p = info.getValue();
-      const bClass = priorityBadge[p] || priorityBadge["normal"];
+      const p = info.getValue() || "normal";
+      const bClass = priorityBadge[p as keyof typeof priorityBadge] || priorityBadge["normal"];
       return (
         <span className={`px-2 py-0.5 rounded text-xs uppercase tracking-wider ${bClass}`}>
           {p}

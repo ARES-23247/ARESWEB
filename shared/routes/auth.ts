@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { selectUserSchema, selectSessionSchema } from "@shared/db/schema-zod";
+import { selectUserSchema } from "@shared/db/schema-zod";
 import { createResponseSchema, responseWrappers } from "@shared/db/schema-openapi";
 
 // ============================================================================

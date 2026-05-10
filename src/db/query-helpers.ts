@@ -291,6 +291,7 @@ export const queryHelpers = {
 				userId: schema.comments.userId,
 				content: schema.comments.content,
 				createdAt: schema.comments.createdAt,
+				updatedAt: schema.comments.updatedAt,
 				nickname: schema.userProfiles.nickname,
 				avatar: schema.user.image,
 				userRole: schema.user.role,

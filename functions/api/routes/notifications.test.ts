@@ -15,6 +15,7 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
+import { globalErrorHandler } from '../middleware/errorHandler';
 
 // Mock drizzle-orm to handle count function
 vi.mock('drizzle-orm', async () => {
@@ -95,7 +96,7 @@ describe('Notifications Routes', () => {
     app.use('*', createTestDbMiddleware());
 
     // Use Hono's built-in onError for error handling (same pattern as production)
-    
+    app.onError(globalErrorHandler);
 
     app.route('/api/notifications', notificationsRouter);
     return app;

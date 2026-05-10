@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { openApiStandardErrors } from "./common";
-import { selectInquirySchema, insertInquirySchema } from "@shared/db/schema-zod";
+import { selectInquirySchema } from "@shared/db/schema-zod";
 import { createResponseSchema, responseWrappers, toCamelCaseResponse } from "@shared/db/schema-openapi";
 
 // ============================================================================

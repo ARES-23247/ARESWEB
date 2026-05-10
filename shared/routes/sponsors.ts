@@ -5,7 +5,7 @@ import {
   selectSponsorMetricSchema,
   selectSponsorTokenSchema,
 } from "@shared/db/schema-zod";
-import { responseWrappers } from "@shared/db/schema-openapi";
+import { responseWrappers, toCamelCaseResponse } from "@shared/db/schema-openapi";
 import { openApiStandardErrors } from "./common";
 import { sponsorSchema as sponsorRequestSchema } from "../schemas/sponsorSchema";
 
@@ -16,17 +16,17 @@ import { sponsorSchema as sponsorRequestSchema } from "../schemas/sponsorSchema"
 /**
  * Sponsor response schema - derived from Drizzle select schema
  */
-export const sponsorResponseSchema = selectSponsorSchema;
+export const sponsorResponseSchema = toCamelCaseResponse(selectSponsorSchema);
 
 /**
  * Sponsor ROI metric schema - derived from Drizzle
  */
-export const sponsorRoiMetricSchema = selectSponsorMetricSchema;
+export const sponsorRoiMetricSchema = toCamelCaseResponse(selectSponsorMetricSchema);
 
 /**
  * Sponsor token schema - derived from Drizzle
  */
-export const sponsorTokenSchema = selectSponsorTokenSchema;
+export const sponsorTokenSchema = toCamelCaseResponse(selectSponsorTokenSchema);
 
 // ============================================================================
 // ROUTES

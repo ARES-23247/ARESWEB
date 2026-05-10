@@ -14,13 +14,14 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
+import { globalErrorHandler } from '../middleware/errorHandler';
 
 // Mock the auth module BEFORE importing storeRouter
 vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn(),
+    getSessionUser: vi.fn(() => Promise.resolve(globalThis.__mockSessionUser)),
     ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
       const user = globalThis.__mockSessionUser;
       if (!user) {
@@ -88,6 +89,7 @@ describe('Store Routes', () => {
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/store', storeRouter);
     return app;
@@ -246,7 +248,7 @@ describe('Store Routes', () => {
       const req = new Request('http://localhost/api/store/orders/order-123/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fulfillment_status: 'shipped' }),
+        body: JSON.stringify({ fulfillmentStatus: 'shipped' }),
       });
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
@@ -266,7 +268,7 @@ describe('Store Routes', () => {
       const req = new Request('http://localhost/api/store/orders/order-123/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fulfillment_status: 'shipped' }),
+        body: JSON.stringify({ fulfillmentStatus: 'shipped' }),
       });
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
@@ -286,7 +288,7 @@ describe('Store Routes', () => {
       const req = new Request('http://localhost/api/store/orders/order-123/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fulfillment_status: 'shipped' }),
+        body: JSON.stringify({ fulfillmentStatus: 'shipped' }),
       });
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);

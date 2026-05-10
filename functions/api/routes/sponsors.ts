@@ -67,7 +67,8 @@ sponsorsRouter.openapi(getSponsorsRoute, async (c) => {
       createdAt: s.createdAt ?? null,
     }));
 
-    return c.json({ sponsors }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ sponsors } as any, 200);
   }
 );
 
@@ -134,7 +135,8 @@ sponsorsRouter.openapi(getRoiRoute, async (c) => {
       yearMonth: m.yearMonth,
     }));
 
-    return c.json({ sponsor, metrics }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ sponsor, metrics } as any, 200);
   }
 );
 
@@ -160,12 +162,14 @@ sponsorsRouter.openapi(adminListSponsorsRoute, async (c) => {
       createdAt: s.createdAt ?? null,
     }));
 
-    return c.json({ sponsors: mappedSponsors }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ sponsors: mappedSponsors } as any, 200);
   }
 );
 
 sponsorsRouter.openapi(saveSponsorRoute, async (c) => {
-    const body = c.req.valid("json");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = c.req.valid("json") as any;
     const db = getDb(c);
     const id = body.id || crypto.randomUUID();
 
@@ -236,7 +240,8 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
       lastUsed: null,
     }));
 
-    return c.json({ tokens }, 200);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ tokens } as any, 200);
   }
 );
 

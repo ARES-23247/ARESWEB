@@ -35,6 +35,11 @@ export const createMockEvent = (overrides?: Partial<EventRow>): EventRow => {
     revisionOf: null,
     publishedAt: null,
     seasonId: null,
+    recurringGroupId: null,
+    rrule: null,
+    recurringException: 0,
+    zulipStream: null,
+    zulipTopic: null,
     updatedAt: null,
     ...overrides,
   };

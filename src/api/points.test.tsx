@@ -199,6 +199,7 @@ describe("Points API", () => {
         reason: "Excellent work at competition",
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.current.mutate(awardData as any);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -221,6 +222,7 @@ describe("Points API", () => {
         reason: "Redeemed team hoodie",
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.current.mutate(deductData as any);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -234,11 +236,17 @@ describe("Points API", () => {
 
       const { result } = renderHook(() => pointsApi.useAwardPoints(), { wrapper });
 
-      (result.current.mutate as any)({
-        userId: "user123",
-        pointsDelta: 50,
-        reason: "Good job",
-      } as any, {} as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (result.current.mutate as any)(
+        {
+          userId: "user123",
+          pointsDelta: 50,
+          reason: "Good job",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        {} as any
+      );
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -264,6 +272,7 @@ describe("Points API", () => {
         reason: "Mentoring new students",
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.current.mutate(awardData as any);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));

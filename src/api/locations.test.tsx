@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -192,7 +192,7 @@ describe("Locations API", () => {
         isDeleted: 0,
       };
 
-      result.current.mutate(locationData as locationsApi.Location);
+      result.current.mutate(locationData as unknown as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
@@ -218,7 +218,7 @@ describe("Locations API", () => {
         isDeleted: 0,
       };
 
-      result.current.mutate(locationData as locationsApi.Location);
+      result.current.mutate(locationData as unknown as locationsApi.Location);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.locations.admin.save.$post).toHaveBeenCalledWith({

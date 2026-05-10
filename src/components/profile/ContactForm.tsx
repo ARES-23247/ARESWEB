@@ -10,7 +10,10 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 				<div>
 					<label htmlFor="pe-phone" className={labelClass}>Phone</label>
 					<form.Field name="phone">
-						{(field: any) => (
+						{(
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
+							field: any
+						) => (
 							<>
 								<input
 									id="pe-phone"
@@ -23,7 +26,10 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 									placeholder="(304) 555-1234"
 								/>
 								<form.Field name="showPhone">
-									{(showField: any) => (
+									{(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										showField: any
+									) => (
 										<label className="flex items-center gap-2 mt-2 text-xs text-ares-gray">
 											<input
 												type="checkbox"
@@ -44,7 +50,10 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 				<div>
 					<label htmlFor="pe-contact-email" className={labelClass}>Contact Email</label>
 					<form.Field name="contactEmail">
-						{(field: any) => (
+						{(
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
+							field: any
+						) => (
 							<>
 								<input
 									id="pe-contact-email"
@@ -59,7 +68,10 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 									placeholder="Optional. Replaces login email."
 								/>
 								<form.Field name="showEmail">
-									{(showField: any) => (
+									{(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										showField: any
+									) => (
 										<label className="flex items-center gap-2 mt-2 text-xs text-ares-gray">
 											<input
 												type="checkbox"

@@ -128,6 +128,11 @@ export const events = sqliteTable("events", {
 	publishedAt: text("published_at"),
 	meetingNotes: text("meeting_notes"),
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	recurringGroupId: text("recurring_group_id"),
+	rrule: text("rrule"),
+	recurringException: integer("recurring_exception").default(0),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
 	updatedAt: text("updated_at"),
 },
 (table) => [

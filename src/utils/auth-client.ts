@@ -6,6 +6,7 @@ export const authClient = createAuthClient({
     plugins: [
         genericOAuthClient(),
         twoFactorClient(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         emailOTPClient as any
     ]
 });

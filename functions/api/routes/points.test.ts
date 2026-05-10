@@ -21,7 +21,7 @@ vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn(),
+    getSessionUser: vi.fn(() => Promise.resolve(globalThis.__mockSessionUser)),
     ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
       const user = globalThis.__mockSessionUser;
       if (!user) {
@@ -380,7 +380,7 @@ describe('Points Routes', () => {
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // awardPointsRoute checks sessionUser.role === 'admin' specifically
-      expect(_res.status).toBe(401);
+      expect(_res.status).toBe(403);
     });
 
     it('should allow admin to award points', async () => {
@@ -441,7 +441,7 @@ describe('Points Routes', () => {
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // awardPointsRoute specifically checks role === 'admin', not memberType
-      expect(_res.status).toBe(401);
+      expect(_res.status).toBe(403);
     });
   });
 

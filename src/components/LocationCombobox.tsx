@@ -27,7 +27,7 @@ export function LocationCombobox({
       ? locations
       : locations.filter((loc) => {
           return loc.name.toLowerCase().includes(query.toLowerCase()) || 
-                 loc.address.toLowerCase().includes(query.toLowerCase());
+                 (loc.address || "").toLowerCase().includes(query.toLowerCase());
         });
 
   return (
@@ -62,7 +62,7 @@ export function LocationCombobox({
             >
               <div className="flex flex-col">
                 <span className="font-bold">{loc.name}</span>
-                <span className="text-[10px] text-white/50">{loc.address}</span>
+                <span className="text-[10px] text-white/50">{loc.address || ""}</span>
               </div>
             </ComboboxOption>
           ))}

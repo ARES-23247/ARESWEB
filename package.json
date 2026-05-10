@@ -50,11 +50,11 @@
     "lodash": "^4.18.1",
     "serialize-javascript": "^7.0.5",
     "esbuild": "^0.25.0",
-    "drizzle-orm": "1.0.0-beta.24"
+    "drizzle-orm": "^1.0.0-beta.22"
   },
   "pnpm": {
     "overrides": {
-      "drizzle-orm": "1.0.0-beta.24"
+      "drizzle-orm": "^1.0.0-beta.22"
     }
   },
   "dependencies": {
@@ -80,6 +80,7 @@
     "@tanstack/react-query-devtools": "^5.100.9",
     "@tanstack/react-query-persist-client": "^5.100.9",
     "@tanstack/react-router": "^1.169.2",
+    "@tanstack/react-store": "^0.11.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
     "@tanstack/zod-form-adapter": "^0.42.1",
@@ -202,6 +203,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "glob": "^13.0.6",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",

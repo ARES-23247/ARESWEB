@@ -14,6 +14,7 @@ export default function SponsorTokensManager() {
   const sponsors = sponsorsRes?.sponsors || [];
 
   const { data: tokensRes, isLoading: loadingTokens, isError: isTokensError } = useGetAdminTokens();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tokens = (tokensRes?.tokens || []) as any[];
 
   const generateMutation = useGenerateSponsorToken({
@@ -101,7 +102,7 @@ export default function SponsorTokensManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {tokens.map((t: any) => {
+              {tokens.map((t: { token: string; sponsorName: string; createdAt: string }) => {
                 const url = `${window.location.origin}/sponsors/roi/${t.token}`;
                 return (
                   <tr key={t.token} className="hover:bg-white/[0.02]">

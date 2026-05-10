@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
-import { eventSchema, EventCategoryEnum } from "../schemas/eventSchema";
+import { eventSchema } from "../schemas/eventSchema";
 import { selectEventSchema, selectEventSignupSchema } from "../db/schema-zod";
 import { toCamelCaseResponse } from "../db/schema-openapi";
 

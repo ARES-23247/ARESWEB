@@ -35,6 +35,10 @@ export const TaskSchema = selectTaskSchema.extend({
       nickname: z.string().nullable(),
     })
   ).nullish(),
+  creatorName: z.string().nullish(),
+  zulipStream: z.string().nullish(),
+  zulipTopic: z.string().nullish(),
+  isDeleted: z.number().nullish(),
 });
 
 /**

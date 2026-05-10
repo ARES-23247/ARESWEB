@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
-import { responseWrappers } from "../db/schema-openapi";
 
 // Request schemas
 export const sendMassEmailSchema = z.object({

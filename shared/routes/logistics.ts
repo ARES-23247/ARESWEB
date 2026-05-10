@@ -1,6 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
-import { responseWrappers } from "../db/schema-openapi";
 
 // Response schemas
 export const logisticsSummarySchema = z.object({

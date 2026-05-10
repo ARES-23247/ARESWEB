@@ -13,7 +13,7 @@ import confetti from "canvas-confetti";
 import { useModal } from "../contexts/ModalContext";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
-import { sponsorSchema, SponsorPayload } from "@shared/schemas/sponsorSchema";
+import { sponsorSchema } from "@shared/schemas/sponsorSchema";
 
 import { useGetAdminSponsors, useSaveSponsor, useDeleteSponsor, type Sponsor } from "../api";
 
@@ -189,6 +189,7 @@ export default function SponsorEditor() {
               <form.Field
                 name="name"
                 validators={{
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange: (sponsorSchema as any).shape.name,
                 }}
               >
@@ -200,7 +201,7 @@ export default function SponsorEditor() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as unknown as any}
+                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="e.g. Google DeepMind"
                     focusColor="ares-red"
                   />
@@ -232,6 +233,7 @@ export default function SponsorEditor() {
                   <form.Field
                     name="logoUrl"
                     validators={{
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       onChange: (sponsorSchema as any).shape.logoUrl,
                     }}
                   >
@@ -243,7 +245,7 @@ export default function SponsorEditor() {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        error={field.state.meta.errors?.[0] as unknown as any}
+                        error={field.state.meta.errors?.[0] as string | undefined}
                         placeholder="https://... or upload"
                         focusColor="ares-red"
                         className="flex-1"
@@ -271,6 +273,7 @@ export default function SponsorEditor() {
               <form.Field
                 name="websiteUrl"
                 validators={{
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange: (sponsorSchema as any).shape.websiteUrl,
                 }}
               >
@@ -282,7 +285,7 @@ export default function SponsorEditor() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as unknown as any}
+                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="https://..."
                     focusColor="ares-red"
                   />
@@ -301,7 +304,7 @@ export default function SponsorEditor() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
            <DashboardLoadingGrid count={3} heightClass="h-32" gridClass="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
-        ) : (sponsors as any[]).map((s) => (
+        ) : (sponsors as Sponsor[]).map((s) => (
           <div key={s.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react";
+import { useEffect } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -65,7 +65,7 @@ export default function BlogPost() {
         image={post.thumbnail ?? undefined}
         type="article"
         schemaData={{
-          authorName: post.authorNickname ?? undefined,
+          authorName: post.author ?? undefined,
           datePublished: post.date ?? undefined,
           readingTime: readingTimeFormatted,
           wordCount: wordCount,
@@ -73,7 +73,7 @@ export default function BlogPost() {
       />
       <MetaTags
         article={true}
-        author={post.authorNickname ?? undefined}
+        author={post.author ?? undefined}
         publishedTime={post.date ?? undefined}
         section="Robotics Education"
         tags={["FIRST Robotics", "FTC", "STEM", "Morgantown", "West Virginia"]}
@@ -99,14 +99,14 @@ export default function BlogPost() {
              <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
                {post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'MMMM do, yyyy') : "Unpublished"}
              </span>
-             {(post.authorAvatar || post.authorNickname) && (
+             {(post.authorAvatar || post.author) && (
                <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
                  <img 
-                   src={post.authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorNickname || post.slug}`}
-                   alt={`${post.authorNickname || "Author"}'s avatar`}
+                   src={post.authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`}
+                   alt={`${post.author || "Author"}'s avatar`}
                    className="w-6 h-6 rounded-full object-cover border border-white/20"
                  />
-                 <span className="text-sm text-white">{post.authorNickname || "ARES Author"}</span>
+                 <span className="text-sm text-white">{post.author || "ARES Author"}</span>
                </div>
              )}
             {isEditor && (

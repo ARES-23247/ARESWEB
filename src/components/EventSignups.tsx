@@ -2,14 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { ClipboardList, Plus, Save, RefreshCw, Trash2, CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
 import { useGetEventSignups, useSubmitEventSignup, useDeleteMyEventSignup, useUpdateMyEventAttendance, useUpdateUserEventAttendance, type EventSignup } from "../api/events";
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-import { zodValidator } from "@tanstack/zod-form-adapter";
-
-const eventSignupSchema = z.object({
-	bringing: z.string().optional(),
-	notes: z.string().optional(),
-	prepHours: z.number().min(0).optional(),
-});
 
 interface EventSignupsProps {
 	eventId: string;
@@ -72,7 +64,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 		}
 	};
 
-	const toggleAttendance = async (userId: string, currentStatus: number | undefined) => {
+	const toggleAttendance = async (userId: string, currentStatus: number | null | undefined) => {
 		try {
 			await updateUserAttendance.mutateAsync({
 				eventId,

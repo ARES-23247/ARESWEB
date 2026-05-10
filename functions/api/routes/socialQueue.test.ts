@@ -145,6 +145,8 @@ describe('SocialQueue Routes', () => {
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
+      const json = await _res.json();
+      console.log("Response JSON:", json);
       expect(_res.status).toBe(401);
     });
 

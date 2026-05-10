@@ -101,7 +101,8 @@ describe("Sponsors API", () => {
 
   describe("useGetSponsors", () => {
     it("should fetch public sponsors successfully", async () => {
-      const mockSponsors: sponsorsApi.Sponsor[] = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSponsors: any[] = [
         { id: "1", name: "Acme Corp", logoUrl: "/acme.png", tier: "Gold", websiteUrl: null, isActive: 1 },
         { id: "2", name: "Beta Inc", logoUrl: "/beta.png", tier: "Silver", websiteUrl: null, isActive: 1 },
       ];
@@ -128,8 +129,10 @@ describe("Sponsors API", () => {
 
   describe("useGetSponsorRoi", () => {
     it("should fetch sponsor ROI dashboard successfully", async () => {
-      const mockSponsor: sponsorsApi.Sponsor = { id: "1", name: "Acme Corp", logoUrl: "/acme.png", tier: "Gold", websiteUrl: null, isActive: 1 };
-      const mockMetrics: sponsorsApi.SponsorRoiMetric[] = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSponsor: any = { id: "1", name: "Acme Corp", logoUrl: "/acme.png", tier: "Gold", websiteUrl: null, isActive: 1 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockMetrics: any[] = [
         { id: "1", sponsorId: "1", clicks: 5000, impressions: 50000, yearMonth: "2024-01" },
         { id: "2", sponsorId: "1", clicks: 2500, impressions: 25000, yearMonth: "2024-02" },
       ];
@@ -174,7 +177,8 @@ describe("Sponsors API", () => {
 
   describe("useGetAdminSponsors", () => {
     it("should fetch admin sponsors list successfully", async () => {
-      const mockSponsors = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSponsors: any[] = [
         { id: "1", name: "Acme Corp", tier: "Gold", contactEmail: "acme@example.com" },
         { id: "2", name: "Beta Inc", tier: "Silver", contactEmail: "beta@example.com" },
       ];
@@ -329,7 +333,8 @@ describe("Sponsors API", () => {
 
   describe("useGetAdminTokens", () => {
     it("should fetch admin tokens successfully", async () => {
-      const mockTokens: sponsorsApi.SponsorToken[] = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockTokens: any[] = [
         { sponsorId: "sponsor-1", token: "token-abc", createdAt: "2024-01-01", lastUsed: null },
         { sponsorId: "sponsor-2", token: "token-xyz", createdAt: "2024-01-02", lastUsed: null },
       ];

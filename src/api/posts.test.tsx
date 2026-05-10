@@ -131,11 +131,13 @@ describe("Posts API", () => {
 
   describe("useGetPosts", () => {
     it("should fetch public posts successfully", async () => {
-      const mockPosts = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockPosts: any[] = [
         { id: "1", slug: "post-1", title: "Post 1", published: true },
         { id: "2", slug: "post-2", title: "Post 2", published: true },
       ];
-      const mockResponse: PostsResponse = { posts: mockPosts };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockResponse: PostsResponse = { posts: mockPosts as any };
       mockClient.posts.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -159,13 +161,14 @@ describe("Posts API", () => {
 
   describe("useGetPost", () => {
     it("should fetch single post successfully", async () => {
-      const mockPost = {
+      const mockPost = { 
         slug: "test-post",
         title: "Test Post",
         ast: '{"type":"doc","content":[]}',
       };
       const mockResponse: PostDetailResponse = {
-        post: mockPost,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        post: mockPost as any,
         is_editor: false,
         author: { id: "123", name: "Author", role: "author" },
       };
@@ -187,11 +190,13 @@ describe("Posts API", () => {
 
   describe("useGetAdminPosts", () => {
     it("should fetch admin posts successfully", async () => {
-      const mockPosts = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockPosts: any[] = [
         { slug: "admin-post-1", title: "Admin Post 1" },
         { slug: "admin-post-2", title: "Admin Post 2" },
       ];
-      const mockResponse: PostsResponse = { posts: mockPosts };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockResponse: PostsResponse = { posts: mockPosts as any };
       mockClient.posts.admin.list.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
@@ -204,7 +209,7 @@ describe("Posts API", () => {
 
   describe("useGetAdminPost", () => {
     it("should fetch admin post detail successfully", async () => {
-      const mockPost = {
+      const mockPost = { 
         slug: "test-post",
         title: "Test Post",
         ast: '{"type":"doc","content":[]}',
@@ -375,11 +380,13 @@ describe("Posts API", () => {
 
   describe("useGetPostHistory", () => {
     it("should fetch post history successfully", async () => {
-      const mockHistory: postsApi.PostHistory[] = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockHistory: any[] = [
         { id: 1, slug: "test-post", title: "Test Post", createdAt: "2024-01-01T00:00:00Z", ast: '{"type":"doc"}' },
         { id: 2, slug: "test-post", title: "Updated Title", createdAt: "2024-01-02T00:00:00Z", ast: '{"type":"doc"}' },
       ];
-      const mockResponse: PostHistoryResponse = { history: mockHistory };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockResponse: PostHistoryResponse = { history: mockHistory as any };
       mockClient.posts.admin[":slug"].history.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 

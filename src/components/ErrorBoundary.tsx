@@ -108,7 +108,9 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error("ARES React Error Boundary Intercepted Fault:", error, errorInfo);
 
     // Report to Sentry if available
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof window !== "undefined" && (window as any).Sentry) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).Sentry.captureException(error, {
         tags: { component: "ErrorBoundary", correlationId: this.state.correlationId },
         extra: { errorInfo, statusCode: this.state.statusCode },

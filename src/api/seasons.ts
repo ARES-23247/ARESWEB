@@ -7,11 +7,11 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
-import { seasonSchema } from "@shared/routes/seasons";
+import { seasonSchema, saveSeasonSchema } from "@shared/routes/seasons";
 
 // Infer TypeScript types from Zod schemas
 export type Season = z.infer<typeof seasonSchema>;
-export type SeasonPayload = z.input<typeof seasonSchema>;
+export type SeasonPayload = z.infer<typeof saveSeasonSchema>;
 
 export interface SeasonsResponse {
   seasons: Season[];

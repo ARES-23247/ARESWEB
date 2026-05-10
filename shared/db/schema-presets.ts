@@ -102,7 +102,10 @@ export const fieldPresets = {
   category: <T extends readonly [string, ...string[]]>(
     values: T,
     defaultVal: T[number]
-  ) => z.enum(values).default(defaultVal as any),
+  ) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return z.enum(values).default(defaultVal as any);
+  },
 
   /**
    * Optional enum field

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
-import { selectUserSchema, selectUserProfileSchema, selectBadgeSchema } from "@shared/db/schema-zod";
+import { selectUserSchema, selectUserProfileSchema } from "@shared/db/schema-zod";
 import { createResponseSchema } from "@shared/db/schema-openapi";
 
 // Enums

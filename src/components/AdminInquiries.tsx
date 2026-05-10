@@ -97,6 +97,7 @@ export default function AdminInquiries() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: res, isLoading, isError } = useGetAdminInquiries({ limit: 200, offset: 0 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inquiries = useMemo(() => (res?.inquiries || []) as any as Inquiry[], [res?.inquiries]);
 
   const filtered = useMemo(() => {

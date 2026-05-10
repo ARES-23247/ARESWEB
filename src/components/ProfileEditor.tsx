@@ -167,7 +167,7 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 					className="space-y-6"
 				>
 					<IdentityForm form={form} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
-					{/* @ts-expect-error */}
+					{/* @ts-expect-error - Complex form state type mapping */}
 					<RoleForm form={form} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
 					<ContactForm form={form} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />
 					<SecuritySettings form={form} isMinor={isMinor} inputClass={inputClass} labelClass={labelClass} sectionClass={sectionClass} />

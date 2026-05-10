@@ -88,7 +88,8 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, async (c) => {
       contactPerson: p.contactPerson,
       seasonId: p.seasonId ? Number(p.seasonId) : null,
       zulipMessageId: p.zulipMessageId,
-      assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId)
+      assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId),
+      createdAt: p.createdAt,
     }));
 
     return c.json({ pipeline: result }, 200); });
@@ -203,146 +204,6 @@ financeRouter.openapi(financeRoutes.deletePipelineRoute, async (c) => {
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
     return c.json({ success: true }, 200); });
 
-// GET /finance/sponsorship - List sponsorship pipeline items
-financeRouter.openapi(financeRoutes.listPipelineRoute, async (c) => {
-    const query = c.req.valid("query");
-    const { seasonId } = query;
-    const db = getDb(c);
-    let queryBuilder = db.select().from(schema.sponsorshipPipeline).$dynamic();
-    if (seasonId) {
-      queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(seasonId)));
-    }
-    const pipeline = await queryBuilder.orderBy(desc(schema.sponsorshipPipeline.createdAt)).all();
-    const pipelineIds = pipeline.map((p) => p.id).filter(Boolean);
-
-    let assignments: SponsorshipAssignment[] = [];
-    if (pipelineIds.length > 0) {
-      assignments = await db.select().from(schema.sponsorshipAssignments).where(inArray(schema.sponsorshipAssignments.sponsorshipId, pipelineIds)).all();
-    }
-
-    const result = pipeline.map((p) => ({
-      id: p.id,
-      companyName: p.companyName,
-      sponsorId: p.id, // Use the primary key as the sponsorship ID
-      status: ((p.status ?? "potential").toLowerCase()) as "potential" | "contacted" | "pledged" | "secured" | "lost",
-      estimatedValue: Number(p.estimatedValue ?? 0),
-      notes: p.notes,
-      contactPerson: p.contactPerson,
-      seasonId: p.seasonId ? Number(p.seasonId) : null,
-      zulipMessageId: p.zulipMessageId,
-      assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId)
-    }));
-
-// GET /finance/transactions - List financial transactions
-financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c) => {
-    const query = c.req.valid("query");
-    const { seasonId, type } = query;
-    const db = getDb(c);
-    let queryBuilder = db.select().from(schema.financeTransactions).$dynamic();
-    if (seasonId) {
-      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.seasonId, seasonId));
-    }
-    if (type) {
-      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.type, type));
-    }
-    const transactions = await queryBuilder.orderBy(desc(schema.financeTransactions.date)).all();
-
-    const result = transactions.map((t) => ({
-      id: t.id,
-      type: t.type as "income" | "expense",
-      amount: Number(t.amount),
-      category: t.category,
-      date: t.date,
-      description: t.description,
-      receiptUrl: t.receiptUrl,
-      seasonId: t.seasonId ? Number(t.seasonId) : null,
-      loggedBy: t.loggedBy,
-    }));
-
-    return c.json({ transactions: result }, 200); });
-
-// POST /finance/transactions - Create or update a financial transaction
-financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c) => {
-    const body = c.req.valid("json");
-    const db = getDb(c);
-    const user = await getSessionUser(c);
-
-    // CR-05 FIX: Require proper authorization for transaction modifications
-    if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
-    if (user.role !== "admin" && user.memberType !== "mentor" && user.memberType !== "coach") {
-      return c.json({ error: "Forbidden" }, 403);
-    }
-
-    const id = body.id ?? crypto.randomUUID();
-    const isNew = !body.id;
-
-    // WR-15: Validate transaction amount and type
-    const amount = Number(body.amount);
-    if (Number.isNaN(amount) || amount < 0 || amount > 1000000) {
-      return c.json({ error: "Invalid amount: must be between 0 and 1,000,000" }, 400);
-    }
-
-    const validTypes: readonly ["income", "expense"] = ["income", "expense"] as const;
-    if (!body.type || !validTypes.includes(body.type)) {
-      return c.json({ error: "Invalid transaction type: must be 'income' or 'expense'" }, 400);
-    }
-
-    const data = {
-      id,
-      amount: body.amount,
-      type: body.type,
-      category: body.category,
-      date: body.date,
-      description: body.description ?? null,
-      receiptUrl: body.receiptUrl ?? null,
-      seasonId: body.seasonId ? Number(body.seasonId) : null,
-      loggedBy: user?.id ?? "system",
-    };
-
-    if (isNew) {
-      await db.insert(schema.financeTransactions).values(data).run();
-    } else {
-      await db.update(schema.financeTransactions).set(data).where(eq(schema.financeTransactions.id, id)).run();
-    }
-
-    await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
-    return c.json({ success: true, id }, 200); });
-
-// DELETE /finance/transactions/{id} - Delete a financial transaction
-financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c) => {
-    const params = c.req.valid("param");
-    const { id } = params;
-    const db = getDb(c);
-    const tx = await db
-      .select({ receiptUrl: schema.financeTransactions.receiptUrl })
-      .from(schema.financeTransactions)
-      .where(eq(schema.financeTransactions.id, id))
-      .get();
-
-    if (!tx) {
-      return c.json({ error: "Transaction not found" }, 404);
-    }
-
-    await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
-
-    if (tx.receiptUrl && tx.receiptUrl.includes("receipts/")) {
-      const key = tx.receiptUrl.split("receipts/")[1];
-      try {
-        if (c.executionCtx?.waitUntil && c.env?.ARES_STORAGE) {
-          c.executionCtx.waitUntil(c.env.ARES_STORAGE.delete(`receipts/${key}`));
-        }
-      } catch (err) {
-        console.warn("[Finance] No execution context available for bucket deletion", err);
-      }
-    }
-
-    await logAuditAction(c, "delete", "finance_transactions", id);
-    return c.json({ success: true }, 200); });
-}
-);
-
 // GET /finance/transactions - List financial transactions
 financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c) => {
     const query = c.req.valid("query");
@@ -370,8 +231,7 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, async (c) => {
     }));
 
     return c.json({ transactions: result }, 200);
-}
-);
+});
 
 // POST /finance/transactions - Create or update a financial transaction
 financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c) => {
@@ -421,8 +281,7 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, async (c) => {
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
     return c.json({ success: true, id }, 200);
-}
-);
+});
 
 // DELETE /finance/transactions/{id} - Delete a financial transaction
 financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c) => {
@@ -454,7 +313,6 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, async (c) => {
 
     await logAuditAction(c, "delete", "finance_transactions", id);
     return c.json({ success: true }, 200);
-}
-);
+});
 
 export default financeRouter;

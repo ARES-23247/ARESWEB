@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 import { selectSimulationSchema } from "../db/schema-zod";
-import { createResponseSchema, responseWrappers } from "../db/schema-openapi";
+import { createResponseSchema } from "../db/schema-openapi";
 
 // Auto-generated response schema from Drizzle
 export const SimulationSchema = createResponseSchema(selectSimulationSchema, {

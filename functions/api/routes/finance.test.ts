@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for finance route handlers
  *
  * Tests finance management endpoints including auth, admin checks,
@@ -14,13 +14,14 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
+import { globalErrorHandler } from '../middleware/errorHandler';
 
 // Mock the auth module BEFORE importing financeRouter
 vi.mock('../middleware/auth', async () => {
   const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth');
   return {
     ...actual,
-    getSessionUser: vi.fn(),
+    getSessionUser: vi.fn(() => Promise.resolve(globalThis.__mockSessionUser)),
     ensureAuth: vi.fn((c: Context<AppEnv>, next: Next) => {
       const user = globalThis.__mockSessionUser;
       if (!user) {
@@ -119,6 +120,7 @@ describe('Finance Routes', () => {
 
   const createTestApp = () => {
     const app = new Hono<AppEnv>()
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/finance', financeRouter);
     return app;

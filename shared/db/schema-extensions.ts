@@ -75,7 +75,7 @@ export class SchemaExtensionBuilder<T extends ZodTypeAny> {
   /**
    * Mark a field as required (remove optional)
    */
-  requireField<K extends string>(field: K): this {
+  requireField<K extends string>(_field: K): this {
     // This will be handled during build with unwrap()
     return this;
   }
@@ -83,7 +83,7 @@ export class SchemaExtensionBuilder<T extends ZodTypeAny> {
   /**
    * Mark a field as optional
    */
-  optionalField<K extends string>(field: K): this {
+  optionalField<K extends string>(_field: K): this {
     return this;
   }
 
@@ -104,6 +104,7 @@ export class SchemaExtensionBuilder<T extends ZodTypeAny> {
    */
   applyPresets(presets: Record<string, z.ZodTypeAny>): this {
     for (const [field, preset] of Object.entries(presets)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const existing = this.extensions.get(field) as any;
       this.extensions.set(field, { ...existing, override: preset });
     }
@@ -121,6 +122,7 @@ export class SchemaExtensionBuilder<T extends ZodTypeAny> {
   /**
    * Build the final schema with all extensions applied
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   build(): z.ZodObject<any> {
     let schema: ZodTypeAny = this.baseSchema;
 
@@ -160,12 +162,14 @@ export class SchemaExtensionBuilder<T extends ZodTypeAny> {
       schema = z.object(newShape);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return schema as z.ZodObject<any>;
   }
 
   /**
    * Check if a schema is a ZodObject
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isZodObject(schema: ZodTypeAny): schema is ZodObject<any> {
     return 'shape' in schema && typeof schema.shape === 'object';
   }

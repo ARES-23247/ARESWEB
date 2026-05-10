@@ -12,7 +12,7 @@ import { useForm } from "@tanstack/react-form";
 import { RefreshCw } from "lucide-react";
 import { z } from "zod";
 
-type DocFormValues = z.infer<typeof docSchema>;
+type _DocFormValues = z.infer<typeof docSchema>;
 
 interface DocData {
   slug: string;
@@ -173,7 +173,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           <label htmlFor="doc-title" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Title</label>
           <form.Field
             name="title"
-            children={(field) => (
+          >
+            {(field) => (
               <>
                 <input
                   id="doc-title" type="text"
@@ -189,14 +190,15 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 )}
               </>
             )}
-          />
+          </form.Field>
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-slug" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Slug</label>
           <form.Field
             name="slug"
-            children={(field) => (
+          >
+            {(field) => (
               <>
                 <input
                   id="doc-slug" type="text"
@@ -213,14 +215,15 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 )}
               </>
             )}
-          />
+          </form.Field>
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-category" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Category</label>
           <form.Field
             name="category"
-            children={(field) => (
+          >
+            {(field) => (
               <input
                 id="doc-category" type="text"
                 name={field.name}
@@ -231,14 +234,15 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 placeholder="e.g. Tutorials"
               />
             )}
-          />
+          </form.Field>
         </div>
 
         <div className="col-span-1 lg:col-span-1">
           <label htmlFor="doc-sort" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Sort Order</label>
           <form.Field
             name="sortOrder"
-            children={(field) => (
+          >
+            {(field) => (
               <input
                 id="doc-sort" type="number"
                 name={field.name}
@@ -248,7 +252,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors"
               />
             )}
-          />
+          </form.Field>
         </div>
       </div>
 
@@ -256,7 +260,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         <label htmlFor="doc-description" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Description / Summary</label>
         <form.Field
           name="description"
-          children={(field) => (
+        >
+          {(field) => (
             <input
               id="doc-description" type="text"
               name={field.name}
@@ -267,13 +272,14 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
               placeholder="Brief summary of what this document covers..."
             />
           )}
-        />
+        </form.Field>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
         <form.Field
           name="isPortfolio"
-          children={(field) => (
+        >
+          {(field) => (
             <div className="flex items-center gap-3 cursor-pointer group">
               <input
                 id="isPortfolioToggle" type="checkbox"
@@ -284,16 +290,17 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 className="w-5 h-5 rounded border-white/10 bg-black text-ares-cyan focus:ring-ares-cyan"
               />
               <div>
-                <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge&apos;s Portfolio Selection</label>
+                <label htmlFor="isPortfolioToggle" className="block text-sm font-bold text-white group-hover:text-ares-cyan transition-colors cursor-pointer">Judge{"'"}s Portfolio Selection</label>
                 <span className="block text-xs text-white/60">Feature this in the Rapid Review dashboard for judges.</span>
               </div>
             </div>
           )}
-        />
+        </form.Field>
 
         <form.Field
           name="isExecutiveSummary"
-          children={(field) => (
+        >
+          {(field) => (
             <div className="flex items-center gap-3 cursor-pointer group">
               <input
                 id="isExecSummaryToggle" type="checkbox"
@@ -309,7 +316,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
               </div>
             </div>
           )}
-        />
+        </form.Field>
       </div>
 
       <div className="mt-2 mb-2">
@@ -317,7 +324,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 ares-cut-sm bg-obsidian/50 border border-white/5">
           <form.Field
             name="displayInAreslib"
-            children={(field) => (
+          >
+            {(field) => (
               <div className="flex items-center gap-3 cursor-pointer group">
                 <input
                   id="displayAreslibToggle" type="checkbox"
@@ -332,11 +340,12 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 </div>
               </div>
             )}
-          />
+          </form.Field>
 
           <form.Field
             name="displayInMathCorner"
-            children={(field) => (
+          >
+            {(field) => (
               <div className="flex items-center gap-3 cursor-pointer group">
                 <input
                   id="displayMathToggle" type="checkbox"
@@ -351,11 +360,12 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 </div>
               </div>
             )}
-          />
+          </form.Field>
 
           <form.Field
             name="displayInScienceCorner"
-            children={(field) => (
+          >
+            {(field) => (
               <div className="flex items-center gap-3 cursor-pointer group">
                 <input
                   id="displayScienceToggle" type="checkbox"
@@ -370,7 +380,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 </div>
               </div>
             )}
-          />
+          </form.Field>
         </div>
       </div>
 

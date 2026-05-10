@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { locationSchema } from "@shared/routes/locations";
-import { z } from "zod";
 import { useGetAdminLocations, useSaveLocation, useDeleteLocation, type Location } from "../api/locations";
 
 export default function LocationsManager() {
@@ -14,7 +13,7 @@ export default function LocationsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const form = useForm({
-    // @ts-expect-error
+    // @ts-expect-error - zodValidator generic type mismatch with form schema
     validatorAdapter: zodValidator(),
     defaultValues: {
       name: "",
@@ -74,7 +73,7 @@ export default function LocationsManager() {
       }
     }, 600);
     return () => clearTimeout(timer);
-  }, [form.state.values.address]);
+  }, [form, form.state.values.address]);
 
   const resetForm = () => {
     setIsAdding(false);
@@ -90,7 +89,7 @@ export default function LocationsManager() {
     form.reset({
       id: l.id,
       name: l.name,
-      address: l.address,
+      address: l.address ?? "",
       mapsUrl: l.mapsUrl ?? "",
       isDeleted: l.isDeleted ?? 0
     });
@@ -179,7 +178,8 @@ export default function LocationsManager() {
               <form.Field
                 name="name"
                 validators={{
-                  onChange: locationSchema.shape.name,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onChange: locationSchema.shape.name as any,
                 }}
               >
                 {(field) => (
@@ -194,7 +194,8 @@ export default function LocationsManager() {
                       type="text"
                       className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
                     />
-                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]?.message as any}</p>}
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{(field.state.meta.errors[0] as any)?.message || String(field.state.meta.errors[0])}</p>}
                   </div>
                 )}
               </form.Field>
@@ -202,7 +203,8 @@ export default function LocationsManager() {
               <form.Field
                 name="address"
                 validators={{
-                  onChange: locationSchema.shape.address,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onChange: locationSchema.shape.address as any,
                 }}
               >
                 {(field) => (
@@ -221,7 +223,8 @@ export default function LocationsManager() {
                       />
                       {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
                     </div>
-                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]?.message as any}</p>}
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{(field.state.meta.errors[0] as any)?.message || String(field.state.meta.errors[0])}</p>}
 
                     {suggestions.length > 0 && (
                       <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">

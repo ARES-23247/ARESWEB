@@ -9,10 +9,6 @@ import AssetPickerModal from "./AssetPickerModal";
 import { DEFAULT_coverImage } from "../utils/constants";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
-import { z } from "zod";
-import { postSchema, PostPayload } from "@shared/schemas/postSchema";
-import { useGetAdminPost, useSavePost, useUpdatePost, useDeletePost, type SavePostResponse, type UpdatePostResponse } from "../api";
-import { useModal } from "../contexts/ModalContext";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import EditorFooter from "./editor/EditorFooter";
@@ -26,7 +22,9 @@ import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/Collab
 import VersionHistorySidebar from "./editor/VersionHistorySidebar";
 
 import ZulipThread from "./ZulipThread";
-
+import { useGetAdminPost, useDeletePost, useUpdatePost, useSavePost } from "../api";
+import { useModal } from "../contexts/ModalContext";
+import { type SavePostResponse, type UpdatePostResponse } from "../api/posts";
 function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -79,6 +77,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       form.setFieldValue("seasonId", post.seasonId ? Number(post.seasonId) : undefined);
       form.setFieldValue("thumbnail", post.thumbnail || DEFAULT_coverImage);
       form.setFieldValue("ast", post.ast ? JSON.parse(post.ast) : {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       form.setFieldValue("socials" as any, (postRes as any).socials || {});
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
@@ -173,8 +172,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   return (
     <div className="flex flex-col gap-6 w-full relative h-full">
       <div className="flex flex-col gap-6 flex-1 min-w-0">
-        <form.Subscribe selector={(s: any) => [s.values.thumbnail, s.values.title, s.values.socials]}>
-          {([thumbnailValue, titleValue, socialsValue]: any[]) => (
+        <form.Subscribe selector={(s) => [s.values.thumbnail, s.values.title, s.values.socials]}>
+          {([thumbnailValue, titleValue, socialsValue]) => (
             <>
               <div>
                 <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
@@ -198,7 +197,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                   <label htmlFor="post-title" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Post Title</label>
                   <form.Field
                     name="title"
-                    children={(field) => (
+                  >
+                    {(field) => (
                       <>
                         <input
                           id="post-title"
@@ -215,7 +215,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                         )}
                       </>
                     )}
-                  />
+                  </form.Field>
                 </div>
                 <div className="flex-1">
                   <CoverAssetPicker
@@ -242,7 +242,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                   <label htmlFor="post-published-at" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Schedule Publish Time</label>
                   <form.Field
                     name="publishedAt"
-                    children={(field) => (
+                  >
+                    {(field) => (
                       <input
                         id="post-published-at" type="datetime-local"
                         name={field.name}
@@ -252,15 +253,18 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                         className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
                       />
                     )}
-                  />
+                  </form.Field>
                 </div>
                 <div className="flex-1 md:max-w-xs">
                   <form.Field
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     name={"seasonId" as any}
-                    children={(field) => (
+                  >
+                    {(field) => (
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       <SeasonPicker value={(field.state.value as any) || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
                     )}
-                  />
+                  </form.Field>
                 </div>
               </div>
 
@@ -296,7 +300,9 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 extraControls={
                   <SocialSyndicationGrid
                     availableSocials={availableSocials}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     socials={socialsValue as any}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
                     isEdit={!!editSlug}
                   />

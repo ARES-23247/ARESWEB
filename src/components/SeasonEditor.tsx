@@ -43,6 +43,7 @@ export default function SeasonEditor() {
       await Promise.resolve();
       if (!active) return;
       if (detailData?.season) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const s = detailData.season as any;
         setStartYear(s.startYear);
         setChallengeName(s.challengeName);
