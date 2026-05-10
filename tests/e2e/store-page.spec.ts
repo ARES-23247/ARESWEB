@@ -206,13 +206,21 @@ test.describe('Store Page', () => {
     // Wait for products to load
     await page.waitForLoadState('domcontentloaded');
 
-    // All buttons should have accessible names
+    // All buttons should have accessible names (via aria-label, text, or title)
     const buttons = page.getByRole('button');
     const count = await buttons.count();
 
     for (let i = 0; i < count; i++) {
       const button = buttons.nth(i);
-      await expect(button).toHaveAttribute('type');
+      // Check if button has an accessible name
+      const accessibleName = await button.evaluate(el =>
+        el.getAttribute('aria-label') ||
+        el.getAttribute('title') ||
+        el.textContent?.trim() ||
+        ''
+      );
+      // Buttons should have some form of accessible label
+      expect(accessibleName.trim().length).toBeGreaterThan(0);
     }
 
     // Verify Add buttons from real seeded data
@@ -276,8 +284,16 @@ test.describe('Store Page - Interactive Features', () => {
     await expect(viewCartButton).toBeVisible();
     await viewCartButton.click();
 
-    // Verify cart drawer is open (check for cart drawer UI elements)
-    const cartDrawer = page.locator('.fixed.inset-0.z-50').filter({ hasText: /Your Cart/i });
+    // Verify cart drawer is open - the drawer uses z-50 and has "Your Cart" heading
+    // Look for the specific drawer structure
+    const cartDrawer = page.locator('.fixed.inset-y-0.right-0.z-50');
     await expect(cartDrawer).toBeVisible({ timeout: 5000 });
+
+    // Also verify the "Your Cart" heading is visible
+    await expect(page.getByText('Your Cart')).toBeVisible();
+
+    // Verify the close backdrop button is present (z-40)
+    const backdrop = page.locator('.fixed.inset-0.z-40');
+    await expect(backdrop).toBeVisible();
   });
 });

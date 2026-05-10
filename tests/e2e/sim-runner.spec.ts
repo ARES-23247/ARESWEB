@@ -125,8 +125,8 @@ test.describe('Sim Runner Page', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify physics sim content is loaded
-    // Use .first() to avoid strict mode violation — multiple elements contain "Physics"
-    await expect(page.getByText(/Physics/i).first()).toBeVisible({ timeout: TEST_TIMEOUTS.DEFAULT });
+    // The "Physics" text appears in a hidden span for nav, so check for visible simulation content
+    await expect(page.getByText(/Interactive Collision Sandbox/i)).toBeVisible({ timeout: TEST_TIMEOUTS.DEFAULT });
   });
 
   test.describe('Sim Runner - Specific Simulations', () => {

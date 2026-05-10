@@ -16,15 +16,15 @@ test.describe('Profile Editor Dashboard', () => {
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
-    // Verify initial profile data is displayed
-    await expect(page.getByDisplayValue('Admin')).toBeVisible();
-    await expect(page.getByDisplayValue('User')).toBeVisible();
-    await expect(page.getByDisplayValue('Admin User')).toBeVisible();
-    await expect(page.getByDisplayValue('I love robotics and mentoring students!')).toBeVisible();
-    await expect(page.getByDisplayValue('he/him')).toBeVisible();
-    await expect(page.getByDisplayValue('Building robots')).toBeVisible();
-    await expect(page.getByDisplayValue('Built my first robot at age 10')).toBeVisible();
-    await expect(page.getByDisplayValue('Pizza')).toBeVisible();
+    // Verify initial profile data is displayed using input value selectors
+    await expect(page.locator('#pe-first-name')).toHaveValue('Admin');
+    await expect(page.locator('#pe-last-name')).toHaveValue('User');
+    await expect(page.locator('#pe-nickname')).toHaveValue('Admin User');
+    await expect(page.locator('#pe-bio')).toHaveValue('I love robotics and mentoring students!');
+    await expect(page.locator('#pe-pronouns')).toHaveValue('he/him');
+    await expect(page.locator('#pe-fav-mech')).toHaveValue('Building robots');
+    await expect(page.locator('#pe-funfact')).toHaveValue('Built my first robot at age 10');
+    await expect(page.locator('#pe-food')).toHaveValue('Pizza');
   });
 
   test('Profile editing workflow - update name and bio', async ({ page }) => {
@@ -33,31 +33,23 @@ test.describe('Profile Editor Dashboard', () => {
     // Wait for the profile form to load
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
-    // Update first name
-    const firstNameInput = page.getByLabel('first name', { exact: false }).or(
-      page.locator('input[placeholder*="first name" i], input[name*="first" i]')
-    );
+    // Update first name - use specific ID to avoid matching favoriteFirstThing
+    const firstNameInput = page.locator('#pe-first-name');
     await firstNameInput.clear();
     await firstNameInput.fill('Updated');
 
     // Update last name
-    const lastNameInput = page.getByLabel('last name', { exact: false }).or(
-      page.locator('input[placeholder*="last name" i], input[name*="last" i]')
-    );
+    const lastNameInput = page.locator('#pe-last-name');
     await lastNameInput.clear();
     await lastNameInput.fill('Name');
 
     // Update nickname
-    const nicknameInput = page.getByLabel('nickname', { exact: false }).or(
-      page.locator('input[placeholder*="nickname" i], input[name*="nickname" i]')
-    );
+    const nicknameInput = page.locator('#pe-nickname');
     await nicknameInput.clear();
     await nicknameInput.fill('Updated Nickname');
 
     // Update bio
-    const bioTextarea = page.getByLabel('bio', { exact: false }).or(
-      page.locator('textarea[name*="bio" i], textarea[placeholder*="bio" i]')
-    );
+    const bioTextarea = page.locator('#pe-bio');
     await bioTextarea.clear();
     await bioTextarea.fill('Updated bio with more information about me.');
 
@@ -79,43 +71,33 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update pronouns
-    const pronounsInput = page.getByLabel('pronouns', { exact: false }).or(
-      page.locator('input[placeholder*="pronouns" i], input[name*="pronouns" i]')
-    );
+    const pronounsInput = page.locator('#pe-pronouns');
     await pronounsInput.clear();
     await pronounsInput.fill('they/them');
 
     // Update grade year (for students)
-    const gradeYearInput = page.getByLabel('grade year', { exact: false }).or(
-      page.locator('input[placeholder*="grade" i], input[name*="grade" i]')
-    );
+    const gradeYearInput = page.locator('#pe-grade');
     if (await gradeYearInput.isVisible({ timeout: 1000 })) {
       await gradeYearInput.clear();
       await gradeYearInput.fill('2025');
     }
 
     // Update favorite robot mechanism
-    const mechanismInput = page.getByLabel('robot mechanism', { exact: false }).or(
-      page.locator('textarea[name*="mechanism" i], textarea[placeholder*="mechanism" i]')
-    );
+    const mechanismInput = page.locator('#pe-fav-mech');
     if (await mechanismInput.isVisible({ timeout: 1000 })) {
       await mechanismInput.clear();
       await mechanismInput.fill('Drivetrain with swerve modules');
     }
 
     // Update leadership role
-    const leadershipInput = page.getByLabel('leadership role', { exact: false }).or(
-      page.locator('input[name*="leadership" i], input[placeholder*="leadership" i]')
-    );
+    const leadershipInput = page.locator('#pe-role');
     if (await leadershipInput.isVisible({ timeout: 1000 })) {
       await leadershipInput.clear();
       await leadershipInput.fill('Team Captain');
     }
 
     // Update rookie year
-    const rookieYearInput = page.getByLabel('rookie year', { exact: false }).or(
-      page.locator('input[name*="rookie" i], input[placeholder*="rookie" i]')
-    );
+    const rookieYearInput = page.locator('#pe-rookie');
     if (await rookieYearInput.isVisible({ timeout: 1000 })) {
       await rookieYearInput.clear();
       await rookieYearInput.fill('2021');
@@ -139,31 +121,23 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update phone
-    const phoneInput = page.getByLabel('phone', { exact: false }).or(
-      page.locator('input[type="tel"], input[name*="phone" i], input[placeholder*="phone" i]')
-    );
+    const phoneInput = page.locator('#pe-phone');
     await phoneInput.clear();
     await phoneInput.fill('555-999-8888');
 
     // Update contact email
-    const contactEmailInput = page.getByLabel('contact email', { exact: false }).or(
-      page.locator('input[name*="contact_email" i], input[placeholder*="contact" i]')
-    );
+    const contactEmailInput = page.locator('#pe-contact-email');
     await contactEmailInput.clear();
     await contactEmailInput.fill('newemail@ares.org');
 
     // Toggle show email checkbox
-    const showEmailCheckbox = page.getByLabel('show email', { exact: false }).or(
-      page.locator('input[type="checkbox"][name*="show_email" i], input[type="checkbox"][id*="email" i]')
-    );
+    const showEmailCheckbox = page.locator('input[type="checkbox"][name="showEmail"]');
     if (await showEmailCheckbox.isVisible({ timeout: 1000 })) {
       await showEmailCheckbox.check();
     }
 
     // Toggle show phone checkbox
-    const showPhoneCheckbox = page.getByLabel('show phone', { exact: false }).or(
-      page.locator('input[type="checkbox"][name*="show_phone" i], input[type="checkbox"][id*="phone" i]')
-    );
+    const showPhoneCheckbox = page.locator('input[type="checkbox"][name="showPhone"]');
     if (await showPhoneCheckbox.isVisible({ timeout: 1000 })) {
       await showPhoneCheckbox.check();
     }
@@ -187,31 +161,23 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update t-shirt size
-    const tshirtSelect = page.getByLabel('t-shirt', { exact: false }).or(
-      page.locator('select[name*="tshirt" i], select[aria-label*="t-shirt" i]')
-    );
+    const tshirtSelect = page.locator('#pe-tshirt');
     if (await tshirtSelect.isVisible({ timeout: 1000 })) {
-      await tshirtSelect.selectOption('XL');
+      await tshirtSelect.selectOption('Adult XL');
     }
 
     // Update favorite food
-    const foodInput = page.getByLabel('favorite food', { exact: false }).or(
-      page.locator('input[name*="favorite_food" i], input[placeholder*="food" i]')
-    );
+    const foodInput = page.locator('#pe-food');
     await foodInput.clear();
     await foodInput.fill('Sushi');
 
     // Update emergency contact name
-    const emergencyNameInput = page.getByLabel('emergency contact name', { exact: false }).or(
-      page.locator('input[name*="emergency_contact_name" i], input[placeholder*="emergency" i][type="text"]')
-    );
+    const emergencyNameInput = page.locator('#pe-ec-name');
     await emergencyNameInput.clear();
     await emergencyNameInput.fill('Emergency Contact');
 
     // Update emergency contact phone
-    const emergencyPhoneInput = page.getByLabel('emergency contact phone', { exact: false }).or(
-      page.locator('input[name*="emergency_contact_phone" i], input[placeholder*="emergency" i][type="tel"]')
-    );
+    const emergencyPhoneInput = page.locator('#pe-ec-phone');
     await emergencyPhoneInput.clear();
     await emergencyPhoneInput.fill('555-111-2222');
 
@@ -323,10 +289,20 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editor handles loading state', async ({ page }) => {
+    // The loading state appears briefly on initial navigation
+    // We need to intercept and delay the response to catch the loading spinner
+
+    // Intercept the profile API call and delay it
+    await page.route('**/api/profile/me', async route => {
+      // Delay the response to allow loading state to be visible
+      await new Promise(resolve => setTimeout(resolve, 500));
+      route.continue();
+    });
+
     await page.goto('/dashboard/profile');
 
-    // Verify loading spinner is visible
-    await expect(page.locator('.animate-spin, svg[class*="spin" i]').first()).toBeVisible();
+    // Verify loading spinner is visible during initial load
+    await expect(page.locator('svg.animate-spin, .animate-spin').first()).toBeVisible();
   });
 
   test('Save button shows loading state during submission', async ({ page }) => {
@@ -336,9 +312,7 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Make a change to enable the save button
-    const firstNameInput = page.getByLabel('first name', { exact: false }).or(
-      page.locator('input[placeholder*="first name" i], input[name*="first" i]')
-    );
+    const firstNameInput = page.locator('#pe-first-name');
     await firstNameInput.clear();
     await firstNameInput.fill('Test');
 
@@ -386,22 +360,36 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Verify all form inputs have accessible labels
-    const inputs = page.locator('input, textarea, select');
+    // All inputs in the profile form have either:
+    // 1. An id with associated label (via htmlFor)
+    // 2. An aria-label
+    // 3. An aria-labelledby
+    // 4. A name attribute
+    // 5. A placeholder attribute
+
+    const inputs = page.locator('input:not([type="hidden"]), textarea, select');
     const inputCount = await inputs.count();
 
     for (let i = 0; i < inputCount; i++) {
       const input = inputs.nth(i);
       const isVisible = await input.isVisible();
       if (isVisible) {
-        // Check if input has aria-label, aria-labelledby, or associated label
+        // Check if input has accessible labeling
         const hasAriaLabel = await input.getAttribute('aria-label');
         const hasAriaLabelledby = await input.getAttribute('aria-labelledby');
         const hasId = await input.getAttribute('id');
         const hasPlaceholder = await input.getAttribute('placeholder');
         const hasName = await input.getAttribute('name');
 
+        // At least one of these should be present for accessibility
         const hasLabel = hasAriaLabel || hasAriaLabelledby || hasId || hasPlaceholder || hasName;
-        expect(hasLabel).toBeTruthy();
+
+        if (!hasLabel) {
+          // Log which element failed for debugging
+          const tagName = await input.evaluate(el => el.tagName);
+          const className = await input.getAttribute('class');
+          throw new Error(`Input lacks accessible label: ${tagName} with class="${className}"`);
+        }
       }
     }
   });
@@ -413,9 +401,7 @@ test.describe('Profile Editor Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Clear a required field (nickname)
-    const nicknameInput = page.getByLabel('nickname', { exact: false }).or(
-      page.locator('input[name*="nickname" i], input[placeholder*="nickname" i]')
-    );
+    const nicknameInput = page.locator('#pe-nickname');
     await nicknameInput.clear();
 
     // Attempt to submit the form
