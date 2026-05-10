@@ -15,15 +15,17 @@ function spaFallbackPlugin(): Plugin {
     configurePreviewServer(server) {
       return () => {
         server.middlewares.use(
+
           history({
             // Disable index.html rewrite for API routes
             rewrites: [
               {
                 from: /^\/api\/.*$/,
-                to: (ctx) => ctx.parsedUrl.pathname || ''
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                to: (context: any) => context.parsedUrl.pathname
               }
             ]
-          }) as any
+          }) as any // eslint-disable-line @typescript-eslint/no-explicit-any -- connect-history-api-fallback type issue
         );
       };
     },
