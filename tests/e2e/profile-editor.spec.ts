@@ -12,7 +12,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -31,7 +31,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update first name
     const firstNameInput = page.getByLabel('first name', { exact: false }).or(
@@ -76,7 +76,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update pronouns
     const pronounsInput = page.getByLabel('pronouns', { exact: false }).or(
@@ -136,7 +136,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update phone
     const phoneInput = page.getByLabel('phone', { exact: false }).or(
@@ -184,7 +184,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Update t-shirt size
     const tshirtSelect = page.getByLabel('t-shirt', { exact: false }).or(
@@ -235,7 +235,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Toggle show on about checkbox
     const showOnAboutCheckbox = page.getByLabel(/show on about/i, { exact: false }).or(
@@ -333,7 +333,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Make a change to enable the save button
     const firstNameInput = page.getByLabel('first name', { exact: false }).or(
@@ -355,7 +355,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to fully load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -383,7 +383,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to fully load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Verify all form inputs have accessible labels
     const inputs = page.locator('input, textarea, select');
@@ -410,7 +410,7 @@ test.describe('Profile Editor Dashboard', () => {
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
-    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Identity/i })).toBeVisible();
 
     // Clear a required field (nickname)
     const nicknameInput = page.getByLabel('nickname', { exact: false }).or(
