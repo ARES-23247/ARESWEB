@@ -387,17 +387,18 @@ test.describe('Social Hub', () => {
     // Wait for page to load
     await expect(page.getByRole('heading', { name: /Social Media Manager/i })).toBeVisible();
 
-    // Try to submit without content
-    const sendButton = page.getByRole('button', { name: /Send Now/i }).first();
+    // The submit button is the second "Send Now" element (the first is a schedule toggle)
+    // Target the submit button directly — it has disabled:opacity-30 styling
+    const sendButton = page.getByRole('button', { name: /Send Now/i }).nth(1);
     await expect(sendButton).toBeVisible();
 
-    // Button should be disabled when form is invalid
+    // Button should be disabled when form is not dirty (no content typed)
     await expect(sendButton).toBeDisabled();
 
     // Type content to enable the button
     await page.getByPlaceholder(/What would you like to share/i).fill('Test content');
 
-    // Button should now be enabled
+    // Button should now be enabled (form is dirty, content is valid, platforms are selected)
     await expect(sendButton).toBeEnabled();
   });
 

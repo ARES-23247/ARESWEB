@@ -63,6 +63,9 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60000,
   maxFailures: 10,
+  expect: {
+    timeout: process.env.CI ? 15000 : 5000,
+  },
   use: {
     baseURL: baseUrl,
     trace: 'on-first-retry',
