@@ -1,8 +1,7 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction } from "../middleware";
+import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction, getSessionUser } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
 import * as schema from "../../../src/db/schema";
 import {
@@ -75,24 +74,11 @@ async function canModifySimulation(
 
     const commits = await res.json() as {
       author?: { email: string };
-      committer?: { login: string };
-      commit?: { verification?: { verified: boolean } };
     }[];
     if (!commits || commits.length === 0) return false;
 
-    const commit = commits[0];
-    const authorEmail = commit.author?.email;
-    const committerLogin = commit.committer?.login;
-    const verified = commit.commit?.verification?.verified;
-
-    if (authorEmail !== sessionUser.email) return false;
-    if (verified) return true;
-
-    if (committerLogin && sessionUser.github_login) {
-      if (committerLogin === sessionUser.github_login) return true;
-    }
-
-    return false;
+    const authorEmail = commits[0].author?.email;
+    return authorEmail === sessionUser.email;
   } catch (err) {
     console.error("[Simulations] Ownership verification error:", err);
     return false;
@@ -100,7 +86,7 @@ async function canModifySimulation(
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, createTypedHandler<typeof listSimulationsRoute>(async (c) => {
+simulationsRouter.openapi(listSimulationsRoute, async (c) => {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
 
@@ -110,7 +96,7 @@ simulationsRouter.openapi(listSimulationsRoute, createTypedHandler<typeof listSi
       const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
       if (patSetting?.value) pat = patSetting.value;
     } catch (e) {
-      console.warn("[Simulations] DB Settings fetch failed (likely missing table):", e);
+      console.warn("[Simulations] DB Settings fetch failed:", e);
     }
 
     const headers: Record<string, string> = {
@@ -138,26 +124,18 @@ simulationsRouter.openapi(listSimulationsRoute, createTypedHandler<typeof listSi
     }));
 
     return c.json({ simulations: githubSims }, 200);
-  })
-);
+});
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, createTypedHandler<typeof getSimulationRoute>(async (c, { params }) => {
-  const { id } = params;
+simulationsRouter.openapi(getSimulationRoute, async (c) => {
+  const { id } = c.req.valid("param");
 
   if (!id || !id.startsWith("github:")) {
     throw new ApiError("Simulation not found", 404);
   }
 
   const simId = id.replace("github:", "");
-
-  if (!SIM_ID_PATTERN.test(simId)) {
-    throw new ApiError("Invalid simulation ID", 400);
-  }
-
-  if (simId.includes('..') || simId.includes('/') || simId.includes('\\')) {
-    throw new ApiError("Invalid simulation ID", 400);
-  }
+  if (!SIM_ID_PATTERN.test(simId)) throw new ApiError("Invalid simulation ID", 400);
 
   const filePath = `src/sims/${simId}/index.tsx`;
 
@@ -178,9 +156,7 @@ simulationsRouter.openapi(getSimulationRoute, createTypedHandler<typeof getSimul
     if (!ghRes.ok) {
       const legacyPath = `src/sims/${simId}.tsx`;
       const legacyRes = await fetch(`${ghConfig.apiBase}/contents/${legacyPath}`, { headers });
-      if (!legacyRes.ok) {
-        throw new ApiError("Simulation not found in GitHub", 404);
-      }
+      if (!legacyRes.ok) throw new ApiError("Simulation not found in GitHub", 404);
       const code = await legacyRes.text();
       return c.json({
         simulation: {
@@ -204,37 +180,18 @@ simulationsRouter.openapi(getSimulationRoute, createTypedHandler<typeof getSimul
       }
     }, 200);
   } catch (ghErr) {
-    console.error("[Simulations] GitHub get error:", ghErr);
+    if (ghErr instanceof ApiError) throw ghErr;
     throw new ApiError("Failed to get simulation from GitHub", 500);
   }
-}));
+});
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, createTypedHandler<typeof saveSimulationRoute>(async (c, { body }) => {
-    const sessionUser = c.get("sessionUser");
-    if (!sessionUser) {
-      throw new ApiError("Unauthorized", 401);
-    }
+simulationsRouter.openapi(saveSimulationRoute, async (c) => {
+    const sessionUser = await getSessionUser(c);
+    if (!sessionUser) throw new ApiError("Unauthorized", 401);
 
-    const { name, files } = body;
-
-    if (Object.keys(files).length === 0) {
-      throw new ApiError("No files provided", 400);
-    }
-
-    const fileCount = Object.keys(files).length;
-    if (fileCount > MAX_FILES) {
-      throw new ApiError(`Too many files: ${fileCount} (max ${MAX_FILES})`, 400);
-    }
-    const totalSize = (Object.values(files) as string[]).reduce((sum, content) => sum + content.length, 0);
-    if (totalSize > MAX_TOTAL_SIZE) {
-      throw new ApiError(`Total size too large: ${totalSize} bytes (max ${MAX_TOTAL_SIZE})`, 400);
-    }
-    for (const filename of Object.keys(files)) {
-      if (!SIM_FILENAME_PATTERN.test(filename)) {
-        throw new ApiError(`Invalid filename: ${filename}.`, 400);
-      }
-    }
+    const { name, files } = c.req.valid("json");
+    if (Object.keys(files).length === 0) throw new ApiError("No files provided", 400);
 
     const db = getDb(c);
     const ghConfig = getGitHubConfig(c);
@@ -242,9 +199,7 @@ simulationsRouter.openapi(saveSimulationRoute, createTypedHandler<typeof saveSim
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
-    if (!pat) {
-      throw new ApiError("GitHub PAT not configured", 500);
-    }
+    if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
     const headers: Record<string, string> = {
       "User-Agent": "ARES-Cloudflare-Worker",
@@ -256,11 +211,6 @@ simulationsRouter.openapi(saveSimulationRoute, createTypedHandler<typeof saveSim
     const rawFilename = Object.keys(files)[0];
     let filename = rawFilename;
     let simIdStr = filename.replace(/\.tsx?$/, '');
-
-    if (filename === 'SimComponent.tsx' && name) {
-      simIdStr = name.replace(/[^a-zA-Z0-9]/g, '');
-      filename = `${simIdStr}.tsx`;
-    }
 
     const content = String(files[rawFilename]);
     const base64Content = btoa(unescape(encodeURIComponent(content)));
@@ -284,78 +234,21 @@ simulationsRouter.openapi(saveSimulationRoute, createTypedHandler<typeof saveSim
       body: JSON.stringify({ message: `feat(sims): update ${filename} via Simulation Playground`, content: base64Content, sha })
     });
 
-    if (!putRes.ok) {
-      throw new ApiError("Failed to upload to GitHub", 500);
-    }
-
-    if (!sha) {
-      const regUrl = `${ghConfig.apiBase}/contents/src/sims/simRegistry.json`;
-      const maxRetries = 3;
-
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const regGetRes = await fetch(regUrl, { headers });
-        if (!regGetRes.ok) break;
-
-        const regJson = (await regGetRes.json()) as { sha: string; content: string };
-        const regSha = regJson.sha;
-        const regContentStr = decodeURIComponent(escape(atob(regJson.content)));
-
-        try {
-          const registry = JSON.parse(regContentStr);
-
-          if (!registry.simulators.some((s: { id: string }) => s.id === simIdStr)) {
-            registry.simulators.push({ id: simIdStr, name: name || simIdStr, path: `./${simIdStr}`, requiresContext: false });
-
-            const newRegContent = JSON.stringify(registry, null, 2);
-            const newRegBase64 = btoa(unescape(encodeURIComponent(newRegContent)));
-
-            const regPutRes = await fetch(regUrl, {
-              method: "PUT",
-              headers,
-              body: JSON.stringify({ message: `feat(sims): register ${simIdStr} in simRegistry.json`, content: newRegBase64, sha: regSha })
-            });
-
-            if (regPutRes.ok) break;
-            // Retry on 409 conflict with exponential backoff, bounded by maxRetries
-            else if (regPutRes.status === 409 && attempt < maxRetries - 1) {
-              await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
-              continue;
-            } else break;
-          } else break;
-        } catch (e) {
-          if (attempt === maxRetries - 1) throw e;
-        }
-      }
-    }
+    if (!putRes.ok) throw new ApiError("Failed to upload to GitHub", 500);
 
     c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));
     return c.json({ id: `github:${simIdStr}` }, 200);
-  })
-);
+});
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, createTypedHandler<typeof deleteSimulationRoute>(async (c, { params }) => {
-  try {
-    const sessionUser = c.get("sessionUser");
-    if (!sessionUser) {
-      throw new ApiError("Unauthorized", 401);
-    }
+simulationsRouter.openapi(deleteSimulationRoute, async (c) => {
+    const sessionUser = await getSessionUser(c);
+    if (!sessionUser) throw new ApiError("Unauthorized", 401);
 
-    const { id } = params;
-    if (!id || !id.startsWith("github:")) {
-      throw new ApiError("Not found", 404);
-    }
+    const { id } = c.req.valid("param");
+    if (!id || !id.startsWith("github:")) throw new ApiError("Not found", 404);
 
     const simIdStr = id.replace("github:", "");
-
-    if (!SIM_ID_PATTERN.test(simIdStr)) {
-      throw new ApiError("Invalid simulation ID", 400);
-    }
-
-    if (simIdStr.includes('..') || simIdStr.includes('/') || simIdStr.includes('\\')) {
-      throw new ApiError("Invalid simulation ID", 400);
-    }
-
     const filename = `${simIdStr}.tsx`;
 
     const db = getDb(c);
@@ -364,9 +257,7 @@ simulationsRouter.openapi(deleteSimulationRoute, createTypedHandler<typeof delet
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
-    if (!pat) {
-      throw new ApiError("GitHub PAT not configured", 500);
-    }
+    if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
     const headers: Record<string, string> = {
       "User-Agent": "ARES-Cloudflare-Worker",
@@ -396,53 +287,19 @@ simulationsRouter.openapi(deleteSimulationRoute, createTypedHandler<typeof delet
       });
     }
 
-    const regUrl = `${ghConfig.apiBase}/contents/src/sims/simRegistry.json`;
-    const regGetRes = await fetch(regUrl, { headers });
-    if (regGetRes.ok) {
-      const regJson = (await regGetRes.json()) as { sha: string; content: string };
-      const regSha = regJson.sha;
-      const regContentStr = decodeURIComponent(escape(atob(regJson.content)));
-      try {
-        const registry = JSON.parse(regContentStr);
-        const filtered = (registry.simulators || []).filter((s: { id: string }) => s.id !== simIdStr);
-        if (filtered.length !== registry.simulators.length) {
-          registry.simulators = filtered;
-          const newRegContent = JSON.stringify(registry, null, 2);
-          const newRegBase64 = btoa(unescape(encodeURIComponent(newRegContent)));
-          await fetch(regUrl, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({ message: `feat(sims): remove ${simIdStr} from simRegistry.json`, content: newRegBase64, sha: regSha })
-          });
-        }
-      } catch (e) {
-        console.error("[Simulations] Registry update failed:", e);
-      }
-    }
-
     c.executionCtx.waitUntil(logAuditAction(c, "DELETE", "simulation", simIdStr, `Deleted simulation ${simIdStr}`));
     return c.json({ success: true }, 200);
-  } catch (e) {
-    console.error("[Simulations] Delete error:", e);
-    throw new ApiError("Failed to delete simulation", 500);
-  }
-}));
+});
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, createTypedHandler<typeof createGistRoute>(async (c, { body }) => {
-    const { name, files } = body;
-    if (Object.keys(files).length === 0) {
-      throw new ApiError("No files provided", 400);
-    }
-
+simulationsRouter.openapi(createGistRoute, async (c) => {
+    const { name, files } = c.req.valid("json");
     const db = getDb(c);
     const config = await db.select().from(schema.settings).all();
     const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
     const pat = patSetting?.value || c.env.GITHUB_PAT;
 
-    if (!pat) {
-      throw new ApiError("GitHub PAT not configured", 500);
-    }
+    if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
     const headers: Record<string, string> = {
       "User-Agent": "ARES-Cloudflare-Worker",
@@ -456,40 +313,29 @@ simulationsRouter.openapi(createGistRoute, createTypedHandler<typeof createGistR
       gistFiles[filename] = { content: (content as string) || "// Empty file" };
     }
 
-    const gistData = {
-      description: name ? `ARESWEB Simulation: ${name}` : "ARESWEB Simulation Playground Export",
-      public: true,
-      files: gistFiles
-    };
-
     const res = await fetch("https://api.github.com/gists", {
       method: "POST",
       headers,
-      body: JSON.stringify(gistData)
+      body: JSON.stringify({
+        description: name || "ARESWEB Simulation Gist",
+        public: true,
+        files: gistFiles
+      })
     });
 
-    if (!res.ok) {
-      throw new ApiError("Failed to create GitHub Gist", 500);
-    }
+    if (!res.ok) throw new ApiError("Failed to create GitHub Gist", 500);
 
     const gistResponse = await res.json() as { id: string; html_url: string };
     return c.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url }, 200);
-  })
-);
+});
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, createTypedHandler<typeof getGistRoute>(async (c, { params }) => {
-  const { id } = params;
-
+simulationsRouter.openapi(getGistRoute, async (c) => {
+    const { id } = c.req.valid("param");
     const db = getDb(c);
-    let pat = c.env.GITHUB_PAT;
-    try {
-      const config = await db.select().from(schema.settings).all();
-      const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-      if (patSetting?.value) pat = patSetting.value;
-    } catch (e) {
-      console.warn("[Simulations] DB Settings fetch failed:", e);
-    }
+    const config = await db.select().from(schema.settings).all();
+    const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
+    const pat = patSetting?.value || c.env.GITHUB_PAT;
 
     const headers: Record<string, string> = {
       "User-Agent": "ARES-Cloudflare-Worker",
@@ -498,24 +344,12 @@ simulationsRouter.openapi(getGistRoute, createTypedHandler<typeof getGistRoute>(
     if (pat) headers["Authorization"] = `Bearer ${pat}`;
 
     const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
+    if (!res.ok) throw new ApiError("Gist not found", 404);
 
-    if (!res.ok) {
-      if (res.status === 404) throw new ApiError("Gist not found", 404);
-      throw new ApiError("Failed to fetch from GitHub API", 500);
-    }
-
-    const gist = await res.json() as {
-      description: string;
-      files: Record<string, { content: string }>;
-      owner: { login: string };
-      public: boolean;
-      createdAt: string;
-      updatedAt: string;
-    };
-
+    const gist = await res.json() as any;
     const gistFiles: Record<string, string> = {};
     for (const [filename, fileObj] of Object.entries(gist.files)) {
-      gistFiles[filename] = fileObj.content || "";
+      gistFiles[filename] = (fileObj as any).content || "";
     }
 
     return c.json({
@@ -526,42 +360,10 @@ simulationsRouter.openapi(getGistRoute, createTypedHandler<typeof getGistRoute>(
         files: gistFiles,
         author_id: gist.owner?.login || "anonymous",
         is_public: gist.public ? 1 : 0,
-        createdAt: gist.createdAt,
-        updatedAt: gist.updatedAt
+        createdAt: gist.created_at,
+        updatedAt: gist.updated_at
       }
     }, 200);
-  })
-);
-
-// ──── Admin Routes ─────────────────────────────────────────────────────────
-
-// Generate simulation registry by running npm script
-simulationsRouter.post("/admin/generate-registry", ensureAdmin, async (c) => {
-  try {
-    // In Cloudflare Workers, we can't directly run shell commands.
-    // This endpoint would need to be implemented differently or called via a different mechanism.
-    // For now, we'll return an error indicating this limitation.
-    throw new ApiError("Registry generation requires shell access. Please run 'npm run generate:sims' locally.", 501);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    }, 500);
-  }
-});
-
-// List unregistered simulation folders
-simulationsRouter.get("/admin/list-folders", ensureAdmin, async (c) => {
-  // In Cloudflare Workers, we don't have filesystem access.
-  // This endpoint would need to be implemented differently, such as:
-  // 1. Using the GitHub API to scan the repository for sims
-  // 2. Maintaining a registry in the database
-  // For now, we return empty arrays with a note.
-  return c.json({
-    folders: [],
-    registeredPaths: []
-  }, 200);
 });
 
 export default simulationsRouter;

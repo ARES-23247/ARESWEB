@@ -1,4 +1,3 @@
-import { typedHandler } from "../../utils/handler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
 
@@ -14,7 +13,7 @@ type ScoutingAnalysisResponse = z.infer<typeof ScoutingAnalysisSchema>;
 
 const analysesRouter = new OpenAPIHono<AppEnv>();
 
-analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScoutingAnalysesRoute>(async (c) => {
+analysesRouter.openapi(listScoutingAnalysesRoute, async (c) => {
   const { teamNumber: teamNumberStr, eventKey } = c.req.valid("query");
   const db = getDb(c);
 
@@ -44,7 +43,10 @@ analysesRouter.openapi(listScoutingAnalysesRoute, typedHandler<typeof listScouti
   })) as ScoutingAnalysisResponse[];
 
   return c.json(transformed, 200);
-}));
+});
 
 export default analysesRouter;
+
+
+
 

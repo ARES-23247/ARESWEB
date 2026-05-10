@@ -1,5 +1,4 @@
- 
-import { typedHandler } from "../../utils/handler";
+
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -67,7 +66,7 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
-analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingRoute>(async (c) => {
+analyzeRouter.openapi(analyzeScoutingRoute, async (c) => {
   const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
   if (!SYSTEM_PROMPTS[mode]) {
@@ -138,7 +137,9 @@ analyzeRouter.openapi(analyzeScoutingRoute, typedHandler<typeof analyzeScoutingR
       model: "GLM-5.1",
       tokensUsed,
     }, 200);
-}));
+});
 
 export default analyzeRouter;
+
+
 

@@ -1,5 +1,4 @@
- 
-import { typedHandler } from "../../utils/handler";
+
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -10,7 +9,7 @@ import { toaProxyRoute } from "../../../../shared/routes/scouting";
 
 const toaProxy = new OpenAPIHono<AppEnv>();
 
-toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => {
+toaProxy.openapi(toaProxyRoute, async (c) => {
   const { path } = c.req.valid("param");
   const toaKey = c.env.TOA_API_KEY;
 
@@ -35,7 +34,9 @@ toaProxy.openapi(toaProxyRoute, typedHandler<typeof toaProxyRoute>(async (c) => 
 
     const data = await upstream.json();
     return c.json(data, 200);
-}));
+});
 
 export default toaProxy;
+
+
 

@@ -1,5 +1,4 @@
- 
-import { typedHandler } from "../../utils/handler";
+
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -10,7 +9,7 @@ import { ftcEventsProxyRoute } from "../../../../shared/routes/scouting";
 
 const ftcEventsProxy = new OpenAPIHono<AppEnv>();
 
-ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRoute>(async (c) => {
+ftcEventsProxy.openapi(ftcEventsProxyRoute, async (c) => {
   const { path } = c.req.valid("param");
   const username = c.env.FTC_EVENTS_USERNAME;
   const apiKey = c.env.FTC_EVENTS_API_KEY;
@@ -36,7 +35,9 @@ ftcEventsProxy.openapi(ftcEventsProxyRoute, typedHandler<typeof ftcEventsProxyRo
 
     const data = await upstream.json();
     return c.json(data, 200);
-}));
+});
 
 export default ftcEventsProxy;
+
+
 

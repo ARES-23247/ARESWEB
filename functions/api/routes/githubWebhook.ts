@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { githubWebhookRoute } from "../../../shared/routes/webhooks";
-import { safeWaitUntil } from "../utils/safeWaitUntil";
 
-// ── GitHub Webhook Payload Types ────────────────────────────────────────
+// â”€â”€ GitHub Webhook Payload Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface GitHubUser {
   login: string;
@@ -87,7 +85,7 @@ type GitHubWebhookPayload =
 
 const githubWebhookRouter = new OpenAPIHono<AppEnv>();
 
-// ── HMAC-SHA256 Signature Verification ───────────────────────────────
+// â”€â”€ HMAC-SHA256 Signature Verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // CRITICAL-007 FIX: Constant-time signature verification to prevent timing attacks
 async function verifyGitHubSignature(
   secret: string,
@@ -133,8 +131,8 @@ async function verifyGitHubSignature(
   }
 }
 
-// ── POST /webhooks/github — Receive GitHub webhook events ────────────
-githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
+// â”€â”€ POST /webhooks/github â€” Receive GitHub webhook events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+githubWebhookRouter.openapi(githubWebhookRoute, async (c) => {
   const secret = c.env.GITHUB_WEBHOOK_SECRET;
   const rawBody = await c.req.text();
 
@@ -173,11 +171,11 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
             c.env,
             engineeringStream,
             "Project Board",
-            `📋 **New project item created**\nItem ID: \`${item?.node_id || "unknown"}\``
+            `ðŸ“‹ **New project item created**\nItem ID: \`${item?.node_id || "unknown"}\``
           ).catch((err: unknown) => console.error(err)));
         } else if (action === "edited" && changes) {
           const fieldChanges = Object.entries(changes)
-            .map(([key, val]) => `**${key}**: \`${String((val as { from?: unknown }).from)}\` → \`${String((val as { to?: unknown }).to)}\``)
+            .map(([key, val]) => `**${key}**: \`${String((val as { from?: unknown }).from)}\` â†’ \`${String((val as { to?: unknown }).to)}\``)
             .join("\n");
 
           if (fieldChanges) {
@@ -185,7 +183,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
               c.env,
               engineeringStream,
               "Project Board",
-              `🔄 **Project item updated**\nItem: \`${item?.node_id || "unknown"}\`\n${fieldChanges}`
+              `ðŸ”„ **Project item updated**\nItem: \`${item?.node_id || "unknown"}\`\n${fieldChanges}`
             ).catch((err: unknown) => console.error(err)));
           }
         } else if (action === "deleted") {
@@ -193,7 +191,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
             c.env,
             engineeringStream,
             "Project Board",
-            `🗑️ **Project item removed** from board`
+            `ðŸ—‘ï¸ **Project item removed** from board`
           ).catch((err: unknown) => console.error(err)));
         }
         break;
@@ -210,14 +208,14 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
         if (commitCount > 0) {
           const commitList = (commits || [])
             .slice(0, 5)
-            .map((comm: GitHubCommit) => `• ${comm.message.split("\n")[0]} *(${comm.author?.name || 'unknown'})*`)
+            .map((comm: GitHubCommit) => `â€¢ ${comm.message.split("\n")[0]} *(${comm.author?.name || 'unknown'})*`)
             .join("\n");
 
           c.executionCtx.waitUntil(sendZulipMessage(
             c.env,
             engineeringStream,
             `${repo}`,
-            `⚡ **${commitCount} new commit${commitCount > 1 ? "s" : ""}** pushed to \`${branch}\`\n\n${commitList}${commitCount > 5 ? `\n...and ${commitCount - 5} more` : ""}`
+            `âš¡ **${commitCount} new commit${commitCount > 1 ? "s" : ""}** pushed to \`${branch}\`\n\n${commitList}${commitCount > 5 ? `\n...and ${commitCount - 5} more` : ""}`
           ).catch((err: unknown) => console.error(err)));
         }
         break;
@@ -230,7 +228,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
         const repo2 = p.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action2)) {
-          const emoji = action2 === "opened" ? "🟢" : pr?.merged ? "🟣" : action2 === "closed" ? "🔴" : "🟡";
+          const emoji = action2 === "opened" ? "ðŸŸ¢" : pr?.merged ? "ðŸŸ£" : action2 === "closed" ? "ðŸ”´" : "ðŸŸ¡";
           const status = pr?.merged ? "merged" : action2;
           c.executionCtx.waitUntil(sendZulipMessage(
             c.env,
@@ -249,7 +247,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
         const repo3 = p.repository?.full_name || "unknown";
 
         if (["opened", "closed", "reopened"].includes(action3)) {
-          const emoji = action3 === "opened" ? "📝" : action3 === "closed" ? "✅" : "🔄";
+          const emoji = action3 === "opened" ? "ðŸ“" : action3 === "closed" ? "âœ…" : "ðŸ”„";
           c.executionCtx.waitUntil(sendZulipMessage(
             c.env,
             engineeringStream,
@@ -268,6 +266,7 @@ githubWebhookRouter.openapi(githubWebhookRoute, (async (c) => {
   }
 
   return c.json({ received: true, event }, 200);
-}));
+});
 
 export default githubWebhookRouter;
+
