@@ -258,6 +258,8 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     'ERR_NAME_NOT_RESOLVED',
     'queryKey needs to be an Array',
     'uncontrolled input',
+    'Content Security Policy',
+    'cloudflareinsights',
   ];
   return ignorePatterns.some((pattern) => text.includes(pattern));
 }
