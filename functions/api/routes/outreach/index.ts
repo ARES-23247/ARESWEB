@@ -1,12 +1,15 @@
- 
- 
+
+// Outreach router - already using modern RouteHandler pattern
+// The individual handlers (list.ts, save.ts, delete.ts) are already
+// properly typed RouteHandler implementations that return c.json() directly.
+
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, rateLimitMiddleware } from "../../middleware";
-import { 
-  listOutreachRoute, 
-  adminListOutreachRoute, 
-  saveOutreachRoute, 
-  deleteOutreachRoute 
+import {
+  listOutreachRoute,
+  adminListOutreachRoute,
+  saveOutreachRoute,
+  deleteOutreachRoute
 } from "../../../../shared/routes/outreach";
 import { handleListOutreach, handleAdminListOutreach } from "./list";
 import { handleSaveOutreach } from "./save";
