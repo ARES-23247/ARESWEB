@@ -63,7 +63,7 @@ commentsRouter.openapi(listCommentsRoute, autoResponseHandler<typeof listComment
   });
 }));
 
-commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitCommentRoute>(async (c, { params, body }) => {
+commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitCommentRoute>(async (c, { params }) => {
   const user = await getSessionUser(c);
   if (!user) {
     return error({ error: "Unauthorized" }, 401);
@@ -74,11 +74,11 @@ commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitComm
 
   const { targetType, targetId } = params;
   const db = getDb(c);
-  const rawContent = body.content;
+  const { content: rawContent } = c.req.valid("json") as { content: string };
   if (!rawContent) {
     return error({ error: "Comment content is required" }, 400);
   }
-  const content = rawContent.trim();
+  const content = String(rawContent).trim();
 
   if (!content) {
     return error({ error: "Comment content is required" }, 400);
@@ -135,20 +135,20 @@ commentsRouter.openapi(submitCommentRoute, autoResponseHandler<typeof submitComm
   return success({ success: true });
 }));
 
-commentsRouter.openapi(updateCommentRoute, autoResponseHandler<typeof updateCommentRoute>(async (c, { params, body }) => {
+commentsRouter.openapi(updateCommentRoute, autoResponseHandler<typeof updateCommentRoute>(async (c, { params }) => {
   const user = await getSessionUser(c);
   if (!user) return error({ error: "Unauthorized" }, 401);
   if (user.role === "unverified") return error({ error: "Unverified" }, 403);
 
   const { id } = params;
   const db = getDb(c);
-  const rawContent = body.content;
-  const content = rawContent?.trim();
+  const { content: rawContent } = c.req.valid("json") as { content: string };
+  const content = rawContent ? String(rawContent).trim() : undefined;
 
   if (!content) return error({ error: "Content is required" }, 400);
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
-  if (rawContent && rawContent.length > MAX_INPUT_LENGTHS.comment) {
+  if (rawContent && String(rawContent).length > MAX_INPUT_LENGTHS.comment) {
     return error({ error: `Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit` }, 400);
   }
 
