@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { ApiError } from "../middleware/errorHandler";
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
 import { eq, desc, and, count, inArray } from "drizzle-orm";
@@ -22,10 +22,10 @@ notificationsRouter.use("*", ensureAuth);
 notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
-notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotificationsRoute>(async (c) => {
+notificationsRouter.openapi(getNotificationsRoute, autoResponseHandler<typeof getNotificationsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
     const results = await db
       .select({
@@ -54,28 +54,27 @@ notificationsRouter.openapi(getNotificationsRoute, typedHandler<typeof getNotifi
       created_at: String(n.createdAt)
     }));
 
-    return c.json({ notifications }, 200);
+    return success({ notifications });
 }));
 
-notificationsRouter.openapi(markNotificationReadRoute, typedHandler<typeof markNotificationReadRoute>(async (c) => {
+notificationsRouter.openapi(markNotificationReadRoute, autoResponseHandler<typeof markNotificationReadRoute>(async (c, { params }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
-    const { id } = c.req.valid("param");
     await db
       .update(schema.notifications)
       .set({ isRead: 1 })
-      .where(and(eq(schema.notifications.id, id), eq(schema.notifications.userId, user.id)))
+      .where(and(eq(schema.notifications.id, params.id), eq(schema.notifications.userId, user.id)))
       .run();
 
-    return c.json({ success: true }, 200);
+    return success({ success: true });
 }));
 
-notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof markAllNotificationsReadRoute>(async (c) => {
+notificationsRouter.openapi(markAllNotificationsReadRoute, autoResponseHandler<typeof markAllNotificationsReadRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
     await db
       .update(schema.notifications)
@@ -83,31 +82,30 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, typedHandler<typeof m
       .where(eq(schema.notifications.userId, user.id))
       .run();
 
-    return c.json({ success: true }, 200);
+    return success({ success: true });
 }));
 
-notificationsRouter.openapi(deleteNotificationRoute, typedHandler<typeof deleteNotificationRoute>(async (c) => {
+notificationsRouter.openapi(deleteNotificationRoute, autoResponseHandler<typeof deleteNotificationRoute>(async (c, { params }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
-    const { id } = c.req.valid("param");
     await db
       .delete(schema.notifications)
-      .where(and(eq(schema.notifications.id, id), eq(schema.notifications.userId, user.id)))
+      .where(and(eq(schema.notifications.id, params.id), eq(schema.notifications.userId, user.id)))
       .run();
 
-    return c.json({ success: true }, 200);
+    return success({ success: true });
 }));
 
-notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendingCountsRoute>(async (c) => {
+notificationsRouter.openapi(getPendingCountsRoute, autoResponseHandler<typeof getPendingCountsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
-      const memberType = user.member_type || "student";
+      const memberType = user.memberType || "student";
       if (memberType === "student") {
         filterOutreach = true;
       }
@@ -141,22 +139,22 @@ notificationsRouter.openapi(getPendingCountsRoute, typedHandler<typeof getPendin
         .get(),
     ]);
 
-    return c.json({
+    return success({
       inquiries: Number(inquiries?.count || 0),
       posts: Number(posts?.count || 0),
       events: Number(events?.count || 0),
       docs: Number(docs?.count || 0),
-    }, 200);
+    });
 }));
 
-notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof getDashboardActionItemsRoute>(async (c) => {
+notificationsRouter.openapi(getDashboardActionItemsRoute, autoResponseHandler<typeof getDashboardActionItemsRoute>(async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) throw new ApiError("Unauthorized", 401);
+    if (!user) return error({ error: "Unauthorized" }, 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
-      const memberType = user.member_type || "student";
+      const memberType = user.memberType || "student";
       if (memberType === "student") {
         filterOutreach = true;
       }
@@ -212,14 +210,12 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, typedHandler<typeof ge
         .all(),
     ]);
 
-    return c.json({
+    return success({
       inquiries,
       posts,
       events,
       docs,
-    }, 200);
+    });
 }));
 
 export default notificationsRouter;
-
-
