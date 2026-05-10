@@ -5,50 +5,7 @@ import { setupMockAuth } from '../fixtures/auth';
 
 /**
  * Note: Product data now comes from real database via seeded test data.
- * The MOCK_PRODUCTS constant is kept for reference only.
  */
-const MOCK_PRODUCTS = [
-  {
-    id: 'prod-1',
-    name: 'ARES Team T-Shirt',
-    description: 'Official team shirt with ARES 23247 logo.',
-    price_cents: 2500,
-    image_url: 'https://example.com/tshirt.jpg',
-    active: 1,
-    stock_count: 50,
-    created_at: '2024-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'prod-2',
-    name: 'ARES Hoodie',
-    description: 'Warm hoodie for competition season.',
-    price_cents: 4500,
-    image_url: 'https://example.com/hoodie.jpg',
-    active: 1,
-    stock_count: 25,
-    created_at: '2024-01-02T00:00:00.000Z',
-  },
-  {
-    id: 'prod-3',
-    name: 'ARES Cap',
-    description: 'Adjustable cap with team branding.',
-    price_cents: 1500,
-    image_url: null,
-    active: 1,
-    stock_count: 100,
-    created_at: '2024-01-03T00:00:00.000Z',
-  },
-  {
-    id: 'prod-4',
-    name: 'ARES Sticker Pack',
-    description: 'Set of 5 vinyl stickers.',
-    price_cents: 500,
-    image_url: 'https://example.com/stickers.jpg',
-    active: 1,
-    stock_count: 200,
-    created_at: '2024-01-04T00:00:00.000Z',
-  },
-] as const;
 
 test.describe('Store Page', () => {
   let dashboardPage: DashboardPage;
