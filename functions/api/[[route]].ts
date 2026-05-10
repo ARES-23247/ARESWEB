@@ -17,7 +17,7 @@ import sponsorsRouter from "./routes/sponsors";
 import tbaRouter from "./routes/tba";
 import outreachRouter from "./routes/outreach/index";
 import awardsRouter from "./routes/awards";
-import postsRouter from "./routes/posts";
+import postsRouter from "./routes/posts/index";
 import eventsRouter from "./routes/events/index";
 import seasonsRouter from "./routes/seasons";
 import docsRouter from "./routes/docs";
@@ -269,9 +269,9 @@ apiRouter.openapi(auditLogRoute, typedHandler<typeof auditLogRoute>(async (c) =>
       id: schema.auditLog.id,
       actor: schema.auditLog.actor,
       action: schema.auditLog.action,
-      resource_type: schema.auditLog.resourceType,
-      resource_id: schema.auditLog.resourceId,
-      created_at: schema.auditLog.createdAt,
+      resourceType: schema.auditLog.resourceType,
+      resourceId: schema.auditLog.resourceId,
+      createdAt: schema.auditLog.createdAt,
       details: schema.auditLog.details
     })
     .from(schema.auditLog)
@@ -283,7 +283,9 @@ apiRouter.openapi(auditLogRoute, typedHandler<typeof auditLogRoute>(async (c) =>
   const logs = results.map((r) => ({
     ...r,
     id: r.id || crypto.randomUUID(),
-    created_at: r.created_at || new Date().toISOString(),
+    createdAt: r.createdAt || new Date().toISOString(),
+    resourceType: r.resourceType || null,
+    resourceId: r.resourceId || null,
     details: (r.details || "").substring(0, 500)
   }));
 
