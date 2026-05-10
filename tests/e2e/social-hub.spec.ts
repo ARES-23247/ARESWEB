@@ -369,7 +369,7 @@ test.describe('Social Hub', () => {
 
     // Verify focus is on an interactive element
     const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
-    expect(['BUTTON', 'INPUT', 'TEXTAREA']).toContain(focusedElement);
+    expect(['BUTTON', 'INPUT', 'TEXTAREA', 'A']).toContain(focusedElement);
 
     // Tab through multiple inputs
     for (let i = 0; i < 5; i++) {
@@ -388,7 +388,7 @@ test.describe('Social Hub', () => {
     await expect(page.getByRole('heading', { name: /Social Media Manager/i })).toBeVisible();
 
     // Try to submit without content
-    const sendButton = page.getByRole('button', { name: /Send Now/i });
+    const sendButton = page.getByRole('button', { name: /Send Now/i }).first();
     await expect(sendButton).toBeVisible();
 
     // Button should be disabled when form is invalid

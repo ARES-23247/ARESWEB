@@ -68,7 +68,7 @@ test.describe('Sponsor Manager', () => {
 
     // Find the first sponsor card and check if it has an edit button
     const sponsorCard = page.locator('.border').first();
-    const editButton = sponsorCard.getByRole('button').filter({ hasText: /Edit/i }).first();
+    const editButton = sponsorCard.getByRole('button', { name: /Edit/i }).first();
 
     const hasEditButton = await editButton.isVisible().catch(() => false);
     if (hasEditButton) {
@@ -103,7 +103,7 @@ test.describe('Sponsor Manager', () => {
 
     // Find a sponsor card and click its delete button
     const sponsorCard = page.locator('.border').first();
-    const deleteButton = sponsorCard.getByRole('button').filter({ hasText: /Delete/i }).first();
+    const deleteButton = sponsorCard.getByRole('button', { name: /Delete/i }).first();
 
     // Check if delete button exists before clicking (sponsor list might be empty)
     const isVisible = await deleteButton.isVisible().catch(() => false);
