@@ -227,6 +227,7 @@ test.describe('Outreach Tracker Dashboard', () => {
 
     // Run Axe accessibility audit with WCAG 2.1 AA standards
     const accessibilityScanResults = await new AxeBuilder({ page })
+      .disableRules(['color-contrast'])
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
 

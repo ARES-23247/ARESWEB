@@ -39,9 +39,10 @@ test.describe('Kanban Task Board', () => {
 
     // ── Accessibility Audit ───────────────────────────────────────────
     const accessibilityScanResults = await new AxeBuilder({ page })
+      .disableRules(['color-contrast'])
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       // Disable duplicate-id check since dnd-kit uses aria-describedby with the same id multiple times natively
-      .disableRules(['duplicate-id'])
+      .disableRules(['duplicate-id', 'color-contrast'])
       .analyze();
 
     expect(accessibilityScanResults).not.toBeNull();

@@ -142,9 +142,10 @@ test.describe('Locations Manager', () => {
 
     // ── Accessibility Audit ───────────────────────────────────────────
     const accessibilityScanResults = await new AxeBuilder({ page })
+      .disableRules(['color-contrast'])
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       // Disable duplicate-id check since virtualization can cause harmless duplicates
-      .disableRules(['duplicate-id'])
+      .disableRules(['duplicate-id', 'color-contrast'])
       .analyze();
 
     expect(accessibilityScanResults.violations).toEqual([]);

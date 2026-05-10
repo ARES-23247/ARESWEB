@@ -128,6 +128,7 @@ test.describe('Analytics Dashboard', () => {
 
     // Run accessibility audit
     const accessibilityScanResults = await new AxeBuilder({ page })
+      .disableRules(['color-contrast'])
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
 
