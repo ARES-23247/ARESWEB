@@ -252,3 +252,163 @@ export const deleteTaskRoute = createRoute({
     },
   },
 });
+
+export const createTaskAttachmentRoute = createRoute({
+  method: "post",
+  path: "/{id}/attachments",
+  tags: ["tasks"],
+  summary: "Create a task attachment",
+  description: "Creates a new task attachment via URL unfurling.",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ url: z.string().url() }),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Attachment created successfully",
+    },
+  },
+});
+
+export const deleteTaskAttachmentRoute = createRoute({
+  method: "delete",
+  path: "/{id}/attachments/{attachmentId}",
+  tags: ["tasks"],
+  summary: "Delete a task attachment",
+  description: "Deletes a task attachment.",
+  request: {
+    params: z.object({ id: z.string(), attachmentId: z.string() }),
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Attachment deleted successfully",
+    },
+  },
+});
+
+export const createTaskChecklistRoute = createRoute({
+  method: "post",
+  path: "/{id}/checklists",
+  tags: ["tasks"],
+  summary: "Create a task checklist item",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ content: z.string().min(1) }),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Checklist item created successfully",
+    },
+  },
+});
+
+export const updateTaskChecklistRoute = createRoute({
+  method: "patch",
+  path: "/{id}/checklists/{checklistId}",
+  tags: ["tasks"],
+  summary: "Update a task checklist item",
+  request: {
+    params: z.object({ id: z.string(), checklistId: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ 
+            isCompleted: z.number().min(0).max(1).optional(), 
+            content: z.string().optional(), 
+            sortOrder: z.number().optional() 
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Checklist item updated successfully",
+    },
+  },
+});
+
+export const deleteTaskChecklistRoute = createRoute({
+  method: "delete",
+  path: "/{id}/checklists/{checklistId}",
+  tags: ["tasks"],
+  summary: "Delete a task checklist item",
+  request: {
+    params: z.object({ id: z.string(), checklistId: z.string() }),
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Checklist item deleted successfully",
+    },
+  },
+});
+
+export const setTaskLabelsRoute = createRoute({
+  method: "post",
+  path: "/{id}/labels",
+  tags: ["tasks"],
+  summary: "Set task labels",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ labelIds: z.array(z.string()) }),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: responseWrappers.success(),
+        },
+      },
+      description: "Task labels set successfully",
+    },
+  },
+});
