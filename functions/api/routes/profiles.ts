@@ -443,7 +443,10 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
   const params = c.req.valid("param");
   const { userId } = params;
   const db = getDb(c);
-  const profileRow = await db
+
+  // W4C-DB-01: Single query fetches profile and badges using JOIN
+  // Replaces two sequential queries for better performance
+  const profileWithBadges = await db
     .select({
       userId: schema.userProfiles.userId,
       nickname: schema.userProfiles.nickname,
@@ -466,42 +469,73 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
       employers: schema.userProfiles.employers,
       gradeYear: schema.userProfiles.gradeYear,
       avatar: schema.user.image,
-      name: schema.user.name
+      name: schema.user.name,
+      // Badge fields (LEFT JOIN means null if no badges)
+      badgeId: schema.badges.id,
+      badgeName: schema.badges.name,
+      badgeDescription: schema.badges.description,
+      badgeIcon: schema.badges.icon,
+      badgeColorTheme: schema.badges.colorTheme,
+      badgeCreatedAt: schema.badges.createdAt
     })
     .from(schema.userProfiles)
     .leftJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+    .leftJoin(schema.userBadges, eq(schema.userProfiles.userId, schema.userBadges.userId))
+    .leftJoin(schema.badges, eq(schema.userBadges.badgeId, schema.badges.id))
     .where(eq(schema.userProfiles.userId, userId))
-    .get();
+    .orderBy(desc(schema.userBadges.awardedAt))
+    .all();
 
-  if (!profileRow) throw new ApiError("Profile not found", 404);
-  if (Number(profileRow.showOnAbout || 0) !== 1) throw new ApiError("This profile is private.", 403);
+  if (profileWithBadges.length === 0) {
+    throw new ApiError("Profile not found", 404);
+  }
 
-  const memberType = String(profileRow.memberType || "student");
+  // Extract profile data from first row
+  const firstRow = profileWithBadges[0];
+  if (Number(firstRow.showOnAbout || 0) !== 1) {
+    throw new ApiError("This profile is private.", 403);
+  }
+
+  const memberType = String(firstRow.memberType || "student");
+
   // Pass camelCase to the sanitizer function
   const sanitized: Record<string, unknown> = sanitizeProfileForPublic({
-    userId: profileRow.userId,
-    nickname: profileRow.nickname,
-    bio: profileRow.bio,
-    pronouns: profileRow.pronouns,
-    subteams: profileRow.subteams,
-    memberType: profileRow.memberType,
-    favoriteFirstThing: profileRow.favoriteFirstThing,
-    funFact: profileRow.funFact,
-    showEmail: profileRow.showEmail,
-    contactEmail: profileRow.contactEmail,
-    showPhone: profileRow.showPhone,
-    phone: profileRow.phone,
-    showOnAbout: profileRow.showOnAbout,
-    favoriteRobotMechanism: profileRow.favoriteRobotMechanism,
-    preMatchSuperstition: profileRow.preMatchSuperstition,
-    leadershipRole: profileRow.leadershipRole,
-    rookieYear: profileRow.rookieYear,
-    colleges: profileRow.colleges,
-    employers: profileRow.employers,
-    gradeYear: profileRow.gradeYear,
-    avatar: profileRow.avatar,
-    name: profileRow.name
+    userId: firstRow.userId,
+    nickname: firstRow.nickname,
+    bio: firstRow.bio,
+    pronouns: firstRow.pronouns,
+    subteams: firstRow.subteams,
+    memberType: firstRow.memberType,
+    favoriteFirstThing: firstRow.favoriteFirstThing,
+    funFact: firstRow.funFact,
+    showEmail: firstRow.showEmail,
+    contactEmail: firstRow.contactEmail,
+    showPhone: firstRow.showPhone,
+    phone: firstRow.phone,
+    showOnAbout: firstRow.showOnAbout,
+    favoriteRobotMechanism: firstRow.favoriteRobotMechanism,
+    preMatchSuperstition: firstRow.preMatchSuperstition,
+    leadershipRole: firstRow.leadershipRole,
+    rookieYear: firstRow.rookieYear,
+    colleges: firstRow.colleges,
+    employers: firstRow.employers,
+    gradeYear: firstRow.gradeYear,
+    avatar: firstRow.avatar,
+    name: firstRow.name
   }, memberType);
+
+  // W4C-DB-01: Extract badges from the joined result (already ordered by awardedAt via the join)
+  // Filter out rows where badgeId is null (user has no badges)
+  const rawBadges = profileWithBadges
+    .filter(row => row.badgeId !== null)
+    .map(row => ({
+      id: row.badgeId,
+      name: row.badgeName,
+      description: row.badgeDescription,
+      icon: row.badgeIcon,
+      colorTheme: row.badgeColorTheme,
+      createdAt: row.badgeCreatedAt
+    }));
 
   const requester = await getSessionUser(c);
   const isAdmin = requester?.role === "admin" || requester?.memberType === "coach" || requester?.memberType === "mentor";
@@ -550,21 +584,6 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
       sanitized.studentsEmail = await safeDecryptValue(sensitive.studentsEmail as string | null);
     }
   }
-
-  const rawBadges = await db
-    .select({
-      id: schema.badges.id,
-      name: schema.badges.name,
-      description: schema.badges.description,
-      icon: schema.badges.icon,
-      colorTheme: schema.badges.colorTheme,
-      createdAt: schema.badges.createdAt
-    })
-    .from(schema.badges)
-    .innerJoin(schema.userBadges, eq(schema.badges.id, schema.userBadges.badgeId))
-    .where(eq(schema.userBadges.userId, userId))
-    .orderBy(desc(schema.userBadges.awardedAt))
-    .all();
 
   return c.json({ profile: sanitized, badges: rawBadges }, 200);
 });
