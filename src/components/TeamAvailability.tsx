@@ -126,9 +126,9 @@ export default function TeamAvailability() {
                   className={`p-3 ares-cut-sm bg-white/5 border transition-all flex items-center gap-3 ${getBorderColor(member.status)}`}
                 >
                   <div className="relative">
-                    <img 
-                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`} 
-                      alt="Avatar" 
+                    <img
+                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`}
+                      alt={`${userNames[member.email] || member.email.split("@")[0]}'s avatar`}
                       className="w-8 h-8 rounded-full border border-white/10 bg-obsidian"
                     />
                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-obsidian ${getStatusColor(member.status)}`} />

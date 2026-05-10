@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useGetRosterStats, type RosterStat } from "../api";
 
 interface EnrichedRosterMember extends RosterStat {
-  total_hours: number;
-  display_name: string;
+  totalHours: number;
+  displayName: string;
 }
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -29,20 +29,20 @@ export default function MemberImpactOverview() {
   // Calculate full roster stats
   const enrichedRoster: EnrichedRosterMember[] = roster.map((m: RosterStat) => ({
     ...m,
-    total_hours: m.manual_prep_hours + m.event_volunteer_hours,
-    display_name: m.nickname || "ARES Member"
+    totalHours: m.manualPrepHours + m.eventVolunteerHours,
+    displayName: m.nickname || "ARES Member"
   }));
 
   // Filtering for MVPs (top 3 students only)
-  const students = enrichedRoster.filter((m: EnrichedRosterMember) => m.member_type === "student" && (m.attended_events > 0 || m.total_hours > 0));
+  const students = enrichedRoster.filter((m: EnrichedRosterMember) => m.memberType === "student" && (m.attendedEvents > 0 || m.totalHours > 0));
 
-  const topAttendance = [...students].sort((a, b) => b.attended_events - a.attended_events).slice(0, 3);
-  const topOutreach = [...students].sort((a, b) => b.total_hours - a.total_hours).slice(0, 3);
+  const topAttendance = [...students].sort((a, b) => b.attendedEvents - a.attendedEvents).slice(0, 3);
+  const topOutreach = [...students].sort((a, b) => b.totalHours - a.totalHours).slice(0, 3);
 
   // Search filter
   const filteredRoster = enrichedRoster.filter((m: EnrichedRosterMember) => 
-    m.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.member_type || "").toLowerCase().includes(searchTerm.toLowerCase())
+    m.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.memberType || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -70,7 +70,7 @@ export default function MemberImpactOverview() {
             
             <div className="flex flex-col gap-4">
               {topAttendance.map((mvp: EnrichedRosterMember, idx: number) => (
-                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
+                <div key={mvp.userId} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
                   idx === 0 ? "bg-ares-gold/10 border-ares-gold/20" : 
                   idx === 1 ? "bg-white/10 border-white/20" : 
                   "bg-ares-bronze/10 border-ares-bronze/20"
@@ -83,11 +83,11 @@ export default function MemberImpactOverview() {
                     #{idx + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-white tracking-tight">{mvp.display_name}</p>
+                    <p className="font-bold text-white tracking-tight">{mvp.displayName}</p>
                     <p className="text-xs text-white/60 uppercase tracking-widest font-bold">Student</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-black text-white">{mvp.attended_events}</p>
+                    <p className="text-2xl font-black text-white">{mvp.attendedEvents}</p>
                     <p className="text-xs font-bold uppercase tracking-widest text-white/60">Events</p>
                   </div>
                 </div>
@@ -104,7 +104,7 @@ export default function MemberImpactOverview() {
             
             <div className="flex flex-col gap-4">
               {topOutreach.map((mvp: EnrichedRosterMember, idx: number) => (
-                <div key={mvp.user_id} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
+                <div key={mvp.userId} className={`flex items-center gap-4 p-4 ares-cut border transition-colors ${
                   idx === 0 ? "bg-ares-gold/10 border-ares-gold/20" : 
                   idx === 1 ? "bg-white/10 border-white/20" : 
                   "bg-ares-bronze/10 border-ares-bronze/20"
@@ -117,11 +117,11 @@ export default function MemberImpactOverview() {
                     #{idx + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-white tracking-tight">{mvp.display_name}</p>
+                    <p className="font-bold text-white tracking-tight">{mvp.displayName}</p>
                     <p className="text-xs text-white/60 uppercase tracking-widest font-bold">Student</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-black text-white">{mvp.total_hours.toFixed(1)}</p>
+                    <p className="text-2xl font-black text-white">{mvp.totalHours.toFixed(1)}</p>
                     <p className="text-xs font-bold uppercase tracking-widest text-white/60">Hours</p>
                   </div>
                 </div>
@@ -163,23 +163,23 @@ export default function MemberImpactOverview() {
             </thead>
             <tbody>
               {filteredRoster.map((m: EnrichedRosterMember) => (
-                <tr key={m.user_id} className="border-b border-white/5 hover:bg-white/10 transition-colors">
+                <tr key={m.userId} className="border-b border-white/5 hover:bg-white/10 transition-colors">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <img src={m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`} alt="avatar" className="w-8 h-8 ares-cut-sm bg-obsidian" />
-                      <span className="font-bold text-white tracking-tight">{m.display_name}</span>
+                      <img src={m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.userId}`} alt={`${m.displayName}'s avatar`} className="w-8 h-8 ares-cut-sm bg-obsidian" />
+                      <span className="font-bold text-white tracking-tight">{m.displayName}</span>
                     </div>
                   </td>
                   <td className="py-4 px-6">
                     <span className="px-2 py-1 bg-white/5 border border-white/10 ares-cut-sm text-xs uppercase font-bold text-white/60">
-                      {m.member_type}
+                      {m.memberType}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-white font-bold">{m.attended_events}</span>
+                    <span className="text-white font-bold">{m.attendedEvents}</span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-white font-bold">{m.total_hours.toFixed(1)} <span className="text-white/60 text-xs font-medium">hrs</span></span>
+                    <span className="text-white font-bold">{m.totalHours.toFixed(1)} <span className="text-white/60 text-xs font-medium">hrs</span></span>
                   </td>
                 </tr>
               ))}
@@ -197,3 +197,4 @@ export default function MemberImpactOverview() {
     </div>
   );
 }
+
