@@ -12,17 +12,14 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
 
     let baseURL = env.BETTER_AUTH_URL as string | undefined;
     
-    if (requestUrl) {
+    // Derive baseURL from the request's origin when BETTER_AUTH_URL is not explicitly set.
+    // CRITICAL: This must work for ALL routes (not just /auth/* routes) because getAuth()
+    // is called from ensureAuth middleware on paths like /api/profile/me.
+    // The protocol (http vs https) determines the cookie prefix (__Secure- vs plain),
+    // so getting this wrong causes session lookups to fail silently.
+    if (!baseURL && requestUrl) {
         const url = new URL(requestUrl);
-        // Find the base authentication path dynamically (e.g., /api/auth or /dashboard/api/auth)
-        const authIndex = url.pathname.indexOf("/auth");
-        if (authIndex !== -1) {
-            const basePath = url.pathname.substring(0, authIndex + 5); // +5 for "/auth"
-            // Ensure we use the protocol/host from the request, but respect BETTER_AUTH_URL if set in production
-            if (!baseURL) {
-                baseURL = `${url.protocol}//${url.host}${basePath}`;
-            }
-        }
+        baseURL = `${url.protocol}//${url.host}/api/auth`;
     }
 
     // Final fallback
