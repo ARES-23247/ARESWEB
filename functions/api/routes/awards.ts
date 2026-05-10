@@ -6,7 +6,6 @@ import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 
 export const awardsRouter = new OpenAPIHono<AppEnv>();
@@ -21,7 +20,8 @@ awardsRouter.use("*", async (c, next) => {
 });
 
 // Get awards list
-awardsRouter.openapi(getAwardsRoute, createTypedHandler(getAwardsRoute, async (c, { query }) => {
+awardsRouter.openapi(getAwardsRoute, async (c) => {
+    const query = c.req.valid("query");
     const db = getDb(c);
     const { limit = 50, offset = 0 } = query;
     const results = await db.select({
@@ -53,12 +53,13 @@ awardsRouter.openapi(getAwardsRoute, createTypedHandler(getAwardsRoute, async (c
       updatedAt: a.createdAt || new Date().toISOString()
     }));
 
-    return c.json({ awards }, 200);
-}));
+    return c.json({ awards } as const);
+});
 
 awardsRouter.use("/admin/*", ensureAdmin);
 
-awardsRouter.openapi(saveAwardRoute, createTypedHandler(saveAwardRoute, async (c, { body }) => {
+awardsRouter.openapi(saveAwardRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
     const { id, title, year, eventName, description, imageUrl, seasonId } = body;
 
@@ -85,7 +86,7 @@ awardsRouter.openapi(saveAwardRoute, createTypedHandler(saveAwardRoute, async (c
       }
       await db.update(schema.awards).set(values).where(eq(schema.awards.id, numericId)).run();
       c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", id, `Award "${title}" (${year}) updated`));
-      return c.json({ success: true, id }, 200);
+      return c.json({ success: true, id } as const);
     }
 
     // For new awards, use insert-or-find pattern to handle race conditions atomically
@@ -101,14 +102,14 @@ awardsRouter.openapi(saveAwardRoute, createTypedHandler(saveAwardRoute, async (c
 
     if (existingAward) {
       c.executionCtx.waitUntil(logAuditAction(c, "award_duplicate_found", "awards", String(existingAward.id), `Award "${title}" (${year}) already exists`));
-      return c.json({ success: true, id: String(existingAward.id) }, 200);
+      return c.json({ success: true, id: String(existingAward.id) } as const);
     }
 
     try {
       const res = await db.insert(schema.awards).values(values).returning({ insertId: schema.awards.id }).get();
       const newId = res && "insertId" in res ? String(res.insertId) : "new";
       c.executionCtx.waitUntil(logAuditAction(c, "award_created", "awards", newId, `Award "${title}" (${year}) created`));
-      return c.json({ success: true, id: newId }, 200);
+      return c.json({ success: true, id: newId } as const);
     } catch (insertError: unknown) {
       const duplicate = await db.select({ id: schema.awards.id })
         .from(schema.awards)
@@ -122,13 +123,14 @@ awardsRouter.openapi(saveAwardRoute, createTypedHandler(saveAwardRoute, async (c
 
       if (duplicate) {
         c.executionCtx.waitUntil(logAuditAction(c, "award_race_condition_handled", "awards", String(duplicate.id), `Award "${title}" (${year}) race condition - returned existing record`));
-        return c.json({ success: true, id: String(duplicate.id) }, 200);
+        return c.json({ success: true, id: String(duplicate.id) } as const);
       }
       throw insertError;
     }
-}));
+});
 
-awardsRouter.openapi(deleteAwardRoute, createTypedHandler(deleteAwardRoute, async (c, { params }) => {
+awardsRouter.openapi(deleteAwardRoute, async (c) => {
+    const params = c.req.valid("param");
     const db = getDb(c);
     const numericId = Number(params.id);
     if (isNaN(numericId) || numericId <= 0) {
@@ -136,7 +138,7 @@ awardsRouter.openapi(deleteAwardRoute, createTypedHandler(deleteAwardRoute, asyn
     }
     await db.update(schema.awards).set({ isDeleted: 1 }).where(eq(schema.awards.id, numericId)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
-    return c.json({ success: true }, 200);
-}));
+    return c.json({ success: true });
+});
 
 export default awardsRouter;

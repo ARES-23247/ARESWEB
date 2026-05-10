@@ -7,7 +7,6 @@ import { sendZulipMessage, updateZulipMessage, deleteZulipMessage } from "../../
 import { emitNotification } from "../../utils/notifications";
 import { listCommentsRoute, submitCommentRoute, updateCommentRoute, deleteCommentRoute } from "../../../shared/routes/comments";
 import { queryHelpers } from "@/db/query-helpers";
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 
 
@@ -40,7 +39,8 @@ commentsRouter.use("/{id}", (c, next) => {
   return next();
 });
 
-commentsRouter.openapi(listCommentsRoute, createTypedHandler(listCommentsRoute, async (c, { params }) => {
+commentsRouter.openapi(listCommentsRoute, async (c) => {
+  const params = c.req.valid("param");
   const { targetType, targetId } = params;
   const user = await getSessionUser(c);
   const db = getDb(c);
@@ -61,10 +61,13 @@ commentsRouter.openapi(listCommentsRoute, createTypedHandler(listCommentsRoute, 
     comments,
     authenticated: !!user,
     role: user?.role || null
-  }, 200);
-}));
+  });
+});
 
-commentsRouter.openapi(submitCommentRoute, createTypedHandler(submitCommentRoute, async (c, { params, body }) => {
+commentsRouter.openapi(submitCommentRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+
   const user = await getSessionUser(c);
   if (!user) {
     throw new ApiError("Unauthorized", 401);
@@ -86,7 +89,7 @@ commentsRouter.openapi(submitCommentRoute, createTypedHandler(submitCommentRoute
   }
 
   // CR-08: Check original length, not trimmed length, to prevent bypass
-  if (rawContent.length > MAX_INPUT_LENGTHS.comment) {
+  if (String(rawContent).length > MAX_INPUT_LENGTHS.comment) {
     throw new ApiError(`Comment exceeds ${MAX_INPUT_LENGTHS.comment} character limit`, 400);
   }
 
@@ -133,10 +136,13 @@ commentsRouter.openapi(submitCommentRoute, createTypedHandler(submitCommentRoute
     }
   }
 
-  return c.json({ success: true }, 200);
-}));
+  return c.json({ success: true });
+});
 
-commentsRouter.openapi(updateCommentRoute, createTypedHandler(updateCommentRoute, async (c, { params, body }) => {
+commentsRouter.openapi(updateCommentRoute, async (c) => {
+  const params = c.req.valid("param");
+  const body = c.req.valid("json");
+
   const user = await getSessionUser(c);
   if (!user) throw new ApiError("Unauthorized", 401);
   if (user.role === "unverified") throw new ApiError("Unverified", 403);
@@ -180,10 +186,12 @@ commentsRouter.openapi(updateCommentRoute, createTypedHandler(updateCommentRoute
     })());
   }
 
-  return c.json({ success: true }, 200);
-}));
+  return c.json({ success: true });
+});
 
-commentsRouter.openapi(deleteCommentRoute, createTypedHandler(deleteCommentRoute, async (c, { params }) => {
+commentsRouter.openapi(deleteCommentRoute, async (c) => {
+  const params = c.req.valid("param");
+
   const user = await getSessionUser(c);
   if (!user) throw new ApiError("Unauthorized", 401);
   if (user.role === "unverified") throw new ApiError("Unverified", 403);
@@ -218,8 +226,7 @@ commentsRouter.openapi(deleteCommentRoute, createTypedHandler(deleteCommentRoute
     })());
   }
 
-  return c.json({ success: true }, 200);
-}));
+  return c.json({ success: true });
+});
 
 export default commentsRouter;
-
