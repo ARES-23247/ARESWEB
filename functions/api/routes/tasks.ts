@@ -17,6 +17,12 @@ import {
   updateTaskRoute,
   deleteTaskRoute,
   reorderTasksRoute,
+  createTaskAttachmentRoute,
+  deleteTaskAttachmentRoute,
+  createTaskChecklistRoute,
+  updateTaskChecklistRoute,
+  deleteTaskChecklistRoute,
+  setTaskLabelsRoute,
 } from "../../../shared/routes/tasks";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
@@ -421,5 +427,164 @@ tasksRouter.openapi(deleteTaskRoute, async (c) => {
     return c.json({ success: true } as any, 200);
   }
 );
+
+tasksRouter.openapi(createTaskAttachmentRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    let title = body.url;
+    let type = "link";
+
+    try {
+      const urlObj = new URL(body.url);
+      title = urlObj.hostname;
+
+      if (urlObj.hostname.includes("docs.google.com")) {
+        if (urlObj.pathname.includes("/document/")) type = "document";
+        else if (urlObj.pathname.includes("/spreadsheets/")) type = "spreadsheet";
+        else if (urlObj.pathname.includes("/presentation/")) type = "presentation";
+        else type = "google_drive";
+      } else if (urlObj.hostname.includes("github.com")) {
+        type = "github";
+      }
+
+      // Fetch HTML for title
+      const res = await fetch(body.url, { headers: { "User-Agent": "ARESWEB-Unfurler/1.0" } });
+      if (res.ok) {
+        const html = await res.text();
+        const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (match && match[1]) {
+          title = match[1].trim().replace(/\n/g, "").substring(0, 100);
+        }
+      }
+    } catch (e) {
+      // Ignore fetch errors, fallback to hostname
+    }
+
+    const id = crypto.randomUUID();
+    await db.insert(schema.taskAttachments).values({
+      id,
+      taskId: params.id,
+      url: body.url,
+      title,
+      type,
+      createdAt: new Date().toISOString(),
+    }).run();
+
+    // Notify via Zulip
+    const task = await db.select({ title: schema.tasks.title }).from(schema.tasks).where(eq(schema.tasks.id, params.id)).get();
+    if (task) {
+      const env = await getSocialConfig(c);
+      safeWaitUntil(c.executionCtx, sendZulipMessage(env, "kanban", `Task-${params.id.split("-")[0]}: ${task.title}`, `📎 **New Attachment Added:** [${title}](${body.url})`), "Failed to send attachment notification");
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
+
+tasksRouter.openapi(deleteTaskAttachmentRoute, async (c) => {
+    const params = c.req.valid("param");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    await db.delete(schema.taskAttachments).where(and(eq(schema.taskAttachments.id, params.attachmentId), eq(schema.taskAttachments.taskId, params.id))).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
+
+tasksRouter.openapi(createTaskChecklistRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    const id = crypto.randomUUID();
+    await db.insert(schema.taskChecklists).values({
+      id,
+      taskId: params.id,
+      content: body.content,
+      isCompleted: 0,
+      sortOrder: 0,
+    }).run();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
+
+tasksRouter.openapi(updateTaskChecklistRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    type ChecklistUpdates = {
+      isCompleted?: number;
+      content?: string;
+      sortOrder?: number;
+    };
+    const updates: ChecklistUpdates = {};
+    if (body.isCompleted !== undefined) updates.isCompleted = body.isCompleted;
+    if (body.content !== undefined) updates.content = body.content;
+    if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder;
+
+    await db.update(schema.taskChecklists)
+      .set(updates)
+      .where(and(eq(schema.taskChecklists.id, params.checklistId), eq(schema.taskChecklists.taskId, params.id)))
+      .run();
+
+    // Milestone logic: if transitioned to completed
+    if (body.isCompleted === 1) {
+       const allChecklists = await db.select({ isCompleted: schema.taskChecklists.isCompleted }).from(schema.taskChecklists).where(eq(schema.taskChecklists.taskId, params.id)).all();
+       const allCompleted = allChecklists.length > 0 && allChecklists.every((c: { isCompleted: number | null }) => c.isCompleted === 1);
+       if (allCompleted) {
+         const task = await db.select({ title: schema.tasks.title }).from(schema.tasks).where(eq(schema.tasks.id, params.id)).get();
+         if (task) {
+           const env = await getSocialConfig(c);
+           safeWaitUntil(c.executionCtx, sendZulipMessage(env, "kanban", `Task-${params.id.split("-")[0]}: ${task.title}`, `✅ **Milestone Reached!** All checklists have been completed for this task.`), "Failed to send milestone notification");
+         }
+       }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
+
+tasksRouter.openapi(deleteTaskChecklistRoute, async (c) => {
+    const params = c.req.valid("param");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    await db.delete(schema.taskChecklists).where(and(eq(schema.taskChecklists.id, params.checklistId), eq(schema.taskChecklists.taskId, params.id))).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
+
+tasksRouter.openapi(setTaskLabelsRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+    const db = getDb(c);
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+
+    await db.delete(schema.taskLabels).where(eq(schema.taskLabels.taskId, params.id)).run();
+
+    if (body.labelIds.length > 0) {
+       const inserts = body.labelIds.map((labelId: string) => ({
+         taskId: params.id,
+         labelId: labelId,
+       }));
+       await db.insert(schema.taskLabels).values(inserts).run();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return c.json({ success: true } as any, 200);
+});
 
 export default tasksRouter;
