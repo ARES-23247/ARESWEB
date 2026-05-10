@@ -25,6 +25,12 @@ interface MockTask {
   assigneeName: string | null;
   parentId: string | null;
   timeSpentSeconds: number | null;
+  startDate: string | null;
+  estimatedMinutes: number | null;
+  coverImage: string | null;
+  checklists: Array<{ id: string; content: string; isCompleted: number; sortOrder: number; }> | null;
+  labels: Array<{ id: string; name: string; colorTheme: string | null; }> | null;
+  attachments: Array<{ id: string; url: string; title: string; type: string; thumbnailUrl: string | null; createdAt: string | null; }> | null;
 }
 
 const mockTask: MockTask = {
@@ -47,6 +53,12 @@ const mockTask: MockTask = {
   assignedTo: null,
   assigneeName: null,
   parentId: null,
+  startDate: null,
+  estimatedMinutes: null,
+  coverImage: null,
+  checklists: null,
+  labels: null,
+  attachments: null,
 };
 
 // Mock the imports

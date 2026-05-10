@@ -39,6 +39,31 @@ export const TaskSchema = selectTaskSchema.extend({
   zulipStream: z.string().nullish(),
   zulipTopic: z.string().nullish(),
   isDeleted: z.number().nullish(),
+  checklists: z.array(
+    z.object({
+      id: z.string(),
+      content: z.string(),
+      isCompleted: z.number(),
+      sortOrder: z.number(),
+    })
+  ).nullish(),
+  labels: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      colorTheme: z.string().nullable(),
+    })
+  ).nullish(),
+  attachments: z.array(
+    z.object({
+      id: z.string(),
+      url: z.string(),
+      title: z.string(),
+      type: z.string(),
+      thumbnailUrl: z.string().nullable(),
+      createdAt: z.string().nullable(),
+    })
+  ).nullish(),
 });
 
 /**
@@ -52,6 +77,9 @@ export const createTaskSchema = z.object({
   subteam: z.string().nullable().optional(),
   assignees: z.array(z.string()).optional(),
   dueDate: z.string().optional(),
+  startDate: z.string().optional(),
+  estimatedMinutes: z.number().optional(),
+  coverImage: z.string().optional(),
   parentId: z.string().nullable().optional(),
   timeSpentSeconds: z.number().optional(),
   sortOrder: z.number().optional(),
