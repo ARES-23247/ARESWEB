@@ -1,5 +1,4 @@
-import { typedHandler } from "../utils/handler";
-import { ApiError } from "../middleware/errorHandler";
+import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -13,6 +12,7 @@ import {
   createJudgeCodeRoute,
   deleteJudgeCodeRoute,
 } from "../../../shared/routes/judges";
+import type { z } from "zod";
 
 // Types for database query results
 
@@ -49,54 +49,26 @@ interface JudgeCodeListResult {
   id: string;
   code: string;
   label: string;
-  created_at: string;
+  createdAt: string;
   expires_at: string | null;
 }
 
-// Types for API responses
+// Types for API responses - inferred from shared routes
 
 
+type JudgeLoginSuccess = z.infer<typeof judgeLoginRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-interface PortfolioResponse {
-  portfolioDocs: Array<{
-    slug: string;
-    title: string;
-    category: string;
-    description: string | null;
-    content: string;
-  }>;
-  outreach: Array<{
-    id: number;
-    title: string;
-    date: string;
-    location: string | null;
-    students_count: number;
-    hours_logged: number;
-    reach_count: number;
-    description: string;
-  }>;
-  awards: Array<{
-    id: number;
-    title: string;
-    year: number;
-    event_name: string;
-    image_url: string;
-    description: string;
-  }>;
-  sponsors: Array<{
-    id: string;
-    name: string;
-    tier: string;
-    logo_url: string | null;
-    website_url: string | null;
-  }>;
-}
+type JudgePortfolioSuccess = z.infer<typeof judgePortfolioRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
+type ListJudgeCodesSuccess = z.infer<typeof listJudgeCodesRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
+type CreateJudgeCodeSuccess = z.infer<typeof createJudgeCodeRoute.responses[200]["content"]["application/json"]["schema"]>;
 
+
+type DeleteJudgeCodeSuccess = z.infer<typeof deleteJudgeCodeRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
 
@@ -124,24 +96,24 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async (c) => {
+judgesRouter.openapi(judgeLoginRoute, autoResponseHandler<typeof judgeLoginRoute>(async (c, { body }) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = getDb(c);
 
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
+    return error({ error: "Too many requests" }, 429);
   }
 
-    const { code, turnstileToken } = c.req.valid("json");
+    const { code, turnstileToken } = body;
     if (!code) {
-      throw new ApiError("Code required", 400, "VALIDATION_ERROR");
+      return error({ error: "Code required" }, 400);
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      throw new ApiError("Security verification failed", 403);
+      return error({ error: "Security verification failed" }, 403);
     }
 
     const [row] = await db.select({
@@ -160,25 +132,24 @@ judgesRouter.openapi(judgeLoginRoute, typedHandler<typeof judgeLoginRoute>(async
       ).limit(1);
 
     if (!row) {
-      throw new ApiError("Invalid or expired access code", 403);
+      return error({ error: "Invalid or expired access code" }, 403);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return c.json({ success: true, label: row.label } as any, 200);
+    return success({ success: true, label: row.label || "" } satisfies JudgeLoginSuccess);
 }));
 
-judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRoute>(async (c) => {
+judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfolioRoute>(async (c) => {
   const db = getDb(c);
-    const { "x-judge-code": code } = c.req.valid("header");
+    const { "x-judge-code": code } = c.req.header();
     if (!code) {
-      throw new ApiError("Access code required", 401);
+      return error({ error: "Access code required" }, 401);
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
+      return error({ error: "Too many requests" }, 429);
     }
 
     const [valid] = await db.select({
@@ -194,7 +165,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         )
       ).limit(1);
     if (!valid) {
-      throw new ApiError("Invalid or expired access code", 403);
+      return error({ error: "Invalid or expired access code" }, 403);
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring
@@ -204,8 +175,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
     const cacheKey = getPortfolioCacheKey();
     const cached = portfolioCache.get(cacheKey);
     if (cached && cached.expiresAt > now && cached.version === portfolioCacheVersion) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json(cached.data as any, 200);
+      return success(cached.data as JudgePortfolioSuccess);
     }
 
     const [portfolioDocs, outreach, awards, sponsors] = await Promise.all([
@@ -240,7 +210,7 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         id: schema.awards.id,
         title: schema.awards.title,
         date: schema.awards.date,
-        event_name: schema.awards.eventName,
+        eventName: schema.awards.eventName,
         image_url: schema.awards.iconType,
         description: schema.awards.description,
       }).from(schema.awards)
@@ -256,21 +226,31 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
         .where(eq(schema.sponsors.isActive, 1))
     ]);
 
-    const payload: PortfolioResponse = {
+    const payload: JudgePortfolioSuccess = {
       portfolioDocs: portfolioDocs.map((d: PortfolioDocResult) => ({
-        ...d,
-        content: sanitizeJudgeContent(d.content)
+        slug: d.slug,
+        title: d.title,
+        category: d.category,
+        description: d.description || "",
+        content: sanitizeJudgeContent(d.content),
+        is_executive_summary: d.category === "Executive Summary" ? 1 : undefined,
       })),
       outreach: outreach.map((o: OutreachResult) => ({
-        ...o,
-        description: sanitizeJudgeContent(o.description || ""),
+        id: o.id,
+        title: o.title,
+        date: o.date,
+        location: o.location || "",
         students_count: Number(o.students_count),
         hours_logged: Number(o.hours_logged),
-        reach_count: Number(o.reach_count)
+        reach_count: Number(o.reach_count),
+        description: sanitizeJudgeContent(o.description || ""),
       })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      awards: awards.map((a: any) => ({
-        ...a,
+      awards: awards.map((a) => ({
+        id: a.id,
+        title: a.title,
+        date: a.date,
+        event_name: a.eventName,
+        image_url: a.image_url,
         description: sanitizeJudgeContent(a.description || ""),
         year: Number(a.date)
       })),
@@ -279,36 +259,37 @@ judgesRouter.openapi(judgePortfolioRoute, typedHandler<typeof judgePortfolioRout
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
-    return c.json(payload, 200);
+    return success(payload);
 }));
 
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, typedHandler<typeof listJudgeCodesRoute>(async (c) => {
+judgesRouter.openapi(listJudgeCodesRoute, autoResponseHandler<typeof listJudgeCodesRoute>(async (c) => {
   const db = getDb(c);
     const results = await db.select({
       id: schema.judgeAccessCodes.id,
       code: schema.judgeAccessCodes.code,
       label: schema.judgeAccessCodes.label,
-      created_at: schema.judgeAccessCodes.createdAt,
+      createdAt: schema.judgeAccessCodes.createdAt,
       expires_at: schema.judgeAccessCodes.expiresAt,
     }).from(schema.judgeAccessCodes)
       .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const codes: JudgeCodeListResult[] = results.map((r: any) => ({
-      ...r,
-      created_at: String(r.created_at),
+    const codes: JudgeCodeListResult[] = results.map((r) => ({
+      id: r.id,
+      code: r.code,
+      label: r.label,
+      createdAt: String(r.createdAt),
       expires_at: r.expires_at || null
     }));
 
-    return c.json({ codes }, 200);
+    return success({ codes } satisfies ListJudgeCodesSuccess);
 }));
 
-judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRoute>(async (c) => {
+judgesRouter.openapi(createJudgeCodeRoute, autoResponseHandler<typeof createJudgeCodeRoute>(async (c, { body }) => {
   const db = getDb(c);
-    const { label, expiresAt } = c.req.valid("json");
+    const { label, expiresAt } = body;
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
     const id = crypto.randomUUID();
 
@@ -326,19 +307,19 @@ judgesRouter.openapi(createJudgeCodeRoute, typedHandler<typeof createJudgeCodeRo
     portfolioCache.clear();
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
-    return c.json({ success: true, code, id }, 200);
+    return success({ success: true, code, id } satisfies CreateJudgeCodeSuccess);
 }));
 
-judgesRouter.openapi(deleteJudgeCodeRoute, typedHandler<typeof deleteJudgeCodeRoute>(async (c) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, autoResponseHandler<typeof deleteJudgeCodeRoute>(async (c, { params }) => {
   const db = getDb(c);
-    const { id } = c.req.valid("param");
+    const { id } = params;
     await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
 
     // WR-08: Invalidate cache when content changes
     portfolioCacheVersion++;
     portfolioCache.clear();
 
-    return c.json({ success: true }, 200);
+    return success({ success: true } satisfies DeleteJudgeCodeSuccess);
 }));
 
 export default judgesRouter;
