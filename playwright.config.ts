@@ -78,9 +78,18 @@ export default defineConfig({
     },
   },
   projects: [
-    // Default project - runs all tests (useful for CI with splitting)
+    // Default project - runs tests NOT covered by specific suite projects
     {
       name: 'chromium',
+      // Ignore test files already assigned to specific suite projects to avoid duplicate runs
+      testIgnore: [
+        '**/admin-*.spec.ts',         // → dashboard suite
+        '**/analytics*.spec.ts',      // → analytics suite
+        '**/*-post.spec.ts',          // → public suite
+        '**/*-detail.spec.ts',        // → details suite
+        '**/*-editor.spec.ts',        // → editors suite
+        '**/{sim,store,social}*.spec.ts', // → features suite
+      ],
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
