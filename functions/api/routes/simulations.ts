@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -100,7 +100,7 @@ async function canModifySimulation(
 }
 
 // List all simulations from GitHub
-simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulationsRoute>(async (c) => {
+simulationsRouter.openapi(listSimulationsRoute, createTypedHandler<typeof listSimulationsRoute>(async (c) => {
     const ghConfig = getGitHubConfig(c);
     let pat = c.env.GITHUB_PAT;
 
@@ -132,17 +132,18 @@ simulationsRouter.openapi(listSimulationsRoute, typedHandler<typeof listSimulati
       name: s.name,
       author_id: "ARES-23247",
       is_public: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       type: "github"
     }));
 
     return c.json({ simulations: githubSims }, 200);
-}));
+  })
+);
 
 // Get a single simulation file by id from GitHub
-simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationRoute>(async (c) => {
-  const { id } = c.req.valid("param");
+simulationsRouter.openapi(getSimulationRoute, createTypedHandler<typeof getSimulationRoute>(async (c, { params }) => {
+  const { id } = params;
 
   if (!id || !id.startsWith("github:")) {
     throw new ApiError("Simulation not found", 404);
@@ -186,8 +187,8 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
           id, name: simId, type: "github",
           files: { [`${simId}.tsx`]: code },
           author_id: "ARES-23247", is_public: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }
       }, 200);
     }
@@ -198,8 +199,8 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
         id, name: simId, type: "github",
         files: { "index.tsx": code },
         author_id: "ARES-23247", is_public: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     }, 200);
   } catch (ghErr) {
@@ -209,13 +210,13 @@ simulationsRouter.openapi(getSimulationRoute, typedHandler<typeof getSimulationR
 }));
 
 // Save simulation to GitHub
-simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulationRoute>(async (c) => {
+simulationsRouter.openapi(saveSimulationRoute, createTypedHandler<typeof saveSimulationRoute>(async (c, { body }) => {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { name, files } = c.req.valid("json");
+    const { name, files } = body;
 
     if (Object.keys(files).length === 0) {
       throw new ApiError("No files provided", 400);
@@ -329,17 +330,18 @@ simulationsRouter.openapi(saveSimulationRoute, typedHandler<typeof saveSimulatio
 
     c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));
     return c.json({ id: `github:${simIdStr}` }, 200);
-}));
+  })
+);
 
 // Delete simulation from GitHub
-simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimulationRoute>(async (c) => {
+simulationsRouter.openapi(deleteSimulationRoute, createTypedHandler<typeof deleteSimulationRoute>(async (c, { params }) => {
   try {
     const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = c.req.valid("param");
+    const { id } = params;
     if (!id || !id.startsWith("github:")) {
       throw new ApiError("Not found", 404);
     }
@@ -427,8 +429,8 @@ simulationsRouter.openapi(deleteSimulationRoute, typedHandler<typeof deleteSimul
 }));
 
 // Create a new GitHub Gist for a simulation
-simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(async (c) => {
-    const { name, files } = c.req.valid("json");
+simulationsRouter.openapi(createGistRoute, createTypedHandler<typeof createGistRoute>(async (c, { body }) => {
+    const { name, files } = body;
     if (Object.keys(files).length === 0) {
       throw new ApiError("No files provided", 400);
     }
@@ -472,11 +474,12 @@ simulationsRouter.openapi(createGistRoute, typedHandler<typeof createGistRoute>(
 
     const gistResponse = await res.json() as { id: string; html_url: string };
     return c.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url }, 200);
-}));
+  })
+);
 
 // Fetch a GitHub Gist by ID
-simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async (c) => {
-  const { id } = c.req.valid("param");
+simulationsRouter.openapi(getGistRoute, createTypedHandler<typeof getGistRoute>(async (c, { params }) => {
+  const { id } = params;
 
     const db = getDb(c);
     let pat = c.env.GITHUB_PAT;
@@ -506,8 +509,8 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
       files: Record<string, { content: string }>;
       owner: { login: string };
       public: boolean;
-      created_at: string;
-      updated_at: string;
+      createdAt: string;
+      updatedAt: string;
     };
 
     const gistFiles: Record<string, string> = {};
@@ -523,13 +526,14 @@ simulationsRouter.openapi(getGistRoute, typedHandler<typeof getGistRoute>(async 
         files: gistFiles,
         author_id: gist.owner?.login || "anonymous",
         is_public: gist.public ? 1 : 0,
-        created_at: gist.created_at,
-        updated_at: gist.updated_at
+        createdAt: gist.createdAt,
+        updatedAt: gist.updatedAt
       }
     }, 200);
-}));
+  })
+);
 
-// ── Admin Routes ─────────────────────────────────────────────────────────────
+// ──── Admin Routes ─────────────────────────────────────────────────────────
 
 // Generate simulation registry by running npm script
 simulationsRouter.post("/admin/generate-registry", ensureAdmin, async (c) => {

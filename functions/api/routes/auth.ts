@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { createTypedHandler } from "../utils/handler-native";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, getSessionUser, persistentRateLimitMiddleware, getDb, ApiError } from "../middleware";
 import { getAuth } from "../../utils/auth";
@@ -16,11 +16,13 @@ const authRouter = new OpenAPIHono<AppEnv>();
 // - See AUTH_PATTERNS.md for security best practices
 
 // ── GET /api/auth-check — verify session (UI gate only) ────────────────
-authRouter.openapi(authCheckRoute, typedHandler<typeof authCheckRoute>(async (c) => {
+authRouter.openapi(authCheckRoute, createTypedHandler(authCheckRoute, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ authenticated: false }, 401);
-  return c.json({ 
-    authenticated: true, 
+  if (!user) {
+    return c.json({ authenticated: false as const }, 401);
+  }
+  return c.json({
+    authenticated: true as const,
     user: {
       id: user.id,
       email: user.email,
@@ -32,7 +34,7 @@ authRouter.openapi(authCheckRoute, typedHandler<typeof authCheckRoute>(async (c)
 }));
 
 // ── GET /api/auth/emergency-clear — force clear poisoned cookies ───────
-authRouter.openapi(emergencyClearRoute, typedHandler<typeof emergencyClearRoute>((c) => {
+authRouter.openapi(emergencyClearRoute, createTypedHandler(emergencyClearRoute, async (c) => {
   const res = c.redirect("/");
   res.headers.append("Set-Cookie", "better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
   res.headers.append("Set-Cookie", "__Secure-better-auth.session_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
@@ -46,7 +48,7 @@ authRouter.openapi(emergencyClearRoute, typedHandler<typeof emergencyClearRoute>
 // @ts-expect-error - Hono's OpenAPI type system doesn't handle union response types well
 // This test-only endpoint returns different types based on status code (200/403/404/500)
 // The runtime behavior is correct; this is a TypeScript limitation with discriminated unions
-authRouter.openapi(testLoginRoute, async (c) => {
+authRouter.openapi(testLoginRoute, createTypedHandler(testLoginRoute, async (c, { body }) => {
   // SECURITY: Verify test mode via environment or special header
   // Note: CI is a GitHub Actions env var, not in Cloudflare Bindings type
   const env = c.env as unknown as Record<string, string | undefined>;
@@ -59,7 +61,6 @@ authRouter.openapi(testLoginRoute, async (c) => {
   }
 
   // Get test user ID from request body, default to admin-user
-  const body = c.req.valid("json") || {};
   const userId = body.userId || 'admin-user';
 
   try {
@@ -86,7 +87,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
     console.log('[Test Auth] authCtx keys:', Object.keys(authCtx));
     if (authCtx.session) console.log('[Test Auth] authCtx.session keys:', Object.keys(authCtx.session));
     if (authCtx.internalAdapter) console.log('[Test Auth] authCtx.internalAdapter keys:', Object.keys(authCtx.internalAdapter));
-    
+
     // Note: Better Auth sessions are created via the signIn API
     // For testing, we'll create a session token directly
     const sessionId = crypto.randomUUID();
@@ -110,7 +111,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
     if (!secret) {
       throw new ApiError("BETTER_AUTH_SECRET environment variable is required", 500, "MISSING_SECRET");
     }
-    
+
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
@@ -136,7 +137,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
         role: user.role,
       },
       sessionToken: signedToken,
-    });
+    }, 200);
 
     // Set the session cookie for immediate use
     const isSecure = c.req.url.startsWith('https://');
@@ -153,7 +154,7 @@ authRouter.openapi(testLoginRoute, async (c) => {
     console.error('[Test Auth] Error creating test session:', error);
     throw new ApiError('Failed to create test session', 500, 'INTERNAL_ERROR', { originalMessage: message });
   }
-});
+}));
 
 // ── Better Auth Routes ────────────────────────────────────────────────
 // Catch-all for Better Auth internal routes
@@ -191,5 +192,3 @@ authRouter.on(["POST", "GET"], "/*", async (c, next) => {
 });
 
 export default authRouter;
-
-

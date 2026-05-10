@@ -1,4 +1,4 @@
-import { typedHandler } from "../../utils/handler";
+import { createTypedHandler } from "../../utils/handler-native";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, verifyTurnstile, getDb } from "../../middleware";
@@ -54,8 +54,8 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
   return text.substring(0, maxChars / 2) + "\n\n...[TRUNCATED BY FALLBACK]...\n\n" + text.substring(text.length - maxChars / 2);
 };
 
-// ── AI Status Diagnostic (admin only) ──────────────────────────────────────
-aiRouter.openapi(aiStatusRoute, async (c) => {
+// ──── AI Status Diagnostic (admin only) ───────────────────────────────────
+aiRouter.openapi(aiStatusRoute, createTypedHandler<typeof aiStatusRoute>(async (c) => {
   let indexErrors = null;
   const db = getDb(c);
 
@@ -83,14 +83,14 @@ aiRouter.openapi(aiStatusRoute, async (c) => {
     primaryModel: c.env.Z_AI_API_KEY ? "zai-5.1" : c.env.AI ? "llama-3.1-8b" : "none",
     indexErrors,
   }, 200);
-});
+}));
 
-// ── Liveblocks AI Copilot Endpoint ────────────────────────────────────────
+// ──── Liveblocks AI Copilot Endpoint ───────────────────────────────────────
 // Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
 
 // WR-07: Add rate limiting to prevent abuse of AI endpoints
-aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRoute>(async (c) => {
-  const { documentContext, action, imageUrl } = c.req.valid("json");
+aiRouter.openapi(liveblocksCopilotRoute, createTypedHandler<typeof liveblocksCopilotRoute>(async (c, { body }) => {
+  const { documentContext, action, imageUrl } = body;
 
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -114,10 +114,10 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
   return streamSSE(c, async (stream) => {
     let lastZaiError = "";
     try {
-      // ── Premium path: z.ai (Claude) ──
+      // ──── Premium path: z.ai (Claude) ────
       if (hasZai) {
         let userContent: MessageContent = safeContext;
-        
+
         if (imageUrl && imageUrl.startsWith('data:image')) {
           const [header, base64] = imageUrl.split(',');
           const mediaType = header.split(';')[0].split(':')[1];
@@ -202,7 +202,7 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
         }
       }
 
-      // ── Fallback path: Cloudflare Workers AI (Llama 3.1) ──
+      // ──── Fallback path: Cloudflare Workers AI (Llama 3.1) ────
       if (!c.env.AI) {
         const errDetails = lastZaiError || "Z.AI service unavailable";
         await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Z.AI Error: ${errDetails}]` }) });
@@ -254,9 +254,8 @@ aiRouter.openapi(liveblocksCopilotRoute, typedHandler<typeof liveblocksCopilotRo
   });
 }));
 
-// ── Simulator Playground AI Route ──────────────────────────────────────────
-aiRouter.openapi(simPlaygroundRoute, typedHandler<typeof simPlaygroundRoute>(async (c) => {
-  const body = c.req.valid("json");
+// ──── Simulator Playground AI Route ──────────────────────────────────────
+aiRouter.openapi(simPlaygroundRoute, createTypedHandler<typeof simPlaygroundRoute>(async (c, { body }) => {
   const { messages, systemPrompt: customSystemPrompt } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -363,9 +362,8 @@ Provide helpful, technical advice. Be concise.`;
   });
 }));
 
-// ── Documentation Editor Chat Route ────────────────────────────────────────
-aiRouter.openapi(editorChatRoute, typedHandler<typeof editorChatRoute>(async (c) => {
-  const body = c.req.valid("json");
+// ──── Documentation Editor Chat Route ───────────────────────────────────
+aiRouter.openapi(editorChatRoute, createTypedHandler<typeof editorChatRoute>(async (c, { body }) => {
   const { messages, systemPrompt: customSystemPrompt, editorContent } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -470,9 +468,9 @@ Be technical, helpful, and follow FIRST Core Values.`;
   });
 }));
 
-// ── RAG Chatbot Endpoint ──────────────────────────────────────────────────
-aiRouter.openapi(ragChatbotRoute, async (c) => {
-  const { query, turnstileToken, sessionId } = c.req.valid("json");
+// ──── RAG Chatbot Endpoint ───────────────────────────────────────────────
+aiRouter.openapi(ragChatbotRoute, createTypedHandler<typeof ragChatbotRoute>(async (c, { body }) => {
+  const { query, turnstileToken, sessionId } = body;
 
   if (!query || !turnstileToken) {
     throw new ApiError("Missing required fields", 400);
@@ -728,7 +726,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
         }
       }
 
-      // ── Fallback: Cloudflare Workers AI (Llama 3.1) ──
+      // ──── Fallback: Cloudflare Workers AI (Llama 3.1) ────
       if (!c.env.AI) {
         const errDetails = lastZaiError || "Z.AI service unavailable";
         await stream.writeSSE({ data: JSON.stringify({ chunk: `\n[Z.AI Error: ${errDetails}]` }) });
@@ -737,7 +735,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
 
       console.log("[RAG] Falling back to Workers AI (Llama 3.1) — Z_AI_API_KEY:", hasZai ? "present but z.ai failed" : "NOT SET");
       await stream.writeSSE({ data: JSON.stringify({ model: "llama-3.1-8b" }) });
-      
+
       const cleanMessages = (messages as ChatMessage[]).map((m: ChatMessage) => ({
         role: m.role,
         content: typeof m.content === "string" ? truncateForFallback(m.content) : ""
@@ -789,7 +787,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
       await stream.writeSSE({ data: JSON.stringify({ chunk: "\n[AI processing error. Please try again.]" }) });
     }
   });
-});
+}));
 
 // Helper to persist chat session history
 async function saveHistory(db: DrizzleDB, sessionId: string | undefined, historyMessages: ChatMessage[], query: string, response: string) {
@@ -816,9 +814,9 @@ async function saveHistory(db: DrizzleDB, sessionId: string | undefined, history
   }
 }
 
-// ── Manual Reindexing ──────────────────────────────────────────────────────
-aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) => {
-  const { context } = c.req.valid("json");
+// ──── Manual Reindexing ───────────────────────────────────────────────────
+aiRouter.openapi(aiSuggestRoute, createTypedHandler<typeof aiSuggestRoute>(async (c, { body }) => {
+  const { context } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
   if (!hasZai && !c.env.AI) {
@@ -858,10 +856,11 @@ aiRouter.openapi(aiSuggestRoute, typedHandler<typeof aiSuggestRoute>(async (c) =
     }
 
     return c.json({ suggestion: "" }, 200);
-}));
+  })
+);
 
-aiRouter.openapi(reindexRoute, typedHandler<typeof reindexRoute>(async (c) => {
-  const { force } = c.req.valid("json");
+aiRouter.openapi(reindexRoute, createTypedHandler<typeof reindexRoute>(async (c, { body }) => {
+  const { force } = body;
   const db = getDb(c);
 
   if (!c.env.AI || !c.env.VECTORIZE_DB) {
@@ -874,8 +873,8 @@ aiRouter.openapi(reindexRoute, typedHandler<typeof reindexRoute>(async (c) => {
   return c.json(result);
 }));
 
-aiRouter.openapi(reindexExternalRoute, typedHandler<typeof reindexExternalRoute>(async (c) => {
-  const { sourceId } = c.req.valid("json");
+aiRouter.openapi(reindexExternalRoute, createTypedHandler<typeof reindexExternalRoute>(async (c, { body }) => {
+  const { sourceId } = body;
   const db = getDb(c);
 
   if (!c.env.VECTORIZE_DB) {
@@ -895,7 +894,7 @@ aiRouter.openapi(reindexExternalRoute, typedHandler<typeof reindexExternalRoute>
   return c.json(result);
 }));
 
-// ── Knowledge Sources Management ───────────────────────────────────────────
+// ──── Knowledge Sources Management ────────────────────────────────────────
 aiRouter.get("/external-sources", ensureAdmin, async (c) => {
   const db = getDb(c);
   const sources = await db.select().from(schema.externalKnowledgeSources);
@@ -944,7 +943,7 @@ aiRouter.get("/chat-session/:id", async (c) => {
     .from(schema.chatSessions)
     .where(eq(schema.chatSessions.id, id))
     .limit(1);
-  
+
   if (!session) throw new ApiError("Not found", 404);
   return c.json(session);
 });

@@ -11,7 +11,7 @@ import {
 import { AppEnv, ensureAdmin, getSessionUser, checkPersistentRateLimit, logAuditAction, getDb, getDbSettings } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { typedHandler } from "../../utils/handler";
+import { createTypedHandler } from "../../utils/handler-native";
 
 import type { R2Bucket, R2Object, R2ListOptions } from "@cloudflare/workers-types";
 
@@ -130,8 +130,8 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
   return { objects };
 }
 
-// Register OpenAPI routes with typedHandler
-mediaRouter.openapi(getMediaRoute, typedHandler<typeof getMediaRoute>(async (c) => {
+// Register OpenAPI routes with createTypedHandler
+mediaRouter.openapi(getMediaRoute, createTypedHandler<typeof getMediaRoute>(async (c) => {
   const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
   const ua = c.req.header("user-agent") || "unknown";
   const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
@@ -190,9 +190,10 @@ mediaRouter.openapi(getMediaRoute, typedHandler<typeof getMediaRoute>(async (c) 
     }
 
     return response;
-}));
+  })
+);
 
-mediaRouter.openapi(getAdminMediaRoute, typedHandler<typeof getAdminMediaRoute>(async (c) => {
+mediaRouter.openapi(getAdminMediaRoute, createTypedHandler<typeof getAdminMediaRoute>(async (c) => {
     const db = getDb(c);
     const [objects, results] = await Promise.all([
       listAllObjects(c.env.ARES_STORAGE),
@@ -221,9 +222,10 @@ mediaRouter.openapi(getAdminMediaRoute, typedHandler<typeof getAdminMediaRoute>(
     }));
 
     return c.json({ media }, 200);
-}));
+  })
+);
 
-mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(async (c) => {
+mediaRouter.openapi(uploadMediaRoute, createTypedHandler<typeof uploadMediaRoute>(async (c) => {
     const formData = await c.req.parseBody();
     const file = formData["file"] as File | undefined;
     const folder = formData["folder"] as string | undefined;
@@ -305,11 +307,12 @@ mediaRouter.openapi(uploadMediaRoute, typedHandler<typeof uploadMediaRoute>(asyn
     }
 
     return c.json({ success: true, key, url: `/api/media/${key}`, altText }, 200);
-}));
+  })
+);
 
-mediaRouter.openapi(moveMediaRoute, typedHandler<typeof moveMediaRoute>(async (c) => {
-  const { key } = c.req.valid("param");
-  const { folder } = c.req.valid("json");
+mediaRouter.openapi(moveMediaRoute, createTypedHandler<typeof moveMediaRoute>(async (c, { params, body }) => {
+  const { key } = params;
+  const { folder } = body;
 
     const fileName = key.split("/").pop();
     if (!fileName) {
@@ -342,10 +345,11 @@ mediaRouter.openapi(moveMediaRoute, typedHandler<typeof moveMediaRoute>(async (c
     }
 
     return c.json({ success: true, newKey }, 200);
-}));
+  })
+);
 
-mediaRouter.openapi(deleteMediaRoute, typedHandler<typeof deleteMediaRoute>(async (c) => {
-  const { key } = c.req.valid("param");
+mediaRouter.openapi(deleteMediaRoute, createTypedHandler<typeof deleteMediaRoute>(async (c, { params }) => {
+  const { key } = params;
 
     if (c.env.ARES_STORAGE) {
       await c.env.ARES_STORAGE.delete(key);
@@ -356,10 +360,11 @@ mediaRouter.openapi(deleteMediaRoute, typedHandler<typeof deleteMediaRoute>(asyn
       c.executionCtx.waitUntil(logAuditAction(c, "media_delete", "media", key));
     }
     return c.json({ success: true }, 200);
-}));
+  })
+);
 
-mediaRouter.openapi(syndicateMediaRoute, typedHandler<typeof syndicateMediaRoute>(async (c) => {
-  const { key, caption } = c.req.valid("json");
+mediaRouter.openapi(syndicateMediaRoute, createTypedHandler<typeof syndicateMediaRoute>(async (c, { body }) => {
+  const { key, caption } = body;
 
     const config = await getDbSettings(c);
     const baseUrl = new URL(c.req.url).origin;
@@ -371,7 +376,8 @@ mediaRouter.openapi(syndicateMediaRoute, typedHandler<typeof syndicateMediaRoute
     }
 
     return c.json({ success: true, message: "Dispatched" }, 200);
-}));
+  })
+);
 
 // GET /media/:key - Serve raw object from R2 (This is NOT an OpenAPI route because it returns binary/raw data)
 mediaRouter.get("/:key{.+$}", async (c) => {
