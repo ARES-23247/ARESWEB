@@ -64,11 +64,14 @@ test.describe('Profile Editor Dashboard', () => {
     const saveButton = page.getByRole('button', { name: /Save Profile/i });
     await saveButton.click();
 
-    // Wait for mutation to complete
-    await page.waitForTimeout(500);
+    // Wait for save button to show loading state
+    await expect(page.getByRole('button', { name: /Saving.../i })).toBeVisible({ timeout: 5000 });
+
+    // Wait for the save operation to complete (button returns to "Save Profile" state)
+    await expect(page.getByRole('button', { name: /Save Profile/i })).toBeVisible({ timeout: 15000 });
 
     // Verify success message appears
-    await expect(page.getByText('Profile saved!', { exact: false })).toBeVisible();
+    await expect(page.getByText('Profile saved!', { exact: false })).toBeVisible({ timeout: 5000 });
   });
 
   test('Profile editing workflow - update role information', async ({ page }) => {
@@ -301,22 +304,22 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editor handles loading state', async ({ page }) => {
-    // The loading state appears briefly on initial navigation
-    // We need to intercept and delay the response to catch the loading spinner
-
-    // Intercept the profile API call and delay it
+    // Intercept and delay the profile API call to ensure loading state is visible
     await page.route('**/profile/me', async route => {
-      // Delay the response to allow loading state to be visible
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay the response by 1 second to ensure loading state is visible
+      await new Promise(resolve => setTimeout(resolve, 1000));
       route.continue();
     });
 
+    // Navigate to the profile page
     await page.goto('/dashboard/profile');
 
     // Verify loading spinner is visible during initial load
     // The loading indicator shows either as a spinning icon or text
-    const loadingIndicator = page.locator('svg.animate-spin, .animate-spin').first();
-    await expect(loadingIndicator).toBeVisible();
+    const loadingIndicator = page.locator('svg.animate-spin, .animate-spin').or(page.getByText(/Loading/i)).first();
+
+    // The loading state should be visible briefly before the content loads
+    await expect(loadingIndicator).toBeVisible({ timeout: 2000 });
   });
 
   test('Save button shows loading state during submission', async ({ page }) => {

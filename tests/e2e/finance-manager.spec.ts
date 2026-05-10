@@ -99,8 +99,16 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
-    // Click Add Lead button - use text-based selector
-    await page.getByText('Add Lead').click();
+    // Ensure the add form is closed first (if open from previous test, close it)
+    const cancelButton = page.getByRole('button', { name: 'Cancel' });
+    const isCancelVisible = await cancelButton.isVisible().catch(() => false);
+    if (isCancelVisible) {
+      await cancelButton.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Click Add Lead button - use role selector with exact text
+    await page.getByRole('button', { name: 'Add Lead' }).click();
 
     // Verify form container is visible
     const formContainer = page.locator('.bg-obsidian.border');
@@ -212,10 +220,9 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
-    // Verify tab buttons exist - use text-based selector for reliability
-    // The tabs are button elements but getByRole may have timing issues
-    await expect(page.getByText('Sponsorship Pipeline')).toBeVisible();
-    await expect(page.getByText('Ledger & Expenses')).toBeVisible();
+    // Verify tab buttons exist - use role selector to avoid matching the heading
+    await expect(page.getByRole('button', { name: 'Sponsorship Pipeline' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ledger & Expenses' })).toBeVisible();
   });
 
   test('should handle empty pipeline state', async ({ page }) => {
@@ -311,9 +318,17 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(500);
 
+    // Ensure the add form is closed first (if open from previous test, close it)
+    const cancelButton = page.getByRole('button', { name: 'Cancel' });
+    const isCancelVisible = await cancelButton.isVisible().catch(() => false);
+    if (isCancelVisible) {
+      await cancelButton.click();
+      await page.waitForTimeout(300);
+    }
+
     // Focus the Add Lead button and verify it's focused
     // The Add button is in the DashboardPageHeader action area
-    const addButton = page.locator('button').filter({ hasText: 'Add Lead' });
+    const addButton = page.getByRole('button', { name: 'Add Lead' });
     await addButton.focus();
     await expect(addButton).toBeFocused();
   });
