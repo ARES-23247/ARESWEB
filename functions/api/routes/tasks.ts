@@ -80,7 +80,7 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
           )
           FROM task_assignments ta
           LEFT JOIN user_profiles up ON ta.user_id = up.user_id
-          WHERE ta.task_id = tasks.id
+          WHERE ta.task_id = ${schema.tasks.id}
         )`,
       })
       .from(schema.tasks)
@@ -89,11 +89,17 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
 
     const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-    const tasks = await finalQuery
-      .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
-      .limit(limit)
-      .offset(Number(offset))
-      .all();
+    let tasks: any[];
+    try {
+      tasks = await finalQuery
+        .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
+        .limit(limit)
+        .offset(Number(offset))
+        .all();
+    } catch (e: any) {
+      console.error("SQL ERROR EXACT:", e.message, e.cause);
+      throw e;
+    }
 
     const formattedTasks = tasks.map((t) => {
       interface Assignee {
