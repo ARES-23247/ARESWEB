@@ -221,27 +221,22 @@ test.describe('Blog Editor Dashboard Route', () => {
       // Try to load non-existent post
       await page.goto('/dashboard/blog/non-existent-post');
 
-      // Wait for page to load (either loads successfully or shows error)
+      // Wait for page to stabilize
       await page.waitForLoadState('domcontentloaded').catch(() => {});
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(2000);
 
-      // Check for any indicator that the page loaded - use multiple fallbacks
-      const editHeading = page.getByRole('heading', { name: /Edit Entry/i });
-      const publishHeading = page.getByRole('heading', { name: /Publish Entry/i });
-      const anyButton = page.getByRole('button');
-      const anyInput = page.locator('input, textarea');
-      const errorText = page.getByText(/COMMUNICATION FAULT|error|not found/i);
+      // Check for any content on the page - the app should handle missing posts gracefully
+      // by either showing an error message, redirecting, or showing a blank form
+      const hasEditHeading = await page.getByRole('heading', { name: /Edit Entry/i }).isVisible().catch(() => false);
+      const hasPublishHeading = await page.getByRole('heading', { name: /Publish Entry/i }).isVisible().catch(() => false);
+      const hasErrorText = await page.getByText(/COMMUNICATION FAULT|error|not found/i, { exact: false }).isVisible().catch(() => false);
+      const hasButton = await page.getByRole('button').first().isVisible().catch(() => false);
+      const hasInput = await page.locator('input, textarea').first().isVisible().catch(() => false);
 
-      // At least something should render on the page
-      const hasAnyContent = await Promise.any([
-        editHeading.isVisible().catch(() => false),
-        publishHeading.isVisible().catch(() => false),
-        anyButton.first().isVisible().catch(() => false),
-        anyInput.first().isVisible().catch(() => false),
-        errorText.isVisible().catch(() => false),
-      ]).catch(() => false);
+      // At least one of these indicators should be present
+      const hasAnyContent = hasEditHeading || hasPublishHeading || hasErrorText || hasButton || hasInput;
 
-      // Page should either show an editor or some kind of content/error
+      // Page should render something - even if it's an error state
       expect(hasAnyContent).toBe(true);
     });
 
