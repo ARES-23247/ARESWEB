@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  ChevronDown, Edit3, GripVertical, Trash2
+  ChevronDown, Edit3, GripVertical, Trash2, ListTodo, Paperclip
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -93,6 +93,36 @@ export function SortableTaskCard({
           )}
         </div>
       </div>
+      
+      {/* Labels */}
+      {task.labels && task.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {task.labels.map(l => (
+            <span key={l.id} className={`px-1 py-0.5 text-[8px] font-black uppercase border ares-cut-sm ${l.colorTheme || "border-white/10 bg-white/5 text-white"}`}>
+              {l.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Attachments & Checklists */}
+      {(task.checklists?.length || task.attachments?.length || false) ? (
+        <div className="flex items-center gap-2 mb-1.5 text-[10px] text-ares-gray font-bold">
+          {task.checklists && task.checklists.length > 0 && (
+            <span className={`flex items-center gap-1 ${task.checklists.every(c => c.isCompleted === 1) ? 'text-ares-cyan' : ''}`}>
+              <ListTodo size={10} /> 
+              {task.checklists.filter(c => c.isCompleted === 1).length}/{task.checklists.length}
+            </span>
+          )}
+          {task.attachments && task.attachments.length > 0 && (
+            <span className="flex items-center gap-1">
+              <Paperclip size={10} />
+              {task.attachments.length}
+            </span>
+          )}
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 flex-wrap">
           {task.priority !== "normal" && (

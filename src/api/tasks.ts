@@ -27,6 +27,9 @@ export interface CreateTaskRequest {
   parentId?: string | null;
   timeSpentSeconds?: number;
   assignedTo?: string | null;
+  startDate?: string | null;
+  estimatedMinutes?: number | null;
+  coverImage?: string | null;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {

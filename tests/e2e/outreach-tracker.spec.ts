@@ -52,10 +52,14 @@ test.describe('Outreach Tracker Dashboard', () => {
     const submitButton = page.getByRole('button', { name: /Finalize/i });
     await submitButton.click();
 
-    // Verify success toast/notification
-    await expect(page.getByText(/synchronized/i)).toBeVisible({
+    // Verify success toast/notification using sonner toast selector
+    const toastSelector = page.locator('[data-sonner-toast]').first();
+    await expect(toastSelector).toBeVisible({
       timeout: TEST_TIMEOUTS.DEFAULT,
     });
+
+    // Verify the toast contains "synchronized" text
+    await expect(page.getByText(/synchronized/i)).toBeVisible();
 
     // Verify form is closed after successful submission
     await expect(page.getByLabel(/Event Title/i)).not.toBeVisible();
@@ -65,18 +69,19 @@ test.describe('Outreach Tracker Dashboard', () => {
     await page.goto('/dashboard/outreach');
 
     // Click "Log Outreach" button
-    await page.getByRole('button', { name: /Log Outreach/i }).click();
+    const logOutreachButton = page.getByRole('button', { name: /Log Outreach/i });
+    await logOutreachButton.click();
 
-    // Toggle mentoring checkbox
-    const mentoringLabel = page.getByText(/Mentoring/i).first();
+    // Toggle mentoring checkbox - use the visible label
+    const mentoringLabel = page.getByText(/Mentoring Session/i).or(page.getByText(/Mentoring/i)).first();
     await mentoringLabel.click();
 
-    // Mentored team number input should appear
-    await expect(page.getByPlaceholder(/e\.g\. 23247/i)).toBeVisible();
+    // Mentored team number input should appear - match actual placeholder "e.g. 23247"
+    await expect(page.getByPlaceholder(/23247/i)).toBeVisible();
 
     // Fill mentoring-specific fields
     await page.getByLabel(/Event Title/i).fill(`FTC Team Mentoring Session ${Date.now()}`);
-    await page.getByPlaceholder(/e\.g\. 23247/i).fill('12345');
+    await page.getByPlaceholder(/23247/i).fill('12345');
     await page.getByLabel(/Date/i).fill('2025-04-15');
     await page.getByLabel(/Hours Logged/i).fill('2');
     await page.getByLabel(/Reach Count/i).fill('10');

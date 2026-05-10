@@ -79,6 +79,24 @@ vi.mock("../../api", () => ({
       tasks: [],
     },
   }),
+  useCreateTaskChecklist: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useUpdateTaskChecklist: () => ({
+    mutate: vi.fn(),
+  }),
+  useDeleteTaskChecklist: () => ({
+    mutate: vi.fn(),
+  }),
+  useCreateTaskAttachment: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useDeleteTaskAttachment: () => ({
+    mutate: vi.fn(),
+  }),
+  useSetTaskLabels: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({ success: true }),
+  }),
 }));
 
 vi.mock("../editor/CollaborativeEditorRoom", () => ({
