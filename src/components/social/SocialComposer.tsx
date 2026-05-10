@@ -155,7 +155,7 @@ export default function SocialComposer({
           <button
             onClick={onClose}
             className="p-2 text-marble/60 hover:text-white hover:bg-white/10 ares-cut-sm transition-all"
-            aria-label="Close composer"
+            aria-label="Close"
           >
             <X size={20} />
           </button>
