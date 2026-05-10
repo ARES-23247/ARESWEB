@@ -81,6 +81,7 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           className="absolute top-4 right-4 text-marble/50 hover:text-white transition-colors"
         >
           <X size={20} />
