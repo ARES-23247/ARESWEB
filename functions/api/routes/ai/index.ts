@@ -1,6 +1,6 @@
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { AppEnv, ensureAdmin, ensureAuth, verifyTurnstile, getDb } from "../../middleware";
+import { AppEnv, ensureAdmin, ensureAuth, verifyTurnstile, getDb, persistentRateLimitMiddleware } from "../../middleware";
 import type { DrizzleDB } from "../../middleware/utils";
 import { streamSSE } from "hono/streaming";
 import { MessageContent, ZaiChatResponse, ChatMessage } from "./types";
@@ -35,6 +35,17 @@ aiRouter.use("/suggest", ensureAuth);
 aiRouter.use("/reindex", ensureAdmin);
 aiRouter.use("/reindex-external", ensureAdmin);
 aiRouter.use("/chat-session/:id", ensureAuth);
+
+// W3A-SEC-04: Apply rate limiting to AI endpoints to prevent abuse
+// AI endpoints can be expensive and should be rate limited
+// 10 requests per minute for copilot, editor-chat, and sim-playground
+aiRouter.use("/copilot", persistentRateLimitMiddleware(10, 60));
+aiRouter.use("/sim-playground", persistentRateLimitMiddleware(10, 60));
+aiRouter.use("/editor-chat", persistentRateLimitMiddleware(10, 60));
+// More restrictive for RAG chatbot (5 requests per minute)
+aiRouter.use("/rag-chatbot", persistentRateLimitMiddleware(5, 60));
+// 20 requests per minute for suggestions
+aiRouter.use("/suggest", persistentRateLimitMiddleware(20, 60));
 
 // PII Scrubber Utility
 const scrubPII = (text: string): string => {

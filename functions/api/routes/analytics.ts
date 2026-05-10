@@ -412,8 +412,11 @@ analyticsRouter.openapi(
     // W3A-SEC-01: Use proper FTS5 query sanitization to prevent SQL injection
     // Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
     const sanitizeFtsQuery = (query: string): string => {
+      // Remove all characters except alphanumeric, spaces, hyphens, and periods
       const cleanQ = (query || "").replace(/[^\w\s\-.]/g, "").trim();
       if (!cleanQ) return "";
+      // Escape double quotes by doubling them (FTS5 escaping)
+      // Use prefix search with * for better UX
       return `"${cleanQ.replace(/"/g, '""')}*`;
     };
     const ftsQ = sanitizeFtsQuery(String(q || ""));
