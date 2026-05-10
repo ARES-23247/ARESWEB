@@ -290,7 +290,8 @@ test.describe('Store Page - Interactive Features', () => {
     await expect(cartDrawer).toBeVisible({ timeout: 5000 });
 
     // Also verify the "Your Cart" heading is visible
-    await expect(page.getByText('Your Cart')).toBeVisible();
+    // Use getByRole to avoid matching "Your cart" in empty state message
+    await expect(page.getByRole('heading', { name: 'Your Cart' })).toBeVisible();
 
     // Verify the close backdrop button is present (z-40)
     const backdrop = page.locator('.fixed.inset-0.z-40');

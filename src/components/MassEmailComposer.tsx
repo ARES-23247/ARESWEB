@@ -41,7 +41,13 @@ export default function MassEmailComposer() {
       toast.error("Please enter email content.");
       return;
     }
-    
+
+    // Check if there are active users to send to
+    if (!statsRes?.activeUsers || statsRes.activeUsers === 0) {
+      toast.error("No active recipients found. There are no registered website users to send emails to.");
+      return;
+    }
+
     if (confirm("Are you sure you want to send this mass email to all registered website users?")) {
       sendMutation.mutate({ subject, htmlContent });
     }
@@ -71,9 +77,9 @@ export default function MassEmailComposer() {
           
           <button
             onClick={handleSend}
-            disabled={sendMutation.isPending || !statsRes?.activeUsers || !subject}
+            disabled={sendMutation.isPending || !subject}
             className={`flex items-center gap-2 px-8 py-3 ares-cut-sm font-black tracking-widest transition-all ${
-              sendMutation.isPending || !statsRes?.activeUsers || !subject
+              sendMutation.isPending || !subject
                 ? "bg-white/5 text-marble/60 cursor-not-allowed border border-white/5"
                 : "bg-ares-red text-white hover:bg-red-700 hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(192,0,0,0.4)]"
             }`}
@@ -139,7 +145,7 @@ export default function MassEmailComposer() {
 
         <div className="flex-1 flex flex-col gap-2 min-h-[500px]">
           <label htmlFor="body-input" className="text-xs font-black text-marble/60 uppercase tracking-widest">HTML Body</label>
-          <div id="body-input" className="flex-1 bg-white/5 border border-white/10 ares-cut relative flex flex-col group focus-within:border-ares-red/50 transition-colors min-h-[500px] overflow-visible">
+          <div id="body-input" role="textbox" aria-label="HTML Body" className="flex-1 bg-white/5 border border-white/10 ares-cut relative flex flex-col group focus-within:border-ares-red/50 transition-colors min-h-[500px] overflow-visible">
              {editor && <RichEditorToolbar editor={editor} documentTitle={subject} />}
              {editor && <CopilotMenu editor={editor} />}
           </div>

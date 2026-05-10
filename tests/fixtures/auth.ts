@@ -266,6 +266,8 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     'Permissions policy violation',
     'Unauthorized: Please log in',
     'xr-spatial-tracking',
+    // Benign CSS console logging from chart/visualization libraries
+    'font-size:0;color:transparent NaN',
   ];
   return ignorePatterns.some((pattern) => text.includes(pattern));
 }

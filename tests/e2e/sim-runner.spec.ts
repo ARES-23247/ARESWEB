@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { DashboardPage } from '../pages/DashboardPage';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
+import { shouldIgnoreConsoleError } from '../fixtures/auth';
 
 /**
  * Valid simulation IDs from the sim registry.
@@ -272,17 +273,7 @@ test.describe('Sim Runner Page', () => {
       await page.waitForTimeout(1000);
 
       // Filter out benign infrastructure errors that are not sim-related
-      const filteredErrors = errors.filter(
-        (err) =>
-          !err.includes('favicon') &&
-          !err.includes('404') &&
-          !err.includes('401') &&
-          !err.includes('Content Security Policy') &&
-          !err.includes('TrustedHTML') &&
-          !err.includes('xr-spatial-tracking') &&
-          !err.includes('[Query Error]') &&
-          !err.includes('font-size:0')
-      );
+      const filteredErrors = errors.filter((err) => !shouldIgnoreConsoleError(err));
 
       expect(filteredErrors).toHaveLength(0);
     });

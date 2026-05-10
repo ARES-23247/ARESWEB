@@ -215,8 +215,8 @@ test.describe('Integrations Manager', () => {
     // Revert the change to original value
     await integrationsPage.zulipUrlInput.fill(currentValue);
 
-    // Wait for form state to update
-    await page.waitForTimeout(200);
+    // Wait for form state to update (TanStack Form debounce)
+    await page.waitForTimeout(500);
 
     // Save button should be disabled again (form is clean)
     await expect(integrationsPage.saveButton).toBeDisabled();
