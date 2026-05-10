@@ -100,7 +100,7 @@ type EventSaveBody = {
 type SignupBody = {
   bringing?: string;
   notes?: string;
-  prep_hours?: number;
+  prepHours?: number;
   attended?: boolean;
 };
 
@@ -121,19 +121,19 @@ type FtsEventResult = {
   id: string;
   title: string;
   category: string;
-  date_start: string;
-  date_end: string | null;
+  dateStart: string;
+  dateEnd: string | null;
   location: string | null;
   description: string | null;
-  cover_image: string | null;
+  coverImage: string | null;
   status: string | null;
-  is_deleted: number;
-  season_id: number | null;
-  meeting_notes: string | null;
-  tba_event_key: string | null;
-  recurring_exception: string | null;
-  is_potluck: number;
-  is_volunteer: number;
+  isDeleted: number;
+  seasonId: number | null;
+  meetingNotes: string | null;
+  tbaEventKey: string | null;
+  recurringException: string | null;
+  isPotluck: number;
+  isVolunteer: number;
 };
 
 // Type for event list results with camelCase fields (from Drizzle selects)
@@ -154,16 +154,6 @@ type EventListResult = {
   tbaEventKey: string | null;
   isPotluck: number | null;
   isVolunteer: number | null;
-  // Also include snake_case fields for fallback compatibility
-  date_start?: string;
-  date_end?: string | null;
-  cover_image?: string | null;
-  tba_event_key?: string | null;
-  season_id?: number | null;
-  is_deleted?: number | null;
-  is_potluck?: number | null;
-  is_volunteer?: number | null;
-  meeting_notes?: string | null;
 };
 
 // Type for formatted event response (snake_case for API consumers)
@@ -184,10 +174,10 @@ export const eventHandlers = {
         // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
         const cleanQ = sanitizeFtsQuery(String(q || ''));
         const results = await db.all<FtsEventResult>(sql`
-          SELECT e.id, e.title, e.category, e.date_start, e.date_end, e.location, e.description, e.cover_image, e.status, e.is_deleted, e.season_id, e.meeting_notes, e.tba_event_key, e.recurring_exception, e.is_potluck, e.is_volunteer
+          SELECT e.id, e.title, e.category, e.dateStart, e.dateEnd, e.location, e.description, e.coverImage, e.status, e.isDeleted, e.seasonId, e.meetingNotes, e.tbaEventKey, e.recurringException, e.isPotluck, e.isVolunteer
            FROM events_fts f
            JOIN events e ON f.id = e.id
-           WHERE e.is_deleted = 0 AND e.status = 'published' AND (e.published_at IS NULL OR datetime(e.published_at) <= datetime('now'))
+           WHERE e.isDeleted = 0 AND e.status = 'published' AND (e.publishedAt IS NULL OR datetime(e.publishedAt) <= datetime('now'))
            AND f.events_fts MATCH ${cleanQ}
            ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
         `);
@@ -195,9 +185,9 @@ export const eventHandlers = {
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
           category: normalizeCategory(e.category),
-          season_id: e.season_id ? Number(e.season_id) : null,
-          is_deleted: Number(e.is_deleted || 0),
-          recurring_exception: e.recurring_exception ? Number(e.recurring_exception) : null
+          seasonId: e.seasonId ? Number(e.seasonId) : null,
+          isDeleted: Number(e.isDeleted || 0),
+          recurringException: e.recurringException ? Number(e.recurringException) : null
         }));
 
         return { status: 200 as const, body: { events } };
@@ -262,18 +252,18 @@ export const eventHandlers = {
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
         // Map Drizzle camelCase back to snake_case for API consumers
-        date_start: e.dateStart ?? e.date_start ?? null,
-        date_end: e.dateEnd ?? e.date_end ?? null,
-        cover_image: e.coverImage ?? e.cover_image ?? null,
-        tba_event_key: e.tbaEventKey ?? e.tba_event_key ?? null,
-        season_id: e.seasonId ? Number(e.seasonId) : (e.season_id ? Number(e.season_id) : null),
-        is_deleted: Number(e.isDeleted ?? e.is_deleted ?? 0),
-        is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
-        is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
+        dateStart: e.dateStart ?? e.dateStart ?? null,
+        dateEnd: e.dateEnd ?? e.dateEnd ?? null,
+        coverImage: e.coverImage ?? e.coverImage ?? null,
+        tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
+        seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
+        isDeleted: Number(e.isDeleted ?? e.isDeleted ?? 0),
+        isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
+        isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
         status: e.status ?? "published",
         category: normalizeCategory(e.category),
-        meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null,
-        location_address: e.location ? (locationMap[e.location] || null) : null
+        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null,
+        locationAddress: e.location ? (locationMap[e.location] || null) : null
       }));
 
       return { status: 200 as const, body: { events } };
@@ -358,19 +348,19 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            date_start: row.dateStart as string,
+            dateStart: row.dateStart as string,
             category: normalizeCategory(row.category) ?? "internal",
-            date_end: row.dateEnd ?? null,
-            cover_image: row.coverImage ?? null,
-            tba_event_key: row.tbaEventKey ?? null,
-            season_id: row.seasonId ? Number(row.seasonId) : null,
-            is_deleted: Number(row.isDeleted || 0),
-            is_potluck: row.isPotluck ?? 0,
-            is_volunteer: row.isVolunteer ?? 0,
-            meeting_notes: (user && user.role !== "unverified") ? row.meetingNotes : null,
-            location_address: locationAddress
+            dateEnd: row.dateEnd ?? null,
+            coverImage: row.coverImage ?? null,
+            tbaEventKey: row.tbaEventKey ?? null,
+            seasonId: row.seasonId ? Number(row.seasonId) : null,
+            isDeleted: Number(row.isDeleted || 0),
+            isPotluck: row.isPotluck ?? 0,
+            isVolunteer: row.isVolunteer ?? 0,
+            meetingNotes: (user && user.role !== "unverified") ? row.meetingNotes : null,
+            locationAddress: locationAddress
           },
-          is_editor: user?.role === "admin"
+          isEditor: user?.role === "admin"
         }
       };
     } catch (e) {
@@ -438,17 +428,17 @@ export const eventHandlers = {
 
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
-        date_start: e.dateStart ?? e.date_start ?? null,
-        date_end: e.dateEnd ?? e.date_end ?? null,
-        cover_image: e.coverImage ?? e.cover_image ?? null,
-        tba_event_key: e.tbaEventKey ?? e.tba_event_key ?? null,
-        season_id: e.seasonId ? Number(e.seasonId) : (e.season_id ? Number(e.season_id) : null),
-        is_deleted: Number(e.isDeleted ?? e.is_deleted ?? 0),
-        is_potluck: e.isPotluck ?? e.is_potluck ?? 0,
-        is_volunteer: e.isVolunteer ?? e.is_volunteer ?? 0,
+        dateStart: e.dateStart ?? e.dateStart ?? null,
+        dateEnd: e.dateEnd ?? e.dateEnd ?? null,
+        coverImage: e.coverImage ?? e.coverImage ?? null,
+        tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
+        seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
+        isDeleted: Number(e.isDeleted ?? e.isDeleted ?? 0),
+        isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
+        isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
         status: e.status ?? "published",
         category: normalizeCategory(e.category),
-        meeting_notes: e.meetingNotes ?? e.meeting_notes ?? null
+        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null
       }));
 
       const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
@@ -512,17 +502,17 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            date_start: (rowData.dateStart ?? rowData.date_start ?? "") as string,
-            date_end: (rowData.dateEnd ?? rowData.date_end ?? null) as string | null,
-            cover_image: (rowData.coverImage ?? rowData.cover_image ?? null) as string | null,
-            tba_event_key: (rowData.tbaEventKey ?? rowData.tba_event_key ?? null) as string | null,
-            season_id: rowData.seasonId ? Number(rowData.seasonId) : (rowData.season_id ? Number(rowData.season_id) : null) as number | null,
-            is_deleted: Number(rowData.isDeleted ?? rowData.is_deleted ?? 0) as number,
-            is_potluck: (rowData.isPotluck ?? rowData.is_potluck ?? 0) as number,
-            is_volunteer: (rowData.isVolunteer ?? rowData.is_volunteer ?? 0) as number,
+            dateStart: (rowData.dateStart ?? rowData.dateStart ?? "") as string,
+            dateEnd: (rowData.dateEnd ?? rowData.dateEnd ?? null) as string | null,
+            coverImage: (rowData.coverImage ?? rowData.coverImage ?? null) as string | null,
+            tbaEventKey: (rowData.tbaEventKey ?? rowData.tbaEventKey ?? null) as string | null,
+            seasonId: rowData.seasonId ? Number(rowData.seasonId) : (rowData.seasonId ? Number(rowData.seasonId) : null) as number | null,
+            isDeleted: Number(rowData.isDeleted ?? rowData.isDeleted ?? 0) as number,
+            isPotluck: (rowData.isPotluck ?? rowData.isPotluck ?? 0) as number,
+            isVolunteer: (rowData.isVolunteer ?? rowData.isVolunteer ?? 0) as number,
             status: (rowData.status ?? "published") as string,
             category: normalizeCategory(rowData.category as string) ?? "internal",
-            meeting_notes: (rowData.meetingNotes ?? rowData.meeting_notes ?? null) as string | null
+            meetingNotes: (rowData.meetingNotes ?? rowData.meetingNotes ?? null) as string | null
           }
         }
       };
@@ -661,7 +651,7 @@ export const eventHandlers = {
         if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
           try {
             const gcalId = await pushEventToGcal(
-              { id: genId, title: title || "", date_start: dateStart, date_end: dateEnd || undefined, location: location || undefined, description: description || undefined, cover_image: coverImage || undefined, meeting_notes: meetingNotes || undefined, recurrence_rule: recurrenceRule || body.rrule || undefined, parent_gcal_id: parentEventId || undefined, original_start_time: originalStartTime || undefined },
+              { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: recurrenceRule || body.rrule || undefined, parentGcalId: parentEventId || undefined, originalStartTime: originalStartTime || undefined },
               { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
             );
             if (gcalId) {
@@ -678,7 +668,7 @@ export const eventHandlers = {
             });
           }
           const eventTopic = `Event: ${title}`;
-          const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
+          const eventContent = `ðŸ“… **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
           await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
             console.error("Failed to send Zulip message for new event:", err);
           });
@@ -765,7 +755,7 @@ export const eventHandlers = {
               }).from(schema.events).where(eq(schema.events.id, id)).get();
               
               const gcalId = await pushEventToGcal(
-                { id, title: title || "", date_start: dateStart, date_end: dateEnd || undefined, location: location || undefined, description: description || undefined, cover_image: coverImage || undefined, gcal_event_id: row?.gcalEventId || undefined, meeting_notes: meetingNotes || undefined },
+                { id, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, gcalEventId: row?.gcalEventId || undefined, meetingNotes: meetingNotes || undefined },
                 { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
               );
               if (gcalId && gcalId !== row?.gcalEventId) {
@@ -869,7 +859,7 @@ export const eventHandlers = {
         if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
           try {
             const gcalId = await pushEventToGcal(
-              { id: targetRow.id as string, title: targetRow.title, date_start: targetRow.dateStart, date_end: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, cover_image: targetRow.coverImage || undefined, gcal_event_id: targetRow.gcalEventId || undefined, meeting_notes: targetRow.meetingNotes || undefined },
+              { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
               { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
             );
             if (gcalId && gcalId !== targetRow.gcalEventId) {
@@ -880,7 +870,7 @@ export const eventHandlers = {
 
         const baseUrl = new URL(c.req.url).origin;
         const eventTopic = `Event: ${targetRow.title}`;
-        const eventContent = `📅 **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
+        const eventContent = `ðŸ“… **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
         await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
           console.error("Failed to send Zulip message for approved event:", err);
         });
@@ -925,7 +915,7 @@ export const eventHandlers = {
         if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
           try {
             const gcalId = await pushEventToGcal(
-              { id: targetRow.id as string, title: targetRow.title, date_start: targetRow.dateStart, date_end: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, cover_image: targetRow.coverImage || undefined, gcal_event_id: targetRow.gcalEventId || undefined, meeting_notes: targetRow.meetingNotes || undefined },
+              { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
               { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
             );
             if (gcalId && gcalId !== targetRow.gcalEventId) {
@@ -1004,11 +994,11 @@ export const eventHandlers = {
             const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
               id: crypto.randomUUID(),
               title: ev.title,
-              dateStart: ev.date_start,
-              dateEnd: ev.date_end || null,
+              dateStart: ev.dateStart,
+              dateEnd: ev.dateEnd || null,
               location: ev.location,
               description: ev.description,
-              gcalEventId: ev.gcal_event_id,
+              gcalEventId: ev.gcalEventId,
               status: 'published' as const,
               category: cal.category,
             }));
@@ -1019,8 +1009,8 @@ export const eventHandlers = {
                 target: schema.events.gcalEventId,
                 set: {
                   title: sql`excluded.title`,
-                  dateStart: sql`excluded.date_start`,
-                  dateEnd: sql`excluded.date_end`,
+                  dateStart: sql`excluded.dateStart`,
+                  dateEnd: sql`excluded.dateEnd`,
                   location: sql`excluded.location`,
                   description: sql`excluded.description`,
                   category: sql`excluded.category`,
@@ -1051,19 +1041,19 @@ export const eventHandlers = {
       const user = await getSessionUser(c);
       const db = getDb(c);
       const isVerified = user && user.role !== "unverified";
-      const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.member_type || ""));
+      const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.memberType || ""));
 
       // Use query helper for event signups with user profiles
       const { eventSignups: results } = await queryHelpers.getEventSignups(db, eventId);
 
       const signups = isVerified ? results.map((rec: typeof results[number]) => ({
-        user_id: rec.userId,
+        userId: rec.userId,
         nickname: rec.profileNickname || null,
         bringing: rec.bringing || null,
         notes: (isManagement || (user && rec.userId === user.id)) ? rec.notes : null,
-        prep_hours: Number(rec.prepHours || 0),
+        prepHours: Number(rec.prepHours || 0),
         attended: Number(rec.attended || 0),
-        is_own: user ? rec.userId === user.id : false,
+        isOwn: user ? rec.userId === user.id : false,
       })) : [];
 
       const dietarySummary: Record<string, number> = {};
@@ -1078,12 +1068,12 @@ export const eventHandlers = {
 
       return { status: 200 as const, body: {
         signups,
-        dietary_summary: dietarySummary,
-        team_dietary_summary: {},
+        dietarySummary,
+        teamDietarySummary: {},
         authenticated: !!user,
         role: user?.role || null,
-        member_type: user?.member_type || null,
-        can_manage: !!isManagement
+        memberType: user?.memberType || null,
+        canManage: !!isManagement
       } };
     } catch (e) {
       console.error("[Events:Signups] Error", e);
@@ -1103,7 +1093,7 @@ export const eventHandlers = {
         userId: user.id,
         bringing: body.bringing || "",
         notes: body.notes || "",
-        prepHours: body.prep_hours || 0,
+        prepHours: body.prepHours || 0,
       });
 
       return { status: 200 as const, body: { success: true } };
@@ -1158,7 +1148,7 @@ export const eventHandlers = {
     const { params, body } = input;
     try {
       const user = await getSessionUser(c);
-      if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.member_type || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
+      if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.memberType || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
       const db = getDb(c);
 
       const existing = await db.select({ id: schema.eventSignups.id })
@@ -1217,7 +1207,7 @@ export const eventHandlers = {
       if (social.GCAL_SERVICE_ACCOUNT_EMAIL && social.GCAL_PRIVATE_KEY && calId) {
         try {
           const gcalId = await pushEventToGcal(
-            { id: event.id as string, title: event.title, date_start: event.dateStart, date_end: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, cover_image: event.coverImage || undefined, gcal_event_id: event.gcalEventId || undefined, meeting_notes: event.meetingNotes || undefined },
+            { id: event.id as string, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: event.gcalEventId || undefined, meetingNotes: event.meetingNotes || undefined },
             { email: social.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: social.GCAL_PRIVATE_KEY, calendarId: calId }
           );
           if (gcalId && gcalId !== event.gcalEventId) {
@@ -1290,12 +1280,12 @@ export const eventHandlers = {
             {
               id: event.id as string,
               title: event.title,
-              date_start: event.dateStart,
-              date_end: event.dateEnd || undefined,
+              dateStart: event.dateStart,
+              dateEnd: event.dateEnd || undefined,
               location: event.location || undefined,
               description: event.description || undefined,
-              cover_image: event.coverImage || undefined,
-              meeting_notes: event.meetingNotes || undefined,
+              coverImage: event.coverImage || undefined,
+              meetingNotes: event.meetingNotes || undefined,
             },
             {
               email: gcalEmail as string,
@@ -1319,7 +1309,7 @@ export const eventHandlers = {
         }
       }
 
-      console.log(`[Events:RepairCalendar] Complete — pushed: ${pushed}, failed: ${failed}`);
+      console.log(`[Events:RepairCalendar] Complete â€” pushed: ${pushed}, failed: ${failed}`);
       invalidateEventsCache(c);
       return { status: 200 as const, body: { success: true, pushed, failed, errors: errors.length > 0 ? errors : undefined } };
     } catch (e) {
@@ -1328,4 +1318,5 @@ export const eventHandlers = {
     }
   },
 };
+
 
