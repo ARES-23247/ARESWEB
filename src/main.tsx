@@ -29,9 +29,6 @@ if (
   throw new Error("Redirecting to aresfirst.org");
 }
 
-// Track query start times for performance monitoring
-const queryStartTimes = new Map<unknown, number>();
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -39,23 +36,8 @@ const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 60 * 24 * 7, // Keep offline data for 7 days
       retry: 1,
       refetchOnWindowFocus: false,
-      onSuccess: (_data, query) => {
-        // Performance monitoring: log slow queries (>2s)
-        const startTime = queryStartTimes.get(query.queryKey);
-        if (startTime) {
-          const duration = performance.now() - startTime;
-          if (duration > 2000) {
-            console.warn(`[Query Performance] Slow query detected: ${duration.toFixed(0)}ms`, {
-              queryKey: query.queryKey,
-            });
-          }
-          queryStartTimes.delete(query.queryKey);
-        }
-      },
     },
   },
-  // Log query lifecycle in development for debugging
-  logger: import.meta.env.DEV ? console : undefined,
   queryCache: new QueryCache({
     onError: (error, query) => {
       // Track query errors in Sentry
@@ -66,10 +48,6 @@ const queryClient = new QueryClient({
         });
       }
       console.error('[Query Error]', error.message, { queryKey: query.queryKey });
-    },
-    onFetch: (query) => {
-      // Track start time for performance monitoring
-      queryStartTimes.set(query.queryKey, performance.now());
     },
   }),
   mutationCache: new MutationCache({
@@ -96,7 +74,6 @@ const persister = createAsyncStoragePersister({
   },
 });
 
-import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import * as Sentry from "@sentry/react";
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 
@@ -131,13 +108,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <HelmetProvider>
       <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
-        <NuqsAdapter>
-          <ModalProvider>
-            <RouterProvider router={router} />
-          </ModalProvider>
-        </NuqsAdapter>
+        <ModalProvider>
+          <RouterProvider router={router} />
+        </ModalProvider>
         <ReactQueryDevtools initialIsOpen={false} position="bottom-left" />
-        <TanStackRouterDevtools initialIsOpen={false} position="bottom-right" />
+        <TanStackRouterDevtools router={router} initialIsOpen={false} position="bottom-right" />
       </PersistQueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>

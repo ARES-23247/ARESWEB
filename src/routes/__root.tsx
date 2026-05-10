@@ -2,6 +2,7 @@ import { createRootRoute, Outlet, useLocation } from '@tanstack/react-router';
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "sonner";
 import React, { Suspense } from "react";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -45,25 +46,27 @@ function RootComponent() {
   });
   
   return (
-    <ErrorBoundary>
-      <SkipLink />
-      <Toaster theme="dark" position="bottom-right" />
-      <ScrollToTop />
-      <PWAInstallPrompt />
-      <CommandPalette />
-      <MobileQuickActions />
-      <Suspense fallback={null}><GlobalRAGChatbot /></Suspense>
-      <Navbar />
-      <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
-        <AnimatePresence mode="wait">
-          <ErrorBoundary>
-            <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-ares-gold border-t-transparent" /></div>}>
-              <Outlet key={location.pathname} />
-            </Suspense>
-          </ErrorBoundary>
-        </AnimatePresence>
-      </main>
-      <Footer />
-    </ErrorBoundary>
+    <NuqsAdapter>
+      <ErrorBoundary>
+        <SkipLink />
+        <Toaster theme="dark" position="bottom-right" />
+        <ScrollToTop />
+        <PWAInstallPrompt />
+        <CommandPalette />
+        <MobileQuickActions />
+        <Suspense fallback={null}><GlobalRAGChatbot /></Suspense>
+        <Navbar />
+        <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
+          <AnimatePresence mode="wait">
+            <ErrorBoundary>
+              <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-ares-gold border-t-transparent" /></div>}>
+                <Outlet key={location.pathname} />
+              </Suspense>
+            </ErrorBoundary>
+          </AnimatePresence>
+        </main>
+        <Footer />
+      </ErrorBoundary>
+    </NuqsAdapter>
   );
 }
