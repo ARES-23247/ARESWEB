@@ -156,8 +156,8 @@ test.describe('Social Hub', () => {
     await expect(page.getByText(/Mon/i)).toBeVisible();
     await expect(page.getByText(/Tue/i)).toBeVisible();
 
-    // Verify calendar navigation is present
-    await expect(page.getByRole('button', { name: /Previous Month/i }).or(page.locator('button').filter({ hasText: /‹/ })).or(page.locator('button').filter({ has: page.locator('svg') }).first())).toBeVisible();
+    // Verify calendar navigation is present - use aria-label selector for reliability
+    await expect(page.locator('button[aria-label="Previous month"]')).toBeVisible();
 
     // Verify status legend is present - use first() to avoid strict mode violations with config docs
     await expect(page.getByText(/pending/i).first()).toBeVisible();
