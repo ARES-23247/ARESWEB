@@ -149,7 +149,7 @@ export function useUpdatePost(
   const queryClient = useQueryClient();
   return useMutation<UpdatePostResponse, Error, { slug: string; body: PostPayload }>({
     mutationFn: async ({ slug, body }) => {
-      const response = await client.posts.admin[":slug"].$post({ param: { slug }, json: body });
+      const response = await client.posts.admin[":slug"].$patch({ param: { slug }, json: body });
       return unwrapResponse<UpdatePostResponse>(response);
     },
     ...wrapOnSuccess(options, (_data, variables) => {

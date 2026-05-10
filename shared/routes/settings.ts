@@ -23,7 +23,7 @@ export const getSettingsRoute = createRoute({
 });
 
 export const updateSettingsRoute = createRoute({
-  method: "post",
+  method: "patch",
   path: "/admin/settings",
   request: {
     body: {

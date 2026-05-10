@@ -220,7 +220,7 @@ export const savePostRoute = createRoute({
 });
 
 export const updatePostRoute = createRoute({
-  method: "post",
+  method: "patch",
   path: "/admin/{slug}",
   request: {
     params: z.object({

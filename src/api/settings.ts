@@ -70,7 +70,7 @@ export function useGetPublicSettings(
 }
 
 /**
- * POST /api/settings/admin/settings - Update integration settings (admin)
+ * PATCH /api/settings/admin/settings - Update integration settings (admin)
  */
 export function useUpdateSettings(
   options?: Omit<UseMutationOptions<UpdateSettingsResponse, Error, Record<string, string>>, "mutationFn">
@@ -78,7 +78,7 @@ export function useUpdateSettings(
   const queryClient = useQueryClient();
   return useMutation<UpdateSettingsResponse, Error, Record<string, string>>({
     mutationFn: async (settings) => {
-      const response = await client.settings.admin.settings.$post({ json: settings });
+      const response = await client.settings.admin.settings.$patch({ json: settings });
       return unwrapResponse<UpdateSettingsResponse>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
