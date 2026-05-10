@@ -12,7 +12,7 @@ export default function Seasons() {
 
   return (
     <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
-      <SEO title="Team Legacy" description="A chronicle of ARES 23247's journey through FIRST Robotics. Explore our seasonal achievements, awards, and growth." />
+      <SEO title="Team Legacy" description="A chronicle of ARES 23247's journey through <em>FIRST</em>® Robotics. Explore our seasonal achievements, awards, and growth." />
       
       <section className="py-32 px-6 relative z-10 text-center bg-ares-gray-deep">
         <motion.div
