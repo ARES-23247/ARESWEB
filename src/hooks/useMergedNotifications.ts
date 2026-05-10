@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDashboardNotifications } from "./useDashboardNotifications";
 import { DashboardSession, DashboardPermissions } from "./useDashboardSession";
@@ -33,18 +33,19 @@ export function useMergedNotifications(
   });
 
   const notifications = useMemo(() => {
-    const rawNotifications = (notifRes?.body as { notifications?: { is_read: boolean; title: string; id: string; message: string; link?: string }[] })?.notifications || [];
+    const rawNotifications = (notifRes?.body as { notifications?: { isRead: boolean; is_read?: boolean; title: string; id: string; message: string; link?: string }[] })?.notifications || [];
     
     // Filter out redundant DB notifications that duplicate our synthetic sticky action items
     // and filter out read notifications so they don't persist in the notification bar
     const filteredRawNotifications = rawNotifications.filter((n) => {
-      if (n.is_read) return false;
+      const isRead = n.isRead !== undefined ? n.isRead : n.is_read;
+      if (isRead) return false;
       
       const t = n.title || "";
       return !(t.includes("Inquiry") && t.startsWith("New ")) &&
-             !(t === "ðŸ“ Pending Blog Post") &&
-             !(t === "ðŸ“ Pending Document" || t === "ðŸ“ Doc Revision Pending");
-    });
+             !t.includes("Pending Blog Post") &&
+             !t.includes("Pending Document") && !t.includes("Doc Revision Pending");
+    }).map(n => ({ ...n, is_read: false }));
 
     return [
       ...filteredRawNotifications,
