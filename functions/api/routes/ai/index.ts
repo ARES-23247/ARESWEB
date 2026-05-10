@@ -1,4 +1,3 @@
-import { createTypedHandler } from "../../utils/handler-native";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, ensureAuth, verifyTurnstile, getDb } from "../../middleware";
@@ -55,7 +54,7 @@ const truncateForFallback = (text: string, maxChars = 18000): string => {
 };
 
 // ──── AI Status Diagnostic (admin only) ───────────────────────────────────
-aiRouter.openapi(aiStatusRoute, createTypedHandler<typeof aiStatusRoute>(async (c) => {
+aiRouter.openapi(aiStatusRoute, async (c) => {
   let indexErrors = null;
   const db = getDb(c);
 
@@ -83,13 +82,14 @@ aiRouter.openapi(aiStatusRoute, createTypedHandler<typeof aiStatusRoute>(async (
     primaryModel: c.env.Z_AI_API_KEY ? "zai-5.1" : c.env.AI ? "llama-3.1-8b" : "none",
     indexErrors,
   }, 200);
-}));
+});
 
 // ──── Liveblocks AI Copilot Endpoint ───────────────────────────────────────
 // Premium: uses z.ai (Claude) if Z_AI_API_KEY is set, otherwise falls back to Workers AI (Llama 3.1)
 
 // WR-07: Add rate limiting to prevent abuse of AI endpoints
-aiRouter.openapi(liveblocksCopilotRoute, createTypedHandler<typeof liveblocksCopilotRoute>(async (c, { body }) => {
+aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
+  const body = c.req.valid("json");
   const { documentContext, action, imageUrl } = body;
 
   const hasZai = !!c.env.Z_AI_API_KEY;
@@ -255,7 +255,8 @@ aiRouter.openapi(liveblocksCopilotRoute, createTypedHandler<typeof liveblocksCop
 }));
 
 // ──── Simulator Playground AI Route ──────────────────────────────────────
-aiRouter.openapi(simPlaygroundRoute, createTypedHandler<typeof simPlaygroundRoute>(async (c, { body }) => {
+aiRouter.openapi(simPlaygroundRoute, async (c) => {
+  const body = c.req.valid("json");
   const { messages, systemPrompt: customSystemPrompt } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -363,7 +364,8 @@ Provide helpful, technical advice. Be concise.`;
 }));
 
 // ──── Documentation Editor Chat Route ───────────────────────────────────
-aiRouter.openapi(editorChatRoute, createTypedHandler<typeof editorChatRoute>(async (c, { body }) => {
+aiRouter.openapi(editorChatRoute, async (c) => {
+  const body = c.req.valid("json");
   const { messages, systemPrompt: customSystemPrompt, editorContent } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -469,7 +471,8 @@ Be technical, helpful, and follow FIRST Core Values.`;
 }));
 
 // ──── RAG Chatbot Endpoint ───────────────────────────────────────────────
-aiRouter.openapi(ragChatbotRoute, createTypedHandler<typeof ragChatbotRoute>(async (c, { body }) => {
+aiRouter.openapi(ragChatbotRoute, async (c) => {
+  const body = c.req.valid("json");
   const { query, turnstileToken, sessionId } = body;
 
   if (!query || !turnstileToken) {
@@ -815,7 +818,8 @@ async function saveHistory(db: DrizzleDB, sessionId: string | undefined, history
 }
 
 // ──── Manual Reindexing ───────────────────────────────────────────────────
-aiRouter.openapi(aiSuggestRoute, createTypedHandler<typeof aiSuggestRoute>(async (c, { body }) => {
+aiRouter.openapi(aiSuggestRoute, async (c) => {
+  const body = c.req.valid("json");
   const { context } = body;
   const hasZai = !!c.env.Z_AI_API_KEY;
 
@@ -823,43 +827,43 @@ aiRouter.openapi(aiSuggestRoute, createTypedHandler<typeof aiSuggestRoute>(async
     return c.json({ suggestion: "" }, 200);
   }
 
-    const systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
+  const systemPrompt = "You are an AI assistant for ARES 23247. Provide a short, helpful suggestion.";
 
-    if (hasZai) {
-      const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "GLM-5.1",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: context.substring(0, 5000) }
-          ],
-          max_tokens: 100
-        })
-      });
-      const data = await zaiRes.json() as ZaiChatResponse;
-      return c.json({ suggestion: (data.choices?.[0]?.message?.content || "").trim() });
-    } else if (c.env.AI) {
-      const result = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+  if (hasZai) {
+    const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${c.env.Z_AI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "GLM-5.1",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: context.substring(0, 2000) }
+          { role: "user", content: context.substring(0, 5000) }
         ],
         max_tokens: 100
-      }) as { response?: string };
+      })
+    });
+    const data = await zaiRes.json() as ZaiChatResponse;
+    return c.json({ suggestion: (data.choices?.[0]?.message?.content || "").trim() }, 200);
+  } else if (c.env.AI) {
+    const result = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: context.substring(0, 2000) }
+      ],
+      max_tokens: 100
+    }) as { response?: string };
 
-      return c.json({ suggestion: (result.response || "").trim() });
-    }
+    return c.json({ suggestion: (result.response || "").trim() }, 200);
+  }
 
-    return c.json({ suggestion: "" }, 200);
-  })
-);
+  return c.json({ suggestion: "" }, 200);
+});
 
-aiRouter.openapi(reindexRoute, createTypedHandler<typeof reindexRoute>(async (c, { body }) => {
+aiRouter.openapi(reindexRoute, async (c) => {
+  const body = c.req.valid("json");
   const { force } = body;
   const db = getDb(c);
 
@@ -869,11 +873,11 @@ aiRouter.openapi(reindexRoute, createTypedHandler<typeof reindexRoute>(async (c,
 
   const { indexSiteContent } = await import("./indexer");
   const result = await indexSiteContent(db, c.env.AI, c.env.VECTORIZE_DB, { force });
+  return c.json(result, 200);
+});
 
-  return c.json(result);
-}));
-
-aiRouter.openapi(reindexExternalRoute, createTypedHandler<typeof reindexExternalRoute>(async (c, { body }) => {
+aiRouter.openapi(reindexExternalRoute, async (c) => {
+  const body = c.req.valid("json");
   const { sourceId } = body;
   const db = getDb(c);
 
@@ -891,8 +895,8 @@ aiRouter.openapi(reindexExternalRoute, createTypedHandler<typeof reindexExternal
     sourceId
   );
 
-  return c.json(result);
-}));
+  return c.json(result, 200);
+});
 
 // ──── Knowledge Sources Management ────────────────────────────────────────
 aiRouter.get("/external-sources", ensureAdmin, async (c) => {

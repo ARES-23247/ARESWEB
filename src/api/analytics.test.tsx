@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -148,11 +148,11 @@ describe("Analytics API", () => {
 
       const { result } = renderHook(() => analyticsApi.useTrackSponsorClick(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" });
+      result.current.mutate({ sponsorId: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.analytics["sponsor-click"].$post).toHaveBeenCalledWith({
-        json: { sponsor_id: "sponsor-123" },
+        json: { sponsorId: "sponsor-123" },
       });
     });
   });
@@ -160,8 +160,8 @@ describe("Analytics API", () => {
   describe("useGetLeaderboard", () => {
     it("should fetch leaderboard successfully", async () => {
       const mockLeaderboard = [
-        { user_id: "1", nickname: "User 1", badge_count: 10 },
-        { user_id: "2", nickname: "User 2", badge_count: 8 },
+        { userId: "1", nickname: "User 1", badge_count: 10 },
+        { userId: "2", nickname: "User 2", badge_count: 8 },
       ];
       const mockResponse = { leaderboard: mockLeaderboard };
       mockClient.analytics.leaderboard.$get.mockResolvedValue({ ok: true });
@@ -218,7 +218,7 @@ describe("Analytics API", () => {
           { category: "api", total: 3000 },
         ],
         userActivity: [
-          { user_id: "1", activity_count: 100 },
+          { userId: "1", activity_count: 100 },
         ],
         resourceUsage: {
           cpu: 50,
@@ -241,9 +241,9 @@ describe("Analytics API", () => {
       const mockRosterStats = {
         roster: [
           {
-            user_id: "1",
+            userId: "1",
             nickname: "Student 1",
-            member_type: "student",
+            memberType: "student",
             impact_hours: 50,
             events_attended: 10,
           },
@@ -299,3 +299,5 @@ describe("Analytics API", () => {
     });
   });
 });
+
+

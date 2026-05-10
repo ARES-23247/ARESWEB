@@ -10,9 +10,9 @@ interface OutreachLog {
   title: string;
   date: string;
   location: string | null;
-  students_count: number;
-  hours_logged: number;
-  reach_count: number;
+  studentsCount: number;
+  hoursLogged: number;
+  reachCount: number;
   description: string | null;
 }
 
@@ -91,8 +91,8 @@ export default function Outreach() {
   const logs: OutreachLog[] = (logsRes?.logs || []) as OutreachLog[];
 
   const totals = logs.reduce((acc: { hours: number; reach: number; events: number }, l: OutreachLog) => ({
-    hours: acc.hours + (l.hours_logged || 0),
-    reach: acc.reach + (l.reach_count || 0),
+    hours: acc.hours + (l.hoursLogged || 0),
+    reach: acc.reach + (l.reachCount || 0),
     events: acc.events + 1
   }), { hours: 0, reach: 0, events: 0 });
 
@@ -210,7 +210,7 @@ export default function Outreach() {
                 <div className="flex items-center gap-4">
                   <div className="px-6 py-4 bg-ares-red text-white ares-cut-lg text-center shadow-lg shadow-ares-red/20 font-bold">
                     <div className="text-xs font-black uppercase tracking-widest mb-1 opacity-80">Impact</div>
-                    <div className="text-3xl font-black">{log.reach_count || 0}</div>
+                    <div className="text-3xl font-black">{log.reachCount || 0}</div>
                   </div>
                 </div>
               </motion.div>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AI API - RAG Chatbot, Content Generation, External Sources
  *
  * Types imported from backend route definitions in @shared/routes/ai.ts
@@ -35,7 +35,7 @@ export interface AIExternalSource {
   url: string;
   branch: string;
   status: string;
-  created_at: string;
+  createdAt: string;
   last_indexed_at?: string | null;
 }
 
@@ -234,3 +234,4 @@ export async function getChatSession(id: string): Promise<ChatSessionResponse> {
   }
   return response.json() as Promise<ChatSessionResponse>;
 }
+

@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+﻿import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
@@ -178,13 +178,13 @@ export default function DashboardSidebar({
             </button>
             <div className="flex flex-col min-w-0">
               <span className="text-white text-sm font-bold truncate tracking-tight">
-                {session?.user?.nickname || session?.user?.first_name 
-                  ? (session?.user?.nickname || `${session.user.first_name} ${session.user.last_name || ''}`.trim())
+                {session?.user?.nickname || session?.user?.firstName 
+                  ? (session?.user?.nickname || `${session.user.firstName} ${session.user.lastName || ''}`.trim())
                   : ((session?.user?.name as string) || "ARES Member")}
               </span>
               <div className="flex flex-col gap-1">
                 <span className="text-ares-gold text-xs font-black uppercase tracking-widest truncate">
-                  {role} • {memberType}
+                  {role} â€¢ {memberType}
                 </span>
                 {permissions.isUnverified && (
                   <span className="w-fit px-1.5 py-0.5 bg-ares-red text-white text-[8px] font-black rounded uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-[0_0_10px_rgba(192,0,0,0.3)]">
@@ -310,4 +310,5 @@ export default function DashboardSidebar({
     </>
   );
 }
+
 

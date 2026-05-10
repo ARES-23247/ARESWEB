@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import GenericManagerList from "./GenericManagerList";
 
 interface SeasonItem {
-  start_year: number;
-  end_year: number;
-  challenge_name: string;
-  robot_name: string | null;
-  is_deleted: number;
+  startYear: number;
+  endYear: number;
+  challengeName: string;
+  robotName: string | null;
+  isDeleted: number;
   status: string;
 }
 
@@ -52,7 +52,7 @@ export default function SeasonManagerTab({
   });
 
   const filtered: SeasonItem[] = seasons.filter((s: SeasonItem) => {
-    const isDeleted = Number(s.is_deleted) === 1;
+    const isDeleted = Number(s.isDeleted) === 1;
     if (view === 'trash') return isDeleted;
     if (view === 'pending') return !isDeleted && s.status === 'draft';
     return !isDeleted && s.status === 'published';
@@ -78,24 +78,25 @@ export default function SeasonManagerTab({
           )}
         </h3>
       }
-      getItemId={(s) => s.start_year.toString()}
-      isItemDeleted={(s) => Number(s.is_deleted) === 1}
+      getItemId={(s) => s.startYear.toString()}
+      isItemDeleted={(s) => Number(s.isDeleted) === 1}
       getItemStatus={(s) => s.status}
-      renderTitle={(s) => `${s.challenge_name} ${s.start_year}-${s.end_year}`}
+      renderTitle={(s) => `${s.challengeName} ${s.startYear}-${s.endYear}`}
       renderSubtitle={(s) => (
         <span className="text-xs text-marble/60 bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm uppercase tracking-widest">
-          {s.robot_name || 'No Robot Assigned'}
+          {s.robotName || 'No Robot Assigned'}
         </span>
       )}
-      onEdit={onEdit ? (s) => onEdit(s.start_year.toString()) : undefined}
-      onDelete={(s) => deleteMutation.mutate(s.start_year.toString())}
-      isDeletePending={(s) => deleteMutation.isPending && deleteMutation.variables === s.start_year.toString()}
-      onRestore={(s) => restoreMutation.mutate(s.start_year.toString())}
-      isRestorePending={(s) => restoreMutation.isPending && restoreMutation.variables === s.start_year.toString()}
-      onPurge={(s) => purgeMutation.mutate(s.start_year.toString())}
-      isPurgePending={(s) => purgeMutation.isPending && purgeMutation.variables === s.start_year.toString()}
+      onEdit={onEdit ? (s) => onEdit(s.startYear.toString()) : undefined}
+      onDelete={(s) => deleteMutation.mutate(s.startYear.toString())}
+      isDeletePending={(s) => deleteMutation.isPending && deleteMutation.variables === s.startYear.toString()}
+      onRestore={(s) => restoreMutation.mutate(s.startYear.toString())}
+      isRestorePending={(s) => restoreMutation.isPending && restoreMutation.variables === s.startYear.toString()}
+      onPurge={(s) => purgeMutation.mutate(s.startYear.toString())}
+      isPurgePending={(s) => purgeMutation.isPending && purgeMutation.variables === s.startYear.toString()}
       confirmId={confirmId}
       setConfirmId={setConfirmId}
     />
   );
 }
+

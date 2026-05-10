@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared test type definitions for type-safe mocking.
  *
  * Provides typed interfaces for common test mocks:
@@ -12,7 +12,7 @@
 
 import type { vi, Mock } from "vitest";
 
-// ── MockDrizzle ────────────────────────────────────────────────────────────────
+// â”€â”€ MockDrizzle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Partial Drizzle ORM interface for database mocks.
  *
@@ -66,13 +66,13 @@ export type MockDrizzle = {
   [key: string]: unknown;
 };
 
-// ── DrizzleMock (alias for consistency) ─────────────────────────────────────────
+// â”€â”€ DrizzleMock (alias for consistency) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Alias for MockDrizzle for consistent naming across test files.
  */
 export type DrizzleMock = MockDrizzle;
 
-// ── TestEnv ───────────────────────────────────────────────────────────────────
+// â”€â”€ TestEnv â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Hono environment binding for tests.
  *
@@ -89,7 +89,7 @@ export type TestEnv = {
       nickname?: string | null;
       image?: string | null;
       role: string;
-      member_type: string;
+      memberType: string;
     } | Record<string, unknown>;
     socialConfig?: Record<string, string | undefined>;
     requestId?: string;
@@ -102,7 +102,7 @@ export type TestEnv = {
   };
 };
 
-// ── MockExecutionContext ───────────────────────────────────────────────────────
+// â”€â”€ MockExecutionContext â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Cloudflare Workers ExecutionContext mock.
  */
@@ -111,3 +111,4 @@ export interface MockExecutionContext extends ExecutionContext {
   passThroughOnException: Mock<() => void>;
   props: Record<string, unknown>;
 }
+

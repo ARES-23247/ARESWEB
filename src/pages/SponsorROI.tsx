@@ -58,8 +58,8 @@ export default function SponsorROI() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row items-center md:items-end justify-between gap-8 mb-16">
           <div className="flex items-center gap-6">
             <div className="w-24 h-24 bg-white/5 border border-white/10 p-4 ares-cut flex items-center justify-center shrink-0 shadow-2xl backdrop-blur-sm">
-              {sponsor.logo_url ? (
-                <img src={sponsor.logo_url} alt={sponsor.name} className="max-w-full max-h-full object-contain filter grayscale" />
+              {sponsor.logoUrl ? (
+                <img src={sponsor.logoUrl} alt={sponsor.name} className="max-w-full max-h-full object-contain filter grayscale" />
               ) : (
                 <Trophy size={40} className="text-ares-gray" />
               )}
@@ -141,10 +141,10 @@ export default function SponsorROI() {
                     const actualImpressions = impressions + 1200; // Simulated baseline for design 
                     const rate = ((clicks / actualImpressions) * 100).toFixed(1);
                     return (
-                      <tr key={m.year_month} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <tr key={m.yearMonth} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="py-4 text-ares-gray flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-ares-red/80"></div>
-                          {m.year_month}
+                          {m.yearMonth}
                         </td>
                         <td className="py-4 text-right text-ares-gray">{actualImpressions.toLocaleString()}</td>
                         <td className="py-4 text-right text-white font-bold">{(m.clicks || 0).toLocaleString()}</td>

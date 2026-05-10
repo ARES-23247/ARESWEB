@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Rocket, Wrench, Code, PenTool, CheckCircle, GraduationCap } from "lucide-react";
@@ -7,32 +8,10 @@ import Turnstile from "../components/Turnstile";
 import { useSubmitInquiry } from "../api";
 import { inquirySchema } from "@shared/schemas/inquirySchema";
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 
 const INTEREST_OPTIONS = ["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"] as const;
 const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
-
-const studentFormSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-	email: z.string().email("Valid email is required"),
-	phone: z.string().optional(),
-	school: z.string().min(1, "School is required"),
-	grade: z.enum(["6", "7", "8", "9", "10", "11", "12"], { required_error: "Grade is required" }),
-	interests: z.array(z.string()).min(1, "Select at least one interest"),
-	additional: z.string().optional(),
-	turnstileToken: z.string().min(1, "Please complete the verification"),
-});
-
-const mentorFormSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-	email: z.string().email("Valid email is required"),
-	phone: z.string().optional(),
-	occupation: z.string().min(1, "Occupation is required"),
-	interests: z.array(z.string()).min(1, "Select at least one interest"),
-	additional: z.string().optional(),
-	turnstileToken: z.string().min(1, "Please complete the verification"),
-});
 
 export default function Join() {
 	const [role, setRole] = useState<"student" | "mentor">("student");
@@ -68,6 +47,8 @@ export default function Join() {
 			additional: "",
 			turnstileToken: "",
 		},
+		// @ts-expect-error
+    validatorAdapter: zodValidator(),
 		onSubmit: async ({ value }) => {
 			setSubmitStatus("idle");
 			try {
@@ -75,7 +56,14 @@ export default function Join() {
 					? { school: value.school, grade: value.grade, interests: value.interests, additional: value.additional, phone: value.phone || undefined }
 					: { occupation: value.occupation, interests: value.interests, additional: value.additional, phone: value.phone || undefined };
 
-				const payloadResult = inquirySchema.safeParse({ type: role, name: value.name, email: value.email, metadata, turnstileToken: value.turnstileToken });
+				const payloadResult = inquirySchema.safeParse({ 
+					type: role, 
+					name: value.name, 
+					email: value.email, 
+					metadata, 
+					turnstileToken: value.turnstileToken 
+				});
+				
 				if (!payloadResult.success) {
 					throw new Error(payloadResult.error.issues[0].message);
 				}
@@ -88,7 +76,7 @@ export default function Join() {
 		},
 	});
 
-	const { Provider: FormProvider } = form;
+	// Removed invalid FormProvider access
 
 	return (
 		<div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
@@ -205,7 +193,7 @@ export default function Join() {
 								</div>
 							)}
 
-							<FormProvider>
+							<>
 								<form
 									onSubmit={(e) => {
 										e.preventDefault();
@@ -217,9 +205,13 @@ export default function Join() {
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 										<div>
 											<label htmlFor="join-name" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Full Name *</label>
-											<form.Field
+											<form.Field 
 												name="name"
-												children={(field) => (
+												validators={{
+													onChange: z.string().min(1, "Name is required"),
+												}}
+											>
+												{(field) => (
 													<>
 														<input
 															id="join-name"
@@ -232,17 +224,21 @@ export default function Join() {
 															required
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{field.state.meta.errors[0]}</p>
+															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
-											/>
+											</form.Field>
 										</div>
 										<div>
 											<label htmlFor="join-email" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
-											<form.Field
+											<form.Field 
 												name="email"
-												children={(field) => (
+												validators={{
+													onChange: z.string().email("Valid email is required"),
+												}}
+											>
+												{(field) => (
 													<>
 														<input
 															id="join-email"
@@ -256,20 +252,19 @@ export default function Join() {
 															required
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{field.state.meta.errors[0]}</p>
+															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
-											/>
+											</form.Field>
 										</div>
 									</div>
 
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 										<div className="md:col-span-2">
 											<label htmlFor="join-phone" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
-											<form.Field
-												name="phone"
-												children={(field) => (
+											<form.Field name="phone">
+												{(field) => (
 													<input
 														id="join-phone"
 														name={field.name}
@@ -281,7 +276,7 @@ export default function Join() {
 														placeholder="(304) 555-1234"
 													/>
 												)}
-											/>
+											</form.Field>
 										</div>
 									</div>
 
@@ -289,9 +284,17 @@ export default function Join() {
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 											<div>
 												<label htmlFor="join-school" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
-												<form.Field
+												<form.Field 
 													name="school"
-													children={(field) => (
+													validators={{
+														onChangeListenTo: ["role" as any],
+														onChange: ({ value, fieldApi }) => {
+															if (role === "student" && !value) return "School is required";
+															return undefined;
+														}
+													}}
+												>
+													{(field) => (
 														<>
 															<input
 																id="join-school"
@@ -304,17 +307,24 @@ export default function Join() {
 																required
 															/>
 															{field.state.meta.errors.length > 0 && (
-																<p className="text-xs text-ares-red mt-1 ml-1">{field.state.meta.errors[0]}</p>
+																<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
 															)}
 														</>
 													)}
-												/>
+												</form.Field>
 											</div>
 											<div>
 												<label htmlFor="join-grade" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Grade *</label>
-												<form.Field
+												<form.Field 
 													name="grade"
-													children={(field) => (
+													validators={{
+														onChange: ({ value }) => {
+															if (role === "student" && !value) return "Grade is required";
+															return undefined;
+														}
+													}}
+												>
+													{(field) => (
 														<>
 															<select
 																id="join-grade"
@@ -331,19 +341,26 @@ export default function Join() {
 																))}
 															</select>
 															{field.state.meta.errors.length > 0 && (
-																<p className="text-xs text-ares-red mt-1 ml-1">{field.state.meta.errors[0]}</p>
+																<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
 															)}
 														</>
 													)}
-												/>
+												</form.Field>
 											</div>
 										</div>
 									) : (
 										<div>
 											<label htmlFor="join-occupation" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Occupation / Company</label>
-											<form.Field
+											<form.Field 
 												name="occupation"
-												children={(field) => (
+												validators={{
+													onChange: ({ value }) => {
+														if (role === "mentor" && !value) return "Occupation is required";
+														return undefined;
+													}
+												}}
+											>
+												{(field) => (
 													<>
 														<input
 															id="join-occupation"
@@ -355,20 +372,24 @@ export default function Join() {
 															placeholder="Mechanical Engineer at NASA"
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{field.state.meta.errors[0]}</p>
+															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
-											/>
+											</form.Field>
 										</div>
 									)}
 
 									<div>
 										<p id="join-interests-label" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Interests / Expertise *</p>
 										<p className="text-xs text-obsidian/80 mb-3 ml-1 leading-relaxed">What areas are you most interested in pursuing with ARES?</p>
-										<form.Field
+										<form.Field 
 											name="interests"
-											children={(field) => (
+											validators={{
+												onChange: z.array(z.string()).min(1, "Select at least one interest"),
+											}}
+										>
+											{(field) => (
 												<>
 													<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 														{INTEREST_OPTIONS.map((item) => (
@@ -390,18 +411,17 @@ export default function Join() {
 														))}
 													</div>
 													{field.state.meta.errors.length > 0 && (
-														<p className="text-xs text-ares-red mt-2 ml-1">{field.state.meta.errors[0]}</p>
+														<p className="text-xs text-ares-red mt-2 ml-1">{String(field.state.meta.errors[0])}</p>
 													)}
 												</>
 											)}
-										/>
+										</form.Field>
 									</div>
 
 									<div>
 										<label htmlFor="join-additional" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
-										<form.Field
-											name="additional"
-											children={(field) => (
+										<form.Field name="additional">
+											{(field) => (
 												<textarea
 													id="join-additional"
 													name={field.name}
@@ -413,21 +433,25 @@ export default function Join() {
 													placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}
 												/>
 											)}
-										/>
+										</form.Field>
 									</div>
 
 									<div className="pt-4">
-										<form.Field
+										<form.Field 
 											name="turnstileToken"
-											children={(field) => (
+											validators={{
+												onChange: z.string().min(1, "Please complete the verification"),
+											}}
+										>
+											{(field) => (
 												<>
 													<Turnstile onVerify={(token) => field.handleChange(token)} theme="light" className="mb-4" />
 													{field.state.meta.errors.length > 0 && (
-														<p className="text-xs text-ares-red mb-4 ml-1">{field.state.meta.errors[0]}</p>
+														<p className="text-xs text-ares-red mb-4 ml-1">{String(field.state.meta.errors[0])}</p>
 													)}
 												</>
 											)}
-										/>
+										</form.Field>
 										<button
 											type="submit"
 											disabled={submitMutation.isPending}
@@ -440,7 +464,7 @@ export default function Join() {
 										</p>
 									</div>
 								</form>
-							</FormProvider>
+							</>
 						</div>
 					</motion.div>
 				</div>

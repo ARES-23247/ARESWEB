@@ -1,7 +1,7 @@
-import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, createColumnHelper, SortingState } from '@tanstack/react-table';
+﻿import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, createColumnHelper, SortingState } from '@tanstack/react-table';
 import { MessageSquare, Zap, Edit3, Trash2, ChevronDown } from 'lucide-react';
 import { memo } from 'react';
-import { ROLES, MEMBER_TYPES } from './adminConstants';
+import { ROLES, memberTypeS } from './adminConstants';
 
 const ROLE_COLORS: Record<string, string> = {
   admin: 'border-ares-red text-ares-red',
@@ -10,7 +10,7 @@ const ROLE_COLORS: Record<string, string> = {
   unverified: 'border-white/20 text-white/60',
 };
 
-const MEMBER_TYPE_COLORS: Record<string, string> = {
+const memberType_COLORS: Record<string, string> = {
   alumni: 'border-ares-gold/50 text-ares-gold',
   student: 'border-white/20 text-white/60',
   parent: 'border-ares-gold/30 text-ares-gold/70',
@@ -26,7 +26,7 @@ interface User {
   role: string;
   createdAt: number;
   nickname?: string | null;
-  member_type?: string | null;
+  memberType?: string | null;
   email?: string | null;
 }
 
@@ -73,7 +73,7 @@ export const UserTable = memo(function UserTable({
     }),
     columnHelper.accessor('email', {
       header: 'Email',
-      cell: info => <span className="text-sm text-white/60">{info.getValue() || '—'}</span>,
+      cell: info => <span className="text-sm text-white/60">{info.getValue() || 'â€”'}</span>,
     }),
     columnHelper.accessor('role', {
       header: 'Role',
@@ -91,7 +91,7 @@ export const UserTable = memo(function UserTable({
         </div>
       ),
     }),
-    columnHelper.accessor('member_type', {
+    columnHelper.accessor('memberType', {
       header: 'Type',
       cell: info => (
         <div className="relative inline-block">
@@ -99,9 +99,9 @@ export const UserTable = memo(function UserTable({
             value={info.getValue() || 'student'}
             onChange={e => onMemberTypeChange(info.row.original.id, e.target.value)}
             title="Change member type"
-            className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${MEMBER_TYPE_COLORS[info.getValue() || 'student']}`}
+            className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${memberType_COLORS[info.getValue() || 'student']}`}
           >
-            {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
+            {memberTypeS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
         </div>
@@ -109,7 +109,7 @@ export const UserTable = memo(function UserTable({
     }),
     columnHelper.accessor('createdAt', {
       header: 'Joined',
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '—'}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : 'â€”'}</span>,
     }),
     columnHelper.display({
       id: 'actions',
@@ -205,3 +205,4 @@ export const UserTable = memo(function UserTable({
     </div>
   );
 });
+

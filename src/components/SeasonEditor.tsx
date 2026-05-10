@@ -5,7 +5,7 @@ import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
 import AssetPickerModal from "./AssetPickerModal";
-import { DEFAULT_COVER_IMAGE } from "../utils/constants";
+import { DEFAULT_coverImage } from "../utils/constants";
 import { useImageUpload } from "../hooks/useImageUpload";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
@@ -24,7 +24,7 @@ export default function SeasonEditor() {
   const [startYear, setStartYear] = useState<number>(new Date().getFullYear());
   const [challengeName, setChallengeName] = useState("");
   const [robotName, setRobotName] = useState("");
-  const [robotImageUrl, setRobotImageUrl] = useState(DEFAULT_COVER_IMAGE);
+  const [robotImageUrl, setRobotImageUrl] = useState(DEFAULT_coverImage);
   const [cadUrl, setCadUrl] = useState("");
   const [summary, setSummary] = useState("");
   const [albumUrl, setAlbumUrl] = useState("");
@@ -43,18 +43,18 @@ export default function SeasonEditor() {
       await Promise.resolve();
       if (!active) return;
       if (detailData?.season) {
-        const s = detailData.season;
-        setStartYear(s.start_year);
-        setChallengeName(s.challenge_name);
-        setRobotName(s.robot_name || "");
-        setRobotImageUrl(s.robot_image || DEFAULT_COVER_IMAGE);
-        setCadUrl(s.robot_cad_url || "");
+        const s = detailData.season as any;
+        setStartYear(s.startYear);
+        setChallengeName(s.challengeName);
+        setRobotName(s.robotName || "");
+        setRobotImageUrl(s.robotImage || DEFAULT_coverImage);
+        setCadUrl(s.robotCadUrl || "");
         setSummary(s.summary || "");
-        setAlbumUrl(s.album_url || "");
-        setAlbumCoverUrl(s.album_cover || "");
-        if (editor && s.robot_description) {
+        setAlbumUrl(s.albumUrl || "");
+        setAlbumCoverUrl(s.albumCover || "");
+        if (editor && s.robotDescription) {
           try {
-            editor.commands.setContent(JSON.parse(s.robot_description));
+            editor.commands.setContent(JSON.parse(s.robotDescription));
           } catch (e) {
             console.error("Failed to parse existing AST", e);
           }
@@ -92,17 +92,17 @@ export default function SeasonEditor() {
     const robot_description = editor ? JSON.stringify(editor.getJSON()) : null;
 
     const payload = {
-      original_year: editId ? Number(editId) : undefined,
-      start_year: Number(startYear),
-      end_year: Number(startYear) + 1,
-      challenge_name: challengeName,
-      robot_name: robotName,
-      robot_image: robotImageUrl === DEFAULT_COVER_IMAGE ? null : robotImageUrl,
-      robot_description,
-      robot_cad_url: cadUrl,
+      originalYear: editId ? Number(editId) : undefined,
+      startYear: Number(startYear),
+      endYear: Number(startYear) + 1,
+      challengeName: challengeName,
+      robotName: robotName,
+      robotImage: robotImageUrl === DEFAULT_coverImage ? null : robotImageUrl,
+      robotDescription: robot_description,
+      robotCadUrl: cadUrl,
       summary,
-      album_url: albumUrl,
-      album_cover: albumCoverUrl,
+      albumUrl: albumUrl,
+      albumCover: albumCoverUrl,
       status: (isDraft ? "draft" : "published") as "draft" | "published"
     };
 
@@ -267,5 +267,6 @@ export default function SeasonEditor() {
     </div>
   );
 }
+
 
 

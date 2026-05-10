@@ -71,7 +71,7 @@ export default function Sponsors() {
   const trackSponsorClickMutation = useTrackSponsorClick();
 
   const trackSponsorClick = (sponsorId: string) => {
-    trackSponsorClickMutation.mutate({ sponsor_id: sponsorId });
+    trackSponsorClickMutation.mutate({ sponsorId });
   };
 
   const submitMutation = useSubmitInquiry({
@@ -157,11 +157,11 @@ export default function Sponsors() {
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                  {grouped[tier].map((s: { id: string; name: string; logo_url: string | null; website_url: string | null; }) => (
+                  {grouped[tier].map((s: any) => (
                     <motion.a
                       key={s.id}
-                      href={s.website_url || "#"}
-                      target={s.website_url ? "_blank" : undefined}
+                      href={s.websiteUrl || "#"}
+                      target={s.websiteUrl ? "_blank" : undefined}
                       rel="noopener noreferrer"
                       onClick={() => trackSponsorClick(s.id)}
                       aria-label={`Visit the website of ${s.name}`}
@@ -172,9 +172,9 @@ export default function Sponsors() {
                         min-h-[200px] hover:bg-white/[0.07]
                       `}
                     >
-                      {s.logo_url ? (
+                      {s.logoUrl ? (
                         <img 
-                          src={s.logo_url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')} 
+                          src={s.logoUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')} 
                           alt={s.name} 
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -183,7 +183,7 @@ export default function Sponsors() {
                           className="max-w-full max-h-24 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" 
                         />
                       ) : null}
-                      <div className={`fallback-text text-2xl font-black text-white/60 mb-2 ${s.logo_url ? 'hidden' : ''}`}>{s.name}</div>
+                      <div className={`fallback-text text-2xl font-black text-white/60 mb-2 ${s.logoUrl ? 'hidden' : ''}`}>{s.name}</div>
                       
                       <div className="flex items-center gap-2 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-xs font-bold uppercase tracking-widest text-white" aria-hidden="true">Visit Website</span>

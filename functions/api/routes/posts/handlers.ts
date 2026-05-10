@@ -50,7 +50,24 @@ type RejectPostBody = {
   reason?: string;
 };
 
+/**
+ * Posts Handler - Blog content CRUD operations
+ *
+ * Provides handlers for creating, reading, updating, and deleting blog posts.
+ * Includes full-text search, revision history, and social media integration.
+ *
+ * @packageDocumentation
+ */
+
 export const postHandlers = {
+  /**
+   * Get published blog posts with optional full-text search
+   *
+   * @query q - Full-text search query (searches title, snippet, author)
+   * @query limit - Maximum number of posts to return (default: 10)
+   * @query offset - Number of posts to skip for pagination (default: 0)
+   * @returns Paginated list of published posts with author details
+   */
   getPosts: async (input: HandlerInput, c: HonoContext) => {
     try {
       const { query } = input;
@@ -154,6 +171,12 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Get a single published blog post by slug
+   *
+   * @param slug - Unique post identifier
+   * @returns Full post details including AST content and author info
+   */
   getPost: async (input: HandlerInput, c: HonoContext) => {
     try {
       const { params } = input;
@@ -230,6 +253,14 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Get all posts (admin view) including drafts and deleted
+   *
+   * @query limit - Maximum number of posts to return (default: 50)
+   * @query offset - Number of posts to skip for pagination (default: 0)
+   * @returns List of all posts regardless of status
+   * @requires Admin or Author role
+   */
   getAdminPosts: async (input: HandlerInput, c: HonoContext) => {
     try {
       const { query } = input;
@@ -310,6 +341,13 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Get a single post for admin editing
+   *
+   * @param slug - Unique post identifier
+   * @returns Full post details with AST content for editing
+   * @requires Admin or Author role
+   */
   getAdminPost: async (input: HandlerInput, c: HonoContext) => {
     try {
       const { params } = input;
@@ -368,6 +406,26 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Create or update a blog post
+   *
+   * Creates a new post if slug is not provided. Updates existing post if slug is provided.
+   * Non-admin users create pending review posts. Admins can publish directly.
+   *
+   * @body title - Post title (required for new posts)
+   * @body slug - Unique identifier (required for updates)
+   * @body ast - Tiptap editor JSON AST
+   * @body content - Plain text content
+   * @body thumbnail - Cover image URL
+   * @body category - Post category for organization
+   * @body isPortfolio - Mark as portfolio-worthy
+   * @body socials - Object mapping social platforms to booleans
+   * @body isDraft - Save as draft instead of publishing
+   * @body publishedAt - Scheduled publish date (ISO string)
+   * @body seasonId - Associated season ID
+   * @returns Success status with slug and optional warnings
+   * @requires Admin or Author role
+   */
   savePost: async (input: HandlerInput<PostSaveBody>, c: HonoContext) => {
     try {
       const { body } = input;
@@ -462,7 +520,7 @@ export const postHandlers = {
         .insert(schema.posts)
         .values({
           slug,
-          title: body.title,
+          title: body.title || "",
           author: "ARES Team",
           date: dateStr,
           thumbnail: body.thumbnail || "",
@@ -565,6 +623,23 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Update an existing blog post
+   *
+   * Non-admin changes create shadow revisions for review. Admin updates apply directly.
+   * History is captured before each update.
+   *
+   * @param slug - Unique post identifier to update
+   * @body title - Updated post title
+   * @body ast - Updated Tiptap editor JSON AST
+   * @body content - Updated plain text content
+   * @body thumbnail - Updated cover image URL
+   * @body isDraft - Save as draft
+   * @body publishedAt - Updated scheduled publish date
+   * @body seasonId - Updated season association
+   * @returns Success status with post slug
+   * @requires Admin or Author role
+   */
   updatePost: async (input: HandlerInput<PostSaveBody>, c: HonoContext) => {
     try {
       const { params, body } = input;
@@ -659,6 +734,15 @@ export const postHandlers = {
     }
   },
 
+  /**
+   * Soft-delete a blog post
+   *
+   * Sets is_deleted=1 and status='draft'. Post remains recoverable.
+   *
+   * @param slug - Unique post identifier to delete
+   * @returns Success status
+   * @requires Admin or Author role
+   */
   deletePost: async (input: HandlerInput, c: HonoContext) => {
     try {
       const { params } = input;

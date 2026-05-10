@@ -1,9 +1,7 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, asc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Context } from "hono";
 
 import { AppEnv, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
 import {
@@ -54,7 +52,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, createTypedHandler(listSocialQue
     const conditions = [];
 
     if (status !== "all") {
-      conditions.push(eq(schema.socialQueue.status, status));
+      conditions.push(eq(schema.socialQueue.status, status as any));
     }
 
     if (user.role !== "admin") {
@@ -97,10 +95,7 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, createTypedHandler(calendarS
     const { start, end } = query;
     const db = getDb(c);
 
-    const conditions = [
-      gte(schema.socialQueue.scheduledFor, start),
-      lte(schema.socialQueue.scheduledFor, end),
-    ];
+    const conditions = [gte(schema.socialQueue.scheduledFor, start), lte(schema.socialQueue.scheduledFor, end)];
 
     if (user.role !== "admin") {
       conditions.push(eq(schema.socialQueue.createdBy, user.id));
@@ -110,7 +105,6 @@ socialQueueRouter.openapi(calendarSocialQueueRoute, createTypedHandler(calendarS
       .select()
       .from(schema.socialQueue)
       .where(and(...conditions))
-      .orderBy(asc(schema.socialQueue.scheduledFor))
       .all();
 
     const posts: SocialQueuePost[] = results.map(toSocialQueuePost);
@@ -124,38 +118,27 @@ socialQueueRouter.openapi(createSocialQueueRoute, createTypedHandler(createSocia
     if (!user) {
       throw new ApiError("Unauthorized", 401);
     }
+
     const db = getDb(c);
     const id = nanoid();
-    const createdAt = new Date().toISOString();
+    const now = new Date().toISOString();
 
-    const newPost = {
+    const newPostValues = {
       id,
       content: body.content,
-      platforms: JSON.stringify(body.platforms),
       mediaUrls: body.mediaUrls ? JSON.stringify(body.mediaUrls) : null,
       scheduledFor: body.scheduledFor,
+      platforms: JSON.stringify(body.platforms),
       status: "pending",
-      createdAt,
       createdBy: user.id,
       linkedType: body.linkedType || null,
       linkedId: body.linkedId || null,
+      createdAt: now,
     };
 
-    await db.insert(schema.socialQueue).values(newPost).run();
+    await db.insert(schema.socialQueue).values(newPostValues).run();
 
-    const post: SocialQueuePost = {
-      ...body,
-      id,
-      status: "pending",
-      createdAt,
-      createdBy: user.id,
-      sentAt: null,
-      errorMessage: null,
-      analytics: null,
-      mediaUrls: body.mediaUrls || [],
-      linkedType: body.linkedType || null,
-      linkedId: body.linkedId || null,
-    };
+    const post = toSocialQueuePost({ ...newPostValues, analytics: null, sentAt: null, errorMessage: null });
 
     return c.json({ success: true, post }, 200);
 }));
@@ -167,8 +150,8 @@ socialQueueRouter.openapi(updateSocialQueueRoute, createTypedHandler(updateSocia
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = params;
     const db = getDb(c);
+    const { id } = params;
 
     const existing = await db
       .select()
@@ -177,35 +160,33 @@ socialQueueRouter.openapi(updateSocialQueueRoute, createTypedHandler(updateSocia
       .get();
 
     if (!existing) {
-      throw new ApiError("Post not found", 500);
+      throw new ApiError("Post not found", 404);
     }
+
     if (user.role !== "admin" && existing.createdBy !== user.id) {
-      throw new ApiError("Unauthorized", 401);
+      throw new ApiError("Forbidden", 403);
     }
 
-    const updates: Record<string, unknown> = {};
-    if (body.content !== undefined) updates.content = body.content;
-    if (body.scheduledFor !== undefined) updates.scheduledFor = body.scheduledFor;
-    if (body.status !== undefined) updates.status = body.status;
-    if (body.linkedType !== undefined) updates.linkedType = body.linkedType;
-    if (body.linkedId !== undefined) updates.linkedId = body.linkedId;
+    if (existing.status === "sent") {
+      throw new ApiError("Cannot edit a post that has already been sent", 400);
+    }
 
-    if (body.platforms) updates.platforms = JSON.stringify(body.platforms);
-    if (body.mediaUrls) updates.mediaUrls = JSON.stringify(body.mediaUrls);
+    const update: any = {};
+    if (body.content !== undefined) update.content = body.content;
+    if (body.mediaUrls !== undefined) update.mediaUrls = body.mediaUrls ? JSON.stringify(body.mediaUrls) : null;
+    if (body.scheduledFor !== undefined) update.scheduledFor = body.scheduledFor;
+    if (body.platforms !== undefined) update.platforms = JSON.stringify(body.platforms);
+    if (body.status !== undefined) update.status = body.status;
 
-    await db.update(schema.socialQueue).set(updates).where(eq(schema.socialQueue.id, id)).run();
+    await db.update(schema.socialQueue).set(update).where(eq(schema.socialQueue.id, id)).run();
 
-    const updated = await db
+    const updatedRow = await db
       .select()
       .from(schema.socialQueue)
       .where(eq(schema.socialQueue.id, id))
       .get();
 
-    if (!updated) {
-      throw new Error("Failed to retrieve updated post");
-    }
-
-    return c.json({ success: true, post: toSocialQueuePost(updated) }, 200);
+    return c.json({ success: true, post: toSocialQueuePost(updatedRow as any) }, 200);
 }));
 
 // Delete post
@@ -215,8 +196,8 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, createTypedHandler(deleteSocia
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = params;
     const db = getDb(c);
+    const { id } = params;
 
     const existing = await db
       .select()
@@ -225,10 +206,11 @@ socialQueueRouter.openapi(deleteSocialQueueRoute, createTypedHandler(deleteSocia
       .get();
 
     if (!existing) {
-      throw new ApiError("Post not found", 500);
+      throw new ApiError("Post not found", 404);
     }
+
     if (user.role !== "admin" && existing.createdBy !== user.id) {
-      throw new ApiError("Unauthorized", 401);
+      throw new ApiError("Forbidden", 403);
     }
 
     await db.delete(schema.socialQueue).where(eq(schema.socialQueue.id, id)).run();
@@ -243,30 +225,25 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, createTypedHandler(sendNowSoc
       throw new ApiError("Unauthorized", 401);
     }
 
-    const { id } = params;
     const db = getDb(c);
+    const { id } = params;
 
-    const record = await db
+    const row = await db
       .select()
       .from(schema.socialQueue)
       .where(eq(schema.socialQueue.id, id))
       .get();
 
-    if (!record) {
-      throw new ApiError("Post not found", 500);
+    if (!row) {
+      throw new ApiError("Post not found", 404);
     }
 
-    const post = toSocialQueuePost(record);
-
-    const config: Record<string, boolean> = {
-      twitter: !!c.env.TWITTER_API_KEY,
-      bluesky: !!c.env.BLUESKY_HANDLE,
-      facebook: !!c.env.FACEBOOK_ACCESS_TOKEN,
-      instagram: !!c.env.INSTAGRAM_ACCESS_TOKEN,
-      discord: !!c.env.DISCORD_WEBHOOK_URL,
-      slack: !!c.env.SLACK_WEBHOOK_URL,
-      linkedin: !!c.env.LINKEDIN_ACCESS_TOKEN,
-    };
+    const post = toSocialQueuePost(row as Record<string, unknown>);
+    const config = {
+      TWITTER_BEARER_TOKEN: c.env.TWITTER_BEARER_TOKEN,
+      BLUESKY_IDENTIFIER: c.env.BLUESKY_IDENTIFIER,
+      BLUESKY_PASSWORD: c.env.BLUESKY_PASSWORD,
+    } as any;
 
     await dispatchQueuePost(db, post, config);
 
@@ -295,9 +272,9 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, createTypedHandler(analytic
     }
 
     const totalPosts = results.length;
-    const totalSent = results.filter((r) => r.status === "sent").length;
-    const totalPending = results.filter((r) => r.status === "pending").length;
-    const totalFailed = results.filter((r) => r.status === "failed").length;
+    const totalSent = results.filter((r: any) => r.status === "sent").length;
+    const totalPending = results.filter((r: any) => r.status === "pending").length;
+    const totalFailed = results.filter((r: any) => r.status === "failed").length;
 
     const byPlatform = {
       twitter: 0,
@@ -313,7 +290,7 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, createTypedHandler(analytic
       band: 0,
     };
 
-    results.forEach((r) => {
+    results.forEach((r: any) => {
       const platforms = JSON.parse(String(r.platforms));
       Object.entries(platforms).forEach(([key, value]) => {
         if (value && key in byPlatform) {
@@ -322,24 +299,20 @@ socialQueueRouter.openapi(analyticsSocialQueueRoute, createTypedHandler(analytic
       });
     });
 
-    return c.json(
-      {
-        totalPosts,
-        totalSent,
-        totalPending,
-        totalFailed,
-        byPlatform,
-        engagement: {
-          totalImpressions: 0,
-          totalLikes: 0,
-          totalShares: 0,
-          totalComments: 0,
-        },
+    return c.json({
+      totalPosts,
+      totalSent,
+      totalPending,
+      totalFailed,
+      byPlatform,
+      engagement: {
+        totalImpressions: 0,
+        totalLikes: 0,
+        totalShares: 0,
+        totalComments: 0,
       },
-      200
-    );
+    }, 200);
 }));
 
 export default socialQueueRouter;
-
 

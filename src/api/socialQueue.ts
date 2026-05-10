@@ -23,8 +23,8 @@ export interface SocialQueueCalendarResponse {
 
 export interface CreateSocialPostRequest {
   content: string;
-  media_urls?: string[];
-  scheduled_for: string;
+  mediaUrls?: string[];
+  scheduledFor: string;
   platforms: {
     twitter?: boolean;
     bluesky?: boolean;
@@ -38,11 +38,11 @@ export interface CreateSocialPostRequest {
     tiktok?: boolean;
     band?: boolean;
   };
-  linked_type?: "blog" | "event" | "document" | "asset";
-  linked_id?: string;
+  linkedType?: "blog" | "event" | "document" | "asset";
+  linkedId?: string;
 }
 
-export interface UpdateSocialPostRequest extends Partial<Omit<CreateSocialPostRequest, "linked_type" | "linked_id">> {
+export interface UpdateSocialPostRequest extends Partial<Omit<CreateSocialPostRequest, "linkedType" | "linkedId">> {
   status?: "pending" | "processing" | "sent" | "failed" | "cancelled";
 }
 
@@ -52,16 +52,16 @@ export interface SocialAnalyticsQuery {
 }
 
 export interface SocialAnalyticsResponse {
-  total_posts: number;
-  total_sent: number;
-  total_pending: number;
-  total_failed: number;
-  by_platform: Record<string, number>;
+  totalPosts: number;
+  totalSent: number;
+  totalPending: number;
+  totalFailed: number;
+  byPlatform: Record<string, number>;
   engagement: {
-    total_impressions: number;
-    total_likes: number;
-    total_shares: number;
-    total_comments: number;
+    totalImpressions: number;
+    totalLikes: number;
+    totalShares: number;
+    totalComments: number;
   };
 }
 

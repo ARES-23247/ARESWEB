@@ -8,7 +8,7 @@ import { zodValidator } from "@tanstack/zod-form-adapter";
 const eventSignupSchema = z.object({
 	bringing: z.string().optional(),
 	notes: z.string().optional(),
-	prep_hours: z.number().min(0).optional(),
+	prepHours: z.number().min(0).optional(),
 });
 
 interface EventSignupsProps {
@@ -37,7 +37,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 		defaultValues: {
 			bringing: "",
 			notes: "",
-			prep_hours: 0,
+			prepHours: 0,
 		},
 		onSubmit: async ({ value }) => {
 			setSignupError(null);
@@ -50,15 +50,14 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 		},
 	});
 
-	const { Provider: FormProvider } = form;
 
 	// Initialize form with existing signup data
 	useEffect(() => {
-		const own = signups.find((s: EventSignup) => s.is_own);
+		const own = signups.find((s: EventSignup) => s.isOwn);
 		if (own) {
 			form.setFieldValue("bringing", own.bringing || "");
 			form.setFieldValue("notes", own.notes || "");
-			form.setFieldValue("prep_hours", own.prep_hours || 0);
+			form.setFieldValue("prepHours", own.prepHours || 0);
 		}
 	}, [signups, form]);
 
@@ -87,7 +86,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 
 	const selfCheckIn = async () => {
 		setSignupError(null);
-		const myEntry = signups.find(s => s.is_own);
+		const myEntry = signups.find(s => s.isOwn);
 		const isCurrentlyAttended = !!myEntry?.attended;
 		try {
 			await updateMyAttendance.mutateAsync({
@@ -102,9 +101,9 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 
 	if (isLoading) return null;
 
-	const myEntry = signups.find(s => s.is_own);
+	const myEntry = signups.find(s => s.isOwn);
 	const totalAttending = signups.filter(s => !!s.attended).length;
-	const totalPrep = signups.reduce((sum, s) => sum + (s.prep_hours || 0), 0);
+	const totalPrep = signups.reduce((sum, s) => sum + (s.prepHours || 0), 0);
 	const hasExistingSignup = !!myEntry;
 
 	return (
@@ -139,7 +138,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 									{Object.entries(dietarySummary).length > 0 ? (
 										Object.entries(dietarySummary).map(([restriction, count]) => (
 											<span key={`rsvp-${restriction}`} className="px-2 py-1 bg-ares-red/10 border border-ares-red/20 ares-cut-sm text-xs font-bold text-ares-red">
-												{count} {restriction}
+												{(count as number)} {restriction}
 											</span>
 										))
 									) : (
@@ -154,7 +153,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 									<div className="flex flex-wrap gap-2 opacity-70 grayscale">
 										{Object.entries(teamDietarySummary).map(([restriction, count]) => (
 											<span key={`team-${restriction}`} className="px-2 py-1 bg-white/10 border border-white/20 ares-cut-sm text-xs font-bold text-marble">
-												{count} {restriction}
+												{(count as number)} {restriction}
 											</span>
 										))}
 									</div>
@@ -202,11 +201,11 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 								</thead>
 								<tbody>
 									{signups.map(entry => (
-										<tr key={entry.user_id} className={`border-b border-white/10 transition-colors ${entry.attended ? "bg-ares-gold/5" : ""}`}>
+										<tr key={entry.userId} className={`border-b border-white/10 transition-colors ${entry.attended ? "bg-ares-gold/5" : ""}`}>
 											<td className="py-3 px-4">
 												{canManage ? (
 													<button
-														onClick={() => toggleAttendance(entry.user_id, entry.attended)}
+														onClick={() => toggleAttendance(entry.userId, entry.attended)}
 														className={`transition-colors ${entry.attended ? "text-ares-gold" : "text-marble/10 hover:text-marble/30"}`}
 													>
 														{entry.attended ? <CheckCircle2 size={18} /> : <Circle size={18} />}
@@ -219,13 +218,13 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 											</td>
 											<td className="py-3 px-4">
 												<div className="flex items-center gap-2">
-													<img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${entry.user_id}`}
+													<img src={`https://api.dicebear.com/9.x/bottts/svg?seed=${entry.userId}`}
 														alt={`${entry.nickname || "ARES Member"}'s avatar`} className="w-6 h-6 ares-cut-sm bg-white/10" />
 													<span className={`text-sm font-bold ${entry.attended ? "text-white" : "text-marble/60"}`}>{entry.nickname || "ARES Member"}</span>
 												</div>
 											</td>
 											{isPotluck && <td className="py-3 px-4 text-sm text-marble">{entry.bringing || "—"}</td>}
-											{isVolunteer && <td className="py-3 px-4 text-sm text-marble">{entry.prep_hours || 0}</td>}
+											{isVolunteer && <td className="py-3 px-4 text-sm text-marble">{entry.prepHours || 0}</td>}
 											<td className="py-3 px-4 text-sm text-marble/60">{entry.notes || "—"}</td>
 										</tr>
 									))}
@@ -256,7 +255,6 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 							</div>
 						)}
 
-						<FormProvider>
 							<form
 								onSubmit={(e) => {
 									e.preventDefault();
@@ -267,9 +265,8 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 							>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									{isPotluck && (
-										<form.Field
-											name="bringing"
-											children={(field) => (
+										<form.Field name="bringing">
+											{(field) => (
 												<input
 													name={field.name}
 													value={field.state.value}
@@ -279,11 +276,10 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 													className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all"
 												/>
 											)}
-										/>
+										</form.Field>
 									)}
-									<form.Field
-										name="notes"
-										children={(field) => (
+									<form.Field name="notes">
+										{(field) => (
 											<input
 												name={field.name}
 												value={field.state.value}
@@ -293,11 +289,10 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 												className={`w-full ${(isPotluck && isVolunteer) || (!isPotluck && !isVolunteer) ? 'col-span-2' : ''} bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold focus:ring-1 focus:ring-ares-gold/20 transition-all`}
 											/>
 										)}
-									/>
+									</form.Field>
 									{isVolunteer && (
-										<form.Field
-											name="prep_hours"
-											children={(field) => (
+										<form.Field name="prepHours">
+											{(field) => (
 												<div className="flex items-center gap-3">
 													<span className="text-marble/60 uppercase tracking-widest text-xs font-bold shrink-0">Prep Hrs</span>
 													<input
@@ -310,7 +305,7 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 													/>
 												</div>
 											)}
-										/>
+										</form.Field>
 									)}
 								</div>
 								<div className="flex gap-3">
@@ -333,7 +328,6 @@ export default function EventSignups({ eventId, isPotluck, isVolunteer }: EventS
 									)}
 								</div>
 							</form>
-						</FormProvider>
 					</div>
 				</>
 			) : (

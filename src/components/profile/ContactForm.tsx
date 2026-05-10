@@ -9,9 +9,8 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div>
 					<label htmlFor="pe-phone" className={labelClass}>Phone</label>
-					<form.Field
-						name="phone"
-						children={(field) => (
+					<form.Field name="phone">
+						{(field: any) => (
 							<>
 								<input
 									id="pe-phone"
@@ -23,9 +22,8 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 									className={inputClass}
 									placeholder="(304) 555-1234"
 								/>
-								<form.Field
-									name="show_phone"
-									children={(showField) => (
+								<form.Field name="showPhone">
+									{(showField: any) => (
 										<label className="flex items-center gap-2 mt-2 text-xs text-ares-gray">
 											<input
 												type="checkbox"
@@ -38,16 +36,15 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 											Show on public profile
 										</label>
 									)}
-								/>
+								</form.Field>
 							</>
 						)}
-					/>
+					</form.Field>
 				</div>
 				<div>
 					<label htmlFor="pe-contact-email" className={labelClass}>Contact Email</label>
-					<form.Field
-						name="contact_email"
-						children={(field) => (
+					<form.Field name="contactEmail">
+						{(field: any) => (
 							<>
 								<input
 									id="pe-contact-email"
@@ -61,9 +58,8 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 									className={inputClass}
 									placeholder="Optional. Replaces login email."
 								/>
-								<form.Field
-									name="show_email"
-									children={(showField) => (
+								<form.Field name="showEmail">
+									{(showField: any) => (
 										<label className="flex items-center gap-2 mt-2 text-xs text-ares-gray">
 											<input
 												type="checkbox"
@@ -76,12 +72,13 @@ export function ContactForm({ form, isMinor, inputClass, labelClass, sectionClas
 											Show email on public profile
 										</label>
 									)}
-								/>
+								</form.Field>
 							</>
 						)}
-					/>
+					</form.Field>
 				</div>
 			</div>
 		</div>
 	);
 }
+

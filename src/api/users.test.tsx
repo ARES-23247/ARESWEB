@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -182,19 +182,19 @@ describe("Users API", () => {
       });
     });
 
-    it("should update user member_type successfully", async () => {
+    it("should update user memberType successfully", async () => {
       const mockResponse = { success: true };
       mockClient.users.admin[":id"].$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => usersApi.usePatchUser(), { wrapper });
 
-      result.current.mutate({ id: "123", member_type: "student" as usersApi.UserMemberType });
+      result.current.mutate({ id: "123", memberType: "student" as usersApi.UserMemberType });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.users.admin[":id"].$patch).toHaveBeenCalledWith({
         param: { id: "123" },
-        json: { member_type: "student" },
+        json: { memberType: "student" },
       });
     });
 
@@ -300,3 +300,4 @@ describe("Users API", () => {
     });
   });
 });
+

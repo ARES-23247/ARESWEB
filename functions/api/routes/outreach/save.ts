@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+﻿import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getSessionUser, logAuditAction, getDb, type AppEnv } from "../../middleware";
@@ -19,16 +19,16 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
         title: validatedData.title,
         date: validatedData.date,
         location: validatedData.location || null,
-        hours: validatedData.hours_logged,
-        peopleReached: validatedData.reach_count,
-        studentsCount: validatedData.students_count,
+        hours: validatedData.hoursLogged,
+        peopleReached: validatedData.reachCount,
+        studentsCount: validatedData.studentsCount,
         impactSummary: validatedData.description || null,
-        isMentoring: validatedData.is_mentoring ? 1 : 0,
-        mentoredTeamNumber: validatedData.mentored_team_number || null,
-        seasonId: validatedData.season_id || null,
-        eventId: validatedData.event_id || null,
-        mentorCount: validatedData.mentor_count || 0,
-        mentorHours: validatedData.mentor_hours || 0,
+        isMentoring: validatedData.isMentoring ? 1 : 0,
+        mentoredTeamNumber: validatedData.mentoredTeamNumber || null,
+        seasonId: validatedData.seasonId || null,
+        eventId: validatedData.eventId || null,
+        mentorCount: validatedData.mentorCount || 0,
+        mentorHours: validatedData.mentorHours || 0,
       })
       .where(eq(schema.outreachLogs.id, Number(validatedData.id)))
       .run();
@@ -39,16 +39,16 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
         title: validatedData.title,
         date: validatedData.date,
         location: validatedData.location || null,
-        hours: validatedData.hours_logged,
-        peopleReached: validatedData.reach_count,
-        studentsCount: validatedData.students_count,
+        hours: validatedData.hoursLogged,
+        peopleReached: validatedData.reachCount,
+        studentsCount: validatedData.studentsCount,
         impactSummary: validatedData.description || null,
-        isMentoring: validatedData.is_mentoring ? 1 : 0,
-        mentoredTeamNumber: validatedData.mentored_team_number || null,
-        seasonId: validatedData.season_id || null,
-        eventId: validatedData.event_id || null,
-        mentorCount: validatedData.mentor_count || 0,
-        mentorHours: validatedData.mentor_hours || 0,
+        isMentoring: validatedData.isMentoring ? 1 : 0,
+        mentoredTeamNumber: validatedData.mentoredTeamNumber || null,
+        seasonId: validatedData.seasonId || null,
+        eventId: validatedData.eventId || null,
+        mentorCount: validatedData.mentorCount || 0,
+        mentorHours: validatedData.mentorHours || 0,
       })
       .returning({ id: schema.outreachLogs.id })
       .all();
@@ -63,3 +63,5 @@ export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> 
     return c.json({ success: true, id: result }, 200);
   }
 };
+
+

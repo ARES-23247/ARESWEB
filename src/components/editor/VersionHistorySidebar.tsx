@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Clock, RotateCcw, Eye, X } from "lucide-react";
@@ -14,7 +14,7 @@ interface HistorySnapshot {
   room_id: string;
   content: string;
   created_by: string;
-  created_at: string;
+  createdAt: string;
 }
 
 interface VersionHistorySidebarProps {
@@ -108,10 +108,10 @@ export default function VersionHistorySidebar({ roomId, editor, onClose, history
             <div className="flex justify-between items-start mb-2">
               <div>
                 <p className="text-white text-sm font-bold">
-                  {format(new Date(snapshot.created_at + "Z"), "MMM d, yyyy")}
+                  {format(new Date(snapshot.createdAt + "Z"), "MMM d, yyyy")}
                 </p>
                 <p className="text-white/60 text-xs">
-                  {format(new Date(snapshot.created_at + "Z"), "h:mm a")}
+                  {format(new Date(snapshot.createdAt + "Z"), "h:mm a")}
                 </p>
               </div>
             </div>
@@ -160,3 +160,4 @@ export default function VersionHistorySidebar({ roomId, editor, onClose, history
     document.body
   );
 }
+

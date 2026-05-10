@@ -58,33 +58,33 @@ describe("useCartStore", () => {
     id: "prod-1",
     name: "ARES Team Jersey",
     description: "Official team jersey",
-    price_cents: 3500,
-    image_url: "https://example.com/jersey.jpg",
+    priceCents: 3500,
+    imageUrl: "https://example.com/jersey.jpg",
     active: 1,
-    stock_count: 50,
-    created_at: "2024-01-01",
+    stockCount: 50,
+    createdAt: "2024-01-01",
   };
 
   const mockProduct2: Product = {
     id: "prod-2",
     name: "ARES Team Pin",
     description: "Official team lapel pin",
-    price_cents: 500,
-    image_url: "https://example.com/pin.jpg",
+    priceCents: 500,
+    imageUrl: "https://example.com/pin.jpg",
     active: 1,
-    stock_count: 100,
-    created_at: "2024-01-02",
+    stockCount: 100,
+    createdAt: "2024-01-02",
   };
 
   const mockProduct3: Product = {
     id: "prod-3",
     name: "ARES Team Sticker",
     description: "Official team sticker pack",
-    price_cents: 200,
-    image_url: null,
+    priceCents: 200,
+    imageUrl: null,
     active: 1,
-    stock_count: 200,
-    created_at: "2024-01-03",
+    stockCount: 200,
+    createdAt: "2024-01-03",
   };
 
   describe("initial state", () => {
@@ -414,7 +414,7 @@ describe("useCartStore", () => {
 
       const freeProduct: Product = {
         ...mockProduct1,
-        price_cents: 0,
+        priceCents: 0,
       };
 
       addItem(freeProduct, 5);
@@ -520,10 +520,10 @@ describe("useCartStore", () => {
     it("should handle product with null image_url", () => {
       const { addItem } = useCartStore.getState();
 
-      addItem(mockProduct3); // image_url is null
+      addItem(mockProduct3); // imageUrl is null
 
       const { items } = useCartStore.getState();
-      expect(items[0].product.image_url).toBeNull();
+      expect(items[0].product.imageUrl).toBeNull();
     });
 
     it("should handle product with null description", () => {
@@ -541,3 +541,4 @@ describe("useCartStore", () => {
     });
   });
 });
+

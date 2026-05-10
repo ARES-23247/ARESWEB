@@ -1,4 +1,4 @@
-import type { D1Database } from "@cloudflare/workers-types";
+﻿import type { D1Database } from "@cloudflare/workers-types";
 
 interface Env {
   DB: D1Database;
@@ -87,8 +87,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (eventMatch && eventMatch[1]) {
       const id = eventMatch[1];
       try {
-        const stmt = context.env.DB.prepare("SELECT title, description, cover_image FROM events WHERE id = ?").bind(id);
-        const event = await stmt.first<{ title: string; description: string; cover_image: string }>();
+        const stmt = context.env.DB.prepare("SELECT title, description, coverImage FROM events WHERE id = ?").bind(id);
+        const event = await stmt.first<{ title: string; description: string; coverImage: string }>();
         if (event) {
           let snippet = event.description;
           try {
@@ -105,7 +105,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
           return new HTMLRewriter()
             .on("title", new TitleRewriter(`ARES 23247 | ${event.title}`))
-            .on("head", new MetaInjector(event.title, snippet, event.cover_image, url.toString(), "event"))
+            .on("head", new MetaInjector(event.title, snippet, event.coverImage, url.toString(), "event"))
             .transform(response);
         }
       } catch (e) {
@@ -156,3 +156,4 @@ class MetaInjector {
     element.append(tags, { html: true });
   }
 }
+

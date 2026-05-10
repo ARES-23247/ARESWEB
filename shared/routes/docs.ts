@@ -17,25 +17,25 @@ const DocResponseSchema = z.object({
   slug: z.string(),
   title: z.string().nullable(),
   category: z.string().nullable(),
-  sort_order: z.number().nullable(),
+  sortOrder: z.number().nullable(),
   description: z.string().nullable(),
-  is_portfolio: z.number().nullable(),
-  is_executive_summary: z.number().nullable(),
-  zulip_stream: z.string().nullable().optional(),
-  zulip_topic: z.string().nullable().optional(),
-  is_deleted: z.number().nullable(),
+  isPortfolio: z.number().nullable(),
+  isExecutiveSummary: z.number().nullable(),
+  zulipStream: z.string().nullable().optional(),
+  zulipTopic: z.string().nullable().optional(),
+  isDeleted: z.number().nullable(),
   status: z.string().nullable(),
-  revision_of: z.string().nullable(),
-  display_in_areslib: z.number().nullable(),
-  display_in_math_corner: z.number().nullable(),
-  display_in_science_corner: z.number().nullable(),
-  original_author_nickname: z.string().optional(),
-  original_author_avatar: z.string().optional(),
+  revisionOf: z.string().nullable(),
+  displayInAreslib: z.number().nullable(),
+  displayInMathCorner: z.number().nullable(),
+  displayInScienceCorner: z.number().nullable(),
+  originalAuthorNickname: z.string().optional(),
+  originalAuthorAvatar: z.string().optional(),
 });
 
 const DocDetailResponseSchema = DocResponseSchema.extend({
   content: z.string().nullable(),
-  updated_at: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
 const ContributorSchema = z.object({
@@ -58,8 +58,8 @@ const DocHistorySchema = z.object({
   category: z.string().nullable(),
   description: z.string().nullable(),
   content: z.string().nullable().optional(),
-  author_email: z.string().nullable(),
-  created_at: z.string(),
+  authorEmail: z.string().nullable(),
+  createdAt: z.string(),
 });
 
 const DocSchema = z.object({

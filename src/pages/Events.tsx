@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { addMonths, subMonths, format, addHours, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
@@ -25,19 +25,19 @@ export default function Events() {
   const events: EventItem[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
     return fullEvents
-      .filter((e) => e.date_start != null) // Filter out events without valid start date
+      .filter((e) => e.dateStart != null) // Filter out events without valid start date
       .map((e): EventItem => ({
         id: e.id,
         title: e.title || "Untitled Event",
-        date_start: e.date_start,
-        date_end: e.date_end || null,
+        dateStart: e.dateStart,
+        dateEnd: e.dateEnd || null,
         location: e.location || null,
-        location_address: e.location_address,
+        locationAddress: e.locationAddress,
         description: e.description || "",
-        cover_image: e.cover_image || null,
-        tba_event_key: e.tba_event_key || null,
+        coverImage: e.coverImage || null,
+        tbaEventKey: e.tbaEventKey || null,
         category: (e.category as "internal" | "outreach" | "external") || "internal",
-        recurring_exception: e.recurring_exception ?? undefined,
+        recurringException: e.recurringException ?? undefined,
       }));
   }, [rawEvents]);
 
@@ -45,11 +45,11 @@ export default function Events() {
   const mappedEvents: CalendarEvent[] = useMemo(() => {
     const fullEvents = rawEvents?.events || [];
     return fullEvents
-      .filter((e) => e.date_start != null) // Filter out events without valid start date
+      .filter((e) => e.dateStart != null) // Filter out events without valid start date
       .map((e) => {
-        const start = new Date(e.date_start);
+        const start = new Date(e.dateStart);
         // If no end date is provided, default to 1 hour after start
-        const end = e.date_end ? new Date(e.date_end) : addHours(start, 1);
+        const end = e.dateEnd ? new Date(e.dateEnd) : addHours(start, 1);
       
       let type: "internal" | "outreach" | "external" = "internal";
       if (e.category === "outreach" || e.category === "external") {
@@ -70,7 +70,7 @@ export default function Events() {
           };
           description = extractText(ast).trim();
         } catch {
-          // Not valid JSON — use raw string as-is
+          // Not valid JSON â€” use raw string as-is
         }
       }
 
@@ -82,7 +82,7 @@ export default function Events() {
         description,
         location: e.location || "",
         type,
-        isException: e.recurring_exception === 1
+        isException: e.recurringException === 1
       };
     });
   }, [rawEvents?.events]);
@@ -105,7 +105,7 @@ export default function Events() {
       className="w-full flex-grow flex flex-col bg-obsidian min-h-screen"
     >
       <SEO title="Event Schedule" description="Upcoming competitions, outreach demos, and build sessions for ARES 23247." />
-      {/* ─── HEADER ─── */}
+      {/* â”€â”€â”€ HEADER â”€â”€â”€ */}
       <section className="relative w-full py-24 px-6 overflow-hidden flex flex-col items-center text-center">
         <div className="absolute inset-0 w-full h-full">
           <div className="absolute inset-0 bg-ares-red/10 mix-blend-screen pointer-events-none"></div>
@@ -128,7 +128,7 @@ export default function Events() {
         </motion.div>
       </section>
 
-      {/* ─── EVENTS CONTAINER ─── */}
+      {/* â”€â”€â”€ EVENTS CONTAINER â”€â”€â”€ */}
       <section className="w-full max-w-5xl mx-auto px-6 pb-32 flex flex-col gap-16">
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
@@ -310,9 +310,10 @@ export default function Events() {
         )}
       </section>
 
-      {activeCompetition?.tba_event_key && (
-        <CompetitionBanner eventKey={activeCompetition.tba_event_key} />
+      {activeCompetition?.tbaEventKey && (
+        <CompetitionBanner eventKey={activeCompetition.tbaEventKey} />
       )}
     </motion.div>
   );
 }
+

@@ -13,7 +13,7 @@ export function CareerSection({ form, inputClass, sectionClass }: ProfileFormSub
 
   const removeEmployer = (i: number) => {
     const current = form.getFieldValue("employers");
-    form.setFieldValue("employers", current.filter((_, idx) => idx !== i));
+    form.setFieldValue("employers", current.filter((_: any, idx: any) => idx !== i));
   };
 
   const updateEmployer = (i: number, field: keyof EmployerEntry, val: string | boolean) => {
@@ -37,7 +37,7 @@ export function CareerSection({ form, inputClass, sectionClass }: ProfileFormSub
           <Plus size={14} /> Add Employer
         </button>
       </div>
-      {employers.map((emp, i) => (
+      {employers.map((emp: any, i: any) => (
         <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all mt-4">
           <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">

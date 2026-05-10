@@ -10,15 +10,15 @@ export const judgeAccessCodeSchema = z.object({
     example: "AB12CD34EF56",
     description: "The access code for judges",
   }),
-  label: z.string().openapi({
+  label: z.string().nullable().openapi({
     example: "Championship Judges",
     description: "Human-readable label for this code",
   }),
-  created_at: z.string().openapi({
+  createdAt: z.string().openapi({
     example: "2026-05-06T12:00:00Z",
     description: "ISO timestamp when the code was created",
   }),
-  expires_at: z.string().nullable().openapi({
+  expiresAt: z.string().nullable().openapi({
     example: null,
     description: "ISO timestamp when the code expires, or null if no expiration",
   }),
@@ -93,7 +93,7 @@ export const judgePortfolioRoute = createRoute({
               category: z.string(),
               description: z.string(),
               content: z.string(),
-              is_executive_summary: z.number().optional(),
+              isExecutiveSummary: z.number().optional(),
             })).openapi({
               description: "Portfolio documents including executive summary and category docs",
             }),
@@ -102,9 +102,9 @@ export const judgePortfolioRoute = createRoute({
               title: z.string(),
               date: z.string(),
               location: z.string(),
-              students_count: z.number(),
-              hours_logged: z.number(),
-              reach_count: z.number(),
+              studentsCount: z.number(),
+              hoursLogged: z.number(),
+              reachCount: z.number(),
               description: z.string(),
             })).openapi({
               description: "Outreach event logs",
@@ -113,8 +113,8 @@ export const judgePortfolioRoute = createRoute({
               id: z.number(),
               title: z.string(),
               date: z.string(),
-              event_name: z.string(),
-              image_url: z.string(),
+              eventName: z.string(),
+              imageUrl: z.string().nullable(),
               description: z.string(),
               year: z.number(),
             })).openapi({
@@ -124,8 +124,8 @@ export const judgePortfolioRoute = createRoute({
               id: z.string(),
               name: z.string(),
               tier: z.string(),
-              logo_url: z.string().nullable(),
-              website_url: z.string().nullable(),
+              logoUrl: z.string().nullable(),
+              websiteUrl: z.string().nullable(),
             })).openapi({
               description: "Team sponsors and partners",
             }),

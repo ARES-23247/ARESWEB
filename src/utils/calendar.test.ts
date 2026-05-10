@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { downloadICS } from './calendar';
 
 describe('calendar utility', () => {
@@ -37,8 +37,8 @@ describe('calendar utility', () => {
   it('generates valid ICS data and triggers download', () => {
     downloadICS({
       title: 'Team Practice',
-      date_start: '2026-03-15T18:00:00Z',
-      date_end: '2026-03-15T20:00:00Z',
+      dateStart: '2026-03-15T18:00:00Z',
+      dateEnd: '2026-03-15T20:00:00Z',
       location: 'ARES Lab',
     });
 
@@ -53,11 +53,11 @@ describe('calendar utility', () => {
     expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url');
   });
 
-  it('defaults to 2-hour duration when date_end is null', () => {
+  it('defaults to 2-hour duration when dateEnd is null', () => {
     downloadICS({
       title: 'Quick Meeting',
-      date_start: '2026-06-01T10:00:00Z',
-      date_end: null,
+      dateStart: '2026-06-01T10:00:00Z',
+      dateEnd: null,
     });
 
     expect(createObjectURLSpy).toHaveBeenCalledOnce();
@@ -72,7 +72,7 @@ describe('calendar utility', () => {
 
     downloadICS({
       title: 'FTC World Championship / Finals!',
-      date_start: '2026-04-20T09:00:00Z',
+      dateStart: '2026-04-20T09:00:00Z',
     });
 
     expect(anchor.download).toBe('ftc_world_championship___finals_.ics');
@@ -81,7 +81,7 @@ describe('calendar utility', () => {
   it('handles empty location gracefully', () => {
     downloadICS({
       title: 'No Location Event',
-      date_start: '2026-01-01T00:00:00Z',
+      dateStart: '2026-01-01T00:00:00Z',
       location: null,
     });
 
@@ -97,3 +97,4 @@ describe('calendar utility', () => {
     expect(clickSpy).not.toHaveBeenCalled();
   });
 });
+

@@ -61,7 +61,7 @@ describe('Notifications Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -71,7 +71,7 @@ describe('Notifications Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 

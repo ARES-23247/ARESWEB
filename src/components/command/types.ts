@@ -6,14 +6,14 @@ export interface TaskItem {
   description?: string | null;
   status: string;
   priority: string;
-  sort_order: number;
+  sortOrder: number;
   assigned_to?: string | null;
   assignee_name?: string | null;
   created_by: string;
   creator_name?: string | null;
   due_date?: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Legacy alias kept for backward compatibility
@@ -32,3 +32,4 @@ export interface IntegrationHealth {
   configured: boolean;
   icon: ReactNode;
 }
+

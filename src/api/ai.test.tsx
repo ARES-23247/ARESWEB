@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -235,7 +235,7 @@ describe("AI API", () => {
           url: "https://github.com/ares23247/docs",
           branch: "main",
           status: "indexed",
-          created_at: "2024-01-01T00:00:00Z",
+          createdAt: "2024-01-01T00:00:00Z",
           last_indexed_at: "2024-01-15T00:00:00Z",
         },
         {
@@ -244,7 +244,7 @@ describe("AI API", () => {
           url: "https://gitlab.com/ares/docs",
           branch: "master",
           status: "pending",
-          created_at: "2024-01-10T00:00:00Z",
+          createdAt: "2024-01-10T00:00:00Z",
         },
       ];
 
@@ -455,3 +455,4 @@ describe("AI API", () => {
     });
   });
 });
+

@@ -1,5 +1,5 @@
-export const ROLES = ['unverified', 'user', 'author', 'admin'] as const;
-export const MEMBER_TYPES = ['student', 'alumni', 'parent', 'coach', 'mentor', 'sponsor'] as const;
+﻿export const ROLES = ['unverified', 'user', 'author', 'admin'] as const;
+export const memberTypeS = ['student', 'alumni', 'parent', 'coach', 'mentor', 'sponsor'] as const;
 export const PLAYER_COLORS: Record<string, string> = {
   red: '#ef4444',
   blue: '#3b82f6',
@@ -8,3 +8,4 @@ export const PLAYER_COLORS: Record<string, string> = {
   purple: '#a855f7',
   black: '#71717a',
 };
+

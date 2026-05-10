@@ -64,18 +64,18 @@ export function useGetPointsHistory(
  * POST /api/points/transaction - Award or deduct points (Admin)
  */
 export function useAwardPoints(
-  options?: Omit<UseMutationOptions<{ success: boolean; transaction_id: string }, Error, { user_id: string; points_delta: number; reason: string }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean; transactionId: string }, Error, { userId: string; pointsDelta: number; reason: string }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; transaction_id: string }, Error, { user_id: string; points_delta: number; reason: string }>({
+  return useMutation<{ success: boolean; transactionId: string }, Error, { userId: string; pointsDelta: number; reason: string }>({
     mutationFn: async (data) => {
       const response = await client.points.transaction.$post({ json: data });
-      return unwrapResponse<{ success: boolean; transaction_id: string }>(response);
+      return unwrapResponse<{ success: boolean; transactionId: string }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
       onSuccess: (qc, _data, variables) => {
-        qc.invalidateQueries({ queryKey: ["points", "balance", variables.user_id] });
-        qc.invalidateQueries({ queryKey: ["points", "history", variables.user_id] });
+        qc.invalidateQueries({ queryKey: ["points", "balance", variables.userId] });
+        qc.invalidateQueries({ queryKey: ["points", "history", variables.userId] });
         qc.invalidateQueries({ queryKey: ["leaderboard"] });
       }
     })

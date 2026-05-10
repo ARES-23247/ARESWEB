@@ -13,24 +13,24 @@ const openApiErrorResponses = {
 
 // Schemas
 export const FinanceSummarySchema = z.object({
-  total_income: z.number(),
-  total_expenses: z.number(),
+  totalIncome: z.number(),
+  totalExpenses: z.number(),
   balance: z.number(),
-  season_id: z.number().nullable(),
+  seasonId: z.number().nullable(),
 });
 
 export const SponsorshipStatusSchema = z.enum(["potential", "contacted", "pledged", "secured", "lost"]);
 
 export const SponsorshipPipelineSchema = z.object({
   id: z.string(),
-  company_name: z.string(),
-  sponsor_id: z.string().nullable().optional(),
+  companyName: z.string(),
+  sponsorId: z.string().nullable().optional(),
   status: SponsorshipStatusSchema,
-  estimated_value: z.number(),
+  estimatedValue: z.number(),
   notes: z.string().nullable().optional(),
-  contact_person: z.string().nullable().optional(),
-  season_id: z.number().nullable().optional(),
-  zulip_message_id: z.string().nullable().optional(),
+  contactPerson: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
+  zulipMessageId: z.string().nullable().optional(),
   assignees: z.array(z.string()).default([]),
 });
 
@@ -43,21 +43,21 @@ export const FinanceTransactionSchema = z.object({
   category: z.string(),
   date: z.string(),
   description: z.string().nullable().optional(),
-  receipt_url: z.string().nullable().optional(),
-  season_id: z.number().nullable().optional(),
-  logged_by: z.string().nullable().optional(),
+  receiptUrl: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
+  loggedBy: z.string().nullable().optional(),
 });
 
 export const SavePipelineSchema = z.object({
   id: z.string().optional(),
-  company_name: z.string().min(1),
-  sponsor_id: z.string().nullable().optional(),
+  companyName: z.string().min(1),
+  sponsorId: z.string().nullable().optional(),
   status: SponsorshipStatusSchema.default("potential"),
-  estimated_value: z.number(),
+  estimatedValue: z.number(),
   notes: z.string().nullable().optional(),
-  contact_person: z.string().nullable().optional(),
-  season_id: z.number().nullable().optional(),
-  zulip_message_id: z.string().nullable().optional(),
+  contactPerson: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
+  zulipMessageId: z.string().nullable().optional(),
   assignees: z.array(z.string()).default([]),
 });
 
@@ -68,8 +68,8 @@ export const SaveTransactionSchema = z.object({
   category: z.string().min(1),
   date: z.string().min(1),
   description: z.string().nullable().optional(),
-  receipt_url: z.string().nullable().optional(),
-  season_id: z.number().nullable().optional(),
+  receiptUrl: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
 });
 
 // Routes
@@ -78,7 +78,7 @@ export const getSummaryRoute = createRoute({
   path: "/summary",
   request: {
     query: z.object({
-      season_id: z.coerce.number().optional(),
+      seasonId: z.coerce.number().optional(),
     }),
   },
   responses: {
@@ -99,7 +99,7 @@ export const listPipelineRoute = createRoute({
   path: "/sponsorship",
   request: {
     query: z.object({
-      season_id: z.coerce.number().optional(),
+      seasonId: z.coerce.number().optional(),
     }),
   },
   responses: {
@@ -168,7 +168,7 @@ export const listTransactionsRoute = createRoute({
   path: "/transactions",
   request: {
     query: z.object({
-      season_id: z.coerce.number().optional(),
+      seasonId: z.coerce.number().optional(),
       type: z.enum(["income", "expense"]).optional(),
     }),
   },

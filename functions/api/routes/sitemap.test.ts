@@ -34,7 +34,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }

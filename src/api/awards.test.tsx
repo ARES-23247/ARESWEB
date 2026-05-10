@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -73,8 +73,8 @@ describe("Awards API", () => {
   describe("useGetAwards", () => {
     it("should fetch awards successfully", async () => {
       const mockAwards = [
-        { id: "1", title: "Winner Award", year: 2024, event_name: "Championship" },
-        { id: "2", title: "Finalist", year: 2024, event_name: "Qualifier" },
+        { id: "1", title: "Winner Award", year: 2024, eventName: "Championship" },
+        { id: "2", title: "Finalist", year: 2024, eventName: "Qualifier" },
       ];
       const mockResponse = { awards: mockAwards };
       mockClient.awards.$get.mockResolvedValue({ ok: true });
@@ -115,7 +115,7 @@ describe("Awards API", () => {
       const newAward = {
         title: "Champion Award",
         year: 2024,
-        event_name: "State Championship",
+        eventName: "State Championship",
         description: "First place finish",
       };
       mockClient.awards.admin.save.$post.mockResolvedValue({ ok: true });
@@ -236,3 +236,4 @@ describe("Awards API", () => {
     });
   });
 });
+

@@ -45,17 +45,17 @@ describe("useDocs hook", () => {
     slug: "getting-started",
     title: "Getting Started",
     category: "Getting Started",
-    sort_order: 1,
+    sortOrder: 1,
     description: "A test doc",
-    is_portfolio: 0,
-    is_executive_summary: 0,
-    display_in_areslib: 1,
+    isPortfolio: 0,
+    isExecutiveSummary: 0,
+    displayInAreslib: 1,
   } as DocRecord;
 
   const mockDocDetail = {
     ...mockDoc,
     content: "# Test Content",
-    updated_at: "2024-01-01",
+    updatedAt: "2024-01-01",
   } as DocDetail;
 
   const mockContributor: Contributor = {
@@ -113,12 +113,12 @@ describe("useDocs hook", () => {
   });
 
   describe("allDocs filtering", () => {
-    it("should filter docs to only include display_in_areslib === 1", () => {
+    it("should filter docs to only include displayInAreslib === 1", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_areslib: 1 },
-        { ...mockDoc, slug: "doc2", display_in_areslib: 0 },
-        { ...mockDoc, slug: "doc3", display_in_areslib: 1 },
-        { ...mockDoc, slug: "doc4", display_in_areslib: undefined },
+        { ...mockDoc, slug: "doc1", displayInAreslib: 1 },
+        { ...mockDoc, slug: "doc2", displayInAreslib: 0 },
+        { ...mockDoc, slug: "doc3", displayInAreslib: 1 },
+        { ...mockDoc, slug: "doc4", displayInAreslib: undefined },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -321,9 +321,9 @@ describe("useDocs hook", () => {
 
     it("should handle docs with same category preserving sort order", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", category: "Test", sort_order: 2 },
-        { ...mockDoc, slug: "doc2", category: "Test", sort_order: 1 },
-        { ...mockDoc, slug: "doc3", category: "Test", sort_order: 3 },
+        { ...mockDoc, slug: "doc1", category: "Test", sortOrder: 2 },
+        { ...mockDoc, slug: "doc2", category: "Test", sortOrder: 1 },
+        { ...mockDoc, slug: "doc3", category: "Test", sortOrder: 3 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -594,11 +594,11 @@ describe("useDocs hook", () => {
       expect(result.current.groupedDocs).toEqual([]);
     });
 
-    it("should handle docs with null/undefined display_in_areslib", () => {
+    it("should handle docs with null/undefined displayInAreslib", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_areslib: null },
-        { ...mockDoc, slug: "doc2", display_in_areslib: undefined },
-        { ...mockDoc, slug: "doc3", display_in_areslib: 1 },
+        { ...mockDoc, slug: "doc1", displayInAreslib: null },
+        { ...mockDoc, slug: "doc2", displayInAreslib: undefined },
+        { ...mockDoc, slug: "doc3", displayInAreslib: 1 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -609,10 +609,10 @@ describe("useDocs hook", () => {
       expect(result.current.allDocs[0].slug).toBe("doc3");
     });
 
-    it("should handle all docs having display_in_areslib === 0", () => {
+    it("should handle all docs having displayInAreslib === 0", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_areslib: 0 },
-        { ...mockDoc, slug: "doc2", display_in_areslib: 0 },
+        { ...mockDoc, slug: "doc1", displayInAreslib: 0 },
+        { ...mockDoc, slug: "doc2", displayInAreslib: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -721,4 +721,5 @@ describe("useDocs hook", () => {
     });
   });
 });
+
 

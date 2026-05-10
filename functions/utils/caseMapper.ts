@@ -1,5 +1,5 @@
-/**
- * Drizzle ORM → API Response Case Mapper
+﻿/**
+ * Drizzle ORM â†’ API Response Case Mapper
  * 
  * After the Drizzle migration, queries return JavaScript property names (camelCase)
  * but the frontend API consumers expect snake_case keys (matching original DB columns).
@@ -12,7 +12,7 @@
 
 /**
  * Convert a single camelCase string to snake_case.
- * e.g. "dateStart" → "date_start", "isPotluck" → "is_potluck"
+ * e.g. "dateStart" â†’ "dateStart", "isPotluck" â†’ "isPotluck"
  */
 export function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
@@ -47,3 +47,4 @@ export function toSnakeCase<T extends Record<string, any>>(obj: T): Record<strin
 export function mapToSnakeCase<T extends Record<string, any>>(rows: T[]): Record<string, any>[] {
   return rows.map(toSnakeCase);
 }
+

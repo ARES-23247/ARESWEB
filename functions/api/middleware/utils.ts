@@ -48,6 +48,9 @@ export type Bindings = {
   CRON_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  TWITTER_BEARER_TOKEN?: string;
+  BLUESKY_IDENTIFIER?: string;
+  BLUESKY_PASSWORD?: string;
   SENTRY_DSN?: string;
   TOA_API_KEY?: string;
   TWITTER_API_KEY?: string;

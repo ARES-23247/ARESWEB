@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -136,7 +136,7 @@ describe("Judges API", () => {
         { id: "1", title: "Robotics Demo", date: "2024-01-15", description: "Demo at elementary school", location: "Lincoln Elementary", students_count: 50, hours_logged: 4, reach_count: 100 },
       ];
       const mockAwards = [
-        { id: 1, title: "Winner", date: "2024-02-01", event_name: "State Championship", image_url: "/trophy.jpg", description: "First place", year: 2024 },
+        { id: 1, title: "Winner", date: "2024-02-01", eventName: "State Championship", image_url: "/trophy.jpg", description: "First place", year: 2024 },
       ];
       const mockSponsors = [
         { id: "1", name: "Acme Corp", tier: "gold", logo_url: "/acme.png", website_url: "https://acme.com" },
@@ -190,3 +190,4 @@ describe("Judges API", () => {
     });
   });
 });
+

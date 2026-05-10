@@ -51,16 +51,16 @@ describe("ProjectBoardKanban Component", () => {
         description: null,
         status: "todo",
         priority: "urgent",
-        sort_order: 0,
+        sortOrder: 0,
         assignees: [{ id: "u1", nickname: "Alice" }],
-        created_by: "u1",
-        creator_name: "Test User",
-        due_date: null,
+        createdBy: "u1",
+        creatorName: "Test User",
+        dueDate: null,
         subteam: null,
-        parent_id: null,
-        time_spent_seconds: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        parentId: null,
+        timeSpentSeconds: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
     ];
     await act(async () => {
@@ -72,3 +72,4 @@ describe("ProjectBoardKanban Component", () => {
     expect(await screen.findByTitle("Alice")).toBeInTheDocument();
   });
 });
+

@@ -1,4 +1,4 @@
- 
+﻿ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import AdminInquiries from "./AdminInquiries";
@@ -44,7 +44,7 @@ describe("AdminInquiries component", () => {
         email: "test@example.com",
         metadata: null,
         status: "pending",
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       }
     ];
 
@@ -112,3 +112,4 @@ describe("AdminInquiries component", () => {
     expect(screen.getByText("No resolved inquiries found.")).toBeInTheDocument();
   });
 });
+

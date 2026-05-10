@@ -98,8 +98,8 @@ describe("Badges API", () => {
   describe("useGetBadges", () => {
     it("should fetch badges successfully", async () => {
       const mockBadges: badgesApi.Badge[] = [
-        { id: "1", name: "Rookie", description: "New member", icon: "star", color_theme: "blue", created_at: "2024-01-01" },
-        { id: "2", name: "Veteran", description: "2+ years", icon: "medal", color_theme: "gold", created_at: "2024-01-02" },
+        { id: "1", name: "Rookie", description: "New member", icon: "star", colorTheme: "blue", createdAt: "2024-01-01" },
+        { id: "2", name: "Veteran", description: "2+ years", icon: "medal", colorTheme: "gold", createdAt: "2024-01-02" },
       ];
       const mockResponse: BadgesResponse = { badges: mockBadges };
       mockClient.badges.$get.mockResolvedValue({ ok: true });
@@ -126,8 +126,8 @@ describe("Badges API", () => {
   describe("useGetBadgeLeaderboard", () => {
     it("should fetch badge leaderboard successfully", async () => {
       const mockLeaderboard: BadgeLeaderboardResponse["leaderboard"] = [
-        { user_id: "1", nickname: "Top Scorer", member_type: "student", badge_count: 15 },
-        { user_id: "2", nickname: "Second", member_type: "mentor", badge_count: 10 },
+        { userId: "1", nickname: "Top Scorer", memberType: "student", badgeCount: 15 },
+        { userId: "2", nickname: "Second", memberType: "mentor", badgeCount: 10 },
       ];
       const mockResponse: BadgeLeaderboardResponse = { leaderboard: mockLeaderboard };
       mockClient.badges.leaderboard.$get.mockResolvedValue({ ok: true });
@@ -143,12 +143,12 @@ describe("Badges API", () => {
   describe("useCreateBadge", () => {
     it("should create badge successfully", async () => {
       const mockResponse = { success: true };
-      const newBadge: Omit<badgesApi.Badge, "created_at"> = {
+      const newBadge: Omit<badgesApi.Badge, "createdAt"> = {
         id: "new-123",
         name: "Achievement Unlocked",
         description: "Special badge",
         icon: "trophy",
-        color_theme: "gold",
+        colorTheme: "gold",
       };
       mockClient.badges.admin.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -177,7 +177,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useCreateBadge(), { wrapper: customWrapper });
 
-      result.current.mutate({ name: "Test", description: "Test badge", icon: "star", color_theme: "blue", id: "test" });
+      result.current.mutate({ name: "Test", description: "Test badge", icon: "star", colorTheme: "blue", id: "test" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["badges"] });
@@ -190,7 +190,7 @@ describe("Badges API", () => {
 
       const { result } = renderHook(() => badgesApi.useCreateBadge(), { wrapper });
 
-      result.current.mutate({ name: "Test", description: "Test", icon: "star", color_theme: "blue", id: "test" });
+      result.current.mutate({ name: "Test", description: "Test", icon: "star", colorTheme: "blue", id: "test" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -317,3 +317,5 @@ describe("Badges API", () => {
     });
   });
 });
+
+

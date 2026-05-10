@@ -29,7 +29,7 @@ interface ProjectBoardKanbanProps {
   onCreateTask: (title: string) => void;
   onUpdateTask: (id: string, updates: import("../../api").UpdateTaskRequest) => Promise<void>;
   onDeleteTask: (id: string) => void;
-  onReorder: (items: { id: string; status: string; sort_order: number }[]) => void;
+  onReorder: (items: { id: string; status: string; sortOrder: number }[]) => void;
   onRefresh: () => void;
   isCreating: boolean;
 }
@@ -131,7 +131,7 @@ export default function ProjectBoardKanban({
         columnConfig={statusConfig as unknown as Record<string, import("../kanban/GenericKanbanBoard").KanbanColumnConfig>}
         getId={(task) => String(task.id)}
         getStatus={(task) => task.status}
-        getSortOrder={(task) => task.sort_order}
+        getSortOrder={(task) => task.sortOrder}
         onReorder={onReorder}
         isLoading={isLoading}
         headerContent={headerContent}

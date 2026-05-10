@@ -14,9 +14,8 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1">
           <label htmlFor="pe-tshirt" className={labelClass}>T-Shirt Size</label>
-          <form.Field
-            name="tshirt_size"
-            children={(field) => (
+          <form.Field name="tshirtSize">
+            {(field: any) => (
               <select
                 id="pe-tshirt"
                 name={field.name}
@@ -36,13 +35,12 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
                 <option value="Adult 3XL">Adult 3XL</option>
               </select>
             )}
-          />
+          </form.Field>
         </div>
         <div className="md:col-span-1">
           <label htmlFor="pe-ec-name" className={labelClass}>Emergency Contact Name</label>
-          <form.Field
-            name="emergency_contact_name"
-            children={(field) => (
+          <form.Field name="emergencyContactName">
+            {(field: any) => (
               <input
                 id="pe-ec-name"
                 name={field.name}
@@ -53,13 +51,12 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
                 onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
-          />
+          </form.Field>
         </div>
         <div className="md:col-span-1">
           <label htmlFor="pe-ec-phone" className={labelClass}>Emergency Contact Phone</label>
-          <form.Field
-            name="emergency_contact_phone"
-            children={(field) => (
+          <form.Field name="emergencyContactPhone">
+            {(field: any) => (
               <input
                 id="pe-ec-phone"
                 name={field.name}
@@ -70,7 +67,7 @@ export function PrivateLogisticsSection({ form, inputClass, labelClass, sectionC
                 onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
-          />
+          </form.Field>
         </div>
       </div>
     </div>

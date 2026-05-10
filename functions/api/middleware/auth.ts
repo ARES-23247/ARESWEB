@@ -64,7 +64,7 @@ export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
 // ── Admin Auth Middleware ─────────────────────────────────────────────
 export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   if (isDevBypassEnabled(c)) {
-    c.set("sessionUser", { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", member_type: "mentor" });
+    c.set("sessionUser", { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", memberType: "mentor" });
     return await next();
   }
 
@@ -87,13 +87,13 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   const db: DrizzleDB = c.get("db");
   const profile = await db.select({
     nickname: schema.userProfiles.nickname,
-    member_type: schema.userProfiles.memberType
+    memberType: schema.userProfiles.memberType
   })
   .from(schema.userProfiles)
   .where(eq(schema.userProfiles.userId, session.user.id))
   .get();
 
-  const memberType = profile?.member_type || "student";
+  const memberType = profile?.memberType || "student";
   const nickname = profile?.nickname || "ARES Member";
 
   // RBAC-02: Super-admin routes (user management, roles) - admin only
@@ -132,7 +132,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
     nickname,
     image: session.user.image,
     role,
-    member_type: memberType,
+    memberType,
   });
 
   await next();
@@ -141,7 +141,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
 // ── Authentication Middleware (Logged In Only) ──────────────────────
 export const ensureAuth = async (c: Context<AppEnv>, next: Next) => {
   if (isDevBypassEnabled(c)) {
-    c.set("sessionUser", { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", member_type: "mentor" });
+    c.set("sessionUser", { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", memberType: "mentor" });
     return await next();
   }
 
@@ -162,17 +162,17 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
   if (cached) return cached as SessionUser;
 
   if (isDevBypassEnabled(c)) {
-    return { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", member_type: "mentor" };
+    return { id: "local-dev", email: "local-dev@localhost", name: "Local Dev", nickname: "Local Dev", image: null, role: "admin", memberType: "mentor" };
   }
   try {
     const auth = getAuth(c.env.DB, c.env, c.req.url);
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session && session.user) {
-      // Fetch member_type and nickname from profile
+      // Fetch memberType and nickname from profile
       const db: DrizzleDB = c.get("db");
       const profile = await db.select({
         nickname: schema.userProfiles.nickname,
-        member_type: schema.userProfiles.memberType
+        memberType: schema.userProfiles.memberType
       })
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.userId, session.user.id))
@@ -186,7 +186,7 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
         image: session.user.image,
         // WR-03: Normalize role to lowercase for consistent comparison
         role: ((session.user as LuciaUserWithRole).role || UserRole.UNVERIFIED).toLowerCase() as string,
-        member_type: profile?.member_type || "student",
+        memberType: profile?.memberType || "student",
       };
       // WR-02: Cache sessionUser in context so subsequent getSessionUser calls don't re-fetch
       c.set("sessionUser", sessionUser);

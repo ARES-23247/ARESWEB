@@ -97,15 +97,15 @@ describe("Tasks API", () => {
       expect(mockClient.tasks.$get).toHaveBeenCalledWith({ query: { status: "todo" } });
     });
 
-    it("should pass parent_id filter", async () => {
+    it("should pass parentId filter", async () => {
       const mockResponse = { tasks: [] };
       mockClient.tasks.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
-      const { result } = renderHook(() => tasksApi.useGetTasks({ parent_id: "parent-123" }), { wrapper });
+      const { result } = renderHook(() => tasksApi.useGetTasks({ parentId: "parent-123" }), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mockClient.tasks.$get).toHaveBeenCalledWith({ query: { parent_id: "parent-123" } });
+      expect(mockClient.tasks.$get).toHaveBeenCalledWith({ query: { parentId: "parent-123" } });
     });
   });
 
@@ -191,7 +191,7 @@ describe("Tasks API", () => {
       });
     });
 
-    it("should update task with sort_order", async () => {
+    it("should update task with sortOrder", async () => {
       const mockResponse = { success: true };
       mockClient.tasks[":id"].$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -200,13 +200,13 @@ describe("Tasks API", () => {
 
       result.current.mutate({
         id: "task-123",
-        updates: { sort_order: 5 },
+        updates: { sortOrder: 5 },
       } as { id: string; updates: tasksApi.UpdateTaskRequest });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.tasks[":id"].$patch).toHaveBeenCalledWith({
         param: { id: "task-123" },
-        json: { sort_order: 5 },
+        json: { sortOrder: 5 },
       });
     });
   });
@@ -244,9 +244,9 @@ describe("Tasks API", () => {
     it("should reorder tasks successfully", async () => {
       const mockResponse = { success: true };
       const reorderItems = [
-        { id: "task-1", status: "todo", sort_order: 0 },
-        { id: "task-2", status: "todo", sort_order: 1 },
-        { id: "task-3", status: "in_progress", sort_order: 0 },
+        { id: "task-1", status: "todo", sortOrder: 0 },
+        { id: "task-2", status: "todo", sortOrder: 1 },
+        { id: "task-3", status: "in_progress", sortOrder: 0 },
       ];
       mockClient.tasks.reorder.$patch.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);

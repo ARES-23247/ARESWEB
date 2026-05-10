@@ -19,10 +19,10 @@ export interface BadgesResponse {
 
 export interface BadgeLeaderboardResponse {
   leaderboard: Array<{
-    user_id: string;
+    userId: string;
     nickname: string | null;
-    member_type: string | null;
-    badge_count: number;
+    memberType: string | null;
+    badgeCount: number;
   }>;
 }
 
@@ -80,10 +80,10 @@ export function useGetBadgeLeaderboard(
  * POST /api/badges/admin - Create a new badge definition
  */
 export function useCreateBadge(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, Omit<Badge, "created_at">>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, Omit<Badge, "createdAt">>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, Omit<Badge, "created_at">>({
+  return useMutation<{ success: boolean }, Error, Omit<Badge, "createdAt">>({
     mutationFn: async (data) => {
       const response = await client.badges.admin.$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
@@ -171,3 +171,4 @@ export function useGetUsersForBadges(
     ...options,
   });
 }
+

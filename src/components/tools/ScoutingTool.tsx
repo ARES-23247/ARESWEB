@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+﻿import { useState, useCallback, useEffect } from "react";
 import { Crosshair, Search, Globe, Sparkles, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { scoutingApi, type TOATeam, type TOARanking, type AnalysisResponse } from "../../lib/scouting-api";
@@ -12,14 +12,14 @@ const SEASON_KEY = "25-26";
 export default function ScoutingTool() {
   const [activeTab, setActiveTab] = useState<Tab>("team");
 
-  // ── Team Search State ──
+  // â”€â”€ Team Search State â”€â”€
   const [teamSearch, setTeamSearch] = useState("");
   const [teamData, setTeamData] = useState<TOATeam | null>(null);
   const [teamRanking, setTeamRanking] = useState<TOARanking | undefined>(undefined);
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
 
-  // ── Event Browser State ──
+  // â”€â”€ Event Browser State â”€â”€
   const [selectedEventKey, setSelectedEventKey] = useState<string>("");
   const [selectedEventName, setSelectedEventName] = useState<string>("");
   const [eventRankings, setEventRankings] = useState<TOARanking[]>([]);
@@ -28,10 +28,10 @@ export default function ScoutingTool() {
   const [eventError, setEventError] = useState<string | null>(null);
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
-  // ── Event Analysis State ──
+  // â”€â”€ Event Analysis State â”€â”€
   const [analysisEventKey, setAnalysisEventKey] = useState<string>("");
   const [analysisEventName, setAnalysisEventName] = useState<string>("");
-  const [eventAnalysis, setEventAnalysis] = useState<AnalysisResponse & { created_at?: string } | null>(null);
+  const [eventAnalysis, setEventAnalysis] = useState<AnalysisResponse & { createdAt?: string } | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [loadingEventHistory, setLoadingEventHistory] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export default function ScoutingTool() {
     return () => { mounted = false; };
   }, [analysisEventKey]);
 
-  // ── Team Search Handler ──
+  // â”€â”€ Team Search Handler â”€â”€
   const handleTeamSearch = useCallback(async () => {
     const num = parseInt(teamSearch, 10);
     if (isNaN(num) || num <= 0) {
@@ -86,7 +86,7 @@ export default function ScoutingTool() {
       // Try to fetch ranking data from current season
       try {
         const results = await scoutingApi.getTeamResults(num, SEASON_KEY);
-        // Results may contain ranking data — extract if available
+        // Results may contain ranking data â€” extract if available
         if (Array.isArray(results) && results.length > 0) {
           const firstResult = results[0] as Record<string, unknown>;
           if (firstResult.opr !== undefined) {
@@ -94,7 +94,7 @@ export default function ScoutingTool() {
           }
         }
       } catch {
-        // Ranking data not available for this season — that's fine
+        // Ranking data not available for this season â€” that's fine
       }
     } catch (err) {
       setTeamError(err instanceof Error ? err.message : "Team not found");
@@ -103,7 +103,7 @@ export default function ScoutingTool() {
     }
   }, [teamSearch]);
 
-  // ── Event Select Handler ──
+  // â”€â”€ Event Select Handler â”€â”€
   const handleEventSelect = useCallback(async (eventKey: string, eventName: string) => {
     setSelectedEventKey(eventKey);
     setSelectedEventName(eventName);
@@ -125,7 +125,7 @@ export default function ScoutingTool() {
     }
   }, []);
 
-  // ── Event Analysis Handler ──
+  // â”€â”€ Event Analysis Handler â”€â”€
   const handleEventAnalysis = useCallback(async () => {
     if (!analysisEventKey) return;
 
@@ -206,9 +206,9 @@ export default function ScoutingTool() {
         ))}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TAB 1: Team Search
-          ═══════════════════════════════════════════════════════════════════ */}
+          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {activeTab === "team" && (
         <div className="space-y-4">
           <div className="flex gap-3">
@@ -259,9 +259,9 @@ export default function ScoutingTool() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TAB 2: Event Browser
-          ═══════════════════════════════════════════════════════════════════ */}
+          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {activeTab === "event" && (
         <div className="space-y-4">
           <EventSelector
@@ -317,16 +317,16 @@ export default function ScoutingTool() {
                           <span className="text-ares-gold font-black">#{ranking.rank}</span>
                           <span className="text-white font-bold">{teamNumber}</span>
                           <span className="text-marble/70 font-semibold truncate text-left">
-                            {team?.team_name_short || "—"}
+                            {team?.team_name_short || "â€”"}
                           </span>
                           <span className="text-ares-cyan font-bold text-right">
-                            {ranking.opr?.toFixed(1) ?? "—"}
+                            {ranking.opr?.toFixed(1) ?? "â€”"}
                           </span>
                           <span className="text-marble/60 font-semibold text-right">
                             {ranking.wins}W-{ranking.losses}L-{ranking.ties}T
                           </span>
                           <span className="text-marble/60 font-semibold text-right flex items-center justify-end gap-1">
-                            {ranking.ranking_points?.toFixed(1) ?? "—"}
+                            {ranking.ranking_points?.toFixed(1) ?? "â€”"}
                             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </span>
                         </button>
@@ -366,9 +366,9 @@ export default function ScoutingTool() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TAB 3: Event Analysis
-          ═══════════════════════════════════════════════════════════════════ */}
+          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {activeTab === "analysis" && (
         <div className="space-y-4">
           <EventSelector
@@ -404,7 +404,7 @@ export default function ScoutingTool() {
                 Generating event analysis...
               </p>
               <p className="text-xs text-marble/30 mt-1">
-                This may take 10–20 seconds
+                This may take 10â€“20 seconds
               </p>
             </div>
           )}
@@ -421,9 +421,9 @@ export default function ScoutingTool() {
                     <h3 className="text-sm font-black text-white uppercase tracking-wider">
                       AI Event Analysis
                     </h3>
-                    {eventAnalysis.created_at && (
+                    {eventAnalysis.createdAt && (
                       <span className="text-[10px] text-marble/60 bg-white/5 px-2 py-0.5 rounded-full">
-                        {new Date(eventAnalysis.created_at).toLocaleDateString()}
+                        {new Date(eventAnalysis.createdAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
@@ -434,7 +434,7 @@ export default function ScoutingTool() {
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-semibold text-marble/30">
                     {eventAnalysis.model}
-                    {eventAnalysis.tokensUsed ? ` • ${eventAnalysis.tokensUsed} tokens` : ""}
+                    {eventAnalysis.tokensUsed ? ` â€¢ ${eventAnalysis.tokensUsed} tokens` : ""}
                   </span>
                   <button
                     onClick={handleEventAnalysis}
@@ -471,7 +471,7 @@ export default function ScoutingTool() {
   );
 }
 
-// ── Shared Sub-Components ────────────────────────────────────────────
+// â”€â”€ Shared Sub-Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
@@ -512,7 +512,7 @@ function EmptyState({
   );
 }
 
-/** Minimal markdown → HTML converter */
+/** Minimal markdown â†’ HTML converter */
 function markdownToHtml(md: string): string {
   let html = md
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")
@@ -530,3 +530,4 @@ function markdownToHtml(md: string): string {
     ALLOWED_ATTR: ['class']
   });
 }
+

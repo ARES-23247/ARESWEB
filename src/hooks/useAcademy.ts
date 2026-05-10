@@ -30,7 +30,7 @@ export function useAcademy(slug: string | undefined) {
 
   const allDocs = useMemo(() => {
     if (!rawAllDocs?.docs) return [];
-    return rawAllDocs.docs.filter((doc: DocRecord) => doc.display_in_math_corner === 1 || doc.display_in_science_corner === 1);
+    return rawAllDocs.docs.filter((doc: DocRecord) => doc.displayInMathCorner === 1 || doc.displayInScienceCorner === 1);
   }, [rawAllDocs]);
 
   const ObjectQuery = useGetDocWithContributors(slug || "");

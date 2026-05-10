@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests for judges route handlers
  *
  * Tests judge access endpoints including auth, admin checks,
@@ -38,7 +38,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }
@@ -65,7 +65,7 @@ describe('Judges Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -75,7 +75,7 @@ describe('Judges Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -450,7 +450,7 @@ describe('Judges Routes', () => {
           id: 'code-1',
           code: 'JUDGE123',
           label: 'Championship Judges',
-          created_at: '2024-01-01T00:00:00.000Z',
+          createdAt: '2024-01-01T00:00:00.000Z',
           expires_at: null,
         }],
         meta: { duration: 1, last_row_id: null, changes: 0, served_by: 'test' }
@@ -708,3 +708,4 @@ describe('Judges Routes', () => {
     });
   });
 });
+

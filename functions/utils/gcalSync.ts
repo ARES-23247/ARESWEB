@@ -10,16 +10,16 @@ export interface GCalConfig {
 export interface ARES_Event {
   id: string;
   title: string;
-  date_start: string;
-  date_end?: string;
+  dateStart: string;
+  dateEnd?: string;
   location?: string;
   description?: string;
-  cover_image?: string;
-  gcal_event_id?: string;
-  meeting_notes?: string;
-  recurrence_rule?: string;
-  parent_gcal_id?: string;
-  original_start_time?: string;
+  coverImage?: string;
+  gcalEventId?: string;
+  meetingNotes?: string;
+  recurrenceRule?: string;
+  parentGcalId?: string;
+  originalStartTime?: string;
 }
 
 /**
@@ -60,8 +60,8 @@ export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
  */
 function prepareGcalPayload(event: ARES_Event) {
   // If there's no end date, make it a 1 hour event from start, or all day.
-  const hasTime = event.date_start.includes("T");
-  const baseStart = hasTime ? event.date_start : `${event.date_start.split("T")[0]}T00:00:00Z`;
+  const hasTime = event.dateStart.includes("T");
+  const baseStart = hasTime ? event.dateStart : `${event.dateStart.split("T")[0]}T00:00:00Z`;
 
   const getNyOffset = (dateStr: string) => {
     const d = new Date(dateStr.includes("T") ? dateStr + (dateStr.endsWith("Z") ? "" : "Z") : dateStr + "T12:00:00Z");
@@ -108,11 +108,11 @@ function prepareGcalPayload(event: ARES_Event) {
     : { date: baseStart.split("T")[0] };
 
   let endObj;
-  if (event.date_end) {
-    const endHasTime = event.date_end.includes("T");
+  if (event.dateEnd) {
+    const endHasTime = event.dateEnd.includes("T");
     endObj = endHasTime
-      ? { dateTime: formatFloatingDateTime(event.date_end), timeZone: "America/New_York" }
-      : { date: event.date_end.split("T")[0] };
+      ? { dateTime: formatFloatingDateTime(event.dateEnd), timeZone: "America/New_York" }
+      : { date: event.dateEnd.split("T")[0] };
   } else {
     if (hasTime) {
       const d = new Date(baseStart + "Z"); 
@@ -133,7 +133,7 @@ function prepareGcalPayload(event: ARES_Event) {
   }
 
   const cleanDescription = parseAstToText(event.description || "");
-  const notesText = event.meeting_notes ? `\n\n--- Meeting Notes ---\n${event.meeting_notes}` : "";
+  const notesText = event.meetingNotes ? `\n\n--- Meeting Notes ---\n${event.meetingNotes}` : "";
 
   const result: Record<string, unknown> = {
     summary: event.title,
@@ -143,15 +143,15 @@ function prepareGcalPayload(event: ARES_Event) {
     end: endObj,
   };
 
-  if (event.recurrence_rule) {
-    result.recurrence = [`RRULE:${event.recurrence_rule}`];
+  if (event.recurrenceRule) {
+    result.recurrence = [`RRULE:${event.recurrenceRule}`];
   }
-
-  if (event.parent_gcal_id) {
-    result.recurringEventId = event.parent_gcal_id;
-    if (event.original_start_time) {
-      const origHasTime = event.original_start_time.includes("T");
-      const baseOrigStart = origHasTime ? event.original_start_time : `${event.original_start_time.split("T")[0]}T00:00:00Z`;
+  
+  if (event.parentGcalId) {
+    result.recurringEventId = event.parentGcalId;
+    if (event.originalStartTime) {
+      const origHasTime = event.originalStartTime.includes("T");
+      const baseOrigStart = origHasTime ? event.originalStartTime : `${event.originalStartTime.split("T")[0]}T00:00:00Z`;
       result.originalStartTime = origHasTime
         ? { dateTime: formatFloatingDateTime(baseOrigStart), timeZone: "America/New_York" }
         : { date: baseOrigStart.split("T")[0] };
@@ -174,8 +174,8 @@ export async function pushEventToGcal(event: ARES_Event, config: GCalConfig): Pr
   let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events`;
   let method = "POST";
 
-  if (event.gcal_event_id) {
-    url += `/${event.gcal_event_id}`;
+  if (event.gcalEventId) {
+    url += `/${event.gcalEventId}`;
     method = "PUT";
   }
 
@@ -265,7 +265,7 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
 
     if (!res.ok) {
       const text = await res.text().catch(() => "(no body)");
-      throw new Error(`Failed to pull from GCal (${config.calendarId}): ${res.status} — ${text}`);
+      throw new Error(`Failed to pull from GCal (${config.calendarId}): ${res.status} â€” ${text}`);
     }
 
     const data = (await res.json()) as Record<string, unknown>;
@@ -277,13 +277,14 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
   return allItems.map((item: GCalItem) => ({
     id: `gcal-${item.id}`,
     title: item.summary || "Untitled Event",
-    date_start: item.start?.dateTime || item.start?.date || "",
-    date_end: item.end?.dateTime || item.end?.date || "",
+    dateStart: item.start?.dateTime || item.start?.date || "",
+    dateEnd: item.end?.dateTime || item.end?.date || "",
     location: item.location || "",
     description: item.description || "",
-    gcal_event_id: item.id,
-    recurrence_rule: item.recurrence?.find((r) => r.startsWith("RRULE:"))?.replace("RRULE:", "") || undefined,
-    parent_gcal_id: item.recurringEventId || undefined,
-    original_start_time: item.originalStartTime?.dateTime || item.originalStartTime?.date || undefined,
+    gcalEventId: item.id,
+    recurrenceRule: item.recurrence?.find((r) => r.startsWith("RRULE:"))?.replace("RRULE:", "") || undefined,
+    parentGcalId: item.recurringEventId || undefined,
+    originalStartTime: item.originalStartTime?.dateTime || item.originalStartTime?.date || undefined,
   }));
 }
+

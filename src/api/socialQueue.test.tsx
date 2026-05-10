@@ -85,8 +85,8 @@ describe("Social Queue API", () => {
   describe("useGetSocialQueue", () => {
     it("should fetch social queue successfully", async () => {
       const mockPosts = [
-        { id: "1", content: "Post 1", status: "pending", scheduled_for: "2024-01-01T12:00:00Z" },
-        { id: "2", content: "Post 2", status: "sent", scheduled_for: "2024-01-02T12:00:00Z" },
+        { id: "1", content: "Post 1", status: "pending", scheduledFor: "2024-01-01T12:00:00Z" },
+        { id: "2", content: "Post 2", status: "sent", scheduledFor: "2024-01-02T12:00:00Z" },
       ];
       const mockResponse = { posts: mockPosts, total: 2 };
       mockClient["social-queue"].$get.mockResolvedValue({ ok: true });
@@ -129,7 +129,7 @@ describe("Social Queue API", () => {
   describe("useGetSocialCalendar", () => {
     it("should fetch social calendar successfully", async () => {
       const mockPosts = [
-        { id: "1", content: "Post 1", scheduled_for: "2024-01-01T12:00:00Z" },
+        { id: "1", content: "Post 1", scheduledFor: "2024-01-01T12:00:00Z" },
       ];
       const mockResponse = { posts: mockPosts };
       mockClient["social-queue"].calendar.$get.mockResolvedValue({ ok: true });
@@ -173,7 +173,7 @@ describe("Social Queue API", () => {
 
       const postData: socialQueueApi.CreateSocialPostRequest = {
         content: "New post",
-        scheduled_for: "2024-01-01T12:00:00Z",
+        scheduledFor: "2024-01-01T12:00:00Z",
         platforms: { twitter: true, instagram: false },
       };
 
@@ -192,7 +192,7 @@ describe("Social Queue API", () => {
 
       result.current.mutate({
         content: "New post",
-        scheduled_for: "2024-01-01T12:00:00Z",
+        scheduledFor: "2024-01-01T12:00:00Z",
         platforms: {},
       } as socialQueueApi.CreateSocialPostRequest);
 
@@ -216,7 +216,7 @@ describe("Social Queue API", () => {
 
       result.current.mutate({
         content: "New post",
-        scheduled_for: "2024-01-01T12:00:00Z",
+        scheduledFor: "2024-01-01T12:00:00Z",
         platforms: {},
       } as socialQueueApi.CreateSocialPostRequest);
 
@@ -320,16 +320,16 @@ describe("Social Queue API", () => {
   describe("useGetSocialAnalytics", () => {
     it("should fetch social analytics successfully", async () => {
       const mockResponse = {
-        total_posts: 100,
-        total_sent: 80,
-        total_pending: 15,
-        total_failed: 5,
-        by_platform: { twitter: 50, instagram: 30 },
+        totalPosts: 100,
+        totalSent: 80,
+        totalPending: 15,
+        totalFailed: 5,
+        byPlatform: { twitter: 50, instagram: 30 },
         engagement: {
-          total_impressions: 10000,
-          total_likes: 500,
-          total_shares: 100,
-          total_comments: 50,
+          totalImpressions: 10000,
+          totalLikes: 500,
+          totalShares: 100,
+          totalComments: 50,
         },
       };
       mockClient["social-queue"].analytics.$get.mockResolvedValue({ ok: true });
@@ -343,16 +343,16 @@ describe("Social Queue API", () => {
 
     it("should accept date range query parameters", async () => {
       const mockResponse = {
-        total_posts: 50,
-        total_sent: 40,
-        total_pending: 10,
-        total_failed: 0,
-        by_platform: {},
+        totalPosts: 50,
+        totalSent: 40,
+        totalPending: 10,
+        totalFailed: 0,
+        byPlatform: {},
         engagement: {
-          total_impressions: 5000,
-          total_likes: 250,
-          total_shares: 50,
-          total_comments: 25,
+          totalImpressions: 5000,
+          totalLikes: 250,
+          totalShares: 50,
+          totalComments: 25,
         },
       };
       mockClient["social-queue"].analytics.$get.mockResolvedValue({ ok: true });
@@ -381,3 +381,4 @@ describe("Social Queue API", () => {
     });
   });
 });
+

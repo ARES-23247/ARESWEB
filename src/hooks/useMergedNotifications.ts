@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useDashboardNotifications } from "./useDashboardNotifications";
 import { DashboardSession, DashboardPermissions } from "./useDashboardSession";
@@ -42,8 +42,8 @@ export function useMergedNotifications(
       
       const t = n.title || "";
       return !(t.includes("Inquiry") && t.startsWith("New ")) &&
-             !(t === "📝 Pending Blog Post") &&
-             !(t === "📝 Pending Document" || t === "📝 Doc Revision Pending");
+             !(t === "ðŸ“ Pending Blog Post") &&
+             !(t === "ðŸ“ Pending Document" || t === "ðŸ“ Doc Revision Pending");
     });
 
     return [
@@ -56,10 +56,10 @@ export function useMergedNotifications(
         link: '/dashboard/inquiries',
         is_inquiry: true
       })),
-      ...pendingPosts.map((p: { slug: string; title: string; author_nickname?: string }) => ({
+      ...pendingPosts.map((p: { slug: string; title: string; authorNickname?: string }) => ({
         id: `post-${p.slug}`,
         title: `New Pending Post`,
-        message: `"${p.title}" by ${p.author_nickname || 'Student'}`,
+        message: `"${p.title}" by ${p.authorNickname || 'Student'}`,
         is_read: false,
         link: '/dashboard/manage_blog',
         is_inquiry: true // Treat as action item (cannot be marked read)
@@ -92,3 +92,4 @@ export function useMergedNotifications(
     unreadCount
   };
 }
+

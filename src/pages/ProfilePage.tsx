@@ -9,30 +9,30 @@ import { validateIdParam } from "../utils/security";
 import { logger } from "../utils/logger";
 
 interface ProfilePublic {
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   nickname: string;
   avatar: string;
   pronouns: string;
   subteams: string[];
-  member_type: string;
+  memberType: string;
   bio: string;
-  favorite_first_thing: string;
-  fun_fact: string;
-  grade_year?: string;
+  favoriteFirstThing: string;
+  funFact: string;
+  gradeYear?: string;
   email?: string;
   phone?: string;
   colleges?: { name: string; domain: string; years: string; degree: string }[];
   employers?: { name: string; domain: string; title: string; current: boolean; years: string }[];
-  dietary_restrictions?: string;
-  favorite_food?: string;
-  tshirt_size?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  favorite_robot_mechanism?: string;
-  pre_match_superstition?: string;
-  rookie_year?: string;
-  leadership_role?: string;
+  dietaryRestrictions?: string;
+  favoriteFood?: string;
+  tshirtSize?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  favoriteRobotMechanism?: string;
+  preMatchSuperstition?: string;
+  rookieYear?: string;
+  leadershipRole?: string;
 }
 
 interface BadgeDef {
@@ -52,7 +52,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfilePublic | null>(null);
   const [badges, setBadges] = useState<BadgeDef[]>([]);
   const [points, setPoints] = useState<number | null>(null);
-  const [history, setHistory] = useState<{id: string, reason: string, points_delta: number, created_at: string}[]>([]);
+  const [history, setHistory] = useState<{id: string, reason: string, points_delta: number, createdAt: string}[]>([]);
   const [error, setError] = useState<{ status: number; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [pointsLoading, setPointsLoading] = useState(true);
@@ -101,7 +101,7 @@ export default function ProfilePage() {
     fetch(`/api/points/${validatedUserId}/history`)
       .then(res => res.json())
       .then((data: unknown) => {
-        const d = data as { transactions: {id: string, reason: string, points_delta: number, created_at: string}[] };
+        const d = data as { transactions: {id: string, reason: string, points_delta: number, createdAt: string}[] };
         if (!cancelled) setHistory(d.transactions);
         setHistoryLoading(false);
       }).catch((err: Error) => {
@@ -152,8 +152,8 @@ export default function ProfilePage() {
     );
   }
 
-  const memberLabel = { student: "Student", alumni: "Alumni", mentor: "Mentor", coach: "Coach" }[profile.member_type] || "Member";
-  const memberIcon = { student: "📚", alumni: "🎓", mentor: "🔧", coach: "🏆" }[profile.member_type] || "👤";
+  const memberLabel = { student: "Student", alumni: "Alumni", mentor: "Mentor", coach: "Coach" }[profile.memberType] || "Member";
+  const memberIcon = { student: "ðŸ“š", alumni: "ðŸŽ“", mentor: "ðŸ”§", coach: "ðŸ†" }[profile.memberType] || "ðŸ‘¤";
 
   const subteams = typeof profile.subteams === "string" ? JSON.parse(profile.subteams || "[]") : (profile.subteams || []);
   const colleges = typeof profile.colleges === "string" ? JSON.parse(profile.colleges || "[]") : (profile.colleges || []);
@@ -187,7 +187,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-black text-white mb-1">
-                {profile.first_name && profile.last_name ? `${profile.first_name} "${profile.nickname}" ${profile.last_name}` : (profile.nickname || profile.first_name || "ARES Member")}
+                {profile.firstName && profile.lastName ? `${profile.firstName} "${profile.nickname}" ${profile.lastName}` : (profile.nickname || profile.firstName || "ARES Member")}
               </h1>
               {profile.pronouns && <p className="text-marble text-sm mb-3">{profile.pronouns}</p>}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
@@ -212,7 +212,7 @@ export default function ProfilePage() {
               </h3>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => {
-                  const IconComp = ((LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[b.icon] || LucideIcons.Award);
+                  const IconComp = (LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[b.icon] || LucideIcons.Award;
                   const colorClass = `text-${b.color_theme.replace("text-", "")}`;
                   return (
                     <div key={b.id} className="relative group cursor-help bg-obsidian border border-white/10 hover:border-ares-gold ares-cut p-4 transition-all flex flex-col items-center justify-center w-28 h-28">
@@ -266,7 +266,7 @@ export default function ProfilePage() {
                       <div key={tx.id} className="bg-black/40 border border-white/5 ares-cut-sm p-3 flex justify-between items-center">
                         <div>
                           <p className="text-sm font-bold text-white">{tx.reason}</p>
-                          <p className="text-[10px] text-white/40">{tx.created_at ? new Date(tx.created_at).toLocaleDateString() : 'Unknown'}</p>
+                          <p className="text-[10px] text-white/40">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'Unknown'}</p>
                         </div>
                         <span className={`text-sm font-black ${tx.points_delta > 0 ? "text-ares-cyan" : "text-ares-red"}`}>
                           {tx.points_delta > 0 ? "+" : ""}{tx.points_delta}
@@ -280,28 +280,28 @@ export default function ProfilePage() {
           )}
 
           {/* Admin / Private Details */}
-          {(profile.emergency_contact_name || profile.dietary_restrictions || profile.tshirt_size) && (
+          {(profile.emergencyContactName || profile.dietaryRestrictions || profile.tshirtSize) && (
              <div className="bg-ares-red/5 border border-ares-red/20 ares-cut p-6 mb-8 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-ares-red text-white text-[9px] font-black uppercase px-2 py-1 ares-cut-sm">Private / Admin Only</div>
                <h3 className="ares-badge-red mb-6 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                 {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
+                 {(profile.emergencyContactName || profile.emergencyContactPhone) && (
                    <div>
                      <p className="text-xs font-bold text-marble uppercase">Emergency Contact</p>
-                     <p className="text-marble text-sm">{profile.emergency_contact_name || "Unknown"}</p>
-                     <p className="text-marble text-xs">{profile.emergency_contact_phone}</p>
+                     <p className="text-marble text-sm">{profile.emergencyContactName || "Unknown"}</p>
+                     <p className="text-marble text-xs">{profile.emergencyContactPhone}</p>
                    </div>
                  )}
-                 {profile.dietary_restrictions && (
+                 {profile.dietaryRestrictions && (
                    <div>
                      <p className="text-xs font-bold text-marble uppercase">Dietary Info</p>
-                     <p className="text-marble text-sm">{JSON.parse(profile.dietary_restrictions || "[]").join(", ")}</p>
+                     <p className="text-marble text-sm">{JSON.parse(profile.dietaryRestrictions || "[]").join(", ")}</p>
                    </div>
                  )}
-                 {profile.tshirt_size && (
+                 {profile.tshirtSize && (
                    <div>
                      <p className="text-xs font-bold text-marble uppercase">T-Shirt Size</p>
-                     <p className="text-marble text-sm uppercase">{profile.tshirt_size}</p>
+                     <p className="text-marble text-sm uppercase">{profile.tshirtSize}</p>
                    </div>
                  )}
                </div>
@@ -310,52 +310,52 @@ export default function ProfilePage() {
 
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {profile.rookie_year && (
+            {profile.rookieYear && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-marble uppercase tracking-wider mb-2">Rookie Year</p>
-                <p className="text-marble text-sm">{profile.rookie_year}</p>
+                <p className="text-marble text-sm">{profile.rookieYear}</p>
               </div>
             )}
-            {profile.leadership_role && (
+            {profile.leadershipRole && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Leadership Role</p>
-                <p className="text-marble text-sm">{profile.leadership_role}</p>
+                <p className="text-marble text-sm">{profile.leadershipRole}</p>
               </div>
             )}
-            {profile.favorite_first_thing && (
+            {profile.favoriteFirstThing && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Favorite Thing About FIRST</p>
-                <p className="text-marble text-sm">{profile.favorite_first_thing}</p>
+                <p className="text-marble text-sm">{profile.favoriteFirstThing}</p>
               </div>
             )}
-            {profile.favorite_robot_mechanism && (
+            {profile.favoriteRobotMechanism && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Favorite Robot Mechanism</p>
-                <p className="text-marble text-sm">{profile.favorite_robot_mechanism}</p>
+                <p className="text-marble text-sm">{profile.favoriteRobotMechanism}</p>
               </div>
             )}
-            {profile.pre_match_superstition && (
+            {profile.preMatchSuperstition && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Pre-Match Superstition</p>
-                <p className="text-marble text-sm">{profile.pre_match_superstition}</p>
+                <p className="text-marble text-sm">{profile.preMatchSuperstition}</p>
               </div>
             )}
-            {profile.fun_fact && (
+            {profile.funFact && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Fun Fact</p>
-                <p className="text-marble text-sm">{profile.fun_fact}</p>
+                <p className="text-marble text-sm">{profile.funFact}</p>
               </div>
             )}
-            {profile.favorite_food && (
+            {profile.favoriteFood && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-ares-cyan uppercase tracking-wider mb-2">Favorite Food</p>
-                <p className="text-marble text-sm">{profile.favorite_food}</p>
+                <p className="text-marble text-sm">{profile.favoriteFood}</p>
               </div>
             )}
-            {profile.grade_year && (
+            {profile.gradeYear && (
               <div className="bg-white/5 border border-white/10 ares-cut p-6">
                 <p className="text-xs font-bold text-marble uppercase tracking-wider mb-2">Class</p>
-                <p className="text-marble text-sm">{profile.grade_year}</p>
+                <p className="text-marble text-sm">{profile.gradeYear}</p>
               </div>
             )}
             {(profile.email || profile.phone) && (
@@ -378,7 +378,7 @@ export default function ProfilePage() {
                     <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{col.name}</p>
-                      <p className="text-marble text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-marble text-xs">{[col.degree, col.years].filter(Boolean).join(" Â· ")}</p>
                     </div>
                   </div>
                 ))}
@@ -396,8 +396,8 @@ export default function ProfilePage() {
                   <div key={i} className="flex items-center gap-3">
                     <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-8 h-8" />
                     <div>
-                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-xs ml-1">● Current</span>}</p>
-                      <p className="text-marble text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
+                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-xs ml-1">â— Current</span>}</p>
+                      <p className="text-marble text-xs">{[emp.title, emp.years].filter(Boolean).join(" Â· ")}</p>
                     </div>
                   </div>
                 ))}
@@ -406,7 +406,7 @@ export default function ProfilePage() {
           )}
 
           {/* Student Safety Notice */}
-          {profile.member_type === "student" && (
+          {profile.memberType === "student" && (
             <div className="mt-8 flex items-center gap-2 text-marble/30 text-xs">
               <Shield size={12} /> Contact information protected per FIRST Youth Protection guidelines.
             </div>
@@ -416,5 +416,6 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
 

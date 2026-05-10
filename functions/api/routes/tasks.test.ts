@@ -47,7 +47,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }
@@ -74,7 +74,7 @@ describe('Tasks Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -84,7 +84,7 @@ describe('Tasks Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -94,7 +94,7 @@ describe('Tasks Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'mentor',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -502,8 +502,8 @@ describe('Tasks Routes', () => {
         },
         body: JSON.stringify({
           items: [
-            { id: 'task-1', status: 'todo', sort_order: 1 },
-            { id: 'task-2', status: 'in-progress', sort_order: 2 },
+            { id: 'task-1', status: 'todo', sortOrder: 1 },
+            { id: 'task-2', status: 'in-progress', sortOrder: 2 },
           ],
         }),
       });
@@ -533,8 +533,8 @@ describe('Tasks Routes', () => {
         },
         body: JSON.stringify({
           items: [
-            { id: 'task-1', status: 'todo', sort_order: 1 },
-            { id: 'task-2', status: 'in-progress', sort_order: 2 },
+            { id: 'task-1', status: 'todo', sortOrder: 1 },
+            { id: 'task-2', status: 'in-progress', sortOrder: 2 },
           ],
         }),
       });

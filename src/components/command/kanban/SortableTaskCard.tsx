@@ -113,10 +113,10 @@ export function SortableTaskCard({
             </div>
           ) : null}
         </div>
-          {task.due_date && (
-            <span className={`text-[9px] font-mono ${task.due_date && new Date(task.due_date) < new Date() && task.status !== "done" ? "text-ares-red font-black" : "text-ares-gray"}`}>
-              {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              {task.due_date && new Date(task.due_date) < new Date() && task.status !== "done" && " ⚠"}
+          {task.dueDate && (
+            <span className={`text-[9px] font-mono ${task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done" ? "text-ares-red font-black" : "text-ares-gray"}`}>
+              {new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done" && " ⚠"}
             </span>
           )}
         </div>

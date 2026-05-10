@@ -63,13 +63,13 @@ export default function PrintPortfolio() {
   }
 
    
-  const execDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.is_executive_summary === 1) || [];
+  const execDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.isExecutiveSummary === 1) || [];
    
-  const techDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.is_executive_summary !== 1) || [];
+  const techDocs = portfolio.portfolioDocs?.filter((d: PortfolioDoc) => d.isExecutiveSummary !== 1) || [];
 
   return (
     <div className="print-layout bg-white text-black min-h-screen">
-      {/* ── COVER PAGE ─────────────────────────────────────────────────── */}
+      {/* â”€â”€ COVER PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="print-cover flex flex-col items-center justify-center h-screen border-[12px] border-ares-red p-12 text-center page-break-after">
         <div className="w-32 h-32 mb-8 bg-black ares-cut-sm flex items-center justify-center p-4">
            {/* Fallback to text logo for print reliability */}
@@ -86,7 +86,7 @@ export default function PrintPortfolio() {
         </div>
       </div>
 
-      {/* ── EXECUTIVE SUMMARIES ────────────────────────────────────────── */}
+      {/* â”€â”€ EXECUTIVE SUMMARIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {execDocs.length > 0 && (
         <div className="print-section">
           <div className="print-section-header">
@@ -108,7 +108,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* ── TECHNICAL PORTFOLIO ────────────────────────────────────────── */}
+      {/* â”€â”€ TECHNICAL PORTFOLIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {techDocs.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header flex items-center gap-4 border-b-4 border-black pb-4 mb-8">
@@ -135,7 +135,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* ── OUTREACH & IMPACT ──────────────────────────────────────────── */}
+      {/* â”€â”€ OUTREACH & IMPACT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {portfolio.outreach && portfolio.outreach.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
@@ -180,7 +180,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* ── AWARDS ─────────────────────────────────────────────────────── */}
+      {/* â”€â”€ AWARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {portfolio?.awards && portfolio.awards.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
@@ -191,9 +191,9 @@ export default function PrintPortfolio() {
             {portfolio.awards.map((award: AwardItem, i: number) => (
               <div key={i} className="border-l-4 border-ares-gold pl-4 py-2 mb-6 page-break-inside-avoid">
                 <h4 className="text-lg font-black uppercase">{award.title}</h4>
-                <div className="text-sm font-bold text-black/60 mt-1">{award.event_name}</div>
+                <div className="text-sm font-bold text-black/60 mt-1">{award.eventName}</div>
                 <div className="text-sm text-black/50 mt-1 flex items-center gap-2">
-                  <Calendar size={14} /> {award.year} &bull; {award.event_name}
+                  <Calendar size={14} /> {award.year} &bull; {award.eventName}
                 </div>
               </div>
             ))}
@@ -203,3 +203,4 @@ export default function PrintPortfolio() {
     </div>
   );
 }
+

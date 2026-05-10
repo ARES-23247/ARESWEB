@@ -23,17 +23,18 @@ export interface CreateTaskRequest {
   priority?: "low" | "normal" | "high" | "urgent";
   subteam?: string | null;
   assignees?: string[];
-  due_date?: string | null;
-  parent_id?: string | null;
-  time_spent_seconds?: number;
+  dueDate?: string | null;
+  parentId?: string | null;
+  timeSpentSeconds?: number;
+  assignedTo?: string | null;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
-  sort_order?: number;
+  sortOrder?: number;
 }
 
 export interface ReorderTasksRequest {
-  items: Array<{ id: string; status: string; sort_order: number }>;
+  items: Array<{ id: string; status: string; sortOrder: number }>;
 }
 
 
@@ -45,7 +46,7 @@ export interface ReorderTasksRequest {
  * GET /api/tasks - Get all tasks
  */
 export function useGetTasks(
-  query?: { status?: string; parent_id?: string },
+  query?: { status?: string; parentId?: string },
   options?: Omit<UseQueryOptions<TasksResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery<TasksResponse>({

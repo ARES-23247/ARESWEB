@@ -14,7 +14,7 @@ export const githubProjectItemSchema = z.object({
     example: "In Progress",
     description: "Status of the item",
   }),
-  updated_at: z.string().openapi({
+  updatedAt: z.string().openapi({
     example: "2026-05-06T12:00:00Z",
     description: "Last updated timestamp",
   }),

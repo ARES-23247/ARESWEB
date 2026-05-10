@@ -1,8 +1,8 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import SEO from "../components/SEO";
-import { DEFAULT_COVER_IMAGE } from "../utils/constants";
+import { DEFAULT_coverImage } from "../utils/constants";
 import { useGetPosts, type Post as _Post } from "../api";
 
 interface PostRecord {
@@ -11,8 +11,8 @@ interface PostRecord {
   date?: string | null;
   snippet?: string | null;
   thumbnail?: string | null;
-  author_nickname?: string | null;
-  author_avatar?: string | null;
+  authorNickname?: string | null;
+  authorAvatar?: string | null;
   cf_email?: string;
 }
 
@@ -55,7 +55,7 @@ export default function Blog() {
             <Link to="/blog/$slug" params={{ slug: post.slug }} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
                 <div className="relative h-56 w-full overflow-hidden">
-                  <img src={post.thumbnail || DEFAULT_COVER_IMAGE} alt={post.title} className={`w-full h-full group-hover:scale-110 transition-transform duration-700 ${post.thumbnail ? 'object-cover' : 'object-contain p-8 bg-black/80'}`} />
+                  <img src={post.thumbnail || DEFAULT_coverImage} alt={post.title} className={`w-full h-full group-hover:scale-110 transition-transform duration-700 ${post.thumbnail ? 'object-cover' : 'object-contain p-8 bg-black/80'}`} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                 </div>
                 <div className="p-6 flex-grow flex flex-col">
@@ -64,14 +64,14 @@ export default function Blog() {
                   
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
                     <p className="text-xs text-white/50">{post.date ? format(new Date(post.date), 'MMMM do, yyyy') : 'No date'}</p>
-                    {(post.author_avatar || post.author_nickname) && (
-                      <div className="flex items-center gap-1.5" title={post.author_nickname ?? undefined}>
+                    {(post.authorAvatar || post.authorNickname) && (
+                      <div className="flex items-center gap-1.5" title={post.authorNickname ?? undefined}>
                         <img
-                          src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
-                          alt={`${post.author_nickname || "Author"}'s avatar`}
+                          src={post.authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorNickname || post.slug}`}
+                          alt={`${post.authorNickname || "Author"}'s avatar`}
                           className="w-5 h-5 rounded-full object-cover border border-white/10"
                         />
-                        <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.author_nickname || "ARES Author"}</span>
+                        <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.authorNickname || "ARES Author"}</span>
                       </div>
                     )}
                   </div>
@@ -94,4 +94,5 @@ export default function Blog() {
     </motion.div>
   );
 }
+
 

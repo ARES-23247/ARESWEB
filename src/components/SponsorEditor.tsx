@@ -11,11 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 
 import { useModal } from "../contexts/ModalContext";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import { zodValidator } from "@tanstack/zod-form-adapter";
 import { sponsorSchema, SponsorPayload } from "@shared/schemas/sponsorSchema";
 
-import { useGetAdminSponsors, useSaveSponsor, useDeleteSponsor } from "../api";
+import { useGetAdminSponsors, useSaveSponsor, useDeleteSponsor, type Sponsor } from "../api";
 
 const TIERS = [
   { name: "Titanium", icon: <Gem className="text-ares-cyan" />, color: "text-ares-cyan", border: "border-ares-cyan/30" },
@@ -34,11 +34,20 @@ export default function SponsorEditor() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<SponsorPayload>({
-    resolver: zodResolver(sponsorSchema),
+  const form = useForm({
+    // @ts-expect-error - Type definitions are outdated
+    validatorAdapter: zodValidator(),
     defaultValues: {
-      tier: "Gold",
-      is_active: 1
+      name: "",
+      tier: "Gold" as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
+      logoUrl: "",
+      websiteUrl: "",
+      isActive: 1,
+      id: ""
+    },
+    onSubmit: async ({ value }) => {
+      const finalId = editingId || value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      saveMutation.mutate({ ...value, id: finalId });
     }
   });
 
@@ -51,7 +60,7 @@ export default function SponsorEditor() {
         queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
         setIsFormOpen(false);
         setEditingId(null);
-        reset();
+        form.reset();
 
         confetti({
           particleCount: 150,
@@ -74,10 +83,7 @@ export default function SponsorEditor() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] })
   });
 
-  const onFormSubmit = (data: SponsorPayload) => {
-    const finalId = editingId || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    saveMutation.mutate({ ...data, id: finalId });
-  };
+  // Handlers moved to form onSubmit
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,7 +102,7 @@ export default function SponsorEditor() {
       const data = (await res.json()) as { success?: boolean; url?: string; error?: string };
       
       if (res.ok && data.success) {
-        setValue("logo_url", data.url || "", { shouldValidate: true });
+        form.setFieldValue("logoUrl", data.url || "");
         toast.success("Logo uploaded securely.");
       } else {
         toast.error(data.error || "Upload failed");
@@ -109,16 +115,15 @@ export default function SponsorEditor() {
     }
   };
 
-  const handleEdit = (s: { id: string; name: string; tier: string; logo_url?: string | null; website_url?: string | null; is_active?: number }) => {
+  const handleEdit = (s: Sponsor) => {
     setEditingId(s.id);
-    reset({
+    form.reset({
       id: s.id,
       name: s.name,
-       
       tier: s.tier as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
-      logo_url: s.logo_url || "",
-      website_url: s.website_url || "",
-      is_active: s.is_active ?? 1
+      logoUrl: s.logoUrl || "",
+      websiteUrl: s.websiteUrl || "",
+      isActive: s.isActive ?? 1
     });
     setIsFormOpen(true);
   };
@@ -147,7 +152,7 @@ export default function SponsorEditor() {
               if (isFormOpen) {
                 setIsFormOpen(false);
                 setEditingId(null);
-                reset();
+                form.reset();
               } else {
                 setIsFormOpen(true);
               }
@@ -173,42 +178,78 @@ export default function SponsorEditor() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-             
-            onSubmit={handleSubmit(onFormSubmit)}
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit();
+            }}
             className="bg-black/40 border border-white/10 ares-cut-lg p-6 space-y-4 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DashboardInput
-                id="sponsor-name"
-                label="Partner Name"
-                {...register("name")}
-                error={errors.name?.message as string}
-                placeholder="e.g. Google DeepMind"
-                focusColor="ares-red"
-              />
-              <div className="space-y-1">
-                <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-marble/60">Tier</label>
-                <select
-                  id="sponsor-tier"
-                  {...register("tier")}
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                >
-                  {TIERS.map(t => <option key={t.name} value={t.name} className="bg-obsidian">{t.name}</option>)}
-                </select>
-                {errors.tier && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{errors.tier.message as string}</p>}
-              </div>
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: (sponsorSchema as any).shape.name,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="sponsor-name"
+                    label="Partner Name"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as unknown as any}
+                    placeholder="e.g. Google DeepMind"
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="tier">
+                {(field) => (
+                  <div className="space-y-1">
+                    <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-marble/60">Tier</label>
+                    <select
+                      id="sponsor-tier"
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind")}
+                      className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
+                    >
+                      {TIERS.map(t => <option key={t.name} value={t.name} className="bg-obsidian">{t.name}</option>)}
+                    </select>
+                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{field.state.meta.errors[0] as string}</p>}
+                  </div>
+                )}
+              </form.Field>
+
               <div className="space-y-1">
                 <label htmlFor="sponsor-logo" className="text-xs font-bold uppercase tracking-widest text-marble/60">Partner Logo</label>
                 <div className="flex gap-2">
-                  <DashboardInput
-                    id="sponsor-logo"
-                    label=""
-                    {...register("logo_url")}
-                    error={errors.logo_url?.message as string}
-                    placeholder="https://... or upload"
-                    focusColor="ares-red"
-                    className="flex-1"
-                  />
+                  <form.Field
+                    name="logoUrl"
+                    validators={{
+                      onChange: (sponsorSchema as any).shape.logoUrl,
+                    }}
+                  >
+                    {(field) => (
+                      <DashboardInput
+                        id="sponsor-logo"
+                        label=""
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        error={field.state.meta.errors?.[0] as unknown as any}
+                        placeholder="https://... or upload"
+                        focusColor="ares-red"
+                        className="flex-1"
+                      />
+                    )}
+                  </form.Field>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -226,14 +267,27 @@ export default function SponsorEditor() {
                   </button>
                 </div>
               </div>
-              <DashboardInput
-                id="sponsor-link"
-                label="Website URL"
-                {...register("website_url")}
-                error={errors.website_url?.message as string}
-                placeholder="https://..."
-                focusColor="ares-red"
-              />
+
+              <form.Field
+                name="websiteUrl"
+                validators={{
+                  onChange: (sponsorSchema as any).shape.websiteUrl,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="sponsor-link"
+                    label="Website URL"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as unknown as any}
+                    placeholder="https://..."
+                    focusColor="ares-red"
+                  />
+                )}
+              </form.Field>
             </div>
             <DashboardSubmitButton 
               isPending={saveMutation.isPending} 
@@ -247,7 +301,7 @@ export default function SponsorEditor() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
            <DashboardLoadingGrid count={3} heightClass="h-32" gridClass="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
-        ) : (sponsors as { id: string; name: string; tier: string; logo_url?: string | null; website_url?: string | null }[]).map((s) => (
+        ) : (sponsors as any[]).map((s) => (
           <div key={s.id} className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-2">
@@ -277,15 +331,15 @@ export default function SponsorEditor() {
             <h4 className="text-lg font-bold text-white mb-1">{s.name}</h4>
             
             <div className="flex items-center gap-3 mt-4">
-              {s.website_url && (
-                <a href={s.website_url} target="_blank" rel="noreferrer" title={`Visit ${s.name} website`} className="text-marble/60 hover:text-ares-gold transition-colors">
+              {s.websiteUrl && (
+                <a href={s.websiteUrl} target="_blank" rel="noreferrer" title={`Visit ${s.name} website`} className="text-marble/60 hover:text-ares-gold transition-colors">
                   <Globe size={16} />
                 </a>
               )}
-              {s.logo_url && (
+              {s.logoUrl && (
                 <div className="h-6 w-px bg-white/5" />
               )}
-              {s.logo_url && (
+              {s.logoUrl && (
                 <div className="text-xs font-bold uppercase tracking-widest text-ares-gold flex items-center gap-1">
                   <CheckCircle2 size={12} /> Logo Linked
                 </div>

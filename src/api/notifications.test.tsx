@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -87,8 +87,8 @@ describe("Notifications API", () => {
   describe("useGetNotifications", () => {
     it("should fetch user notifications successfully", async () => {
       const mockNotifications = [
-        { id: "1", title: "New post", message: "A new post was published", read: false, created_at: "2024-01-01" },
-        { id: "2", title: "Event reminder", message: "Robotics meeting tomorrow", read: true, created_at: "2024-01-02" },
+        { id: "1", title: "New post", message: "A new post was published", read: false, createdAt: "2024-01-01" },
+        { id: "2", title: "Event reminder", message: "Robotics meeting tomorrow", read: true, createdAt: "2024-01-02" },
       ];
       const mockResponse = { notifications: mockNotifications };
       mockClient.notifications.$get.mockResolvedValue({ ok: true });
@@ -338,3 +338,4 @@ describe("Notifications API", () => {
     });
   });
 });
+

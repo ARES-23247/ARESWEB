@@ -17,12 +17,12 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-// Union types for role and member_type to provide type safety
+// Union types for role and memberType to provide type safety
 type UserRole = "unverified" | "user" | "author" | "admin";
 type MemberType = "student" | "alumni" | "parent" | "coach" | "mentor" | "sponsor";
 
 const ROLES: readonly UserRole[] = ["unverified", "user", "author", "admin"] as const;
-const MEMBER_TYPES: readonly MemberType[] = ["student", "alumni", "parent", "coach", "mentor", "sponsor"] as const;
+const memberTypeS: readonly MemberType[] = ["student", "alumni", "parent", "coach", "mentor", "sponsor"] as const;
 
 type User = {
   id: string;
@@ -31,7 +31,7 @@ type User = {
   role: string;
   createdAt: number;
   nickname?: string | null;
-  member_type?: string | null;
+  memberType?: string | null;
   email?: string | null;
 };
 
@@ -98,8 +98,8 @@ export default function AdminUsers() {
 
   const changeMemberType = useCallback((userId: string, newType: string) => {
     // Validate that newType is a valid MemberType before mutation
-    const validType = MEMBER_TYPES.includes(newType as MemberType) ? (newType as MemberType) : "student";
-    patchMutation.mutate({ id: userId, member_type: validType });
+    const validType = memberTypeS.includes(newType as MemberType) ? (newType as MemberType) : "student";
+    patchMutation.mutate({ id: userId, memberType: validType });
   }, [patchMutation]);
 
   const removeUser = (userId: string, name: string) => {
@@ -116,9 +116,9 @@ export default function AdminUsers() {
     if (!pointsUserId || !pointsDelta || !pointsReason) return;
     const delta = parseInt(pointsDelta, 10);
     if (isNaN(delta)) return toast.error("Invalid points amount");
-    pointsMutation.mutate({
-      user_id: pointsUserId,
-      points_delta: delta,
+    (pointsMutation.mutate as any)({
+      userId: pointsUserId,
+      pointsDelta: delta,
       reason: pointsReason
     }, {
       onSuccess: () => {
@@ -174,7 +174,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("email", {
       header: "Email",
-      cell: info => <span className="text-sm text-white/60">{info.getValue() || "—"}</span>,
+      cell: info => <span className="text-sm text-white/60">{info.getValue() || "â€”"}</span>,
     }),
     columnHelper.accessor("role", {
       header: "Role",
@@ -196,7 +196,7 @@ export default function AdminUsers() {
         </div>
       ),
     }),
-    columnHelper.accessor("member_type", {
+    columnHelper.accessor("memberType", {
       header: "Type",
       cell: info => (
         <div className="relative inline-block">
@@ -210,7 +210,7 @@ export default function AdminUsers() {
               "border-white/20 text-white/60"
             }`}
           >
-            {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
+            {memberTypeS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
         </div>
@@ -218,7 +218,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("createdAt", {
       header: "Joined",
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "—"}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "â€”"}</span>,
     }),
     columnHelper.display({
       id: "actions",
@@ -501,3 +501,5 @@ export default function AdminUsers() {
     </div>
   );
 }
+
+

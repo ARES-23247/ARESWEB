@@ -8,7 +8,7 @@ import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCir
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -19,21 +19,21 @@ const outreachSchema = z.object({
   title: z.string().min(1, "Title is required"),
   date: z.string(),
   location: z.string().nullable().optional(),
-  students_count: z.number().min(0),
-  hours_logged: z.number().min(0),
-  reach_count: z.number().min(0),
+  studentsCount: z.number().min(0),
+  hoursLogged: z.number().min(0),
+  reachCount: z.number().min(0),
   description: z.string().nullable().optional(),
-  is_mentoring: z.boolean().optional(),
-  mentored_team_number: z.string().nullable().optional(),
-  season_id: z.number().nullable().optional(),
-  event_id: z.string().nullable().optional(),
-  mentor_count: z.number().optional(),
-  mentor_hours: z.number().optional(),
+  isMentoring: z.boolean().optional(),
+  mentoredTeamNumber: z.string().nullable().optional(),
+  seasonId: z.number().nullable().optional(),
+  eventId: z.string().nullable().optional(),
+  mentorCount: z.number().optional(),
+  mentorHours: z.number().optional(),
 });
 
 const outreachFormSchema = outreachSchema.omit({ id: true }).extend({
   id: z.string().optional(),
-  event_id: z.string().nullable().optional(),
+  eventId: z.string().nullable().optional(),
 });
 
 type OutreachFormValues = z.infer<typeof outreachFormSchema>;
@@ -43,17 +43,17 @@ interface OutreachLog {
   title: string;
   date: string;
   location: string | null;
-  students_count: number;
-  hours_logged: number;
-  reach_count: number;
+  studentsCount: number;
+  hoursLogged: number;
+  reachCount: number;
   description: string | null;
-  is_mentoring?: boolean;
-  mentored_team_number?: string | null;
-  season_id?: number | null;
-  is_dynamic?: boolean;
-  event_id?: string | null;
-  mentor_count?: number;
-  mentor_hours?: number;
+  isMentoring?: boolean;
+  mentoredTeamNumber?: string | null;
+  seasonId?: number | null;
+  isDynamic?: boolean;
+  eventId?: string | null;
+  mentorCount?: number;
+  mentorHours?: number;
 }
 
 import { useGetAdminOutreach, useSaveOutreach, useDeleteOutreach, useGetSeasons } from "../api";
@@ -62,26 +62,26 @@ export default function OutreachTracker() {
   const [isAdding, setIsAdding] = useState(false);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<OutreachFormValues>({
-    resolver: zodResolver(outreachFormSchema) as unknown as import("react-hook-form").Resolver<OutreachFormValues>,
+    resolver: zodResolver(outreachFormSchema) as Resolver<OutreachFormValues>,
     defaultValues: {
       title: "",
       date: new Date().toISOString().split('T')[0],
       location: "",
-      students_count: 0,
-      hours_logged: 0,
-      reach_count: 0,
+      studentsCount: 0,
+      hoursLogged: 0,
+      reachCount: 0,
       description: "",
-      is_mentoring: false,
-      mentored_team_number: "",
-      season_id: null,
-      event_id: null,
-      mentor_count: 0,
-      mentor_hours: 0
+      isMentoring: false,
+      mentoredTeamNumber: "",
+      seasonId: null,
+      eventId: null,
+      mentorCount: 0,
+      mentorHours: 0
     }
   });
 
-  const seasonId = useWatch({ control, name: "season_id" });
-  const isMentoring = useWatch({ control, name: "is_mentoring" });
+  const seasonId = useWatch({ control, name: "seasonId" });
+  const isMentoring = useWatch({ control, name: "isMentoring" });
   const [activeSeasonTab, setActiveSeasonTab] = useState<string>("all");
   const { data: rawOutreachData, isLoading } = useGetAdminOutreach();
 
@@ -89,19 +89,19 @@ export default function OutreachTracker() {
 
   const allLogs: OutreachLog[] = useMemo(() => rawOutreachData?.logs || [], [rawOutreachData]);
 
-  interface SeasonInfo { start_year: number; end_year: number; challenge_name: string; }
-  const seasons: SeasonInfo[] = useMemo(() => rawSeasonsData?.seasons || [], [rawSeasonsData]);
-
+  interface SeasonInfo { startYear: number; endYear: number; challengeName: string; }
+  const seasons: SeasonInfo[] = useMemo(() => (rawSeasonsData?.seasons || []) as any[], [rawSeasonsData]);
+  
   const seasonTabs = useMemo(() => {
-    const usedSeasons = new Set(allLogs.map(l => l.season_id).filter(Boolean));
-    return seasons.filter(s => usedSeasons.has(s.start_year)).sort((a, b) => b.start_year - a.start_year);
+    const usedSeasons = new Set(allLogs.map(l => l.seasonId).filter(Boolean));
+    return seasons.filter(s => usedSeasons.has(s.startYear)).sort((a, b) => b.startYear - a.startYear);
   }, [allLogs, seasons]);
 
   const logs = useMemo(() => {
     if (activeSeasonTab === "all") return allLogs;
-    if (activeSeasonTab === "unlinked") return allLogs.filter(l => !l.season_id);
+    if (activeSeasonTab === "unlinked") return allLogs.filter(l => !l.seasonId);
     const yr = parseInt(activeSeasonTab);
-    return allLogs.filter(l => l.season_id === yr);
+    return allLogs.filter(l => l.seasonId === yr);
   }, [allLogs, activeSeasonTab]);
 
   const handleTabChange = useCallback((tab: string) => setActiveSeasonTab(tab), []);
@@ -113,12 +113,12 @@ export default function OutreachTracker() {
   const onFormSubmit = (data: z.infer<typeof outreachFormSchema>) => {
     const cleanData = {
       ...data,
-      students_count: data.students_count || 0,
-      hours_logged: data.hours_logged || 0,
-      reach_count: data.reach_count || 0,
+      studentsCount: data.studentsCount || 0,
+      hoursLogged: data.hoursLogged || 0,
+      reachCount: data.reachCount || 0,
       description: data.description === "" ? null : data.description,
       location: data.location === "" ? null : data.location,
-      mentored_team_number: data.mentored_team_number === "" ? null : data.mentored_team_number,
+      mentoredTeamNumber: data.mentoredTeamNumber === "" ? null : data.mentoredTeamNumber,
     };
     saveMutation.mutate(cleanData, {
       onSuccess: () => {
@@ -128,17 +128,17 @@ export default function OutreachTracker() {
           title: "",
           date: new Date().toISOString().split('T')[0],
           location: "",
-          students_count: 0,
-          hours_logged: 0,
-          reach_count: 0,
+          studentsCount: 0,
+          hoursLogged: 0,
+          reachCount: 0,
           description: "",
-          is_mentoring: false,
-          mentored_team_number: "",
-          season_id: null,
+          isMentoring: false,
+          mentoredTeamNumber: "",
+          seasonId: null,
           id: undefined,
-          event_id: null,
-          mentor_count: 0,
-          mentor_hours: 0
+          eventId: null,
+          mentorCount: 0,
+          mentorHours: 0
         });
       },
       onError: () => toast.error("Failed to save impact record.")
@@ -155,12 +155,12 @@ export default function OutreachTracker() {
   };
 
   const totals = useMemo(() => logs.reduce((acc, l) => ({
-    hours: acc.hours + (l.hours_logged || 0),
-    mentoringHours: acc.mentoringHours + (l.is_mentoring ? (l.hours_logged || 0) : 0),
-    mentorHours: acc.mentorHours + (l.mentor_hours || 0),
-    reach: acc.reach + (l.reach_count || 0),
-    students: acc.students + (l.students_count || 0),
-    mentors: acc.mentors + (l.mentor_count || 0),
+    hours: acc.hours + (l.hoursLogged || 0),
+    mentoringHours: acc.mentoringHours + (l.isMentoring ? (l.hoursLogged || 0) : 0),
+    mentorHours: acc.mentorHours + (l.mentorHours || 0),
+    reach: acc.reach + (l.reachCount || 0),
+    students: acc.students + (l.studentsCount || 0),
+    mentors: acc.mentors + (l.mentorCount || 0),
     events: acc.events + 1
   }), { hours: 0, mentoringHours: 0, mentorHours: 0, reach: 0, students: 0, mentors: 0, events: 0 }), [logs]);
 
@@ -229,8 +229,8 @@ export default function OutreachTracker() {
                 id="outreach-reach"
                 type="number"
                 label="Reach Count (Estimated)"
-                {...register("reach_count", { valueAsNumber: true })}
-                error={errors.reach_count?.message}
+                {...register("reachCount", { valueAsNumber: true })}
+                error={errors.reachCount?.message}
                 focusColor="ares-red"
               />
               <DashboardInput
@@ -238,24 +238,24 @@ export default function OutreachTracker() {
                 type="number"
                 step="0.5"
                 label="Hours Logged"
-                {...register("hours_logged", { valueAsNumber: true })}
-                error={errors.hours_logged?.message}
+                {...register("hoursLogged", { valueAsNumber: true })}
+                error={errors.hoursLogged?.message}
                 focusColor="ares-red"
               />
               <DashboardInput
                 id="outreach-students"
                 type="number"
                 label="Students Participating"
-                {...register("students_count", { valueAsNumber: true })}
-                error={errors.students_count?.message}
+                {...register("studentsCount", { valueAsNumber: true })}
+                error={errors.studentsCount?.message}
                 focusColor="ares-red"
               />
               <DashboardInput
                 id="outreach-mentors"
                 type="number"
                 label="Mentors Participating"
-                {...register("mentor_count", { valueAsNumber: true })}
-                error={errors.mentor_count?.message}
+                {...register("mentorCount", { valueAsNumber: true })}
+                error={errors.mentorCount?.message}
                 focusColor="ares-bronze"
               />
               <DashboardInput
@@ -263,8 +263,8 @@ export default function OutreachTracker() {
                 type="number"
                 step="0.5"
                 label="Mentor Hours"
-                {...register("mentor_hours", { valueAsNumber: true })}
-                error={errors.mentor_hours?.message}
+                {...register("mentorHours", { valueAsNumber: true })}
+                error={errors.mentorHours?.message}
                 focusColor="ares-bronze"
               />
               <DashboardTextarea
@@ -283,7 +283,7 @@ export default function OutreachTracker() {
                       className="w-4 h-4 bg-white ares-cut-sm shadow-sm"
                     />
                   </div>
-                  <input type="checkbox" className="hidden" {...register("is_mentoring")} />
+                  <input type="checkbox" className="hidden" {...register("isMentoring")} />
                   <span className="text-xs font-bold text-marble/60 group-hover:text-white transition-colors">Mentoring Session</span>
                 </label>
 
@@ -291,14 +291,14 @@ export default function OutreachTracker() {
                   <DashboardInput
                     id="outreach-mentored-team"
                     label="Mentored Team #"
-                    {...register("mentored_team_number")}
-                    error={errors.mentored_team_number?.message}
+                    {...register("mentoredTeamNumber")}
+                    error={errors.mentoredTeamNumber?.message}
                     placeholder="e.g. 23247"
                     focusColor="ares-cyan"
                   />
                 )}
               </div>
-              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("season_id", val ? parseInt(val) : null)} />
+              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("seasonId", val ? parseInt(val) : null)} />
             </div>
             <DashboardSubmitButton 
               isPending={saveMutation.isPending} 
@@ -325,18 +325,18 @@ export default function OutreachTracker() {
           </button>
           {seasonTabs.map(s => (
             <button
-              key={s.start_year}
-              onClick={() => handleTabChange(s.start_year.toString())}
+              key={s.startYear}
+              onClick={() => handleTabChange(s.startYear.toString())}
               className={`px-4 py-2 text-xs font-black uppercase tracking-widest ares-cut-sm transition-all whitespace-nowrap ${
-                activeSeasonTab === s.start_year.toString()
+                activeSeasonTab === s.startYear.toString()
                   ? "bg-ares-gold text-obsidian shadow-lg shadow-ares-gold/20"
                   : "bg-white/5 text-marble/60 hover:text-white hover:bg-white/10 border border-white/5"
               }`}
             >
-              {s.challenge_name} {s.start_year}-{s.end_year}
+              {s.challengeName} {s.startYear}-{s.endYear}
             </button>
           ))}
-          {allLogs.some(l => !l.season_id) && (
+          {allLogs.some(l => !l.seasonId) && (
             <button
               onClick={() => handleTabChange("unlinked")}
               className={`px-4 py-2 text-xs font-black uppercase tracking-widest ares-cut-sm transition-all whitespace-nowrap ${
@@ -363,9 +363,9 @@ export default function OutreachTracker() {
               </div>
               <h4 className="text-xl font-bold text-white mb-2">{log.title}</h4>
               <div className="flex items-center gap-2 mb-2">
-                {log.is_mentoring && (
+                {log.isMentoring && (
                   <span className="px-2 py-0.5 bg-ares-cyan/10 border border-ares-cyan/30 text-[10px] font-black text-ares-cyan uppercase tracking-tighter ares-cut-sm">
-                    Mentoring {log.mentored_team_number ? `#${log.mentored_team_number}` : ""}
+                    Mentoring {log.mentoredTeamNumber ? `#${log.mentoredTeamNumber}` : ""}
                   </span>
                 )}
               </div>
@@ -394,31 +394,31 @@ export default function OutreachTracker() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-gold uppercase tracking-tighter">Reach</span>
-                <span className="text-lg font-black text-white">{log.reach_count || 0}</span>
+                <span className="text-lg font-black text-white">{log.reachCount || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
-                <span className="text-lg font-black text-white">{(log.hours_logged || 0).toFixed(1)}</span>
+                <span className="text-lg font-black text-white">{(log.hoursLogged || 0).toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-red uppercase tracking-tighter">Students</span>
-                <span className="text-lg font-black text-white">{log.students_count || 0}</span>
+                <span className="text-lg font-black text-white">{log.studentsCount || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-bronze uppercase tracking-tighter">Mentors</span>
-                <span className="text-lg font-black text-white">{log.mentor_count || 0}</span>
+                <span className="text-lg font-black text-white">{log.mentorCount || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-bronze uppercase tracking-tighter">Mnt Hrs</span>
-                <span className="text-lg font-black text-white">{(log.mentor_hours || 0).toFixed(1)}</span>
+                <span className="text-lg font-black text-white">{(log.mentorHours || 0).toFixed(1)}</span>
               </div>
               
-              {log.is_dynamic && !log.event_id && (
+              {log.isDynamic && !log.eventId && (
                 <div className="flex items-center px-3 py-1 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm">
                   <span className="text-xs font-bold text-ares-gold uppercase tracking-widest text-center leading-tight">Synced<br/>Event</span>
                 </div>
               )}
-              {log.is_dynamic && log.event_id && (
+              {log.isDynamic && log.eventId && (
                 <div className="flex items-center px-3 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm">
                   <span className="text-xs font-bold text-ares-cyan uppercase tracking-widest text-center leading-tight">Synced<br/>& Edited</span>
                 </div>
@@ -428,21 +428,21 @@ export default function OutreachTracker() {
                   onClick={() => {
                     setIsAdding(true);
                     reset({
-                      id: (log.is_dynamic && !log.event_id) ? undefined : log.id,
-                      event_id: log.is_dynamic ? (log.event_id || log.id) : null,
+                      id: (log.isDynamic && !log.eventId) ? undefined : log.id,
+                      eventId: log.isDynamic ? (log.eventId || log.id) : null,
                       title: log.title,
                       date: log.date.split('T')[0],
                       location: log.location || "",
-                      students_count: log.students_count || 0,
-                      hours_logged: log.hours_logged || 0,
-                      reach_count: log.reach_count || 0,
+                      studentsCount: log.studentsCount || 0,
+                      hoursLogged: log.hoursLogged || 0,
+                      reachCount: log.reachCount || 0,
                       description: log.description || "",
-                      is_mentoring: !!log.is_mentoring,
-                      mentored_team_number: log.mentored_team_number || "",
-                      season_id: log.season_id || null,
-                      mentor_count: log.mentor_count || 0,
-                      mentor_hours: log.mentor_hours || 0
-                    });
+                      isMentoring: !!log.isMentoring,
+                      mentoredTeamNumber: log.mentoredTeamNumber || "",
+                      seasonId: log.seasonId || null,
+                      mentorCount: log.mentorCount || 0,
+                      mentorHours: log.mentorHours || 0
+                    } as any);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   title="Edit this impact record"
@@ -450,7 +450,7 @@ export default function OutreachTracker() {
                 >
                   <Pencil size={18} />
                 </button>
-                {(!log.is_dynamic || log.event_id) && (
+                {(!log.isDynamic || log.eventId) && (
                   <button
                     onClick={() => handleDelete(log.id)}
                     title="Purge this impact record"

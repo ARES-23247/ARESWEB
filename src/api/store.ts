@@ -87,14 +87,14 @@ export function useGetOrders(
  * PATCH /api/store/orders/:id/status - Update order fulfillment status
  */
 export function useUpdateOrderStatus(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; fulfillment_status: string }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; fulfillmentStatus: string }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { id: string; fulfillment_status: string }>({
-    mutationFn: async ({ id, fulfillment_status }) => {
+  return useMutation<{ success: boolean }, Error, { id: string; fulfillmentStatus: string }>({
+    mutationFn: async ({ id, fulfillmentStatus }) => {
       const response = await client.store.orders[":id"].status.$patch({
         param: { id },
-        json: { fulfillment_status }
+        json: { fulfillmentStatus }
       });
       return unwrapResponse<{ success: boolean }>(response);
     },

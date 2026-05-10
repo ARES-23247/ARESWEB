@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
-import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
+import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
 import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
 import { GenericKanbanBoard, KanbanColumnConfig } from "./kanban/GenericKanbanBoard";
 import { SortablePipelineCard } from "./kanban/SortablePipelineCard";
@@ -26,7 +25,7 @@ import {
   useDeleteFinanceTransaction 
 } from "../api";
 
-// ── Status config for Sponsorship ─────────────────────────────────────
+// â”€â”€ Status config for Sponsorship â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
 
 const pipelineConfig: Record<string, KanbanColumnConfig> = {
@@ -45,8 +44,9 @@ export default function FinanceManager() {
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [editingLead, setEditingLead] = useState<PipelineItem | null>(null);
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // ── Queries ──
+  // â”€â”€ Queries â”€â”€
   const { data: summaryRes, error: summaryError } = useGetFinanceSummary(selectedSeason);
   const { data: pipelineDataRes, error: pipelineError } = useListSponsorshipPipeline(selectedSeason);
   const { data: transactionsDataRes, error: transactionsError } = useListFinanceTransactions(selectedSeason);
@@ -56,7 +56,7 @@ export default function FinanceManager() {
   const transactions = transactionsDataRes?.transactions || [];
   const isError = !!(summaryError || pipelineError || transactionsError);
 
-  // ── Mutations ──
+  // â”€â”€ Mutations â”€â”€
   const savePipeline = useSaveSponsorshipPipeline();
   const saveTransaction = useSaveFinanceTransaction();
   const deleteTransaction = useDeleteFinanceTransaction();
@@ -69,7 +69,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    savePipeline.mutate(result.data, {
+    savePipeline.mutate(result.data as any, {
       onSuccess: () => {
         toast.success("Sponsorship updated.");
         setIsAdding(false);
@@ -88,7 +88,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    saveTransaction.mutate(result.data, {
+    (saveTransaction.mutate as any)(result.data, {
       onSuccess: () => {
         toast.success("Transaction recorded.");
         setIsAdding(false);
@@ -114,13 +114,45 @@ export default function FinanceManager() {
     });
   };
 
-  // ── Forms ──
+  const filteredPipeline = pipeline.filter(item => 
+    item.companyName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (item.contactPerson || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // —— Forms ——
   const pipelineForm = useForm({
-    defaultValues: { company_name: "", status: "potential" as const, estimated_value: 0, season_id: selectedSeason }
+    defaultValues: {
+      companyName: "",
+      status: "potential" as const,
+      estimatedValue: 0,
+      seasonId: selectedSeason || undefined,
+      assignees: [] as string[],
+    },
+    onSubmit: async ({ value }) => {
+      handleSavePipeline({
+        ...value,
+        seasonId: selectedSeason || undefined,
+        estimatedValue: Number(value.estimatedValue),
+      } as any);
+    },
   });
 
   const transactionForm = useForm({
-    defaultValues: { type: "expense" as const, amount: 0, category: "parts", date: new Date().toISOString().split('T')[0], description: "", season_id: selectedSeason }
+    defaultValues: {
+      type: "expense" as const,
+      amount: 0,
+      category: "",
+      date: new Date().toISOString().split("T")[0],
+      description: "",
+      seasonId: selectedSeason || null,
+    },
+    onSubmit: async ({ value }) => {
+      handleSaveTransaction({
+        ...value,
+        seasonId: selectedSeason || undefined,
+        amount: Number(value.amount),
+      });
+    },
   });
 
   const isInitialLoading = !summaryRes && !isError;
@@ -152,10 +184,10 @@ export default function FinanceManager() {
       {/* Overview Metrics */}
       <DashboardMetricsGrid 
         metrics={[
-          { label: "Total Income", value: `$${(summary?.total_income ?? 0).toLocaleString()}`, icon: <TrendingUp className="text-ares-green" /> },
-          { label: "Total Expenses", value: `$${(summary?.total_expenses ?? 0).toLocaleString()}`, icon: <TrendingDown className="text-ares-red" /> },
+          { label: "Total Income", value: `$${(summary?.totalIncome ?? 0).toLocaleString()}`, icon: <TrendingUp className="text-ares-green" /> },
+          { label: "Total Expenses", value: `$${(summary?.totalExpenses ?? 0).toLocaleString()}`, icon: <TrendingDown className="text-ares-red" /> },
           { label: "Cash Balance", value: `$${(summary?.balance ?? 0).toLocaleString()}`, icon: <Wallet className="text-ares-gold" /> },
-          { label: "Pipeline Value", value: `$${pipeline.reduce((acc: number, p: PipelineItem) => acc + (p.status !== 'lost' ? (Number(p.estimated_value) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
+          { label: "Pipeline Value", value: `$${pipeline.reduce((acc: number, p: PipelineItem) => acc + (p.status !== 'lost' ? (Number(p.estimatedValue) || 0) : 0), 0).toLocaleString()}`, icon: <PieChart className="text-ares-cyan" /> },
         ]}
       />
 
@@ -201,32 +233,180 @@ export default function FinanceManager() {
             className="bg-obsidian border border-ares-red/30 ares-cut-lg p-8 shadow-2xl"
           >
             {activeTab === 'pipeline' ? (
-              <form onSubmit={pipelineForm.handleSubmit(data => handleSavePipeline({ ...data, season_id: selectedSeason || undefined }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <DashboardInput id="pipeline-company" label="Company Name" {...pipelineForm.register("company_name")} error={pipelineForm.formState.errors.company_name?.message} fullWidth />
-                <DashboardInput id="pipeline-value" label="Est. Value ($)" type="number" {...pipelineForm.register("estimated_value")} error={pipelineForm.formState.errors.estimated_value?.message} />
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="pipeline-status" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Initial Status</label>
-                  <select id="pipeline-status" {...pipelineForm.register("status")} className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none">
-                    {PIPELINE_COLUMNS.map(c => <option key={c} value={c} className="bg-obsidian text-white">{pipelineConfig[c].label}</option>)}
-                  </select>
-                </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  pipelineForm.handleSubmit();
+                }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              >
+                <pipelineForm.Field
+                  name="companyName"
+                  validators={{
+                    onChange: sponsorshipPipelineSchema.shape.companyName,
+                  }}
+                >
+                  {(field) => (
+                    <DashboardInput
+                      id="pipeline-company"
+                      label="Company Name"
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      error={field.state.meta.errors?.[0] as unknown as string}
+                      fullWidth
+                    />
+                  )}
+                </pipelineForm.Field>
+
+                <pipelineForm.Field
+                  name="estimatedValue"
+                  validators={{
+                    onChange: sponsorshipPipelineSchema.shape.estimatedValue as any,
+                  }}
+                >
+                  {(field) => (
+                    <DashboardInput
+                      id="pipeline-value"
+                      label="Est. Value ($)"
+                      type="number"
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(Number(e.target.value))}
+                      error={field.state.meta.errors?.[0] as unknown as string}
+                    />
+                  )}
+                </pipelineForm.Field>
+
+                <pipelineForm.Field name="status">
+                  {(field) => (
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="pipeline-status" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Initial Status</label>
+                      <select
+                        id="pipeline-status"
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value as any)}
+                        className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none"
+                      >
+                        {PIPELINE_COLUMNS.map(c => <option key={c} value={c} className="bg-obsidian text-white">{pipelineConfig[c].label}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </pipelineForm.Field>
+
                 <div className="md:col-span-3">
                   <DashboardSubmitButton isPending={savePipeline.isPending} defaultText="Add Lead to Pipeline" theme="red" />
                 </div>
               </form>
             ) : (
-              <form onSubmit={transactionForm.handleSubmit(data => handleSaveTransaction({ ...data, season_id: selectedSeason || undefined }))} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="transaction-type" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Type</label>
-                  <select id="transaction-type" {...transactionForm.register("type")} className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none">
-                    <option value="expense" className="bg-obsidian text-white">Expense (-)</option>
-                    <option value="income" className="bg-obsidian text-white">Income (+)</option>
-                  </select>
-                </div>
-                <DashboardInput id="ledger-amount" label="Amount ($)" type="number" step="0.01" {...transactionForm.register("amount")} error={transactionForm.formState.errors.amount?.message} />
-                <DashboardInput id="ledger-date" label="Date" type="date" {...transactionForm.register("date")} />
-                <DashboardInput id="ledger-category" label="Category" {...transactionForm.register("category")} placeholder="e.g. Parts, Travel, Reg" />
-                <DashboardInput id="ledger-desc" label="Description" {...transactionForm.register("description")} placeholder="Details about the transaction..." fullWidth />
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  transactionForm.handleSubmit();
+                }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              >
+                <transactionForm.Field name="type">
+                  {(field) => (
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="transaction-type" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Type</label>
+                      <select
+                        id="transaction-type"
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value as any)}
+                        className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none"
+                      >
+                        <option value="expense" className="bg-obsidian text-white">Expense (-)</option>
+                        <option value="income" className="bg-obsidian text-white">Income (+)</option>
+                      </select>
+                    </div>
+                  )}
+                </transactionForm.Field>
+
+                <transactionForm.Field
+                  name="amount"
+                  validators={{
+                    onChange: z.coerce.number().min(0.01, "Amount must be positive") as any
+                  }}
+                >
+                  {(field) => (
+                    <DashboardInput
+                      id="entry-amount"
+                      type="number"
+                      step="0.01"
+                      label="Amount ($)"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(Number(e.target.value))}
+                      error={field.state.meta.errors?.[0] as unknown as string}
+                      focusColor="ares-red"
+                    />
+                  )}
+                </transactionForm.Field>
+
+                <transactionForm.Field name="date">
+                  {(field) => (
+                    <DashboardInput
+                      id="ledger-date"
+                      label="Date"
+                      type="date"
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  )}
+                </transactionForm.Field>
+
+                <transactionForm.Field
+                  name="category"
+                  validators={{
+                    onChange: financeTransactionSchema.shape.category,
+                  }}
+                >
+                  {(field) => (
+                    <DashboardInput
+                      id="ledger-category"
+                      label="Category"
+                      placeholder="e.g. Parts, Travel, Reg"
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      error={(field.state.meta.errors?.[0] as any)?.message}
+                    />
+                  )}
+                </transactionForm.Field>
+
+                <transactionForm.Field
+                  name="description"
+                  validators={{
+                    onChange: z.string().nullable().optional() as any
+                  }}
+                >
+                  {(field) => (
+                    <DashboardTextarea
+                      id="entry-desc"
+                      label="Description / Purpose"
+                      value={field.state.value || ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => field.handleChange(e.target.value)}
+                      error={field.state.meta.errors?.[0] as unknown as string}
+                      placeholder="Briefly describe the transaction..."
+                      focusColor="ares-red"
+                      fullWidth
+                    />
+                  )}
+                </transactionForm.Field>
+
                 <div className="md:col-span-3">
                   <DashboardSubmitButton isPending={saveTransaction.isPending} defaultText="Record Transaction" theme="red" />
                 </div>
@@ -240,27 +420,27 @@ export default function FinanceManager() {
       {activeTab === 'pipeline' ? (
         <>
           <GenericKanbanBoard<PipelineItem>
-            items={pipeline}
+            items={filteredPipeline}
             columns={PIPELINE_COLUMNS}
             columnConfig={pipelineConfig}
             getId={(item) => String(item.id)}
             getStatus={(item) => item.status}
             getSortOrder={(_item) => 0} // no sort order in DB currently
             onReorder={(updates) => {
-              // we only care about status updates since sort_order is not saved
+              // we only care about status updates since sortOrder is not saved
               // to optimize, just update the items that changed status
               updates.forEach(update => {
                 const item = pipeline.find((p: PipelineItem) => String(p.id) === update.id);
                 if (item && item.status !== update.status) {
-                  const pipelineItem = item as PipelineItem & { id?: string; season_id?: number | null };
+                  const pipelineItem = item as PipelineItem & { id?: string; seasonId?: number | null };
                   savePipeline.mutate({
                     id: pipelineItem.id,
-                    company_name: pipelineItem.company_name,
+                    companyName: pipelineItem.companyName,
                     status: update.status as "potential" | "contacted" | "pledged" | "secured" | "lost",
-                    estimated_value: Number(pipelineItem.estimated_value),
-                    contact_person: pipelineItem.contact_person ?? null,
+                    estimatedValue: Number(pipelineItem.estimatedValue),
+                    contactPerson: pipelineItem.contactPerson ?? null,
                     notes: pipelineItem.notes ?? null,
-                    season_id: pipelineItem.season_id ?? null,
+                    seasonId: pipelineItem.seasonId ?? null,
                     assignees: pipelineItem.assignees ?? [],
                   });
                 }
@@ -280,7 +460,7 @@ export default function FinanceManager() {
             )}
             renderDragOverlay={(item) => (
               <div className="p-3 bg-obsidian/90 ares-cut-sm border border-ares-cyan/40 shadow-lg shadow-ares-cyan/10 cursor-grabbing">
-                <p className="text-sm font-bold text-white leading-tight">{item.company_name}</p>
+                <p className="text-sm font-bold text-white leading-tight">{item.companyName}</p>
               </div>
             )}
           />
@@ -294,12 +474,12 @@ export default function FinanceManager() {
                   const lead = editingLead as PipelineItem & { id?: string };
                   const updatePayload: SponsorshipPipelinePayload = {
                     id: lead.id,
-                    company_name: updates.company_name ?? lead.company_name,
+                    companyName: updates.companyName ?? lead.companyName,
                     status: updates.status ?? lead.status,
-                    estimated_value: Number(updates.estimated_value ?? lead.estimated_value),
-                    contact_person: updates.contact_person ?? lead.contact_person ?? null,
+                    estimatedValue: Number(updates.estimatedValue ?? lead.estimatedValue),
+                    contactPerson: updates.contactPerson ?? lead.contactPerson ?? null,
                     notes: updates.notes ?? lead.notes ?? null,
-                    season_id: updates.season_id ?? lead.season_id ?? null,
+                    seasonId: updates.seasonId ?? lead.seasonId ?? null,
                     assignees: updates.assignees ?? lead.assignees ?? [],
                   };
                   handleSavePipeline(updatePayload);
@@ -334,7 +514,7 @@ export default function FinanceManager() {
                       {t.category}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-white font-medium">{t.description || "—"}</td>
+                  <td className="p-4 text-sm text-white font-medium">{t.description || "â€”"}</td>
                   <td className={`p-4 text-sm font-black text-right ${t.type === 'income' ? 'text-ares-green' : 'text-ares-red'}`}>
                     {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
                   </td>
@@ -368,3 +548,4 @@ export default function FinanceManager() {
 const XCircle = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
 );
+

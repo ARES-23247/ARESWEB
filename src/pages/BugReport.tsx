@@ -3,8 +3,7 @@ import { siteConfig } from "../site.config";
 import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import SEO from "../components/SEO";
-import { z } from "zod";
-import { zodValidator } from "@tanstack/zod-form-adapter";
+// import { zodValidator } from "@tanstack/zod-form-adapter";
 
 // SEC-WR-02: Whitelist of allowed GitHub repositories to prevent phishing redirects
 const ALLOWED_REPOS = [
@@ -14,11 +13,13 @@ const ALLOWED_REPOS = [
 
 type AllowedRepo = typeof ALLOWED_REPOS[number];
 
+/*
 const bugReportSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
 	repo: z.enum(ALLOWED_REPOS),
 });
+*/
 
 export default function BugReport() {
 	const form = useForm({
@@ -42,7 +43,6 @@ export default function BugReport() {
 		},
 	});
 
-	const { Provider: FormProvider } = form;
 
 	return (
 		<div className="flex flex-col w-full">
@@ -64,7 +64,7 @@ export default function BugReport() {
 						<div>
 							<div className="bg-white/5 border border-white/10 ares-cut-sm p-8 shadow-2xl relative overflow-hidden">
 								<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ares-red to-ares-gold"></div>
-								<FormProvider>
+								<>
 									<form
 										onSubmit={(e) => {
 											e.preventDefault();
@@ -80,7 +80,8 @@ export default function BugReport() {
 												validators={{
 													onChange: ({ value }) => !value ? "Title is required" : undefined,
 												}}
-												children={(field) => (
+											>
+												{(field) => (
 													<>
 														<input
 															id="issue-title"
@@ -93,18 +94,17 @@ export default function BugReport() {
 															placeholder="e.g. Gallery images fail to load on mobile"
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+															<p className="text-xs text-ares-red mt-1">{field.state.meta.errors[0] as string}</p>
 														)}
 													</>
 												)}
-											/>
+											</form.Field>
 										</div>
 
 										<div>
 											<label htmlFor="issue-desc" className="block text-xs font-bold text-ares-gold uppercase tracking-widest mb-2">Details (Optional)</label>
-											<form.Field
-												name="description"
-												children={(field) => (
+											<form.Field name="description">
+												{(field) => (
 													<>
 														<textarea
 															id="issue-desc"
@@ -119,14 +119,13 @@ export default function BugReport() {
 														<p className="text-xs text-white/60 mt-2 italic">You can always add screenshots or more info on GitHub directly.</p>
 													</>
 												)}
-											/>
+											</form.Field>
 										</div>
 
 										<div>
 											<label htmlFor="repo-select" className="block text-xs font-bold text-ares-gold uppercase tracking-widest mb-2">Target Repository</label>
-											<form.Field
-												name="repo"
-												children={(field) => (
+											<form.Field name="repo">
+												{(field) => (
 													<select
 														id="repo-select"
 														name={field.name}
@@ -139,7 +138,7 @@ export default function BugReport() {
 														<option value={ALLOWED_REPOS[1]}>IntoTheDeep (Robot Code)</option>
 													</select>
 												)}
-											/>
+											</form.Field>
 										</div>
 
 										<button
@@ -149,7 +148,7 @@ export default function BugReport() {
 											Draft GitHub Issue
 										</button>
 									</form>
-								</FormProvider>
+								</>
 							</div>
 						</div>
 

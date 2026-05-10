@@ -36,10 +36,10 @@ export async function upsertProfile(
     if (key in data) {
       const val = data[key];
       if (isEncrypted) return await encrypt(String(val || ""), secret);
-      if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
+      if (key === 'subteams' || key === 'dietaryRestrictions' || key === 'colleges' || key === 'employers') {
         return safeJSONStringify(val, defaultValue as string);
       }
-      if (key === 'show_on_about' || key === 'show_email' || key === 'show_phone') {
+      if (key === 'showOnAbout' || key === 'showEmail' || key === 'showPhone') {
         return (val === true || val === 1) ? 1 : 0;
       }
       return (val ?? defaultValue) as string | number;
@@ -49,7 +49,7 @@ export async function upsertProfile(
     const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
     const existingVal = (existing as Record<string, unknown>)?.[camelCaseKey];
 
-    if (key === 'subteams' || key === 'dietary_restrictions' || key === 'colleges' || key === 'employers') {
+    if (key === 'subteams' || key === 'dietaryRestrictions' || key === 'colleges' || key === 'employers') {
       // We want to return the string from the DB, but only if it's valid JSON
       if (typeof existingVal === 'string') {
         try {
@@ -76,35 +76,35 @@ export async function upsertProfile(
   const values: Record<string, string | number> = {
     userId: userId,
     nickname: (await getMergedValue("nickname")) ?? "",
-    firstName: (await getMergedValue("first_name")) ?? "",
-    lastName: (await getMergedValue("last_name")) ?? "",
+    firstName: (await getMergedValue("firstName")) ?? "",
+    lastName: (await getMergedValue("lastName")) ?? "",
     pronouns: (await getMergedValue("pronouns")) ?? "",
     phone: (await getMergedValue("phone", true)) ?? "",
-    contactEmail: (await getMergedValue("contact_email", true)) ?? "",
+    contactEmail: (await getMergedValue("contactEmail", true)) ?? "",
     bio: (await getMergedValue("bio")) ?? "",
     subteams: (await getMergedValue("subteams", false, "[]")) ?? "[]",
-    dietaryRestrictions: (await getMergedValue("dietary_restrictions", false, "[]")) ?? "[]",
-    showOnAbout: (await getMergedValue("show_on_about", false, 1)) ?? 1,
-    showEmail: (await getMergedValue("show_email", false, 0)) ?? 0,
-    showPhone: (await getMergedValue("show_phone", false, 0)) ?? 0,
+    dietaryRestrictions: (await getMergedValue("dietaryRestrictions", false, "[]")) ?? "[]",
+    showOnAbout: (await getMergedValue("showOnAbout", false, 1)) ?? 1,
+    showEmail: (await getMergedValue("showEmail", false, 0)) ?? 0,
+    showPhone: (await getMergedValue("showPhone", false, 0)) ?? 0,
     memberType: memberType ?? "student",
-    gradeYear: (await getMergedValue("grade_year")) ?? "",
+    gradeYear: (await getMergedValue("gradeYear")) ?? "",
     colleges: (await getMergedValue("colleges", false, "[]")) ?? "[]",
     employers: (await getMergedValue("employers", false, "[]")) ?? "[]",
-    favoriteFirstThing: (await getMergedValue("favorite_first_thing")) ?? "",
-    funFact: (await getMergedValue("fun_fact")) ?? "",
-    favoriteRobotMechanism: (await getMergedValue("favorite_robot_mechanism")) ?? "",
-    preMatchSuperstition: (await getMergedValue("pre_match_superstition")) ?? "",
-    leadershipRole: (await getMergedValue("leadership_role")) ?? "",
-    rookieYear: (await getMergedValue("rookie_year")) ?? "",
-    tshirtSize: (await getMergedValue("tshirt_size")) ?? "",
-    emergencyContactName: (await getMergedValue("emergency_contact_name", true)) ?? "",
-    emergencyContactPhone: (await getMergedValue("emergency_contact_phone", true)) ?? "",
-    parentsName: (await getMergedValue("parents_name", true)) ?? "",
-    parentsEmail: (await getMergedValue("parents_email", true)) ?? "",
-    studentsName: (await getMergedValue("students_name", true)) ?? "",
-    studentsEmail: (await getMergedValue("students_email", true)) ?? "",
-    favoriteFood: (await getMergedValue("favorite_food")) ?? ""
+    favoriteFirstThing: (await getMergedValue("favoriteFirstThing")) ?? "",
+    funFact: (await getMergedValue("funFact")) ?? "",
+    favoriteRobotMechanism: (await getMergedValue("favoriteRobotMechanism")) ?? "",
+    preMatchSuperstition: (await getMergedValue("preMatchSuperstition")) ?? "",
+    leadershipRole: (await getMergedValue("leadershipRole")) ?? "",
+    rookieYear: (await getMergedValue("rookieYear")) ?? "",
+    tshirtSize: (await getMergedValue("tshirtSize")) ?? "",
+    emergencyContactName: (await getMergedValue("emergencyContactName", true)) ?? "",
+    emergencyContactPhone: (await getMergedValue("emergencyContactPhone", true)) ?? "",
+    parentsName: (await getMergedValue("parentsName", true)) ?? "",
+    parentsEmail: (await getMergedValue("parentsEmail", true)) ?? "",
+    studentsName: (await getMergedValue("studentsName", true)) ?? "",
+    studentsEmail: (await getMergedValue("studentsEmail", true)) ?? "",
+    favoriteFood: (await getMergedValue("favoriteFood")) ?? ""
   };
 
   const { userId: _, ...updateSet } = values;
@@ -116,4 +116,5 @@ export async function upsertProfile(
       set: updateSet as typeof schema.userProfiles.$inferInsert
     });
 }
+
 

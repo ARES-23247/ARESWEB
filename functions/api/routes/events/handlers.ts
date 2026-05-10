@@ -162,7 +162,27 @@ import { z } from "zod";
 
 type FormattedEvent = z.infer<typeof eventResponseSchema>;
 
+/**
+ * Events Handler - Team event management and calendar operations
+ *
+ * Provides handlers for team events, including calendar sync, signups,
+ * attendance tracking, and Google Calendar integration.
+ *
+ * @packageDocumentation
+ */
+
 export const eventHandlers = {
+  /**
+   * Get published team events with optional full-text search
+   *
+   * Returns events from all categories (internal, outreach, external)
+   * that are published and not deleted.
+   *
+   * @query q - Full-text search query (searches title, location, description)
+   * @query limit - Maximum number of events to return (default: 50)
+   * @query offset - Number of events to skip for pagination (default: 0)
+   * @returns Paginated list of published events with location addresses
+   */
   getEvents: async (input: HandlerInput, c: AresContext) => {
     try {
       const { query } = input;
@@ -272,6 +292,15 @@ export const eventHandlers = {
       return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
   },
+
+  /**
+   * Get public Google Calendar IDs for each event category
+   *
+   * Returns calendar IDs for internal, outreach, and external events
+   * for embedding in frontend calendar views.
+   *
+   * @returns Calendar IDs for internal, outreach, and external events
+   */
   getCalendarSettings: async (_input: HandlerInput, c: AresContext) => {
     try {
       const db = getDb(c);
@@ -295,6 +324,16 @@ export const eventHandlers = {
       return { status: 500 as const, body: {} };
     }
   },
+
+  /**
+   * Get a single published event by ID
+   *
+   * Returns full event details including signups if user is authenticated.
+   * Meeting notes are only visible to verified users.
+   *
+   * @param id - Unique event identifier (UUID)
+   * @returns Full event details with signup information for authenticated users
+   */
   getEvent: async (input: HandlerInput, c: AresContext) => {
     const { params } = input;
     const { id } = params;
@@ -368,6 +407,18 @@ export const eventHandlers = {
       return { status: 404 as const, body: { error: "Database error" } };
     }
   },
+
+  /**
+   * Get all events (admin view) with cursor-based pagination
+   *
+   * Returns all events regardless of status. Supports cursor pagination
+   * for efficient large dataset handling.
+   *
+   * @query limit - Maximum number of events to return (default: 100)
+   * @query cursor - Date-based cursor for pagination (date_start of last item)
+   * @returns All events with last sync timestamp and next cursor
+   * @requires Admin role
+   */
   getAdminEvents: async (input: HandlerInput, c: AresContext) => {
     try {
       const { query } = input;

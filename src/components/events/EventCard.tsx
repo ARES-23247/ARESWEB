@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { DEFAULT_COVER_IMAGE } from "../../utils/constants";
+import { DEFAULT_coverImage } from "../../utils/constants";
 import { downloadICS } from "../../utils/calendar";
 import { Calendar } from "lucide-react";
 import { extractAstText } from "../../utils/tiptap";
@@ -9,21 +9,21 @@ import { extractAstText } from "../../utils/tiptap";
 export interface EventItem {
   id: string;
   title: string;
-  date_start: string;
-  date_end: string | null;
+  dateStart: string;
+  dateEnd: string | null;
   location: string | null;
-  location_address?: string | null;
+  locationAddress?: string | null;
   description: string;
-  cover_image: string | null;
-  tba_event_key: string | null;
+  coverImage: string | null;
+  tbaEventKey: string | null;
   category: "internal" | "outreach" | "external";
-  recurring_exception?: number;
+  recurringException?: number;
 }
 
 export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean }) => {
   // EFF-N01: Memoize expensive parsing/formatting
-  const startDate = useMemo(() => parseISO(event.date_start), [event.date_start]);
-  const endDate = useMemo(() => event.date_end ? parseISO(event.date_end) : null, [event.date_end]);
+  const startDate = useMemo(() => parseISO(event.dateStart), [event.dateStart]);
+  const endDate = useMemo(() => event.dateEnd ? parseISO(event.dateEnd) : null, [event.dateEnd]);
   const plainDescription = useMemo(() => extractAstText(event.description), [event.description]);
   
   const formattedDay = useMemo(() => format(startDate, 'd'), [startDate]);
@@ -41,10 +41,10 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
       {/* Date / Image Block */}
       <div className="md:w-1/3 relative overflow-hidden bg-ares-red/20 min-h-[200px] flex-shrink-0">
         <img 
-          src={event.cover_image || DEFAULT_COVER_IMAGE} 
+          src={event.coverImage || DEFAULT_coverImage} 
           alt={event.title} 
           loading="lazy"
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.cover_image ? 'object-contain p-8 bg-black/80' : ''}`} 
+          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.coverImage ? 'object-contain p-8 bg-black/80' : ''}`} 
         />
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 ares-cut-sm border border-white/10 text-center z-10">
           <div className={`text-2xl font-bold ${isPast ? 'text-white' : 'text-ares-gold'}`}>{formattedDay}</div>
@@ -61,14 +61,14 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
           </span>
           {event.location && (
             <a
-              href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location_address || (event.location.includes('—') ? event.location.split('—').pop()!.trim() : event.location))}`}
+              href={`https://maps.google.com/maps?q=${encodeURIComponent(event.locationAddress || (event.location.includes('â€”') ? event.location.split('â€”').pop()!.trim() : event.location))}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 relative z-20 pointer-events-auto hover:text-ares-gold transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${event.category === 'internal' ? 'bg-ares-red' : event.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'} opacity-50`}></span>
-              {event.location} ↗
+              {event.location} â†—
             </a>
           )}
         </div>
@@ -78,7 +78,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
           <Link to="/events/$id" params={{ id: event.id }} className="after:absolute after:inset-0 focus:outline-none">
             {event.title}
           </Link>
-          {event.recurring_exception === 1 && (
+          {event.recurringException === 1 && (
             <span className="bg-ares-gold/20 text-ares-gold text-[10px] md:text-xs uppercase px-2 py-1 rounded-sm border border-ares-gold/30 flex items-center gap-1 z-20 pointer-events-none" title="This is a modified instance of a recurring series">
               Exception
             </span>
@@ -112,4 +112,5 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
     </div>
   );
 };
+
 

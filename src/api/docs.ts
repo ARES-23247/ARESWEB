@@ -14,25 +14,25 @@ export const DocResponseSchema = z.object({
   slug: z.string(),
   title: z.string(),
   category: z.string(),
-  sort_order: z.number(),
+  sortOrder: z.number(),
   description: z.string().nullable().optional(),
-  is_portfolio: z.number(),
-  is_executive_summary: z.number(),
-  is_deleted: z.number().optional(),
-  display_in_areslib: z.number().optional(),
-  display_in_math_corner: z.number().optional(),
-  display_in_science_corner: z.number().optional(),
-  original_author_nickname: z.string().optional(),
-  original_author_avatar: z.string().optional(),
+  isPortfolio: z.number(),
+  isExecutiveSummary: z.number(),
+  isDeleted: z.number().optional(),
+  displayInAreslib: z.number().optional(),
+  displayInMathCorner: z.number().optional(),
+  displayInScienceCorner: z.number().optional(),
+  original_authorNickname: z.string().optional(),
+  original_authorAvatar: z.string().optional(),
 });
 
 export const DocDetailResponseSchema = DocResponseSchema.extend({
   content: z.string().nullable().optional(),
-  updated_at: z.string().optional(),
+  updatedAt: z.string().optional(),
   status: z.string().optional(),
   revision_of: z.string().nullable().optional(),
-  zulip_stream: z.string().nullable().optional(),
-  zulip_topic: z.string().nullable().optional(),
+  zulipStream: z.string().nullable().optional(),
+  zulipTopic: z.string().nullable().optional(),
   cf_email: z.string().nullable().optional(),
 });
 
@@ -55,8 +55,8 @@ export const DocHistorySchema = z.object({
   title: z.string(),
   category: z.string(),
   description: z.string().nullable().optional(),
-  author_email: z.string().nullable().optional(),
-  created_at: z.string().nullable().optional(),
+  authorEmail: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
 });
 
 export const DocSchema = z.object({
@@ -424,3 +424,4 @@ export function useExportSingleDoc(
     ...options,
   });
 }
+

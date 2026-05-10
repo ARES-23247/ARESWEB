@@ -61,14 +61,14 @@ export function useUpdateMe(
       console.log("[Profile:updateMe] Response data:", result);
       return result;
     },
-    onSuccess: (...args) => {
+    onSuccess: (data, variables, context) => {
       console.log("[Profile:updateMe] Mutation successful");
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(data, variables, context);
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       console.error("[Profile:updateMe] Mutation failed:", error);
-      options?.onError?.(error);
+      (options?.onError as any)?.(error, variables, context);
     }
   });
 }
@@ -85,12 +85,12 @@ export function useUpdateAvatar(
       const response = await client.profile.avatar.$put({ json: data });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    onSuccess: (...args) => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
-      options?.onSuccess?.(...args);
+      (options?.onSuccess as any)?.(data, variables, context);
     },
-    onError: (...args) => {
-      options?.onError?.(...args);
+    onError: (error, variables, context) => {
+      (options?.onError as any)?.(error, variables, context);
     }
   });
 }

@@ -34,7 +34,7 @@ describe('Comments Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -44,7 +44,7 @@ describe('Comments Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -54,7 +54,7 @@ describe('Comments Routes', () => {
     name: 'Unverified User',
     nickname: 'Unverified',
     role: 'unverified',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -64,7 +64,7 @@ describe('Comments Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'user',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 

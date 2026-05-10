@@ -11,20 +11,20 @@ interface MockTask {
   description: string | null;
   status: "todo" | "in_progress" | "done" | "blocked";
   priority: "low" | "normal" | "high" | "urgent";
-  sort_order: number;
+  sortOrder: number;
   assignees: Array<{ id: string; nickname: string | null }>;
-  created_by: string;
-  creator_name: string | null;
-  due_date: string | null;
-  created_at: string;
-  updated_at: string;
+  createdBy: string;
+  creatorName: string | null;
+  dueDate: string | null;
+  createdAt: string;
+  updatedAt: string;
   subteam: string | null;
-  zulip_stream: string | null;
-  zulip_topic: string | null;
-  assigned_to: string | null;
-  assignee_name: string | null;
-  parent_id: string | null;
-  time_spent_seconds: number | null;
+  zulipStream: string | null;
+  zulipTopic: string | null;
+  assignedTo: string | null;
+  assigneeName: string | null;
+  parentId: string | null;
+  timeSpentSeconds: number | null;
 }
 
 const mockTask: MockTask = {
@@ -33,20 +33,20 @@ const mockTask: MockTask = {
   description: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Test description"}]}]}',
   status: "in_progress",
   priority: "normal",
-  sort_order: 0,
+  sortOrder: 0,
   assignees: [{ id: "user1", nickname: null }],
-  created_by: "user1",
-  creator_name: "Test Creator",
-  due_date: "2024-12-31",
-  time_spent_seconds: 3600,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-01-02T00:00:00Z",
+  createdBy: "user1",
+  creatorName: "Test Creator",
+  dueDate: "2024-12-31",
+  timeSpentSeconds: 3600,
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-02T00:00:00Z",
   subteam: "Mechanical",
-  zulip_stream: "tasks",
-  zulip_topic: "Task: Test Task Title",
-  assigned_to: null,
-  assignee_name: null,
-  parent_id: null,
+  zulipStream: "tasks",
+  zulipTopic: "Task: Test Task Title",
+  assignedTo: null,
+  assigneeName: null,
+  parentId: null,
 };
 
 // Mock the imports
@@ -227,7 +227,7 @@ describe("TaskDetailsModal Component", () => {
   it("shows overdue indicator for past due dates", () => {
     const overdueTask: MockTask = {
       ...mockTask,
-      due_date: "2020-01-01",
+      dueDate: "2020-01-01",
       status: "in_progress",
     };
 
@@ -421,3 +421,4 @@ describe("TaskDetailsModal Component", () => {
     expect(screen.getByText("No subtasks found.")).toBeInTheDocument();
   });
 });
+

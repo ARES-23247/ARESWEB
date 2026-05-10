@@ -83,7 +83,7 @@ export const posts = sqliteTable("posts", {
 	authorAvatar: text("author_avatar"),
 },
 (table) => [
-	index("idx_posts_published_at").on(table.publishedAt, table.status, table.isDeleted),
+	index("idx_posts_publishedAt").on(table.publishedAt, table.status, table.isDeleted),
 	index("idx_posts_cf_email").on(table.cfEmail),
 	index("idx_posts_author").on(table.author),
 	index("idx_posts_status").on(table.status, table.isDeleted),
@@ -239,6 +239,7 @@ export const docsFeedback = sqliteTable("docs_feedback", {
 	slug: text().notNull().references(() => docs.slug, { onDelete: "cascade" } ),
 	isHelpful: integer("is_helpful"),
 	comment: text(),
+	isResolved: integer("is_resolved").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
@@ -266,6 +267,7 @@ export const userProfiles = sqliteTable("user_profiles", {
 	colleges: text().default("[]"),
 	employers: text().default("[]"),
 	showOnAbout: integer("show_on_about").default(1),
+	hours: integer("hours").notNull().default(0),
 	favoriteRobotMechanism: text("favorite_robot_mechanism"),
 	preMatchSuperstition: text("pre_match_superstition"),
 	leadershipRole: text("leadership_role"),
@@ -280,8 +282,8 @@ export const userProfiles = sqliteTable("user_profiles", {
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
-	index("idx_user_profiles_show_on_about").on(table.showOnAbout),
-	index("idx_user_profiles_member_type").on(table.memberType),
+	index("idx_user_profiles_showOnAbout").on(table.showOnAbout),
+	index("idx_user_profiles_memberType").on(table.memberType),
 ]);
 
 export const badges = sqliteTable("badges", {
@@ -417,7 +419,7 @@ export const comments = sqliteTable("comments", {
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
-	index("idx_comments_is_deleted").on(table.isDeleted),
+	index("idx_comments_isDeleted").on(table.isDeleted),
 	index("idx_comments_created").on(table.createdAt),
 	index("idx_comments_user").on(table.userId),
 	index("idx_comments_target").on(table.targetType, table.targetId),
@@ -490,6 +492,7 @@ export const tasks = sqliteTable("tasks", {
 	timeSpentSeconds: integer("time_spent_seconds").default(0),
 	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	dueDate: text("due_date"),
+	isDeleted: integer("is_deleted").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 },
@@ -517,7 +520,7 @@ export const auditLog = sqliteTable("audit_log", {
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
-	index("idx_audit_log_created_at").on(table.createdAt),
+	index("idx_audit_log_createdAt").on(table.createdAt),
 	index("idx_audit_log_action").on(table.action),
 	index("idx_audit_log_actor").on(table.actor),
 ]);
@@ -625,7 +628,7 @@ export const chatSessions = sqliteTable("chat_sessions", {
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
-	index("idx_chat_sessions_updated_at").on(table.updatedAt),
+	index("idx_chat_sessions_updatedAt").on(table.updatedAt),
 	index("idx_chat_sessions_user_id").on(table.userId),
 ]);
 
@@ -752,3 +755,4 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
 	page: text().notNull(),
 	timestamp: text().notNull(),
 });
+

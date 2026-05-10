@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock jose — we don't want real crypto in unit tests
+// Mock jose â€” we don't want real crypto in unit tests
 vi.mock("jose", () => {
   class MockSignJWT {
     setProtectedHeader() { return this; }
@@ -79,8 +79,8 @@ describe("gcalSync Utilities", () => {
     const event: ARES_Event = {
       id: "evt-1",
       title: "Team Meeting",
-      date_start: "2025-03-15T18:00:00",
-      date_end: "2025-03-15T20:00:00",
+      dateStart: "2025-03-15T18:00:00",
+      dateEnd: "2025-03-15T20:00:00",
       location: "Lab A",
       description: "Weekly sync",
     };
@@ -120,7 +120,7 @@ describe("gcalSync Utilities", () => {
           });
         });
 
-      const existing = { ...event, gcal_event_id: "existing-gcal-id" };
+      const existing = { ...event, gcalEventId: "existing-gcal-id" };
       await pushEventToGcal(existing, config);
       expect(usedMethod).toBe("PUT");
     });
@@ -211,9 +211,9 @@ describe("gcalSync Utilities", () => {
       expect(events[0].id).toBe("gcal-g1");
       expect(events[0].title).toBe("Practice");
       expect(events[0].location).toBe("Gym");
-      expect(events[0].gcal_event_id).toBe("g1");
+      expect(events[0].gcalEventId).toBe("g1");
       expect(events[1].title).toBe("Competition");
-      expect(events[1].date_start).toBe("2025-04-01");
+      expect(events[1].dateStart).toBe("2025-04-01");
     });
 
     it("should throw on non-ok response", async () => {
@@ -243,3 +243,4 @@ describe("gcalSync Utilities", () => {
     });
   });
 });
+

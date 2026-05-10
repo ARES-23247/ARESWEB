@@ -168,12 +168,12 @@ export async function dispatchQueuePost(
     title: "ARES Update",
     url: baseUrl,
     snippet: post.content,
-    thumbnail: post.media_urls?.[0],
+    thumbnail: post.mediaUrls?.[0],
     baseUrl
   };
 
-  if (post.linked_type && post.linked_id) {
-    if (post.linked_type === "blog") {
+  if (post.linkedType && post.linkedId) {
+    if (post.linkedType === "blog") {
       const p = await db
         .select({
           title: schema.posts.title,
@@ -182,7 +182,7 @@ export async function dispatchQueuePost(
           thumbnail: schema.posts.thumbnail
         })
         .from(schema.posts)
-        .where(and(eq(schema.posts.slug, post.linked_id), eq(schema.posts.isDeleted, 0)))
+        .where(and(eq(schema.posts.slug, post.linkedId), eq(schema.posts.isDeleted, 0)))
         .get();
       if (p) {
         payload.title = p.title;
@@ -190,7 +190,7 @@ export async function dispatchQueuePost(
         payload.snippet = p.snippet || post.content;
         payload.thumbnail = p.thumbnail || payload.thumbnail;
       }
-    } else if (post.linked_type === "document") {
+    } else if (post.linkedType === "document") {
       const d = await db
         .select({
           title: schema.docs.title,
@@ -198,14 +198,14 @@ export async function dispatchQueuePost(
           description: schema.docs.description
         })
         .from(schema.docs)
-        .where(and(eq(schema.docs.slug, post.linked_id), eq(schema.docs.isDeleted, 0)))
+        .where(and(eq(schema.docs.slug, post.linkedId), eq(schema.docs.isDeleted, 0)))
         .get();
       if (d) {
         payload.title = d.title;
         payload.url = `${baseUrl}/docs/${d.slug}`;
         payload.snippet = d.description || post.content;
       }
-    } else if (post.linked_type === "event") {
+    } else if (post.linkedType === "event") {
       const e = await db
         .select({
           title: schema.events.title,
@@ -214,7 +214,7 @@ export async function dispatchQueuePost(
           coverImage: schema.events.coverImage
         })
         .from(schema.events)
-        .where(and(eq(schema.events.id, post.linked_id), eq(schema.events.isDeleted, 0)))
+        .where(and(eq(schema.events.id, post.linkedId), eq(schema.events.isDeleted, 0)))
         .get();
       if (e) {
         payload.title = e.title;

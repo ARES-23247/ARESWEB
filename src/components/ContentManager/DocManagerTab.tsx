@@ -157,8 +157,8 @@ export default function DocManagerTab({
           ) : undefined
         }
         getItemId={(d) => d.slug}
-        isItemDeleted={(d) => Number(d.is_deleted) === 1}
-        isItemRevision={(d) => !!d.revision_of}
+        isItemDeleted={(d) => Number(d.isDeleted) === 1}
+        isItemRevision={(d) => !!d.revisionOf}
         getItemStatus={(d) => d.status}
         renderTitle={(d) => d.title}
         renderSubtitle={(d) => (
@@ -169,16 +169,16 @@ export default function DocManagerTab({
             {view === 'active' && (
               <span className="flex items-center text-xs text-marble/60 bg-obsidian border border-white/10 ares-cut-sm overflow-hidden">
                 <button
-                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sort_order - 1 })}
+                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sortOrder - 1 })}
                   disabled={sortMutation.isPending}
                   className="px-1 py-0.5 hover:bg-white/10 hover:text-ares-cyan transition-colors disabled:opacity-50"
                   aria-label="Move Up"
                 >
                   <ChevronUp size={12} />
                 </button>
-                <span className="px-2 border-x border-white/10">Order: {d.sort_order}</span>
+                <span className="px-2 border-x border-white/10">Order: {d.sortOrder}</span>
                 <button
-                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sort_order + 1 })}
+                  onClick={() => sortMutation.mutate({ slug: d.slug, sortOrder: d.sortOrder + 1 })}
                   disabled={sortMutation.isPending}
                   className="px-1 py-0.5 hover:bg-white/10 hover:text-ares-red transition-colors disabled:opacity-50"
                   aria-label="Move Down"
@@ -190,7 +190,7 @@ export default function DocManagerTab({
           </>
         )}
         renderCustomActions={(d) => (
-          view !== 'pending' && Number(d.is_deleted) !== 1 ? (
+          view !== 'pending' && Number(d.isDeleted) !== 1 ? (
             <button
               onClick={() => exportSingleDoc(d.slug)}
               className="text-xs font-bold text-marble/60 hover:text-ares-gold bg-white/5 hover:bg-white/10 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1"
@@ -226,3 +226,4 @@ export default function DocManagerTab({
     </>
   );
 }
+

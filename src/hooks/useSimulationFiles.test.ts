@@ -1,4 +1,4 @@
- 
+﻿ 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useSimulationFiles, SavedSim, GithubSim } from "./useSimulationFiles";
@@ -136,15 +136,15 @@ describe("useSimulationFiles hook", () => {
           id: "1",
           name: "Sim 1",
           author_id: "user1",
-          created_at: "2024-01-01",
-          updated_at: "2024-01-02",
+          createdAt: "2024-01-01",
+          updatedAt: "2024-01-02",
         },
         {
           id: "2",
           name: "Sim 2",
           author_id: "user2",
-          created_at: "2024-01-03",
-          updated_at: "2024-01-04",
+          createdAt: "2024-01-03",
+          updatedAt: "2024-01-04",
           type: "custom",
         },
       ];
@@ -1195,3 +1195,4 @@ describe("useSimulationFiles hook", () => {
     });
   });
 });
+

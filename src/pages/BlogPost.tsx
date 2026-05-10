@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -58,11 +58,11 @@ export default function BlogPost() {
         image={post.thumbnail ?? undefined}
         type="article"
         schemaData={{
-          authorName: post.author_nickname ?? undefined,
+          authorName: post.authorNickname ?? undefined,
           datePublished: post.date ?? undefined,
         }}
       />
-      {/* ─── STANDALONE BLOG HERO ─── */}
+      {/* â”€â”€â”€ STANDALONE BLOG HERO â”€â”€â”€ */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
         <img fetchPriority="high" src={post.thumbnail || "/api/media/1776551060548-favicon.webp"} alt={post.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${post.thumbnail ? 'object-cover' : 'object-contain p-16 bg-black/80'}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
@@ -83,14 +83,14 @@ export default function BlogPost() {
              <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
                {post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'MMMM do, yyyy') : "Unpublished"}
              </span>
-             {(post.author_avatar || post.author_nickname) && (
+             {(post.authorAvatar || post.authorNickname) && (
                <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
                  <img 
-                   src={post.author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author_nickname || post.slug}`}
-                   alt={`${post.author_nickname || "Author"}'s avatar`}
+                   src={post.authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorNickname || post.slug}`}
+                   alt={`${post.authorNickname || "Author"}'s avatar`}
                    className="w-6 h-6 rounded-full object-cover border border-white/20"
                  />
-                 <span className="text-sm text-white">{post.author_nickname || "ARES Author"}</span>
+                 <span className="text-sm text-white">{post.authorNickname || "ARES Author"}</span>
                </div>
              )}
             {isEditor && (
@@ -110,7 +110,7 @@ export default function BlogPost() {
         </motion.div>
       </section>
 
-      {/* ─── BLOG CONTENT BODY ─── */}
+      {/* â”€â”€â”€ BLOG CONTENT BODY â”€â”€â”€ */}
       <div className="w-full max-w-4xl mx-auto px-6 py-12 md:py-24">
         <motion.article
           initial={{ opacity: 0, y: 20 }}
@@ -121,11 +121,12 @@ export default function BlogPost() {
           <TiptapRenderer node={parsedAst} />
 
           {/* Comments (auth-gated, handled via Zulip) */}
-          {slug && session && <ZulipThread stream={post.zulip_stream || "blog"} topic={post.zulip_topic || `Blog: ${post.title}`} />}
+          {slug && session && <ZulipThread stream={post.zulipStream || "blog"} topic={post.zulipTopic || `Blog: ${post.title}`} />}
         </motion.article>
       </div>
     </motion.div>
   );
 }
+
 
 

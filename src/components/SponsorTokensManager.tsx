@@ -14,7 +14,7 @@ export default function SponsorTokensManager() {
   const sponsors = sponsorsRes?.sponsors || [];
 
   const { data: tokensRes, isLoading: loadingTokens, isError: isTokensError } = useGetAdminTokens();
-  const tokens = (tokensRes?.tokens || []) as Array<{ token: string; sponsor_name: string; created_at: string }>;
+  const tokens = (tokensRes?.tokens || []) as any[];
 
   const generateMutation = useGenerateSponsorToken({
     onSuccess: (res) => {
@@ -76,7 +76,7 @@ export default function SponsorTokensManager() {
           </select>
           <button
             disabled={!selectedSponsor || generateMutation.isPending}
-            onClick={() => generateMutation.mutate({ sponsor_id: selectedSponsor })}
+            onClick={() => generateMutation.mutate({ sponsorId: selectedSponsor })}
             className="px-6 py-2.5 bg-ares-gold hover:opacity-90 text-black font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {generateMutation.isPending ? <RefreshCw className="animate-spin" size={16} /> : <Plus size={16} />} 
@@ -101,12 +101,12 @@ export default function SponsorTokensManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {tokens.map((t: { token: string; sponsor_name: string; created_at: string }) => {
+              {tokens.map((t: any) => {
                 const url = `${window.location.origin}/sponsors/roi/${t.token}`;
                 return (
                   <tr key={t.token} className="hover:bg-white/[0.02]">
                     <td className="px-6 py-4">
-                      <p className="text-white font-bold">{t.sponsor_name}</p>
+                      <p className="text-white font-bold">{t.sponsorName}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export default function SponsorTokensManager() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-white/60">
-                      {new Date(t.created_at).toLocaleDateString()}
+                      {new Date(t.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
                 );
@@ -129,3 +129,4 @@ export default function SponsorTokensManager() {
     </div>
   );
 }
+

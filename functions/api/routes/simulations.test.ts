@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests for simulations route handlers
  *
  * Tests simulation management endpoints including auth, admin checks,
@@ -35,7 +35,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }
@@ -72,7 +72,7 @@ describe('Simulations Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -82,7 +82,7 @@ describe('Simulations Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -625,8 +625,8 @@ describe('Simulations Routes', () => {
           files: { 'index.tsx': { content: 'code' } },
           owner: { login: 'testuser' },
           public: true,
-          created_at: '2026-01-01',
-          updated_at: '2026-01-01',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
         }),
       } as Response);
 
@@ -929,3 +929,4 @@ describe('Simulations Routes', () => {
     });
   });
 });
+

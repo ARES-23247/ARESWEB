@@ -114,7 +114,7 @@ describe("Finance API", () => {
       expect(result.current.data).toEqual(mockSummary);
     });
 
-    it("should pass season_id parameter", async () => {
+    it("should pass seasonId parameter", async () => {
       const mockSummary = { totalIncome: 0, totalExpenses: 0, netIncome: 0 };
       mockClient.finance.summary.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockSummary);
@@ -123,11 +123,11 @@ describe("Finance API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.summary.$get).toHaveBeenCalledWith({
-        query: { season_id: 42 },
+        query: { seasonId: 42 },
       });
     });
 
-    it("should handle null season_id", async () => {
+    it("should handle null seasonId", async () => {
       const mockSummary = { totalIncome: 0, totalExpenses: 0, netIncome: 0 };
       mockClient.finance.summary.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockSummary);
@@ -136,7 +136,7 @@ describe("Finance API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.summary.$get).toHaveBeenCalledWith({
-        query: { season_id: undefined },
+        query: { seasonId: undefined },
       });
     });
   });
@@ -144,8 +144,8 @@ describe("Finance API", () => {
   describe("useListSponsorshipPipeline", () => {
     it("should fetch sponsorship pipeline successfully", async () => {
       const mockPipeline = [
-        { id: "1", company_name: "Acme Corp", status: "potential", estimated_value: 5000 },
-        { id: "2", company_name: "Beta Inc", status: "contacted", estimated_value: 10000 },
+        { id: "1", companyName: "Acme Corp", status: "potential", estimatedValue: 5000 },
+        { id: "2", companyName: "Beta Inc", status: "contacted", estimatedValue: 10000 },
       ];
       const mockResponse = { pipeline: mockPipeline };
       mockClient.finance.sponsorship.$get.mockResolvedValue({ ok: true });
@@ -172,9 +172,9 @@ describe("Finance API", () => {
     it("should create new pipeline item successfully", async () => {
       const mockResponse = { success: true, id: "new-123" };
       const pipelineItem = {
-        company_name: "New Sponsor",
+        companyName: "New Sponsor",
         status: "potential" as const,
-        estimated_value: 7500,
+        estimatedValue: 7500,
       };
       mockClient.finance.sponsorship.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -205,7 +205,7 @@ describe("Finance API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate({ company_name: "Test", status: "potential", estimated_value: 1000 } as SaveSponsorshipPipelineParams);
+      result.current.mutate({ companyName: "Test", status: "potential", estimatedValue: 1000 } as SaveSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["finance", "sponsorship"] });
@@ -219,7 +219,7 @@ describe("Finance API", () => {
 
       const { result } = renderHook(() => financeApi.useSaveSponsorshipPipeline(), { wrapper });
 
-      result.current.mutate({ company_name: "Test", status: "potential", estimated_value: 1000 } as SaveSponsorshipPipelineParams);
+      result.current.mutate({ companyName: "Test", status: "potential", estimatedValue: 1000 } as SaveSponsorshipPipelineParams);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
@@ -284,7 +284,7 @@ describe("Finance API", () => {
       expect(result.current.data).toEqual(mockResponse);
     });
 
-    it("should pass season_id and type parameters", async () => {
+    it("should pass seasonId and type parameters", async () => {
       const mockResponse = { transactions: [] };
       mockClient.finance.transactions.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -296,11 +296,11 @@ describe("Finance API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.transactions.$get).toHaveBeenCalledWith({
-        query: { season_id: 42, type: "expense" },
+        query: { seasonId: 42, type: "expense" },
       });
     });
 
-    it("should handle null season_id", async () => {
+    it("should handle null seasonId", async () => {
       const mockResponse = { transactions: [] };
       mockClient.finance.transactions.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -312,7 +312,7 @@ describe("Finance API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.transactions.$get).toHaveBeenCalledWith({
-        query: { season_id: undefined, type: "income" },
+        query: { seasonId: undefined, type: "income" },
       });
     });
 
@@ -328,7 +328,7 @@ describe("Finance API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.finance.transactions.$get).toHaveBeenCalledWith({
-        query: { season_id: 1, type: undefined },
+        query: { seasonId: 1, type: undefined },
       });
     });
   });
@@ -430,3 +430,4 @@ describe("Finance API", () => {
     });
   });
 });
+

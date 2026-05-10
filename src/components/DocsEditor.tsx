@@ -8,7 +8,7 @@ import { docSchema } from "@shared/schemas/docSchema";
 import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
-import { useForm, type Form } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { RefreshCw } from "lucide-react";
 import { z } from "zod";
 
@@ -18,16 +18,16 @@ interface DocData {
   slug: string;
   title: string;
   category: string;
-  sort_order: number;
+  sortOrder: number;
   description: string;
-  is_portfolio: number;
-  is_executive_summary: number;
-  display_in_areslib?: number;
-  display_in_math_corner?: number;
-  display_in_science_corner?: number;
+  isPortfolio: number;
+  isExecutiveSummary: number;
+  displayInAreslib?: number;
+  displayInMathCorner?: number;
+  displayInScienceCorner?: number;
   content: string;
-  zulip_stream?: string;
-  zulip_topic?: string;
+  zulipStream?: string;
+  zulipTopic?: string;
 }
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "./editor/CollaborativeEditorRoom";
@@ -48,7 +48,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     provider
   });
 
-  const form = useForm<DocFormValues>({
+  const form = useForm({
     defaultValues: {
       slug: "",
       title: "",
@@ -65,8 +65,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const { Provider: FormProvider } = form;
-  const formTitle = form.useStore((s) => s.values.title);
+
 
   const { data: docRes, isLoading, isError } = useGetAdminDocDetail(editSlug || "");
 
@@ -76,13 +75,13 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       form.setFieldValue("slug", doc.slug || "");
       form.setFieldValue("title", doc.title || "");
       form.setFieldValue("category", doc.category || "Getting Started");
-      form.setFieldValue("sortOrder", doc.sort_order || 10);
+      form.setFieldValue("sortOrder", doc.sortOrder || 10);
       form.setFieldValue("description", doc.description || "");
-      form.setFieldValue("isPortfolio", !!doc.is_portfolio);
-      form.setFieldValue("isExecutiveSummary", !!doc.is_executive_summary);
-      form.setFieldValue("displayInAreslib", doc.display_in_areslib === undefined ? true : !!doc.display_in_areslib);
-      form.setFieldValue("displayInMathCorner", !!doc.display_in_math_corner);
-      form.setFieldValue("displayInScienceCorner", !!doc.display_in_science_corner);
+      form.setFieldValue("isPortfolio", !!doc.isPortfolio);
+      form.setFieldValue("isExecutiveSummary", !!doc.isExecutiveSummary);
+      form.setFieldValue("displayInAreslib", doc.displayInAreslib === undefined ? true : !!doc.displayInAreslib);
+      form.setFieldValue("displayInMathCorner", !!doc.displayInMathCorner);
+      form.setFieldValue("displayInScienceCorner", !!doc.displayInScienceCorner);
       form.setFieldValue("content", doc.content || "{}");
 
       if (editor && doc.content) {
@@ -150,7 +149,7 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
 
   return (
-    <FormProvider>
+
     <div className="flex flex-col gap-6 w-full relative h-full">
         <div className="flex flex-col gap-6 flex-1 min-w-0">
         <div>
@@ -380,7 +379,13 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         {editor && (
           <>
             <div className="flex items-center gap-2">
-              <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={formTitle || ""} /></div>
+              <div className="flex-1">
+                <form.Subscribe selector={(s) => s.values.title}>
+                  {(title) => (
+                    <RichEditorToolbar editor={editor} documentTitle={title || ""} />
+                  )}
+                </form.Subscribe>
+              </div>
             </div>
             <CopilotMenu editor={editor} />
           </>
@@ -427,13 +432,12 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       {editSlug && docRes?.doc && (
         <div className="w-full flex flex-col gap-6 mt-6">
           <ZulipThread
-            stream={(docRes.doc as unknown as DocData).zulip_stream || "documents"}
-            topic={(docRes.doc as unknown as DocData).zulip_topic || `Doc: ${(docRes.doc as unknown as DocData).title}`}
+            stream={(docRes.doc as unknown as DocData).zulipStream || "documents"}
+            topic={(docRes.doc as unknown as DocData).zulipTopic || `Doc: ${(docRes.doc as unknown as DocData).title}`}
           />
         </div>
       )}
-      </div>
-    </FormProvider>
+    </div>
   );
 }
 
@@ -449,5 +453,6 @@ export default function DocsEditor({ userRole }: { userRole?: string | unknown }
     </CollaborativeEditorRoom>
   );
 }
+
 
 

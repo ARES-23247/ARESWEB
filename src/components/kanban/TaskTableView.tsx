@@ -99,11 +99,11 @@ const columns = [
     },
     enableSorting: false,
   }),
-  columnHelper.accessor("due_date", {
+  columnHelper.accessor("dueDate", {
     header: "Due",
     cell: info => info.getValue() ? <span className="text-sm text-white/70">{info.getValue()}</span> : <span className="text-ares-gray/50">-</span>,
   }),
-  columnHelper.accessor("time_spent_seconds", {
+  columnHelper.accessor("timeSpentSeconds", {
     header: "Time Logged",
     cell: info => {
       const seconds = info.getValue() || 0;

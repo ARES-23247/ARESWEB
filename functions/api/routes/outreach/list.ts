@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+﻿import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";
@@ -15,7 +15,7 @@ type OutreachQueryResult = {
   reach_count: number | null;
   students_count: number | null;
   description: string | null;
-  season_id: number | null;
+  seasonId: number | null;
   is_mentoring: number | boolean | null;
   mentored_team_number: number | string | null;
   event_id: string | null;
@@ -35,7 +35,7 @@ interface OutreachLog {
   description: string | null;
   is_mentoring: boolean;
   mentored_team_number: number | null;
-  season_id: number | null;
+  seasonId: number | null;
   is_dynamic: boolean;
   event_id: string | null;
   mentor_count: number;
@@ -53,7 +53,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
       reach_count: schema.outreachLogs.peopleReached,
       students_count: schema.outreachLogs.studentsCount,
       description: schema.outreachLogs.impactSummary,
-      season_id: schema.outreachLogs.seasonId,
+      seasonId: schema.outreachLogs.seasonId,
       is_mentoring: schema.outreachLogs.isMentoring,
       mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
       event_id: schema.outreachLogs.eventId,
@@ -80,7 +80,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
     description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
     is_mentoring: !!r.is_mentoring,
     mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
-    season_id: r.season_id ? Number(r.season_id) : null,
+    seasonId: r.seasonId ? Number(r.seasonId) : null,
     is_dynamic: !!r.event_id,
     event_id: r.event_id || null,
     mentor_count: Number(r.mentor_count || 0),
@@ -104,7 +104,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       reach_count: schema.outreachLogs.peopleReached,
       students_count: schema.outreachLogs.studentsCount,
       description: schema.outreachLogs.impactSummary,
-      season_id: schema.outreachLogs.seasonId,
+      seasonId: schema.outreachLogs.seasonId,
       is_mentoring: schema.outreachLogs.isMentoring,
       mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
       event_id: schema.outreachLogs.eventId,
@@ -131,7 +131,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
     description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
     is_mentoring: !!r.is_mentoring,
     mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
-    season_id: r.season_id ? Number(r.season_id) : null,
+    seasonId: r.seasonId ? Number(r.seasonId) : null,
     is_dynamic: !!r.event_id,
     event_id: r.event_id || null,
     mentor_count: Number(r.mentor_count || 0),
@@ -143,3 +143,4 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
+

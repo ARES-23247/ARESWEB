@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation } from "lucide-react";
 import { toast } from "sonner";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import { zodValidator } from "@tanstack/zod-form-adapter";
 import { locationSchema } from "@shared/routes/locations";
 import { z } from "zod";
 import { useGetAdminLocations, useSaveLocation, useDeleteLocation, type Location } from "../api/locations";
@@ -13,18 +13,22 @@ export default function LocationsManager() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<z.infer<typeof locationSchema>>({
-    resolver: zodResolver(locationSchema) as unknown as import("react-hook-form").Resolver<z.infer<typeof locationSchema>>,
+  const form = useForm({
+    // @ts-expect-error
+    validatorAdapter: zodValidator(),
     defaultValues: {
       name: "",
       address: "",
-      maps_url: "",
-      is_deleted: 0
+      mapsUrl: "",
+      isDeleted: 0 as number,
+      id: undefined as string | undefined
+    },
+    onSubmit: async ({ value }) => {
+      saveMutation.mutate({ ...value, id: editingId || undefined } as Location);
     }
   });
 
-  const addressQuery = useWatch({ control, name: "address" });
-  const mapsUrl = useWatch({ control, name: "maps_url" });
+  // OSM integration watches form state
 
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
@@ -53,6 +57,7 @@ export default function LocationsManager() {
   // Debounced OSM Geocoding
   useEffect(() => {
     const timer = setTimeout(async () => {
+      const addressQuery = form.getFieldValue("address");
       if (!addressQuery || addressQuery.length < 4) {
         setSuggestions([]);
         return;
@@ -69,12 +74,12 @@ export default function LocationsManager() {
       }
     }, 600);
     return () => clearTimeout(timer);
-  }, [addressQuery]);
+  }, [form.state.values.address]);
 
   const resetForm = () => {
     setIsAdding(false);
     setEditingId(null);
-    reset({ name: "", address: "", maps_url: "", is_deleted: 0 });
+    form.reset();
     setSuggestions([]);
     setErrorMsg("");
   };
@@ -82,18 +87,16 @@ export default function LocationsManager() {
   const handleEdit = (l: Location) => {
     setEditingId(l.id !== undefined ? l.id : null);
     setIsAdding(true);
-    reset({
+    form.reset({
       id: l.id,
       name: l.name,
       address: l.address,
-      maps_url: l.maps_url ?? "",
-      is_deleted: l.is_deleted ?? 0
+      mapsUrl: l.mapsUrl ?? "",
+      isDeleted: l.isDeleted ?? 0
     });
   };
 
-  const onFormSubmit = (data: z.infer<typeof locationSchema>) => {
-    saveMutation.mutate({ ...data, id: editingId || undefined } as Location);
-  };
+  // Form submission handled in form definition
 
   const filtered = useMemo(() => locations.filter((l: Location) => l.name.toLowerCase().includes(searchTerm.toLowerCase())), [locations, searchTerm]);
 
@@ -138,16 +141,16 @@ export default function LocationsManager() {
             {isLoading ? <div className="text-center p-8 text-marble/50 animate-pulse">Loading venues...</div> : (
               <div className="flex flex-col gap-3">
                 {filtered.map((l: Location) => (
-                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.is_deleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
+                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.isDeleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
                     <div>
-                      <h4 className={`font-bold ${l.is_deleted ? 'text-ares-red/60 line-through' : 'text-white'}`}>{l.name}</h4>
+                      <h4 className={`font-bold ${l.isDeleted ? 'text-ares-red/60 line-through' : 'text-white'}`}>{l.name}</h4>
                       <p className="text-sm text-marble/90 mt-1 flex items-center gap-2">
                         <MapPin size={14} /> {l.address}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {l.is_deleted ? (
-                        <button onClick={() => saveMutation.mutate({ ...l, is_deleted: 0 } as Location)} className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm">RESTORE</button>
+                      {l.isDeleted ? (
+                        <button onClick={() => saveMutation.mutate({ ...l, isDeleted: 0 } as Location)} className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm">RESTORE</button>
                       ) : (
                         <>
                           <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
@@ -162,76 +165,111 @@ export default function LocationsManager() {
             )}
           </>
         ) : (
-          <form onSubmit={handleSubmit(onFormSubmit)} className="bg-obsidian border border-white/10 p-6 ares-cut-sm">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit();
+            }}
+            className="bg-obsidian border border-white/10 p-6 ares-cut-sm"
+          >
             <h3 className="text-white font-bold mb-6 font-heading tracking-widest">{editingId ? 'Edit Venue' : 'Register New Venue'}</h3>
 
             <div className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
-                <input
-                  id="venue_name"
-                  type="text"
-                  {...register("name")}
-                  className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
-                />
-                {errors.name && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.name.message}</p>}
-              </div>
-
-              <div className="relative">
-                <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
-                <div className="relative">
-                  <input
-                    id="venue_address"
-                    type="text"
-                    {...register("address")}
-                    className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
-                    placeholder="Start typing an address..."
-                  />
-                  {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
-                </div>
-                {errors.address && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{errors.address.message}</p>}
-
-                {suggestions.length > 0 && (
-                  <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">
-                    {suggestions.map((s, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-white/10 text-sm text-marble transition-colors last:border-0"
-                        onClick={() => {
-                          setValue("address", s.display_name);
-                          const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
-                          setValue("maps_url", mapsLink);
-                          setSuggestions([]);
-                        }}
-                      >
-                        {s.display_name}
-                      </button>
-                    ))}
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: locationSchema.shape.name,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label htmlFor="venue_name" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Alias (e.g. &apos;Mars Workspace&apos;) *</label>
+                    <input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      type="text"
+                      className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                    />
+                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]?.message as any}</p>}
                   </div>
                 )}
-              </div>
+              </form.Field>
 
-              <div>
-                <label htmlFor="maps_url" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 flex items-center justify-between">
-                  <span>Google Maps URL</span>
-                  <span className="text-marble/60 text-xs lowercase tracking-normal bg-obsidian border border-white/10 px-2 py-0.5 rounded">Auto-generated</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="maps_url"
-                    type="text"
-                    {...register("maps_url")}
-                    readOnly
-                    className="flex-1 bg-obsidian/50 border border-white/5 rounded p-3 text-marble/50 outline-none cursor-not-allowed text-sm font-mono"
-                  />
-                  {mapsUrl && (
-                    <a href={mapsUrl} target="_blank" rel="noreferrer" title="Open in Google Maps" className="bg-white/10 flex items-center justify-center px-4 rounded hover:bg-white/20 text-marble/90">
-                      <Navigation size={18} />
-                    </a>
-                  )}
-                </div>
-              </div>
+              <form.Field
+                name="address"
+                validators={{
+                  onChange: locationSchema.shape.address,
+                }}
+              >
+                {(field) => (
+                  <div className="relative">
+                    <label htmlFor="venue_address" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 block">Street Address (Auto-suggest) *</label>
+                    <div className="relative">
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        type="text"
+                        className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
+                        placeholder="Start typing an address..."
+                      />
+                      {isSearchingOSM && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-marble/50 text-xs">...</div>}
+                    </div>
+                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]?.message as any}</p>}
+
+                    {suggestions.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-black border border-white/10 ares-cut-sm shadow-xl overflow-hidden">
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="w-full text-left p-3 hover:bg-ares-cyan hover:text-black border-b border-white/10 text-sm text-marble transition-colors last:border-0"
+                            onClick={() => {
+                              field.handleChange(s.display_name);
+                              const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
+                              form.setFieldValue("mapsUrl", mapsLink);
+                              setSuggestions([]);
+                            }}
+                          >
+                            {s.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="mapsUrl">
+                {(field) => (
+                  <div>
+                    <label htmlFor="mapsUrl" className="text-xs uppercase tracking-widest text-marble/90 font-bold mb-2 flex items-center justify-between">
+                      <span>Google Maps URL</span>
+                      <span className="text-marble/60 text-xs lowercase tracking-normal bg-obsidian border border-white/10 px-2 py-0.5 rounded">Auto-generated</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value || ""}
+                        readOnly
+                        className="flex-1 bg-obsidian/50 border border-white/5 rounded p-3 text-marble/50 outline-none cursor-not-allowed text-sm font-mono"
+                      />
+                      {field.state.value && (
+                        <a href={field.state.value} target="_blank" rel="noreferrer" title="Open in Google Maps" className="bg-white/10 flex items-center justify-center px-4 rounded hover:bg-white/20 text-marble/90">
+                          <Navigation size={18} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </form.Field>
 
               {errorMsg && (
                 <div className="p-3 ares-cut-sm bg-ares-red text-white text-sm font-bold shadow-lg shadow-ares-red/20">
@@ -262,3 +300,4 @@ export default function LocationsManager() {
     </div>
   );
 }
+

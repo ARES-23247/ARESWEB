@@ -14,14 +14,14 @@ export const StoreOrders: React.FC = () => {
     const newStatus = currentStatus === "fulfilled" ? "unfulfilled" : "fulfilled";
     await updateStatus.mutateAsync({
       id: orderId,
-      fulfillment_status: newStatus
+      fulfillmentStatus: newStatus
     });
   };
 
   const orders: Order[] = data?.orders || [];
   const filteredOrders = orders.filter(o => {
-    if (filter !== "all" && o.fulfillment_status !== filter) return false;
-    if (search && !o.customer_email?.toLowerCase().includes(search.toLowerCase()) && !o.id.includes(search)) return false;
+    if (filter !== "all" && o.fulfillmentStatus !== filter) return false;
+    if (search && !o.customerEmail?.toLowerCase().includes(search.toLowerCase()) && !o.id.includes(search)) return false;
     return true;
   });
 
@@ -100,31 +100,31 @@ export const StoreOrders: React.FC = () => {
                   <tr key={order.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-mono text-xs text-slate-500 truncate w-32" title={order.id}>{order.id.split('-').pop()}</div>
-                      <div className="text-xs mt-1">{order.created_at ? format(new Date(order.created_at), "MMM d, yyyy h:mm a") : "Unknown Date"}</div>
+                      <div className="text-xs mt-1">{order.createdAt ? format(new Date(order.createdAt), "MMM d, yyyy h:mm a") : "Unknown Date"}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-white">{order.shipping_name || "Unknown"}</div>
-                      <div className="text-slate-400 text-xs">{order.customer_email || "No email"}</div>
+                      <div className="font-bold text-white">{order.shippingName || "Unknown"}</div>
+                      <div className="text-slate-400 text-xs">{order.customerEmail || "No email"}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs text-slate-400 max-w-[200px]">
-                        {order.shipping_address_line1} {order.shipping_address_line2}
+                        {order.shippingAddressLine1} {order.shippingAddressLine2}
                         <br />
-                        {order.shipping_city}, {order.shipping_state} {order.shipping_postal_code}
+                        {order.shippingCity}, {order.shippingState} {order.shippingPostalCode}
                         <br />
-                        {order.shipping_country}
+                        {order.shippingCountry}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-ares-gold font-bold">
-                        ${(order.total_cents / 100).toFixed(2)}
+                        ${(order.totalCents / 100).toFixed(2)}
                       </div>
                       <div className="text-xs uppercase bg-white/10 px-2 py-0.5 rounded-full inline-block mt-1">
                         {order.status}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {order.fulfillment_status === "fulfilled" ? (
+                      {order.fulfillmentStatus === "fulfilled" ? (
                         <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full w-max border border-green-500/20">
                           <CheckCircle2 className="w-3 h-3" /> Fulfilled
                         </span>
@@ -136,11 +136,11 @@ export const StoreOrders: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleToggleStatus(order.id, order.fulfillment_status)}
+                        onClick={() => handleToggleStatus(order.id, order.fulfillmentStatus)}
                         disabled={updateStatus.isPending}
                         className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 text-white transition-colors disabled:opacity-50"
                       >
-                        {order.fulfillment_status === "fulfilled" ? "Mark Unfulfilled" : "Mark Fulfilled"}
+                        {order.fulfillmentStatus === "fulfilled" ? "Mark Unfulfilled" : "Mark Fulfilled"}
                       </button>
                     </td>
                   </tr>
@@ -155,3 +155,4 @@ export const StoreOrders: React.FC = () => {
 };
 
 export default StoreOrders;
+

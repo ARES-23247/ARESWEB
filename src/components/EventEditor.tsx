@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
@@ -10,14 +9,14 @@ import SocialSyndicationGrid from "./editor/SocialSyndicationGrid";
 import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 import SeasonPicker from "./SeasonPicker";
-import { useForm, type Form } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { eventSchema, EventPayload } from "@shared/schemas/eventSchema";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { useModal } from "../contexts/ModalContext";
-import { DEFAULT_COVER_IMAGE } from "../utils/constants";
+import { DEFAULT_coverImage } from "../utils/constants";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent } from "../api";
@@ -54,20 +53,20 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
-  const form = useForm<EventPayload>({
+  const form = useForm({
     defaultValues: {
       title: "",
       dateStart: "",
       dateEnd: "",
       location: "",
       description: "",
-      coverImage: DEFAULT_COVER_IMAGE,
+      coverImage: DEFAULT_coverImage,
       category: "internal",
       tbaEventKey: "",
       isPotluck: false,
       isVolunteer: false,
       publishedAt: "",
-      seasonId: undefined,
+      seasonId: undefined as number | undefined,
       meetingNotes: "",
       socials: {
         discord: true,
@@ -83,7 +82,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     }
   });
 
-  const { Provider: FormProvider } = form;
+
 
   const [recurringGroupId, setRecurringGroupId] = useState<string | null>(null);
   const [updateMode, setUpdateMode] = useState<"single" | "following">("single");
@@ -128,21 +127,21 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           return d.slice(0, 16).replace(" ", "T");
         };
 
-        setIsDeleted(event.is_deleted === 1);
-        setIsException(event.recurring_exception === 1);
+        setIsDeleted(event.isDeleted === 1);
+        setIsException(event.recurringException === 1);
         form.setFieldValue("title", event.title || "");
-        form.setFieldValue("dateStart", formatForInput(event.date_start));
-        form.setFieldValue("dateEnd", formatForInput(event.date_end));
+        form.setFieldValue("dateStart", formatForInput(event.dateStart));
+        form.setFieldValue("dateEnd", formatForInput(event.dateEnd));
         form.setFieldValue("location", event.location || "");
         form.setFieldValue("description", event.description || "");
-        form.setFieldValue("coverImage", event.cover_image || DEFAULT_COVER_IMAGE);
+        form.setFieldValue("coverImage", event.coverImage || DEFAULT_coverImage);
         form.setFieldValue("category", (event.category || "internal") as "internal" | "outreach" | "external");
-        form.setFieldValue("tbaEventKey", event.tba_event_key || "");
-        form.setFieldValue("isPotluck", event.is_potluck === 1);
-        form.setFieldValue("isVolunteer", event.is_volunteer === 1);
-        form.setFieldValue("publishedAt", ((event as unknown) as Record<string, unknown>).published_at as string || "");
-        form.setFieldValue("seasonId", event.season_id ? Number(event.season_id) : undefined);
-        form.setFieldValue("socials", ((eventRes as unknown) as Record<string, unknown>).socials as Record<string, boolean> || {});
+        form.setFieldValue("tbaEventKey", event.tbaEventKey || "");
+        form.setFieldValue("isPotluck", event.isPotluck === 1);
+        form.setFieldValue("isVolunteer", event.isVolunteer === 1);
+        form.setFieldValue("publishedAt", (event as unknown as Record<string, unknown>).publishedAt as string || "");
+        form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
+        form.setFieldValue("socials", ((eventRes as unknown as Record<string, unknown>).socials as Record<string, boolean> || {}) as any);
 
         // Parse rrule
         let parsedFreq = "";
@@ -167,7 +166,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         setLimitCount(parsedLimitCount);
         setLimitDate(parsedLimitDate);
 
-        setRecurringGroupId(event.recurring_group_id || null);
+        setRecurringGroupId(event.recurringGroupId || null);
 
         if (editor) {
           const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
@@ -239,9 +238,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : formValue.description;
     const payload = { ...formValue, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
     if (editId) {
-      updateMutation.mutate({ id: editId, body: payload });
+      updateMutation.mutate({ id: editId, body: payload as any });
     } else {
-      saveMutation.mutate(payload);
+      saveMutation.mutate(payload as any);
     }
   };
 
@@ -283,7 +282,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
   if (isLoading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
 
   return (
-    <FormProvider>
+
       <div className="flex flex-col gap-6 w-full relative h-full">
         <div>
         <div>
@@ -325,9 +324,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <div className="flex flex-col md:flex-row gap-4 mt-2">
         <div className="flex-1">
           <label htmlFor="event-title" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Event Title *</label>
-          <form.Field
-            name="title"
-            children={(field) => (
+          <form.Field name="title">
+            {(field) => (
               <>
                 <input
                   id="event-title" type="text"
@@ -339,29 +337,32 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   placeholder="State Championship"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as unknown as string}</p>
                 )}
               </>
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
-          <CoverAssetPicker
-            coverImage={form.UseFieldState("coverImage").value || DEFAULT_COVER_IMAGE}
-            isUploading={isUploading}
-            onUrlChange={(url) => form.setFieldValue("coverImage", url)}
-            onLibraryClick={() => setIsCoverPickerOpen(true)}
-            onFileChange={handleFileUpload}
-          />
+          <form.Subscribe selector={(s) => s.values.coverImage}>
+            {(coverImage) => (
+              <CoverAssetPicker
+                coverImage={coverImage || DEFAULT_coverImage}
+                isUploading={isUploading}
+                onUrlChange={(url) => form.setFieldValue("coverImage", url as any)}
+                onLibraryClick={() => setIsCoverPickerOpen(true)}
+                onFileChange={handleFileUpload}
+              />
+            )}
+          </form.Subscribe>
         </div>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <label htmlFor="event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Category *</label>
-          <form.Field
-            name="category"
-            children={(field) => (
+          <form.Field name="category">
+            {(field) => (
               <select
                 id="event-category"
                 name={field.name}
@@ -375,16 +376,15 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 <option value="external">ARES Community Spotlight</option>
               </select>
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
           <label htmlFor="event-tba-key" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
             <span>TBA Event Key</span>
             <span className="text-xs text-white/60 font-normal normal-case">Optional</span>
           </label>
-          <form.Field
-            name="tbaEventKey"
-            children={(field) => (
+          <form.Field name="tbaEventKey">
+            {(field) => (
               <input
                 id="event-tba-key" type="text"
                 name={field.name}
@@ -395,15 +395,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 placeholder="e.g. 2024wvcmp"
               />
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
-          <form.Field
-            name="seasonId"
-            children={(field) => (
-              <SeasonPicker value={field.state.value || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
+          <form.Field name="seasonId">
+            {(field) => (
+              <SeasonPicker value={(field.state.value as any) || ""} onChange={(val) => field.handleChange(val ? Number(val) : (undefined as any))} />
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
           <label htmlFor="event-location" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -411,9 +410,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
             <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
           </label>
           <div className="relative group">
-            <form.Field
-              name="location"
-              children={(field) => (
+            <form.Field name="location">
+              {(field) => (
                 <LocationCombobox
                   id="event-location"
                   locations={locations}
@@ -422,7 +420,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   onCustomClick={() => setIsLocationModalOpen(true)}
                 />
               )}
-            />
+            </form.Field>
           </div>
         </div>
       </div>
@@ -430,9 +428,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <label htmlFor="event-start" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Start Date & Time *</label>
-          <form.Field
-            name="dateStart"
-            children={(field) => (
+          <form.Field name="dateStart">
+            {(field) => (
               <>
                 <input
                   id="event-start" type="datetime-local"
@@ -443,17 +440,16 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as unknown as string}</p>
                 )}
               </>
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
           <label htmlFor="event-end" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">End Date & Time</label>
-          <form.Field
-            name="dateEnd"
-            children={(field) => (
+          <form.Field name="dateEnd">
+            {(field) => (
               <input
                 id="event-end" type="datetime-local"
                 name={field.name}
@@ -463,13 +459,12 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
               />
             )}
-          />
+          </form.Field>
         </div>
         <div className="flex-1">
           <label htmlFor="event-published-at" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Schedule Publish Time</label>
-          <form.Field
-            name="publishedAt"
-            children={(field) => (
+          <form.Field name="publishedAt">
+            {(field) => (
               <input
                 id="event-published-at" type="datetime-local"
                 name={field.name}
@@ -479,7 +474,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
               />
             )}
-          />
+          </form.Field>
         </div>
       </div>
 
@@ -557,8 +552,8 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       )}
 
       <EventPotluckVolunteerFlags
-        isPotluck={form.UseFieldState("isPotluck").value || false}
-        isVolunteer={form.UseFieldState("isVolunteer").value || false}
+        isPotluck={form.state.values.isPotluck || false}
+        isVolunteer={form.state.values.isVolunteer || false}
         onChange={(field, val) => form.setFieldValue(field as "isPotluck" | "isVolunteer", val as boolean)}
       />
 
@@ -566,14 +561,14 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         <label htmlFor="event-desc-editor" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Event Description / Recap</label>
         {editor && (
           <div className="flex items-center gap-2">
-            <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.UseFieldState("title").value || ""} /></div>
+             <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={form.state.values.title || ""} /></div>
           </div>
         )}
         {editor && <CopilotMenu editor={editor} />}
       </div>
 
-      {editId && form.UseFieldState("title").value && (
-        <ZulipThread stream="events" topic={`Event: ${form.UseFieldState("title").value}`} />
+       {editId && form.state.values.title && (
+        <ZulipThread stream="events" topic={`Event: ${form.state.values.title}`} />
       )}
 
       <div className="mt-6 flex flex-col gap-4">
@@ -618,12 +613,16 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           roundedClass="ares-cut"
           onShowHistory={() => setIsHistoryOpen(true)}
           extraControls={
-            <SocialSyndicationGrid
-              availableSocials={availableSocials}
-              socials={form.UseFieldState("socials").value as Record<string, boolean>}
-              onChange={(platform, val) => form.setFieldValue(`socials.${platform}`, val)}
-              isEdit={!!editId}
-            />
+            <form.Subscribe selector={(s) => s.values.socials}>
+              {(socials) => (
+                <SocialSyndicationGrid
+                  availableSocials={availableSocials}
+                  socials={socials as Record<string, boolean>}
+                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val as any)}
+                  isEdit={!!editId}
+                />
+              )}
+            </form.Subscribe>
           }
         />
       </div>
@@ -642,7 +641,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         onClose={() => {
           setIsLocationModalOpen(false);
           // If they close without saving, reset dropdown to empty
-          if (form.UseFieldState("location").value === "CUSTOM") {
+          if (form.state.values.location === "CUSTOM") {
             form.setFieldValue("location", "");
           }
         }}
@@ -668,7 +667,6 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       )}
       </div>
     </div>
-    </FormProvider>
   );
 }
 
@@ -684,5 +682,6 @@ export default function EventEditor({ userRole }: { userRole?: string | unknown 
     </CollaborativeEditorRoom>
   );
 }
+
 
 

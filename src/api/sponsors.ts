@@ -150,10 +150,10 @@ export function useGetAdminTokens(
  * POST /api/sponsors/admin/tokens/generate - Generate sponsor token
  */
 export function useGenerateSponsorToken(
-  options?: Omit<UseMutationOptions<{ success: boolean; token?: string }, Error, { sponsor_id: string }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean; token?: string }, Error, { sponsorId: string }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean; token?: string }, Error, { sponsor_id: string }>({
+  return useMutation<{ success: boolean; token?: string }, Error, { sponsorId: string }>({
     mutationFn: async (data) => {
       const response = await client.sponsors.admin.tokens.generate.$post({ json: data });
       return unwrapResponse<{ success: boolean; token?: string }>(response);

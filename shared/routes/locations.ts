@@ -5,8 +5,8 @@ export const locationSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Alias is required"),
   address: z.string().min(1, "Address is required"),
-  maps_url: z.string().url("Invalid maps URL format").optional().nullable().or(z.literal("")),
-  is_deleted: z.number().default(0),
+  mapsUrl: z.string().url("Invalid maps URL format").optional().nullable().or(z.literal("")),
+  isDeleted: z.number().default(0),
 });
 
 export const listLocationsRoute = createRoute({

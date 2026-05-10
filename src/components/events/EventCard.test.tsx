@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { EventCard, EventItem } from "./EventCard";
 import * as calendarUtils from "../../utils/calendar";
@@ -25,12 +25,12 @@ vi.mock("../../utils/calendar", () => ({
 const mockEvent: EventItem = {
   id: "test-event-1",
   title: "Championship Celebration",
-  date_start: "2026-05-15T18:00:00Z",
-  date_end: "2026-05-15T21:00:00Z",
+  dateStart: "2026-05-15T18:00:00Z",
+  dateEnd: "2026-05-15T21:00:00Z",
   location: "ARES Lab",
   description: '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Join us for a celebration of our championship win!"}]}]}',
-  cover_image: null,
-  tba_event_key: null,
+  coverImage: null,
+  tbaEventKey: null,
   category: "internal",
 };
 
@@ -89,4 +89,5 @@ describe("EventCard Component", () => {
     expect(indicator).toBeInTheDocument();
   });
 });
+
 

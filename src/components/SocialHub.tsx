@@ -82,8 +82,8 @@ export default function SocialHub() {
                   setEditingPost(null);
                 }}
                 defaultContent={editingPost?.content}
-                defaultLinkedType={editingPost?.linked_type ?? undefined}
-                defaultLinkedId={editingPost?.linked_id ?? undefined}
+                defaultLinkedType={editingPost?.linkedType ?? undefined}
+                defaultLinkedId={editingPost?.linkedId ?? undefined}
               />
             </motion.div>
           )}

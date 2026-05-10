@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Finance API - Financial Management, Sponsorship Pipeline, Transactions
  *
  * Types imported from backend route definitions in @shared/routes/finance.ts
@@ -43,14 +43,14 @@ export interface TransactionsResponse {
  * GET /api/finance/summary - Get financial summary for a season
  */
 export function useGetFinanceSummary(
-  season_id?: number | null,
+  seasonId?: number | null,
   options?: Omit<UseQueryOptions<FinanceSummary>, "queryKey" | "queryFn">
 ) {
   return useQuery<FinanceSummary>({
-    queryKey: ["finance", "summary", season_id],
+    queryKey: ["finance", "summary", seasonId],
     queryFn: async () => {
       const response = await client.finance.summary.$get({
-        query: { season_id: season_id ?? undefined }
+        query: { seasonId: seasonId ?? undefined }
       });
       return unwrapResponse<FinanceSummary>(response);
     },
@@ -62,14 +62,14 @@ export function useGetFinanceSummary(
  * GET /api/finance/sponsorship - List sponsorship pipeline items
  */
 export function useListSponsorshipPipeline(
-  season_id?: number | null,
+  seasonId?: number | null,
   options?: Omit<UseQueryOptions<SponsorshipPipelineResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery<SponsorshipPipelineResponse>({
-    queryKey: ["finance", "sponsorship", season_id],
+    queryKey: ["finance", "sponsorship", seasonId],
     queryFn: async () => {
       const response = await client.finance.sponsorship.$get({
-        query: { season_id: season_id ?? undefined }
+        query: { seasonId: seasonId ?? undefined }
       });
       return unwrapResponse<SponsorshipPipelineResponse>(response);
     },
@@ -123,16 +123,16 @@ export function useDeleteSponsorshipPipeline(
  * GET /api/finance/transactions - List financial transactions
  */
 export function useListFinanceTransactions(
-  season_id?: number | null,
+  seasonId?: number | null,
   type?: "income" | "expense",
   options?: Omit<UseQueryOptions<TransactionsResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery<TransactionsResponse>({
-    queryKey: ["finance", "transactions", season_id, type],
+    queryKey: ["finance", "transactions", seasonId, type],
     queryFn: async () => {
       const response = await client.finance.transactions.$get({
         query: {
-          season_id: season_id ?? undefined,
+          seasonId: seasonId ?? undefined,
           type: type ?? undefined
         }
       });
@@ -183,3 +183,4 @@ export function useDeleteFinanceTransaction(
     })
   });
 }
+

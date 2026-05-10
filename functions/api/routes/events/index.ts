@@ -1,5 +1,3 @@
-﻿import { typedHandler } from "../../utils/handler";
-import { wrapLegacyHandler, autoResponseHandler, success } from "../../utils/handler-v2";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { z } from "zod";
@@ -34,7 +32,7 @@ import {
 } from "../../../../shared/routes/events";
 import { edgeCacheMiddleware } from "../../middleware/cache";
 
-// â”€â”€â”€ Type Inference from Schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Type Inference from Schemas ───────────────────────────────────────────────
 
 type GetEventsSuccess = z.infer<typeof getEventsRoute.responses[200]["content"]["application/json"]["schema"]>;
 type GetEventSuccess = z.infer<typeof getEventRoute.responses[200]["content"]["application/json"]["schema"]>;
@@ -58,7 +56,7 @@ type UpdateMyAttendanceSuccess = z.infer<typeof updateMyAttendanceRoute.response
 type UpdateUserAttendanceSuccess = z.infer<typeof updateUserAttendanceRoute.responses[200]["content"]["application/json"]["schema"]>;
 type RestoreEventHistorySuccess = z.infer<typeof restoreEventHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
 
-// â”€â”€â”€ Router Setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Router Setup ─────────────────────────────────────────────────────────────
 
 const eventsRouter = new OpenAPIHono<AppEnv>();
 
@@ -72,57 +70,57 @@ eventsRouter.use("*", async (c, next) => {
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
-// â”€â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Middleware ───────────────────────────────────────────────────────────
 
 
 eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
 
 
-// â”€â”€â”€ Public Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-eventsRouter.openapi(getEventsRoute, wrapLegacyHandler(eventHandlers.getEvents, getEventsRoute.responses[200].content["application/json"].schema));
+// ─── Public Routes ───────────────────────────────────────────────────────
+eventsRouter.openapi(getEventsRoute, wrapHandler(getEventsRoute, async (c, input) => eventHandlers.getEvents(input, c)));
 
-eventsRouter.openapi(getCalendarSettingsRoute, wrapLegacyHandler(eventHandlers.getCalendarSettings, getCalendarSettingsRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(getCalendarSettingsRoute, wrapHandler(getCalendarSettingsRoute, async (c, input) => eventHandlers.getCalendarSettings(input, c)));
 
-eventsRouter.openapi(getEventRoute, wrapLegacyHandler(eventHandlers.getEvent, getEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(getEventRoute, wrapHandler(getEventRoute, async (c, input) => eventHandlers.getEvent(input, c)));
 
-eventsRouter.openapi(getSignupsRoute, wrapLegacyHandler(eventHandlers.getSignups, getSignupsRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(getSignupsRoute, wrapHandler(getSignupsRoute, async (c, input) => eventHandlers.getSignups(input, c)));
 
-eventsRouter.openapi(submitSignupRoute, wrapLegacyHandler(eventHandlers.submitSignup, submitSignupRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(submitSignupRoute, wrapHandler(submitSignupRoute, async (c, input) => eventHandlers.submitSignup(input, c)));
 
-eventsRouter.openapi(deleteMySignupRoute, wrapLegacyHandler(eventHandlers.deleteMySignup, deleteMySignupRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(deleteMySignupRoute, wrapHandler(deleteMySignupRoute, async (c, input) => eventHandlers.deleteMySignup(input, c)));
 
-eventsRouter.openapi(updateMyAttendanceRoute, wrapLegacyHandler(eventHandlers.updateMyAttendance, updateMyAttendanceRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(updateMyAttendanceRoute, wrapHandler(updateMyAttendanceRoute, async (c, input) => eventHandlers.updateMyAttendance(input, c)));
 
-// â”€â”€â”€ Admin Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-eventsRouter.openapi(getAdminEventsRoute, wrapLegacyHandler(eventHandlers.getAdminEvents, getAdminEventsRoute.responses[200].content["application/json"].schema));
+// ─── Admin Routes ────────────────────────────────────────────────────────
+eventsRouter.openapi(getAdminEventsRoute, wrapHandler(getAdminEventsRoute, async (c, input) => eventHandlers.getAdminEvents(input, c)));
 
-eventsRouter.openapi(getAdminEventRoute, wrapLegacyHandler(eventHandlers.adminDetail, getAdminEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(getAdminEventRoute, wrapHandler(getAdminEventRoute, async (c, input) => eventHandlers.adminDetail(input, c)));
 
-eventsRouter.openapi(saveEventRoute, wrapLegacyHandler(eventHandlers.saveEvent, saveEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(saveEventRoute, wrapHandler(saveEventRoute, async (c, input) => eventHandlers.saveEvent(input, c)));
 
-eventsRouter.openapi(updateEventRoute, wrapLegacyHandler(eventHandlers.updateEvent, updateEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(updateEventRoute, wrapHandler(updateEventRoute, async (c, input) => eventHandlers.updateEvent(input, c)));
 
-eventsRouter.openapi(deleteEventRoute, wrapLegacyHandler(eventHandlers.deleteEvent, deleteEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(deleteEventRoute, wrapHandler(deleteEventRoute, async (c, input) => eventHandlers.deleteEvent(input, c)));
 
-eventsRouter.openapi(syncEventsRoute, wrapLegacyHandler(eventHandlers.syncEvents, syncEventsRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(syncEventsRoute, wrapHandler(syncEventsRoute, async (c, input) => eventHandlers.syncEvents(input, c)));
 
-eventsRouter.openapi(repairCalendarRoute, wrapLegacyHandler(eventHandlers.repairCalendar, repairCalendarRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(repairCalendarRoute, wrapHandler(repairCalendarRoute, async (c, input) => eventHandlers.repairCalendar(input, c)));
 
-eventsRouter.openapi(approveEventRoute, wrapLegacyHandler(eventHandlers.approveEvent, approveEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(approveEventRoute, wrapHandler(approveEventRoute, async (c, input) => eventHandlers.approveEvent(input, c)));
 
-eventsRouter.openapi(rejectEventRoute, wrapLegacyHandler(eventHandlers.rejectEvent, rejectEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(rejectEventRoute, wrapHandler(rejectEventRoute, async (c, input) => eventHandlers.rejectEvent(input, c)));
 
-eventsRouter.openapi(undeleteEventRoute, wrapLegacyHandler(eventHandlers.undeleteEvent, undeleteEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(undeleteEventRoute, wrapHandler(undeleteEventRoute, async (c, input) => eventHandlers.undeleteEvent(input, c)));
 
-eventsRouter.openapi(purgeEventRoute, wrapLegacyHandler(eventHandlers.purgeEvent, purgeEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(purgeEventRoute, wrapHandler(purgeEventRoute, async (c, input) => eventHandlers.purgeEvent(input, c)));
 
-eventsRouter.openapi(repushEventRoute, wrapLegacyHandler(eventHandlers.repushEvent, repushEventRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(repushEventRoute, wrapHandler(repushEventRoute, async (c, input) => eventHandlers.repushEvent(input, c)));
 
-eventsRouter.openapi(updateUserAttendanceRoute, wrapLegacyHandler(eventHandlers.updateUserAttendance, updateUserAttendanceRoute.responses[200].content["application/json"].schema));
+eventsRouter.openapi(updateUserAttendanceRoute, wrapHandler(updateUserAttendanceRoute, async (c, input) => eventHandlers.updateUserAttendance(input, c)));
 
-// â”€â”€â”€ Event Version History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRoute>(async (c) => {
+// ─── Event Version History ──────────────────────────────────────────────
+eventsRouter.openapi(getEventHistoryRoute, createTypedHandler(getEventHistoryRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = getDb(c);
     const results = await db.select({
@@ -153,7 +151,7 @@ eventsRouter.openapi(getEventHistoryRoute, typedHandler<typeof getEventHistoryRo
     return c.json({ history }, 200);
 }));
 
-eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventHistoryRoute>(async (c) => {
+eventsRouter.openapi(restoreEventHistoryRoute, createTypedHandler(restoreEventHistoryRoute, async (c) => {
     const { id, historyId } = c.req.valid("param");
     const db = getDb(c);
 
@@ -189,5 +187,7 @@ eventsRouter.openapi(restoreEventHistoryRoute, typedHandler<typeof restoreEventH
 }));
 
 export default eventsRouter;
+
+
 
 

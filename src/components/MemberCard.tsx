@@ -3,16 +3,16 @@ import { GraduationCap } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 export interface TeamMember {
-  user_id: string;
+  userId: string;
   nickname: string;
   name?: string | null;
   avatar: string;
   pronouns?: string | null;
   subteams?: string | string[] | null;
-  member_type: string;
+  memberType: string;
   bio?: string | null;
-  fun_fact?: string | null;
-  favorite_first_thing?: string | null;
+  funFact?: string | null;
+  favoriteFirstThing?: string | null;
   colleges?: string | unknown[] | null;
   employers?: string | unknown[] | null;
 }
@@ -22,11 +22,11 @@ export function MemberCard({ member }: { member: TeamMember }) {
   const colleges = Array.isArray(member.colleges) ? member.colleges : (typeof member.colleges === "string" ? JSON.parse(member.colleges || "[]") : []);
 
   return (
-    <Link to="/profile/$userId" params={{ userId: member.user_id }} className="group block h-full">
+    <Link to="/profile/$userId" params={{ userId: member.userId }} className="group block h-full">
       <div className="hero-card bg-white/5 border border-white/10 p-6 text-center transition-all duration-300 group-hover:border-ares-red/30 group-hover:shadow-lg backdrop-blur-sm h-full flex flex-col">
         <div className="w-20 h-20 mx-auto mb-4 ares-cut bg-white/10 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform shrink-0">
           <img
-            src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.user_id}`}
+            src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.userId}`}
             alt=""
             aria-hidden="true"
             className="w-full h-full object-contain"
@@ -49,7 +49,7 @@ export function MemberCard({ member }: { member: TeamMember }) {
               ))}
             </div>
           )}
-          {member.member_type === "alumni" && colleges.length > 0 && (
+          {member.memberType === "alumni" && colleges.length > 0 && (
             <div className="flex justify-center gap-1.5">
               {(colleges as { domain: string }[]).slice(0, 3).map((col: { domain: string }, i: number) => (
                 <BrandLogo key={i} domain={col.domain} fallbackIcon={GraduationCap} className="w-5 h-5" />
@@ -61,4 +61,5 @@ export function MemberCard({ member }: { member: TeamMember }) {
     </Link>
   );
 }
+
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -259,15 +259,15 @@ describe("Events API", () => {
   describe("useGetEventSignups", () => {
     it("should fetch event signups successfully", async () => {
       const mockSignups = [
-        { id: "1", user_id: "user1", notes: "Test notes" },
-        { id: "2", user_id: "user2", notes: "" },
+        { id: "1", userId: "user1", notes: "Test notes" },
+        { id: "2", userId: "user2", notes: "" },
       ];
       const mockResponse = {
         signups: mockSignups,
         dietary_summary: { "Vegetarian": 2 },
         authenticated: true,
         role: "admin",
-        member_type: "student",
+        memberType: "student",
         can_manage: true,
       };
       mockClient.events[":id"].signups.$get.mockResolvedValue({ ok: true });
@@ -525,3 +525,5 @@ describe("Events API", () => {
     });
   });
 });
+
+

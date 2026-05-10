@@ -179,7 +179,7 @@ export default function JudgesHub() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {portfolio?.portfolioDocs.filter((d) => d.is_executive_summary === 1).map((doc) => (
+                {portfolio?.portfolioDocs.filter((d) => d.isExecutiveSummary === 1).map((doc) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -211,7 +211,7 @@ export default function JudgesHub() {
               </div>
               
               <div className="grid grid-cols-1 gap-4">
-                {portfolio?.portfolioDocs.filter((d) => d.is_executive_summary !== 1).map((doc) => (
+                {portfolio?.portfolioDocs.filter((d) => d.isExecutiveSummary !== 1).map((doc) => (
                   <motion.a 
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
@@ -279,7 +279,7 @@ export default function JudgesHub() {
                     className="p-5 bg-gradient-to-br from-obsidian to-black border border-white/5 ares-cut relative overflow-hidden group shadow-lg"
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-ares-gold/5 blur-2xl rounded-full" />
-                    <div className="text-xs font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.event_name}</div>
+                    <div className="text-xs font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.eventName}</div>
                     <h4 className="font-bold text-white text-lg leading-tight group-hover:text-ares-gold transition-colors">{award.title}</h4>
                     <div className="text-xs text-marble mt-2 font-mono uppercase italic">{award.description}</div>
                   </motion.div>
@@ -320,3 +320,4 @@ export default function JudgesHub() {
     </div>
   );
 }
+

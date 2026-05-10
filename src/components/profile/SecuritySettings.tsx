@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Shield, Key, CheckCircle, AlertTriangle, Copy, RefreshCw } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "../../utils/auth-client";
-import { ProfileStylingProps } from "./types";
+import { ProfileFormSubComponentProps } from "./types";
 
-export function SecuritySettings({ inputClass, labelClass, sectionClass }: ProfileStylingProps) {
+export function SecuritySettings({ inputClass, labelClass, sectionClass }: ProfileFormSubComponentProps) {
   const { data: session, refetch: refetchSession } = authClient.useSession();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
@@ -39,7 +39,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
     setError("");
     setSuccess("");
     try {
-      // @ts-expect-error -- BetterAuth extensions
+      // @ts-expect-error -- emailVerification is a server plugin that might not have a client-side type export yet
       const { error } = await authClient.emailVerification.sendVerificationEmail({
         email: session?.user.email || "",
         callbackURL: window.location.origin + "/dashboard/profile"
@@ -56,14 +56,14 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const start2FASetup = async () => {
     setError("");
     try {
-      // @ts-expect-error -- BetterAuth extensions
-      const { data, error } = await authClient.twoFactor.enable();
+      const { data, error } = await (authClient as any).twoFactor.enable({
+        password: "" // Some versions require a password check even if empty
+      });
       if (error) throw new Error(error.message);
       if (data) {
         // SEC-WR-10: Validate TOTP URI format before storing in state
-        const validUri = validateTotpUri(data.totpURI);
-        // @ts-expect-error -- BetterAuth extensions
-        setTwoFactorData({ qrCode: validUri, secret: data.secret });
+        const validUri = validateTotpUri((data as any).totpURI);
+        setTwoFactorData({ qrCode: validUri, secret: (data as any).secret });
         setIsSettingUp2FA(true);
       }
     } catch (err) {
@@ -74,7 +74,7 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
   const verifyAndEnable2FA = async () => {
     setError("");
     try {
-      const { error } = await authClient.twoFactor.verifyTotp({
+      const { error } = await (authClient as any).twoFactor.verifyTotp({
         code: otpCode
       });
       if (error) throw new Error(error.message);
@@ -93,8 +93,9 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
     if (!confirm("Are you sure you want to disable 2FA? This makes your account less secure.")) return;
     setError("");
     try {
-      // @ts-expect-error -- BetterAuth extensions
-      const { error } = await authClient.twoFactor.disable();
+      const { error } = await (authClient as any).twoFactor.disable({
+        password: ""
+      });
       if (error) throw new Error(error.message);
       setSuccess("Two-factor authentication disabled.");
       await refetchSession();
@@ -139,19 +140,19 @@ export function SecuritySettings({ inputClass, labelClass, sectionClass }: Profi
       <div className="bg-obsidian/50 border border-white/10 p-4 ares-cut-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${session?.user?.twoFactorEnabled ? "bg-ares-gold/10 text-ares-gold" : "bg-black/40 text-marble/60"}`}>
+            <div className={`p-2 rounded-full ${(session?.user as any)?.twoFactorEnabled ? "bg-ares-gold/10 text-ares-gold" : "bg-black/40 text-marble/60"}`}>
               <Key size={20} />
             </div>
             <div>
               <p className="text-sm font-bold text-white">Two-Factor Authentication (2FA)</p>
               <p className="text-xs text-marble/50">
-                {session?.user?.twoFactorEnabled 
+                {(session?.user as any)?.twoFactorEnabled 
                   ? "Active: Your account is protected with TOTP." 
                   : "Inactive: Add an extra layer of security to your account."}
               </p>
             </div>
           </div>
-          {!session?.user?.twoFactorEnabled ? (
+          {!(session?.user as any)?.twoFactorEnabled ? (
             <button 
               onClick={start2FASetup}
               className="px-4 py-2 bg-white text-black text-xs font-bold ares-cut-sm hover:bg-ares-red hover:text-white transition-all"

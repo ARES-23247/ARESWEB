@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -100,7 +100,7 @@ describe("Profiles API", () => {
         id: "123",
         name: "Test User",
         email: "test@example.com",
-        member_type: "student",
+        memberType: "student",
       };
       mockClient.profile.me.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockProfile);
@@ -328,3 +328,4 @@ describe("Profiles API", () => {
     });
   });
 });
+

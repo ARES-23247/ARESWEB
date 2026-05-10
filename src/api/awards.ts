@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Awards API - Team Awards and Recognition
  *
  * Types imported from backend route definitions in @shared/routes/awards.ts
@@ -20,10 +20,10 @@ export interface AwardPayload {
   id?: string;
   title: string;
   year: number;
-  event_name?: string | null;
+  eventName?: string | null;
   description?: string | null;
   image_url?: string | null;
-  season_id?: number | null;
+  seasonId?: number | null;
 }
 
 // ============================================
@@ -86,3 +86,4 @@ export function useDeleteAward(
     })
   });
 }
+

@@ -13,7 +13,7 @@ export function EducationSection({ form, inputClass, sectionClass }: ProfileForm
 
   const removeCollege = (i: number) => {
     const current = form.getFieldValue("colleges");
-    form.setFieldValue("colleges", current.filter((_, idx) => idx !== i));
+    form.setFieldValue("colleges", current.filter((_: unknown, idx: number) => idx !== i));
   };
 
   const updateCollege = (i: number, field: keyof CollegeEntry, val: string) => {
@@ -43,7 +43,7 @@ export function EducationSection({ form, inputClass, sectionClass }: ProfileForm
           <Plus size={14} /> Add College
         </button>
       </div>
-      {colleges.map((col, i) => (
+      {colleges.map((col: any, i: number) => (
         <div key={i} className="flex gap-4 items-start bg-black/30 p-4 ares-cut border border-white/5 group hover:border-ares-gold/30 transition-all mt-4">
           <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-12 h-12" />
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">

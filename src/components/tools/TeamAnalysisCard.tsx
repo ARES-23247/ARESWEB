@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Sparkles, RefreshCw, Award, TrendingUp, TrendingDown, Target } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { scoutingApi, type TOATeam, type TOARanking, type AnalysisResponse } from "../../lib/scouting-api";
@@ -11,7 +11,7 @@ interface TeamAnalysisCardProps {
 }
 
 export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnalysisCardProps) {
-  const [analysis, setAnalysis] = useState<AnalysisResponse & { created_at?: string } | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResponse & { createdAt?: string } | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -83,11 +83,11 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
   const statItems = ranking
     ? [
         { label: "Rank", value: `#${ranking.rank}`, icon: Award, color: "text-ares-gold" },
-        { label: "OPR", value: ranking.opr?.toFixed(1) ?? "—", icon: TrendingUp, color: "text-ares-cyan" },
-        { label: "NP-OPR", value: ranking.np_opr?.toFixed(1) ?? "—", icon: Target, color: "text-emerald-400" },
+        { label: "OPR", value: ranking.opr?.toFixed(1) ?? "â€”", icon: TrendingUp, color: "text-ares-cyan" },
+        { label: "NP-OPR", value: ranking.np_opr?.toFixed(1) ?? "â€”", icon: Target, color: "text-emerald-400" },
         { label: "Record", value: `${ranking.wins}W-${ranking.losses}L-${ranking.ties}T`, icon: TrendingDown, color: "text-marble" },
-        { label: "High Score", value: ranking.highest_qual_score?.toString() ?? "—", icon: Sparkles, color: "text-amber-400" },
-        { label: "RP", value: ranking.ranking_points?.toFixed(1) ?? "—", icon: Award, color: "text-violet-400" },
+        { label: "High Score", value: ranking.highest_qual_score?.toString() ?? "â€”", icon: Sparkles, color: "text-amber-400" },
+        { label: "RP", value: ranking.ranking_points?.toFixed(1) ?? "â€”", icon: Award, color: "text-violet-400" },
       ]
     : [];
 
@@ -108,12 +108,12 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
             <div className="flex items-center gap-2 mt-1">
               {team.city && (
                 <span className="text-xs text-marble/60 font-semibold">
-                  📍 {team.city}, {team.state_prov}{team.country && team.country !== "USA" ? `, ${team.country}` : ""}
+                  ðŸ“ {team.city}, {team.state_prov}{team.country && team.country !== "USA" ? `, ${team.country}` : ""}
                 </span>
               )}
               {team.robot_name && (
                 <span className="text-xs text-ares-cyan/60 font-semibold">
-                  🤖 {team.robot_name}
+                  ðŸ¤– {team.robot_name}
                 </span>
               )}
               {team.rookie_year && (
@@ -189,15 +189,15 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
                 <span className="text-xs font-black text-ares-cyan uppercase tracking-widest">
                   AI Analysis
                 </span>
-                {analysis.created_at && (
+                {analysis.createdAt && (
                   <span className="text-[10px] text-marble/60 bg-white/5 px-2 py-0.5 rounded-full">
-                    {new Date(analysis.created_at).toLocaleDateString()}
+                    {new Date(analysis.createdAt).toLocaleDateString()}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-semibold text-marble/30">
-                  {analysis.model} {analysis.tokensUsed ? `• ${analysis.tokensUsed} tokens` : ""}
+                  {analysis.model} {analysis.tokensUsed ? `â€¢ ${analysis.tokensUsed} tokens` : ""}
                 </span>
                 <button
                   onClick={handleAnalyze}
@@ -225,7 +225,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
   );
 }
 
-/** Minimal markdown → HTML converter for AI analysis responses */
+/** Minimal markdown â†’ HTML converter for AI analysis responses */
 function markdownToHtml(md: string): string {
   let html = md
     // Headers
@@ -251,3 +251,4 @@ function markdownToHtml(md: string): string {
     ALLOWED_ATTR: ['class']
   });
 }
+

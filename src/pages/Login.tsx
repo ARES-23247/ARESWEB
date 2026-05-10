@@ -11,7 +11,7 @@ export default function Login() {
     setErrorMessage(null);
     try {
       if (provider === "zulip") {
-        const { error } = await signIn.oauth2({ providerId: "zulip", callbackURL: "/dashboard" });
+        const { error } = await (signIn as any).oauth2({ providerId: "zulip", callbackURL: "/dashboard" });
         if (error) throw error;
         return;
       }

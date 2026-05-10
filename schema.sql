@@ -802,3 +802,18 @@ CREATE TABLE IF NOT EXISTS performance_metrics (
     page TEXT NOT NULL,
     timestamp TEXT NOT NULL
 );
+
+-- ── Usage Metrics ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS usage_metrics (
+    id TEXT PRIMARY KEY,
+    timestamp TEXT DEFAULT (datetime('now')),
+    endpoint TEXT NOT NULL,
+    method TEXT NOT NULL,
+    status_code INTEGER NOT NULL,
+    latency_ms INTEGER NOT NULL,
+    user_id TEXT,
+    cf_ray TEXT,
+    cf_ip TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_usage_metrics_timestamp ON usage_metrics(timestamp);
+CREATE INDEX IF NOT EXISTS idx_usage_metrics_endpoint ON usage_metrics(endpoint);

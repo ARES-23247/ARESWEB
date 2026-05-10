@@ -111,8 +111,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ModalProvider>
           <RouterProvider router={router} />
         </ModalProvider>
-        <ReactQueryDevtools initialIsOpen={false} position="bottom-left" />
-        <TanStackRouterDevtools router={router} initialIsOpen={false} position="bottom-right" />
+        {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
+        {TanStackRouterDevtools && <TanStackRouterDevtools router={router} initialIsOpen={false} position="bottom-right" />}
       </PersistQueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>

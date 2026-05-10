@@ -68,8 +68,8 @@ type Inquiry = {
   email: string;
   metadata: string | null;
   status: "pending" | "approved" | "resolved" | "rejected";
-  created_at: string;
-  zulip_message_id: string | null;
+  createdAt: string;
+  zulipMessageId: string | null;
   notes: string | null;
 };
 
@@ -97,7 +97,7 @@ export default function AdminInquiries() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: res, isLoading, isError } = useGetAdminInquiries({ limit: 200, offset: 0 });
-  const inquiries = useMemo(() => (res?.inquiries || []) as Inquiry[], [res?.inquiries]);
+  const inquiries = useMemo(() => (res?.inquiries || []) as any as Inquiry[], [res?.inquiries]);
 
   const filtered = useMemo(() => {
     let result = inquiries as Inquiry[];
@@ -220,7 +220,7 @@ export default function AdminInquiries() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-xs text-marble/30 font-mono">
-                      {format(new Date(inquiry.created_at), "MMM d, yyyy")}
+                      {format(new Date(inquiry.createdAt), "MMM d, yyyy")}
                     </span>
                     <span className={`px-3 py-1 ares-cut-xs text-[10px] font-bold uppercase tracking-widest border ${STATUS_COLORS[inquiry.status] || "bg-white/10 text-white border-white/20"}`}>
                       {inquiry.status}
@@ -301,9 +301,9 @@ export default function AdminInquiries() {
                   </div>
 
                   {/* Right side: Zulip button */}
-                  {inquiry.zulip_message_id && (
+                  {inquiry.zulipMessageId && (
                     <a
-                      href={`https://aresfirst.zulipchat.com/#narrow/id/${inquiry.zulip_message_id}`}
+                      href={`https://aresfirst.zulipchat.com/#narrow/id/${inquiry.zulipMessageId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[10px] font-black text-white hover:text-white bg-social-zulip/80 hover:bg-social-zulip px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(94,130,166,0.2)]"
@@ -321,3 +321,4 @@ export default function AdminInquiries() {
     </div>
   );
 }
+

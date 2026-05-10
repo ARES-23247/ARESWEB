@@ -57,8 +57,8 @@ perfRouter.openapi(createRoute({
 
   // A simple summary by taking the average of the last 100 entries for each metric.
   const results = await db.select({
-    metric_name: schema.performanceMetrics.metricName,
-    avg_value: sql<number>`avg(${schema.performanceMetrics.value})`.as('avg_value')
+    metricName: schema.performanceMetrics.metricName,
+    avgValue: sql<number>`avg(${schema.performanceMetrics.value})`.as('avg_value')
   })
   .from(schema.performanceMetrics)
   .groupBy(schema.performanceMetrics.metricName)
@@ -66,7 +66,7 @@ perfRouter.openapi(createRoute({
 
   const summary: Record<string, number> = {};
   for (const row of results) {
-    summary[row.metric_name.toLowerCase()] = row.avg_value as number;
+    summary[row.metricName.toLowerCase()] = row.avgValue as number;
   }
 
   return c.json(summary, 200);

@@ -1,8 +1,9 @@
+// Media Handler Utilities
 /**
  * Media Handler Utilities
  *
  * This file exports utility functions used by media route handlers.
- * The main route handlers are defined inline in index.ts using typedHandler
+ * The main route handlers are defined inline in index.ts using createTypedHandler
  * for proper TypeScript type inference with zod schemas.
  */
 
@@ -125,3 +126,7 @@ export async function listAllObjects(bucket: R2Bucket | undefined, options?: R2L
   }
   return { objects };
 }
+
+
+
+

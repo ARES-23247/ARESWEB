@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests for finance route handlers
  *
  * Tests finance management endpoints including auth, admin checks,
@@ -34,7 +34,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }
@@ -71,7 +71,7 @@ describe('Finance Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -81,7 +81,7 @@ describe('Finance Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -91,7 +91,7 @@ describe('Finance Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'user',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -101,7 +101,7 @@ describe('Finance Routes', () => {
     name: 'Coach User',
     nickname: 'Coach',
     role: 'user',
-    member_type: 'coach',
+    memberType: 'coach',
     image: null,
   };
 
@@ -304,7 +304,7 @@ describe('Finance Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow mentor (non-admin role) to access finance routes via member_type', async () => {
+    it('should allow mentor (non-admin role) to access finance routes via memberType', async () => {
       // This tests that mentors get admin access for finance routes
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
@@ -323,7 +323,7 @@ describe('Finance Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow coach (non-admin role) to access finance routes via member_type', async () => {
+    it('should allow coach (non-admin role) to access finance routes via memberType', async () => {
       // This tests that coaches get admin access for finance routes
       globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
@@ -432,12 +432,12 @@ describe('Finance Routes', () => {
   // the actual CRUD operations would require a full Drizzle integration test setup.
   describe.skip('Database queries (require integration tests)', () => {
     it('should return financial summary with income, expenses, and balance');
-    it('should return list of sponsorship pipeline items filtered by season_id');
+    it('should return list of sponsorship pipeline items filtered by seasonId');
     it('should create a new sponsorship pipeline item and log audit action');
     it('should update existing sponsorship pipeline item and log audit action');
     it('should delete sponsorship pipeline item and log audit action');
     it('should auto-create transaction when sponsorship status changes to secured');
-    it('should return list of transactions filtered by season_id and type');
+    it('should return list of transactions filtered by seasonId and type');
     it('should create a new transaction and log audit action');
     it('should update existing transaction and log audit action');
     it('should delete transaction and remove receipt from R2 bucket');
@@ -507,3 +507,4 @@ describe('Finance Routes', () => {
     });
   });
 });
+

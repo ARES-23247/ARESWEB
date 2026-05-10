@@ -175,8 +175,8 @@ describe("Docs API", () => {
   describe("useGetAllDocs", () => {
     it("should fetch all docs successfully", async () => {
       const mockDocs = [
-        { slug: "doc1", title: "First Doc", category: "Technical", sort_order: 1 },
-        { slug: "doc2", title: "Second Doc", category: "Process", sort_order: 2 },
+        { slug: "doc1", title: "First Doc", category: "Technical", sortOrder: 1 },
+        { slug: "doc2", title: "Second Doc", category: "Process", sortOrder: 2 },
       ];
       const mockResponse = { docs: mockDocs };
       mockClient.docs.$get.mockResolvedValue({ ok: true });

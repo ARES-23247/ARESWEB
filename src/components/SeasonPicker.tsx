@@ -9,7 +9,7 @@ interface SeasonPickerProps {
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
   const { data: rawSeasons } = useGetSeasons();
 
-  const seasons = Array.isArray(rawSeasons) ? rawSeasons : (rawSeasons?.seasons || []);
+  const seasons = (rawSeasons?.seasons || []) as any[];
 
   return (
     <div className="w-full">
@@ -24,8 +24,8 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
       >
         <option value="">-- No Season Link --</option>
         {seasons?.map((s) => (
-          <option key={s.start_year} value={s.start_year.toString()}>
-            {s.challenge_name} {s.start_year}-{s.end_year}
+          <option key={s.startYear} value={s.startYear.toString()}>
+            {s.challengeName} {s.startYear}-{s.endYear}
           </option>
         ))}
       </select>

@@ -3,21 +3,21 @@ import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 
 export const seasonSchema = z.object({
-  original_year: z.number().optional().openapi({ example: 2024 }),
-  start_year: z.number().openapi({ example: 2024 }),
-  end_year: z.number().openapi({ example: 2025 }),
-  challenge_name: z.string().openapi({ example: "Rapid React" }),
-  robot_name: z.string().nullable().optional().openapi({ example: "Atlas" }),
-  robot_image: z.string().nullable().optional().openapi({ example: "https://example.com/robot.jpg" }),
-  robot_description: z.string().nullable().optional().openapi({ example: "A tall robot with a shooter" }),
-  robot_cad_url: z.string().nullable().optional().openapi({ example: "https://example.com/cad" }),
+  originalYear: z.number().optional().openapi({ example: 2024 }),
+  startYear: z.number().openapi({ example: 2024 }),
+  endYear: z.number().openapi({ example: 2025 }),
+  challengeName: z.string().openapi({ example: "Rapid React" }),
+  robotName: z.string().nullable().optional().openapi({ example: "Atlas" }),
+  robotImage: z.string().nullable().optional().openapi({ example: "https://example.com/robot.jpg" }),
+  robotDescription: z.string().nullable().optional().openapi({ example: "A tall robot with a shooter" }),
+  robotCadUrl: z.string().nullable().optional().openapi({ example: "https://example.com/cad" }),
   summary: z.string().nullable().optional().openapi({ example: "Season summary" }),
-  album_url: z.string().nullable().optional().openapi({ example: "https://photos.app.goo.gl/xyz" }),
-  album_cover: z.string().nullable().optional().openapi({ example: "https://example.com/cover.jpg" }),
+  albumUrl: z.string().nullable().optional().openapi({ example: "https://photos.app.goo.gl/xyz" }),
+  albumCover: z.string().nullable().optional().openapi({ example: "https://example.com/cover.jpg" }),
   status: z.string().nullable().optional().openapi({ example: "published" }),
-  is_deleted: z.number().nullable().optional().openapi({ example: 0 }),
-  created_at: z.string().nullable().optional(),
-  updated_at: z.string().nullable().optional(),
+  isDeleted: z.number().nullable().optional().openapi({ example: 0 }),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
 });
 
 export const listSeasonsRoute = createRoute({

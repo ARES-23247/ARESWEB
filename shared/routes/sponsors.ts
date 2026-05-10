@@ -8,26 +8,26 @@ export const sponsorResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   tier: z.enum(["Titanium", "Gold", "Silver", "Bronze", "In-Kind"]),
-  logo_url: z.string().nullable(),
-  website_url: z.string().nullable(),
-  is_active: z.number(),
-  created_at: z.string().nullable().optional(),
+  logoUrl: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
+  isActive: z.number(),
+  createdAt: z.string().nullable().optional(),
 });
 
 export const sponsorRoiMetricSchema = z.object({
   id: z.string().nullable(),
-  sponsor_id: z.string(),
+  sponsorId: z.string(),
   clicks: z.number().nullable(),
   impressions: z.number().nullable(),
-  year_month: z.string(),
+  yearMonth: z.string(),
 });
 
 export const sponsorTokenSchema = z.object({
-  sponsor_id: z.string(),
+  sponsorId: z.string(),
   token: z.string(),
-  sponsor_name: z.string().optional(),
-  created_at: z.string().nullable(),
-  last_used: z.string().nullable(),
+  sponsorName: z.string().optional(),
+  createdAt: z.string().nullable(),
+  lastUsed: z.string().nullable(),
 });
 
 // Route: Get all public sponsors
@@ -174,7 +174,7 @@ export const generateTokenRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            sponsor_id: z.string(),
+            sponsorId: z.string(),
           }),
         },
       },

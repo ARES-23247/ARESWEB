@@ -1,4 +1,4 @@
-
+﻿
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
@@ -49,9 +49,9 @@ export default function Academy() {
 
   return (
     <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
-      <SEO title={currentDoc?.title ? `${currentDoc.title} — ARES Academy` : "ARES Academy"} description={currentDoc?.description || "ARES Academy lessons and interactive simulations."} />
+      <SEO title={currentDoc?.title ? `${currentDoc.title} â€” ARES Academy` : "ARES Academy"} description={currentDoc?.description || "ARES Academy lessons and interactive simulations."} />
 
-      {/* ── Search Overlay ─────────────────────────────────────────── */}
+      {/* â”€â”€ Search Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>
         {searchOpen && (
           <motion.div
@@ -106,7 +106,7 @@ export default function Academy() {
       </AnimatePresence>
 
       <div className="flex flex-1">
-        {/* ── Sidebar ─────────────────────────────────────────────── */}
+        {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <DocsSidebar
           groupedDocs={groupedDocs}
           currentSlug={slug}
@@ -233,7 +233,7 @@ export default function Academy() {
                   <div className="flex flex-col gap-1">
                     <span className="text-white/60 font-bold uppercase tracking-widest text-xs">Document Lifecycle</span>
                     <span className="text-white/50">
-                      {currentDoc.updated_at ? `Last updated: ${new Date(currentDoc.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : 'Not yet updated'}
+                      {currentDoc.updatedAt ? `Last updated: ${new Date(currentDoc.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : 'Not yet updated'}
                     </span>
                   </div>
 
@@ -241,14 +241,14 @@ export default function Academy() {
                     <div className="flex items-center">
                       <div className="relative z-10 w-8 h-8 rounded-full border-2 border-ares-gray-deep overflow-hidden bg-ares-gray-dark">
                         <img
-                          src={currentDoc.original_author_avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentDoc.cf_email}`}
-                          alt={`${currentDoc.original_author_nickname || "Author"}'s avatar`}
+                          src={currentDoc.original_authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentDoc.cf_email}`}
+                          alt={`${currentDoc.original_authorNickname || "Author"}'s avatar`}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="ml-2 flex flex-col justify-center">
                         <span className="text-xs uppercase font-bold text-ares-gold/80 tracking-wider leading-none">Created By</span>
-                        <span className="text-white font-medium">{currentDoc.original_author_nickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
+                        <span className="text-white font-medium">{currentDoc.original_authorNickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
                       </div>
                     </div>
 
@@ -261,7 +261,7 @@ export default function Academy() {
                 </div>
               )}
 
-              {/* ── Documentation Feedback ───────────────────────────── */}
+              {/* â”€â”€ Documentation Feedback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
                   <BookOpen size={64} className="text-ares-gold rotate-12" />
@@ -283,7 +283,7 @@ export default function Academy() {
                       disabled={feedbackMutation.isPending}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">👍</span> Yes, it was
+                      <span className="text-lg">ðŸ‘</span> Yes, it was
                     </button>
                     <button
                       onClick={async () => {
@@ -303,13 +303,13 @@ export default function Academy() {
                       disabled={feedbackMutation.isPending}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">👎</span> No, it wasn&apos;t
+                      <span className="text-lg">ðŸ‘Ž</span> No, it wasn&apos;t
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* ── Documentation Discussion ───────────────────────────── */}
+              {/* â”€â”€ Documentation Discussion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               {slug && session && <ZulipThread stream="announcements" topic={`Doc: ${currentDoc.title}`} />}
             </motion.article>
           )}
@@ -323,5 +323,6 @@ export default function Academy() {
     </div>
   );
 }
+
 
 

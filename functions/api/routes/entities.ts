@@ -4,7 +4,6 @@ import { eq, and, inArray, or } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAuth, logAuditAction, getDb } from "../middleware";
 import { getEntityLinksRoute, saveEntityLinkRoute, deleteEntityLinkRoute } from "../../../shared/routes/entities";
-import { createTypedHandler } from "../utils/handler-native";
 
 
 

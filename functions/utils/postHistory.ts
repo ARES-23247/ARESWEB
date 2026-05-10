@@ -1,4 +1,4 @@
-import { Context } from "hono";
+﻿import { Context } from "hono";
 import { AppEnv, SessionUser, getSocialConfig } from "../api/middleware";
 import { emitNotification } from "./notifications";
 import { dispatchSocials } from "./socialSync";
@@ -9,8 +9,8 @@ export interface PostHistoryRow {
   id: number;
   title: string;
   author: string;
-  author_email: string;
-  created_at: string;
+  authorEmail: string;
+  createdAt: string;
 }
 
 export interface PostHistoryContent {
@@ -19,7 +19,7 @@ export interface PostHistoryContent {
   thumbnail: string;
   snippet: string;
   ast: string;
-  season_id?: string;
+  seasonId?: string;
 }
 
 /**
@@ -172,9 +172,9 @@ export async function getPostHistory(c: Context<AppEnv>, slug: string) {
       id: schema.postsHistory.id,
       title: schema.postsHistory.title,
       author: schema.postsHistory.author,
-      author_email: schema.postsHistory.authorEmail,
-      created_at: schema.postsHistory.createdAt,
-      season_id: schema.postsHistory.seasonId
+      authorEmail: schema.postsHistory.authorEmail,
+      createdAt: schema.postsHistory.createdAt,
+      seasonId: schema.postsHistory.seasonId
     }).from(schema.postsHistory)
     .where(eq(schema.postsHistory.slug, slug))
     .orderBy(desc(schema.postsHistory.createdAt))
@@ -300,7 +300,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         socialConfig,
         "announcements",
         `Blog: ${row.title}`,
-        `🚀 **New Blog Post Published:** [${row.title}](${baseUrl}/blog/${slug})\n\n${row.snippet?.substring(0, 300) || ""}`
+        `ðŸš€ **New Blog Post Published:** [${row.title}](${baseUrl}/blog/${slug})\n\n${row.snippet?.substring(0, 300) || ""}`
       ).catch((err: unknown) => console.error("[Approve] Zulip thread creation failed:", err))
     );
   }).catch(() => {});
@@ -326,3 +326,4 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
 
   return { success: true, warnings };
 }
+

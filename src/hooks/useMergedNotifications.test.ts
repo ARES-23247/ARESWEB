@@ -1,4 +1,4 @@
- 
+﻿ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderWithProviders } from "../test/utils";
 import { useMergedNotifications } from "./useMergedNotifications";
@@ -18,9 +18,9 @@ describe("useMergedNotifications Hook", () => {
       email: "test@ares23247.com",
       name: "Test User",
       role: "admin",
-      member_type: "mentor",
-      first_name: "Test",
-      last_name: "User",
+      memberType: "mentor",
+      firstName: "Test",
+      lastName: "User",
       nickname: "Test",
     },
   });
@@ -216,7 +216,7 @@ describe("useMergedNotifications Hook", () => {
             notifications: [
               {
                 id: "notif-1",
-                title: "📝 Pending Blog Post",
+                title: "ðŸ“ Pending Blog Post",
                 message: "Pending post",
                 is_read: false,
               },
@@ -256,13 +256,13 @@ describe("useMergedNotifications Hook", () => {
             notifications: [
               {
                 id: "notif-1",
-                title: "📝 Pending Document",
+                title: "ðŸ“ Pending Document",
                 message: "Pending doc",
                 is_read: false,
               },
               {
                 id: "notif-2",
-                title: "📝 Doc Revision Pending",
+                title: "ðŸ“ Doc Revision Pending",
                 message: "Pending revision",
                 is_read: false,
               },
@@ -346,7 +346,7 @@ describe("useMergedNotifications Hook", () => {
               {
                 slug: "post-1",
                 title: "Amazing Post",
-                author_nickname: "StudentWriter",
+                authorNickname: "StudentWriter",
               },
             ],
             events: [],
@@ -533,7 +533,7 @@ describe("useMergedNotifications Hook", () => {
         http.get("/api/notifications/action-items", () => {
           return HttpResponse.json({
             inquiries: [{ id: "inq-1", type: "support", name: "Support User" }],
-            posts: [{ slug: "post-1", title: "Blog Post", author_nickname: "Author" }],
+            posts: [{ slug: "post-1", title: "Blog Post", authorNickname: "Author" }],
             events: [{ id: "event-1", title: "Event Title" }],
             docs: [{ slug: "doc-1", title: "Doc Title" }],
           });
@@ -827,3 +827,4 @@ describe("useMergedNotifications Hook", () => {
     });
   });
 });
+

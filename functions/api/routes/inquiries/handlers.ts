@@ -1,4 +1,4 @@
-import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
+﻿import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
 import { QUERY_LIMITS } from "../../utils/queryLimits";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
@@ -39,7 +39,7 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
     WHERE id IN (
       SELECT id FROM inquiries
       WHERE status IN ('resolved', 'rejected')
-      AND created_at < datetime('now', '-' || ${days} || ' days')
+      AND createdAt < datetime('now', '-' || ${days} || ' days')
       LIMIT ${QUERY_LIMITS.MAX_PAGE}
     )
   `);
@@ -58,7 +58,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
     let filterOutreach = false;
 
     if (user.role !== "admin") {
-      const memberType = user.member_type || "student";
+      const memberType = user.memberType || "student";
       if (memberType === "student") {
         maskPII = true;
         filterOutreach = true;
@@ -72,7 +72,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
         email: schema.inquiries.email,
         metadata: schema.inquiries.metadata,
         status: schema.inquiries.status,
-        created_at: schema.inquiries.createdAt,
+        createdAt: schema.inquiries.createdAt,
         zulip_message_id: schema.inquiries.zulipMessageId,
         notes: schema.inquiries.notes
       })
@@ -127,7 +127,7 @@ export const handleListInquiries: RouteHandler<typeof listInquiriesRoute, AppEnv
         email,
         metadata: metadata || null,
         status: r.status,
-        created_at: String(r.created_at),
+        createdAt: String(r.createdAt),
         zulip_message_id: r.zulip_message_id,
         notes: r.notes
       };
@@ -299,3 +299,4 @@ export const handleDeleteInquiry: RouteHandler<typeof deleteInquiryRoute, AppEnv
     c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
     return c.json({ success: true }, 200);
 };
+

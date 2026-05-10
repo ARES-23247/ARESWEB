@@ -1,4 +1,3 @@
-import { wrapHandler, createTypedHandler } from "../utils/handler-native";
 import { QUERY_LIMITS } from "../utils/queryLimits";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -109,14 +108,14 @@ analyticsRouter.use("/search", rateLimitMiddleware(100, 60));
 // Track page view
 analyticsRouter.openapi(
   trackPageViewRoute,
-  wrapHandler(trackPageViewRoute, async (c, { body }) => {
+  async (c) => {
     const db = getDb(c);
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     if (!(await checkPersistentRateLimit(db, `track:${ip}`, ua, 20, 600))) {
       throw new ApiError("Rate limit exceeded", 429, "RATE_LIMIT_EXCEEDED");
     }
-    const { path, category, referrer } = body;
+    const { path, category, referrer } = c.req.valid("json");
     const userAgent = c.req.header("user-agent") || ua;
 
     await db.insert(schema.pageAnalytics)
@@ -129,21 +128,21 @@ analyticsRouter.openapi(
       })
       .run();
 
-    return { success: true };
-  })
+    return c.json({ success: true }, 200);
+  }
 );
 
 // Track sponsor click
 analyticsRouter.openapi(
   trackSponsorClickRoute,
-  wrapHandler(trackSponsorClickRoute, async (c, { body }) => {
+  async (c) => {
     const db = getDb(c);
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     if (!(await checkPersistentRateLimit(db, `click:${ip}`, ua, 10, 600))) {
       throw new ApiError("Rate limit exceeded", 429, "RATE_LIMIT_EXCEEDED");
     }
-    const { sponsorId } = body;
+    const { sponsorId } = c.req.valid("json");
 
     // WR-04: Validate sponsor exists to prevent database pollution
     if (!sponsorId || typeof sponsorId !== 'string') {
@@ -167,14 +166,14 @@ analyticsRouter.openapi(
       ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
     `);
 
-    return { success: true };
-  })
+    return c.json({ success: true }, 200);
+  }
 );
 
 // Get platform analytics (admin)
 analyticsRouter.openapi(
   getPlatformAnalyticsRoute,
-  createTypedHandler(getPlatformAnalyticsRoute, async (c) => {
+  async (c) => {
     const db = getDb(c);
     console.log("[Analytics] Fetching platform analytics...");
     const [
@@ -296,7 +295,7 @@ analyticsRouter.openapi(
 // No email, phone, or full name data is selected from user_profiles or user tables
 analyticsRouter.openapi(
   getRosterStatsRoute,
-  createTypedHandler(getRosterStatsRoute, async (c) => {
+  async (c) => {
     const db = getDb(c);
     const results = await db.all(sql<RosterMemberRow>`
       SELECT

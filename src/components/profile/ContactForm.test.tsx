@@ -8,23 +8,23 @@ const mockSetProfile = vi.fn();
 
 const defaultProfile: ProfileData = {
   phone: "",
-  contact_email: "",
-  show_phone: false,
-  show_email: false,
+  contactEmail: "",
+  showPhone: false,
+  showEmail: false,
 } as ProfileData;
 
 // Create a mock TanStack Form-like object
 const createMockForm = (profile: ProfileData) => ({
-  Field: ({ name, children }: any) => {
+  Field: ({ name, children }: { name: keyof ProfileData; children: (field: any) => React.ReactNode }) => {
     const field = {
       name,
       state: {
-        value: (profile as any)[name],
+        value: profile[name],
         meta: { errors: [] }
       },
       handleBlur: vi.fn(),
       handleChange: (val: any) => {
-        mockSetProfile((prev: any) => ({ ...prev, [name]: val }));
+        mockSetProfile((prev: ProfileData) => ({ ...prev, [name]: val }));
       }
     };
     return children(field);
@@ -32,7 +32,7 @@ const createMockForm = (profile: ProfileData) => ({
 });
 
 const defaultProps = {
-  form: createMockForm(defaultProfile) as any,
+  form: createMockForm(defaultProfile) as unknown as any,
   isMinor: false,
   inputClass: "w-full bg-white/5 border border-white/10 px-4 py-2 text-white",
   labelClass: "text-xs font-bold uppercase tracking-widest text-marble/50",
@@ -100,14 +100,14 @@ describe("ContactForm Component", () => {
     expect(mockSetProfile).toHaveBeenCalled();
   });
 
-  it("toggles show_phone checkbox", () => {
+  it("toggles showPhone checkbox", () => {
     render(<ContactForm {...defaultProps} isMinor={false} />);
     const showPhoneCheckbox = screen.getByRole("checkbox", { name: /show phone number on public profile/i });
     fireEvent.click(showPhoneCheckbox);
     expect(mockSetProfile).toHaveBeenCalled();
   });
 
-  it("toggles show_email checkbox", () => {
+  it("toggles showEmail checkbox", () => {
     render(<ContactForm {...defaultProps} isMinor={false} />);
     const showEmailCheckbox = screen.getByRole("checkbox", { name: /show email on public profile/i });
     fireEvent.click(showEmailCheckbox);
@@ -123,7 +123,7 @@ describe("ContactForm Component", () => {
   });
 
   it("initializes with existing contact email value", () => {
-    const customProfile = { ...defaultProfile, contact_email: "existing@example.com" };
+    const customProfile = { ...defaultProfile, contactEmail: "existing@example.com" };
     const props = { ...defaultProps, form: createMockForm(customProfile) as any };
     render(<ContactForm {...props} />);
     const emailInput = screen.getByLabelText("Contact Email") as HTMLInputElement;
@@ -149,3 +149,4 @@ describe("ContactForm Component", () => {
     expect(showPhoneCheckbox).toHaveAttribute("aria-label", "Show phone number on public profile");
   });
 });
+

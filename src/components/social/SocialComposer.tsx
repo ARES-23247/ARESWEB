@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState } from "react";
+import { useForm } from "@tanstack/react-form";
+// import { zodValidator } from "@tanstack/zod-form-adapter";
 import {
   Calendar,
   Image as ImageIcon,
@@ -33,13 +33,13 @@ const PLATFORMS = {
 
 const socialComposerSchema = z.object({
   content: z.string().min(1, "Content is required").max(5000, "Content is too long"),
-  scheduled_for: z.string().optional(),
+  scheduledFor: z.string().optional(),
   platforms: z.record(z.string(), z.boolean()).optional(),
-  linked_type: z.enum(["blog", "event", "document", "asset"]).nullable().optional(),
-  linked_id: z.string().optional(),
+  linkedType: z.enum(["blog", "event", "document", "asset"]).nullable().optional(),
+  linkedId: z.string().optional(),
 });
 
-type SocialComposerForm = z.infer<typeof socialComposerSchema>;
+// type SocialComposerForm = z.infer<typeof socialComposerSchema>;
 
 interface SocialComposerProps {
   onClose?: () => void;
@@ -56,25 +56,17 @@ export default function SocialComposer({
   defaultLinkedId,
   defaultLinkedTitle,
 }: SocialComposerProps) {
-  const [characterCount, setCharacterCount] = useState(0);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaInput, setMediaInput] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors, isValid, isDirty },
-  } = useForm<SocialComposerForm>({
-    resolver: zodResolver(socialComposerSchema),
+  const form = useForm({
+    // validatorAdapter: zodValidator(),
     defaultValues: {
       content: defaultContent,
-      scheduled_for: undefined,
+      scheduledFor: undefined as string | undefined,
       platforms: {
         twitter: true,
         bluesky: true,
@@ -88,19 +80,38 @@ export default function SocialComposer({
         tiktok: false,
         band: false,
       } as Record<string, boolean>,
-      linked_type: defaultLinkedType,
-      linked_id: defaultLinkedId,
+      linkedType: defaultLinkedType as "blog" | "event" | "document" | "asset" | null | undefined,
+      linkedId: defaultLinkedId,
     },
+    onSubmit: async ({ value }) => {
+      const selectedPlatforms = Object.entries(value.platforms || {}).filter(([_, enabled]) => enabled);
+      if (selectedPlatforms.length === 0) {
+        toast.error("Please select at least one platform");
+        return;
+      }
+
+      const scheduledFor = isScheduling && scheduledDate && scheduledTime
+        ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
+        : new Date().toISOString();
+
+      const payload: CreateSocialPostRequest = {
+        content: value.content,
+        scheduledFor: scheduledFor,
+        platforms: value.platforms || {},
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        linkedType: value.linkedType || undefined,
+        linkedId: value.linkedId,
+      };
+      createMutation.mutate(payload);
+    }
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const content = watch("content");
-  const platforms = watch("platforms");
+  // Reactivity is now handled locally by form.Field and form.Subscribe where needed.
 
   const createMutation = useCreateSocialPost({
     onSuccess: () => {
       toast.success("Social post scheduled successfully!");
-      reset();
+      form.reset();
       setMediaUrls([]);
       setIsScheduling(false);
       onClose?.();
@@ -110,15 +121,11 @@ export default function SocialComposer({
     },
   });
 
-  useEffect(() => {
-    setCharacterCount(content?.length || 0);
-  }, [content]);
-
-  const selectedPlatforms = Object.entries(platforms || {}).filter(([_, enabled]) => enabled);
-  const hasSelectedPlatforms = selectedPlatforms.length > 0;
-
-  const handleTogglePlatform = (platform: string) => {
-    setValue(`platforms.${platform}`, !platforms?.[platform], { shouldDirty: true });
+  const handleTogglePlatform = (platform: string, platformsState: Record<string, boolean> | undefined, handleChange: (val: Record<string, boolean>) => void) => {
+    handleChange({
+      ...platformsState,
+      [platform]: !platformsState?.[platform]
+    });
   };
 
   const handleAddMedia = () => {
@@ -137,32 +144,8 @@ export default function SocialComposer({
     const tomorrow = addHours(new Date(), 24);
     setScheduledDate(format(tomorrow, "yyyy-MM-dd"));
     setScheduledTime(format(tomorrow, "HH:mm"));
-    setValue("scheduled_for", tomorrow.toISOString(), { shouldDirty: true });
+    form.setFieldValue("scheduledFor", tomorrow.toISOString());
   };
-
-  const onSubmit = (data: SocialComposerForm) => {
-    if (!hasSelectedPlatforms) {
-      toast.error("Please select at least one platform");
-      return;
-    }
-
-    const scheduledFor = isScheduling && scheduledDate && scheduledTime
-      ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
-      : new Date().toISOString();
-
-    const payload: CreateSocialPostRequest = {
-      content: data.content,
-      scheduled_for: scheduledFor,
-      platforms: platforms || {},
-      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      linked_type: data.linked_type || undefined,
-      linked_id: data.linked_id,
-    };
-    createMutation.mutate(payload);
-  };
-
-  const characterLimitWarning = characterCount > 280;
-  const characterLimitError = characterCount > 5000;
 
   return (
     <div className="space-y-6">
@@ -194,57 +177,81 @@ export default function SocialComposer({
           Select Platforms
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {Object.entries(PLATFORMS).map(([key, config]) => {
-            const isEnabled = platforms?.[key];
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleTogglePlatform(key)}
-                className={`px-3 py-3 ares-cut-sm text-sm font-bold transition-all flex flex-col items-center gap-1 ${
-                  isEnabled
-                    ? `${config.color} text-white shadow-lg`
-                    : "bg-white/5 text-marble/60 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                <span className="text-lg">{config.icon}</span>
-                <span className="text-xs">{config.name}</span>
-              </button>
-            );
-          })}
+          <form.Field name="platforms">
+            {(field) => {
+              const platformsState = field.state.value;
+              return (
+                <>
+                  {Object.entries(PLATFORMS).map(([key, config]) => {
+                    const isEnabled = platformsState?.[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleTogglePlatform(key, platformsState, field.handleChange)}
+                        className={`px-3 py-3 ares-cut-sm text-sm font-bold transition-all flex flex-col items-center gap-1 ${
+                          isEnabled
+                            ? `${config.color} text-white shadow-lg`
+                            : "bg-white/5 text-marble/60 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        <span className="text-lg">{config.icon}</span>
+                        <span className="text-xs">{config.name}</span>
+                      </button>
+                    );
+                  })}
+                </>
+              );
+            }}
+          </form.Field>
         </div>
       </div>
 
-      {/* Content Input */}
-      <div className="space-y-2">
-        <label htmlFor="social-content" className="text-xs font-bold text-marble/60 uppercase tracking-widest">
-          Content
-        </label>
-        <textarea
-          id="social-content"
-          {...register("content")}
-          className={`w-full bg-white/5 border ${
-            characterLimitError ? "border-ares-red" : characterLimitWarning ? "border-ares-gold" : "border-white/10"
-          } ares-cut-sm px-4 py-3 text-white outline-none transition-colors min-h-[150px] resize-y`}
-          placeholder="What would you like to share..."
-        />
-        <div className="flex items-center justify-between">
-          <span className={`text-xs font-mono ${
-            characterLimitError ? "text-ares-red" : characterLimitWarning ? "text-ares-gold" : "text-marble/60"
-          }`}>
-            {characterCount.toLocaleString()} / 5,000
-          </span>
-          {characterLimitWarning && (
-            <span className="text-xs text-ares-gold flex items-center gap-1">
-              <AlertCircle size={12} />
-              Over 280 characters
-            </span>
-          )}
-        </div>
-        {errors.content && (
-          <p className="text-xs text-ares-red font-bold uppercase">{errors.content.message}</p>
-        )}
-      </div>
+      <form.Field
+        name="content"
+        validators={{
+          onChange: socialComposerSchema.shape.content,
+        }}
+      >
+        {(field) => {
+          const charCount = field.state.value?.length || 0;
+          const charLimitWarning = charCount > 280;
+          const charLimitError = charCount > 5000;
+          return (
+          <div className="space-y-2">
+            <label htmlFor="social-content" className="text-xs font-bold text-marble/60 uppercase tracking-widest">
+              Content
+            </label>
+            <textarea
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className={`w-full bg-white/5 border ${
+                charLimitError ? "border-ares-red" : charLimitWarning ? "border-ares-gold" : "border-white/10"
+              } ares-cut-sm px-4 py-3 text-white outline-none transition-colors min-h-[150px] resize-y`}
+              placeholder="What would you like to share..."
+            />
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-mono ${
+                charLimitError ? "text-ares-red" : charLimitWarning ? "text-ares-gold" : "text-marble/60"
+              }`}>
+                {charCount.toLocaleString()} / 5,000
+              </span>
+              {charLimitWarning && (
+                <span className="text-xs text-ares-gold flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  Over 280 characters
+                </span>
+              )}
+            </div>
+            {field.state.meta.errors?.[0] && (
+              <p className="text-xs text-ares-red font-bold uppercase">{field.state.meta.errors[0]?.message as string}</p>
+            )}
+          </div>
+        )}}
+      </form.Field>
 
       {/* Media Attachments */}
       <div className="space-y-2">
@@ -304,7 +311,7 @@ export default function SocialComposer({
             type="button"
             onClick={() => {
               setIsScheduling(false);
-              setValue("scheduled_for", undefined);
+              form.setFieldValue("scheduledFor", undefined);
             }}
             className={`px-4 py-2 ares-cut-sm text-sm font-bold transition-all ${
               !isScheduling
@@ -334,7 +341,7 @@ export default function SocialComposer({
               onChange={(e) => {
                 setScheduledDate(e.target.value);
                 if (scheduledTime) {
-                  setValue("scheduled_for", new Date(`${e.target.value}T${scheduledTime}`).toISOString());
+                  form.setFieldValue("scheduledFor", new Date(`${e.target.value}T${scheduledTime}`).toISOString());
                 }
               }}
               className="bg-white/5 border border-white/10 ares-cut-sm px-3 py-2 text-white text-sm"
@@ -345,7 +352,7 @@ export default function SocialComposer({
               onChange={(e) => {
                 setScheduledTime(e.target.value);
                 if (scheduledDate) {
-                  setValue("scheduled_for", new Date(`${scheduledDate}${e.target.value}`).toISOString());
+                  form.setFieldValue("scheduledFor", new Date(`${scheduledDate}T${e.target.value}`).toISOString());
                 }
               }}
               className="bg-white/5 border border-white/10 ares-cut-sm px-3 py-2 text-white text-sm"
@@ -356,27 +363,41 @@ export default function SocialComposer({
 
       {/* Submit */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleSubmit(onSubmit)}
-          disabled={!isValid || !isDirty || !hasSelectedPlatforms || createMutation.isPending}
-          className="flex-1 py-3 bg-gradient-to-r from-ares-gold to-yellow-600 text-black font-bold ares-cut hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {createMutation.isPending ? (
-            <>
-              <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
-              Scheduling...
-            </>
-          ) : (
-            <>
-              <Send size={18} />
-              {isScheduling ? "Schedule Post" : "Send Now"}
-            </>
-          )}
-        </button>
+      <form.Subscribe
+        selector={(state) => [state.canSubmit, state.isDirty, state.values.platforms]}
+      >
+        {([canSubmit, isDirty, platforms]) => {
+          const selectedPlatforms = Object.entries(platforms as Record<string, boolean> || {}).filter(([_, enabled]) => enabled);
+          const hasSelectedPlatforms = selectedPlatforms.length > 0;
+          return (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+              disabled={!canSubmit || !isDirty || !hasSelectedPlatforms || createMutation.isPending}
+              className="flex-1 py-3 bg-gradient-to-r from-ares-gold to-yellow-600 text-black font-bold ares-cut hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {createMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                  Scheduling...
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  {isScheduling ? "Schedule Post" : "Send Now"}
+                </>
+              )}
+            </button>
+          );
+        }}
+      </form.Subscribe>
         <button
           type="button"
           onClick={() => {
-            reset();
+            form.reset();
             setMediaUrls([]);
             setIsScheduling(false);
           }}

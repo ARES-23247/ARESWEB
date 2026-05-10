@@ -1,9 +1,9 @@
-import { Hono, Context } from "hono";
+﻿import { Hono, Context } from "hono";
 import { AppEnv, logAuditAction, getDb } from "./utils";
 import { ensureAdmin } from "./auth";
 import { sql } from "drizzle-orm";
 
-// ── Generic Content Management Factory ────────────────────────────────
+// â”€â”€ Generic Content Management Factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface ContentLifecycleHooks {
   onApprove?: (c: Context<AppEnv>, id: string) => Promise<boolean | { handled: boolean, warnings?: string[] } | void>;
@@ -82,7 +82,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
     if (!handled) {
       const db = getDb(c);
       // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
-      await db.run(sql`UPDATE ${sql.raw(tableName)} SET is_deleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`);
+      await db.run(sql`UPDATE ${sql.raw(tableName)} SET isDeleted = 0, status = 'draft' WHERE ${sql.raw(idColumn)} = ${id}`);
     }
 
     c.executionCtx.waitUntil(logAuditAction(c, `RESTORE_${tableName.toUpperCase()}`, tableName, id));
@@ -100,7 +100,7 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
       if (!handled) {
         const db = getDb(c);
         // CRITICAL-001 FIX: Use parameterized query to prevent SQL injection
-        await db.run(sql`UPDATE ${sql.raw(tableName)} SET is_deleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`);
+        await db.run(sql`UPDATE ${sql.raw(tableName)} SET isDeleted = 1 WHERE ${sql.raw(idColumn)} = ${id}`);
       }
       
       c.executionCtx.waitUntil(logAuditAction(c, `DELETE_${tableName.toUpperCase()}`, tableName, id));
@@ -135,3 +135,4 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
 
   return router;
 }
+

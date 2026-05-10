@@ -30,7 +30,7 @@ export interface GenericKanbanBoardProps<T> {
   getId: (item: T) => string;
   getStatus: (item: T) => string;
   getSortOrder: (item: T) => number;
-  onReorder: (updates: { id: string; status: string; sort_order: number }[]) => void;
+  onReorder: (updates: { id: string; status: string; sortOrder: number }[]) => void;
   renderItem: (item: T) => React.ReactNode;
   renderDragOverlay?: (item: T) => React.ReactNode;
   isLoading?: boolean;
@@ -172,13 +172,13 @@ export function GenericKanbanBoard<T>({
         const reorderUpdates = sourceItems.map((t, i) => ({
           id: t.id,
           status: sourceCol,
-          sort_order: i,
+          sortOrder: i,
         }));
 
         // Optimitically update local items
         setLocalItems(prev => prev.map(item => {
           const update = reorderUpdates.find(u => u.id === item.id);
-          if (update) return { ...item, status: update.status, sortOrder: update.sort_order };
+          if (update) return { ...item, status: update.status, sortOrder: update.sortOrder };
           return item;
         }));
 
@@ -200,13 +200,13 @@ export function GenericKanbanBoard<T>({
       const reorderUpdates = targetItems.map((t, i) => ({ 
         id: t.id, 
         status: targetCol, 
-        sort_order: i 
+        sortOrder: i 
       }));
 
       // Optimitically update local items
       setLocalItems(prev => prev.map(item => {
         const update = reorderUpdates.find(u => u.id === item.id);
-        if (update) return { ...item, status: update.status, sortOrder: update.sort_order };
+        if (update) return { ...item, status: update.status, sortOrder: update.sortOrder };
         return item;
       }));
       

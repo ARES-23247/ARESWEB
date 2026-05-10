@@ -1,46 +1,63 @@
+import { extendSchema } from "@shared/db/schema-extensions";
+import { insertEventSchema } from "@shared/db/schema-zod";
+import { fieldPresets } from "@shared/db/schema-presets";
 import { z } from "zod";
 import { sanitizeHtml } from "../utils/sanitize";
-
-// ISO 8601 date string validator
-const isoDateSchema = z.string().refine(
-  (val) => !isNaN(Date.parse(val)),
-  { message: "Invalid ISO 8601 date format" }
-);
 
 // Event category enum for consistency
 export const EventCategoryEnum = z.enum(["internal", "outreach", "external"]);
 
 // Sanitized text field for rich content that may contain HTML
-const sanitizedTextSchema = z.string().max(200000).optional().transform((val) => {
-  if (!val) return val;
-  return sanitizeHtml(val);
-});
+const sanitizedTextSchema = fieldPresets.sanitizedHtml(200000, sanitizeHtml);
 
-export const eventSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, "Event title is required").max(255),
-  dateStart: isoDateSchema.min(1, "Start date is required").max(255),
-  dateEnd: isoDateSchema.max(255).optional(),
-  location: z.string().max(255).optional(),
-  description: z.string().max(5000).optional(),
-  coverImage: z.string().max(255).optional().or(z.literal("")),
-  category: EventCategoryEnum.default("internal"),
-  tbaEventKey: z.string().max(255).optional().or(z.literal("")),
-  isPotluck: z.boolean().default(false),
-  isVolunteer: z.boolean().default(false),
-  publishedAt: z.string().max(255).optional(),
-  isDraft: z.boolean().optional(),
-  seasonId: z.union([z.string(), z.number()]).transform(v => v === "" ? undefined : Number(v)).optional(),
-  meetingNotes: sanitizedTextSchema, // Sanitized to prevent XSS
-  socials: z.record(z.string().max(255), z.boolean()).optional(),
-  rrule: z.string().max(1000).optional().or(z.literal("")),
-  recurrenceRule: z.string().max(1000).optional().or(z.literal("")),
-  parentEventId: z.string().optional(),
-  originalStartTime: z.string().optional(),
-  recurringGroupId: z.string().optional(),
-  recurringException: z.boolean().optional(),
-  updateMode: z.enum(["single", "following"]).optional(),
-  deleteMode: z.enum(["single", "following"]).optional(),
-});
+export const eventSchema = extendSchema(insertEventSchema)
+  .applyPresets({
+    // Core event fields
+    title: fieldPresets.requiredString(255, "Event title is required"),
+    dateStart: fieldPresets.requiredDate("Start date is required"),
+    dateEnd: fieldPresets.optionalDate(),
+    location: fieldPresets.optionalString(255),
+    description: fieldPresets.longText(5000),
+    coverImage: fieldPresets.emptyStringOrOptional(255),
+    category: fieldPresets.category(["internal", "outreach", "external"] as const, "internal"),
+    tbaEventKey: fieldPresets.emptyStringOrOptional(255),
+
+    // Event type flags
+    isPotluck: fieldPresets.booleanDefault(false),
+    isVolunteer: fieldPresets.booleanDefault(false),
+
+    // Publishing fields
+    publishedAt: fieldPresets.optionalString(255),
+    isDraft: fieldPresets.optionalBoolean(),
+
+    // Relations
+    seasonId: fieldPresets.seasonId(),
+
+    // Content fields
+    meetingNotes: sanitizedTextSchema,
+
+    // Social media
+    socials: fieldPresets.socialsRecord(),
+
+    // Recurrence fields
+    rrule: fieldPresets.recurrenceRule(),
+    recurrenceRule: fieldPresets.recurrenceRule(),
+    parentEventId: fieldPresets.optionalId(),
+    originalStartTime: fieldPresets.optionalString(),
+    recurringGroupId: fieldPresets.optionalId(),
+    recurringException: fieldPresets.optionalBoolean(),
+
+    // Update/delete mode for recurring events
+    updateMode: fieldPresets.optionalCategory(["single", "following"] as const),
+    deleteMode: fieldPresets.optionalCategory(["single", "following"] as const),
+  })
+  .omitField("id")
+  .omitField("gcalEventId")
+  .omitField("isDeleted")
+  .omitField("status")
+  .omitField("revisionOf")
+  .omitField("contentDraft")
+  .omitField("updatedAt")
+  .build();
 
 export type EventPayload = z.infer<typeof eventSchema>;

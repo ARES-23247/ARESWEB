@@ -8,6 +8,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useGetTasks, useUpdateTask, useDeleteTask, useReorderTasks, useCreateTask, type Task as TaskItem } from "../api";
 import usePartySocket from "partysocket/react";
 import { useSession } from "../utils/auth-client";
+import { useStore } from "@tanstack/react-store";
+import { kanbanStore, kanbanActions } from "../store/kanbanStore";
 
 export interface TaskNode extends TaskItem {
   subRows?: TaskNode[];
@@ -35,8 +37,8 @@ export default function TaskBoardPage() {
     const rootTasks: TaskNode[] = [];
     flatTasks.forEach(t => {
       const node = taskMap.get(t.id)!;
-      if (t.parent_id && taskMap.has(t.parent_id)) {
-        taskMap.get(t.parent_id)!.subRows!.push(node);
+      if (t.parentId && taskMap.has(t.parentId)) {
+        taskMap.get(t.parentId)!.subRows!.push(node);
       } else {
         rootTasks.push(node);
       }
@@ -45,7 +47,7 @@ export default function TaskBoardPage() {
     return rootTasks;
   };
 
-  const rootTasks = (tasks as TaskItem[]).filter((t) => !t.parent_id);
+  const rootTasks = (tasks as TaskItem[]).filter((t) => !t.parentId);
   const taskTree = buildTaskTree(tasks as TaskItem[]);
 
   // -- Mutations ------------------------------------------------------
@@ -64,7 +66,7 @@ export default function TaskBoardPage() {
 
   // -- Real-Time Presence & Sync --------------------------------------
   const { data: session } = useSession();
-  const [activeUsers, setActiveUsers] = useState<Record<string, { userId: string; name: string; image?: string; lastSeen: number; x?: number; y?: number }>>({});
+  const activeUsers = useStore(kanbanStore, (s) => s.activeUsers);
   const lastCursorSend = React.useRef(0);
   const boardRef = React.useRef<HTMLDivElement>(null);
   
@@ -96,10 +98,10 @@ export default function TaskBoardPage() {
           queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
         } else if (msg.type === "presence") {
           // Track active users
-          setActiveUsers((prev) => ({
-            ...prev,
-            [msg.userId]: { userId: msg.userId, name: msg.name, image: msg.image, lastSeen: Date.now() }
-          }));
+          kanbanActions.updateUser(msg.userId, { 
+            name: msg.name, 
+            image: msg.image 
+          });
           // Ping back so they know we are here too
           if (session?.user && msg.userId !== session.user.id) {
              socket.send(JSON.stringify({ 
@@ -110,27 +112,23 @@ export default function TaskBoardPage() {
              }));
           }
         } else if (msg.type === "presence_ack") {
-          setActiveUsers((prev) => ({
-            ...prev,
-            [msg.userId]: { userId: msg.userId, name: msg.name, image: msg.image, lastSeen: Date.now() }
-          }));
+          kanbanActions.updateUser(msg.userId, { 
+            name: msg.name, 
+            image: msg.image 
+          });
         } else if (msg.type === "cursor") {
-          setActiveUsers((prev) => {
-            const user = prev[msg.userId];
-            if (!user) return prev;
-            return {
-              ...prev,
-              [msg.userId]: { ...user, x: msg.x, y: msg.y, lastSeen: Date.now() }
-            };
+          kanbanActions.updateUser(msg.userId, { 
+            x: msg.x, 
+            y: msg.y 
           });
         } else if (msg.type === "task_reordered") {
           // Optimistic sync for dragging
           queryClient.setQueryData(queryKey, (old: { tasks?: TaskItem[] } | undefined) => {
             if (!old?.tasks) return old;
             const newTasks = old.tasks.map((task: TaskItem) => {
-              const updatedItem = msg.items.find((i: { id: string; status: string; sort_order: number }) => i.id === task.id);
+              const updatedItem = msg.items.find((i: { id: string; status: string; sortOrder: number }) => i.id === task.id);
               if (updatedItem) {
-                return { ...task, status: updatedItem.status, sort_order: updatedItem.sort_order };
+                return { ...task, status: updatedItem.status, sortOrder: updatedItem.sortOrder };
               }
               return task;
             });
@@ -146,18 +144,7 @@ export default function TaskBoardPage() {
   // Cleanup stale presence (users who left without saying goodbye)
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setActiveUsers(prev => {
-        const now = Date.now();
-        const next = { ...prev };
-        let changed = false;
-        for (const [id, user] of Object.entries(next)) {
-          if (now - user.lastSeen > 60000) { // 1 minute timeout
-            delete next[id];
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
+      kanbanActions.clearStaleUsers(60000);
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -207,7 +194,7 @@ export default function TaskBoardPage() {
     });
   };
 
-  const handleReorder = async (items: { id: string; status: string; sort_order: number }[]) => {
+  const handleReorder = async (items: { id: string; status: string; sortOrder: number }[]) => {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: "task_reordered", items }));
     }

@@ -34,7 +34,7 @@ vi.mock('../middleware/auth', async () => {
       if (!user) {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires admin privileges.' }, 403);
       }
@@ -61,7 +61,7 @@ describe('Communications Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -71,7 +71,7 @@ describe('Communications Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -81,7 +81,7 @@ describe('Communications Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'user',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -91,7 +91,7 @@ describe('Communications Routes', () => {
     name: 'Coach User',
     nickname: 'Coach',
     role: 'user',
-    member_type: 'coach',
+    memberType: 'coach',
     image: null,
   };
 
@@ -197,7 +197,7 @@ describe('Communications Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow mentor to access stats via member_type', async () => {
+    it('should allow mentor to access stats via memberType', async () => {
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
@@ -215,7 +215,7 @@ describe('Communications Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow coach to access stats via member_type', async () => {
+    it('should allow coach to access stats via memberType', async () => {
       globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
 
@@ -369,7 +369,7 @@ describe('Communications Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow mentor to send mass email via member_type', async () => {
+    it('should allow mentor to send mass email via memberType', async () => {
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
@@ -397,7 +397,7 @@ describe('Communications Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow coach to send mass email via member_type', async () => {
+    it('should allow coach to send mass email via memberType', async () => {
       globalThis.__mockSessionUser = mockCoachUser;
       const app = createTestApp();
 

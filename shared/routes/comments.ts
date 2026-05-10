@@ -5,12 +5,12 @@ import { commentSchema as commentInputSchema } from "../schemas/commentSchema";
 
 export const commentSchema = z.object({
   id: z.string(),
-  user_id: z.string(),
+  userId: z.string(),
   nickname: z.string().nullable(),
   avatar: z.string().nullable(),
   content: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export const listCommentsRoute = createRoute({

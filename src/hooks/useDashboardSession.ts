@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 
 import { useGetMe } from "../api";
 
@@ -10,9 +10,9 @@ export interface DashboardSession {
     email?: string;
     image?: string;
     role: string;
-    member_type: string;
-    first_name: string;
-    last_name: string;
+    memberType: string;
+    firstName: string;
+    lastName: string;
     nickname: string;
     [key: string]: unknown;
   };
@@ -54,9 +54,9 @@ export function useDashboardSession() {
         ..._res.auth,
         name: _res.auth.name ?? undefined,
         image: _res.auth.image ?? undefined,
-        member_type: _res.member_type || "student",
-        first_name: _res.first_name || "",
-        last_name: _res.last_name || "",
+        memberType: _res.memberType || "student",
+        firstName: _res.firstName || "",
+        lastName: _res.lastName || "",
         nickname: _res.nickname || "",
         role: (_res.auth.role as string) || "unverified",
       },
@@ -65,7 +65,7 @@ export function useDashboardSession() {
 
   const permissions: DashboardPermissions = useMemo(() => {
     const role = session?.user?.role || "unverified";
-    const memberType = session?.user?.member_type || "student";
+    const memberType = session?.user?.memberType || "student";
     const isAdmin = role === "admin";
     const isAuthorized = isAdmin || role === "author" || memberType === "coach" || memberType === "mentor";
     const isUnverified = role === "unverified";
@@ -89,3 +89,4 @@ export function useDashboardSession() {
 
   return useMemo(() => ({ session, isPending, permissions }), [session, isPending, permissions]);
 }
+

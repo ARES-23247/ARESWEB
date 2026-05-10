@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -82,6 +82,7 @@ const mockClient = honoClient.client as unknown as {
       };
       ":slug": {
         $get: ReturnType<typeof vi.fn>;
+        $patch: ReturnType<typeof vi.fn>;
         $post: ReturnType<typeof vi.fn>;
         $delete: ReturnType<typeof vi.fn>;
         undelete: {

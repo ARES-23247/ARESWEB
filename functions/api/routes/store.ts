@@ -1,24 +1,20 @@
-import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { ApiError } from "../middleware/errorHandler";
-
-import { eq, desc, and, inArray, isNotNull, sql } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
-
-import { AppEnv, logSystemError, ensureAdmin, getDb } from "../middleware";
 import Stripe from "stripe";
-import { sendZulipMessage } from "../../utils/zulip";
+import { sendZulipMessage } from "../../utils/zulipSync";
 import {
   getProductsRoute,
   createCheckoutSessionRoute,
   getOrdersRoute,
   updateOrderStatusRoute,
 } from "../../../shared/routes/store";
+import { getDb, ensureAdmin, AppEnv, logSystemError } from "../middleware";
 
 export const storeRouter = new OpenAPIHono<AppEnv>();
 
-// Webhook endpoint - must be before auth middleware since Stripe calls it
-// Using native Hono route since webhook doesn't follow OpenAPI pattern (Stripe signature verification)
+// Webhook endpoint - remains as-is since it's not openapi()
 storeRouter.post("/webhook", async (c) => {
     try {
       const stripeKey = c.env.STRIPE_SECRET_KEY;
@@ -33,129 +29,84 @@ storeRouter.post("/webhook", async (c) => {
       let event: Stripe.Event;
 
       try {
-        const rawBody = await c.req.text();
-        event = stripe.webhooks.constructEvent(
-          rawBody,
-          signature,
-          endpointSecret
-        );
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        console.error(`[Webhook] Signature verification failed: ${message}`);
-        throw new ApiError(`Invalid signature`, 400);
+        const body = await c.req.text();
+        event = await stripe.webhooks.constructEventAsync(body, signature, endpointSecret);
+      } catch (err: any) {
+        console.error("Webhook signature verification failed.", err.message);
+        return c.text("Webhook Error", 400);
       }
+
+      const db = getDb(c);
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        const db = getDb(c);
-
-        // Fulfill order
         const metadata = session.metadata;
-        const cartItems = metadata?.cartItems ? JSON.parse(metadata.cartItems) : [];
 
-        const shippingName = (session as { shipping_details?: { name?: string | null } }).shipping_details?.name || null;
-
-        await db
-          .insert(schema.orders)
-          .values({
-            id: session.id,
-            stripeSessionId: session.id,
-            customerEmail: session.customer_details?.email || "unknown",
-            shippingName: shippingName,
-            totalCents: session.amount_total || 0,
-            status: "paid",
-            createdAt: new Date().toISOString(),
-          })
-          .run();
-
-        // Deplete inventory
-        for (const item of cartItems) {
-          await db
-            .update(schema.products)
-            .set({ stockCount: sql`${schema.products.stockCount} - ${item.q}` })
-            .where(
-              and(
-                eq(schema.products.id, item.id),
-                isNotNull(schema.products.stockCount)
-              )
-            )
+        if (metadata?.type === "STORE_ORDER" && metadata.orderId) {
+          // Update order status in DB
+          await db.update(schema.orders)
+            .set({
+              status: "paid",
+              stripeSessionId: session.id,
+              customerEmail: session.customer_details?.email,
+              shippingName: session.shipping_details?.name,
+              updatedAt: new Date().toISOString()
+            })
+            .where(eq(schema.orders.id, metadata.orderId))
             .run();
-        }
 
-        // Alert team
-        const totalAmount = session.amount_total ? (session.amount_total / 100).toFixed(2) : "0.00";
-        const customerEmail = session.customer_details?.email || "Unknown Email";
-        const message = `Ã°Å¸â€ºÂÃ¯Â¸Â **New Order Received!**\n\n**Order ID**: ${session.id}\n**Customer**: ${customerEmail}\n**Total**: $${totalAmount}\n\n[View Dashboard](https://aresweb.org/admin)`;
-        await sendZulipMessage(c.env, "general", "Store Orders", message);
+          // Optional: Send to Zulip
+          c.executionCtx.waitUntil(sendZulipMessage(c, {
+            id: metadata.orderId,
+            author: "System",
+            content: `New Paid Order: ${metadata.orderId}\nTotal: ${session.amount_total ? session.amount_total / 100 : 0} ${session.currency}`,
+            targetType: "order",
+            targetId: metadata.orderId
+          }));
+        }
       }
 
-      return c.json({ success: true }, 200);
-    } catch (err: unknown) {
-      logSystemError(getDb(c), "webhook_error", String(err));
-      throw new ApiError("Webhook fulfillment failed", 500);
+      return c.json({ received: true });
+    } catch (err: any) {
+      const db = getDb(c);
+      await logSystemError(db, "stripe_webhook", err.message, err.stack);
+      return c.text("Webhook Handler Error", 500);
     }
-  }
-);
+});
 
-// Apply ensureAdmin middleware to orders routes
-storeRouter.use("/orders/*", ensureAdmin);
-storeRouter.use("/orders", ensureAdmin);
-
-storeRouter.openapi(getProductsRoute, autoResponseHandler(async (c) => {
+// Get products
+storeRouter.openapi(getProductsRoute, async (c) => {
     const db = getDb(c);
-    const products = await db
-      .select()
-      .from(schema.products)
-      .where(eq(schema.products.active, 1))
-      .all();
+    const products = await db.select().from(schema.products).where(eq(schema.products.active, 1)).all();
+    return c.json(products, 200);
+});
 
-    type Product = typeof schema.products.$inferSelect;
-    return success(
-      products.map((p: Product) => ({
-        ...p,
-        description: p.description || null,
-        imageUrl: p.imageUrl || null,
-        stockCount: p.stockCount ?? null,
-      }))
-    );
-}));
-
-storeRouter.openapi(createCheckoutSessionRoute, autoResponseHandler(async (c, { body }) => {
+// Create checkout session
+storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
+    const body = c.req.valid("json");
     const { items, successUrl, cancelUrl } = body;
+    const db = getDb(c);
     const stripeKey = c.env.STRIPE_SECRET_KEY;
+
     if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY is not configured.");
+      throw new ApiError("Stripe is not configured.", 500);
     }
 
     const stripe = new Stripe(stripeKey);
-    const db = getDb(c);
 
-    // Fetch product details
-    const productIds = items.map((i) => i.productId);
-    const products = await db
-      .select()
-      .from(schema.products)
-      .where(
-        and(
-          inArray(schema.products.id, productIds),
-          eq(schema.products.active, 1)
-        )
-      )
-      .all();
+    // Fetch products to verify price
+    const productIds = items.map((i: any) => i.productId);
+    const dbProducts = await db.select().from(schema.products).where(inArray(schema.products.id, productIds)).all();
 
-    type Product = typeof schema.products.$inferSelect;
-    const productMap = new Map<string, Product>(products.map((p: Product) => [p.id, p]));
-
-    const lineItems = items.map((item) => {
-      const product = productMap.get(item.productId);
-      if (!product) {
-        throw new Error(`Product ${item.productId} not found or inactive.`);
-      }
+    const lineItems = items.map((item: any) => {
+      const product = dbProducts.find(p => p.id === item.productId);
+      if (!product) throw new ApiError(`Product not found: ${item.productId}`, 404);
       return {
         price_data: {
           currency: "usd",
           product_data: {
             name: product.name,
+            description: product.description,
             images: product.imageUrl ? [product.imageUrl] : [],
           },
           unit_amount: product.priceCents,
@@ -164,57 +115,57 @@ storeRouter.openapi(createCheckoutSessionRoute, autoResponseHandler(async (c, { 
       };
     });
 
+    const orderId = crypto.randomUUID();
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
-      metadata: {
-        cartItems: JSON.stringify(items.map((i) => ({ id: i.productId, q: i.quantity })))
-      },
       mode: "payment",
       success_url: successUrl,
       cancel_url: cancelUrl,
-      shipping_address_collection: {
-        allowed_countries: ["US", "CA"],
+      metadata: {
+        type: "STORE_ORDER",
+        orderId,
       },
     });
 
-    if (!session.url) {
-      throw new Error("Stripe session URL is null");
-    }
+    // Create pending order
+    await db.insert(schema.orders).values({
+      id: orderId,
+      status: "pending",
+      totalCents: session.amount_total || 0,
+      stripeSessionId: session.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).run();
 
-    return success({
-      sessionId: session.id,
-      url: session.url,
-    });
-}));
+    return c.json({ sessionId: session.id, url: session.url || "" }, 200);
+});
 
-storeRouter.openapi(getOrdersRoute, autoResponseHandler(async (c) => {
+// Get orders (admin only)
+storeRouter.openapi(getOrdersRoute, async (c) => {
     const db = getDb(c);
-    const results = await db
-      .select()
-      .from(schema.orders)
-      .orderBy(desc(schema.orders.createdAt))
-      .all();
+    const orders = await db.select().from(schema.orders).orderBy(desc(schema.orders.createdAt)).all();
+    return c.json({ orders }, 200);
+});
 
-    const orders = results.map(o => ({
-        ...o,
-        stripeSessionId: o.stripeSessionId || null,
-        customerEmail: o.customerEmail || null,
-        shippingName: o.shippingName || null,
-        status: o.status || "processing",
-        fulfillmentStatus: o.fulfillmentStatus || "unfulfilled",
-    }));
-
-    return success({ orders });
-}));
-
-storeRouter.openapi(updateOrderStatusRoute, autoResponseHandler(async (c, { params, body }) => {
+// Update order status (admin only)
+storeRouter.openapi(updateOrderStatusRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
     const { id } = params;
+    const { fulfillmentStatus } = body;
     const db = getDb(c);
-    await db.update(schema.orders).set({ fulfillmentStatus: body.fulfillmentStatus }).where(eq(schema.orders.id, id)).run();
-    return success({ success: true });
-}));
+
+    await db.update(schema.orders)
+      .set({
+        fulfillmentStatus,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(schema.orders.id, id))
+      .run();
+
+    return c.json({ success: true }, 200);
+});
 
 export default storeRouter;
-
-

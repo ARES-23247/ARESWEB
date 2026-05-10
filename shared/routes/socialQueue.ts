@@ -52,16 +52,16 @@ const analyticsSchema = z.object({
 export const socialQueueSchema = z.object({
   id: z.string(),
   content: z.string().min(1).max(5000),
-  media_urls: z.array(z.string().url()).optional(),
-  scheduled_for: z.string(),
+  mediaUrls: z.array(z.string().url()).optional(),
+  scheduledFor: z.string(),
   platforms: platformSchema,
   status: z.enum(["pending", "processing", "sent", "failed", "cancelled"]),
-  created_at: z.string(),
-  sent_at: z.string().nullable(),
-  error_message: z.string().nullish(),
-  created_by: z.string().nullish(),
-  linked_type: z.enum(["blog", "event", "document", "asset"]).nullish(),
-  linked_id: z.string().nullish(),
+  createdAt: z.string(),
+  sentAt: z.string().nullable(),
+  errorMessage: z.string().nullish(),
+  createdBy: z.string().nullish(),
+  linkedType: z.enum(["blog", "event", "document", "asset"]).nullish(),
+  linkedId: z.string().nullish(),
   analytics: analyticsSchema.nullable(),
 });
 
@@ -130,11 +130,11 @@ export const createSocialQueueRoute = createRoute({
           schema: socialQueueSchema.omit({
             id: true,
             status: true,
-            created_at: true,
-            sent_at: true,
-            error_message: true,
+            createdAt: true,
+            sentAt: true,
+            errorMessage: true,
             analytics: true,
-            created_by: true,
+            createdBy: true,
           }),
         },
       },
@@ -170,8 +170,8 @@ export const updateSocialQueueRoute = createRoute({
           schema: socialQueueSchema
             .omit({
               id: true,
-              created_at: true,
-              created_by: true,
+              createdAt: true,
+              createdBy: true,
             })
             .partial(),
         },
@@ -258,11 +258,11 @@ export const analyticsSocialQueueRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            total_posts: z.number(),
-            total_sent: z.number(),
-            total_pending: z.number(),
-            total_failed: z.number(),
-            by_platform: z.object({
+            totalPosts: z.number(),
+            totalSent: z.number(),
+            totalPending: z.number(),
+            totalFailed: z.number(),
+            byPlatform: z.object({
               twitter: z.number(),
               bluesky: z.number(),
               facebook: z.number(),
@@ -276,10 +276,10 @@ export const analyticsSocialQueueRoute = createRoute({
               band: z.number(),
             }),
             engagement: z.object({
-              total_impressions: z.number(),
-              total_likes: z.number(),
-              total_shares: z.number(),
-              total_comments: z.number(),
+              totalImpressions: z.number(),
+              totalLikes: z.number(),
+              totalShares: z.number(),
+              totalComments: z.number(),
             }),
           }),
         },

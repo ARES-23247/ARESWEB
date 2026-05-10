@@ -1,4 +1,4 @@
-
+﻿
 
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";
@@ -10,8 +10,8 @@ import { useGetPostHistory, useRestorePostHistory, type PostHistoryResponse } fr
 export interface Revision {
   id: number;
   title: string;
-  author_email: string;
-  created_at: string;
+  authorEmail: string;
+  createdAt: string;
   category?: string;
   author?: string;
 }
@@ -118,16 +118,16 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
                     <div className="font-bold text-white truncate">{rev.title}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-white/60 bg-black/40 border border-white/10 px-2 py-0.5 ares-cut-sm">
-                        {format(new Date(rev.created_at), 'MMM do, yyyy @ HH:mm')}
+                        {format(new Date(rev.createdAt), 'MMM do, yyyy @ HH:mm')}
                       </span>
                       <span className="text-xs text-ares-cyan truncate max-w-[150px]">
-                        By {rev.author_email || rev.author || "Unknown"}
+                        By {rev.authorEmail || rev.author || "Unknown"}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => {
-                        if (confirm(`Are you sure you want to restore "${displayTitle}" to the version from ${format(new Date(rev.created_at), 'PPP')}? Current unsaved changes might be lost if you haven't saved.`)) {
+                        if (confirm(`Are you sure you want to restore "${displayTitle}" to the version from ${format(new Date(rev.createdAt), 'PPP')}? Current unsaved changes might be lost if you haven't saved.`)) {
                            restoreRevision(rev.id);
                         }
                     }}
@@ -150,3 +150,4 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
     </div>
   );
 }
+

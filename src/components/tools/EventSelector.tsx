@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { Search, Calendar, RefreshCw, ChevronDown, MapPin } from "lucide-react";
 
 interface EventSelectorProps {
@@ -8,7 +8,7 @@ interface EventSelectorProps {
 
 interface TOAEvent {
   event_key: string;
-  event_name: string;
+  eventName: string;
   start_date: string;
   end_date: string;
   city: string;
@@ -20,12 +20,12 @@ interface TOAEvent {
 }
 
 const SEASONS = [
-  { key: "26-27", label: "2026–2027 (BIOBUZZ)" },
-  { key: "25-26", label: "2025–2026 (DECODE)" },
-  { key: "24-25", label: "2024–2025 (INTO THE DEEP)" },
-  { key: "23-24", label: "2023–2024 (CENTERSTAGE)" },
-  { key: "22-23", label: "2022–2023 (POWERPLAY)" },
-  { key: "21-22", label: "2021–2022 (FREIGHT FRENZY)" },
+  { key: "26-27", label: "2026â€“2027 (BIOBUZZ)" },
+  { key: "25-26", label: "2025â€“2026 (DECODE)" },
+  { key: "24-25", label: "2024â€“2025 (INTO THE DEEP)" },
+  { key: "23-24", label: "2023â€“2024 (CENTERSTAGE)" },
+  { key: "22-23", label: "2022â€“2023 (POWERPLAY)" },
+  { key: "21-22", label: "2021â€“2022 (FREIGHT FRENZY)" },
 ];
 
 export default function EventSelector({ onEventSelect, selectedEventKey }: EventSelectorProps) {
@@ -63,7 +63,7 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
   const filtered = events.filter((e) => {
     const q = search.toLowerCase();
     return (
-      e.event_name?.toLowerCase().includes(q) ||
+      e.eventName?.toLowerCase().includes(q) ||
       e.city?.toLowerCase().includes(q) ||
       e.state_prov?.toLowerCase().includes(q) ||
       e.event_key?.toLowerCase().includes(q)
@@ -113,7 +113,7 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
           <Search size={14} className="text-marble/60 shrink-0" />
           {selectedEvent ? (
             <span className="text-sm text-white font-semibold truncate flex-1">
-              {selectedEvent.event_name}
+              {selectedEvent.eventName}
             </span>
           ) : (
             <span className="text-sm text-marble/60 font-semibold truncate flex-1">
@@ -162,7 +162,7 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
                   <button
                     key={evt.event_key}
                     onClick={() => {
-                      onEventSelect(evt.event_key, evt.event_name);
+                      onEventSelect(evt.event_key, evt.eventName);
                       setIsOpen(false);
                       setSearch("");
                     }}
@@ -173,7 +173,7 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
                     }`}
                   >
                     <div className="text-sm text-white font-semibold truncate">
-                      {evt.event_name}
+                      {evt.eventName}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
                       <span className="flex items-center gap-1 text-xs text-marble/50">
@@ -202,3 +202,4 @@ export default function EventSelector({ onEventSelect, selectedEventKey }: Event
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { DashboardSession, DashboardPermissions } from "./useDashboardSession";
 
 // Named constants for notification polling intervals
@@ -22,7 +22,7 @@ export function useDashboardNotifications(
 
   const data = actionItemsRes?.status === 200 ? actionItemsRes.body as { 
     inquiries?: { id: string | number; type?: string; name?: string }[], 
-    posts?: { slug: string; title: string; author_nickname?: string }[], 
+    posts?: { slug: string; title: string; authorNickname?: string }[], 
     events?: { id: string | number; title: string }[], 
     docs?: { slug: string; title: string }[] 
   } : { inquiries: [], posts: [], events: [], docs: [] };
@@ -43,3 +43,4 @@ export function useDashboardNotifications(
     pendingDocs,
   };
 }
+

@@ -76,8 +76,8 @@ export const CartDrawer: React.FC = () => {
             items.map((item) => (
               <div key={item.product.id} className="flex gap-4 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
                 <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
-                  {item.product.image_url ? (
-                    <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                  {item.product.imageUrl ? (
+                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-600">
                       No Image
@@ -88,7 +88,7 @@ export const CartDrawer: React.FC = () => {
                   <div>
                     <h3 className="font-bold text-white leading-tight">{item.product.name}</h3>
                     <p className="text-ares-gold font-mono mt-1">
-                      ${(item.product.price_cents / 100).toFixed(2)}
+                      ${(item.product.priceCents / 100).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-2">

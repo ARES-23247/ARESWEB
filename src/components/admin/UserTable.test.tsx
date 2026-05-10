@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { UserTable } from "./UserTable";
 
 // Mock adminConstants
 vi.mock("./adminConstants", () => ({
   ROLES: ["unverified", "user", "author", "admin"],
-  MEMBER_TYPES: ["student", "alumni", "parent", "coach", "mentor", "sponsor"],
+  memberTypeS: ["student", "alumni", "parent", "coach", "mentor", "sponsor"],
   PLAYER_COLORS: {},
 }));
 
@@ -17,7 +17,7 @@ describe("UserTable Component", () => {
       nickname: "Johnny",
       image: "https://example.com/avatar1.jpg",
       role: "admin",
-      member_type: "student",
+      memberType: "student",
       email: "john@example.com",
       createdAt: 1640000000000,
     },
@@ -27,7 +27,7 @@ describe("UserTable Component", () => {
       nickname: null,
       image: null,
       role: "author",
-      member_type: "mentor",
+      memberType: "mentor",
       email: "jane@example.com",
       createdAt: 1650000000000,
     },
@@ -37,7 +37,7 @@ describe("UserTable Component", () => {
       nickname: "Bobby",
       image: null,
       role: "user",
-      member_type: "alumni",
+      memberType: "alumni",
       email: "bob@example.com",
       createdAt: 1660000000000,
     },
@@ -265,7 +265,7 @@ describe("UserTable Component", () => {
         nickname: null,
         image: null,
         role: "user",
-        member_type: "student",
+        memberType: "student",
         email: "test@example.com",
         createdAt: 1640000000000,
       },
@@ -284,7 +284,7 @@ describe("UserTable Component", () => {
         nickname: null,
         image: null,
         role: "user",
-        member_type: "student",
+        memberType: "student",
         email: null,
         createdAt: 1640000000000,
       },
@@ -292,7 +292,7 @@ describe("UserTable Component", () => {
 
     render(<UserTable {...defaultProps} users={usersWithoutEmail} />);
 
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("â€”")).toBeInTheDocument();
   });
 
   it("renders dash for missing join date", () => {
@@ -303,7 +303,7 @@ describe("UserTable Component", () => {
         nickname: null,
         image: null,
         role: "user",
-        member_type: "student",
+        memberType: "student",
         email: "test@example.com",
         createdAt: null as unknown as number,
       },
@@ -311,7 +311,7 @@ describe("UserTable Component", () => {
 
     render(<UserTable {...defaultProps} users={usersWithoutDate} />);
 
-    const dashes = screen.getAllByText("—");
+    const dashes = screen.getAllByText("â€”");
     expect(dashes.length).toBeGreaterThan(0);
   });
 
@@ -384,3 +384,4 @@ describe("UserTable Component", () => {
     expect(studentSelect).toBeTruthy();
   });
 });
+

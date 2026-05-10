@@ -1,5 +1,4 @@
 ﻿import { ApiError } from "../middleware/errorHandler";
-import { createTypedHandler } from "../utils/handler-native";
 import { QUERY_LIMITS } from "../utils/queryLimits";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";

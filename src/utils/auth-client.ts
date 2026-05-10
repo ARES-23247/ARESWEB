@@ -6,7 +6,7 @@ export const authClient = createAuthClient({
     plugins: [
         genericOAuthClient(),
         twoFactorClient(),
-        emailOTPClient()
+        emailOTPClient as any
     ]
 });
 

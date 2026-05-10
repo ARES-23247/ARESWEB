@@ -9,8 +9,8 @@ export const inquirySchema = z.object({
   email: z.string(),
   metadata: z.string().nullable().optional(),
   status: z.string(),
-  created_at: z.string(),
-  zulip_message_id: z.string().nullable().optional(),
+  createdAt: z.string(),
+  zulipMessageId: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 

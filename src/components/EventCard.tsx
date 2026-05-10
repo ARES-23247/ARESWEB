@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import { Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import type { Event } from "../api/events";
@@ -24,8 +24,8 @@ export const EventCard = React.memo(function EventCard({
   isLoading = false,
   className = "",
 }: EventCardProps) {
-  const startDate = new Date(event.date_start);
-  const endDate = event.date_end ? new Date(event.date_end) : null;
+  const startDate = new Date(event.dateStart);
+  const endDate = event.dateEnd ? new Date(event.dateEnd) : null;
   const isPast = startDate < new Date();
   const isFull = false;
 
@@ -46,7 +46,7 @@ export const EventCard = React.memo(function EventCard({
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-marble">
             <time
               className="flex items-center gap-1.5"
-              dateTime={event.date_start}
+              dateTime={event.dateStart}
               aria-label={`Starts ${format(startDate, "MMMM d, yyyy 'at' h:mm a")}`}
             >
               <Calendar size={14} aria-hidden="true" />
@@ -55,7 +55,7 @@ export const EventCard = React.memo(function EventCard({
                 {endDate && format(endDate, "yyyy") !== format(startDate, "yyyy") && format(startDate, ", yyyy")}
               </span>
               <span className="text-marble/60">
-                {format(startDate, "h:mm a")} {endDate && `– ${format(endDate, "h:mm a")}`}
+                {format(startDate, "h:mm a")} {endDate && `â€“ ${format(endDate, "h:mm a")}`}
               </span>
             </time>
             {event.location && (
@@ -94,4 +94,5 @@ export const EventCard = React.memo(function EventCard({
 import React from "react";
 
 export default EventCard;
+
 

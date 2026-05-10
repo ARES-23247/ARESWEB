@@ -42,7 +42,7 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
   const postsByDay = useMemo<Record<string, SocialQueuePost[]>>(() => {
     const grouped: Record<string, SocialQueuePost[]> = {};
     for (const post of posts) {
-      const day = format(new Date(post.scheduled_for), "yyyy-MM-dd");
+      const day = format(new Date(post.scheduledFor), "yyyy-MM-dd");
       if (!grouped[day]) {
         grouped[day] = [];
       }
@@ -195,13 +195,13 @@ export default function SocialCalendar({ onEditPost }: SocialCalendarProps) {
                           {post.status}
                         </span>
                         <span className="text-xs text-marble/60 font-mono">
-                          {format(new Date(post.scheduled_for), "h:mm a")}
+                          {format(new Date(post.scheduledFor), "h:mm a")}
                         </span>
                       </div>
                       <p className="text-sm text-white line-clamp-2 mb-2">{post.content}</p>
-                      {post.linked_type && (
+                      {post.linkedType && (
                         <div className="text-xs text-ares-cyan">
-                          Linked to: {post.linked_type}/{post.linked_id}
+                          Linked to: {post.linkedType}/{post.linkedId}
                         </div>
                       )}
                     </div>

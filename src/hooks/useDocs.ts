@@ -28,7 +28,7 @@ export function useDocs(slug: string | undefined) {
 
   const allDocs = useMemo(() => {
     if (!allDocsData?.docs) return [];
-    return allDocsData.docs.filter((doc) => doc.display_in_areslib === 1);
+    return allDocsData.docs.filter((doc) => doc.displayInAreslib === 1);
   }, [allDocsData]);
 
   const { data: docWithData, isLoading: docLoading } = useGetDocWithContributors(slug || "");

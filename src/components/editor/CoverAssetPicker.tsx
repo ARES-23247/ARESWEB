@@ -1,4 +1,4 @@
-import { DEFAULT_COVER_IMAGE } from "../../utils/constants";
+﻿import { DEFAULT_coverImage } from "../../utils/constants";
 import { useRef } from "react";
 
 interface CoverAssetPickerProps {
@@ -28,7 +28,7 @@ export default function CoverAssetPicker({
           type="text"
           value={coverImage} onChange={(e) => onUrlChange(e.target.value)}
           className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner"
-          placeholder={DEFAULT_COVER_IMAGE}
+          placeholder={DEFAULT_coverImage}
         />
         <button 
           type="button"
@@ -60,3 +60,4 @@ export default function CoverAssetPicker({
     </div>
   );
 }
+

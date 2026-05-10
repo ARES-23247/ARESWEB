@@ -9,11 +9,11 @@ export interface ContentMutationResult {
 export interface EventItem {
   id: string;
   title: string;
-  date_start: string;
-  cf_email?: string;
-  is_deleted?: number;
+  dateStart: string;
+  cfEmail?: string;
+  isDeleted?: number;
   status?: string;
-  revision_of?: string;
+  revisionOf?: string;
   category?: string;
 }
 
@@ -21,22 +21,22 @@ export interface PostItem {
   slug: string;
   title: string;
   date: string;
-  cf_email?: string;
-  is_deleted?: number;
+  cfEmail?: string;
+  isDeleted?: number;
   status?: string;
-  revision_of?: string;
+  revisionOf?: string;
 }
 
 export interface DocItem {
   slug: string;
   title: string;
   category: string;
-  sort_order: number;
-  is_deleted?: number;
-  is_portfolio?: number;
-  is_executive_summary?: number;
+  sortOrder: number;
+  isDeleted?: number;
+  isPortfolio?: number;
+  isExecutiveSummary?: number;
   status?: string;
-  revision_of?: string;
+  revisionOf?: string;
 }
 
 export const ClickToDeleteButton = ({ 
@@ -83,9 +83,10 @@ export const ClickToDeleteButton = ({
   );
 };
 
-export const contentFilter = (view: ViewType) => (item: { is_deleted?: number | boolean, status?: string }) => {
-  const isDeleted = Number(item.is_deleted) === 1;
+export const contentFilter = (view: ViewType) => (item: { isDeleted?: number | boolean, status?: string }) => {
+  const isDeleted = Number(item.isDeleted) === 1;
   if (view === 'trash') return isDeleted;
   if (view === 'pending') return !isDeleted && (item.status === 'pending' || item.status === 'rejected' || item.status === 'draft');
   return !isDeleted && (item.status === 'published' || !item.status);
 };
+

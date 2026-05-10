@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Response Transform Utilities
  *
  * Converts snake_case database responses to camelCase API responses.
@@ -11,7 +11,7 @@
  * Converts a snake_case string to camelCase
  * @example user_id -> userId
  * @example points_delta -> pointsDelta
- * @example created_at -> createdAt
+ * @example createdAt -> createdAt
  */
 export function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -37,7 +37,7 @@ export function camelToSnake(str: string): string {
  * const result = toCamelCase({
  *   user_id: '123',
  *   points_delta: 10,
- *   created_at: '2024-01-01'
+ *   createdAt: '2024-01-01'
  * });
  * // { userId: '123', pointsDelta: 10, createdAt: '2024-01-01' }
  * ```
@@ -88,7 +88,7 @@ export function toCamelCase<T>(obj: unknown): T {
  *   pointsDelta: 10,
  *   createdAt: '2024-01-01'
  * });
- * // { user_id: '123', points_delta: 10, created_at: '2024-01-01' }
+ * // { user_id: '123', points_delta: 10, createdAt: '2024-01-01' }
  * ```
  */
 export function toSnakeCase<T>(obj: unknown): T {
@@ -154,3 +154,4 @@ export function createFieldTransformer<T extends Record<string, unknown>, U exte
     return result as U;
   };
 }
+

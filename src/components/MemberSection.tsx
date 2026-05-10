@@ -24,7 +24,7 @@ export function MemberSection({ section }: { section: SectionConfig }) {
         </div>
         <div className={`grid gap-6 ${section.items.length <= 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" : section.items.length <= 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"}`}>
           {section.items.map(member => (
-            <MemberCard key={member.user_id} member={member} />
+            <MemberCard key={member.userId} member={member} />
           ))}
         </div>
       </div>

@@ -91,7 +91,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
                 </div>
                 <div>
                   <p className="text-xs text-marble/60 uppercase tracking-wider font-bold">Total Posts</p>
-                  <p className="text-2xl font-black text-white">{analytics.total_posts}</p>
+                  <p className="text-2xl font-black text-white">{analytics.totalPosts}</p>
                 </div>
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
                 </div>
                 <div>
                   <p className="text-xs text-marble/60 uppercase tracking-wider font-bold">Sent</p>
-                  <p className="text-2xl font-black text-white">{analytics.total_sent}</p>
+                  <p className="text-2xl font-black text-white">{analytics.totalSent}</p>
                 </div>
               </div>
             </div>
@@ -113,7 +113,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
                 </div>
                 <div>
                   <p className="text-xs text-marble/60 uppercase tracking-wider font-bold">Pending</p>
-                  <p className="text-2xl font-black text-white">{analytics.total_pending}</p>
+                  <p className="text-2xl font-black text-white">{analytics.totalPending}</p>
                 </div>
               </div>
             </div>
@@ -124,7 +124,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
                 </div>
                 <div>
                   <p className="text-xs text-marble/60 uppercase tracking-wider font-bold">Failed</p>
-                  <p className="text-2xl font-black text-white">{analytics.total_failed}</p>
+                  <p className="text-2xl font-black text-white">{analytics.totalFailed}</p>
                 </div>
               </div>
             </div>
@@ -139,22 +139,22 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white/5 ares-cut-sm p-4 text-center">
                 <Eye className="mx-auto text-ares-cyan mb-2" size={24} />
-                <p className="text-2xl font-black text-white">{analytics.engagement.total_impressions.toLocaleString()}</p>
+                <p className="text-2xl font-black text-white">{analytics.engagement.totalImpressions.toLocaleString()}</p>
                 <p className="text-xs text-marble/60 uppercase tracking-wider">Impressions</p>
               </div>
               <div className="bg-white/5 ares-cut-sm p-4 text-center">
                 <Heart className="mx-auto text-ares-red mb-2" size={24} />
-                <p className="text-2xl font-black text-white">{analytics.engagement.total_likes.toLocaleString()}</p>
+                <p className="text-2xl font-black text-white">{analytics.engagement.totalLikes.toLocaleString()}</p>
                 <p className="text-xs text-marble/60 uppercase tracking-wider">Likes</p>
               </div>
               <div className="bg-white/5 ares-cut-sm p-4 text-center">
                 <Share2 className="mx-auto text-ares-gold mb-2" size={24} />
-                <p className="text-2xl font-black text-white">{analytics.engagement.total_shares.toLocaleString()}</p>
+                <p className="text-2xl font-black text-white">{analytics.engagement.totalShares.toLocaleString()}</p>
                 <p className="text-xs text-marble/60 uppercase tracking-wider">Shares</p>
               </div>
               <div className="bg-white/5 ares-cut-sm p-4 text-center">
                 <MessageCircle className="mx-auto text-ares-cyan mb-2" size={24} />
-                <p className="text-2xl font-black text-white">{analytics.engagement.total_comments.toLocaleString()}</p>
+                <p className="text-2xl font-black text-white">{analytics.engagement.totalComments.toLocaleString()}</p>
                 <p className="text-xs text-marble/60 uppercase tracking-wider">Comments</p>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
               Posts by Platform
             </h3>
             <div className="space-y-3">
-              {Object.entries(analytics.by_platform)
+              {Object.entries(analytics.byPlatform)
                 .filter(([_, count]) => (count as number) > 0)
                 .sort(([_, a], [__, b]) => (b as number) - (a as number))
                 .map(([platform, count]) => (
@@ -183,7 +183,7 @@ export default function SocialAnalytics({ dateRange }: SocialAnalyticsProps) {
                       <div className="h-2 bg-white/10 ares-cut overflow-hidden">
                         <div
                           className={`h-full ${PLATFORM_COLORS[platform]}`}
-                          style={{ width: `${((count as number) / analytics.total_posts) * 100}%` }}
+                          style={{ width: `${((count as number) / analytics.totalPosts) * 100}%` }}
                         />
                       </div>
                     </div>

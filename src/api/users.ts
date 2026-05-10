@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Users API - User Management
  *
  * Types imported from backend route definitions in @shared/routes/users.ts
@@ -67,10 +67,10 @@ export function useGetUser(
  * PATCH /api/users/admin/:id - Update user role or type
  */
 export function usePatchUser(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; role?: UserRole; member_type?: UserMemberType }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; role?: UserRole; memberType?: UserMemberType }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { id: string; role?: UserRole; member_type?: UserMemberType }>({
+  return useMutation<{ success: boolean }, Error, { id: string; role?: UserRole; memberType?: UserMemberType }>({
     mutationFn: async function patchUser({ id, ...data }) {
       const response = await client.users.admin[":id"].$patch({ param: { id }, json: data });
       return unwrapResponse<{ success: boolean }>(response);
@@ -143,3 +143,4 @@ export function useDeleteUser(
     }
   });
 }
+

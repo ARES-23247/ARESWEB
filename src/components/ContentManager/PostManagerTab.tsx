@@ -98,8 +98,8 @@ export default function PostManagerTab({
           </h3>
         }
         getItemId={(p) => p.slug}
-        isItemDeleted={(p) => Number(p.is_deleted) === 1}
-        isItemRevision={(p) => !!p.revision_of}
+        isItemDeleted={(p) => Number(p.isDeleted) === 1}
+        isItemRevision={(p) => !!p.revisionOf}
         getItemStatus={(p) => p.status}
         renderTitle={(p) => p.title}
         renderSubtitle={(p) => (
@@ -142,3 +142,4 @@ export default function PostManagerTab({
     </>
   );
 }
+

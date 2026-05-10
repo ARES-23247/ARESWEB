@@ -90,9 +90,9 @@ export function useTrackPageView(
  * POST /api/analytics/sponsor-click - Track sponsor click
  */
 export function useTrackSponsorClick(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { sponsor_id: string }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { sponsorId: string }>, "mutationFn">
 ) {
-  return useMutation<{ success: boolean }, Error, { sponsor_id: string }>({
+  return useMutation<{ success: boolean }, Error, { sponsorId: string }>({
     mutationFn: async (data) => {
       const response = await client.analytics["sponsor-click"].$post({ json: data });
       return unwrapResponse<{ success: boolean }>(response);

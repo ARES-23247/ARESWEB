@@ -27,16 +27,16 @@ vi.mock("./BrandLogo", () => ({
 }));
 
 const mockMember: TeamMember = {
-  user_id: "123",
+  userId: "123",
   nickname: "TestUser",
   name: "Test User",
   avatar: "https://example.com/avatar.png",
   pronouns: "they/them",
   subteams: '["Software", "Electronics"]',
-  member_type: "student",
+  memberType: "student",
   bio: "Test bio",
-  fun_fact: "Loves robotics",
-  favorite_first_thing: "Building",
+  funFact: "Loves robotics",
+  favoriteFirstThing: "Building",
   colleges: '[{"domain": "wvu.edu"}]',
   employers: null,
 };
@@ -48,23 +48,23 @@ const mockMemberWithArraySubteams: TeamMember = {
 
 const mockMemberWithArrayColleges: TeamMember = {
   ...mockMember,
-  member_type: "alumni",
+  memberType: "alumni",
   colleges: [{ domain: "wvu.edu" }, { domain: "cmu.edu" }],
 };
 
 const mockAlumniMember: TeamMember = {
-  user_id: "456",
+  userId: "456",
   nickname: "AlumniUser",
   avatar: "",
   pronouns: null,
   subteams: null,
-  member_type: "alumni",
+  memberType: "alumni",
   colleges: '[{"domain": "mit.edu"}]',
   employers: null,
   name: null,
   bio: null,
-  fun_fact: null,
-  favorite_first_thing: null,
+  funFact: null,
+  favoriteFirstThing: null,
 };
 
 const mockMemberWithNoSubteams: TeamMember = {
@@ -174,7 +174,7 @@ describe("MemberCard Component", () => {
   it("parses colleges from JSON string for alumni", () => {
     const alumniWithJsonColleges = {
       ...mockMember,
-      member_type: "alumni" as const,
+      memberType: "alumni" as const,
       colleges: '[{"domain": "wvu.edu"}, {"domain": "cmu.edu"}]',
     };
     renderWithRouter(<MemberCard member={alumniWithJsonColleges} />);
@@ -197,7 +197,7 @@ describe("MemberCard Component", () => {
   it("limits colleges display to 3 items", () => {
     const alumniWithManyColleges: TeamMember = {
       ...mockMember,
-      member_type: "alumni" as const,
+      memberType: "alumni" as const,
       colleges: [
         { domain: "mit.edu" },
         { domain: "stanford.edu" },
@@ -214,7 +214,7 @@ describe("MemberCard Component", () => {
   it("does not show colleges when colleges array is empty", () => {
     const alumniWithNoColleges: TeamMember = {
       ...mockMember,
-      member_type: "alumni" as const,
+      memberType: "alumni" as const,
       colleges: [],
     };
     renderWithRouter(<MemberCard member={alumniWithNoColleges} />);
@@ -262,4 +262,5 @@ describe("MemberCard Component", () => {
     expect(avatarContainer).toBeInTheDocument();
   });
 });
+
 

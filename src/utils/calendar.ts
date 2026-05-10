@@ -1,24 +1,24 @@
-export const downloadICS = (event: {
+﻿export const downloadICS = (event: {
   title: string;
-  date_start: string;
-  date_end?: string | null;
+  dateStart: string;
+  dateEnd?: string | null;
   location?: string | null;
-  location_address?: string | null;
+  locationAddress?: string | null;
 }) => {
   if (!event) return;
-  const startStr = new Date(event.date_start).toISOString().replace(/-|:|\.\d+/g, '');
+  const startStr = new Date(event.dateStart).toISOString().replace(/-|:|\.\d+/g, '');
   let endStr: string;
-  if (event.date_end) {
-    endStr = new Date(event.date_end).toISOString().replace(/-|:|\.\d+/g, '');
+  if (event.dateEnd) {
+    endStr = new Date(event.dateEnd).toISOString().replace(/-|:|\.\d+/g, '');
   } else {
-    const end = new Date(event.date_start);
+    const end = new Date(event.dateStart);
     end.setHours(end.getHours() + 2);
     endStr = end.toISOString().replace(/-|:|\.\d+/g, '');
   }
 
   const locationParts = [];
   if (event.location) locationParts.push(event.location);
-  if (event.location_address) locationParts.push(event.location_address);
+  if (event.locationAddress) locationParts.push(event.locationAddress);
   const locationString = locationParts.join(', ').replace(/,/g, '\\,');
 
   const icsData = [
@@ -43,3 +43,4 @@ export const downloadICS = (event: {
   document.body.removeChild(a);
   window.URL.revokeObjectURL(url);
 };
+

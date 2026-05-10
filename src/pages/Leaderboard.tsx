@@ -30,7 +30,7 @@ export default function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-obsidian text-marble py-24 relative overflow-hidden">
-      <SEO title="Team Leaderboard — ARES 23247" description="The most engaged students and mentors on Team ARES 23247." />
+      <SEO title="Team Leaderboard â€” ARES 23247" description="The most engaged students and mentors on Team ARES 23247." />
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
         <Link to="/" className="inline-flex items-center gap-2 text-white hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors bg-obsidian px-3 py-1.5 ares-cut-sm border border-white/10 shadow-lg">
@@ -83,23 +83,23 @@ export default function Leaderboard() {
 
               return (
                 <motion.div
-                  key={user.user_id}
+                  key={user.userId}
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + (idx * 0.1), type: "spring", stiffness: 100 }}
                   className="flex flex-col items-center w-full md:w-64"
                 >
-                  <Link to="/profile/$userId" params={{ userId: user.user_id }} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
+                  <Link to="/profile/$userId" params={{ userId: user.userId }} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
                     <div className={`w-20 h-20 rounded-full border-4 ${border} bg-obsidian overflow-hidden mb-3 relative`}>
-                      <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.userId}`} alt="Avatar" className="w-full h-full object-cover" />
                       <div className={`absolute -bottom-2 -right-2 bg-obsidian rounded-full p-1 border-2 ${border}`}>
                          <Icon size={14} className={color} />
                       </div>
                     </div>
                     <p className="text-white font-black text-lg text-center leading-tight">
-                      {user.nickname || user.first_name || "Unknown Member"}
+                      {user.nickname || user.firstName || "Unknown Member"}
                     </p>
-                    <p className="text-ares-gray text-xs font-bold uppercase tracking-widest">{user.member_type || "Member"}</p>
+                    <p className="text-ares-gray text-xs font-bold uppercase tracking-widest">{user.memberType || "Member"}</p>
                   </Link>
 
                   <div className={`w-full ${height} ${bg} border-t border-x ${border}/30 flex flex-col items-center justify-start pt-6 relative overflow-hidden backdrop-blur-sm group`}>
@@ -107,7 +107,7 @@ export default function Leaderboard() {
                      <p className={`text-4xl font-black ${color}`}>{rank}</p>
                      <div className="mt-auto pb-6 flex items-center gap-2">
                        <Star size={16} className={color} />
-                       <span className="text-white font-bold">{user.badge_count} badges</span>
+                       <span className="text-white font-bold">{user.badgeCount} badges</span>
                      </div>
                   </div>
                 </motion.div>
@@ -135,25 +135,25 @@ export default function Leaderboard() {
                 </thead>
                 <tbody className="text-sm">
                   {rest.map((user, idx: number) => (
-                    <tr key={user.user_id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                    <tr key={user.userId} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                       <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">
-                        <Link to="/profile/$userId" params={{ userId: user.user_id }} className="flex items-center gap-3">
+                        <Link to="/profile/$userId" params={{ userId: user.userId }} className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/60 transition-colors">
-                            <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.user_id}`} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.userId}`} alt="Avatar" className="w-full h-full object-cover" />
                           </div>
                           <div>
                             <p className="text-white font-bold group-hover:text-white transition-colors">
-                              {user.nickname || user.first_name || "Unknown Member"}
+                              {user.nickname || user.firstName || "Unknown Member"}
                             </p>
-                            <p className="text-xs uppercase tracking-widest text-ares-gray">{user.member_type || "Member"}</p>
+                            <p className="text-xs uppercase tracking-widest text-ares-gray">{user.memberType || "Member"}</p>
                           </div>
                         </Link>
                       </td>
                       <td className="py-4 text-right">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 ares-cut-sm border border-white/10 text-white font-bold text-xs">
                           <Star size={14} className="text-ares-cyan" />
-                          {user.badge_count}
+                          {user.badgeCount}
                         </div>
                       </td>
                     </tr>
@@ -167,4 +167,5 @@ export default function Leaderboard() {
     </div>
   );
 }
+
 

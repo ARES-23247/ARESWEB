@@ -1,4 +1,4 @@
-import { faker } from "@faker-js/faker";
+﻿import { faker } from "@faker-js/faker";
 import { DashboardSession } from "../../hooks/useDashboardSession";
 
 /**
@@ -17,9 +17,9 @@ export const createMockSession = (overrides?: Partial<DashboardSession>): Dashbo
       email: faker.internet.email(),
       image: faker.image.avatar(),
       role: faker.helpers.arrayElement(["admin", "author", "unverified"]),
-      member_type: faker.helpers.arrayElement(["student", "coach", "mentor", "parent", "alumni"]),
-      first_name: firstName,
-      last_name: lastName,
+      memberType: faker.helpers.arrayElement(["student", "coach", "mentor", "parent", "alumni"]),
+      firstName: firstName,
+      lastName: lastName,
       nickname: firstName,
     },
     ...overrides,
@@ -47,3 +47,4 @@ export const createMockSettings = (overrides?: Record<string, string>): Record<s
     ...overrides,
   };
 };
+

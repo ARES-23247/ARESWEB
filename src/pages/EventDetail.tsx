@@ -1,10 +1,10 @@
-import { useParams, Link } from "@tanstack/react-router";
+﻿import { useParams, Link } from "@tanstack/react-router";
 import { format, isBefore } from "date-fns";
 import { motion } from "framer-motion";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import EventSignups from "../components/EventSignups";
 import ZulipThread from "../components/ZulipThread";
-import { DEFAULT_COVER_IMAGE } from "../utils/constants";
+import { DEFAULT_coverImage } from "../utils/constants";
 import { useGetEvent, type FullEventItem as _FullEventItem } from "../api";
 import SEO from "../components/SEO";
 import { extractTextFromAst } from "../utils/content";
@@ -41,8 +41,8 @@ export default function EventDetail() {
   if (isLoading) return <div className="w-full min-h-[50vh] flex items-center justify-center text-ares-gold animate-pulse font-heading tracking-widest">Consulting the Oracle...</div>;
   if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Event Record Erased or Unfound.</div>;
 
-  const isPast = isBefore(new Date(event.date_start), new Date());
-  const locationAddress = event.location_address;
+  const isPast = isBefore(new Date(event.dateStart), new Date());
+  const locationAddress = event.locationAddress;
   
   const handleSaveToCalendar = () => {
     if (event) {
@@ -60,16 +60,16 @@ export default function EventDetail() {
   }
 
   let parsedNotesAst: ASTNode | null = null;
-  if (event.meeting_notes) {
+  if (event.meetingNotes) {
     try {
-      parsedNotesAst = JSON.parse(event.meeting_notes);
+      parsedNotesAst = JSON.parse(event.meetingNotes);
       if (!parsedNotesAst || parsedNotesAst.type !== "doc") parsedNotesAst = null;
     } catch {
       parsedNotesAst = null;
     }
   }
 
-  const startDate = new Date(event.date_start);
+  const startDate = new Date(event.dateStart);
 
   return (
     <motion.div 
@@ -81,18 +81,18 @@ export default function EventDetail() {
       <SEO 
         title={event.title} 
         description={parsedAst ? extractTextFromAst(parsedAst).slice(0, 160) + "..." : (event.description?.slice(0, 160) || "") + "..."} 
-        image={event.cover_image ?? undefined}
+        image={event.coverImage ?? undefined}
         type="event"
         schemaData={{
-          startDate: event.date_start ?? undefined,
-          endDate: event.date_end ?? undefined,
+          startDate: event.dateStart ?? undefined,
+          endDate: event.dateEnd ?? undefined,
           locationName: event.location ?? undefined,
           locationAddress: locationAddress ?? event.location ?? undefined,
         }}
       />
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
         <GreekMeander variant="thick" opacity="opacity-60" className="absolute bottom-[-1px] left-0 z-10" />
-        <img fetchPriority="high" src={event.cover_image || DEFAULT_COVER_IMAGE} alt={event.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${event.cover_image ? "object-cover" : "object-contain p-16 bg-black/80"}`} />
+        <img fetchPriority="high" src={event.coverImage || DEFAULT_coverImage} alt={event.title} className={`absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity ${event.coverImage ? "object-cover" : "object-contain p-16 bg-black/80"}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
         
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] rounded-full border border-ares-gold/10 shadow-[0_0_120px_rgba(192,0,0,0.15)] pointer-events-none mix-blend-screen animate-pulse-slow" aria-hidden="true"></div>
@@ -138,9 +138,9 @@ export default function EventDetail() {
               <p className="flex items-center gap-2">
                 <span className="text-white">Start:</span> {format(startDate, "EEEE, MMMM do, yyyy 'at' h:mm a")}
               </p>
-              {event.date_end && (
+              {event.dateEnd && (
                 <p className="flex items-center gap-2">
-                  <span className="text-white">End:</span> {format(new Date(event.date_end), "EEEE, MMMM do, yyyy 'at' h:mm a")}
+                  <span className="text-white">End:</span> {format(new Date(event.dateEnd), "EEEE, MMMM do, yyyy 'at' h:mm a")}
                 </p>
               )}
             </div>
@@ -148,7 +148,7 @@ export default function EventDetail() {
               <p className="flex items-center gap-2">
                 <span className="text-white">Location:</span>{" "}
                 <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(locationAddress || (event.location.includes("—") ? event.location.split("—").pop()!.trim() : event.location))}`}
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(locationAddress || (event.location.includes("â€”") ? event.location.split("â€”").pop()!.trim() : event.location))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 decoration-ares-bronze/50 hover:text-white hover:decoration-white transition-colors"
@@ -180,26 +180,26 @@ export default function EventDetail() {
             <p className="whitespace-pre-wrap text-xl leading-relaxed">{event.description}</p>
           )}
 
-          {event.meeting_notes && (
+          {event.meetingNotes && (
             <div className="mt-12 bg-ares-red/10 border border-ares-red/30 ares-cut-sm p-8">
               <h2 className="text-2xl font-bold text-ares-red flex items-center gap-2 mb-6 border-b border-ares-red/20 pb-4 !mt-0">
-                <span>🔒 Private Meeting Notes</span>
+                <span>ðŸ”’ Private Meeting Notes</span>
               </h2>
               <div className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-ares-gold prose-a:text-ares-gold">
                 {parsedNotesAst ? (
                   <TiptapRenderer node={parsedNotesAst} />
                 ) : (
-                  <p className="whitespace-pre-wrap">{event.meeting_notes}</p>
+                  <p className="whitespace-pre-wrap">{event.meetingNotes}</p>
                 )}
               </div>
             </div>
           )}
 
-          {id && <EventSignups eventId={id} isPotluck={event.is_potluck === 1} isVolunteer={event.is_volunteer === 1} />}
+          {id && <EventSignups eventId={id} isPotluck={event.isPotluck === 1} isVolunteer={event.isVolunteer === 1} />}
           
           {session && (
             <div className="mt-12">
-              <ZulipThread stream={event.zulip_stream || "events"} topic={event.zulip_topic || `Event: ${event.title}`} />
+              <ZulipThread stream={event.zulipStream || "events"} topic={event.zulipTopic || `Event: ${event.title}`} />
             </div>
           )}
         </motion.article>
@@ -207,4 +207,5 @@ export default function EventDetail() {
     </motion.div>
   );
 }
+
 

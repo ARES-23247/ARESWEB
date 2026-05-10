@@ -144,7 +144,7 @@ export default function EventManagerTab({
   });
 
   const lifecycleFiltered = allEvents.filter(e => {
-    const isDeleted = Number(e.is_deleted) === 1;
+    const isDeleted = Number(e.isDeleted) === 1;
     if (view === 'trash') return isDeleted;
     if (view === 'pending') return !isDeleted && (e.status === 'pending' || e.status === 'rejected' || e.status === 'draft');
     if (view === 'all') return !isDeleted;
@@ -197,15 +197,15 @@ export default function EventManagerTab({
         ) : undefined
       }
       getItemId={(e) => e.id}
-      isItemDeleted={(e) => Number(e.is_deleted) === 1}
-      isItemRevision={(e) => !!e.revision_of}
+      isItemDeleted={(e) => Number(e.isDeleted) === 1}
+      isItemRevision={(e) => !!e.revisionOf}
       getItemStatus={(e) => e.status}
       renderTitle={(e) => e.title || "Untitled Event"}
       renderSubtitle={(e) => (
         <>
           <span className={`w-2 h-2 rounded-full ${e.category === 'internal' ? 'bg-ares-red' : e.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'}`}></span>
           <span className="text-xs text-marble/60 bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm">
-            {e.date_start ? format(new Date(e.date_start), 'MMM do, yyyy') : 'No Date'}
+            {e.dateStart ? format(new Date(e.dateStart), 'MMM do, yyyy') : 'No Date'}
           </span>
         </>
       )}
@@ -247,3 +247,4 @@ export default function EventManagerTab({
     </>
   );
 }
+

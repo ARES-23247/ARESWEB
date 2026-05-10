@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { GITHUB_REPO } from '../utils/constants';
 
@@ -6,8 +6,8 @@ export interface SavedSim {
   id: string;
   name: string;
   author_id: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   type?: string;
 }
 
@@ -186,3 +186,4 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
     handleLoadGist,
   };
 }
+

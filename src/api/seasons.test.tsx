@@ -92,8 +92,8 @@ describe("Seasons API", () => {
   describe("useGetSeasons", () => {
     it("should fetch public seasons successfully", async () => {
       const mockSeasons = [
-        { year: "2024", game_name: "Into the Deep", robot_name: "Atlas" },
-        { year: "2023", game_name: "Centerstage", robot_name: "Orion" },
+        { year: "2024", gameName: "Into the Deep", robotName: "Atlas" },
+        { year: "2023", gameName: "Centerstage", robotName: "Orion" },
       ];
       const mockResponse = { seasons: mockSeasons };
       mockClient.seasons.$get.mockResolvedValue({ ok: true });
@@ -132,7 +132,7 @@ describe("Seasons API", () => {
   describe("useGetSeasonDetail", () => {
     it("should fetch season detail successfully", async () => {
       const mockResponse = {
-        season: { year: "2024", game_name: "Into the Deep" },
+        season: { year: "2024", gameName: "Into the Deep" },
         awards: [{ title: "Winner" }],
         events: [{ name: "Qualifier" }],
         posts: [{ title: "Season Recap" }],
@@ -171,8 +171,8 @@ describe("Seasons API", () => {
   describe("useGetAdminSeasons", () => {
     it("should fetch admin seasons successfully", async () => {
       const mockSeasons = [
-        { year: "2024", game_name: "Into the Deep", deleted: false },
-        { year: "2023", game_name: "Centerstage", deleted: false },
+        { year: "2024", gameName: "Into the Deep", deleted: false },
+        { year: "2023", gameName: "Centerstage", deleted: false },
       ];
       const mockResponse = { seasons: mockSeasons };
       mockClient.seasons.admin.list.$get.mockResolvedValue({ ok: true });
@@ -199,7 +199,7 @@ describe("Seasons API", () => {
 
   describe("useGetAdminSeasonDetail", () => {
     it("should fetch admin season detail successfully", async () => {
-      const mockSeason = { year: "2024", game_name: "Into the Deep", deleted: false };
+      const mockSeason = { year: "2024", gameName: "Into the Deep", deleted: false };
       const mockResponse = { season: mockSeason };
       mockClient.seasons.admin[":id"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -229,10 +229,10 @@ describe("Seasons API", () => {
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper });
 
       const seasonData: seasonsApi.SeasonPayload = {
-        start_year: 2024,
-        end_year: 2025,
-        challenge_name: "Into the Deep",
-        robot_name: "Atlas",
+        startYear: 2024,
+        endYear: 2025,
+        challengeName: "Into the Deep",
+        robotName: "Atlas",
       };
 
       result.current.mutate(seasonData);
@@ -250,7 +250,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper });
 
-      result.current.mutate({ start_year: 2024, end_year: 2025, challenge_name: "Test" } as seasonsApi.SeasonPayload);
+      result.current.mutate({ startYear: 2024, endYear: 2025, challengeName: "Test" } as seasonsApi.SeasonPayload);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -270,7 +270,7 @@ describe("Seasons API", () => {
 
       const { result } = renderHook(() => seasonsApi.useSaveSeason(), { wrapper: customWrapper });
 
-      result.current.mutate({ start_year: 2024, end_year: 2025, challenge_name: "Test" } as seasonsApi.SeasonPayload);
+      result.current.mutate({ startYear: 2024, endYear: 2025, challengeName: "Test" } as seasonsApi.SeasonPayload);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["seasons"] });

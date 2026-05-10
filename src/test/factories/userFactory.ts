@@ -63,6 +63,7 @@ export const createMockProfile = (overrides?: Partial<UserProfileRow>): UserProf
   parentsEmail: null,
   studentsName: null,
   studentsEmail: null,
+  hours: 0,
   updatedAt: faker.date.recent().toISOString(),
   ...overrides,
 });

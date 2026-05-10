@@ -2,13 +2,13 @@ import type { SponsorshipStatus } from "@shared/schemas/financeSchema";
 
 export interface PipelineItem {
   id?: string;
-  company_name: string;
+  companyName: string;
   status: SponsorshipStatus;
-  estimated_value: number;
-  contact_person?: string | null;
+  estimatedValue: number;
+  contactPerson?: string | null;
   notes?: string | null;
-  season_id?: number | null;
-  zulip_message_id?: string | null;
+  seasonId?: number | null;
+  zulipMessageId?: string | null;
   assignees?: string[];
 }
 
@@ -20,3 +20,4 @@ export interface TransactionItem {
   date: string;
   description?: string | null;
 }
+

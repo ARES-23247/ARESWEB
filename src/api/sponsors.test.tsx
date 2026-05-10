@@ -102,8 +102,8 @@ describe("Sponsors API", () => {
   describe("useGetSponsors", () => {
     it("should fetch public sponsors successfully", async () => {
       const mockSponsors: sponsorsApi.Sponsor[] = [
-        { id: "1", name: "Acme Corp", logo_url: "/acme.png", tier: "Gold", website_url: null, is_active: 1 },
-        { id: "2", name: "Beta Inc", logo_url: "/beta.png", tier: "Silver", website_url: null, is_active: 1 },
+        { id: "1", name: "Acme Corp", logoUrl: "/acme.png", tier: "Gold", websiteUrl: null, isActive: 1 },
+        { id: "2", name: "Beta Inc", logoUrl: "/beta.png", tier: "Silver", websiteUrl: null, isActive: 1 },
       ];
       const mockResponse: SponsorsResponse = { sponsors: mockSponsors };
       mockClient.sponsors.$get.mockResolvedValue({ ok: true });
@@ -128,10 +128,10 @@ describe("Sponsors API", () => {
 
   describe("useGetSponsorRoi", () => {
     it("should fetch sponsor ROI dashboard successfully", async () => {
-      const mockSponsor: sponsorsApi.Sponsor = { id: "1", name: "Acme Corp", logo_url: "/acme.png", tier: "Gold", website_url: null, is_active: 1 };
+      const mockSponsor: sponsorsApi.Sponsor = { id: "1", name: "Acme Corp", logoUrl: "/acme.png", tier: "Gold", websiteUrl: null, isActive: 1 };
       const mockMetrics: sponsorsApi.SponsorRoiMetric[] = [
-        { id: "1", sponsor_id: "1", clicks: 5000, impressions: 50000, year_month: "2024-01" },
-        { id: "2", sponsor_id: "1", clicks: 2500, impressions: 25000, year_month: "2024-02" },
+        { id: "1", sponsorId: "1", clicks: 5000, impressions: 50000, yearMonth: "2024-01" },
+        { id: "2", sponsorId: "1", clicks: 2500, impressions: 25000, yearMonth: "2024-02" },
       ];
       const mockResponse: SponsorRoiResponse = { sponsor: mockSponsor, metrics: mockMetrics };
       mockClient.sponsors.roi[":token"].$get.mockResolvedValue({ ok: true });
@@ -175,8 +175,8 @@ describe("Sponsors API", () => {
   describe("useGetAdminSponsors", () => {
     it("should fetch admin sponsors list successfully", async () => {
       const mockSponsors = [
-        { id: "1", name: "Acme Corp", tier: "Gold", contact_email: "acme@example.com" },
-        { id: "2", name: "Beta Inc", tier: "Silver", contact_email: "beta@example.com" },
+        { id: "1", name: "Acme Corp", tier: "Gold", contactEmail: "acme@example.com" },
+        { id: "2", name: "Beta Inc", tier: "Silver", contactEmail: "beta@example.com" },
       ];
       const mockResponse = { sponsors: mockSponsors };
       mockClient.sponsors.admin.list.$get.mockResolvedValue({ ok: true });
@@ -205,8 +205,8 @@ describe("Sponsors API", () => {
       const newSponsor = {
         name: "New Sponsor",
         tier: "Bronze",
-        contact_email: "contact@newsponsor.com",
-        logo_url: "/logo.png",
+        contactEmail: "contact@newsponsor.com",
+        logoUrl: "/logo.png",
       };
       mockClient.sponsors.admin.save.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -228,7 +228,7 @@ describe("Sponsors API", () => {
         id: "existing-123",
         name: "Updated Name",
         tier: "Gold",
-        contact_email: "updated@example.com",
+        contactEmail: "updated@example.com",
       };
       mockClient.sponsors.admin.save.$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
@@ -330,8 +330,8 @@ describe("Sponsors API", () => {
   describe("useGetAdminTokens", () => {
     it("should fetch admin tokens successfully", async () => {
       const mockTokens: sponsorsApi.SponsorToken[] = [
-        { sponsor_id: "sponsor-1", token: "token-abc", created_at: "2024-01-01", last_used: null },
-        { sponsor_id: "sponsor-2", token: "token-xyz", created_at: "2024-01-02", last_used: null },
+        { sponsorId: "sponsor-1", token: "token-abc", createdAt: "2024-01-01", lastUsed: null },
+        { sponsorId: "sponsor-2", token: "token-xyz", createdAt: "2024-01-02", lastUsed: null },
       ];
       const mockResponse: SponsorTokensResponse = { tokens: mockTokens };
       mockClient.sponsors.admin.tokens.$get.mockResolvedValue({ ok: true });
@@ -362,11 +362,11 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useGenerateSponsorToken(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" });
+      result.current.mutate({ sponsorId: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.sponsors.admin.tokens.generate.$post).toHaveBeenCalledWith({
-        json: { sponsor_id: "sponsor-123" },
+        json: { sponsorId: "sponsor-123" },
       });
       expect(result.current.data?.token).toBe("new-generated-token-xyz");
     });
@@ -387,7 +387,7 @@ describe("Sponsors API", () => {
         wrapper: customWrapper,
       });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" });
+      result.current.mutate({ sponsorId: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["sponsor_tokens"] });
@@ -400,9 +400,10 @@ describe("Sponsors API", () => {
 
       const { result } = renderHook(() => sponsorsApi.useGenerateSponsorToken(), { wrapper });
 
-      result.current.mutate({ sponsor_id: "sponsor-123" });
+      result.current.mutate({ sponsorId: "sponsor-123" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
   });
 });
+

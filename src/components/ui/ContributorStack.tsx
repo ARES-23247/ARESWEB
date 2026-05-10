@@ -1,9 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 interface Contributor {
   id: number;
-  user_id: string;
+  userId: string;
   user_name: string;
   user_avatar: string | null;
 }
@@ -70,3 +70,4 @@ export function ContributorStack({ roomId, max = 5 }: ContributorStackProps) {
     </div>
   );
 }
+

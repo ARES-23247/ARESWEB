@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -189,7 +189,7 @@ describe("Locations API", () => {
         zip: "62701",
         latitude: 39.78,
         longitude: -89.65,
-        is_deleted: 0,
+        isDeleted: 0,
       };
 
       result.current.mutate(locationData as locationsApi.Location);
@@ -215,7 +215,7 @@ describe("Locations API", () => {
         city: "Springfield",
         state: "IL",
         zip: "62701",
-        is_deleted: 0,
+        isDeleted: 0,
       };
 
       result.current.mutate(locationData as locationsApi.Location);
@@ -312,3 +312,4 @@ describe("Locations API", () => {
     });
   });
 });
+

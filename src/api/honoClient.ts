@@ -91,10 +91,9 @@ export function wrapOnSuccess<TData, TError, TVariables>(
 
   return {
     ...options,
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, context) => {
       internalOnSuccess(data, variables);
-      const userOnSuccess = options.onSuccess as ((data: TData, variables: TVariables, context: unknown) => void) | undefined;
-      userOnSuccess?.(data, variables, undefined);
+      (options?.onSuccess as any)?.(data, variables, context);
     },
   };
 }
@@ -127,26 +126,22 @@ export function withMutationCallbacks<TData, TError, TVariables>(
   }
 ): UseMutationOptions<TData, TError, TVariables> {
   return {
-    onSuccess: async (...args) => {
-      const [data, variables, context] = args as unknown as [TData, TVariables, unknown];
+    onSuccess: async (data, variables, context) => {
       await callbacks.onSuccess?.(queryClient, data, variables);
       // Call user's onSuccess with all arguments from TanStack Query
-      await options?.onSuccess?.(
+      await (options?.onSuccess as any)?.(
         data as never,
         variables as never,
-        context,
-        args[3] as never
+        context as never
       );
     },
-    onError: async (...args) => {
-      const [error, variables, context] = args as unknown as [TError, TVariables, unknown];
+    onError: async (error, variables, context) => {
       await callbacks.onError?.(queryClient, error, variables);
       // Call user's onError with all arguments from TanStack Query
-      await options?.onError?.(
+      await (options?.onError as any)?.(
         error as never,
         variables as never,
-        context,
-        args[3] as never
+        context as never
       );
     },
   };

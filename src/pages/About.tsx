@@ -7,10 +7,10 @@ import { useGetTeamRoster } from "../api";
 import { type TeamMember } from "../components/MemberCard";
 
 const SECTION_ORDER = [
-  { type: "student", title: "Our Students", icon: "📚", desc: "The innovators, builders, and dreamers who bring ARES to life." },
-  { type: "alumni", title: "Our Alumni", icon: "🎓", desc: "Where the ARES legacy carries forward — in classrooms, labs, and careers." },
-  { type: "mentor", title: "Our Mentors", icon: "🔧", desc: "Technical experts shaping the next generation of West Virginia engineers." },
-  { type: "coach", title: "Our Coaches", icon: "🏆", desc: "The strategic leaders guiding ARES to championship-grade performance." },
+  { type: "student", title: "Our Students", icon: "ðŸ“š", desc: "The innovators, builders, and dreamers who bring ARES to life." },
+  { type: "alumni", title: "Our Alumni", icon: "ðŸŽ“", desc: "Where the ARES legacy carries forward â€” in classrooms, labs, and careers." },
+  { type: "mentor", title: "Our Mentors", icon: "ðŸ”§", desc: "Technical experts shaping the next generation of West Virginia engineers." },
+  { type: "coach", title: "Our Coaches", icon: "ðŸ†", desc: "The strategic leaders guiding ARES to championship-grade performance." },
 ];
 
 
@@ -21,16 +21,16 @@ export default function About() {
     const rawMembers = rosterRes?.members || [];
     
     return rawMembers.map((m): TeamMember => ({
-      user_id: m.user_id,
+      userId: m.userId,
       nickname: m.nickname || m.name || "ARES Member",
       name: m.name,
-      avatar: m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.user_id}`,
+      avatar: m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.userId}`,
       pronouns: m.pronouns,
       subteams: m.subteams,
-      member_type: m.member_type || "student",
+      memberType: m.memberType || "student",
       bio: m.bio,
-      fun_fact: m.fun_fact,
-      favorite_first_thing: m.favorite_first_thing,
+      funFact: m.funFact,
+      favoriteFirstThing: m.favoriteFirstThing,
       colleges: m.colleges,
       employers: m.employers
     }));
@@ -39,14 +39,14 @@ export default function About() {
   const grouped = useMemo(() => SECTION_ORDER.map(section => ({
     ...section,
     items: members.filter((m: TeamMember) => 
-      String(m.member_type || "").toLowerCase() === section.type.toLowerCase()
+      String(m.memberType || "").toLowerCase() === section.type.toLowerCase()
     ),
   })).filter(section => section.items.length > 0), [members]);
 
   return (
     <div className="flex flex-col w-full bg-obsidian">
       <SEO title="About Us" description="Learn about ARES 23247, our mission, and the students driving FIRST Robotics forward in Morgantown, West Virginia." />
-      {/* ─── HERO ─── */}
+      {/* â”€â”€â”€ HERO â”€â”€â”€ */}
       <section className="py-32 bg-obsidian text-marble relative overflow-hidden">
         <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
@@ -59,7 +59,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* ─── THE MISSION ─── */}
+      {/* â”€â”€â”€ THE MISSION â”€â”€â”€ */}
       <section className="py-24 bg-obsidian text-marble border-t border-white/5">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 items-start">
@@ -69,12 +69,12 @@ export default function About() {
                 <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut text-white font-bold">Our Community?</span>
               </h2>
               <p className="text-marble/70 text-lg">
-                We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.
+                We recruit students from 6thâ€“12th grade who possess grit, determination, and a hunger for innovation.
               </p>
             </div>
             <div className="md:col-span-2 space-y-8 text-lg leading-relaxed text-marble">
               <p>
-                In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
+                In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>Â® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
               <div className="bg-white/5 border-l-4 border-ares-red hero-card p-8 backdrop-blur-sm group hover:border-ares-red">
                 <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading text-white">What You&apos;ll Learn</h3>
@@ -106,12 +106,12 @@ export default function About() {
         </div>
       </section>
 
-      {/* ─── JOIN CTA ─── */}
+      {/* â”€â”€â”€ JOIN CTA â”€â”€â”€ */}
       <section className="py-16 bg-ares-red">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading uppercase">Ready to Join ARES?</h2>
           <p className="text-white text-lg mb-8 max-w-2xl mx-auto">
-            We welcome students from 6th–12th grade across Monongalia, Harrison, and Preston counties, SW PA, and anyone within driving distance of Morgantown. No experience needed — just bring your curiosity.
+            We welcome students from 6thâ€“12th grade across Monongalia, Harrison, and Preston counties, SW PA, and anyone within driving distance of Morgantown. No experience needed â€” just bring your curiosity.
           </p>
           <Link
             to="/join"
@@ -122,7 +122,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* ─── DYNAMIC TEAM ROSTER ─── */}
+      {/* â”€â”€â”€ DYNAMIC TEAM ROSTER â”€â”€â”€ */}
       {grouped.length > 0 && grouped.map(section => (
         <MemberSection key={section.type} section={section} />
       ))}
@@ -147,10 +147,10 @@ export default function About() {
               <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
               <div className="space-y-6 text-lg text-marble/90 leading-relaxed max-w-2xl mx-auto italic">
                 <p>
-                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>®</a> ecosystem, and robotics has since redefined their community impact.
+                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>Â®</a> ecosystem, and robotics has since redefined their community impact.
                 </p>
                 <p>
-                  Active across <a href="https://www.firstinspires.org/robotics/fll" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® LEGO League</a> and <a href="https://www.firstinspires.org/robotics/frc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Robotics Competition</a>, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
+                  Active across <a href="https://www.firstinspires.org/robotics/fll" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>Â® LEGO League</a> and <a href="https://www.firstinspires.org/robotics/frc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>Â® Robotics Competition</a>, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
                 </p>
               </div>
             </div>
@@ -158,7 +158,7 @@ export default function About() {
         </section>
       )}
 
-      {/* ─── QUICK ANSWERS (FAQS) ─── */}
+      {/* â”€â”€â”€ QUICK ANSWERS (FAQS) â”€â”€â”€ */}
       <section className="py-24 bg-obsidian border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
@@ -189,4 +189,5 @@ export default function About() {
     </div>
   );
 }
+
 

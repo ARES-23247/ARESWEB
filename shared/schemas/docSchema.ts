@@ -1,19 +1,29 @@
+import { extendSchema } from "@shared/db/schema-extensions";
+import { insertDocSchema } from "@shared/db/schema-zod";
 import { z } from "zod";
 import { slugSchema } from "./validators";
 
-export const docSchema = z.object({
-  slug: slugSchema,
-  title: z.string().min(1, "Title is required").max(255),
-  category: z.string().min(1, "Category is required").max(255),
-  sortOrder: z.number().int().default(10),
-  description: z.string().max(5000).optional(),
-  content: z.string().min(1, "Content is required").max(200000), // Stringified JSON AST
-  isPortfolio: z.boolean().default(false),
-  isExecutiveSummary: z.boolean().default(false),
-  isDraft: z.boolean().optional(),
-  displayInAreslib: z.boolean().default(false),
-  displayInMathCorner: z.boolean().default(false),
-  displayInScienceCorner: z.boolean().default(false),
-});
+export const docSchema = extendSchema(insertDocSchema)
+  .overrideField("slug", slugSchema)
+  .overrideField("title", z.string().min(1, "Title is required").max(255))
+  .overrideField("category", z.string().min(1, "Category is required").max(255))
+  .overrideField("sortOrder", z.number().int().default(10))
+  .overrideField("description", z.string().max(5000).optional())
+  .overrideField("content", z.string().min(1, "Content is required").max(200000))
+  .overrideField("isPortfolio", z.boolean().default(false))
+  .overrideField("isExecutiveSummary", z.boolean().default(false))
+  .overrideField("isDraft", z.boolean().optional())
+  .overrideField("displayInAreslib", z.boolean().default(false))
+  .overrideField("displayInMathCorner", z.boolean().default(false))
+  .overrideField("displayInScienceCorner", z.boolean().default(false))
+  .omitField("contentDraft")
+  .omitField("cfEmail")
+  .omitField("updatedAt")
+  .omitField("isDeleted")
+  .omitField("status")
+  .omitField("revisionOf")
+  .omitField("zulipStream")
+  .omitField("zulipTopic")
+  .build();
 
 export type DocPayload = z.infer<typeof docSchema>;

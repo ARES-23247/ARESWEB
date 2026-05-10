@@ -14,7 +14,7 @@ describe("useDashboardNotifications Hook", () => {
   it("should fetch pending counts on mount when authorized", async () => {
     const mockSession: any = { 
       authenticated: true,
-      user: { role: "admin", member_type: "mentor" }
+      user: { role: "admin", memberType: "mentor" }
     };
     const mockPermissions: any = { 
       isAuthorized: true, 
@@ -25,9 +25,9 @@ describe("useDashboardNotifications Hook", () => {
       http.get(/\/api\/notifications\/action-items/, () => {
         return HttpResponse.json({ 
           inquiries: [{ status: "pending" }],
-          posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }],
-          events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }],
-          docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }]
+          posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, publishedAt: null, seasonId: null, isDeleted: 0 }],
+          events: [{ status: "pending", id: "dummy", title: "dummy", dateStart: "dummy", dateEnd: null, location: null, description: null, coverImage: null, category: "dummy", seasonId: null, isDeleted: 0 }],
+          docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", createdAt: "dummy", isDeleted: 0 }]
         });
       })
     );
@@ -43,7 +43,7 @@ describe("useDashboardNotifications Hook", () => {
   it("should allow manager to see inquiries", async () => {
     const mockSession: any = { 
       authenticated: true,
-      user: { role: "manager", member_type: "mentor" }
+      user: { role: "manager", memberType: "mentor" }
     };
     const mockPermissions: any = { 
       isAuthorized: true, 
@@ -71,7 +71,7 @@ describe("useDashboardNotifications Hook", () => {
   it("should not fetch when not authorized", async () => {
     const mockSession: any = { 
       authenticated: true,
-      user: { role: "unverified", member_type: "student" }
+      user: { role: "unverified", memberType: "student" }
     };
     const mockPermissions: any = { 
       isAuthorized: false, 
@@ -117,9 +117,9 @@ describe("useDashboardNotifications Hook", () => {
     server.use(
       http.get(/\/api\/notifications\/action-items/, () => HttpResponse.json({ 
         inquiries: [{ status: "pending" }],
-        posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, published_at: null, season_id: null, is_deleted: 0 }],
-        events: [{ status: "pending", id: "dummy", title: "dummy", date_start: "dummy", date_end: null, location: null, description: null, cover_image: null, category: "dummy", season_id: null, is_deleted: 0 }],
-        docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", created_at: "dummy", is_deleted: 0 }]
+        posts: [{ status: "pending", title: "dummy", slug: "dummy", date: null, snippet: null, thumbnail: null, author: null, publishedAt: null, seasonId: null, isDeleted: 0 }],
+        events: [{ status: "pending", id: "dummy", title: "dummy", dateStart: "dummy", dateEnd: null, location: null, description: null, coverImage: null, category: "dummy", seasonId: null, isDeleted: 0 }],
+        docs: [{ status: "pending", id: 1, title: "dummy", slug: "dummy", content: "dummy", ast: "dummy", createdAt: "dummy", isDeleted: 0 }]
       }))
     );
 
@@ -174,3 +174,4 @@ describe("useDashboardNotifications Hook", () => {
     });
   });
 });
+

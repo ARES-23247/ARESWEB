@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+﻿import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { waitFor } from "@testing-library/react";
 import { useDashboardSession } from "./useDashboardSession";
 import { renderWithProviders } from "../test/utils";
@@ -29,9 +29,9 @@ describe("useDashboardSession", () => {
             image: null,
             role: "admin",
           },
-          member_type: "mentor",
-          first_name: "Admin",
-          last_name: "User",
+          memberType: "mentor",
+          firstName: "Admin",
+          lastName: "User",
           nickname: "Admin",
         });
       })
@@ -56,9 +56,9 @@ describe("useDashboardSession", () => {
             image: null,
             role: "unverified",
           },
-          member_type: "student",
-          first_name: "New",
-          last_name: "Student",
+          memberType: "student",
+          firstName: "New",
+          lastName: "Student",
           nickname: "Newbie",
         });
       })
@@ -99,9 +99,9 @@ describe("useDashboardSession", () => {
             image: null,
             role: "verified",
           },
-          member_type: "coach",
-          first_name: "Coach",
-          last_name: "User",
+          memberType: "coach",
+          firstName: "Coach",
+          lastName: "User",
           nickname: "Coach",
         });
       })
@@ -123,9 +123,9 @@ describe("useDashboardSession", () => {
             image: null,
             role: "verified",
           },
-          member_type: "student",
-          first_name: "Lead",
-          last_name: "User",
+          memberType: "student",
+          firstName: "Lead",
+          lastName: "User",
             nickname: "Lead",
         });
       })
@@ -147,9 +147,9 @@ describe("useDashboardSession", () => {
             image: null,
             role: "verified",
           },
-          member_type: "mentor",
-          first_name: "Manager",
-          last_name: "User",
+          memberType: "mentor",
+          firstName: "Manager",
+          lastName: "User",
           nickname: "Manager",
         });
       })
@@ -160,3 +160,4 @@ describe("useDashboardSession", () => {
     expect(result.current.permissions.canSeeInquiries).toBe(true);
   });
 });
+

@@ -9,7 +9,7 @@ import { ClickToDeleteButton } from "./ContentManager/shared";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
-interface BadgeRecord { id: string; name: string; description?: string | null; icon: string; color_theme: string; }
+interface BadgeRecord { id: string; name: string; description?: string | null; icon: string; colorTheme: string; }
 interface UserRecord { id: string; name?: string | null; nickname?: string | null; email: string; }
 
 export default function BadgeManager() {
@@ -119,7 +119,7 @@ export default function BadgeManager() {
               <input id="badge-desc" type="text" value={newBadgeDesc} onChange={e => setNewBadgeDesc(e.target.value)} placeholder="Awarded to members who attain top 3 in outreach hours." className="w-full bg-ares-gray-dark border border-white/5 ares-cut-sm px-4 py-2.5 text-white focus:outline-none focus:border-ares-gold mt-1" />
             </div>
             <button 
-              onClick={() => createBadgeMutation.mutate({ id: newBadgeId, name: newBadgeName, description: newBadgeDesc, icon: newBadgeIcon, color_theme: newBadgeColor })} 
+              onClick={() => createBadgeMutation.mutate({ id: newBadgeId, name: newBadgeName, description: newBadgeDesc, icon: newBadgeIcon, colorTheme: newBadgeColor })} 
               disabled={createBadgeMutation.isPending || !newBadgeId || !newBadgeName}
               className="px-6 py-2.5 bg-white text-black font-bold text-sm ares-cut-sm hover:bg-white transition-all disabled:opacity-50"
             >
@@ -140,7 +140,7 @@ export default function BadgeManager() {
               const IconComp = getLucideIcon(b.icon);
               return (
                 <div key={b.id} className="bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4">
-                  <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.color_theme.replace("text-", "")}`}>
+                  <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.colorTheme.replace("text-", "")}`}>
                     <IconComp size={24} />
                   </div>
                   <div className="flex-1">

@@ -36,7 +36,7 @@ vi.mock('../middleware/auth', async () => {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       // Match the actual ensureAdmin logic from auth.ts
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires one of [admin] privileges or adult leader status.' }, 403);
       }
@@ -63,7 +63,7 @@ describe('Points Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -73,7 +73,7 @@ describe('Points Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -83,7 +83,7 @@ describe('Points Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'user',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -93,7 +93,7 @@ describe('Points Routes', () => {
     name: 'Other User',
     nickname: 'Other',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -238,7 +238,7 @@ describe('Points Routes', () => {
       expect(_res.status).toBe(403);
     });
 
-    it('should allow mentor (non-admin role) to view any user balance via member_type', async () => {
+    it('should allow mentor (non-admin role) to view any user balance via memberType', async () => {
       // This tests RBAC-03 from auth.ts: mentors get admin-like access for points routes
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
@@ -253,8 +253,8 @@ describe('Points Routes', () => {
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
       // The points router checks sessionUser.role === 'admin' strictly
-      // Mentors with role='user' and member_type='mentor' are NOT granted access
-      // This is different from ensureAdmin middleware which checks member_type
+      // Mentors with role='user' and memberType='mentor' are NOT granted access
+      // This is different from ensureAdmin middleware which checks memberType
       expect(_res.status).toBe(403);
     });
   });
@@ -417,7 +417,7 @@ describe('Points Routes', () => {
 
     it('should require admin role even for mentors (awardPoints is admin-only)', async () => {
       // The awardPoints route has a strict check: sessionUser.role === 'admin'
-      // Unlike other routes, it does NOT check member_type for mentors
+      // Unlike other routes, it does NOT check memberType for mentors
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
 
@@ -440,7 +440,7 @@ describe('Points Routes', () => {
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      // awardPointsRoute specifically checks role === 'admin', not member_type
+      // awardPointsRoute specifically checks role === 'admin', not memberType
       expect(_res.status).toBe(401);
     });
   });

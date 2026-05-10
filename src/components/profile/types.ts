@@ -1,48 +1,44 @@
-import type { Form } from "@tanstack/react-form";
 
 export interface CollegeEntry { name: string; domain: string; years: string; degree: string; }
 export interface EmployerEntry { name: string; domain: string; title: string; current: boolean; years: string; }
 
 export interface ProfileData {
 	email: string;
-	first_name: string;
-	last_name: string;
+	firstName: string;
+	lastName: string;
 	nickname: string;
 	phone: string;
-	contact_email: string;
-	show_email: boolean;
-	show_phone: boolean;
+	contactEmail: string;
+	showEmail: boolean;
+	showPhone: boolean;
 	pronouns: string;
-	grade_year: string;
+	gradeYear: string;
 	subteams: string[];
-	member_type: string;
+	memberType: string;
 	bio: string;
-	favorite_food: string;
-	dietary_restrictions: string[];
-	favorite_first_thing: string;
-	fun_fact: string;
+	favoriteFood: string;
+	dietaryRestrictions: string[];
+	favoriteFirstThing: string;
+	funFact: string;
 	colleges: CollegeEntry[];
 	employers: EmployerEntry[];
-	favorite_robot_mechanism: string;
-	pre_match_superstition: string;
-	leadership_role: string;
-	rookie_year: string;
-	tshirt_size: string;
-	emergency_contact_name: string;
-	emergency_contact_phone: string;
-	show_on_about: boolean;
-	parents_name?: string;
-	parents_email?: string;
-	students_name?: string;
-	students_email?: string;
+	favoriteRobotMechanism: string;
+	preMatchSuperstition: string;
+	leadershipRole: string;
+	rookieYear: string;
+	tshirtSize: string;
+	emergencyContactName: string;
+	emergencyContactPhone: string;
+	showOnAbout: boolean;
+	parentsName?: string;
+	parentsEmail?: string;
+	studentsName?: string;
+	studentsEmail?: string;
 }
 
-export interface ProfileFormSubComponentProps {
-	form: Form<ProfileData>;
+export interface ProfileFormSubComponentProps extends ProfileStylingProps {
+	form: any;
 	isMinor: boolean;
-	inputClass: string;
-	labelClass: string;
-	sectionClass: string;
 }
 
 export interface ProfileStylingProps {
@@ -50,3 +46,4 @@ export interface ProfileStylingProps {
 	labelClass: string;
 	sectionClass: string;
 }
+

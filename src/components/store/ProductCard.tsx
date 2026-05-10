@@ -13,9 +13,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-ares-gold/50 transition-colors group flex flex-col h-full">
       <div className="aspect-square bg-slate-800 relative overflow-hidden">
-        {product.image_url ? (
+        {product.imageUrl ? (
           <img 
-            src={product.image_url} 
+            src={product.imageUrl} 
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -39,7 +39,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800">
           <span className="font-mono font-bold text-ares-gold text-xl">
-            ${(product.price_cents / 100).toFixed(2)}
+            ${(product.priceCents / 100).toFixed(2)}
           </span>
           <button
             onClick={() => addItem(product)}

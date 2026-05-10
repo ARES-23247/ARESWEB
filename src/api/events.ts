@@ -30,9 +30,9 @@ export interface AdminEventsResponse {
 
 export interface EventDetailResponse {
   event: Event;
-  is_editor?: boolean;
+  isEditor?: boolean;
   signups?: EventSignup[];
-  my_signup?: EventSignup;
+  mySignup?: EventSignup;
 }
 
 export interface EventSignupsResponse {
@@ -41,7 +41,7 @@ export interface EventSignupsResponse {
   team_dietary_summary: Record<string, number> | null;
   authenticated: boolean;
   role: string | null;
-  member_type: string | null;
+  memberType: string | null;
   can_manage: boolean;
 }
 
@@ -465,3 +465,4 @@ export function useUpdateUserEventAttendance(
     })
   });
 }
+

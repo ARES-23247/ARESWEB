@@ -14,7 +14,9 @@ export default ts.config(
       "dist",
       "coverage",
       ".wrangler",
+      "ci-report",
       "playwright-report",
+
       "pw-report*/**",
       "test-results",
       "Roo-Code/**",

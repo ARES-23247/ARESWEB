@@ -1,4 +1,4 @@
-import { MockedFunction, vi } from "vitest";
+﻿import { MockedFunction, vi } from "vitest";
 
 /**
  * Test mock types and interfaces for database and API testing
@@ -94,7 +94,7 @@ export interface SessionUser {
   name: string;
   nickname?: string;
   image: string | null;
-  member_type: string;
+  memberType: string;
 }
 
 // API response types for assertions
@@ -173,7 +173,7 @@ export interface Inquiry {
   name: string;
   email: string;
   status: string;
-  created_at: string;
+  createdAt: string;
   metadata: string;
   [key: string]: unknown;
 }
@@ -183,14 +183,14 @@ export interface Event {
   id: string;
   title: string;
   category: string;
-  date_start: string;
-  date_end?: string;
+  dateStart: string;
+  dateEnd?: string;
   location?: string;
   description?: string;
   status: string;
-  is_deleted?: number | boolean;
-  cover_image?: string | null;
-  meeting_notes?: string | null;
+  isDeleted?: number | boolean;
+  coverImage?: string | null;
+  meetingNotes?: string | null;
   gcalEventId?: string | null;
   [key: string]: unknown;
 }
@@ -211,11 +211,11 @@ export interface Award {
   title: string;
   date?: string;
   year?: number;
-  event_name?: string;
+  eventName?: string;
   description?: string;
   image_url?: string | null;
-  season_id?: number | null;
-  created_at?: string | null;
+  seasonId?: number | null;
+  createdAt?: string | null;
   [key: string]: unknown;
 }
 
@@ -231,7 +231,7 @@ export interface Badge {
   description?: string;
   icon?: string;
   color_theme?: string;
-  created_at: string;
+  createdAt: string;
   [key: string]: unknown;
 }
 
@@ -243,7 +243,7 @@ export interface BadgeResponse {
 export interface BadgeLeaderboardEntry {
   user_id: string;
   nickname: string | null;
-  member_type: string | null;
+  memberType: string | null;
   badge_count: number;
   [key: string]: unknown;
 }
@@ -293,3 +293,4 @@ export interface UserProfileWithEmail {
 export interface ProxyTarget {
   [key: string]: MockFn | ChainableQuery | unknown;
 }
+

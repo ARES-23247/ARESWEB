@@ -18,7 +18,7 @@ export interface PortfolioDoc {
   category: string;
   description: string;
   content: string;
-  is_executive_summary?: number;
+  isExecutiveSummary?: number;
 }
 
 export interface OutreachItem {
@@ -36,7 +36,7 @@ export interface AwardItem {
   id: number;
   title: string;
   date: string;
-  event_name: string;
+  eventName: string;
   image_url: string;
   description: string;
   year: number;
@@ -96,3 +96,4 @@ export function useGetJudgePortfolio(
     ...options,
   });
 }
+

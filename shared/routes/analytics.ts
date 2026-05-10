@@ -12,7 +12,7 @@ export const topPageSchema = z.object({
 export const recentViewSchema = z.object({
   path: z.string(),
   category: z.string(),
-  user_agent: z.string(),
+  userAgent: z.string(),
   referrer: z.string(),
   timestamp: z.string(),
 });
@@ -23,22 +23,22 @@ export const totalSchema = z.object({
 });
 
 export const rosterStatSchema = z.object({
-  user_id: z.string(),
+  userId: z.string(),
   nickname: z.string().nullable().optional(),
-  member_type: z.string().nullable().optional(),
-  attended_events: z.number(),
-  manual_prep_hours: z.number(),
-  event_volunteer_hours: z.number(),
+  memberType: z.string().nullable().optional(),
+  attendedEvents: z.number(),
+  manualPrepHours: z.number(),
+  eventVolunteerHours: z.number(),
   avatar: z.string().nullable().optional(),
 });
 
 export const leaderboardEntrySchema = z.object({
-  user_id: z.string(),
-  first_name: z.string(),
-  last_name: z.string().nullable(),
+  userId: z.string(),
+  firstName: z.string(),
+  lastName: z.string().nullable(),
   nickname: z.string().nullable(),
-  member_type: z.string(),
-  badge_count: z.number(),
+  memberType: z.string(),
+  badgeCount: z.number(),
   avatar: z.string().nullable().optional(),
 });
 
@@ -64,7 +64,7 @@ export const userActivitySchema = z.object({
 
 export const latencySchema = z.object({
   date: z.string(),
-  avg_latency: z.number(),
+  avgLatency: z.number(),
 });
 
 export const searchResultSchema = z.object({
@@ -113,7 +113,7 @@ export const trackSponsorClickRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            sponsor_id: z.string(),
+            sponsorId: z.string(),
             "cf-turnstile-response": z.string().optional(),
           }),
         },

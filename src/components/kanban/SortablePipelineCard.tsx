@@ -51,7 +51,7 @@ export function SortablePipelineCard({ item, onDelete, onEdit }: SortablePipelin
           >
             <GripVertical size={14} />
           </div>
-          <span className="text-xs font-bold text-white leading-tight truncate">{item.company_name}</span>
+          <span className="text-xs font-bold text-white leading-tight truncate">{item.companyName}</span>
         </div>
         
         <button 
@@ -72,12 +72,12 @@ export function SortablePipelineCard({ item, onDelete, onEdit }: SortablePipelin
       <div className="pl-6 flex items-center justify-between">
         <div className="text-[10px] font-black text-ares-gold flex items-center">
           <DollarSign size={10} className="mr-0.5 opacity-70" />
-          {Number(item.estimated_value || 0).toLocaleString()}
+          {Number(item.estimatedValue || 0).toLocaleString()}
         </div>
         <div className="flex items-center gap-2">
-          {item.contact_person && (
-            <div className="text-[10px] font-medium text-marble/60 truncate max-w-[80px]" title={item.contact_person}>
-              {item.contact_person}
+          {item.contactPerson && (
+            <div className="text-[10px] font-medium text-marble/60 truncate max-w-[80px]" title={item.contactPerson}>
+              {item.contactPerson}
             </div>
           )}
           {item.assignees && item.assignees.length > 0 && (

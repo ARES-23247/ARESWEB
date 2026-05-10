@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { Context } from "hono";
 import type { AppEnv, SessionUser } from "../api/middleware/utils";
@@ -148,7 +148,7 @@ const mockSessionUser: SessionUser = {
   nickname: "Student",
   image: null,
   role: "author",
-  member_type: "student",
+  memberType: "student",
 };
 
 describe("postHistory utilities", () => {
@@ -493,17 +493,17 @@ describe("postHistory utilities", () => {
           id: 1,
           title: "Version 1",
           author: "Author 1",
-          author_email: "author1@example.com",
-          created_at: "2024-01-01 12:00:00",
-          season_id: 2024,
+          authorEmail: "author1@example.com",
+          createdAt: "2024-01-01 12:00:00",
+          seasonId: 2024,
         },
         {
           id: 2,
           title: "Version 2",
           author: "Author 2",
-          author_email: "author2@example.com",
-          created_at: "2024-01-02 12:00:00",
-          season_id: null,
+          authorEmail: "author2@example.com",
+          createdAt: "2024-01-02 12:00:00",
+          seasonId: null,
         },
       ];
 
@@ -528,12 +528,12 @@ describe("postHistory utilities", () => {
       expect(result).toEqual([]);
     });
 
-    it("orders history by created_at descending", async () => {
+    it("orders history by createdAt descending", async () => {
       const { mockCtx, mockDb, mockAll } = createMockContext({
         selectResults: [
-          { id: 3, title: "V3", author: "A", author_email: "a@b.com", created_at: "2024-01-03", season_id: null },
-          { id: 2, title: "V2", author: "B", author_email: "b@c.com", created_at: "2024-01-02", season_id: null },
-          { id: 1, title: "V1", author: "C", author_email: "c@d.com", created_at: "2024-01-01", season_id: null },
+          { id: 3, title: "V3", author: "A", authorEmail: "a@b.com", createdAt: "2024-01-03", seasonId: null },
+          { id: 2, title: "V2", author: "B", authorEmail: "b@c.com", createdAt: "2024-01-02", seasonId: null },
+          { id: 1, title: "V1", author: "C", authorEmail: "c@d.com", createdAt: "2024-01-01", seasonId: null },
         ],
       });
 
@@ -843,3 +843,4 @@ describe("postHistory utilities", () => {
     });
   });
 });
+

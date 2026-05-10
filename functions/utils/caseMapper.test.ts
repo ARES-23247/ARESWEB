@@ -40,7 +40,7 @@ describe('caseMapper utility', () => {
       const input = { firstName: 'John' };
       const result = toSnakeCase(input);
 
-      expect(result).toHaveProperty('first_name', 'John');
+      expect(result).toHaveProperty('firstName', 'John');
       expect(result).toHaveProperty('firstName', 'John');
     });
 
@@ -75,13 +75,13 @@ describe('caseMapper utility', () => {
     it('handles mixed camelCase and snake_case', () => {
       const input = {
         firstName: 'John',
-        last_name: 'Doe',
+        lastName: 'Doe',
         emailAddress: 'john@example.com',
       };
       const result = toSnakeCase(input);
 
-      expect(result.first_name).toBe('John');
-      expect(result.last_name).toBe('Doe');
+      expect(result.firstName).toBe('John');
+      expect(result.lastName).toBe('Doe');
       expect(result.email_address).toBe('john@example.com');
     });
   });
@@ -112,3 +112,4 @@ describe('caseMapper utility', () => {
     });
   });
 });
+

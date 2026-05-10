@@ -1,21 +1,21 @@
 import { ProfileFormSubComponentProps } from "./types";
 
 const SUBTEAM_OPTIONS = ["Build", "Programming", "Design/CAD", "Outreach", "Marketing", "Documentation", "Drive Team", "Scouting", "Strategy"];
-const MEMBER_TYPES = [
-  { value: "student", label: "Student", icon: "📚" },
-  { value: "alumni", label: "Alumni", icon: "🎓" },
-  { value: "mentor", label: "Mentor", icon: "🔧" },
-  { value: "coach", label: "Coach", icon: "🏆" },
-  { value: "parent", label: "Parent", icon: "👪" },
+const memberTypeS = [
+  { value: "student", label: "Student", icon: "ðŸ“š" },
+  { value: "alumni", label: "Alumni", icon: "ðŸŽ“" },
+  { value: "mentor", label: "Mentor", icon: "ðŸ”§" },
+  { value: "coach", label: "Coach", icon: "ðŸ†" },
+  { value: "parent", label: "Parent", icon: "ðŸ‘ª" },
 ];
 
-export function RoleForm({ form, inputClass, labelClass, sectionClass }: ProfileFormSubComponentProps) {
-	const memberType = form.getFieldValue("member_type");
+export function RoleForm({ form, inputClass, labelClass, sectionClass }: Omit<ProfileFormSubComponentProps, "isMinor">) {
+	const memberType = form.getFieldValue("memberType");
 
 	const toggleSubteam = (team: string) => {
 		const current = form.getFieldValue("subteams");
 		form.setFieldValue("subteams", current.includes(team)
-			? current.filter((t) => t !== team)
+			? current.filter((t: string) => t !== team)
 			: [...current, team]
 		);
 	};
@@ -25,9 +25,8 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 			<h3 className="text-sm font-black uppercase tracking-wider text-ares-red">Team Role</h3>
 			<div>
 				<label htmlFor="pe-member-type" className={labelClass}>Member Type</label>
-				<form.Field
-					name="member_type"
-					children={(field) => (
+				<form.Field name="memberType">
+					{(field: any) => (
 						<select
 							id="pe-member-type"
 							name={field.name}
@@ -38,21 +37,20 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 							}}
 							className={inputClass}
 						>
-							{MEMBER_TYPES.map(mt => (
+							{memberTypeS.map((mt) => (
 								<option key={mt.value} value={mt.value}>{mt.icon} {mt.label}</option>
 							))}
 						</select>
 					)}
-				/>
+				</form.Field>
 			</div>
 
 			{memberType === "student" && (
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
 					<div>
 						<label htmlFor="pe-parents-name" className={labelClass}>Parent&apos;s Name</label>
-						<form.Field
-							name="parents_name"
-							children={(field) => (
+						<form.Field name="parentsName">
+							{(field: any) => (
 								<input
 									id="pe-parents-name"
 									name={field.name}
@@ -63,13 +61,12 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 									placeholder="e.g. Jane Doe"
 								/>
 							)}
-						/>
+						</form.Field>
 					</div>
 					<div>
 						<label htmlFor="pe-parents-email" className={labelClass}>Parent&apos;s Email</label>
-						<form.Field
-							name="parents_email"
-							children={(field) => (
+						<form.Field name="parentsEmail">
+							{(field: any) => (
 								<input
 									id="pe-parents-email"
 									name={field.name}
@@ -81,7 +78,7 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 									placeholder="jane.doe@example.com"
 								/>
 							)}
-						/>
+						</form.Field>
 					</div>
 				</div>
 			)}
@@ -90,9 +87,8 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
 					<div>
 						<label htmlFor="pe-students-name" className={labelClass}>Student&apos;s Name</label>
-						<form.Field
-							name="students_name"
-							children={(field) => (
+						<form.Field name="studentsName">
+							{(field: any) => (
 								<input
 									id="pe-students-name"
 									name={field.name}
@@ -103,13 +99,12 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 									placeholder="e.g. John Doe"
 								/>
 							)}
-						/>
+						</form.Field>
 					</div>
 					<div>
 						<label htmlFor="pe-students-email" className={labelClass}>Student&apos;s Email</label>
-						<form.Field
-							name="students_email"
-							children={(field) => (
+						<form.Field name="studentsEmail">
+							{(field: any) => (
 								<input
 									id="pe-students-email"
 									name={field.name}
@@ -121,17 +116,16 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 									placeholder="john.doe@example.com"
 								/>
 							)}
-						/>
+						</form.Field>
 					</div>
 				</div>
 			)}
 			<div>
 				<span className={labelClass}>Subteams (select all that apply)</span>
-				<form.Field
-					name="subteams"
-					children={(field) => (
+				<form.Field name="subteams">
+					{(field: any) => (
 						<div className="flex flex-wrap gap-2">
-							{SUBTEAM_OPTIONS.map(team => (
+							{SUBTEAM_OPTIONS.map((team: string) => (
 								<button
 									key={team}
 									type="button"
@@ -143,14 +137,13 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 							))}
 						</div>
 					)}
-				/>
+				</form.Field>
 			</div>
 			{(memberType === "student" || memberType === "alumni") && (
 				<div>
 					<label htmlFor="pe-grade" className={labelClass}>Grade / Graduation Year</label>
-					<form.Field
-						name="grade_year"
-						children={(field) => (
+					<form.Field name="gradeYear">
+						{(field: any) => (
 							<input
 								id="pe-grade"
 								name={field.name}
@@ -161,15 +154,14 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 								placeholder="e.g. 10th Grade, Class of 2025"
 							/>
 						)}
-					/>
+					</form.Field>
 				</div>
 			)}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div>
 					<label htmlFor="pe-role" className={labelClass}>Leadership Role</label>
-					<form.Field
-						name="leadership_role"
-						children={(field) => (
+					<form.Field name="leadershipRole">
+						{(field: any) => (
 							<input
 								id="pe-role"
 								name={field.name}
@@ -180,13 +172,12 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 								placeholder="e.g. Build Lead, Captain (Optional)"
 							/>
 						)}
-					/>
+					</form.Field>
 				</div>
 				<div>
 					<label htmlFor="pe-rookie" className={labelClass}>Rookie Year</label>
-					<form.Field
-						name="rookie_year"
-						children={(field) => (
+					<form.Field name="rookieYear">
+						{(field: any) => (
 							<input
 								id="pe-rookie"
 								name={field.name}
@@ -197,12 +188,11 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 								placeholder="e.g. 2023"
 							/>
 						)}
-					/>
+					</form.Field>
 				</div>
 			</div>
-			<form.Field
-				name="show_on_about"
-				children={(field) => (
+			<form.Field name="showOnAbout">
+				{(field: any) => (
 					<div className="flex items-center gap-3 mt-4 text-sm text-marble">
 						<input
 							type="checkbox"
@@ -215,7 +205,8 @@ export function RoleForm({ form, inputClass, labelClass, sectionClass }: Profile
 						<label htmlFor="showAbout">Show me on the About Us page</label>
 					</div>
 				)}
-			/>
+			</form.Field>
 		</div>
 	);
 }
+

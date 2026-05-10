@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared mock type definitions for type-safe testing.
  *
  * Provides typed interfaces for common test mocks to avoid using `any`.
@@ -6,7 +6,7 @@
 
 import type { Mock } from "vitest";
 
-// ── DrizzleMock ───────────────────────────────────────────────────────────────────
+// â”€â”€ DrizzleMock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Input database mock interface for createDrizzleProxy.
  *
@@ -35,7 +35,7 @@ export interface DrizzleMock {
   having?: Mock;
 }
 
-// ── DrizzleProxy ───────────────────────────────────────────────────────────────────
+// â”€â”€ DrizzleProxy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Output proxy interface that wraps a database mock.
  *
@@ -75,7 +75,7 @@ export interface DrizzleProxy extends DrizzleMock {
   [key: string]: unknown;
 }
 
-// ── DrizzleProxyTarget ─────────────────────────────────────────────────────────────
+// â”€â”€ DrizzleProxyTarget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Extended interface for proxy target with additional methods.
  */
@@ -85,20 +85,20 @@ export interface DrizzleProxyTarget extends DrizzleMock {
   [key: string]: unknown;
 }
 
-// ── PromiseLike ───────────────────────────────────────────────────────────────────
+// â”€â”€ PromiseLike â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Promise then callback functions.
  */
 export type ThenFn<R = unknown, T = unknown> = (value: T) => R | PromiseLike<R>;
 export type CatchFn = (reason: unknown) => unknown;
 
-// ── ExecutionContext Mock ───────────────────────────────────────────────────────────
+// â”€â”€ ExecutionContext Mock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Mock waitUntil function signature.
  */
 export type MockWaitUntil = (promise: Promise<unknown>) => void | Promise<unknown>;
 
-// ── Test Environment Bindings ───────────────────────────────────────────────────────
+// â”€â”€ Test Environment Bindings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Mock environment bindings for Cloudflare Workers.
  */
@@ -108,7 +108,7 @@ export interface MockBindings {
   [key: string]: unknown;
 }
 
-// ── Route Handler Mocks ─────────────────────────────────────────────────────────────
+// â”€â”€ Route Handler Mocks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Mock Hono context variables.
  */
@@ -121,14 +121,15 @@ export interface MockContextVariables {
     nickname?: string | null;
     image?: string | null;
     role: string;
-    member_type: string;
+    memberType: string;
   };
   socialConfig?: Record<string, string | undefined>;
   requestId?: string;
 }
 
-// ── Generic Mock Function ───────────────────────────────────────────────────────────
+// â”€â”€ Generic Mock Function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /**
  * Generic mock implementation callback.
  */
 export type MockImplementation<T = unknown> = (...args: unknown[]) => T;
+

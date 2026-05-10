@@ -58,14 +58,14 @@ describe("Login Page", () => {
     });
   });
 
-  it("calls signIn.oauth2 with Zulip provider when Zulip button clicked", async () => {
+  it("calls (signIn as any).oauth2 with Zulip provider when Zulip button clicked", async () => {
     const { signIn } = await import("@/utils/auth-client");
-    vi.mocked(signIn.oauth2).mockResolvedValue({ data: null, error: null });
+    vi.mocked((signIn as any).oauth2).mockResolvedValue({ data: null, error: null });
 
     render(<Login />);
     fireEvent.click(screen.getByRole("button", { name: /sign in with zulip/i }));
 
-    expect(signIn.oauth2).toHaveBeenCalledWith({
+    expect((signIn as any).oauth2).toHaveBeenCalledWith({
       providerId: "zulip",
       callbackURL: "/dashboard",
     });

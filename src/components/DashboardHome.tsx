@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import { useSession } from "../utils/auth-client";
 import { Activity, Target, MessageSquare, BookOpen, User, HelpCircle } from "lucide-react";
 import TeamAvailability from "./TeamAvailability";
@@ -21,9 +21,9 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
     docs: 0,
   };
    
-  const userProfile = session?.user as unknown as { nickname?: string; first_name?: string; last_name?: string };
-  const firstName = userProfile?.nickname || userProfile?.first_name 
-    ? (userProfile?.nickname || `${userProfile.first_name} ${userProfile.last_name || ''}`.trim())
+  const userProfile = session?.user as unknown as { nickname?: string; firstName?: string; lastName?: string };
+  const firstName = userProfile?.nickname || userProfile?.firstName 
+    ? (userProfile?.nickname || `${userProfile.firstName} ${userProfile.lastName || ''}`.trim())
     : ((session?.user?.name as string) || "ARES Member");
 
   const startTour = () => {
@@ -132,4 +132,5 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
     </div>
   );
 }
+
 

@@ -6,8 +6,8 @@ import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dash
 import { useGetAwards, useSaveAward, useDeleteAward } from "../api";
 import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import { zodValidator } from "@tanstack/zod-form-adapter";
 import { awardFormSchema, type AwardFormPayload } from "@shared/routes/awards";
 
 import SeasonPicker from "./SeasonPicker";
@@ -15,29 +15,42 @@ interface Award {
   id: string;
   title: string;
   year: number;
-  event_name: string | null;
-  image_url: string | null;
+  eventName: string | null;
+  imageUrl: string | null;
   description: string | null;
-  season_id?: number | null;
+  seasonId?: number | null;
 }
 
 export default function AwardEditor() {
   // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const [isAdding, setIsAdding] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<AwardFormPayload>({
-    resolver: zodResolver(awardFormSchema),
+  const form = useForm({
+    validatorAdapter: zodValidator(),
     defaultValues: {
       year: new Date().getFullYear(),
       title: "",
-      event_name: "",
-      image_url: "",
+      eventName: "",
+      imageUrl: "",
       description: "",
-      season_id: null
+      seasonId: null as number | null
+    },
+    onSubmit: async ({ value }: { value: any }) => {
+      const payload: AwardFormPayload = {
+        ...value,
+        year: typeof value.year === "number" ? value.year : Number(value.year) || new Date().getFullYear(),
+        seasonId: value.seasonId === null ? null : (typeof value.seasonId === "number" ? value.seasonId : Number(value.seasonId) || null)
+      };
+      saveMutation.mutate(payload, {
+        onSuccess: () => {
+          setIsAdding(false);
+          form.reset();
+        }
+      });
     }
-  });
+  } as any);
 
-  const seasonId = useWatch({ control, name: "season_id" });
+  // Season ID handled via form.Subscribe
 
   const { data: awardsRes, isLoading, isError } = useGetAwards();
   
@@ -45,19 +58,7 @@ export default function AwardEditor() {
   const saveMutation = useSaveAward();
   const deleteMutation = useDeleteAward();
 
-  const onFormSubmit = (data: AwardFormPayload) => {
-    const payload: AwardFormPayload = {
-      ...data,
-      year: typeof data.year === "number" ? data.year : Number(data.year) || new Date().getFullYear(),
-      season_id: data.season_id === null ? null : (typeof data.season_id === "number" ? data.season_id : Number(data.season_id) || null)
-    };
-    saveMutation.mutate(payload, {
-      onSuccess: () => {
-        setIsAdding(false);
-        reset();
-      }
-    });
-  };
+  // Submission integrated into form definition
 
   return (
     <div className="space-y-8">
@@ -70,7 +71,7 @@ export default function AwardEditor() {
             onClick={() => {
               if (isAdding) {
                 setIsAdding(false);
-                reset();
+                form.reset();
               } else {
                 setIsAdding(true);
               }
@@ -96,51 +97,117 @@ export default function AwardEditor() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            onSubmit={handleSubmit(onFormSubmit)}
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit();
+            }}
             className="bg-obsidian border border-ares-gold/30 ares-cut-lg p-8 space-y-6 shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <DashboardInput
-                id="award-title"
-                label="Award Title"
-                {...register("title")}
-                error={(errors.title?.message as string)}
-                placeholder="e.g. Excellence in Engineering"
-                focusColor="ares-gold"
-                fullWidth
-              />
-              <DashboardInput
-                id="award-year"
-                type="number"
-                label="Year"
-                {...register("year")}
-                error={(errors.year?.message as string)}
-                focusColor="ares-gold"
-              />
-              <DashboardInput
-                id="award-eventName"
-                label="Event Name"
-                {...register("event_name")}
-                placeholder="e.g. West Virginia State Championship"
-                focusColor="ares-gold"
-              />
-              <SeasonPicker value={seasonId || ""} onChange={(val) => setValue("season_id", val === "" ? null : Number(val), { shouldValidate: true })} />
-              <DashboardInput
-                id="award-image"
-                label="Image URL (Optional)"
-                {...register("image_url")}
-                placeholder="https://..."
-                focusColor="ares-gold"
-                fullWidth
-              />
-              <DashboardTextarea
-                id="award-desc"
-                label="Description"
-                {...register("description")}
-                placeholder="Tell the story of how we won..."
-                focusColor="ares-gold"
-                fullWidth
-              />
+              <form.Field
+                name="title"
+                validators={{
+                  onChange: awardFormSchema.shape.title as any,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="award-title"
+                    label="Award Title"
+                    name={field.name}
+                    value={field.state.value as any}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={field.state.meta.errors?.[0] as any}
+                    placeholder="e.g. Excellence in Engineering"
+                    focusColor="ares-gold"
+                    fullWidth
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
+                name="year"
+                validators={{
+                  onChange: awardFormSchema.shape.year as any,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="award-year"
+                    type="number"
+                    label="Year"
+                    name={field.name}
+                    value={field.state.value as any}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    error={field.state.meta.errors?.[0] as any}
+                    focusColor="ares-gold"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field
+                name="eventName"
+                validators={{
+                  onChange: awardFormSchema.shape.eventName as any,
+                }}
+              >
+                {(field) => (
+                  <DashboardInput
+                    id="award-eventName"
+                    label="Event Name"
+                    name={field.name}
+                    value={(field.state.value as any) || ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g. West Virginia State Championship"
+                    focusColor="ares-gold"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="seasonId">
+                {(field) => (
+                  <SeasonPicker 
+                    value={(field.state.value as any) || ""} 
+                    onChange={(val) => field.handleChange(val === "" ? null : Number(val))} 
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="imageUrl">
+                {(field) => (
+                  <DashboardInput
+                    id="award-imageUrl"
+                    label="Image URL (Optional)"
+                    name={field.name}
+                    value={(field.state.value as any) || ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="https://..."
+                    focusColor="ares-gold"
+                    fullWidth
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="description">
+                {(field) => (
+                  <DashboardTextarea
+                    id="award-desc"
+                    label="Description"
+                    name={field.name}
+                    value={(field.state.value as any) || ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Tell the story of how we won..."
+                    focusColor="ares-gold"
+                    fullWidth
+                  />
+                )}
+              </form.Field>
             </div>
             <DashboardSubmitButton 
               isPending={saveMutation.isPending} 
@@ -160,9 +227,9 @@ export default function AwardEditor() {
             {/* Background Glow */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
             
-            {award.image_url ? (
+            {award.imageUrl ? (
               <div className="w-full md:w-32 h-32 bg-white/5 ares-cut overflow-hidden flex-shrink-0 border border-white/10">
-                <img src={award.image_url} alt={award.title} className="w-full h-full object-cover" />
+                <img src={award.imageUrl} alt={award.title} className="w-full h-full object-cover" />
               </div>
             ) : (
               <div className="w-full md:w-32 h-32 bg-white/5 ares-cut flex items-center justify-center flex-shrink-0 border border-white/10">
@@ -177,7 +244,7 @@ export default function AwardEditor() {
               </div>
               <h4 className="text-2xl font-black text-white mb-2 tracking-tighter">{award.title}</h4>
               <div className="flex items-center gap-2 text-ares-gray text-xs font-bold mb-4">
-                 <MapPin size={10} /> {award.event_name}
+                 <MapPin size={10} /> {award.eventName}
               </div>
               <p className="text-ares-gray text-sm line-clamp-3 leading-relaxed">{award.description}</p>
             </div>
@@ -203,3 +270,4 @@ export default function AwardEditor() {
     </div>
   );
 }
+

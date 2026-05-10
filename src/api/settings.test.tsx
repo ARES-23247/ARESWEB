@@ -49,7 +49,7 @@ vi.mock("./honoClient", () => ({
 const mockClient = honoClient.client as {
   settings: {
     admin: {
-      settings: { $get: ReturnType<typeof vi.fn>; $post: ReturnType<typeof vi.fn> };
+      settings: { $get: ReturnType<typeof vi.fn>; $patch: ReturnType<typeof vi.fn> };
       stats: { $get: ReturnType<typeof vi.fn> };
       backup: { $get: ReturnType<typeof vi.fn> };
     };

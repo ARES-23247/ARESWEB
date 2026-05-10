@@ -39,7 +39,7 @@ export default function TaskDetailPage() {
   const tasks = tasksData?.tasks ?? [];
   const task = tasks.find((t: TaskItem) => t.id === taskId);
 
-  // Local edit state — synced from task on first load
+  // Local edit state â€” synced from task on first load
   const [edits, setEdits] = useState<UpdateTaskRequest>({});
 
   // Fetch team members for assignee picker
@@ -121,7 +121,7 @@ export default function TaskDetailPage() {
 
   const currentStatus = (getValue("status") as string) || "todo";
   const currentPriority = (getValue("priority") as string) || "normal";
-  const currentDue = getValue("due_date") as string | null;
+  const currentDue = getValue("dueDate") as string | null;
   const isOverdue = currentDue && new Date(currentDue) < new Date() && currentStatus !== "done";
   const isDirty = Object.keys(edits).length > 0;
 
@@ -265,8 +265,8 @@ export default function TaskDetailPage() {
               title="Due Date"
               placeholder="Due Date"
               type="date"
-              value={(getValue("due_date") as string) || ""}
-              onChange={(e) => setField("due_date", e.target.value || null)}
+              value={(getValue("dueDate") as string) || ""}
+              onChange={(e) => setField("dueDate", e.target.value || null)}
               className={`w-full bg-ares-gray-dark/50 border text-sm px-3 py-2.5 ares-cut-sm outline-none transition-colors ${
                 isOverdue
                   ? "border-ares-red/40 text-ares-red focus:border-ares-red/60"
@@ -295,9 +295,9 @@ export default function TaskDetailPage() {
         {/* Metadata + Actions */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-4 text-[10px] text-ares-gray font-mono">
-            {task && <span>Created {new Date(task.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
-            {task?.creator_name && <span>by <span className="text-marble">{task.creator_name}</span></span>}
-            {task && <span>Last updated {new Date(task.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+            {task && <span>Created {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+            {task?.creatorName && <span>by <span className="text-marble">{task.creatorName}</span></span>}
+            {task && <span>Last updated {new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
           </div>
           <div>
             {confirmDelete ? (
@@ -334,5 +334,6 @@ export default function TaskDetailPage() {
     </div>
   );
 }
+
 
 

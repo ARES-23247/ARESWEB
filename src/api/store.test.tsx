@@ -167,8 +167,8 @@ describe("Store API", () => {
   describe("useGetOrders", () => {
     it("should fetch orders successfully", async () => {
       const mockOrders = [
-        { id: "1", items: [], total: 40, fulfillment_status: "pending" },
-        { id: "2", items: [], total: 30, fulfillment_status: "shipped" },
+        { id: "1", items: [], total: 40, fulfillmentStatus: "pending" },
+        { id: "2", items: [], total: 30, fulfillmentStatus: "shipped" },
       ];
       const mockResponse = { orders: mockOrders };
       mockClient.store.orders.$get.mockResolvedValue({ ok: true });
@@ -212,12 +212,12 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "shipped" });
+      result.current.mutate({ id: "123", fulfillmentStatus: "shipped" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockClient.store.orders[":id"].status.$patch).toHaveBeenCalledWith({
         param: { id: "123" },
-        json: { fulfillment_status: "shipped" },
+        json: { fulfillmentStatus: "shipped" },
       });
     });
 
@@ -228,7 +228,7 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "shipped" });
+      result.current.mutate({ id: "123", fulfillmentStatus: "shipped" });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(mockError);
@@ -248,7 +248,7 @@ describe("Store API", () => {
 
       const { result } = renderHook(() => storeApi.useUpdateOrderStatus(), { wrapper: customWrapper });
 
-      result.current.mutate({ id: "123", fulfillment_status: "delivered" });
+      result.current.mutate({ id: "123", fulfillmentStatus: "delivered" });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["store", "orders"] });

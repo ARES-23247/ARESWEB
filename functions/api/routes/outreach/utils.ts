@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+﻿import { eq, and, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { DrizzleDB } from "../../middleware";
 
@@ -12,7 +12,7 @@ interface VolunteerEventDbResult {
   title: string;
   date: string;
   location: string | null;
-  season_id: number | null;
+  seasonId: number | null;
 }
 
 /**
@@ -29,7 +29,7 @@ interface VolunteerEvent {
   description: string;
   is_mentoring: boolean;
   mentored_team_number: null;
-  season_id: number | null;
+  seasonId: number | null;
   is_dynamic: boolean;
   event_id: string;
 }
@@ -41,7 +41,7 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       title: schema.events.title,
       date: schema.events.dateStart,
       location: schema.events.location,
-      season_id: schema.events.seasonId,
+      seasonId: schema.events.seasonId,
     }).from(schema.events)
       .where(
         and(
@@ -66,7 +66,7 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       description: "Volunteer Event (Synced)",
       is_mentoring: false,
       mentored_team_number: null,
-      season_id: r.season_id ? Number(r.season_id) : null,
+      seasonId: r.seasonId ? Number(r.seasonId) : null,
       is_dynamic: true,
       event_id: String(r.id)
     }));
@@ -74,3 +74,4 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
     return [];
   }
 }
+

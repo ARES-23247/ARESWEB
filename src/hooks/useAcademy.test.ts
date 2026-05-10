@@ -46,18 +46,18 @@ describe("useAcademy hook", () => {
     slug: "neural-networks-intro",
     title: "Introduction to Neural Networks",
     category: "Neural Networks",
-    sort_order: 1,
+    sortOrder: 1,
     description: "A test academy doc",
-    is_portfolio: 0,
-    is_executive_summary: 0,
-    display_in_math_corner: 1,
-    display_in_science_corner: 0,
+    isPortfolio: 0,
+    isExecutiveSummary: 0,
+    displayInMathCorner: 1,
+    displayInScienceCorner: 0,
   } as DocRecord;
 
   const mockDocDetail = {
     ...mockDoc,
     content: "# Test Content",
-    updated_at: "2024-01-01",
+    updatedAt: "2024-01-01",
   } as DocDetail;
 
   const mockContributor: Contributor = {
@@ -115,12 +115,12 @@ describe("useAcademy hook", () => {
   });
 
   describe("allDocs filtering for Academy", () => {
-    it("should filter docs to only include display_in_math_corner === 1", () => {
+    it("should filter docs to only include displayInMathCorner === 1", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: 1, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: 0, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc3", display_in_math_corner: 1, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc4", display_in_math_corner: undefined, display_in_science_corner: 0 },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: 1, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: 0, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc3", displayInMathCorner: 1, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc4", displayInMathCorner: undefined, displayInScienceCorner: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -131,12 +131,12 @@ describe("useAcademy hook", () => {
       expect(result.current.allDocs.map((d) => d.slug)).toEqual(["doc1", "doc3"]);
     });
 
-    it("should filter docs to only include display_in_science_corner === 1", () => {
+    it("should filter docs to only include displayInScienceCorner === 1", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: 0, display_in_science_corner: 1 },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: 0, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc3", display_in_math_corner: 0, display_in_science_corner: 1 },
-        { ...mockDoc, slug: "doc4", display_in_math_corner: 0, display_in_science_corner: undefined },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: 0, displayInScienceCorner: 1 },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: 0, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc3", displayInMathCorner: 0, displayInScienceCorner: 1 },
+        { ...mockDoc, slug: "doc4", displayInMathCorner: 0, displayInScienceCorner: undefined },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -147,10 +147,10 @@ describe("useAcademy hook", () => {
       expect(result.current.allDocs.map((d) => d.slug)).toEqual(["doc1", "doc3"]);
     });
 
-    it("should include docs with both display_in_math_corner === 1 AND display_in_science_corner === 1", () => {
+    it("should include docs with both displayInMathCorner === 1 AND displayInScienceCorner === 1", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: 1, display_in_science_corner: 1 },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: 0, display_in_science_corner: 0 },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: 1, displayInScienceCorner: 1 },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: 0, displayInScienceCorner: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -179,8 +179,8 @@ describe("useAcademy hook", () => {
 
     it("should exclude docs with both flags set to 0", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: 0, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: 1, display_in_science_corner: 0 },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: 0, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: 1, displayInScienceCorner: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -372,9 +372,9 @@ describe("useAcademy hook", () => {
 
     it("should handle docs with same category preserving sort order", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", category: "AI 101", sort_order: 2 },
-        { ...mockDoc, slug: "doc2", category: "AI 101", sort_order: 1 },
-        { ...mockDoc, slug: "doc3", category: "AI 101", sort_order: 3 },
+        { ...mockDoc, slug: "doc1", category: "AI 101", sortOrder: 2 },
+        { ...mockDoc, slug: "doc2", category: "AI 101", sortOrder: 1 },
+        { ...mockDoc, slug: "doc3", category: "AI 101", sortOrder: 3 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -662,9 +662,9 @@ describe("useAcademy hook", () => {
 
     it("should handle docs with null/undefined display flags", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: null, display_in_science_corner: null },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: undefined, display_in_science_corner: undefined },
-        { ...mockDoc, slug: "doc3", display_in_math_corner: 1, display_in_science_corner: 0 },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: null, displayInScienceCorner: null },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: undefined, displayInScienceCorner: undefined },
+        { ...mockDoc, slug: "doc3", displayInMathCorner: 1, displayInScienceCorner: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -677,8 +677,8 @@ describe("useAcademy hook", () => {
 
     it("should handle all docs having both display flags set to 0", () => {
       const mockDocs = [
-        { ...mockDoc, slug: "doc1", display_in_math_corner: 0, display_in_science_corner: 0 },
-        { ...mockDoc, slug: "doc2", display_in_math_corner: 0, display_in_science_corner: 0 },
+        { ...mockDoc, slug: "doc1", displayInMathCorner: 0, displayInScienceCorner: 0 },
+        { ...mockDoc, slug: "doc2", displayInMathCorner: 0, displayInScienceCorner: 0 },
       ] as DocRecord[];
 
       vi.mocked(docsApi.useGetAllDocs).mockReturnValue({ data: { docs: mockDocs } } as unknown as ReturnType<typeof docsApi.useGetAllDocs>);
@@ -793,4 +793,5 @@ describe("useAcademy hook", () => {
     });
   });
 });
+
 

@@ -35,7 +35,7 @@ vi.mock('../middleware/auth', async () => {
         return c.json({ error: 'Unauthorized: Please log in.' }, 401);
       }
       // Match the actual ensureAdmin logic from auth.ts
-      const isAdmin = user?.role === 'admin' || user?.member_type === 'mentor' || user?.member_type === 'coach';
+      const isAdmin = user?.role === 'admin' || user?.memberType === 'mentor' || user?.memberType === 'coach';
       if (!isAdmin) {
         return c.json({ error: 'Forbidden: Requires one of [admin] privileges or adult leader status.' }, 403);
       }
@@ -62,7 +62,7 @@ describe('Users Routes', () => {
     name: 'Admin User',
     nickname: 'Admin',
     role: 'admin',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -72,7 +72,7 @@ describe('Users Routes', () => {
     name: 'Auth User',
     nickname: 'User',
     role: 'user',
-    member_type: 'student',
+    memberType: 'student',
     image: null,
   };
 
@@ -82,7 +82,7 @@ describe('Users Routes', () => {
     name: 'Mentor User',
     nickname: 'Mentor',
     role: 'user',
-    member_type: 'mentor',
+    memberType: 'mentor',
     image: null,
   };
 
@@ -264,7 +264,7 @@ describe('Users Routes', () => {
       expect(_res.status).not.toBe(403);
     });
 
-    it('should allow mentor (non-admin role) to access admin routes via member_type', async () => {
+    it('should allow mentor (non-admin role) to access admin routes via memberType', async () => {
       // This tests RBAC-03 from auth.ts: mentors get admin access for non-super-admin routes
       globalThis.__mockSessionUser = mockMentorUser;
       const app = createTestApp();
@@ -302,7 +302,7 @@ describe('Users Routes', () => {
     it('should return paginated list of users when admin');
     it('should return single user details when admin');
     it('should update user role when admin (and invalidate sessions)');
-    it('should update user member_type when admin');
+    it('should update user memberType when admin');
     it('should update user profile when admin');
     it('should return full user profile for admin editing');
     it('should delete user and all related records when admin');

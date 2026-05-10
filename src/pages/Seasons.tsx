@@ -55,7 +55,7 @@ export default function Seasons() {
                  const isEven = idx % 2 === 0;
                  return (
                    <motion.div 
-                     key={season.start_year}
+                     key={season.startYear}
                      initial={{ opacity: 0, x: isEven ? -50 : 50 }}
                      whileInView={{ opacity: 1, x: 0 }}
                      className="relative pl-8 md:pl-0"
@@ -66,11 +66,11 @@ export default function Seasons() {
                         <div className={`md:w-1/2 ${isEven ? 'md:text-right' : 'md:text-left'}`}>
                            <div className={`mb-3 flex ${isEven ? 'md:justify-end' : 'md:justify-start'}`}>
                              <span className="bg-ares-red text-white text-xs font-black uppercase tracking-widest px-3 py-1 ares-cut-sm shadow-md">
-                               {season.start_year}-{season.end_year}
+                               {season.startYear}-{season.endYear}
                              </span>
                            </div>
                            <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4 uppercase leading-none">
-                             {season.challenge_name}
+                             {season.challengeName}
                            </h3>
                            {season.summary && (
                              <p className="text-marble text-lg leading-relaxed mb-6 font-medium">
@@ -78,20 +78,20 @@ export default function Seasons() {
                              </p>
                            )}
                            
-                           {season.robot_name && (
+                           {season.robotName && (
                              <div className={`flex items-center gap-3 mb-6 p-4 bg-white/5 border border-white/10 ares-cut-sm ${isEven ? 'md:justify-end' : 'md:justify-start'}`}>
                                <Cpu size={20} className="text-ares-gold" />
                                <div className={isEven ? 'md:text-right' : 'md:text-left'}>
                                  <span className="block text-xs font-black text-ares-gold uppercase tracking-widest">Designated Asset</span>
-                                 <span className="text-white font-bold">{season.robot_name}</span>
+                                 <span className="text-white font-bold">{season.robotName}</span>
                                </div>
                              </div>
                            )}
 
                            <div className={`flex flex-wrap gap-2 ${isEven ? 'md:justify-end' : 'md:justify-start'}`}>
-                              {season.robot_cad_url && (
+                              {season.robotCadUrl && (
                                 <a 
-                                  href={season.robot_cad_url} 
+                                  href={season.robotCadUrl} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="px-4 py-2 bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 ares-cut-sm text-xs font-black tracking-widest transition-all flex items-center gap-2"
@@ -102,12 +102,12 @@ export default function Seasons() {
                            </div>
                         </div>
 
-                        {season.robot_image && (
+                        {season.robotImage && (
                           <div className="md:w-1/2 flex justify-center">
                             <div className="w-full max-w-md aspect-video ares-cut overflow-hidden border border-white/10 shadow-2xl group">
                               <img 
-                                src={season.robot_image} 
-                                alt={season.robot_name || season.challenge_name} 
+                                src={season.robotImage} 
+                                alt={season.robotName || season.challengeName} 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               />
                             </div>
@@ -138,7 +138,7 @@ export default function Seasons() {
             {isLoadingAwards ? (
               [1,2,3].map(i => <div key={i} className="h-64 bg-white/5 ares-cut animate-pulse" />)
             ) : awards.length > 0 ? (
-              awards.map((award: Award, idx: number) => (
+              awards.map((award: any, idx: number) => (
                 <motion.div
                   key={award.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -155,7 +155,7 @@ export default function Seasons() {
                   </div>
                   <h3 className="text-2xl font-black text-white mb-2 tracking-tighter group-hover:text-ares-gold transition-colors">{award.title}</h3>
                   <div className="text-xs font-bold uppercase tracking-widest text-marble mb-4 flex items-center gap-2">
-                    <MapPin size={10} className="text-ares-red" /> {award.event_name}
+                    <MapPin size={10} className="text-ares-red" /> {award.eventName}
                   </div>
                   <p className="text-marble text-sm leading-relaxed line-clamp-3">{award.description}</p>
                 </motion.div>
