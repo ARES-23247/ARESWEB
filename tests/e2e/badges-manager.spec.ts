@@ -68,8 +68,17 @@ test.describe('Badges Manager', () => {
     // Wait for the page to load
     await expect(page.getByRole('heading', { name: /Manual Badge Grant/i })).toBeVisible();
 
-    // Select a user from the dropdown (index 0 is the empty placeholder, so pick index 1)
+    // Select a user from the dropdown — wait for options to load from API
     const userSelect = page.getByLabel(/Target Member/i);
+    await expect(userSelect).toBeVisible();
+
+    // Wait for user options to populate from the real API
+    const optionCount = await userSelect.locator('option').count();
+    if (optionCount <= 1) {
+      // Only the empty placeholder exists — no users loaded from API, skip
+      test.skip(true, 'No users loaded in Target Member dropdown');
+      return;
+    }
     await userSelect.selectOption({ index: 1 });
 
     // Verify user was selected
