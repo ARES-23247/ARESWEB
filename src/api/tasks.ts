@@ -138,3 +138,105 @@ export function useReorderTasks(
     })
   });
 }
+
+export function useCreateTaskAttachment(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; url: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; url: string }>({
+    mutationFn: async ({ id, url }) => {
+      const response = await client.tasks[":id"].attachments.$post({ param: { id }, json: { url } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
+
+export function useDeleteTaskAttachment(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; attachmentId: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; attachmentId: string }>({
+    mutationFn: async ({ id, attachmentId }) => {
+      const response = await client.tasks[":id"].attachments[":attachmentId"].$delete({ param: { id, attachmentId } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
+
+export function useCreateTaskChecklist(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; content: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; content: string }>({
+    mutationFn: async ({ id, content }) => {
+      const response = await client.tasks[":id"].checklists.$post({ param: { id }, json: { content } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
+
+export function useUpdateTaskChecklist(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; checklistId: string; updates: { isCompleted?: number; content?: string; sortOrder?: number } }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; checklistId: string; updates: { isCompleted?: number; content?: string; sortOrder?: number } }>({
+    mutationFn: async ({ id, checklistId, updates }) => {
+      const response = await client.tasks[":id"].checklists[":checklistId"].$patch({ param: { id, checklistId }, json: updates });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
+
+export function useDeleteTaskChecklist(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; checklistId: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; checklistId: string }>({
+    mutationFn: async ({ id, checklistId }) => {
+      const response = await client.tasks[":id"].checklists[":checklistId"].$delete({ param: { id, checklistId } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
+
+export function useSetTaskLabels(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; labelIds: string[] }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, { id: string; labelIds: string[] }>({
+    mutationFn: async ({ id, labelIds }) => {
+      const response = await client.tasks[":id"].labels.$post({ param: { id }, json: { labelIds } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
+    })
+  });
+}
