@@ -1,4 +1,3 @@
-import { wrapHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 /* TBA API route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -40,26 +39,29 @@ async function getTBA(path: string, c: HonoContext) {
   return await r.json();
 }
 
-tbaRouter.openapi(getRankingsRoute, wrapHandler(getRankingsRoute, async (c, { params }) => {
+tbaRouter.openapi(getRankingsRoute, async (c) => {
+    const params = c.req.valid("param");
     const { eventKey } = params;
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/rankings`, c);
-    return { status: 200, body: { rankings: (data as { rankings?: unknown[] })?.rankings || [] } };
-}));
+    return c.json({ rankings: (data as { rankings?: unknown[] })?.rankings || [] }, 200);
+});
 
-tbaRouter.openapi(getMatchesRoute, wrapHandler(getMatchesRoute, async (c, { params }) => {
+tbaRouter.openapi(getMatchesRoute, async (c) => {
+    const params = c.req.valid("param");
     const { eventKey } = params;
     if (!/^[a-zA-Z0-9]+$/.test(eventKey)) {
       throw new ApiError("Invalid eventKey", 400);
     }
     const data = await getTBA(`/event/${eventKey}/matches/simple`, c) as Array<{ time?: number }>;
     const sorted = (data || []).sort((a, b) => (a.time || 0) - (b.time || 0));
-    return { status: 200, body: { matches: sorted as unknown[] } };
-}));
+    return c.json({ matches: sorted as unknown[] }, 200);
+});
 
-tbaRouter.openapi(getFtcEventsRoute, wrapHandler(getFtcEventsRoute, async (c, { params }) => {
+tbaRouter.openapi(getFtcEventsRoute, async (c) => {
+    const params = c.req.valid("param");
     const { season, eventCode, type } = params;
     const path = `/${season}/events/${eventCode}/${type}`;
 
@@ -82,7 +84,7 @@ tbaRouter.openapi(getFtcEventsRoute, wrapHandler(getFtcEventsRoute, async (c, { 
     if (!r.ok) throw new Error(`FTC API Error: ${r.status}`);
 
     const data = await r.json();
-    return { status: 200, body: data };
-}));
+    return c.json(data, 200);
+});
 
 export default tbaRouter;

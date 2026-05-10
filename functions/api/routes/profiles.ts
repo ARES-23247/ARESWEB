@@ -1,4 +1,3 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, sql, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -101,7 +100,7 @@ profilesRouter.use("/me", ensureAuth);
 profilesRouter.use("/update-me", ensureAuth);
 profilesRouter.use("/avatar", ensureAuth);
 
-profilesRouter.openapi(getMeRoute, createTypedHandler(getMeRoute, async (c) => {
+profilesRouter.openapi(getMeRoute, async (c) => {
   const user = (await getSessionUser(c))!;
   const db = getDb(c);
 
@@ -208,9 +207,9 @@ profilesRouter.openapi(getMeRoute, createTypedHandler(getMeRoute, async (c) => {
   response.headers.set("Pragma", "no-cache");
   response.headers.set("Expires", "0");
   return response;
-}));
+});
 
-profilesRouter.openapi(updateMeRoute, createTypedHandler(updateMeRoute, async (c) => {
+profilesRouter.openapi(updateMeRoute, async (c) => {
   const user = (await getSessionUser(c))!;
   const body = c.req.valid("json");
   const validationResult = updateUserProfileSchema.safeParse(body);
@@ -223,18 +222,18 @@ profilesRouter.openapi(updateMeRoute, createTypedHandler(updateMeRoute, async (c
   await upsertProfile(c, user.id, validationResult.data);
   console.log("[Profile:UpdateMe] Profile saved successfully for user:", user.id);
   return c.json({ success: true }, 200);
-}));
+});
 
-profilesRouter.openapi(updateAvatarRoute, createTypedHandler(updateAvatarRoute, async (c) => {
+profilesRouter.openapi(updateAvatarRoute, async (c) => {
   const body = c.req.valid("json");
   const image = (body as { image?: string | null }).image;
   const auth = getAuth(c.env.DB, c.env, c.req.url);
   await auth.api.updateUser({ headers: c.req.raw.headers, body: { image: image || null } });
   return c.json({ success: true }, 200);
-}));
+});
 
 // Public Routes
-profilesRouter.openapi(getTeamRosterRoute, createTypedHandler(getTeamRosterRoute, async (c) => {
+profilesRouter.openapi(getTeamRosterRoute, async (c) => {
   const db = getDb(c);
   const results = await db
     .select({
@@ -330,12 +329,13 @@ profilesRouter.openapi(getTeamRosterRoute, createTypedHandler(getTeamRosterRoute
   }
 
   return c.json({ members: members as z.infer<typeof rosterMemberSchema>[] }, 200);
-}));
+});
 
 // Truly Public Profile (cacheable, no auth)
 // This endpoint is CDN-cacheable because it NEVER varies by the requester.
 // Used for public pages, about page, member cards.
-profilesRouter.openapi(getPublicProfileByIdRoute, createTypedHandler(getPublicProfileByIdRoute, async (c, { params }) => {
+profilesRouter.openapi(getPublicProfileByIdRoute, async (c) => {
+  const params = c.req.valid("param");
   const { userId } = params;
   const db = getDb(c);
 
@@ -437,9 +437,10 @@ profilesRouter.openapi(getPublicProfileByIdRoute, createTypedHandler(getPublicPr
   // 3. Only contains public-safe information
   response.headers.set("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=300");
   return response;
-}));
+});
 
-profilesRouter.openapi(getPublicProfileRoute, createTypedHandler(getPublicProfileRoute, async (c, { params }) => {
+profilesRouter.openapi(getPublicProfileRoute, async (c) => {
+  const params = c.req.valid("param");
   const { userId } = params;
   const db = getDb(c);
   const profileRow = await db
@@ -566,6 +567,6 @@ profilesRouter.openapi(getPublicProfileRoute, createTypedHandler(getPublicProfil
     .all();
 
   return c.json({ profile: sanitized, badges: rawBadges }, 200);
-}));
+});
 
 export default profilesRouter;

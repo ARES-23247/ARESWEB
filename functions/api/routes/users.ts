@@ -1,4 +1,3 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 /* User management route handlers */
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -25,7 +24,7 @@ export const usersRouter = new OpenAPIHono<AppEnv>();
 // CR-07 FIX: Apply authentication to all admin routes
 usersRouter.use("/admin/*", ensureAdmin);
 
-usersRouter.openapi(getUsersRoute, createTypedHandler(getUsersRoute, async (c, { query }) => {
+usersRouter.openapi(getUsersRoute, async (c) => {
     const db = getDb(c);
     const { limit, cursor } = parsePagination(c, 50, 100);
 
@@ -75,9 +74,10 @@ usersRouter.openapi(getUsersRoute, createTypedHandler(getUsersRoute, async (c, {
         : null;
 
     return c.json({ users, nextCursor }, 200);
-}));
+});
 
-usersRouter.openapi(adminDetailRoute, createTypedHandler(adminDetailRoute, async (c, { params }) => {
+usersRouter.openapi(adminDetailRoute, async (c) => {
+    const params = c.req.valid("param");
     const { id } = params;
     const db = getDb(c);
     
@@ -131,9 +131,11 @@ usersRouter.openapi(adminDetailRoute, createTypedHandler(adminDetailRoute, async
       },
       200
     );
-}));
+});
 
-usersRouter.openapi(patchUserRoute, createTypedHandler(patchUserRoute, async (c, { params, body }) => {
+usersRouter.openapi(patchUserRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
     // Defense-in-depth: Re-validate admin authorization for sensitive role changes
     const sessionUser = c.get("sessionUser") as
       | { id: string; role: string }
@@ -203,15 +205,18 @@ usersRouter.openapi(patchUserRoute, createTypedHandler(patchUserRoute, async (c,
     );
 
     return c.json({ success: true }, 200);
-}));
+});
 
-usersRouter.openapi(updateUserProfileRoute, createTypedHandler(updateUserProfileRoute, async (c, { params, body }) => {
+usersRouter.openapi(updateUserProfileRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
     const { id } = params;
     await upsertProfile(c, id, body);
     return c.json({ success: true }, 200);
-}));
+});
 
-usersRouter.openapi(adminGetProfileRoute, createTypedHandler(adminGetProfileRoute, async (c, { params }) => {
+usersRouter.openapi(adminGetProfileRoute, async (c) => {
+    const params = c.req.valid("param");
     const { id } = params;
     const db = getDb(c);
 
@@ -343,9 +348,10 @@ usersRouter.openapi(adminGetProfileRoute, createTypedHandler(adminGetProfileRout
       },
       200
     );
-}));
+});
 
-usersRouter.openapi(deleteUserRoute, createTypedHandler(deleteUserRoute, async (c, { params }) => {
+usersRouter.openapi(deleteUserRoute, async (c) => {
+    const params = c.req.valid("param");
     const { id } = params;
     const db = getDb(c);
 
@@ -366,7 +372,7 @@ usersRouter.openapi(deleteUserRoute, createTypedHandler(deleteUserRoute, async (
     );
 
     return c.json({ success: true }, 200);
-}));
+});
 
 export default usersRouter;
 

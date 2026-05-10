@@ -1,5 +1,4 @@
-﻿import { createTypedHandler } from "../utils/handler-native";
-import { OpenAPIHono } from "@hono/zod-openapi";
+﻿import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, getDb } from "../middleware";
@@ -11,7 +10,7 @@ export const sitemapRouter = new OpenAPIHono<AppEnv>();
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
 
-sitemapRouter.openapi(getSitemapRoute, createTypedHandler(getSitemapRoute, async (c) => {
+sitemapRouter.openapi(getSitemapRoute, async (c) => {
   const db = getDb(c);
     const now = Date.now();
     if (sitemapCache && sitemapCache.expiresAt > now) {
@@ -99,7 +98,7 @@ sitemapRouter.openapi(getSitemapRoute, createTypedHandler(getSitemapRoute, async
       "Content-Type": "application/xml",
       "Cache-Control": "public, s-maxage=900, max-age=900",
     });
-}));
+});
 
 export default sitemapRouter;
 
