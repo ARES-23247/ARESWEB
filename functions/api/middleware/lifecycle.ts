@@ -1,7 +1,8 @@
-﻿import { Hono, Context } from "hono";
+import { Hono, Context } from "hono";
 import { AppEnv, logAuditAction, getDb } from "./utils";
 import { ensureAdmin } from "./auth";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 // â”€â”€ Generic Content Management Factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -55,12 +56,18 @@ export function createContentLifecycleRouter(tableName: string, hooks?: ContentL
   });
 
   // Reject
+  const rejectSchema = z.object({ reason: z.string().optional() });
   router.patch("/:id/reject", async (c) => {
     const id = c.req.param("id");
-    const body = await c.req.json().catch(() => ({})) as { reason?: string };
+    const body = await c.req.json().catch(() => ({}));
+
+    const parsed = rejectSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request body", details: parsed.error.format() }, 400);
+    }
 
     let handled = false;
-    if (hooks?.onReject) handled = (await hooks.onReject(c, id, body.reason)) === true;
+    if (hooks?.onReject) handled = (await hooks.onReject(c, id, parsed.data.reason)) === true;
 
     if (!handled) {
       const db = getDb(c);
