@@ -57,6 +57,7 @@ See: .planning/PROJECT.md (updated 2026-05-07)
 
 ### Roadmap Evolution
 
+- Phase 68 added: Kanban Feature Parity with Google Integrations
 - v7.2 added: TypeScript Safety & ESLint Compliance — complete type safety achieved
 - v7.0-v7.1 marked as planned but not executed (phantom milestones from documentation drift)
 

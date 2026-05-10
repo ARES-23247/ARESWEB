@@ -82,6 +82,16 @@ These milestones are documented in `.planning/milestones/v7.0-*` files for refer
 
 This work completes the v7.1 Drizzle ORM migration goals that were previously marked as "not executed".
 
+### Phase 68: Kanban Feature Parity with Google Integrations
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 67
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 68 to break down)
+
 ---
 
 ## Backlog
