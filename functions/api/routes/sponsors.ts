@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { ApiError } from "../middleware/errorHandler";
-import { typedHandler } from "../utils/handler";
+import { wrapLegacyHandler } from "../utils/handler-v2";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
@@ -24,7 +25,6 @@ import {
 } from "../../../shared/routes/sponsors";
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
-
 
 // Apply edge caching to public GET routes (non-admin, non-signups)
 sponsorsRouter.use("*", async (c, next) => {
@@ -49,9 +49,11 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 // WR-01 FIX: Standardize on /admin/* pattern (remove redundant /admin patterns)
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
+// Handler functions
+type HandlerInput = { query?: Record<string, unknown>; params?: Record<string, unknown>; body?: Record<string, unknown> };
 
-// Get all public sponsors
-sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(async (c) => {
+const sponsorHandlers = {
+  getSponsors: async (input: HandlerInput, c: Context<AppEnv>) => {
     const db = getDb(c);
     const results = await db
       .select({
@@ -78,13 +80,11 @@ sponsorsRouter.openapi(getSponsorsRoute, typedHandler<typeof getSponsorsRoute>(a
       created_at: s.created_at ?? null,
     }));
 
-    const response: GetSponsorsResponse = { sponsors };
-    return c.json(response satisfies GetSponsorsResponse, 200);
-}));
+    return { status: 200, body: { sponsors } as GetSponsorsResponse };
+  },
 
-// Get ROI dashboard by token
-sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) => {
-    const { token } = c.req.valid("param");
+  getRoi: async (input: HandlerInput, c: Context<AppEnv>) => {
+    const { token } = input.params as { token: string };
     const db = getDb(c);
     const tokens = await db
       .select({ sponsorId: schema.sponsorTokens.sponsorId })
@@ -93,7 +93,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .all();
 
     if (!tokens || tokens.length === 0) {
-      throw new ApiError("Invalid token", 403);
+      return { status: 403, body: { error: "Invalid token" } };
     }
     const sponsor_id = tokens[0].sponsorId;
 
@@ -112,7 +112,7 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
       .get();
 
     if (!sponsorRow) {
-      throw new ApiError("Sponsor not found", 403);
+      return { status: 403, body: { error: "Sponsor not found" } };
     }
 
     const metricsRow = await db
@@ -147,11 +147,10 @@ sponsorsRouter.openapi(getRoiRoute, typedHandler<typeof getRoiRoute>(async (c) =
     }));
 
     const response = { sponsor, metrics } satisfies z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
 
-// Admin list all sponsors
-sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSponsorsRoute>(async (c) => {
+  adminListSponsors: async (input: HandlerInput, c: Context<AppEnv>) => {
     const db = getDb(c);
     const sponsors = await db.select({
         id: schema.sponsors.id,
@@ -174,12 +173,11 @@ sponsorsRouter.openapi(adminListSponsorsRoute, typedHandler<typeof adminListSpon
     }));
 
     const response = { sponsors: mappedSponsors } satisfies z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
 
-// Save/create sponsor
-sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(async (c) => {
-    const body = c.req.valid("json");
+  saveSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
+    const body = input.body as { id?: string; name: string; tier: string; logo_url?: string; website_url?: string; is_active?: number };
     const db = getDb(c);
     const id = body.id || crypto.randomUUID();
 
@@ -214,23 +212,21 @@ sponsorsRouter.openapi(saveSponsorRoute, typedHandler<typeof saveSponsorRoute>(a
     }
 
     const response = { success: true, id } satisfies z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
 
-// Delete sponsor
-sponsorsRouter.openapi(deleteSponsorRoute, typedHandler<typeof deleteSponsorRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+  deleteSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
+    const { id } = input.params as { id: string };
     const db = getDb(c);
 
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
 
     const response = { success: true } satisfies z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
 
-// Get admin tokens
-sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRoute>(async (c) => {
+  getAdminTokens: async (input: HandlerInput, c: Context<AppEnv>) => {
     const db = getDb(c);
     const results = await db
       .select({
@@ -253,12 +249,11 @@ sponsorsRouter.openapi(getAdminTokensRoute, typedHandler<typeof getAdminTokensRo
     }));
 
     const response = { tokens } satisfies z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
 
-// Generate token
-sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRoute>(async (c) => {
-    const { sponsor_id } = c.req.valid("json");
+  generateToken: async (input: HandlerInput, c: Context<AppEnv>) => {
+    const { sponsor_id } = input.body as { sponsor_id: string };
     const db = getDb(c);
 
     const token = crypto.randomUUID();
@@ -274,7 +269,23 @@ sponsorsRouter.openapi(generateTokenRoute, typedHandler<typeof generateTokenRout
     if (sRes) await sendZulipAlert(c.env, "Sponsor", "ROI Token Generated", `ROI token for **${sRes.name}**.`);
 
     const response = { success: true, token } satisfies z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return c.json(response, 200);
-}));
+    return { status: 200, body: response };
+  },
+};
+
+// Routes
+sponsorsRouter.openapi(getSponsorsRoute, wrapLegacyHandler(sponsorHandlers.getSponsors, getSponsorsRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(getRoiRoute, wrapLegacyHandler(sponsorHandlers.getRoi, getRoiRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(adminListSponsorsRoute, wrapLegacyHandler(sponsorHandlers.adminListSponsors, adminListSponsorsRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(saveSponsorRoute, wrapLegacyHandler(sponsorHandlers.saveSponsor, saveSponsorRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(deleteSponsorRoute, wrapLegacyHandler(sponsorHandlers.deleteSponsor, deleteSponsorRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(getAdminTokensRoute, wrapLegacyHandler(sponsorHandlers.getAdminTokens, getAdminTokensRoute.responses[200].content["application/json"].schema));
+
+sponsorsRouter.openapi(generateTokenRoute, wrapLegacyHandler(sponsorHandlers.generateToken, generateTokenRoute.responses[200].content["application/json"].schema));
 
 export default sponsorsRouter;
