@@ -6,9 +6,11 @@ interface ResponsiveImageProps {
   alt: string;
   className?: string;
   imgClassName?: string;
+  fetchPriority?: "high" | "low" | "auto";  // W4C-IMG-01: fetch priority hint
+  decoding?: "sync" | "async" | "auto";     // W4C-IMG-01: decoding hint
 }
 
-export default function ResponsiveImage({ src, alt, className = "", imgClassName = "" }: ResponsiveImageProps) {
+export default function ResponsiveImage({ src, alt, className = "", imgClassName = "", fetchPriority = "auto", decoding = "async" }: ResponsiveImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -42,6 +44,8 @@ export default function ResponsiveImage({ src, alt, className = "", imgClassName
           animate={{ opacity: (isLoaded || isError) ? 1 : 0, filter: (isLoaded || isError) ? "blur(0px)" : "blur(10px)", scale: (isLoaded || isError) ? 1 : 1.05 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           loading="lazy"
+          fetchPriority={fetchPriority}
+          decoding={decoding}
           onLoad={() => setIsLoaded(true)}
           onError={() => {
             if (!isError) setIsError(true);

@@ -113,6 +113,7 @@ export default function Navbar() {
                 src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${session?.user?.id}`}
                 alt=""
                 className="w-6 h-6 rounded-full bg-black/40"
+                decoding="async"
               />
               <span className="text-xs font-bold text-white group-hover:text-white uppercase tracking-wider">Dashboard</span>
             </Link>

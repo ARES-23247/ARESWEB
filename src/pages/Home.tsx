@@ -20,10 +20,12 @@ export default function Home() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20 pb-16 flex flex-col items-start text-left">
           <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16 mb-6">
-            <img 
-              src="/favicon.svg" 
-              alt="ARES 23247 Logo" 
-              className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0" 
+            <img
+              src="/favicon.svg"
+              alt="ARES 23247 Logo"
+              fetchPriority="high"
+              decoding="sync"
+              className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0"
             />
             <div className="bg-obsidian">
               <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading mb-4">

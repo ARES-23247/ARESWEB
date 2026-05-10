@@ -40,11 +40,12 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
     <div className={`relative flex flex-col md:flex-row gap-6 bg-black/40 border ${isPast ? 'border-white/5 opacity-80' : 'border-ares-gold/30 shadow-lg shadow-ares-gold/10'} hero-card overflow-hidden group transition-all duration-300`}>
       {/* Date / Image Block */}
       <div className="md:w-1/3 relative overflow-hidden bg-ares-red/20 min-h-[200px] flex-shrink-0">
-        <img 
-          src={event.coverImage || DEFAULT_coverImage} 
-          alt={event.title} 
+        <img
+          src={event.coverImage || DEFAULT_coverImage}
+          alt={event.title}
           loading="lazy"
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.coverImage ? 'object-contain p-8 bg-black/80' : ''}`} 
+          decoding="async"
+          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${isPast ? '' : 'group-hover:scale-105'} ${!event.coverImage ? 'object-contain p-8 bg-black/80' : ''}`}
         />
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-4 py-2 ares-cut-sm border border-white/10 text-center z-10">
           <div className={`text-2xl font-bold ${isPast ? 'text-white' : 'text-ares-gold'}`}>{formattedDay}</div>

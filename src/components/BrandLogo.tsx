@@ -7,17 +7,21 @@ interface BrandLogoProps {
   className?: string;
   fallbackIcon?: LucideIcon;
   alt?: string;
+  fetchPriority?: "high" | "low" | "auto";  // W4C-IMG-01: fetch priority hint
+  decoding?: "sync" | "async" | "auto";     // W4C-IMG-01: decoding hint
 }
 
 /**
  * A resilient logo component that handles domain sanitization,
  * loading states, and provides a Lucide icon fallback if the logo fails to load.
  */
-export const BrandLogo: React.FC<BrandLogoProps> = ({ 
-  domain, 
-  className = "w-8 h-8", 
+export const BrandLogo: React.FC<BrandLogoProps> = ({
+  domain,
+  className = "w-8 h-8",
   fallbackIcon: Fallback = Globe,
-  alt = "Brand Logo" 
+  alt = "Brand Logo",
+  fetchPriority = "auto",
+  decoding = "async"
 }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -49,6 +53,8 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         src={logoUrl}
         alt={alt}
         className={`w-full h-full object-contain transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+        fetchPriority={fetchPriority}
+        decoding={decoding}
         onLoad={() => setLoading(false)}
         onError={() => setError(true)}
       />

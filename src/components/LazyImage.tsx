@@ -8,9 +8,11 @@ interface LazyImageProps {
   imgClassName?: string;
   srcset?: string;  // Comma-separated srcset values for responsive images
   sizes?: string;   // Media query sizes for responsive images
+  fetchPriority?: "high" | "low" | "auto";  // W4C-IMG-01: fetch priority hint
+  decoding?: "sync" | "async" | "auto";     // W4C-IMG-01: decoding hint
 }
 
-export default function LazyImage({ src, alt, className = "", imgClassName = "", srcset, sizes }: LazyImageProps) {
+export default function LazyImage({ src, alt, className = "", imgClassName = "", srcset, sizes, fetchPriority = "auto", decoding = "async" }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -45,6 +47,8 @@ export default function LazyImage({ src, alt, className = "", imgClassName = "",
           animate={{ opacity: (isLoaded || isError) ? 1 : 0, filter: (isLoaded || isError) ? "blur(0px)" : "blur(10px)", scale: (isLoaded || isError) ? 1 : 1.05 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           loading="lazy"
+          fetchPriority={fetchPriority}
+          decoding={decoding}
           onLoad={() => setIsLoaded(true)}
           onError={() => {
             if (!isError) setIsError(true);
