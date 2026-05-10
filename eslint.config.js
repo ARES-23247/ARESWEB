@@ -4,6 +4,9 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import security from "eslint-plugin-security";
+import pluginRouter from "@tanstack/eslint-plugin-router";
+import pluginQuery from "@tanstack/eslint-plugin-query";
+import drizzle from "eslint-plugin-drizzle";
 import globals from "globals";
 import { fixupPluginRules } from "@eslint/compat";
 
@@ -43,6 +46,8 @@ export default ts.config(
   },
   js.configs.recommended,
   ...ts.configs.recommended,
+  ...pluginRouter.configs["flat/recommended"],
+  ...pluginQuery.configs["flat/recommended"],
   {
     // Global settings for all files
     languageOptions: {
@@ -75,6 +80,7 @@ export default ts.config(
       "react-hooks": fixupPluginRules(reactHooks),
       "jsx-a11y": jsxA11y,
       security,
+      drizzle,
     },
     settings: {
       react: {
@@ -114,6 +120,10 @@ export default ts.config(
       
       // Security overrides
       "security/detect-object-injection": "off",
+
+      // Drizzle safety — prevent accidental table-wide operations
+      "drizzle/enforce-delete-with-where": "error",
+      "drizzle/enforce-update-with-where": "error",
 
       // Project logic - ignore unused variables prefixed with _
       "no-unused-vars": "off", // use @typescript-eslint/no-unused-vars instead
