@@ -11,7 +11,6 @@ import {
 import { AppEnv, ensureAdmin, getSessionUser, checkPersistentRateLimit, logAuditAction, getDb, getDbSettings } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { createTypedHandler } from "../../utils/handler-native";
 
 import type { R2Bucket, R2Object, R2ListOptions } from "@cloudflare/workers-types";
 
@@ -130,8 +129,8 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
   return { objects };
 }
 
-// Register OpenAPI routes with createTypedHandler
-mediaRouter.openapi(getMediaRoute, createTypedHandler<typeof getMediaRoute>(async (c) => {
+// Register OpenAPI routes with native Hono type inference
+mediaRouter.openapi(getMediaRoute, async (c) => {
   const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
   const ua = c.req.header("user-agent") || "unknown";
   const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
@@ -193,7 +192,7 @@ mediaRouter.openapi(getMediaRoute, createTypedHandler<typeof getMediaRoute>(asyn
   })
 );
 
-mediaRouter.openapi(getAdminMediaRoute, createTypedHandler<typeof getAdminMediaRoute>(async (c) => {
+mediaRouter.openapi(getAdminMediaRoute, async (c) => {
     const db = getDb(c);
     const [objects, results] = await Promise.all([
       listAllObjects(c.env.ARES_STORAGE),
@@ -225,7 +224,7 @@ mediaRouter.openapi(getAdminMediaRoute, createTypedHandler<typeof getAdminMediaR
   })
 );
 
-mediaRouter.openapi(uploadMediaRoute, createTypedHandler<typeof uploadMediaRoute>(async (c) => {
+mediaRouter.openapi(uploadMediaRoute, async (c) => {
     const formData = await c.req.parseBody();
     const file = formData["file"] as File | undefined;
     const folder = formData["folder"] as string | undefined;
@@ -310,9 +309,9 @@ mediaRouter.openapi(uploadMediaRoute, createTypedHandler<typeof uploadMediaRoute
   })
 );
 
-mediaRouter.openapi(moveMediaRoute, createTypedHandler<typeof moveMediaRoute>(async (c, { params, body }) => {
-  const { key } = params;
-  const { folder } = body;
+mediaRouter.openapi(moveMediaRoute, async (c) => {
+  const { key } = c.req.valid("param");
+  const { folder } = c.req.valid("json");
 
     const fileName = key.split("/").pop();
     if (!fileName) {
@@ -348,8 +347,8 @@ mediaRouter.openapi(moveMediaRoute, createTypedHandler<typeof moveMediaRoute>(as
   })
 );
 
-mediaRouter.openapi(deleteMediaRoute, createTypedHandler<typeof deleteMediaRoute>(async (c, { params }) => {
-  const { key } = params;
+mediaRouter.openapi(deleteMediaRoute, async (c) => {
+  const { key } = c.req.valid("param");
 
     if (c.env.ARES_STORAGE) {
       await c.env.ARES_STORAGE.delete(key);
@@ -363,8 +362,8 @@ mediaRouter.openapi(deleteMediaRoute, createTypedHandler<typeof deleteMediaRoute
   })
 );
 
-mediaRouter.openapi(syndicateMediaRoute, createTypedHandler<typeof syndicateMediaRoute>(async (c, { body }) => {
-  const { key, caption } = body;
+mediaRouter.openapi(syndicateMediaRoute, async (c) => {
+  const { key, caption } = c.req.valid("json");
 
     const config = await getDbSettings(c);
     const baseUrl = new URL(c.req.url).origin;

@@ -1,4 +1,3 @@
-import { typedHandler } from "../utils/handler";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv, ensureAdmin, getSocialConfig, checkPersistentRateLimit, getDb } from "../middleware";
@@ -20,7 +19,7 @@ interface WeekData {
  * Ensures the printed portfolio is championship-ready.
  */
 // WR-01: Apply rate limiting to prevent abuse of GitHub API calls
-githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(async (c) => {
+githubRouter.openapi(getActivityRoute, async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const ua = c.req.header("User-Agent") || "unknown";
   const db = getDb(c);
@@ -131,11 +130,11 @@ githubRouter.openapi(getActivityRoute, typedHandler<typeof getActivityRoute>(asy
 
 githubRouter.use("/projects/*", ensureAdmin);
 
-githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c) => {
+githubRouter.openapi(getBoardRoute, async (c) => {
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
     if (!ghConfig) {
-      console.error("[GitHub:Board] Configuration missing — GITHUB_PAT or GITHUB_PROJECT_ID not set");
+      console.error("[GitHub:Board] Configuration missing â€” GITHUB_PAT or GITHUB_PROJECT_ID not set");
       throw new ApiError("GitHub integration not configured", 503, "SERVICE_UNAVAILABLE");
     }
 
@@ -147,7 +146,7 @@ githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c)
         id: String(item.id),
         title: String(item.title),
         status: String(item.status || "Todo"),
-        updated_at: String(item.updatedAt || item.updated_at || new Date().toISOString()),
+        updatedAt: String(item.updatedAt || item.updatedAt || new Date().toISOString()),
         assignees: Array.isArray(item.assignees) ? item.assignees : [],
         type: String(item.type || "DRAFT_ISSUE"),
       };
@@ -156,7 +155,7 @@ githubRouter.openapi(getBoardRoute, typedHandler<typeof getBoardRoute>(async (c)
     return c.json({ success: true, board }, 200);
 }));
 
-githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async (c) => {
+githubRouter.openapi(createItemRoute, async (c) => {
     const { title } = c.req.valid("json");
     const config = await getSocialConfig(c);
     const ghConfig = buildGitHubConfig(config);
@@ -170,3 +169,5 @@ githubRouter.openapi(createItemRoute, typedHandler<typeof createItemRoute>(async
 }));
 
 export default githubRouter;
+
+

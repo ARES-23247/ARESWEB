@@ -1,4 +1,3 @@
-import { autoResponseHandler, success } from "../utils/handler-v2";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc } from "drizzle-orm";
@@ -49,7 +48,7 @@ locationsRouter.use("*", async (c, next) => {
 
 locationsRouter.use("/admin/*", ensureAdmin);
 
-locationsRouter.openapi(listLocationsRoute, autoResponseHandler<typeof listLocationsRoute>(async (c) => {
+locationsRouter.openapi(listLocationsRoute, async (c) => {
     const db = getDb(c);
     const results = await db.select({
         id: schema.locations.id,
@@ -69,10 +68,10 @@ locationsRouter.openapi(listLocationsRoute, autoResponseHandler<typeof listLocat
       isDeleted: Number(r.isDeleted || 0)
     }));
 
-    return success({ locations: locations as LocationInput[] } satisfies ListLocationsSuccess);
+    return c.json({ locations: locations as LocationInput[] } satisfies ListLocationsSuccess, 200);
 }));
 
-locationsRouter.openapi(adminListLocationsRoute, autoResponseHandler<typeof adminListLocationsRoute>(async (c) => {
+locationsRouter.openapi(adminListLocationsRoute, async (c) => {
     const db = getDb(c);
     const results = await db.select({
         id: schema.locations.id,
@@ -91,11 +90,11 @@ locationsRouter.openapi(adminListLocationsRoute, autoResponseHandler<typeof admi
       isDeleted: Number(r.isDeleted || 0)
     }));
 
-    return success({ locations: locations as LocationInput[] } satisfies AdminListLocationsSuccess);
+    return c.json({ locations: locations as LocationInput[] } satisfies AdminListLocationsSuccess, 200);
 }));
 
-locationsRouter.openapi(saveLocationRoute, autoResponseHandler<typeof saveLocationRoute>(async (c, { body }) => {
-    const validatedData = body;
+locationsRouter.openapi(saveLocationRoute, async (c) => {
+    const validatedData = c.req.valid("json");
     const db = getDb(c);
     const id = validatedData.id || crypto.randomUUID();
 
@@ -119,18 +118,18 @@ locationsRouter.openapi(saveLocationRoute, autoResponseHandler<typeof saveLocati
       .run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
-    return success({ success: true, id } satisfies SaveLocationSuccess);
+    return c.json({ success: true, id } satisfies SaveLocationSuccess, 200);
 }));
 
-locationsRouter.openapi(deleteLocationRoute, autoResponseHandler<typeof deleteLocationRoute>(async (c, { params }) => {
-    const { id } = params;
+locationsRouter.openapi(deleteLocationRoute, async (c) => {
+    const { id } = c.req.valid("param");
     const db = getDb(c);
     await db.update(schema.locations)
       .set({ isDeleted: 1 })
       .where(eq(schema.locations.id, id))
       .run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
-    return success({ success: true } satisfies DeleteLocationSuccess);
+    return c.json({ success: true } satisfies DeleteLocationSuccess, 200);
 }));
 
 export default locationsRouter;

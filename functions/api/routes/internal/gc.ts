@@ -1,4 +1,3 @@
-import { typedHandler } from "../../utils/handler";
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -12,7 +11,7 @@ import { gcRoute } from "../../../../shared/routes/internal";
 export const gcRouter = new OpenAPIHono<AppEnv>();
 
 // This is an internal cron trigger endpoint
-gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
+gcRouter.openapi(gcRoute, async (c) => {
     const cronSecret = c.env.CRON_SECRET;
     const providedSecret = c.req.header("x-cron-secret");
 
@@ -43,3 +42,5 @@ gcRouter.openapi(gcRoute, typedHandler<typeof gcRoute>(async (c) => {
 }));
 
 export default gcRouter;
+
+

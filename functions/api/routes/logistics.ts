@@ -1,4 +1,3 @@
-import { typedHandler } from "../utils/handler";
 import { AppEnv, ensureAdmin, getDb } from "../middleware";
 import { eq, ne } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -16,50 +15,50 @@ export const logisticsRouter = new OpenAPIHono<AppEnv>();
 // and require administrative privileges
 logisticsRouter.use("/admin/*", ensureAdmin);
 
-logisticsRouter.openapi(getLogisticsSummaryRoute, typedHandler<typeof getLogisticsSummaryRoute>(async (c) => {
+logisticsRouter.openapi(getLogisticsSummaryRoute, async (c) => {
   const db = getDb(c);
 
-    const results = await db.select({
-      dietary_restrictions: schema.userProfiles.dietaryRestrictions,
-      tshirt_size: schema.userProfiles.tshirtSize,
-      member_type: schema.userProfiles.memberType,
-      name: schema.user.name
-    })
-    .from(schema.userProfiles)
-    .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
-    .where(ne(schema.user.role, "unverified"))
-    .all();
+  const results = await db.select({
+    dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
+    tshirt_size: schema.userProfiles.tshirtSize,
+    memberType: schema.userProfiles.memberType,
+    name: schema.user.name
+  })
+  .from(schema.userProfiles)
+  .innerJoin(schema.user, eq(schema.userProfiles.userId, schema.user.id))
+  .where(ne(schema.user.role, "unverified"))
+  .all();
 
-    const summary: Record<string, number> = {};
-    const tshirtSummary: Record<string, number> = {};
-    const memberCounts: Record<string, number> = {};
-    const totalMembers = results.length;
+  const summary: Record<string, number> = {};
+  const tshirtSummary: Record<string, number> = {};
+  const memberCounts: Record<string, number> = {};
+  const totalMembers = results.length;
 
-    for (const r of results) {
-      const mt = r.member_type || "student";
-      memberCounts[mt] = (memberCounts[mt] || 0) + 1;
+  for (const r of results) {
+    const mt = r.memberType || "student";
+    memberCounts[mt] = (memberCounts[mt] || 0) + 1;
 
-      if (r.tshirt_size) {
-        tshirtSummary[r.tshirt_size] = (tshirtSummary[r.tshirt_size] || 0) + 1;
-      }
-
-      if (r.dietary_restrictions) {
-        const restrictions = r.dietary_restrictions.split(",").map((st: string) => st.trim());
-        for (const dr of restrictions) {
-          if (dr) summary[dr] = (summary[dr] || 0) + 1;
-        }
-      }
+    if (r.tshirt_size) {
+      tshirtSummary[r.tshirt_size] = (tshirtSummary[r.tshirt_size] || 0) + 1;
     }
 
-    return c.json({
-      totalCount: totalMembers,
-      memberCounts,
-      dietary: summary,
-      tshirts: tshirtSummary,
-    }, 200);
+    if (r.dietaryRestrictions) {
+      const restrictions = r.dietaryRestrictions.split(",").map((st: string) => st.trim());
+      for (const dr of restrictions) {
+        if (dr) summary[dr] = (summary[dr] || 0) + 1;
+      }
+    }
+  }
+
+  return c.json({
+    totalCount: totalMembers,
+    memberCounts,
+    dietary: summary,
+    tshirts: tshirtSummary,
+  }, 200);
 }));
 
-logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLogisticsEmailsRoute>(async (c) => {
+logisticsRouter.openapi(exportLogisticsEmailsRoute, async (c) => {
   const db = getDb(c);
   const secret = c.env.ENCRYPTION_SECRET;
 
@@ -103,4 +102,5 @@ logisticsRouter.openapi(exportLogisticsEmailsRoute, typedHandler<typeof exportLo
 }));
 
 export default logisticsRouter;
+
 

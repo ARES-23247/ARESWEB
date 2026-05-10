@@ -1,4 +1,3 @@
-import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -29,9 +28,9 @@ interface OutreachResult {
   title: string;
   date: string;
   location: string | null;
-  students_count: number | null;
-  hours_logged: number | null;
-  reach_count: number | null;
+  studentsCount: number | null;
+  hoursLogged: number | null;
+  reachCount: number | null;
   description: string | null;
 }
 
@@ -41,16 +40,16 @@ interface SponsorResult {
   id: string;
   name: string;
   tier: string;
-  logo_url: string | null;
-  website_url: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
 }
 
 interface JudgeCodeListResult {
   id: string;
   code: string;
-  label: string;
+  label: string | null;
   createdAt: string;
-  expires_at: string | null;
+  expiresAt: string | null;
 }
 
 // Types for API responses - inferred from shared routes
@@ -96,30 +95,30 @@ const portfolioCache = new Map<string, { data: unknown; expiresAt: number; versi
 // Helper to get the current portfolio cache key with version
 const getPortfolioCacheKey = () => `portfolio_v${portfolioCacheVersion}`;
 
-judgesRouter.openapi(judgeLoginRoute, autoResponseHandler<typeof judgeLoginRoute>(async (c, { body }) => {
+judgesRouter.openapi(judgeLoginRoute, async (c) => {
   const ip = c.req.header("CF-Connecting-IP") || "unknown";
   const db = getDb(c);
 
   const ua = c.req.header("User-Agent") || "unknown";
   const allowed = await checkPersistentRateLimit(db, `judge-login:${ip}`, ua, 10, 60);
   if (!allowed) {
-    return error({ error: "Too many requests" }, 429);
+    return c.json({ error: "Too many requests" }, 429);
   }
 
-    const { code, turnstileToken } = body;
+    const { code, turnstileToken } = c.req.valid("json");
     if (!code) {
-      return error({ error: "Code required" }, 400);
+      return c.json({ error: "Code required" }, 400);
     }
 
     const validToken = await verifyTurnstile(turnstileToken || "", c.env.TURNSTILE_SECRET_KEY, ip);
     if (!validToken) {
-      return error({ error: "Security verification failed" }, 403);
+      return c.json({ error: "Security verification failed" }, 403);
     }
 
     const [row] = await db.select({
       code: schema.judgeAccessCodes.code,
       label: schema.judgeAccessCodes.label,
-      expires_at: schema.judgeAccessCodes.expiresAt,
+      expiresAt: schema.judgeAccessCodes.expiresAt,
     }).from(schema.judgeAccessCodes)
       .where(
         and(
@@ -131,25 +130,17 @@ judgesRouter.openapi(judgeLoginRoute, autoResponseHandler<typeof judgeLoginRoute
         )
       ).limit(1);
 
-    if (!row) {
-      return error({ error: "Invalid or expired access code" }, 403);
-    }
-
-    return success({ success: true, label: row.label || "" } satisfies JudgeLoginSuccess);
+    return c.json({ success: true, label: row.label || "" } satisfies JudgeLoginSuccess, 200);
 }));
 
-judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfolioRoute>(async (c) => {
+judgesRouter.openapi(judgePortfolioRoute, async (c) => {
   const db = getDb(c);
     const { "x-judge-code": code } = c.req.header();
-    if (!code) {
-      return error({ error: "Access code required" }, 401);
-    }
-
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return error({ error: "Too many requests" }, 429);
+      return c.json({ error: "Too many requests" }, 429);
     }
 
     const [valid] = await db.select({
@@ -165,7 +156,7 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
         )
       ).limit(1);
     if (!valid) {
-      return error({ error: "Invalid or expired access code" }, 403);
+      return c.json({ error: "Invalid or expired access code" }, 403);
     }
 
     // WR-10: Audit log judge portfolio access for security monitoring
@@ -175,7 +166,7 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
     const cacheKey = getPortfolioCacheKey();
     const cached = portfolioCache.get(cacheKey);
     if (cached && cached.expiresAt > now && cached.version === portfolioCacheVersion) {
-      return success(cached.data as JudgePortfolioSuccess);
+      return c.json(cached.data as JudgePortfolioSuccess, 200);
     }
 
     const [portfolioDocs, outreach, awards, sponsors] = await Promise.all([
@@ -199,9 +190,9 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
         title: schema.outreachLogs.title,
         date: schema.outreachLogs.date,
         location: schema.outreachLogs.location,
-        students_count: schema.outreachLogs.studentsCount,
-        hours_logged: schema.outreachLogs.hours,
-        reach_count: schema.outreachLogs.peopleReached,
+        studentsCount: schema.outreachLogs.studentsCount,
+        hoursLogged: schema.outreachLogs.hours,
+        reachCount: schema.outreachLogs.peopleReached,
         description: schema.outreachLogs.impactSummary,
       }).from(schema.outreachLogs)
         .where(eq(schema.outreachLogs.isDeleted, 0))
@@ -211,7 +202,7 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
         title: schema.awards.title,
         date: schema.awards.date,
         eventName: schema.awards.eventName,
-        image_url: schema.awards.iconType,
+        imageUrl: schema.awards.iconType,
         description: schema.awards.description,
       }).from(schema.awards)
         .where(eq(schema.awards.isDeleted, 0))
@@ -220,8 +211,8 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
         id: schema.sponsors.id,
         name: schema.sponsors.name,
         tier: schema.sponsors.tier,
-        logo_url: schema.sponsors.logoUrl,
-        website_url: schema.sponsors.websiteUrl,
+        logoUrl: schema.sponsors.logoUrl,
+        websiteUrl: schema.sponsors.websiteUrl,
       }).from(schema.sponsors)
         .where(eq(schema.sponsors.isActive, 1))
     ]);
@@ -233,24 +224,24 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
         category: d.category,
         description: d.description || "",
         content: sanitizeJudgeContent(d.content),
-        is_executive_summary: d.category === "Executive Summary" ? 1 : undefined,
+        isExecutiveSummary: d.category === "Executive Summary" ? 1 : undefined,
       })),
       outreach: outreach.map((o: OutreachResult) => ({
         id: o.id,
         title: o.title,
         date: o.date,
         location: o.location || "",
-        students_count: Number(o.students_count),
-        hours_logged: Number(o.hours_logged),
-        reach_count: Number(o.reach_count),
+        studentsCount: Number(o.studentsCount),
+        hoursLogged: Number(o.hoursLogged),
+        reachCount: Number(o.reachCount),
         description: sanitizeJudgeContent(o.description || ""),
       })),
       awards: awards.map((a) => ({
         id: a.id,
         title: a.title,
         date: a.date,
-        event_name: a.eventName,
-        image_url: a.image_url,
+        eventName: a.eventName,
+        imageUrl: a.imageUrl,
         description: sanitizeJudgeContent(a.description || ""),
         year: Number(a.date)
       })),
@@ -259,37 +250,37 @@ judgesRouter.openapi(judgePortfolioRoute, autoResponseHandler<typeof judgePortfo
 
     portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 
-    return success(payload);
+    return c.json(payload, 200);
 }));
 
 // Admin routes require ensureAdmin middleware
 judgesRouter.use("/admin/*", ensureAdmin);
 
-judgesRouter.openapi(listJudgeCodesRoute, autoResponseHandler<typeof listJudgeCodesRoute>(async (c) => {
+judgesRouter.openapi(listJudgeCodesRoute, async (c) => {
   const db = getDb(c);
     const results = await db.select({
       id: schema.judgeAccessCodes.id,
       code: schema.judgeAccessCodes.code,
       label: schema.judgeAccessCodes.label,
       createdAt: schema.judgeAccessCodes.createdAt,
-      expires_at: schema.judgeAccessCodes.expiresAt,
+      expiresAt: schema.judgeAccessCodes.expiresAt,
     }).from(schema.judgeAccessCodes)
       .orderBy(desc(schema.judgeAccessCodes.createdAt));
 
     const codes: JudgeCodeListResult[] = results.map((r) => ({
       id: r.id,
       code: r.code,
-      label: r.label,
+      label: r.label || "",
       createdAt: String(r.createdAt),
-      expires_at: r.expires_at || null
+      expiresAt: r.expiresAt || null
     }));
 
-    return success({ codes } satisfies ListJudgeCodesSuccess);
+    return c.json({ codes } satisfies ListJudgeCodesSuccess, 200);
 }));
 
-judgesRouter.openapi(createJudgeCodeRoute, autoResponseHandler<typeof createJudgeCodeRoute>(async (c, { body }) => {
+judgesRouter.openapi(createJudgeCodeRoute, async (c) => {
   const db = getDb(c);
-    const { label, expiresAt } = body;
+    const { label, expiresAt } = c.req.valid("json");
     const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
     const id = crypto.randomUUID();
 
@@ -307,19 +298,19 @@ judgesRouter.openapi(createJudgeCodeRoute, autoResponseHandler<typeof createJudg
     portfolioCache.clear();
 
     c.executionCtx.waitUntil(logAuditAction(c, "CREATE_JUDGE_CODE", "judge_access", id, `Created access code: ${label}`));
-    return success({ success: true, code, id } satisfies CreateJudgeCodeSuccess);
+    return c.json({ success: true, code, id } satisfies CreateJudgeCodeSuccess, 200);
 }));
 
-judgesRouter.openapi(deleteJudgeCodeRoute, autoResponseHandler<typeof deleteJudgeCodeRoute>(async (c, { params }) => {
+judgesRouter.openapi(deleteJudgeCodeRoute, async (c) => {
   const db = getDb(c);
-    const { id } = params;
+    const { id } = c.req.valid("param");
     await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
 
     // WR-08: Invalidate cache when content changes
     portfolioCacheVersion++;
     portfolioCache.clear();
 
-    return success({ success: true } satisfies DeleteJudgeCodeSuccess);
+    return c.json({ success: true } satisfies DeleteJudgeCodeSuccess, 200);
 }));
 
 export default judgesRouter;
