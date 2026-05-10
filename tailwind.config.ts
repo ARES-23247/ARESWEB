@@ -54,6 +54,9 @@ const config: Config = {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         heading: ["League Spartan", "Inter", "sans-serif"],
+        // Simulation/technical fonts (authorized per brand enforcement)
+        "sim-heading": ["Orbitron", "sans-serif"],
+        "sim-mono": ["JetBrains Mono", "monospace"],
       },
       zIndex: {
         navbar: "50",

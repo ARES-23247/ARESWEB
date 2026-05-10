@@ -199,12 +199,12 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
     }
     /* Utility classes for sim authors */
     .sim-container { padding: 24px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.03); }
-    .sim-title { font-size: 18px; font-weight: 700; color: #FFB81C; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+    .sim-title { font-size: 18px; font-weight: bold; color: #FFB81C; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
     .sim-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
-    .sim-value { font-size: 24px; font-weight: 700; color: #00E5FF; font-family: monospace; }
+    .sim-value { font-size: 24px; font-weight: bold; color: #00E5FF; font-family: monospace; }
     .sim-slider { width: 100%; accent-color: #FFB81C; }
     .sim-canvas { border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
-    .sim-btn { padding: 8px 16px; background: #FFB81C; color: #000; font-weight: 700; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.1em; }
+    .sim-btn { padding: 8px 16px; background: #FFB81C; color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.1em; }
     .sim-btn:hover { background: #e8b84a; }
     .sim-grid { display: grid; gap: 16px; }
     .sim-flex { display: flex; gap: 12px; align-items: center; }

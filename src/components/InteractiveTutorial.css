@@ -13,8 +13,9 @@
 
 .tutorial-title h1 {
   color: #fff;
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'League Spartan', 'Inter', sans-serif;
   font-size: 32px;
+  font-weight: 700;
   margin: 0 0 10px 0;
 }
 
@@ -216,7 +217,7 @@
   background: var(--ifm-color-emphasis-200);
   padding: 2px 6px;
   border-radius: 3px;
-  font-family: 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'ui-monospace', 'SFMono-Regular', monospace;
   font-size: 14px;
 }
 
@@ -251,7 +252,7 @@
 .code-block code {
   background: transparent;
   padding: 0;
-  font-family: 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'ui-monospace', 'SFMono-Regular', monospace;
   font-size: 13px;
   line-height: 1.5;
   color: #f8f8f2;
