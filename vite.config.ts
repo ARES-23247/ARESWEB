@@ -20,7 +20,7 @@ function spaFallbackPlugin(): Plugin {
             rewrites: [
               {
                 from: /^\/api\/.*$/,
-                to: (context) => context.parsedUrl.pathname
+                to: (context: any) => context.parsedUrl.pathname
               }
             ]
           })
@@ -188,7 +188,7 @@ export default defineConfig({
         ]
       }
     })
-  ],
+  ] as any,
   server: {
     proxy: {
       '/api': {
@@ -358,6 +358,20 @@ export default defineConfig({
           // TanStack query + table (shared data layer)
           if (normalizedId.includes("node_modules/@tanstack/")) {
             return "tanstack";
+          }
+
+          // Yjs and collaborative editing
+          if (normalizedId.includes("node_modules/yjs") || 
+              normalizedId.includes("node_modules/y-") || 
+              normalizedId.includes("node_modules/lib0") ||
+              normalizedId.includes("node_modules/partykit") ||
+              normalizedId.includes("node_modules/partysocket")) {
+            return "yjs";
+          }
+          
+          // Blockly
+          if (normalizedId.includes("node_modules/blockly")) {
+            return "blockly";
           }
         },
       },

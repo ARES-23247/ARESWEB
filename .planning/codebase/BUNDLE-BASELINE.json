@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-05-06T20:00:00Z",
+  "timestamp": "2026-05-10T12:00:00Z",
   "bundles": {
-    "index": { "size": 600000, "gzip": 180000 },
-    "vendor": { "size": 1500000, "gzip": 400000 }
+    "index": { "size": 810000, "gzip": 210000 },
+    "vendor": { "size": 185000, "gzip": 60000 }
   },
   "threshold": 0.1
 }
