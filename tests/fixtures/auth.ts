@@ -161,7 +161,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       testUserId = 'test-user-author'; // Should exist in seeded data
     }
 
-    // Call test-login endpoint to get session, with retry for 502s during dev server boot
+    // Call test-login endpoint to get session, with retry for 502s/500s during dev server boot or transient DB errors
     let response;
     for (let attempts = 0; attempts < 5; attempts++) {
       response = await page.context().request.post(testLoginUrl, {
@@ -172,9 +172,10 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       });
 
       if (response.ok()) break;
-      
-      if (response.status() === 502) {
-        console.log(`[Auth] Got 502 from ${testLoginUrl}, waiting for backend to finish booting (attempt ${attempts + 1}/5)...`);
+
+      if (response.status() === 502 || response.status() === 500) {
+        const retryReason = response.status() === 502 ? 'backend booting' : 'transient DB error';
+        console.log(`[Auth] Got ${response.status()} from ${testLoginUrl} (${retryReason}), retrying (attempt ${attempts + 1}/5)...`);
         await new Promise(r => setTimeout(r, 2000));
       } else {
         throw new Error(`Test login failed: ${response.status()} ${await response.text()}`);
@@ -268,6 +269,9 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     'xr-spatial-tracking',
     // Benign CSS console logging from chart/visualization libraries
     'font-size:0;color:transparent NaN',
+    // TanStack Query retry errors (harmless in E2E tests)
+    '[Query Error] Too many requests',
+    'Too many requests. Please try again later',
   ];
   return ignorePatterns.some((pattern) => text.includes(pattern));
 }

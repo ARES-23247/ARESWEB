@@ -255,6 +255,15 @@ apiRouter.openapi(searchRoute, async (c) => {
   }, 200);
 });
 
+// ── Health / Environment Info ────────────
+apiRouter.get("/health", (c) => {
+  return c.json({ 
+    environment: c.env?.ENVIRONMENT || "production",
+    status: "ok"
+  }, 200);
+});
+
+
 // ── Audit Log ────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 apiRouter.openapi(auditLogRoute, (async (c: any) => {
@@ -295,10 +304,13 @@ apiRouter.openapi(auditLogRoute, (async (c: any) => {
 app.onError(async (err, c) => {
   // Import ApiError dynamically to avoid circular deps
   const { ApiError } = await import("./middleware/errorHandler");
-  
+
   // Handle ApiError with correct status code (400, 404, 429, etc.)
   if (err instanceof ApiError) {
-    return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
+    const response: Record<string, unknown> = { error: err.message };
+    if (err.code) response.code = err.code;
+    if (err.details) response.details = err.details;
+    return c.json(response, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
   }
 
   // Generic errors — log and return 500

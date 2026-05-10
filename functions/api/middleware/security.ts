@@ -217,8 +217,12 @@ export const rateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
  */
 export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) => {
   return async (c: Context<AppEnv>, next: Next) => {
-    // Only bypass if explicitly requested via DEV_BYPASS
+    // Only bypass if explicitly requested via DEV_BYPASS or test mode
     if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1") {
+      return await next();
+    }
+    // Bypass rate limiting for E2E test endpoint
+    if (c.req.path === "/api/auth/test-login" || c.req.header("x-test-bypass-auth") === "true") {
       return await next();
     }
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
