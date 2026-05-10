@@ -20,10 +20,10 @@ function spaFallbackPlugin(): Plugin {
             rewrites: [
               {
                 from: /^\/api\/.*$/,
-                to: (context: any) => context.parsedUrl.pathname
+                to: (ctx) => ctx.parsedUrl.pathname || ''
               }
             ]
-          })
+          }) as any
         );
       };
     },
@@ -188,7 +188,7 @@ export default defineConfig({
         ]
       }
     })
-  ] as any,
+  ] as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- VitePWA runtimeCaching type issue
   server: {
     proxy: {
       '/api': {
