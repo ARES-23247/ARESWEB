@@ -497,6 +497,9 @@ export const tasks = sqliteTable("tasks", {
 	timeSpentSeconds: integer("time_spent_seconds").default(0),
 	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	dueDate: text("due_date"),
+	startDate: text("start_date"),
+	estimatedMinutes: integer("estimated_minutes"),
+	coverImage: text("cover_image"),
 	isDeleted: integer("is_deleted").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
@@ -513,6 +516,46 @@ export const taskAssignments = sqliteTable("task_assignments", {
 (table) => [
 	index("idx_task_assignments_user").on(table.userId),
 	primaryKey({ columns: [table.taskId, table.userId], name: "task_assignments_task_id_user_id_pk"})
+]);
+
+export const labels = sqliteTable("labels", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	colorTheme: text("color_theme"),
+});
+
+export const taskLabels = sqliteTable("task_labels", {
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	labelId: text("label_id").notNull().references(() => labels.id, { onDelete: "cascade" } ),
+},
+(table) => [
+	index("idx_task_labels_task").on(table.taskId),
+	index("idx_task_labels_label").on(table.labelId),
+	primaryKey({ columns: [table.taskId, table.labelId], name: "task_labels_task_id_label_id_pk"})
+]);
+
+export const taskChecklists = sqliteTable("task_checklists", {
+	id: text().primaryKey(),
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	content: text().notNull(),
+	isCompleted: integer("is_completed").default(0),
+	sortOrder: integer("sort_order").default(0),
+},
+(table) => [
+	index("idx_task_checklists_task").on(table.taskId),
+]);
+
+export const taskAttachments = sqliteTable("task_attachments", {
+	id: text().primaryKey(),
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	url: text().notNull(),
+	title: text().notNull(),
+	type: text().notNull(),
+	thumbnailUrl: text("thumbnail_url"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_task_attachments_task").on(table.taskId),
 ]);
 
 export const auditLog = sqliteTable("audit_log", {
