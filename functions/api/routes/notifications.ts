@@ -1,4 +1,4 @@
-import { autoResponseHandler, success, error } from "../utils/handler-v2";
+import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { AppEnv, getSessionUser, ensureAuth, rateLimitMiddleware, getDb } from "../middleware";
 import { eq, desc, and, count, inArray } from "drizzle-orm";
@@ -6,7 +6,6 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import {
-
   getNotificationsRoute,
   markNotificationReadRoute,
   markAllNotificationsReadRoute,
@@ -15,17 +14,16 @@ import {
   getDashboardActionItemsRoute
 } from "../../../shared/routes/notifications";
 
-
 export const notificationsRouter = new OpenAPIHono<AppEnv>();
 
 notificationsRouter.use("*", ensureAuth);
 notificationsRouter.use("/:id/read", rateLimitMiddleware(20, 60));
 notificationsRouter.use("/read-all", rateLimitMiddleware(10, 60));
 
-notificationsRouter.openapi(getNotificationsRoute, autoResponseHandler<typeof getNotificationsRoute>(async (c) => {
+notificationsRouter.openapi(getNotificationsRoute, createTypedHandler(getNotificationsRoute, async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     const results = await db
       .select({
@@ -54,13 +52,13 @@ notificationsRouter.openapi(getNotificationsRoute, autoResponseHandler<typeof ge
       created_at: String(n.createdAt)
     }));
 
-    return success({ notifications });
+    return c.json({ notifications }, 200);
 }));
 
-notificationsRouter.openapi(markNotificationReadRoute, autoResponseHandler<typeof markNotificationReadRoute>(async (c, { params }) => {
+notificationsRouter.openapi(markNotificationReadRoute, createTypedHandler(markNotificationReadRoute, async (c, { params }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     await db
       .update(schema.notifications)
@@ -68,13 +66,13 @@ notificationsRouter.openapi(markNotificationReadRoute, autoResponseHandler<typeo
       .where(and(eq(schema.notifications.id, params.id), eq(schema.notifications.userId, user.id)))
       .run();
 
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
-notificationsRouter.openapi(markAllNotificationsReadRoute, autoResponseHandler<typeof markAllNotificationsReadRoute>(async (c) => {
+notificationsRouter.openapi(markAllNotificationsReadRoute, createTypedHandler(markAllNotificationsReadRoute, async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     await db
       .update(schema.notifications)
@@ -82,26 +80,26 @@ notificationsRouter.openapi(markAllNotificationsReadRoute, autoResponseHandler<t
       .where(eq(schema.notifications.userId, user.id))
       .run();
 
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
-notificationsRouter.openapi(deleteNotificationRoute, autoResponseHandler<typeof deleteNotificationRoute>(async (c, { params }) => {
+notificationsRouter.openapi(deleteNotificationRoute, createTypedHandler(deleteNotificationRoute, async (c, { params }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     await db
       .delete(schema.notifications)
       .where(and(eq(schema.notifications.id, params.id), eq(schema.notifications.userId, user.id)))
       .run();
 
-    return success({ success: true });
+    return c.json({ success: true }, 200);
 }));
 
-notificationsRouter.openapi(getPendingCountsRoute, autoResponseHandler<typeof getPendingCountsRoute>(async (c) => {
+notificationsRouter.openapi(getPendingCountsRoute, createTypedHandler(getPendingCountsRoute, async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
@@ -139,18 +137,18 @@ notificationsRouter.openapi(getPendingCountsRoute, autoResponseHandler<typeof ge
         .get(),
     ]);
 
-    return success({
+    return c.json({
       inquiries: Number(inquiries?.count || 0),
       posts: Number(posts?.count || 0),
       events: Number(events?.count || 0),
       docs: Number(docs?.count || 0),
-    });
+    }, 200);
 }));
 
-notificationsRouter.openapi(getDashboardActionItemsRoute, autoResponseHandler<typeof getDashboardActionItemsRoute>(async (c) => {
+notificationsRouter.openapi(getDashboardActionItemsRoute, createTypedHandler(getDashboardActionItemsRoute, async (c) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
-    if (!user) return error({ error: "Unauthorized" }, 401);
+    if (!user) throw new ApiError("Unauthorized", 401);
 
     let filterOutreach = false;
     if (user.role !== "admin") {
@@ -210,12 +208,12 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, autoResponseHandler<ty
         .all(),
     ]);
 
-    return success({
+    return c.json({
       inquiries,
       posts,
       events,
       docs,
-    });
+    }, 200);
 }));
 
 export default notificationsRouter;
