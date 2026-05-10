@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { autoResponseHandler, success, error } from "../utils/handler-v2";
 import { ApiError } from "../middleware/errorHandler";
 
 import { eq, desc, inArray, sum, and } from "drizzle-orm";
@@ -10,29 +10,29 @@ import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUse
 import * as financeRoutes from "../../../shared/routes/finance";
 import type { z } from "zod";
 
-// ─── Type Inference Helpers ─────────────────────────────────────────────────────
-// Infer types from route schemas for proper type safety
+// ─── Type Inference Helpers ────────────────────────────────────────────────────────────────────────────────────────────────
+// Infer success response types from route schemas for proper type safety with handler-v2
 
 
-type GetSummaryResponse = z.infer<typeof financeRoutes.FinanceSummarySchema>;
+type GetSummarySuccess = z.infer<typeof financeRoutes.getSummaryRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type ListPipelineResponse = z.infer<typeof financeRoutes.listPipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+type ListPipelineSuccess = z.infer<typeof financeRoutes.listPipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type SavePipelineResponse = z.infer<typeof financeRoutes.savePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+type SavePipelineSuccess = z.infer<typeof financeRoutes.savePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type DeletePipelineResponse = z.infer<typeof financeRoutes.deletePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
+type DeletePipelineSuccess = z.infer<typeof financeRoutes.deletePipelineRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type ListTransactionsResponse = z.infer<typeof financeRoutes.listTransactionsRoute.responses[200]["content"]["application/json"]["schema"]>;
+type ListTransactionsSuccess = z.infer<typeof financeRoutes.listTransactionsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type SaveTransactionResponse = z.infer<typeof financeRoutes.saveTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
+type SaveTransactionSuccess = z.infer<typeof financeRoutes.saveTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 
-type DeleteTransactionResponse = z.infer<typeof financeRoutes.deleteTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
+type DeleteTransactionSuccess = z.infer<typeof financeRoutes.deleteTransactionRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 // Database query result types
 
@@ -49,24 +49,23 @@ financeRouter.use("*", ensureAdmin);
 financeRouter.use("*", rateLimitMiddleware(30, 60));
 
 // GET /finance/summary - Get financial summary for a season
-financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof financeRoutes.getSummaryRoute>(async (c) => {
-    const { season_id } = c.req.valid("query");
+financeRouter.openapi(financeRoutes.getSummaryRoute, autoResponseHandler<typeof financeRoutes.getSummaryRoute>(async (c, { query }) => {
+    const { seasonId } = query;
     const db = getDb(c);
 
-    let latestSeasonId: number | undefined | null = season_id;
+    let latestSeasonId: number | undefined | null = seasonId;
     if (!latestSeasonId) {
       const latest = await db.select().from(schema.seasons).orderBy(desc(schema.seasons.startYear)).get();
       latestSeasonId = latest?.startYear;
     }
 
     if (!latestSeasonId) {
-      const response: GetSummaryResponse = {
-        total_income: 0,
-        total_expenses: 0,
+      return success({
+        totalIncome: 0,
+        totalExpenses: 0,
         balance: 0,
-        season_id: null
-      };
-      return c.json(response satisfies GetSummaryResponse, 200);
+        seasonId: null
+      } satisfies GetSummarySuccess);
     }
 
     const summary = await db
@@ -84,22 +83,21 @@ financeRouter.openapi(financeRoutes.getSummaryRoute, typedHandler<typeof finance
       expense: summary.find((s) => s.type === "expense")?.total ?? 0,
     };
 
-    const response: GetSummaryResponse = {
-      total_income: totals.income,
-      total_expenses: totals.expense,
+    return success({
+      totalIncome: totals.income,
+      totalExpenses: totals.expense,
       balance: totals.income - totals.expense,
-      season_id: Number(latestSeasonId),
-    };
-    return c.json(response satisfies GetSummaryResponse, 200);
+      seasonId: Number(latestSeasonId),
+    } satisfies GetSummarySuccess);
 }));
 
 // GET /finance/sponsorship - List sponsorship pipeline items
-financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof financeRoutes.listPipelineRoute>(async (c) => {
-    const { season_id } = c.req.valid("query");
+financeRouter.openapi(financeRoutes.listPipelineRoute, autoResponseHandler<typeof financeRoutes.listPipelineRoute>(async (c, { query }) => {
+    const { seasonId } = query;
     const db = getDb(c);
     let queryBuilder = db.select().from(schema.sponsorshipPipeline).$dynamic();
-    if (season_id) {
-      queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(season_id)));
+    if (seasonId) {
+      queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(seasonId)));
     }
     const pipeline = await queryBuilder.orderBy(desc(schema.sponsorshipPipeline.createdAt)).all();
     const pipelineIds = pipeline.map((p) => p.id).filter(Boolean);
@@ -111,33 +109,31 @@ financeRouter.openapi(financeRoutes.listPipelineRoute, typedHandler<typeof finan
 
     const result = pipeline.map((p) => ({
       id: p.id,
-      company_name: p.companyName,
-      sponsor_id: p.id, // Use the primary key as the sponsorship ID
+      companyName: p.companyName,
+      sponsorId: p.id, // Use the primary key as the sponsorship ID
       status: ((p.status ?? "potential").toLowerCase()) as "potential" | "contacted" | "pledged" | "secured" | "lost",
-      estimated_value: Number(p.estimatedValue ?? 0),
+      estimatedValue: Number(p.estimatedValue ?? 0),
       notes: p.notes,
-      contact_person: p.contactPerson,
-      season_id: p.seasonId ? Number(p.seasonId) : null,
-      zulip_message_id: p.zulipMessageId,
+      contactPerson: p.contactPerson,
+      seasonId: p.seasonId ? Number(p.seasonId) : null,
+      zulipMessageId: p.zulipMessageId,
       assignees: assignments.filter((a) => a.sponsorshipId === p.id).map((a) => a.userId)
     }));
 
-    const response = { pipeline: result } as ListPipelineResponse;
-    return c.json(response satisfies ListPipelineResponse, 200);
+    return success({ pipeline: result } satisfies ListPipelineSuccess);
 }));
 
 // POST /finance/sponsorship - Create or update a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof financeRoutes.savePipelineRoute>(async (c) => {
-    const body = c.req.valid("json");
+financeRouter.openapi(financeRoutes.savePipelineRoute, autoResponseHandler<typeof financeRoutes.savePipelineRoute>(async (c, { body }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for pipeline modifications
     if (!user) {
-      throw new ApiError("Unauthorized", 401);
+      return error({ error: "Unauthorized" }, 401);
     }
-    if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      throw new ApiError("Forbidden", 403);
+    if (user.role !== "admin" && user.memberType !== "mentor" && user.memberType !== "coach") {
+      return error({ error: "Forbidden" }, 403);
     }
 
     const id = body.id || crypto.randomUUID();
@@ -155,13 +151,13 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
 
     const data = {
       id,
-      companyName: body.company_name,
-      contactPerson: body.contact_person ?? null,
+      companyName: body.companyName,
+      contactPerson: body.contactPerson ?? null,
       status: body.status,
-      estimatedValue: body.estimated_value ?? 0,
-      seasonId: body.season_id ? Number(body.season_id) : null,
+      estimatedValue: body.estimatedValue ?? 0,
+      seasonId: body.seasonId ? Number(body.seasonId) : null,
       notes: body.notes ?? null,
-      zulipMessageId: body.zulip_message_id ?? null,
+      zulipMessageId: body.zulipMessageId ?? null,
     };
 
     if (isNew) {
@@ -186,13 +182,13 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
         .select({ id: schema.financeTransactions.id })
         .from(schema.financeTransactions)
         .where(and(
-          eq(schema.financeTransactions.description, `Sponsorship from ${body.company_name}`),
-          eq(schema.financeTransactions.amount, body.estimated_value ?? 0)
+          eq(schema.financeTransactions.description, `Sponsorship from ${body.companyName}`),
+          eq(schema.financeTransactions.amount, body.estimatedValue ?? 0)
         ))
         .$dynamic();
 
-      if (body.season_id) {
-        existingTxQuery = existingTxQuery.where(eq(schema.financeTransactions.seasonId, Number(body.season_id)));
+      if (body.seasonId) {
+        existingTxQuery = existingTxQuery.where(eq(schema.financeTransactions.seasonId, Number(body.seasonId)));
       }
 
       const existingTx = await existingTxQuery.get();
@@ -202,7 +198,7 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
           .insert(schema.sponsors)
           .values({
             id: crypto.randomUUID(),
-            name: body.company_name,
+            name: body.companyName,
             tier: "Bronze",
             isActive: 1,
           })
@@ -212,12 +208,12 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
           .insert(schema.financeTransactions)
           .values({
             id: crypto.randomUUID(),
-            amount: body.estimated_value ?? 0,
+            amount: body.estimatedValue ?? 0,
             type: "income",
             category: "Sponsorship",
             date: new Date().toISOString().split("T")[0],
-            description: `Sponsorship from ${body.company_name}`,
-            seasonId: body.season_id ? Number(body.season_id) : null,
+            description: `Sponsorship from ${body.companyName}`,
+            seasonId: body.seasonId ? Number(body.seasonId) : null,
             loggedBy: user?.id ?? "system",
           })
           .run();
@@ -225,27 +221,25 @@ financeRouter.openapi(financeRoutes.savePipelineRoute, typedHandler<typeof finan
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "sponsorship_pipeline", id);
-    const response: SavePipelineResponse = { success: true, id };
-    return c.json(response satisfies SavePipelineResponse, 200);
+    return success({ success: true, id } satisfies SavePipelineSuccess);
 }));
 
 // DELETE /finance/sponsorship/{id} - Delete a sponsorship pipeline item
-financeRouter.openapi(financeRoutes.deletePipelineRoute, typedHandler<typeof financeRoutes.deletePipelineRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+financeRouter.openapi(financeRoutes.deletePipelineRoute, autoResponseHandler<typeof financeRoutes.deletePipelineRoute>(async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
     await db.delete(schema.sponsorshipPipeline).where(eq(schema.sponsorshipPipeline.id, id)).run();
     await logAuditAction(c, "delete", "sponsorship_pipeline", id);
-    const response: DeletePipelineResponse = { success: true };
-    return c.json(response satisfies DeletePipelineResponse, 200);
+    return success({ success: true } satisfies DeletePipelineSuccess);
 }));
 
 // GET /finance/transactions - List financial transactions
-financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof financeRoutes.listTransactionsRoute>(async (c) => {
-    const { season_id, type } = c.req.valid("query");
+financeRouter.openapi(financeRoutes.listTransactionsRoute, autoResponseHandler<typeof financeRoutes.listTransactionsRoute>(async (c, { query }) => {
+    const { seasonId, type } = query;
     const db = getDb(c);
     let queryBuilder = db.select().from(schema.financeTransactions).$dynamic();
-    if (season_id) {
-      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.seasonId, season_id));
+    if (seasonId) {
+      queryBuilder = queryBuilder.where(eq(schema.financeTransactions.seasonId, seasonId));
     }
     if (type) {
       queryBuilder = queryBuilder.where(eq(schema.financeTransactions.type, type));
@@ -259,27 +253,25 @@ financeRouter.openapi(financeRoutes.listTransactionsRoute, typedHandler<typeof f
       category: t.category,
       date: t.date,
       description: t.description,
-      receipt_url: t.receiptUrl,
-      season_id: t.seasonId ? Number(t.seasonId) : null,
-      logged_by: t.loggedBy,
+      receiptUrl: t.receiptUrl,
+      seasonId: t.seasonId ? Number(t.seasonId) : null,
+      loggedBy: t.loggedBy,
     }));
 
-    const response = { transactions: result } as ListTransactionsResponse;
-    return c.json(response satisfies ListTransactionsResponse, 200);
+    return success({ transactions: result } satisfies ListTransactionsSuccess);
 }));
 
 // POST /finance/transactions - Create or update a financial transaction
-financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof financeRoutes.saveTransactionRoute>(async (c) => {
-    const body = c.req.valid("json");
+financeRouter.openapi(financeRoutes.saveTransactionRoute, autoResponseHandler<typeof financeRoutes.saveTransactionRoute>(async (c, { body }) => {
     const db = getDb(c);
     const user = await getSessionUser(c);
 
     // CR-05 FIX: Require proper authorization for transaction modifications
     if (!user) {
-      throw new ApiError("Unauthorized", 401);
+      return error({ error: "Unauthorized" }, 401);
     }
-    if (user.role !== "admin" && user.member_type !== "mentor" && user.member_type !== "coach") {
-      throw new ApiError("Forbidden", 403);
+    if (user.role !== "admin" && user.memberType !== "mentor" && user.memberType !== "coach") {
+      return error({ error: "Forbidden" }, 403);
     }
 
     const id = body.id ?? crypto.randomUUID();
@@ -288,12 +280,12 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     // WR-15: Validate transaction amount and type
     const amount = Number(body.amount);
     if (Number.isNaN(amount) || amount < 0 || amount > 1000000) {
-      throw new ApiError("Invalid amount: must be between 0 and 1,000,000", 400, "VALIDATION_ERROR");
+      return error({ error: "Invalid amount: must be between 0 and 1,000,000" }, 400);
     }
 
     const validTypes: readonly ["income", "expense"] = ["income", "expense"] as const;
     if (!body.type || !validTypes.includes(body.type)) {
-      throw new ApiError("Invalid transaction type: must be 'income' or 'expense'", 400, "VALIDATION_ERROR");
+      return error({ error: "Invalid transaction type: must be 'income' or 'expense'" }, 400);
     }
 
     const data = {
@@ -303,8 +295,8 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
       category: body.category,
       date: body.date,
       description: body.description ?? null,
-      receiptUrl: body.receipt_url ?? null,
-      seasonId: body.season_id ? Number(body.season_id) : null,
+      receiptUrl: body.receiptUrl ?? null,
+      seasonId: body.seasonId ? Number(body.seasonId) : null,
       loggedBy: user?.id ?? "system",
     };
 
@@ -315,13 +307,12 @@ financeRouter.openapi(financeRoutes.saveTransactionRoute, typedHandler<typeof fi
     }
 
     await logAuditAction(c, isNew ? "create" : "update", "finance_transactions", id);
-    const response: SaveTransactionResponse = { success: true, id };
-    return c.json(response satisfies SaveTransactionResponse, 200);
+    return success({ success: true, id } satisfies SaveTransactionSuccess);
 }));
 
 // DELETE /finance/transactions/{id} - Delete a financial transaction
-financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof financeRoutes.deleteTransactionRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+financeRouter.openapi(financeRoutes.deleteTransactionRoute, autoResponseHandler<typeof financeRoutes.deleteTransactionRoute>(async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
     const tx = await db
       .select({ receiptUrl: schema.financeTransactions.receiptUrl })
@@ -330,7 +321,7 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
       .get();
 
     if (!tx) {
-      throw new ApiError("Transaction", 404, "NOT_FOUND");
+      return error({ error: "Transaction not found" }, 404);
     }
 
     await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
@@ -347,8 +338,7 @@ financeRouter.openapi(financeRoutes.deleteTransactionRoute, typedHandler<typeof 
     }
 
     await logAuditAction(c, "delete", "finance_transactions", id);
-    const response: DeleteTransactionResponse = { success: true };
-    return c.json(response satisfies DeleteTransactionResponse, 200);
+    return success({ success: true } satisfies DeleteTransactionSuccess);
 }));
 
 export default financeRouter;
