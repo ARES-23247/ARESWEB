@@ -1,6 +1,11 @@
-import { z } from "zod";
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * SPONSORS ROUTER - NATIVE HONO TYPE INFERENCE PATTERN
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { ApiError } from "../middleware/errorHandler";
-import { wrapLegacyHandler } from "../utils/handler-v2";
+import { wrapHandler } from "../utils/handler-native";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -18,11 +23,6 @@ import {
   getAdminTokensRoute,
   generateTokenRoute,
 } from "../../../shared/routes/sponsors";
-import {
-  sponsorResponseSchema,
-  sponsorRoiMetricSchema,
-  sponsorTokenSchema,
-} from "../../../shared/routes/sponsors";
 
 export const sponsorsRouter = new OpenAPIHono<AppEnv>();
 
@@ -34,14 +34,6 @@ sponsorsRouter.use("*", async (c, next) => {
   }
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
-
-// Response type inference helpers
-type GetSponsorsResponse = z.infer<typeof getSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
-
-// Infer individual types from schemas
-type SponsorResponse = z.infer<typeof sponsorResponseSchema>;
-type SponsorRoiMetric = z.infer<typeof sponsorRoiMetricSchema>;
-type SponsorToken = z.infer<typeof sponsorTokenSchema>;
 
 // WR-12: Add rate limiting to public sponsor endpoint to prevent scraping
 sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
@@ -60,27 +52,27 @@ const sponsorHandlers = {
         id: schema.sponsors.id,
         name: schema.sponsors.name,
         tier: schema.sponsors.tier,
-        logo_url: schema.sponsors.logoUrl,
-        website_url: schema.sponsors.websiteUrl,
-        is_active: schema.sponsors.isActive,
-        created_at: schema.sponsors.createdAt,
+        logoUrl: schema.sponsors.logoUrl,
+        websiteUrl: schema.sponsors.websiteUrl,
+        isActive: schema.sponsors.isActive,
+        createdAt: schema.sponsors.createdAt,
       })
       .from(schema.sponsors)
       .where(eq(schema.sponsors.isActive, 1))
       .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
       .all();
 
-    const sponsors: SponsorResponse[] = results.map((s): SponsorResponse => ({
+    const sponsors = results.map((s) => ({
       id: s.id ?? "",
       name: s.name,
-      tier: (s.tier || "In-Kind") as SponsorResponse["tier"],
-      logo_url: s.logo_url ?? null,
-      website_url: s.website_url ?? null,
-      is_active: s.is_active ? 1 : 0,
-      created_at: s.created_at ?? null,
+      tier: (s.tier || "In-Kind") as string,
+      logoUrl: s.logoUrl ?? null,
+      websiteUrl: s.websiteUrl ?? null,
+      isActive: s.isActive ? 1 : 0,
+      createdAt: s.createdAt ?? null,
     }));
 
-    return { status: 200, body: { sponsors } as GetSponsorsResponse };
+    return { status: 200, body: { sponsors } };
   },
 
   getRoi: async (input: HandlerInput, c: Context<AppEnv>) => {
@@ -95,20 +87,20 @@ const sponsorHandlers = {
     if (!tokens || tokens.length === 0) {
       return { status: 403, body: { error: "Invalid token" } };
     }
-    const sponsor_id = tokens[0].sponsorId;
+    const sponsorId = tokens[0].sponsorId;
 
     const sponsorRow = await db
       .select({
         id: schema.sponsors.id,
         name: schema.sponsors.name,
         tier: schema.sponsors.tier,
-        logo_url: schema.sponsors.logoUrl,
-        website_url: schema.sponsors.websiteUrl,
-        is_active: schema.sponsors.isActive,
-        created_at: schema.sponsors.createdAt,
+        logoUrl: schema.sponsors.logoUrl,
+        websiteUrl: schema.sponsors.websiteUrl,
+        isActive: schema.sponsors.isActive,
+        createdAt: schema.sponsors.createdAt,
       })
       .from(schema.sponsors)
-      .where(eq(schema.sponsors.id, sponsor_id))
+      .where(eq(schema.sponsors.id, sponsorId))
       .get();
 
     if (!sponsorRow) {
@@ -118,36 +110,35 @@ const sponsorHandlers = {
     const metricsRow = await db
       .select({
         id: schema.sponsorMetrics.id,
-        sponsor_id: schema.sponsorMetrics.sponsorId,
+        sponsorId: schema.sponsorMetrics.sponsorId,
         clicks: schema.sponsorMetrics.clicks,
         impressions: schema.sponsorMetrics.impressions,
-        year_month: schema.sponsorMetrics.yearMonth,
+        yearMonth: schema.sponsorMetrics.yearMonth,
       })
       .from(schema.sponsorMetrics)
-      .where(eq(schema.sponsorMetrics.sponsorId, sponsor_id))
+      .where(eq(schema.sponsorMetrics.sponsorId, sponsorId))
       .orderBy(asc(schema.sponsorMetrics.createdAt))
       .all();
 
-    const sponsor: SponsorResponse = {
+    const sponsor = {
       id: sponsorRow.id ?? "",
       name: sponsorRow.name,
-      tier: (sponsorRow.tier || "In-Kind") as SponsorResponse["tier"],
-      logo_url: sponsorRow.logo_url ?? null,
-      website_url: sponsorRow.website_url ?? null,
-      is_active: sponsorRow.is_active ? 1 : 0,
-      created_at: sponsorRow.created_at ?? null,
+      tier: (sponsorRow.tier || "In-Kind") as string,
+      logoUrl: sponsorRow.logoUrl ?? null,
+      websiteUrl: sponsorRow.websiteUrl ?? null,
+      isActive: sponsorRow.isActive ? 1 : 0,
+      createdAt: sponsorRow.createdAt ?? null,
     };
 
-    const metrics: SponsorRoiMetric[] = metricsRow.map((m): SponsorRoiMetric => ({
+    const metrics = metricsRow.map((m) => ({
       id: m.id ?? "",
-      sponsor_id: m.sponsor_id,
+      sponsorId: m.sponsorId,
       clicks: m.clicks ?? 0,
       impressions: m.impressions ?? 0,
-      year_month: m.year_month,
+      yearMonth: m.yearMonth,
     }));
 
-    const response = { sponsor, metrics } satisfies z.infer<typeof getRoiRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { sponsor, metrics } };
   },
 
   adminListSponsors: async (input: HandlerInput, c: Context<AppEnv>) => {
@@ -156,28 +147,27 @@ const sponsorHandlers = {
         id: schema.sponsors.id,
         name: schema.sponsors.name,
         tier: schema.sponsors.tier,
-        logo_url: schema.sponsors.logoUrl,
-        website_url: schema.sponsors.websiteUrl,
-        is_active: schema.sponsors.isActive,
-        created_at: schema.sponsors.createdAt,
+        logoUrl: schema.sponsors.logoUrl,
+        websiteUrl: schema.sponsors.websiteUrl,
+        isActive: schema.sponsors.isActive,
+        createdAt: schema.sponsors.createdAt,
       }).from(schema.sponsors).all();
 
-    const mappedSponsors: SponsorResponse[] = sponsors.map((s): SponsorResponse => ({
+    const mappedSponsors = sponsors.map((s) => ({
       id: s.id ?? "",
       name: s.name,
-      tier: (s.tier || "In-Kind") as SponsorResponse["tier"],
-      logo_url: s.logo_url ?? null,
-      website_url: s.website_url ?? null,
-      is_active: s.is_active ? 1 : 0,
-      created_at: s.created_at ?? null,
+      tier: (s.tier || "In-Kind") as string,
+      logoUrl: s.logoUrl ?? null,
+      websiteUrl: s.websiteUrl ?? null,
+      isActive: s.isActive ? 1 : 0,
+      createdAt: s.createdAt ?? null,
     }));
 
-    const response = { sponsors: mappedSponsors } satisfies z.infer<typeof adminListSponsorsRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { sponsors: mappedSponsors } };
   },
 
   saveSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const body = input.body as { id?: string; name: string; tier: string; logo_url?: string; website_url?: string; is_active?: number };
+    const body = input.body as { id?: string; name: string; tier: string; logoUrl?: string; websiteUrl?: string; isActive?: number };
     const db = getDb(c);
     const id = body.id || crypto.randomUUID();
 
@@ -187,9 +177,9 @@ const sponsorHandlers = {
         .set({
           name: body.name,
           tier: body.tier,
-          logoUrl: body.logo_url ?? null,
-          websiteUrl: body.website_url ?? null,
-          isActive: body.is_active ? 1 : 0,
+          logoUrl: body.logoUrl ?? null,
+          websiteUrl: body.websiteUrl ?? null,
+          isActive: body.isActive ? 1 : 0,
         })
         .where(eq(schema.sponsors.id, body.id))
         .run();
@@ -201,9 +191,9 @@ const sponsorHandlers = {
           id,
           name: body.name,
           tier: body.tier,
-          logoUrl: body.logo_url ?? null,
-          websiteUrl: body.website_url ?? null,
-          isActive: body.is_active ? 1 : 0,
+          logoUrl: body.logoUrl ?? null,
+          websiteUrl: body.websiteUrl ?? null,
+          isActive: body.isActive ? 1 : 0,
         })
         .run();
       c.executionCtx.waitUntil(
@@ -211,8 +201,7 @@ const sponsorHandlers = {
       );
     }
 
-    const response = { success: true, id } satisfies z.infer<typeof saveSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { success: true, id } };
   },
 
   deleteSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
@@ -222,8 +211,7 @@ const sponsorHandlers = {
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
 
-    const response = { success: true } satisfies z.infer<typeof deleteSponsorRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { success: true } };
   },
 
   getAdminTokens: async (input: HandlerInput, c: Context<AppEnv>) => {
@@ -231,61 +219,108 @@ const sponsorHandlers = {
     const results = await db
       .select({
         token: schema.sponsorTokens.token,
-        sponsor_id: schema.sponsorTokens.sponsorId,
-        created_at: schema.sponsorTokens.createdAt,
-        sponsor_name: schema.sponsors.name,
+        sponsorId: schema.sponsorTokens.sponsorId,
+        createdAt: schema.sponsorTokens.createdAt,
+        sponsorName: schema.sponsors.name,
       })
       .from(schema.sponsorTokens)
       .innerJoin(schema.sponsors, eq(schema.sponsorTokens.sponsorId, schema.sponsors.id))
       .orderBy(desc(schema.sponsorTokens.createdAt))
       .all();
 
-    const tokens: SponsorToken[] = results.map((t): SponsorToken => ({
+    const tokens = results.map((t) => ({
       token: t.token ?? "",
-      sponsor_id: t.sponsor_id,
-      sponsor_name: t.sponsor_name ?? undefined,
-      created_at: t.created_at ?? "",
-      last_used: null,
+      sponsorId: t.sponsorId,
+      sponsorName: t.sponsorName ?? undefined,
+      createdAt: t.createdAt ?? "",
+      lastUsed: null,
     }));
 
-    const response = { tokens } satisfies z.infer<typeof getAdminTokensRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { tokens } };
   },
 
   generateToken: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { sponsor_id } = input.body as { sponsor_id: string };
+    const { sponsorId } = input.body as { sponsorId: string };
     const db = getDb(c);
 
     const token = crypto.randomUUID();
-    await db.insert(schema.sponsorTokens).values({ token, sponsorId: sponsor_id }).run();
+    await db.insert(schema.sponsorTokens).values({ token, sponsorId }).run();
 
-    c.executionCtx.waitUntil(logAuditAction(c, "generate_token", "sponsor_tokens", sponsor_id));
+    c.executionCtx.waitUntil(logAuditAction(c, "generate_token", "sponsor_tokens", sponsorId));
 
     const sRes = await db
       .select({ name: schema.sponsors.name })
       .from(schema.sponsors)
-      .where(eq(schema.sponsors.id, sponsor_id))
+      .where(eq(schema.sponsors.id, sponsorId))
       .get();
     if (sRes) await sendZulipAlert(c.env, "Sponsor", "ROI Token Generated", `ROI token for **${sRes.name}**.`);
 
-    const response = { success: true, token } satisfies z.infer<typeof generateTokenRoute.responses[200]["content"]["application/json"]["schema"]>;
-    return { status: 200, body: response };
+    return { status: 200, body: { success: true, token } };
   },
 };
 
 // Routes
-sponsorsRouter.openapi(getSponsorsRoute, wrapLegacyHandler(sponsorHandlers.getSponsors, getSponsorsRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  getSponsorsRoute,
+  wrapHandler(getSponsorsRoute, async (c) => {
+    const result = await sponsorHandlers.getSponsors({ query: {}, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(getRoiRoute, wrapLegacyHandler(sponsorHandlers.getRoi, getRoiRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  getRoiRoute,
+  wrapHandler(getRoiRoute, async (c, { params }) => {
+    const result = await sponsorHandlers.getRoi({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(adminListSponsorsRoute, wrapLegacyHandler(sponsorHandlers.adminListSponsors, adminListSponsorsRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  adminListSponsorsRoute,
+  wrapHandler(adminListSponsorsRoute, async (c) => {
+    const result = await sponsorHandlers.adminListSponsors({ query: {}, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(saveSponsorRoute, wrapLegacyHandler(sponsorHandlers.saveSponsor, saveSponsorRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  saveSponsorRoute,
+  wrapHandler(saveSponsorRoute, async (c, { body }) => {
+    const result = await sponsorHandlers.saveSponsor({ query: {}, params: {}, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(deleteSponsorRoute, wrapLegacyHandler(sponsorHandlers.deleteSponsor, deleteSponsorRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  deleteSponsorRoute,
+  wrapHandler(deleteSponsorRoute, async (c, { params }) => {
+    const result = await sponsorHandlers.deleteSponsor({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(getAdminTokensRoute, wrapLegacyHandler(sponsorHandlers.getAdminTokens, getAdminTokensRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  getAdminTokensRoute,
+  wrapHandler(getAdminTokensRoute, async (c) => {
+    const result = await sponsorHandlers.getAdminTokens({ query: {}, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-sponsorsRouter.openapi(generateTokenRoute, wrapLegacyHandler(sponsorHandlers.generateToken, generateTokenRoute.responses[200].content["application/json"].schema));
+sponsorsRouter.openapi(
+  generateTokenRoute,
+  wrapHandler(generateTokenRoute, async (c, { body }) => {
+    const result = await sponsorHandlers.generateToken({ query: {}, params: {}, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
 export default sponsorsRouter;

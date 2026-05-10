@@ -1,4 +1,10 @@
-import { typedHandler } from "../utils/handler";
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * BADGES ROUTER - NATIVE HONO TYPE INFERENCE PATTERN
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import { createTypedHandler } from "../utils/handler-native";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc, and } from "drizzle-orm";
@@ -6,7 +12,6 @@ import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAdmin, ensureAuth, getSessionUser, rateLimitMiddleware, getDb } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 import {
-
   listBadgesRoute,
   createBadgeRoute,
   grantBadgeRoute,
@@ -16,7 +21,6 @@ import {
 } from "../../../shared/routes/badges";
 import { queryHelpers } from "@/db/query-helpers";
 
-
 export const badgesRouter = new OpenAPIHono<AppEnv>();
 
 // Middlewares
@@ -25,7 +29,9 @@ badgesRouter.use("/", ensureAuth);
 badgesRouter.use("/admin/*", ensureAdmin);
 badgesRouter.use("/admin/*", rateLimitMiddleware(15, 60));
 
-badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async (c) => {
+badgesRouter.openapi(
+  listBadgesRoute,
+  createTypedHandler(listBadgesRoute, async (c) => {
     const db = getDb(c);
     const results = await db
       .select({
@@ -33,8 +39,8 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
         name: schema.badges.name,
         description: schema.badges.description,
         icon: schema.badges.icon,
-        color_theme: schema.badges.colorTheme,
-        created_at: schema.badges.createdAt,
+        colorTheme: schema.badges.colorTheme,
+        createdAt: schema.badges.createdAt,
       })
       .from(schema.badges)
       .orderBy(asc(schema.badges.createdAt))
@@ -50,10 +56,13 @@ badgesRouter.openapi(listBadgesRoute, typedHandler<typeof listBadgesRoute>(async
     }));
 
     return c.json({ badges }, 200);
-}));
+  })
+);
 
-badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(async (c) => {
-    const { id, name, description, icon, colorTheme } = c.req.valid("json");
+badgesRouter.openapi(
+  createBadgeRoute,
+  createTypedHandler(createBadgeRoute, async (c, { body }) => {
+    const { id, name, description, icon, colorTheme } = body;
     const db = getDb(c);
     await db
       .insert(schema.badges)
@@ -66,10 +75,13 @@ badgesRouter.openapi(createBadgeRoute, typedHandler<typeof createBadgeRoute>(asy
       })
       .run();
     return c.json({ success: true }, 200);
-}));
+  })
+);
 
-badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async (c) => {
-    const { userId, badgeId } = c.req.valid("json");
+badgesRouter.openapi(
+  grantBadgeRoute,
+  createTypedHandler(grantBadgeRoute, async (c, { body }) => {
+    const { userId, badgeId } = body;
     const db = getDb(c);
     const user = await getSessionUser(c);
     const sessionId = user?.id || "system";
@@ -88,8 +100,8 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
         try {
           const userProfile = await db
             .select({
-              first_name: schema.userProfiles.firstName,
-              last_name: schema.userProfiles.lastName,
+              firstName: schema.userProfiles.firstName,
+              lastName: schema.userProfiles.lastName,
               nickname: schema.userProfiles.nickname
             })
             .from(schema.userProfiles)
@@ -106,7 +118,7 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
             .get();
 
           if (userProfile && badge) {
-            const userName = userProfile.nickname || userProfile.first_name || "A team member";
+            const userName = userProfile.nickname || userProfile.firstName || "A team member";
             const iconMap: Record<string, string> = {
               Trophy: "🏆",
               Crown: "👑",
@@ -132,26 +144,35 @@ badgesRouter.openapi(grantBadgeRoute, typedHandler<typeof grantBadgeRoute>(async
     );
 
     return c.json({ success: true }, 200);
-}));
+  })
+);
 
-badgesRouter.openapi(revokeBadgeRoute, typedHandler<typeof revokeBadgeRoute>(async (c) => {
-    const { userId, badgeId } = c.req.valid("param");
+badgesRouter.openapi(
+  revokeBadgeRoute,
+  createTypedHandler(revokeBadgeRoute, async (c, { params }) => {
+    const { userId, badgeId } = params;
     const db = getDb(c);
     await db
       .delete(schema.userBadges)
       .where(and(eq(schema.userBadges.userId, userId), eq(schema.userBadges.badgeId, badgeId)))
       .run();
     return c.json({ success: true }, 200);
-}));
+  })
+);
 
-badgesRouter.openapi(deleteBadgeRoute, typedHandler<typeof deleteBadgeRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+badgesRouter.openapi(
+  deleteBadgeRoute,
+  createTypedHandler(deleteBadgeRoute, async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
     await db.delete(schema.badges).where(eq(schema.badges.id, id)).run();
     return c.json({ success: true }, 200);
-}));
+  })
+);
 
-badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadgeRoute>(async (c) => {
+badgesRouter.openapi(
+  leaderboardBadgeRoute,
+  createTypedHandler(leaderboardBadgeRoute, async (c) => {
     const db = getDb(c);
     const results = await queryHelpers.getBadgeLeaderboard(db, 20);
 
@@ -163,6 +184,7 @@ badgesRouter.openapi(leaderboardBadgeRoute, typedHandler<typeof leaderboardBadge
     }));
 
     return c.json({ leaderboard }, 200);
-}));
+  })
+);
 
 export default badgesRouter;

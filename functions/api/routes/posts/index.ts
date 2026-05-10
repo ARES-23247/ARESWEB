@@ -1,6 +1,11 @@
-import { wrapLegacyHandler } from "../../utils/handler-v2";
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * POSTS ROUTER - NATIVE HONO TYPE INFERENCE PATTERN
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import { wrapHandler } from "../../utils/handler-native";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
 
 import { AppEnv, ensureAdmin, edgeCacheMiddleware } from "../../middleware";
 import { postHandlers } from "./handlers";
@@ -21,22 +26,6 @@ import {
   repushSocialsRoute,
 } from "../../../../shared/routes/posts";
 
-// Type inference from route schemas
-type GetPostsSuccess = z.infer<typeof getPostsRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetPostSuccess = z.infer<typeof getPostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetAdminPostsSuccess = z.infer<typeof getAdminPostsRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetAdminPostSuccess = z.infer<typeof getAdminPostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type SavePostSuccess = z.infer<typeof savePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type UpdatePostSuccess = z.infer<typeof updatePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type DeletePostSuccess = z.infer<typeof deletePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type UndeletePostSuccess = z.infer<typeof undeletePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type PurgePostSuccess = z.infer<typeof purgePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type ApprovePostSuccess = z.infer<typeof approvePostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type RejectPostSuccess = z.infer<typeof rejectPostRoute.responses[200]["content"]["application/json"]["schema"]>;
-type GetPostHistorySuccess = z.infer<typeof getPostHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
-type RestorePostHistorySuccess = z.infer<typeof restorePostHistoryRoute.responses[200]["content"]["application/json"]["schema"]>;
-type RepushSocialsSuccess = z.infer<typeof repushSocialsRoute.responses[200]["content"]["application/json"]["schema"]>;
-
 export const postsRouter = new OpenAPIHono<AppEnv>();
 
 // Apply edge caching to public blog routes (GET only, non-admin)
@@ -55,33 +44,131 @@ postsRouter.use("/admin/:slug/history/*", ensureAdmin);
 postsRouter.use("/admin/*", ensureAdmin);
 
 // Public Routes
-postsRouter.openapi(getPostsRoute, wrapLegacyHandler(postHandlers.getPosts, GetPostsSuccess));
+postsRouter.openapi(
+  getPostsRoute,
+  wrapHandler(getPostsRoute, async (c, { query }) => {
+    const result = await postHandlers.getPosts({ query, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(getPostRoute, wrapLegacyHandler(postHandlers.getPost, GetPostSuccess));
+postsRouter.openapi(
+  getPostRoute,
+  wrapHandler(getPostRoute, async (c, { params }) => {
+    const result = await postHandlers.getPost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
 // Admin Routes
-postsRouter.openapi(getAdminPostsRoute, wrapLegacyHandler(postHandlers.getAdminPosts, GetAdminPostsSuccess));
+postsRouter.openapi(
+  getAdminPostsRoute,
+  wrapHandler(getAdminPostsRoute, async (c, { query }) => {
+    const result = await postHandlers.getAdminPosts({ query, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(getAdminPostRoute, wrapLegacyHandler(postHandlers.getAdminPost, GetAdminPostSuccess));
+postsRouter.openapi(
+  getAdminPostRoute,
+  wrapHandler(getAdminPostRoute, async (c, { params }) => {
+    const result = await postHandlers.getAdminPost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(savePostRoute, wrapLegacyHandler(postHandlers.savePost, SavePostSuccess));
+postsRouter.openapi(
+  savePostRoute,
+  wrapHandler(savePostRoute, async (c, { body }) => {
+    const result = await postHandlers.savePost({ query: {}, params: {}, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(updatePostRoute, wrapLegacyHandler(postHandlers.updatePost, UpdatePostSuccess));
+postsRouter.openapi(
+  updatePostRoute,
+  wrapHandler(updatePostRoute, async (c, { params, body }) => {
+    const result = await postHandlers.updatePost({ query: {}, params, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(deletePostRoute, wrapLegacyHandler(postHandlers.deletePost, DeletePostSuccess));
+postsRouter.openapi(
+  deletePostRoute,
+  wrapHandler(deletePostRoute, async (c, { params }) => {
+    const result = await postHandlers.deletePost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(undeletePostRoute, wrapLegacyHandler(postHandlers.undeletePost, UndeletePostSuccess));
+postsRouter.openapi(
+  undeletePostRoute,
+  wrapHandler(undeletePostRoute, async (c, { params }) => {
+    const result = await postHandlers.undeletePost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(purgePostRoute, wrapLegacyHandler(postHandlers.purgePost, PurgePostSuccess));
+postsRouter.openapi(
+  purgePostRoute,
+  wrapHandler(purgePostRoute, async (c, { params }) => {
+    const result = await postHandlers.purgePost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(approvePostRoute, wrapLegacyHandler(postHandlers.approvePost, ApprovePostSuccess));
+postsRouter.openapi(
+  approvePostRoute,
+  wrapHandler(approvePostRoute, async (c, { params }) => {
+    const result = await postHandlers.approvePost({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(rejectPostRoute, wrapLegacyHandler(postHandlers.rejectPost, RejectPostSuccess));
+postsRouter.openapi(
+  rejectPostRoute,
+  wrapHandler(rejectPostRoute, async (c, { params, body }) => {
+    const result = await postHandlers.rejectPost({ query: {}, params, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(getPostHistoryRoute, wrapLegacyHandler(postHandlers.getPostHistory, GetPostHistorySuccess));
+postsRouter.openapi(
+  getPostHistoryRoute,
+  wrapHandler(getPostHistoryRoute, async (c, { params }) => {
+    const result = await postHandlers.getPostHistory({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(restorePostHistoryRoute, wrapLegacyHandler(postHandlers.restorePostHistory, RestorePostHistorySuccess));
+postsRouter.openapi(
+  restorePostHistoryRoute,
+  wrapHandler(restorePostHistoryRoute, async (c, { params }) => {
+    const result = await postHandlers.restorePostHistory({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
-postsRouter.openapi(repushSocialsRoute, wrapLegacyHandler(postHandlers.repushSocials, RepushSocialsSuccess));
+postsRouter.openapi(
+  repushSocialsRoute,
+  wrapHandler(repushSocialsRoute, async (c, { params, body }) => {
+    const result = await postHandlers.repushSocials({ query: {}, params, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new Error((result.body as { error?: string })?.error || "Request failed");
+  })
+);
 
 export default postsRouter;

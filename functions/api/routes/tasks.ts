@@ -1,4 +1,10 @@
-import { wrapLegacyHandler } from "../utils/handler-v2";
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TASKS ROUTER - NATIVE HONO TYPE INFERENCE PATTERN
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import { wrapHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -416,14 +422,49 @@ const taskHandlers = {
 };
 
 // Routes
-tasksRouter.openapi(listTasksRoute, wrapLegacyHandler(taskHandlers.listTasks, listTasksRoute.responses[200].content["application/json"].schema));
+tasksRouter.openapi(
+  listTasksRoute,
+  wrapHandler(listTasksRoute, async (c, { query }) => {
+    const result = await taskHandlers.listTasks({ query, params: {}, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-tasksRouter.openapi(createTaskRoute, wrapLegacyHandler(taskHandlers.createTask, createTaskRoute.responses[200].content["application/json"].schema));
+tasksRouter.openapi(
+  createTaskRoute,
+  wrapHandler(createTaskRoute, async (c, { body }) => {
+    const result = await taskHandlers.createTask({ query: {}, params: {}, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-tasksRouter.openapi(reorderTasksRoute, wrapLegacyHandler(taskHandlers.reorderTasks, reorderTasksRoute.responses[200].content["application/json"].schema));
+tasksRouter.openapi(
+  reorderTasksRoute,
+  wrapHandler(reorderTasksRoute, async (c, { body }) => {
+    const result = await taskHandlers.reorderTasks({ query: {}, params: {}, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-tasksRouter.openapi(updateTaskRoute, wrapLegacyHandler(taskHandlers.updateTask, updateTaskRoute.responses[200].content["application/json"].schema));
+tasksRouter.openapi(
+  updateTaskRoute,
+  wrapHandler(updateTaskRoute, async (c, { params, body }) => {
+    const result = await taskHandlers.updateTask({ query: {}, params, body }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
-tasksRouter.openapi(deleteTaskRoute, wrapLegacyHandler(taskHandlers.deleteTask, deleteTaskRoute.responses[200].content["application/json"].schema));
+tasksRouter.openapi(
+  deleteTaskRoute,
+  wrapHandler(deleteTaskRoute, async (c, { params }) => {
+    const result = await taskHandlers.deleteTask({ query: {}, params, body: {} }, c);
+    if (result.status === 200) return c.json(result.body, 200);
+    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
+  })
+);
 
 export default tasksRouter;
