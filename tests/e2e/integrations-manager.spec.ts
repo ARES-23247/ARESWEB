@@ -206,19 +206,22 @@ test.describe('Integrations Manager', () => {
     // Initial state - save button should be disabled
     await expect(integrationsPage.saveButton).toBeDisabled();
 
-    // Make a change
+    // Make a change - clear first to ensure onChange fires
+    await integrationsPage.zulipUrlInput.clear();
     await integrationsPage.zulipUrlInput.fill('https://test.zulipchat.com');
 
     // Save button should be enabled
     await expect(integrationsPage.saveButton).toBeEnabled();
 
-    // Revert the change to original value
+    // Revert the change to original value - clear and fill again
+    await integrationsPage.zulipUrlInput.clear();
     await integrationsPage.zulipUrlInput.fill(currentValue);
 
-    // Wait for form state to update (TanStack Form debounce)
-    await page.waitForTimeout(500);
+    // Wait for form state to update (TanStack Form debounce + React render)
+    await page.waitForTimeout(1000);
 
     // Save button should be disabled again (form is clean)
+    // Note: This test verifies dirty state tracking; if it fails, the form library may have different equality semantics
     await expect(integrationsPage.saveButton).toBeDisabled();
   });
 
