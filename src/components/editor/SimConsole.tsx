@@ -63,7 +63,7 @@ export function SimConsole({
           {activeTab === "console" && hasError && onFixWithAI && (
             <button
               onClick={onFixWithAI}
-              className="text-[10px] px-2 py-0.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded transition-colors flex items-center gap-1"
+              className="text-[10px] px-2 py-0.5 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 rounded transition-colors flex items-center gap-1"
             >
               <span>✨ Fix with AI</span>
             </button>
@@ -72,21 +72,21 @@ export function SimConsole({
             <div className="flex items-center gap-1.5 ml-2 border-l border-white/10 pl-4">
               <button
                 onClick={() => toggleFilter("error")}
-                className={`p-1 rounded transition-colors ${filters.error ? "text-red-400 bg-red-400/10" : "text-white/20 hover:text-white/40"}`}
+                className={`p-1 rounded transition-colors ${filters.error ? "text-ares-danger bg-ares-danger/10" : "text-white/20 hover:text-white/40"}`}
                 title="Toggle Errors"
               >
                 <XCircle className="w-3 h-3" />
               </button>
               <button
                 onClick={() => toggleFilter("warn")}
-                className={`p-1 rounded transition-colors ${filters.warn ? "text-yellow-400 bg-yellow-400/10" : "text-white/20 hover:text-white/40"}`}
+                className={`p-1 rounded transition-colors ${filters.warn ? "text-ares-bronze bg-ares-bronze/10" : "text-white/20 hover:text-white/40"}`}
                 title="Toggle Warnings"
               >
                 <AlertTriangle className="w-3 h-3" />
               </button>
               <button
                 onClick={() => toggleFilter("info")}
-                className={`p-1 rounded transition-colors ${filters.info ? "text-blue-400 bg-blue-400/10" : "text-white/20 hover:text-white/40"}`}
+                className={`p-1 rounded transition-colors ${filters.info ? "text-ares-cyan bg-ares-cyan/10" : "text-white/20 hover:text-white/40"}`}
                 title="Toggle Info"
               >
                 <Info className="w-3 h-3" />
@@ -121,11 +121,11 @@ export function SimConsole({
                 key={i}
                 className={`px-2 py-1 flex items-start gap-2 border-b border-white/5 last:border-0 ${
                   log.level === "error"
-                    ? "text-red-400 bg-red-500/5"
+                    ? "text-ares-danger bg-ares-danger/5"
                     : log.level === "warn"
-                    ? "text-yellow-400 bg-yellow-500/5"
+                    ? "text-ares-bronze bg-ares-bronze/5"
                     : log.level === "info"
-                    ? "text-blue-400"
+                    ? "text-ares-cyan"
                     : "text-zinc-300"
                 }`}
               >
@@ -148,14 +148,14 @@ export function SimConsole({
               <div key={i} className="px-2 py-1.5 border-b border-white/5 last:border-0">
                 <div className="flex items-center gap-2">
                   {tr.passed ? (
-                    <span className="text-emerald-400 font-bold bg-emerald-400/10 px-1 rounded">PASS</span>
+                    <span className="text-ares-cyan font-bold bg-ares-cyan/10 px-1 rounded">PASS</span>
                   ) : (
-                    <span className="text-red-400 font-bold bg-red-400/10 px-1 rounded">FAIL</span>
+                    <span className="text-ares-danger font-bold bg-ares-danger/10 px-1 rounded">FAIL</span>
                   )}
-                  <span className={tr.passed ? "text-emerald-100" : "text-red-100"}>{tr.name}</span>
+                  <span className={tr.passed ? "text-ares-cyan/80" : "text-ares-danger/80"}>{tr.name}</span>
                 </div>
                 {!tr.passed && tr.error && (
-                  <div className="mt-1 pl-8 text-red-400/80 text-[10px] whitespace-pre-wrap">
+                  <div className="mt-1 pl-8 text-ares-danger/80 text-[10px] whitespace-pre-wrap">
                     {tr.error}
                   </div>
                 )}

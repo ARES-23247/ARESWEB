@@ -89,6 +89,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
@@ -140,6 +141,7 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };

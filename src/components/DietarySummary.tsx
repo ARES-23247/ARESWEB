@@ -257,7 +257,7 @@ export default function DietarySummary() {
               />
               <button
                 onClick={handleCopy}
-                className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-ares-red hover:bg-red-600 text-white font-bold text-xs uppercase tracking-widest ares-cut-sm transition-colors"
+                className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-ares-red hover:bg-ares-danger text-white font-bold text-xs uppercase tracking-widest ares-cut-sm transition-colors"
               >
                 {copied ? <Check size={14} /> : <Copy size={14} />}
                 {copied ? "Copied" : "Copy"}

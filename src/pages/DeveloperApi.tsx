@@ -82,7 +82,7 @@ export default function DeveloperApi() {
               href="https://ares23247.zulipchat.com" 
               target="_blank" 
               rel="noreferrer"
-              className="inline-block w-full py-2 bg-ares-gold text-ares-black font-bold uppercase rounded hover:bg-yellow-500 transition-colors"
+              className="inline-block w-full py-2 bg-ares-gold text-ares-black font-bold uppercase rounded hover:bg-ares-gold/80 transition-colors"
             >
               Open Zulip
             </a>

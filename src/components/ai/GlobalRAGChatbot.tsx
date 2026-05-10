@@ -177,8 +177,8 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
             </div>
             <div>
               <div className="font-bold text-zinc-100 text-sm">ARES Intelligence</div>
-              <div className="text-[10px] text-emerald-400 flex items-center gap-1 uppercase tracking-widest font-black">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
+              <div className="text-[10px] text-ares-cyan flex items-center gap-1 uppercase tracking-widest font-black">
+                <span className="w-1.5 h-1.5 rounded-full bg-ares-cyan animate-pulse" /> Online
               </div>
             </div>
           </div>

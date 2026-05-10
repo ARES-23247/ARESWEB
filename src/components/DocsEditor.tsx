@@ -5,12 +5,14 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { docSchema } from "@shared/schemas/docSchema";
+import { slugSchema } from "@shared/schemas/validators";
 import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import EditorFooter from "./editor/EditorFooter";
 import { useForm } from "@tanstack/react-form";
 import { RefreshCw } from "lucide-react";
 import { z } from "zod";
+import { zodValidator } from "@tanstack/zod-form-adapter";
 
 type _DocFormValues = z.infer<typeof docSchema>;
 
@@ -62,7 +64,10 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       displayInMathCorner: false,
       displayInScienceCorner: false,
       content: "{}"
-    }
+    },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error - zodValidator generic type mismatch with form schema
+    validatorAdapter: zodValidator(),
   });
 
 
@@ -126,8 +131,25 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const onFormSubmit = (isDraft = false) => {
+  const onFormSubmit = async (isDraft = false) => {
     if (!editor) return;
+
+    // Update the isDraft field in the form before validating
+    form.setFieldValue("isDraft", isDraft);
+
+    // Trigger validation on all fields before checking isInvalid
+    await form.validate();
+
+    // Check if form has validation errors (from field validators)
+    if (form.state.isInvalid) {
+      setErrorMsg("Please fix the form errors before submitting.");
+      return;
+    }
+
+    // Clear any previous errors
+    setErrorMsg("");
+
+    // Validation passed, submit the form
     const content = JSON.stringify(editor.getJSON());
     const formValue = form.state.values;
     saveMutation.mutate({ ...formValue, content, isDraft });
@@ -168,6 +190,13 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         </div>
       )}
 
+      {errorMsg && (
+        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
+          {errorMsg}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-2">
         <div className="col-span-1 lg:col-span-2">
           <label htmlFor="doc-title" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Title</label>
@@ -197,6 +226,24 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           <label htmlFor="doc-slug" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">Slug</label>
           <form.Field
             name="slug"
+            validators={{
+              onChange: ({ value }) => {
+                // Validate slug format: lowercase letters, numbers, and hyphens only
+                if (!value) return "Slug is required";
+                if (!/^[a-z0-9-]+$/.test(value)) {
+                  return "Slug must contain only lowercase letters, numbers, and hyphens";
+                }
+                return undefined;
+              },
+              onBlur: ({ value }) => {
+                // Validate slug format: lowercase letters, numbers, and hyphens only
+                if (!value) return "Slug is required";
+                if (!/^[a-z0-9-]+$/.test(value)) {
+                  return "Slug must contain only lowercase letters, numbers, and hyphens";
+                }
+                return undefined;
+              },
+            }}
           >
             {(field) => (
               <>
@@ -209,9 +256,10 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                   disabled={!!editSlug}
                   className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 ares-cut-sm focus:outline-none focus:ring-2 focus:ring-ares-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="e.g. swerve-kinematics"
+                  aria-invalid={field.state.meta.errors.length > 0}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0]}</p>
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1" role="alert" data-testid="slug-error">{field.state.meta.errors[0]}</p>
                 )}
               </>
             )}

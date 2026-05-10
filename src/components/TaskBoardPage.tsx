@@ -288,8 +288,8 @@ export default function TaskBoardPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Live
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-ares-cyan animate-pulse"></div> Live
               </div>
             </div>
           )}

@@ -441,13 +441,13 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   return (
     <div className="relative h-full flex flex-col">
       {displayError && (
-        <div className="absolute top-0 left-0 right-0 z-10 bg-red-950/90 border-b border-red-500/30 px-4 py-3 flex items-start gap-2 text-red-400 text-xs font-mono">
+        <div className="absolute top-0 left-0 right-0 z-10 bg-ares-red-dark/90 border-b border-ares-danger/30 px-4 py-3 flex items-start gap-2 text-ares-danger text-xs font-mono">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <pre className="whitespace-pre-wrap flex-1">{displayError}</pre>
           {onFixWithAI && (
             <button
               onClick={onFixWithAI}
-              className="shrink-0 ml-2 px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+              className="shrink-0 ml-2 px-2.5 py-1 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 rounded transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
             >
               ✨ Fix with AI
             </button>

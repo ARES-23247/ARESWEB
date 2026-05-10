@@ -53,6 +53,7 @@ socialQueueRouter.openapi(listSocialQueueRoute, async (c) => {
   const conditions = [];
 
   if (status !== "all") {
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     conditions.push(eq(schema.socialQueue.status, status as any));
   }
@@ -192,6 +193,7 @@ socialQueueRouter.openapi(updateSocialQueueRoute, async (c) => {
     .where(eq(schema.socialQueue.id, id))
     .get();
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ success: true, post: toSocialQueuePost(updatedRow as any) }, 200);
 });
@@ -252,6 +254,7 @@ socialQueueRouter.openapi(sendNowSocialQueueRoute, async (c) => {
     TWITTER_BEARER_TOKEN: c.env.TWITTER_BEARER_TOKEN,
     BLUESKY_IDENTIFIER: c.env.BLUESKY_IDENTIFIER,
     BLUESKY_PASSWORD: c.env.BLUESKY_PASSWORD,
+  // Type boundary: Env mapping to SocialMediaConfig interface
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 

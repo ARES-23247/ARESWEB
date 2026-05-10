@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TechStackRouteImport } from './routes/tech-stack'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SimRunnerRouteImport } from './routes/sim-runner'
@@ -80,6 +81,11 @@ import { Route as DashboardEventEditIdRouteImport } from './routes/dashboard/eve
 import { Route as DashboardDocsEditSlugRouteImport } from './routes/dashboard/docs/$editSlug'
 import { Route as DashboardBlogEditSlugRouteImport } from './routes/dashboard/blog/$editSlug'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TechStackRoute = TechStackRouteImport.update({
   id: '/tech-stack',
   path: '/tech-stack',
@@ -448,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
+  '/terms': typeof TermsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
@@ -519,6 +526,7 @@ export interface FileRoutesByTo {
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
+  '/terms': typeof TermsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
@@ -592,6 +600,7 @@ export interface FileRoutesById {
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
+  '/terms': typeof TermsRoute
   '/academy/$slug': typeof AcademySlugRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
@@ -666,6 +675,7 @@ export interface FileRouteTypes {
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
+    | '/terms'
     | '/academy/$slug'
     | '/blog/$slug'
     | '/dashboard/analytics'
@@ -737,6 +747,7 @@ export interface FileRouteTypes {
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
+    | '/terms'
     | '/academy/$slug'
     | '/blog/$slug'
     | '/dashboard/analytics'
@@ -809,6 +820,7 @@ export interface FileRouteTypes {
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
+    | '/terms'
     | '/academy/$slug'
     | '/blog/$slug'
     | '/dashboard/analytics'
@@ -882,6 +894,7 @@ export interface RootRouteChildren {
   SimRunnerRoute: typeof SimRunnerRoute
   StoreRoute: typeof StoreRoute
   TechStackRoute: typeof TechStackRoute
+  TermsRoute: typeof TermsRoute
   AcademySlugRoute: typeof AcademySlugRoute
   BlogSlugRoute: typeof BlogSlugRoute
   DevelopersApiRoute: typeof DevelopersApiRoute
@@ -902,6 +915,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tech-stack': {
       id: '/tech-stack'
       path: '/tech-stack'
@@ -1498,6 +1518,7 @@ const rootRouteChildren: RootRouteChildren = {
   SimRunnerRoute: SimRunnerRoute,
   StoreRoute: StoreRoute,
   TechStackRoute: TechStackRoute,
+  TermsRoute: TermsRoute,
   AcademySlugRoute: AcademySlugRoute,
   BlogSlugRoute: BlogSlugRoute,
   DevelopersApiRoute: DevelopersApiRoute,

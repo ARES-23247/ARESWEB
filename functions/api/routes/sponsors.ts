@@ -67,6 +67,7 @@ sponsorsRouter.openapi(getSponsorsRoute, async (c) => {
       createdAt: s.createdAt ?? null,
     }));
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ sponsors } as any, 200);
   }
@@ -135,6 +136,7 @@ sponsorsRouter.openapi(getRoiRoute, async (c) => {
       yearMonth: m.yearMonth,
     }));
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ sponsor, metrics } as any, 200);
   }
@@ -162,12 +164,14 @@ sponsorsRouter.openapi(adminListSponsorsRoute, async (c) => {
       createdAt: s.createdAt ?? null,
     }));
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ sponsors: mappedSponsors } as any, 200);
   }
 );
 
 sponsorsRouter.openapi(saveSponsorRoute, async (c) => {
+    // Request boundary: Zod validated body for flexible schema updates
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = c.req.valid("json") as any;
     const db = getDb(c);
@@ -240,6 +244,7 @@ sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
       lastUsed: null,
     }));
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ tokens } as any, 200);
   }

@@ -455,7 +455,7 @@ export default function SimulationPlayground() {
               Open
             </button>
 
-            <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-emerald-600/30 transition-colors">
+            <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-cyan/30 transition-colors">
               <Play className="w-3.5 h-3.5" /> Run
             </button>
 
@@ -532,9 +532,9 @@ export default function SimulationPlayground() {
               <Panel defaultSize={60} minSize={20}>
                 <div className="px-3 py-1.5 border-b border-white/10 bg-obsidian-dark flex items-center gap-2 shrink-0">
                   <span className="text-white/40 text-xs font-mono">Live Preview</span>
-                  <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                  <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-ares-danger' : 'bg-ares-cyan'}`} />
                   {fps !== null && (
-                    <span className={`text-[10px] font-mono ml-auto ${fps >= 50 ? 'text-emerald-400' : fps >= 30 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    <span className={`text-[10px] font-mono ml-auto ${fps >= 50 ? 'text-ares-cyan' : fps >= 30 ? 'text-ares-bronze' : 'text-ares-danger'}`}>
                       {fps} FPS
                     </span>
                   )}

@@ -167,6 +167,7 @@ simulationsRouter.openapi(getSimulationRoute, async (c) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
+        // Response boundary: Drizzle return type diverges from Zod schema
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any, 200);
     }
@@ -180,7 +181,8 @@ simulationsRouter.openapi(getSimulationRoute, async (c) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Response boundary: Drizzle return type diverges from Zod schema
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any, 200);
   } catch (ghErr) {
     if (ghErr instanceof ApiError) throw ghErr;
@@ -368,7 +370,8 @@ simulationsRouter.openapi(getGistRoute, async (c) => {
         createdAt: String(gist.created_at),
         updatedAt: String(gist.updated_at)
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Response boundary: Drizzle return type diverges from Zod schema
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any, 200);
 });
 

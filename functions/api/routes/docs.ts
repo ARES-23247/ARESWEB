@@ -111,12 +111,19 @@ function setCache(key: string, value: DocSearchCacheEntry) {
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
  * Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
+ * SECURITY: Limits query length to prevent abuse and ReDoS attacks.
  */
 const sanitizeFtsQuery = (query: string): string => {
+  // SECURITY: Limit query length to prevent abuse and ReDoS attacks
+  if (query.length > 100) {
+    throw new ApiError("Search query too long (max 100 characters)", 400);
+  }
+
   // Allow only alphanumeric, spaces, hyphens, and periods
   const cleanQ = (query || "").replace(/[^\w\s-.]/g, "").trim();
   if (!cleanQ) return "";
-  // Escape double quotes for FTS5 phrase search and use prefix search
+
+  // SECURITY: Proper FTS5 phrase search with escaped quotes
   return `"${cleanQ.replace(/"/g, '""')}*`;
 };
 

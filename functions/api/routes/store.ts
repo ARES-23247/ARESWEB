@@ -117,6 +117,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
           unit_amount: product.priceCents,
         },
         quantity: item.quantity,
+      // Type boundary: Stripe API line item structure
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
     });
@@ -145,6 +146,7 @@ storeRouter.openapi(createCheckoutSessionRoute, async (c) => {
       updatedAt: new Date().toISOString(),
     }).run();
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ sessionId: session.id, url: session.url || "" } as any, 200);
 });
@@ -156,6 +158,7 @@ storeRouter.openapi(getOrdersRoute, async (c) => {
     if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
     const db = getDb(c);
     const orders = await db.select().from(schema.orders).orderBy(desc(schema.orders.createdAt)).all();
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ orders } as any, 200);
 });
@@ -179,6 +182,7 @@ storeRouter.openapi(updateOrderStatusRoute, async (c) => {
       .where(eq(schema.orders.id, id))
       .run();
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
 });

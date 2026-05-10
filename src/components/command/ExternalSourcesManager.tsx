@@ -104,7 +104,7 @@ export default function ExternalSourcesManager() {
                   <div className="text-xs text-marble/60 flex items-center gap-2">
                     {src.type === "github" && <span>{src.branch}</span>}
                     {src.last_indexed_at ? (
-                      <span className="text-green-400/80">Synced {new Date(src.last_indexed_at).toLocaleDateString()}</span>
+                      <span className="text-ares-cyan/80">Synced {new Date(src.last_indexed_at).toLocaleDateString()}</span>
                     ) : (
                       <span className="text-ares-gold/80">Never synced</span>
                     )}
@@ -153,17 +153,17 @@ export default function ExternalSourcesManager() {
 
       {/* Admin Debug Console from KV */}
       {statusData?.indexErrors && !syncErrors && (
-        <div className="mt-6 border border-red-500/30 bg-black/50 p-3 relative group">
-          <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-red-400 text-[10px] font-bold uppercase tracking-widest border border-red-500/30">
+        <div className="mt-6 border border-ares-danger/30 bg-black/50 p-3 relative group">
+          <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-ares-danger-soft text-[10px] font-bold uppercase tracking-widest border border-ares-danger/30">
             <Terminal size={10} />
             Previous Sync Errors
           </div>
           <div className="text-[10px] text-marble/60 mb-2 font-mono">
             Last run: {new Date(statusData.indexErrors.timestamp).toLocaleString()}
           </div>
-          <div className="space-y-1 max-h-40 overflow-y-auto font-mono text-[11px] text-red-300/80">
+          <div className="space-y-1 max-h-40 overflow-y-auto font-mono text-[11px] text-ares-danger/80">
             {statusData.indexErrors.errors.map((err, i) => (
-              <div key={i} className="pl-2 border-l border-red-500/30">
+              <div key={i} className="pl-2 border-l border-ares-danger/30">
                 &gt; {err}
               </div>
             ))}
@@ -173,17 +173,17 @@ export default function ExternalSourcesManager() {
 
       {/* Immediate Sync Errors */}
       {syncErrors && (
-        <div className="mt-6 border border-red-500/50 bg-red-950/20 p-4 relative group rounded">
-          <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-red-400 text-xs font-bold uppercase tracking-widest border border-red-500/50">
+        <div className="mt-6 border border-ares-danger/50 bg-ares-red-dark/20 p-4 relative group rounded">
+          <div className="absolute top-0 left-3 -translate-y-1/2 bg-obsidian px-2 flex items-center gap-1.5 text-ares-danger-soft text-xs font-bold uppercase tracking-widest border border-ares-danger/50">
             <Terminal size={12} />
             Indexing Errors ({syncErrors.length})
           </div>
           <div className="text-xs text-marble/60 mb-3 font-mono">
             These errors occurred during your most recent sync attempt.
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto font-mono text-xs text-red-200">
+          <div className="space-y-2 max-h-60 overflow-y-auto font-mono text-xs text-ares-danger/80">
             {syncErrors.map((err, i) => (
-              <div key={i} className="pl-3 border-l-2 border-red-500/50 bg-black/40 py-2 pr-2 rounded-r break-words whitespace-pre-wrap">
+              <div key={i} className="pl-3 border-l-2 border-ares-danger/50 bg-black/40 py-2 pr-2 rounded-r break-words whitespace-pre-wrap">
                 {err}
               </div>
             ))}

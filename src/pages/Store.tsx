@@ -88,7 +88,7 @@ export const Store: React.FC = () => {
             <p>Loading inventory...</p>
           </div>
         ) : error ? (
-          <div className="py-24 text-center text-red-400 bg-red-400/10 rounded-2xl border border-red-400/20">
+          <div className="py-24 text-center text-ares-danger bg-ares-danger/10 rounded-2xl border border-ares-danger/20">
             Failed to load products. Please try again later.
           </div>
         ) : !products || products.length === 0 ? (

@@ -260,6 +260,12 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     'uncontrolled input',
     'Content Security Policy',
     'cloudflareinsights',
+    'TrustedHTML',
+    'TrustedScript',
+    'TrustedScriptURL',
+    'Permissions policy violation',
+    'Unauthorized: Please log in',
+    'xr-spatial-tracking',
   ];
   return ignorePatterns.some((pattern) => text.includes(pattern));
 }

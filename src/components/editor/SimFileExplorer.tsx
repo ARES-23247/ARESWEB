@@ -161,13 +161,13 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
             {isFolder ? (
               <>
                 <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                <Folder className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                <Folder className="w-3.5 h-3.5 shrink-0 text-ares-cyan" />
               </>
             ) : (
               <>
                 <span className="w-3 h-3" /> {/* spacer for alignment */}
                 {node.name.endsWith(".tsx") || node.name.endsWith(".ts") ? (
-                  <FileCode className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                  <FileCode className="w-3.5 h-3.5 shrink-0 text-ares-cyan" />
                 ) : (
                   <File className="w-3.5 h-3.5 shrink-0 text-zinc-400" />
                 )}
@@ -207,7 +207,7 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
                 </button>
                 <button
                   onClick={(e) => handleDelete(node.path, e)}
-                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-red-400"
+                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-ares-danger"
                   title={isFolder ? "Delete Folder" : "Delete"}
                 >
                   <Trash2 className="w-3 h-3" />

@@ -293,6 +293,8 @@ test.describe('Docs Editor E2E', () => {
 
       // Try to submit with invalid slug (uppercase letters)
       await page.locator('#doc-slug').fill('Invalid-Slug-With-Uppercase');
+      // Trigger blur to ensure validation runs
+      await page.locator('#doc-slug').blur();
       await page.getByRole('button', { name: /PUBLISH DOC/i }).click();
 
       // Verify validation error appears
@@ -310,6 +312,8 @@ test.describe('Docs Editor E2E', () => {
 
       // Try to submit with invalid slug (special characters)
       await page.locator('#doc-slug').fill('invalid-slug-with-underscores_');
+      // Trigger blur to ensure validation runs
+      await page.locator('#doc-slug').blur();
       await page.getByRole('button', { name: /PUBLISH DOC/i }).click();
 
       // Verify validation error appears

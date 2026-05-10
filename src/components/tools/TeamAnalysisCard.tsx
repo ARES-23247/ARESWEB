@@ -84,10 +84,10 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
     ? [
         { label: "Rank", value: `#${ranking.rank}`, icon: Award, color: "text-ares-gold" },
         { label: "OPR", value: ranking.opr?.toFixed(1) ?? "â€”", icon: TrendingUp, color: "text-ares-cyan" },
-        { label: "NP-OPR", value: ranking.np_opr?.toFixed(1) ?? "â€”", icon: Target, color: "text-emerald-400" },
+        { label: "NP-OPR", value: ranking.np_opr?.toFixed(1) ?? "—", icon: Target, color: "text-ares-cyan" },
         { label: "Record", value: `${ranking.wins}W-${ranking.losses}L-${ranking.ties}T`, icon: TrendingDown, color: "text-marble" },
-        { label: "High Score", value: ranking.highest_qual_score?.toString() ?? "â€”", icon: Sparkles, color: "text-amber-400" },
-        { label: "RP", value: ranking.ranking_points?.toFixed(1) ?? "â€”", icon: Award, color: "text-violet-400" },
+        { label: "High Score", value: ranking.highest_qual_score?.toString() ?? "—", icon: Sparkles, color: "text-ares-gold" },
+        { label: "RP", value: ranking.ranking_points?.toFixed(1) ?? "—", icon: Award, color: "text-ares-bronze" },
       ]
     : [];
 

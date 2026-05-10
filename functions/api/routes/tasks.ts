@@ -116,6 +116,7 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
       };
     });
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ tasks: formattedTasks } as any, 200);
   }
@@ -214,6 +215,7 @@ tasksRouter.openapi(createTaskRoute, async (c) => {
       assigneeName: null,
     };
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true, task: createdTask } as any, 200);
   }
@@ -235,6 +237,7 @@ tasksRouter.openapi(reorderTasksRoute, async (c) => {
         .run()
     ));
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
   }
@@ -354,6 +357,7 @@ tasksRouter.openapi(updateTaskRoute, async (c) => {
       createdAt: new Date().toISOString(),
     }).run();
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
   }
@@ -397,6 +401,7 @@ tasksRouter.openapi(deleteTaskRoute, async (c) => {
       createdAt: new Date().toISOString(),
     }).run();
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
   }

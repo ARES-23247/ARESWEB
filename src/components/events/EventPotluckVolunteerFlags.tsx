@@ -10,10 +10,11 @@ export default function EventPotluckVolunteerFlags({ isPotluck, isVolunteer, onC
     <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
       <div className="flex flex-col gap-1">
         <label className="flex items-center gap-3 cursor-pointer group">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={isPotluck}
             onChange={(e) => onChange('isPotluck', e.target.checked)}
+            aria-label="Enable Potluck Coordination"
             className="w-5 h-5 rounded border-white/10 bg-obsidian text-ares-red focus:ring-ares-red transition-all cursor-pointer"
           />
           <span className="text-sm font-bold text-white group-hover:text-white transition-colors uppercase tracking-wider">
@@ -27,10 +28,11 @@ export default function EventPotluckVolunteerFlags({ isPotluck, isVolunteer, onC
 
         <div className="flex flex-col gap-1">
         <label className="flex items-center gap-3 cursor-pointer group">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={isVolunteer}
             onChange={(e) => onChange('isVolunteer', e.target.checked)}
+            aria-label="Enable Volunteer Roles"
             className="w-5 h-5 rounded border-white/10 bg-obsidian text-ares-red focus:ring-ares-red transition-all cursor-pointer"
           />
           <span className="text-sm font-bold text-white group-hover:text-white transition-colors uppercase tracking-wider">

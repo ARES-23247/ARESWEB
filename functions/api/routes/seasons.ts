@@ -70,6 +70,7 @@ seasonsRouter.openapi(listSeasonsRoute, async (c) => {
     updatedAt: r.updatedAt as string,
   }));
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ seasons } as any, 200);
 });
@@ -107,6 +108,7 @@ seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
     updatedAt: r.updatedAt as string,
   }));
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ seasons } as any, 200);
 });
@@ -151,6 +153,7 @@ seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
     updatedAt: row.updatedAt as string,
   };
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ season } as any, 200);
 });
@@ -281,6 +284,7 @@ seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
     updatedAt: seasonRow.updatedAt as string,
   };
 
+  // Response boundary: Drizzle return type diverges from Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ season, awards, events, posts, outreach } as any, 200);
 });

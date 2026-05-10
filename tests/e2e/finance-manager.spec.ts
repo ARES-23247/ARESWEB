@@ -20,13 +20,13 @@ test.describe('Finance Manager Dashboard', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify main heading is visible
-    await expect(page.getByRole('heading', { name: /Treasury & Finance/i })).toBeVisible();
+    // Verify main heading is visible (defaults to Sponsorship Pipeline)
+    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible();
 
     // Verify summary metrics are displayed
     await expect(page.getByText('Total Income')).toBeVisible();
     await expect(page.getByText('Total Expenses')).toBeVisible();
-    await expect(page.getByText('Total Balance')).toBeVisible();
+    await expect(page.getByText('Cash Balance')).toBeVisible();
   });
 
   test('should display all sponsorship pipeline columns', async ({ page }) => {
@@ -49,11 +49,14 @@ test.describe('Finance Manager Dashboard', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify main heading is visible
-    await expect(page.getByRole('heading', { name: /Treasury & Finance/i })).toBeVisible();
+    // Verify main heading is visible (defaults to Sponsorship Pipeline)
+    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible();
 
     // Click on Ledger tab
     await page.getByRole('button', { name: /Ledger & Expenses/i }).click();
+
+    // Verify ledger heading changed
+    await expect(page.getByRole('heading', { name: /Financial Ledger/i })).toBeVisible();
 
     // Verify ledger view is displayed
     await expect(page.getByRole('button', { name: /Add Transaction/i })).toBeVisible();
@@ -97,11 +100,11 @@ test.describe('Finance Manager Dashboard', () => {
     // Verify Company Name input is visible (using label text)
     await expect(page.getByText('Company Name')).toBeVisible();
 
-    // Verify Estimated Value input is visible
-    await expect(page.getByText('Estimated Value ($)')).toBeVisible();
+    // Verify Estimated Value input is visible (component uses "Est. Value ($)")
+    await expect(page.getByText('Est. Value ($)')).toBeVisible();
 
-    // Verify Status select is visible
-    await expect(page.getByText('Status', { exact: true })).toBeVisible();
+    // Verify Initial Status select is visible
+    await expect(page.getByText('Initial Status')).toBeVisible();
   });
 
   test('should show add transaction form when Add Transaction button is clicked', async ({ page }) => {
@@ -241,7 +244,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.goto('/dashboard/finance');
 
     // The loading state may be too brief to catch reliably, so we just verify the page eventually loads
-    await expect(page.getByRole('heading', { name: /Treasury & Finance/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
   });

@@ -73,6 +73,7 @@ usersRouter.openapi(getUsersRoute, async (c) => {
           : usersData[usersData.length - 1].createdAt)
         : null;
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ users, nextCursor } as any, 200);
 });
@@ -129,6 +130,7 @@ usersRouter.openapi(adminDetailRoute, async (c) => {
           nickname: user.nickname || null,
           memberType: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
         },
+      // Response boundary: Drizzle return type diverges from Zod schema
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       200
@@ -206,6 +208,7 @@ usersRouter.openapi(patchUserRoute, async (c) => {
       )
     );
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
 });
@@ -215,6 +218,7 @@ usersRouter.openapi(updateUserProfileRoute, async (c) => {
     const body = c.req.valid("json");
     const { id } = params;
     await upsertProfile(c, id, body);
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
 });
@@ -349,6 +353,7 @@ usersRouter.openapi(adminGetProfileRoute, async (c) => {
             role: String(user.role || "user"),
           },
         } as Record<string, unknown>,
+      // Response boundary: Drizzle return type diverges from Zod schema
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       200
@@ -376,6 +381,7 @@ usersRouter.openapi(deleteUserRoute, async (c) => {
       logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`)
     );
 
+    // Response boundary: Drizzle return type diverges from Zod schema
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json({ success: true } as any, 200);
 });

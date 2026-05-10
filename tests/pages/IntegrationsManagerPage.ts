@@ -99,7 +99,7 @@ export class IntegrationsManagerPage extends DashboardPage {
    * Navigate to the integrations manager page.
    */
   async goto(): Promise<void> {
-    await this.goto('integrations');
+    await super.goto('integrations');
   }
 
   /**
