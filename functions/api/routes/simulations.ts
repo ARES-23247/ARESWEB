@@ -373,7 +373,7 @@ simulationsRouter.openapi(getGistRoute, async (c) => {
 });
 
 simulationsRouter.openapi(generateSimRegistryRoute, async (c) => {
-    return c.json({ error: "Not Implemented in Cloudflare Workers" } as any, 501);
+    return c.json({ success: false, error: "Not Implemented in Cloudflare Workers" }, 200);
 });
 
 simulationsRouter.openapi(listSimFoldersRoute, async (c) => {

@@ -1,7 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { zulipWebhookRoute } from "../../../shared/routes/webhooks";
-import { getSocialConfig, AppEnv, getDb } from "../middleware";
-import * as schema from "../../../src/db/schema";
+import { getSocialConfig, AppEnv } from "../middleware";
 import { sendZulipMessage } from "../../utils/zulipSync";
 
 export const zulipWebhookRouter = new OpenAPIHono<AppEnv>();

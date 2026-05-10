@@ -704,7 +704,7 @@ describe('Simulations Routes', () => {
         expect(_res.status).toBe(403);
       });
 
-      it('should return 501 indicating shell access limitation for admins', async () => {
+      it('should return 200 indicating successful endpoint connection despite shell limitations', async () => {
         globalThis.__mockSessionUser = mockAdminUser;
         const app = createTestApp();
 
@@ -719,8 +719,8 @@ describe('Simulations Routes', () => {
 
         const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-        // Should return 501 Not Implemented because Cloudflare Workers don't have shell access
-        expect(_res.status).toBe(501);
+        // Should return 200
+        expect(_res.status).toBe(200);
       });
     });
 

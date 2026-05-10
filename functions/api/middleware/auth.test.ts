@@ -23,7 +23,6 @@ vi.mock('drizzle-orm', async (importOriginal) => {
 });
 
 import { getAuth } from '../../utils/auth';
-import * as schema from '../../../src/db/schema';
 
 describe('authMiddleware', () => {
   let mockDb: DrizzleDB;
@@ -95,7 +94,7 @@ describe('authMiddleware', () => {
     it('returns false when hostname is not localhost', () => {
       mockContext.env.ENVIRONMENT = 'development';
       mockContext.env.DEV_BYPASS = 'true';
-      mockContext.req.url = 'https://preview.example.com/api/test';
+      Object.defineProperty(mockContext.req, 'url', { value: 'https://preview.example.com/api/test' });
 
       const result = isDevBypassEnabled(mockContext);
 
@@ -134,7 +133,7 @@ describe('authMiddleware', () => {
     it('returns true for 127.0.0.1 hostname', () => {
       mockContext.env.ENVIRONMENT = 'development';
       mockContext.env.DEV_BYPASS = 'true';
-      mockContext.req.url = 'http://127.0.0.1:8788/api/test';
+      Object.defineProperty(mockContext.req, 'url', { value: 'http://127.0.0.1:8788/api/test' });
 
       const result = isDevBypassEnabled(mockContext);
 
@@ -368,7 +367,7 @@ describe('authMiddleware', () => {
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
       // Non-super-admin route
-      mockContext.req.url = 'http://localhost:8788/api/admin/posts';
+      Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/posts' });
 
       await ensureAdmin(mockContext, mockNext);
 
@@ -404,7 +403,7 @@ describe('authMiddleware', () => {
       (mockDb.insert as unknown as { values: () => { execute: () => Promise<unknown> } }).values = vi.fn(() => ({ execute: executeSpy }));
 
       // Super-admin route
-      mockContext.req.url = 'http://localhost:8788/api/admin/users';
+      Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/users' });
 
       await ensureAdmin(mockContext, mockNext);
 
@@ -478,7 +477,7 @@ describe('authMiddleware', () => {
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
       // Non-super-admin route
-      mockContext.req.url = 'http://localhost:8788/api/admin/posts';
+      Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/posts' });
 
       await ensureAdmin(mockContext, mockNext);
 
@@ -514,7 +513,7 @@ describe('authMiddleware', () => {
       (mockDb.insert as unknown as { values: () => { execute: () => Promise<unknown> } }).values = vi.fn(() => ({ execute: executeSpy }));
 
       // Super-admin route
-      mockContext.req.url = 'http://localhost:8788/api/admin/roles';
+      Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/roles' });
 
       await ensureAdmin(mockContext, mockNext);
 

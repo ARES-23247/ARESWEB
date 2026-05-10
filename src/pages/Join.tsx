@@ -293,7 +293,7 @@ export default function Join() {
 													validators={{
 														// eslint-disable-next-line @typescript-eslint/no-explicit-any
 														onChangeListenTo: ["role" as any],
-														onChange: ({ value, fieldApi }) => {
+														onChange: ({ value }) => {
 															if (role === "student" && !value) return "School is required";
 															return undefined;
 														}

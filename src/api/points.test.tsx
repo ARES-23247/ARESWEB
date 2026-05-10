@@ -9,12 +9,12 @@ vi.mock("./honoClient", () => ({
   client: {
     points: {
       balance: {
-        ":userId": {
+        ":user_id": {
           $get: vi.fn(),
         },
       },
       history: {
-        ":userId": {
+        ":user_id": {
           $get: vi.fn(),
         },
       },
@@ -48,12 +48,12 @@ vi.mock("./honoClient", () => ({
 // Mock types for the Hono client
 interface MockPointsClient {
   balance: {
-    ":userId": {
+    ":user_id": {
       $get: ReturnType<typeof vi.fn>;
     };
   };
   history: {
-    ":userId": {
+    ":user_id": {
       $get: ReturnType<typeof vi.fn>;
     };
   };
@@ -97,15 +97,15 @@ describe("Points API", () => {
         total_earned: 1000,
         total_spent: 500,
       };
-      mockClient.points.balance[":userId"].$get.mockResolvedValue({ ok: true });
+      mockClient.points.balance[":user_id"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockBalance);
 
       const { result } = renderHook(() => pointsApi.useGetPointsBalance("user123"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockBalance);
-      expect(mockClient.points.balance[":userId"].$get).toHaveBeenCalledWith({
-        param: { userId: "user123" },
+      expect(mockClient.points.balance[":user_id"].$get).toHaveBeenCalledWith({
+        param: { user_id: "user123" },
       });
     });
 
@@ -117,7 +117,7 @@ describe("Points API", () => {
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch balance");
-      mockClient.points.balance[":userId"].$get.mockResolvedValue({ ok: false });
+      mockClient.points.balance[":user_id"].$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => pointsApi.useGetPointsBalance("user123"), { wrapper });
@@ -145,15 +145,15 @@ describe("Points API", () => {
           createdAt: "2024-01-16T14:00:00Z",
         },
       ];
-      mockClient.points.history[":userId"].$get.mockResolvedValue({ ok: true });
+      mockClient.points.history[":user_id"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockHistory);
 
       const { result } = renderHook(() => pointsApi.useGetPointsHistory("user123"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockHistory);
-      expect(mockClient.points.history[":userId"].$get).toHaveBeenCalledWith({
-        param: { userId: "user123" },
+      expect(mockClient.points.history[":user_id"].$get).toHaveBeenCalledWith({
+        param: { user_id: "user123" },
       });
     });
 
@@ -165,7 +165,7 @@ describe("Points API", () => {
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch history");
-      mockClient.points.history[":userId"].$get.mockResolvedValue({ ok: false });
+      mockClient.points.history[":user_id"].$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => pointsApi.useGetPointsHistory("user123"), { wrapper });
@@ -175,7 +175,7 @@ describe("Points API", () => {
     });
 
     it("should handle empty history", async () => {
-      mockClient.points.history[":userId"].$get.mockResolvedValue({ ok: true });
+      mockClient.points.history[":user_id"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue([]);
 
       const { result } = renderHook(() => pointsApi.useGetPointsHistory("user123"), { wrapper });

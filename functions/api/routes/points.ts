@@ -1,7 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, sum, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, getSessionUser, ensureAdmin, ensureAuth, getDb, ApiError } from "../middleware";
+import { AppEnv, getSessionUser, ensureAuth, getDb, ApiError } from "../middleware";
 import { getPointsBalanceRoute, awardPointsRoute, getPointsLeaderboardRoute, getPointsHistoryRoute } from "../../../shared/routes/points";
 
 export const pointsRouter = new OpenAPIHono<AppEnv>();
@@ -59,7 +59,7 @@ pointsRouter.openapi(getPointsHistoryRoute, async (c) => {
     userId: item.userId,
     pointsDelta: item.pointsDelta,
     reason: item.reason,
-    createdBy: item.createdBy,
+    createdBy: item.createdBy || "",
     createdAt: item.createdAt,
   }));
 

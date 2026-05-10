@@ -17,8 +17,7 @@ interface ReviewSchemaProps {
 
 export default function ReviewSchema({
   reviews,
-  itemName = "ARES 23247 Robotics Team",
-  itemReviewed = "ARES 23247 - Appalachian Robotics & Engineering Society"
+  itemName = "ARES 23247 Robotics Team"
 }: ReviewSchemaProps) {
 
   // Calculate aggregate rating

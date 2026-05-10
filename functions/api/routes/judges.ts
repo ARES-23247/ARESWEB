@@ -137,14 +137,14 @@ judgesRouter.openapi(judgePortfolioRoute, async (c) => {
   const db = getDb(c);
     const { "x-judge-code": code } = c.req.header();
     if (!code) {
-      return c.json({ error: "Unauthorized" } as any, 401);
+      return c.json({ error: "Unauthorized" }, 401);
     }
 
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const allowed = await checkPersistentRateLimit(db, `judge-portfolio:${ip}`, ua, 20, 60);
     if (!allowed) {
-      return c.json({ error: "Too many requests" } as any, 429);
+      return c.json({ error: "Too many requests" }, 429);
     }
 
     const [valid] = await db.select({
