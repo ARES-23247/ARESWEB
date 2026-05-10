@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Building, DollarSign, Type, AlignLeft, User, CheckCircle2, Plus } from "lucide-react";
 import { useGetUsers } from "../../api/users";
 import ZulipThread from "../ZulipThread";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import type { PipelineItem } from "../../types/finance";
 
 interface SponsorshipEditModalProps {
@@ -15,15 +16,18 @@ interface SponsorshipEditModalProps {
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
 
 export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }: SponsorshipEditModalProps) {
-  const [companyName, setCompanyName] = useState(item.company_name || "");
+  const [companyName, setCompanyName] = useState(item.companyName || "");
   const [status, setStatus] = useState(item.status || "potential");
-  const [estimatedValue, setEstimatedValue] = useState(item.estimated_value?.toString() || "0");
-  const [contactPerson, setContactPerson] = useState(item.contact_person || "");
+  const [estimatedValue, setEstimatedValue] = useState(item.estimatedValue?.toString() || "0");
+  const [contactPerson, setContactPerson] = useState(item.contactPerson || "");
   const [notes, setNotes] = useState(item.notes || "");
   const [assigneeIds, setAssigneeIds] = useState<string[]>(item.assignees || []);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Accessibility: Focus trap for keyboard navigation
+  const { modalRef } = useFocusTrap({ isOpen: true, onClose });
 
   const { data: usersData } = useGetUsers({ limit: 100 }, { staleTime: 60000 });
   const teamMembers = usersData?.users ?? [];
@@ -49,10 +53,10 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
     setIsSaving(true);
     try {
       await onSave(item.id, {
-        company_name: companyName,
+        companyName: companyName,
         status,
-        estimated_value: Number(estimatedValue),
-        contact_person: contactPerson,
+        estimatedValue: Number(estimatedValue),
+        contactPerson: contactPerson,
         notes: notes,
         assignees: assigneeIds,
       });
@@ -67,6 +71,9 @@ export default function SponsorshipEditModal({ item, onClose, onSave, onDelete }
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
       <motion.div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}

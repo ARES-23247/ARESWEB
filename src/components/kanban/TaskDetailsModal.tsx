@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
   X, Save, Trash2, Calendar, User, AlertTriangle, Flag,
   CheckCircle2, Circle, Clock, Plus, Layout, Layers
@@ -37,7 +38,7 @@ const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent", color: "bg-ares-red/20 text-ares-red" },
 ];
 
-// Compact toolbar for the task modal – only essential formatting buttons, no import/export/fullscreen/editor-content
+// Compact toolbar for the task modal â€“ only essential formatting buttons, no import/export/fullscreen/editor-content
 function CompactEditorToolbar({ editor }: { editor: Editor }) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
@@ -46,12 +47,12 @@ function CompactEditorToolbar({ editor }: { editor: Editor }) {
       <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2 py-1 text-xs line-through ares-cut-sm transition-all ${editor.isActive("strike") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>S</button>
       <div className="w-px h-4 bg-white/10 mx-0.5" />
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>H2</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>• List</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>☑</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>â€¢ List</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>â˜‘</button>
       <div className="w-px h-4 bg-white/10 mx-0.5" />
       <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
-      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
+      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">â€•</button>
     </div>
   );
 }
@@ -112,13 +113,13 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const [priority, setPriority] = useState(task.priority);
   const [subteam, setSubteam] = useState(task.subteam || "");
   const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a: { id: string }) => a.id) || []);
-  const [dueDate, setDueDate] = useState(task.due_date || "");
+  const [dueDate, setDueDate] = useState(task.dueDate || "");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [timeSpentSeconds, setTimeSpentSeconds] = useState(task.time_spent_seconds || 0);
+  const [timeSpentSeconds, setTimeSpentSeconds] = useState(task.timeSpentSeconds || 0);
 
   const queryClient = useQueryClient();
 
@@ -131,16 +132,14 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const { data: usersData } = useGetUsers({ limit: 100 });
   const teamMembers = usersData?.users ?? [];
 
-  const { data: subtasksData } = useGetTasks({ parent_id: task.id }, { staleTime: 10000 });
+  const { data: subtasksData } = useGetTasks({ parentId: task.id }, { staleTime: 10000 });
   const subtasks = subtasksData?.tasks ?? [];
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  // Accessibility: Focus trap for keyboard navigation
+  const { modalRef: focusTrapRef } = useFocusTrap({
+    isOpen: true, // TaskDetailsModal is always rendered when open
+    onClose,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -161,7 +160,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
       if (status !== task.status) updates.status = status as "todo" | "in_progress" | "done" | "blocked";
       if (priority !== task.priority) updates.priority = priority as "low" | "normal" | "high" | "urgent";
       if (subteam !== (task.subteam || "")) updates.subteam = subteam || null;
-      if (dueDate !== (task.due_date || "")) updates.due_date = dueDate || null;
+      if (dueDate !== (task.dueDate || "")) updates.dueDate = dueDate || null;
       
       const currentIds = task.assignees?.map((a: { id: string }) => a.id) || [];
       const hasAssigneeChange = assigneeIds.length !== currentIds.length || 
@@ -171,8 +170,8 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         updates.assignees = assigneeIds;
       }
       
-      if (timeSpentSeconds !== (task.time_spent_seconds || 0)) {
-        updates.time_spent_seconds = timeSpentSeconds;
+      if (timeSpentSeconds !== (task.timeSpentSeconds || 0)) {
+        updates.timeSpentSeconds = timeSpentSeconds;
       }
 
       if (Object.keys(updates).length > 0) {
@@ -204,6 +203,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
       />
 
       <motion.div
+        ref={focusTrapRef}
         role="dialog"
         aria-modal="true"
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -298,7 +298,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                         target.value = "";
                         target.disabled = true;
                         try {
-                          await createSubtaskMutation.mutateAsync({ title, parent_id: task.id });
+                          await createSubtaskMutation.mutateAsync({ title, parentId: task.id });
                         } catch (err) {
                           console.error("Failed to create subtask:", err);
                         } finally {
@@ -492,8 +492,8 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
               <div className="flex-1 min-h-[400px] border-t border-white/5 bg-obsidian flex flex-col">
                 <div className="flex-1 overflow-hidden">
                   <ZulipThread 
-                    stream={task.zulip_stream || "tasks"} 
-                    topic={task.zulip_topic || `Task: ${task.title}`} 
+                    stream={task.zulipStream || "tasks"} 
+                    topic={task.zulipTopic || `Task: ${task.title}`} 
                     className="m-0 border-none bg-transparent shadow-none max-h-none h-full"
                   />
                 </div>
@@ -505,9 +505,9 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         {/* Footer */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-t border-white/5 bg-white/5">
           <div className="flex items-center gap-4 text-[10px] text-ares-gray font-mono">
-            <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
-            {task.creator_name && <span>by {task.creator_name}</span>}
-            <span>Updated {new Date(task.updated_at).toLocaleDateString()}</span>
+            <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
+            {task.creatorName && <span>by {task.creatorName}</span>}
+            <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center gap-3">
             {confirmDelete ? (
@@ -556,3 +556,4 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
     </div>
   );
 }
+

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -41,12 +42,14 @@ export function QuickAddEventModal({
   selectedDate,
   onSuccess,
 }: QuickAddEventModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
   const previousDateRef = useRef<Date | null>(null);
   const [formData, setFormData] = useState<FormData>(DEFAULT_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  // Accessibility: Focus trap for keyboard navigation
+  const { modalRef } = useFocusTrap({ isOpen, onClose });
 
   // Fetch locations from registry (only when modal is open)
   const { data: locationsData } = useGetLocations({ enabled: isOpen, staleTime: 5 * 60 * 1000 });
@@ -78,30 +81,6 @@ export function QuickAddEventModal({
       previousDateRef.current = null;
     }
   }, [isOpen, selectedDate]);
-
-  // Keyboard handling
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Focus management
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        const titleInput = modalRef.current?.querySelector('#quick-event-title-input') as HTMLElement;
-        if (titleInput) titleInput.focus();
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

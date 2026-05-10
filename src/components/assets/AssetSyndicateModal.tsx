@@ -1,4 +1,5 @@
 import { UseMutationResult } from "@tanstack/react-query";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 interface AssetSyndicateModalProps {
   syndicateKey: string | null;
@@ -15,14 +16,27 @@ export default function AssetSyndicateModal({
   setSyndicateCaption,
   syndicateMutation
 }: AssetSyndicateModalProps) {
-  if (!syndicateKey) return null;
+  const isOpen = !!syndicateKey;
+  // Accessibility: Focus trap for keyboard navigation
+  const { modalRef } = useFocusTrap({
+    isOpen,
+    onClose: () => { setSyndicateKey(null); setSyndicateCaption(""); },
+  });
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-obsidian border border-white/20 ares-cut w-full max-w-md p-6 shadow-2xl relative overflow-hidden">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-syndicate-title"
+        className="bg-obsidian border border-white/20 ares-cut w-full max-w-md p-6 shadow-2xl relative overflow-hidden"
+      >
         <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />
-        
-        <h3 className="text-xl font-bold text-white mb-2">Broadcast Media</h3>
+
+        <h3 id="asset-syndicate-title" className="text-xl font-bold text-white mb-2">Broadcast Media</h3>
         <p className="text-sm text-marble mb-6">
           Dispatch this asset to Instagram, X, Facebook, and Discord securely. Make sure your Integration Keys are populated.
         </p>

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
@@ -15,28 +16,29 @@ interface CreateLocationModalProps {
 }
 
 export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocationModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
   const _queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState("");
   const [isSearchingOSM, setIsSearchingOSM] = useState(false);
   const [suggestions, setSuggestions] = useState<{ display_name: string }[]>([]);
 
-  const form = useForm<z.infer<typeof locationSchema>>({
+  // Accessibility: Focus trap for keyboard navigation
+  const { modalRef } = useFocusTrap({ isOpen, onClose });
+
+  const form = useForm({
     defaultValues: {
       name: "",
       address: "",
-      maps_url: "",
-      is_deleted: 0
+      mapsUrl: "",
+      isDeleted: 0
     }
   });
 
-  const { Provider: FormProvider } = form;
 
   const resetForm = useCallback(() => {
     form.setFieldValue("name", "");
     form.setFieldValue("address", "");
-    form.setFieldValue("maps_url", "");
-    form.setFieldValue("is_deleted", 0);
+    form.setFieldValue("mapsUrl", "");
+    form.setFieldValue("isDeleted", 0);
     setSuggestions([]);
     setErrorMsg("");
   }, [form]);
@@ -93,30 +95,6 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     saveMutation.mutate({ ...formValue, id: undefined });
   };
 
-  // Keyboard handling
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose]);
-
-  // Focus management
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        const titleInput = modalRef.current?.querySelector('#venue_name') as HTMLElement;
-        if (titleInput) titleInput.focus();
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -161,7 +139,6 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
             </div>
 
             {/* Form */}
-            <FormProvider>
               <form onSubmit={(e) => { e.preventDefault(); onFormSubmit(); }} className="p-6 space-y-5">
                 {errorMsg && (
                   <div className="p-3 bg-ares-danger/10 border border-ares-danger/30 rounded text-ares-danger text-sm">
@@ -231,7 +208,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
                             onClick={() => {
                               form.setFieldValue("address", s.display_name);
                               const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display_name)}`;
-                              form.setFieldValue("maps_url", mapsLink);
+                              form.setFieldValue("mapsUrl", mapsLink);
                               setSuggestions([]);
                             }}
                           >
@@ -272,10 +249,10 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
                 </button>
               </div>
               </form>
-            </FormProvider>
           </motion.div>
         </div>
       )}
     </AnimatePresence>
   );
 }
+
