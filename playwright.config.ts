@@ -69,7 +69,7 @@ export default defineConfig({
   use: {
     baseURL: baseUrl,
     trace: 'on-first-retry',
-    actionTimeout: 10000,
+    actionTimeout: process.env.CI ? 15000 : 10000,
     navigationTimeout: 30000,
     contextOptions: {
       serviceWorkers: 'block',

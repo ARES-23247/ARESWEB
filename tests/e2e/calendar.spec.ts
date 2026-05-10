@@ -9,6 +9,9 @@ import { setupMockAuth } from '../fixtures/auth';
  */
 
 test.describe('Calendar Repair API Integration', () => {
+  // Skip in CI: POST /api/events/admin/sync writes to production DB — not safe on preview
+  test.skip(!!process.env.CI, 'Requires writable API — not available in CI preview');
+
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page, { useRealAuth: true });
     await page.goto('/');

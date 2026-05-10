@@ -11,6 +11,9 @@ import { DashboardPage } from '../pages/DashboardPage';
  */
 
 test.describe('Collaboration', () => {
+  // Skip in CI: requires live PartyKit/Yjs WebSocket server not available on Cloudflare Pages preview
+  test.skip(!!process.env.CI, 'Requires live WebSocket server — not available in CI preview');
+
   test.beforeEach(async ({ page }) => {
     page.on('console', (msg) => console.log('BROWSER CONSOLE:', msg.text()));
     page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message));
