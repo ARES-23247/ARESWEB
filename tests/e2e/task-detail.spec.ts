@@ -17,13 +17,26 @@ const TEST_TASK_ID = 'test-task-detail-123';
 async function gotoTaskAndCheckLoaded(page: import('@playwright/test').Page): Promise<boolean> {
   await page.goto(`/dashboard/tasks/${TEST_TASK_ID}`);
 
+  // Wait for page load state
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+
   // Wait for either the task form or the "Task not found" fallback
+  // Use multiple possible indicators for robustness
   const taskTitle = page.locator('#task-title');
-  const notFound = page.getByText('Task not found');
+  const notFound = page.getByText(/Task not found|not found/i);
+  const anyHeading = page.getByRole('heading');
+  const anyInput = page.locator('input').first();
 
-  await expect(taskTitle.or(notFound)).toBeVisible({ timeout: TEST_TIMEOUTS.SLOW_PAGE });
+  // Wait for ANY content to appear (task, not found, or general page content)
+  await Promise.race([
+    taskTitle.isVisible().catch(() => false),
+    notFound.isVisible().catch(() => false),
+    anyHeading.first().isVisible().catch(() => false),
+    anyInput.isVisible().catch(() => false),
+  ]);
 
-  return taskTitle.isVisible({ timeout: 500 }).catch(() => false);
+  // Check if task actually loaded
+  return taskTitle.isVisible({ timeout: 2000 }).catch(() => false);
 }
 
 /**

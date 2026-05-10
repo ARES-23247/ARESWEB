@@ -65,13 +65,13 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
         assignees_json: sql<string>`(
           SELECT json_group_array(
             json_object(
-              'id', ${schema.taskAssignments.userId},
-              'nickname', ${schema.userProfiles.nickname}
+              'id', ta.user_id,
+              'nickname', up.nickname
             )
           )
-          FROM ${schema.taskAssignments} ta
-          LEFT JOIN ${schema.userProfiles} up ON ta.${schema.taskAssignments.userId} = up.${schema.userProfiles.userId}
-          WHERE ta.${schema.taskAssignments.taskId} = ${schema.tasks.id}
+          FROM task_assignments ta
+          LEFT JOIN user_profiles up ON ta.user_id = up.user_id
+          WHERE ta.task_id = tasks.id
         )`,
       })
       .from(schema.tasks)
