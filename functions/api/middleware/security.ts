@@ -35,6 +35,23 @@ export function _resetCircuitBreakerStateForTest() {
 // ── Write-Endpoint Rate Limiting (Persistent D1) ────────────────────────────
 
 /**
+ * Rate limit metadata for response headers
+ */
+export interface RateLimitMetadata {
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+/**
+ * Result of a rate limit check with metadata
+ */
+export interface RateLimitCheckResult {
+  allowed: boolean;
+  metadata: RateLimitMetadata;
+}
+
+/**
  * SEC-RL-02: Enhanced Persistent Rate Limit Check with Circuit Breaker
  *
  * Circuit Breaker Logic:
