@@ -359,6 +359,20 @@ export default defineConfig({
           if (normalizedId.includes("node_modules/@tanstack/")) {
             return "tanstack";
           }
+
+          // Yjs and collaborative editing
+          if (normalizedId.includes("node_modules/yjs") || 
+              normalizedId.includes("node_modules/y-") || 
+              normalizedId.includes("node_modules/lib0") ||
+              normalizedId.includes("node_modules/partykit") ||
+              normalizedId.includes("node_modules/partysocket")) {
+            return "yjs";
+          }
+          
+          // Blockly
+          if (normalizedId.includes("node_modules/blockly")) {
+            return "blockly";
+          }
         },
       },
     },

@@ -62,6 +62,14 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       displayInMathCorner: false,
       displayInScienceCorner: false,
       content: "{}"
+    },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error - zodValidator generic type mismatch with form schema
+    validatorAdapter: zodValidator(),
+    onSubmit: async ({ value }) => {
+      if (!editor) return;
+      const content = JSON.stringify(editor.getJSON());
+      saveMutation.mutate({ ...value, content, isDraft: value.isDraft });
     }
   });
 
@@ -126,11 +134,17 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     }
   });
 
-  const onFormSubmit = (isDraft = false) => {
+  const onFormSubmit = async (isDraft = false) => {
     if (!editor) return;
-    const content = JSON.stringify(editor.getJSON());
-    const formValue = form.state.values;
-    saveMutation.mutate({ ...formValue, content, isDraft });
+
+    // Update the isDraft field in the form before validating
+    form.setFieldValue("isDraft", isDraft);
+
+    // Clear any previous errors
+    setErrorMsg("");
+
+    // Trigger validation and submit
+    await form.handleSubmit();
   };
 
   const handleDelete = async () => {
