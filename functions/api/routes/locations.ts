@@ -1,4 +1,4 @@
-import { typedHandler } from "../utils/handler";
+import { autoResponseHandler, success } from "../utils/handler-v2";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc } from "drizzle-orm";
@@ -16,7 +16,20 @@ import { edgeCacheMiddleware } from "../middleware/cache";
 
 
 
+
 type LocationInput = z.infer<typeof locationSchema>;
+
+
+type ListLocationsSuccess = z.infer<typeof listLocationsRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+
+type AdminListLocationsSuccess = z.infer<typeof adminListLocationsRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+
+type SaveLocationSuccess = z.infer<typeof saveLocationRoute.responses[200]["content"]["application/json"]["schema"]>;
+
+
+type DeleteLocationSuccess = z.infer<typeof deleteLocationRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 export const locationsRouter = new OpenAPIHono<AppEnv>();
 
@@ -30,19 +43,20 @@ locationsRouter.use("*", async (c, next) => {
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
+
 // Apply caching to public locations list
 
 
 locationsRouter.use("/admin/*", ensureAdmin);
 
-locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRoute>(async (c) => {
+locationsRouter.openapi(listLocationsRoute, autoResponseHandler<typeof listLocationsRoute>(async (c) => {
     const db = getDb(c);
     const results = await db.select({
         id: schema.locations.id,
         name: schema.locations.name,
         address: schema.locations.address,
         maps_url: schema.locations.mapsUrl,
-        is_deleted: schema.locations.isDeleted
+        isDeleted: schema.locations.isDeleted
       })
       .from(schema.locations)
       .where(eq(schema.locations.isDeleted, 0))
@@ -52,20 +66,20 @@ locationsRouter.openapi(listLocationsRoute, typedHandler<typeof listLocationsRou
     const locations = results.map((r) => ({
       ...r,
       id: r.id || undefined,
-      is_deleted: Number(r.is_deleted || 0)
+      isDeleted: Number(r.isDeleted || 0)
     }));
 
-    return c.json({ locations: locations as LocationInput[] }, 200);
+    return success({ locations: locations as LocationInput[] } satisfies ListLocationsSuccess);
 }));
 
-locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLocationsRoute>(async (c) => {
+locationsRouter.openapi(adminListLocationsRoute, autoResponseHandler<typeof adminListLocationsRoute>(async (c) => {
     const db = getDb(c);
     const results = await db.select({
         id: schema.locations.id,
         name: schema.locations.name,
         address: schema.locations.address,
         maps_url: schema.locations.mapsUrl,
-        is_deleted: schema.locations.isDeleted
+        isDeleted: schema.locations.isDeleted
       })
       .from(schema.locations)
       .orderBy(asc(schema.locations.name))
@@ -74,14 +88,14 @@ locationsRouter.openapi(adminListLocationsRoute, typedHandler<typeof adminListLo
     const locations = results.map((r) => ({
       ...r,
       id: r.id || undefined,
-      is_deleted: Number(r.is_deleted || 0)
+      isDeleted: Number(r.isDeleted || 0)
     }));
 
-    return c.json({ locations: locations as LocationInput[] }, 200);
+    return success({ locations: locations as LocationInput[] } satisfies AdminListLocationsSuccess);
 }));
 
-locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute>(async (c) => {
-    const validatedData = c.req.valid("json");
+locationsRouter.openapi(saveLocationRoute, autoResponseHandler<typeof saveLocationRoute>(async (c, { body }) => {
+    const validatedData = body;
     const db = getDb(c);
     const id = validatedData.id || crypto.randomUUID();
 
@@ -90,33 +104,33 @@ locationsRouter.openapi(saveLocationRoute, typedHandler<typeof saveLocationRoute
         id,
         name: validatedData.name,
         address: validatedData.address,
-        mapsUrl: validatedData.maps_url || null,
-        isDeleted: validatedData.is_deleted || 0,
+        mapsUrl: validatedData.mapsUrl || null,
+        isDeleted: validatedData.isDeleted || 0,
       })
       .onConflictDoUpdate({
         target: schema.locations.id,
         set: {
           name: validatedData.name,
           address: validatedData.address,
-          mapsUrl: validatedData.maps_url || null,
-          isDeleted: validatedData.is_deleted || 0,
+          mapsUrl: validatedData.mapsUrl || null,
+          isDeleted: validatedData.isDeleted || 0,
         }
       })
       .run();
 
     c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
-    return c.json({ success: true, id }, 200);
+    return success({ success: true, id } satisfies SaveLocationSuccess);
 }));
 
-locationsRouter.openapi(deleteLocationRoute, typedHandler<typeof deleteLocationRoute>(async (c) => {
-    const { id } = c.req.valid("param");
+locationsRouter.openapi(deleteLocationRoute, autoResponseHandler<typeof deleteLocationRoute>(async (c, { params }) => {
+    const { id } = params;
     const db = getDb(c);
     await db.update(schema.locations)
       .set({ isDeleted: 1 })
       .where(eq(schema.locations.id, id))
       .run();
     c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
-    return c.json({ success: true }, 200);
+    return success({ success: true } satisfies DeleteLocationSuccess);
 }));
 
 export default locationsRouter;
