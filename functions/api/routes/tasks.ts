@@ -53,6 +53,9 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
         priority: schema.tasks.priority,
         subteam: schema.tasks.subteam,
         dueDate: schema.tasks.dueDate,
+        startDate: schema.tasks.startDate,
+        estimatedMinutes: schema.tasks.estimatedMinutes,
+        coverImage: schema.tasks.coverImage,
         sortOrder: schema.tasks.sortOrder,
         parentId: schema.tasks.parentId,
         timeSpentSeconds: schema.tasks.timeSpentSeconds,
@@ -148,6 +151,9 @@ tasksRouter.openapi(createTaskRoute, async (c) => {
       createdAt: string;
       updatedAt: string;
       assignedTo?: string;
+      startDate?: string | null;
+      estimatedMinutes?: number | null;
+      coverImage?: string | null;
     }
 
     const taskData: TaskData = {
@@ -160,6 +166,9 @@ tasksRouter.openapi(createTaskRoute, async (c) => {
       dueDate: body.dueDate || null,
       sortOrder: body.sortOrder || 0,
       parentId: body.parentId || null,
+      startDate: body.startDate || null,
+      estimatedMinutes: body.estimatedMinutes || null,
+      coverImage: body.coverImage || null,
       timeSpentSeconds: 0,
       createdBy: user.id,
       createdAt: now,
@@ -284,6 +293,9 @@ tasksRouter.openapi(updateTaskRoute, async (c) => {
       parentId?: string | null;
       timeSpentSeconds?: number;
       assignedTo?: string | null;
+      startDate?: string | null;
+      estimatedMinutes?: number | null;
+      coverImage?: string | null;
     };
 
     const updates: TaskUpdates = { updatedAt: new Date().toISOString() };
@@ -297,6 +309,9 @@ tasksRouter.openapi(updateTaskRoute, async (c) => {
     if (body.parentId !== undefined) updates.parentId = body.parentId;
     if (body.timeSpentSeconds !== undefined) updates.timeSpentSeconds = body.timeSpentSeconds;
     if (body.assignedTo !== undefined) updates.assignedTo = body.assignedTo;
+    if (body.startDate !== undefined) updates.startDate = body.startDate;
+    if (body.estimatedMinutes !== undefined) updates.estimatedMinutes = body.estimatedMinutes;
+    if (body.coverImage !== undefined) updates.coverImage = body.coverImage;
 
     await db.update(schema.tasks)
       .set(updates)
