@@ -2,7 +2,6 @@
  * Playwright config for running tests against deployed environments
  *
  * Usage:
- *   PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote
  *   PREVIEW_URL=https://your-branch-abc123.pages.dev npm run test:e2e:remote
  *
  * No local build or server required - tests run against the deployed site.
@@ -10,7 +9,13 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
-const previewUrl = process.env.PREVIEW_URL || 'https://aresweb.pages.dev';
+if (!process.env.PREVIEW_URL) {
+  console.warn("⚠️ WARNING: No PREVIEW_URL provided. You MUST provide a branch preview URL to run remote tests.");
+  console.warn("Example: PREVIEW_URL=https://<your-branch-hash>.aresweb.pages.dev npm run test:e2e:remote");
+  console.warn("🚨 NEVER test against https://aresweb.pages.dev (production)");
+}
+
+const previewUrl = process.env.PREVIEW_URL || 'http://127.0.0.1:8788'; // Fall back to local if unspecified, never production
 
 export default defineConfig({
   globalSetup: './tests/global-setup.ts',
