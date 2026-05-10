@@ -190,10 +190,10 @@ analyticsRouter.openapi(
         .then((results) => results?.[0] || { uniqueCount: 0 })
         .catch((err) => { console.error("Analytics: Failed to count unique visitors:", err); return { uniqueCount: 0 }; }),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, views: sql<number>`count(${schema.pageAnalytics.path})` })
-        .from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`views`)).limit(10).all()
+        .from(schema.pageAnalytics).groupBy(schema.pageAnalytics.path, schema.pageAnalytics.category).orderBy(desc(sql`count(${schema.pageAnalytics.path})`)).limit(10).all()
         .catch((err) => { console.error("Analytics: Failed to fetch top pages:", err); return []; }),
       db.select({ referrer: schema.pageAnalytics.referrer, visits: sql<number>`count(${schema.pageAnalytics.referrer})` })
-        .from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`visits`)).limit(10).all()
+        .from(schema.pageAnalytics).where(sql`referrer != ''`).groupBy(schema.pageAnalytics.referrer).orderBy(desc(sql`count(${schema.pageAnalytics.referrer})`)).limit(10).all()
         .catch((err) => { console.error("Analytics: Failed to fetch top referrers:", err); return []; }),
       db.select({ path: schema.pageAnalytics.path, category: schema.pageAnalytics.category, userAgent: schema.pageAnalytics.userAgent, referrer: schema.pageAnalytics.referrer, timestamp: schema.pageAnalytics.timestamp })
         .from(schema.pageAnalytics).orderBy(desc(schema.pageAnalytics.timestamp)).limit(20).all()

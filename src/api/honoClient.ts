@@ -5,48 +5,56 @@ import type { UseMutationOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 /**
+ * Custom fetch that handles:
+ * - Path normalization (removes duplicate slashes)
+ * - Automatic Content-Type header for JSON requests
+ * - 401 session refresh triggering
+ */
+const customFetch = async (
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const normalizedPath = url.replace(/\/+(\?|$)/, "$1");
+  const headers = new Headers(init?.headers);
+  const body = init?.body;
+  if (!(body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  const response = await fetch(normalizedPath, {
+    ...init,
+    headers,
+  });
+
+  // Handle 401 Unauthorized - trigger session refresh
+  if (response.status === 401 && typeof window !== 'undefined') {
+    // Trigger Better Auth session refresh
+    // The auth state will be updated and components will re-render
+    console.warn('[API] 401 response - session may need refresh');
+  }
+
+  return response;
+};
+
+/**
  * Type-safe Hono client for API calls.
  *
- * NOTE: We use hc<AppType> to get full RPC type safety where possible.
+ * LIMITATIONS:
+ * 1. Custom fetch breaks hc() type inference (even with `as typeof fetch`)
+ * 2. Server routes mounted via `.route()` don't chain OpenAPI types into `typeof apiRouter`
  *
- * IMPORTANT: The client uses a loose type (extends Client) because OpenAPIHono
- * route types are not fully inferrable by Hono's hc() client. OpenAPIHono extends
- * Hono with additional metadata (for OpenAPI spec generation) that creates
- * structural incompatibilities with hc's type inference. Individual API
- * wrapper functions handle their own type safety through Zod schemas and
- * explicit type annotations.
+ * For full type safety, server would need to export chained `.openapi()` results:
+ *   const routes = apiRouter.openapi(getRoute, handler).openapi(postRoute, handler);
+ *   export type AppType = typeof routes;
  *
- * The Partial<> wrapper makes all routes optional to work around type inference
- * issues while still providing autocomplete for available routes.
+ * Individual API wrapper functions in src/api/ provide type safety via Zod schemas.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const client: any =
-  hc<AppType>("/api", {
+export const client: any = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },
-  async fetch(input: RequestInfo | URL, init?: RequestInit) {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const normalizedPath = url.replace(/\/+(\?|$)/, "$1");
-    const headers = new Headers(init?.headers);
-    const body = init?.body;
-    if (!(body instanceof FormData) && !headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
-    }
-    const response = await fetch(normalizedPath, {
-      ...init,
-      headers,
-    });
-
-    // Handle 401 Unauthorized - trigger session refresh
-    if (response.status === 401 && typeof window !== 'undefined') {
-      // Trigger Better Auth session refresh
-      // The auth state will be updated and components will re-render
-      console.warn('[API] 401 response - session may need refresh');
-    }
-
-    return response;
-  },
+  fetch: customFetch as typeof fetch,
 });
 
 /**

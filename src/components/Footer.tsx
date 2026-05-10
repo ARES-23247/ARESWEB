@@ -129,13 +129,13 @@ export default function Footer() {
               <p className="text-marble/60 text-xs tracking-wider">
                 Morgantown, West Virginia 26501
               </p>
-              <p className="text-marble/40 text-[9px] mt-1">
+              <p className="text-marble/60 text-[9px] mt-1">
                 Serving North Central West Virginia
               </p>
             </div>
             <div className="pt-4 flex items-center gap-3">
               <ShieldCheck size={24} className="text-ares-cyan opacity-40" />
-              <p className="text-[9px] text-marble/50 leading-tight uppercase font-medium">
+              <p className="text-[9px] text-marble/60 leading-tight uppercase font-medium">
                 Official ARES Portal. All student data is protected under FIRST YPP.
               </p>
             </div>

@@ -149,7 +149,7 @@ export async function setupMockAuth(
  * @param role - User role (for looking up seeded test users)
  */
 async function setupRealAuth(page: Page, userId: string, role?: string): Promise<void> {
-  const baseUrlStr = process.env.PREVIEW_URL || (process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173');
+  const baseUrlStr = process.env.PREVIEW_URL || 'http://127.0.0.1:8788';
   // Ensure we don't have double slashes like https://foo.pages.dev//api/auth
   const baseUrl = baseUrlStr.endsWith('/') ? baseUrlStr.slice(0, -1) : baseUrlStr;
   const testLoginUrl = `${baseUrl}/api/auth/test-login`;

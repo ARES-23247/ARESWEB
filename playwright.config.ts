@@ -15,7 +15,7 @@ const WRANGLER_COMMAND = 'cross-env ENVIRONMENT=test npx wrangler pages dev dist
 
 // Use deployed preview URL if available (from CI), otherwise use local URLs
 const previewUrl = process.env.PREVIEW_URL;
-const baseUrl = previewUrl || (process.env.CI ? 'http://127.0.0.1:8788' : 'http://localhost:5173');
+const baseUrl = previewUrl || 'http://127.0.0.1:8788';
 
 // Define test suites for batch running
 const testSuites = {
@@ -185,16 +185,10 @@ export default defineConfig({
     },
   ],
   // Skip webServer when using deployed preview URL (PR testing)
-  webServer: previewUrl ? undefined : process.env.CI
-    ? {
-        command: WRANGLER_COMMAND,
-        url: 'http://127.0.0.1:8788',
-        reuseExistingServer: false,
-        timeout: 120 * 1000,
-      }
-    : {
-        command: 'cross-env MODE=test npm run dev',
-        url: 'http://localhost:5173',
-        reuseExistingServer: true,
-      },
+  webServer: previewUrl ? undefined : {
+    command: WRANGLER_COMMAND,
+    url: 'http://127.0.0.1:8788',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
 });

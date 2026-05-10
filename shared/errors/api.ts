@@ -41,8 +41,7 @@ export function errorResponse<T extends Context>(
   status: 400 | 401 | 403 | 404 | 409 | 429 | 500,
   code?: string,
   details?: unknown
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): Response {
   return c.json(createErrorResponse(message, code, details), status);
 }
 
@@ -121,8 +120,7 @@ export function formatZodError(zodError: {
 export function validationErrorResponse(
   c: Context,
   validationErrors: Record<string, string>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): Response {
   return c.json(
     createErrorResponse("Validation failed", ErrorCode.VALIDATION_ERROR, validationErrors),
     400
@@ -147,10 +145,9 @@ export function successResponse<T extends Context, D>(
   c: T,
   data: D,
   status: 200 | 201 | 202 | 204 = 200
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return c.json(data, status as any);
+): Response {
+  // Hono's c.json() type doesn't accept union of status literals, so we cast
+  return c.json(data, status as 200);
 }
 
 /**
@@ -165,8 +162,7 @@ export function paginatedResponse<T extends Context, D>(
   limit: number,
   offset: number,
   total?: number
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): Response {
   const response: {
     items: D[];
     limit: number;
