@@ -1,4 +1,3 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { eq, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -42,16 +41,16 @@ const settingsSchema = z.record(z.string(), z.string().max(10000));
 
 settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, createTypedHandler(getSettingsRoute, async (c) => {
+settingsRouter.openapi(getSettingsRoute, async (c) => {
   const settings = await getDbSettings(c);
   const masked: Record<string, string> = {};
   for (const [key, value] of Object.entries(settings)) {
     masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
   }
   return c.json({ success: true, settings: masked }, 200);
-}));
+});
 
-settingsRouter.openapi(updateSettingsRoute, createTypedHandler(updateSettingsRoute, async (c) => {
+settingsRouter.openapi(updateSettingsRoute, async (c) => {
   const db = getDb(c);
   const body = c.req.valid("json");
   const validationResult = settingsSchema.safeParse(body);
@@ -89,9 +88,9 @@ settingsRouter.openapi(updateSettingsRoute, createTypedHandler(updateSettingsRou
 
   c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
   return c.json({ success: true, updated: updatedCount }, 200);
-}));
+});
 
-settingsRouter.openapi(getStatsRoute, createTypedHandler(getStatsRoute, async (c) => {
+settingsRouter.openapi(getStatsRoute, async (c) => {
   const db = getDb(c);
   const [posts, events, docs, inquiries, users] = await Promise.all([
     db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
@@ -107,9 +106,9 @@ settingsRouter.openapi(getStatsRoute, createTypedHandler(getStatsRoute, async (c
     inquiries: Number(inquiries?.count || 0),
     users: Number(users?.count || 0),
   }, 200);
-}));
+});
 
-settingsRouter.openapi(getPublicSettingsRoute, createTypedHandler(getPublicSettingsRoute, async (c) => {
+settingsRouter.openapi(getPublicSettingsRoute, async (c) => {
   const settings = await getDbSettings(c);
   const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
   const publicSettings: Record<string, string> = {};
@@ -117,7 +116,7 @@ settingsRouter.openapi(getPublicSettingsRoute, createTypedHandler(getPublicSetti
     if (settings[key]) publicSettings[key] = settings[key];
   }
   return c.json({ success: true, settings: publicSettings }, 200);
-}));
+});
 
 const SCHEMA_MAP: Record<string, unknown> = {
   posts: schema.posts,

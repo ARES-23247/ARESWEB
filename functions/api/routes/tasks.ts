@@ -4,10 +4,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { wrapHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Context } from "hono";
 
 import { eq, asc, desc, and, inArray, sql, aliasedTable } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -29,24 +27,21 @@ export const tasksRouter = new OpenAPIHono<AppEnv>();
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
 tasksRouter.use("*", originIntegrityMiddleware());
 
-// Handler functions
-type HandlerInput = { query?: Record<string, unknown>; params?: Record<string, unknown>; body?: Record<string, unknown> };
-
-const taskHandlers = {
-  listTasks: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const query = input.query || {};
+// Routes
+tasksRouter.openapi(listTasksRoute, async (c) => {
+    const query = c.req.valid("query");
     const db = getDb(c);
     const { limit, offset } = parsePagination(c, 50, 200);
 
     const conditions = [];
     if (query.status) {
-      conditions.push(eq(schema.tasks.status, query.status as string));
+      conditions.push(eq(schema.tasks.status, query.status));
     }
     if (query.parentId) {
-      conditions.push(eq(schema.tasks.parentId, query.parentId as string));
+      conditions.push(eq(schema.tasks.parentId, query.parentId));
     }
     if (query.assignedTo) {
-      conditions.push(eq(schema.tasks.assignedTo, query.assignedTo as string));
+      conditions.push(eq(schema.tasks.assignedTo, query.assignedTo));
     }
 
     const creatorProfile = aliasedTable(schema.userProfiles, "creatorProfile");
@@ -121,26 +116,16 @@ const taskHandlers = {
       };
     });
 
-    return { status: 200, body: { tasks: formattedTasks } };
-  },
+    return c.json({ tasks: formattedTasks }, 200);
+  }
+);
 
-  createTask: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const body = input.body as {
-      title: string;
-      description?: string;
-      status?: string;
-      priority?: string;
-      subteam?: string;
-      dueDate?: string;
-      sortOrder?: number;
-      parentId?: string;
-      assignedTo?: string;
-      assignees?: string[];
-    };
+tasksRouter.openapi(createTaskRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) {
-      return { status: 401, body: { error: "Unauthorized" } };
+      throw new ApiError("Unauthorized", 401);
     }
 
     const id = crypto.randomUUID();
@@ -228,15 +213,16 @@ const taskHandlers = {
       assigneeName: null,
     };
 
-    return { status: 200, body: { success: true, task: createdTask } };
-  },
+    return c.json({ success: true, task: createdTask }, 200);
+  }
+);
 
-  reorderTasks: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const body = input.body as { items: Array<{ id: string; sortOrder: number }> };
+tasksRouter.openapi(reorderTasksRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) {
-      return { status: 401, body: { error: "Unauthorized" } };
+      throw new ApiError("Unauthorized", 401);
     }
 
     // Batch update sort orders
@@ -247,28 +233,17 @@ const taskHandlers = {
         .run()
     ));
 
-    return { status: 200, body: { success: true } };
-  },
+    return c.json({ success: true }, 200);
+  }
+);
 
-  updateTask: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { id } = input.params as { id: string };
-    const body = input.body as {
-      title?: string;
-      description?: string;
-      status?: string;
-      priority?: string;
-      subteam?: string;
-      dueDate?: string;
-      sortOrder?: number;
-      parentId?: string;
-      timeSpentSeconds?: number;
-      assignedTo?: string;
-      assignees?: string[];
-    };
+tasksRouter.openapi(updateTaskRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) {
-      return { status: 401, body: { error: "Unauthorized" } };
+      throw new ApiError("Unauthorized", 401);
     }
 
     const existing = await db.select({
@@ -278,11 +253,11 @@ const taskHandlers = {
         subteam: schema.tasks.subteam,
       })
       .from(schema.tasks)
-      .where(eq(schema.tasks.id, id))
+      .where(eq(schema.tasks.id, params.id))
       .get();
 
     if (!existing) {
-      return { status: 404, body: { error: "Task not found" } };
+      throw new ApiError("Task not found", 404);
     }
 
     const isAdmin = user.role === "admin";
@@ -319,13 +294,13 @@ const taskHandlers = {
 
     await db.update(schema.tasks)
       .set(updates)
-      .where(eq(schema.tasks.id, id))
+      .where(eq(schema.tasks.id, params.id))
       .run();
 
     // Only admins, mentors/coaches, and the task creator can change assignments
     if (body.assignees !== undefined) {
       if (!canAssign) {
-        return { status: 403, body: { error: "Only mentors, coaches, admins, or the task creator can change assignments" } };
+        throw new ApiError("Only mentors, coaches, admins, or the task creator can change assignments", 403);
       }
 
       // WR-12: Additional validation - prevent assigning users from different subteams
@@ -340,16 +315,16 @@ const taskHandlers = {
 
           const hasMismatchedSubteam = assigneeSubteams.some((p) => p.subteams && p.subteams !== existing.subteam);
           if (hasMismatchedSubteam) {
-            return { status: 403, body: { error: "Cannot assign users from different subteams to this task" } };
+            throw new ApiError("Cannot assign users from different subteams to this task", 403);
           }
         }
       }
 
       // Sync assignments: delete and re-insert
-      await db.delete(schema.taskAssignments).where(eq(schema.taskAssignments.taskId, id)).run();
+      await db.delete(schema.taskAssignments).where(eq(schema.taskAssignments.taskId, params.id)).run();
       if (body.assignees && body.assignees.length > 0) {
         const assignments = body.assignees.map((userId: string) => ({
-          taskId: id,
+          taskId: params.id,
           userId: userId,
         }));
         await db.insert(schema.taskAssignments).values(assignments).run();
@@ -371,40 +346,41 @@ const taskHandlers = {
       actor: user.id,
       action: "update_task",
       resourceType: "task",
-      resourceId: id,
+      resourceId: params.id,
       details: "Updated task",
       createdAt: new Date().toISOString(),
     }).run();
 
-    return { status: 200, body: { success: true } };
-  },
+    return c.json({ success: true }, 200);
+  }
+);
 
-  deleteTask: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { id } = input.params as { id: string };
+tasksRouter.openapi(deleteTaskRoute, async (c) => {
+    const params = c.req.valid("param");
     const db = getDb(c);
     const user = await getSessionUser(c);
     if (!user) {
-      return { status: 401, body: { error: "Unauthorized" } };
+      throw new ApiError("Unauthorized", 401);
     }
 
     const existing = await db.select({ createdBy: schema.tasks.createdBy })
       .from(schema.tasks)
-      .where(eq(schema.tasks.id, id))
+      .where(eq(schema.tasks.id, params.id))
       .get();
 
     if (!existing) {
-      return { status: 404, body: { error: "Task not found" } };
+      throw new ApiError("Task not found", 404);
     }
 
     const isAdmin = user.role === "admin";
     const isOwner = existing.createdBy === user.id;
 
     if (!isAdmin && !isOwner) {
-      return { status: 403, body: { error: "You are not authorized to delete this task" } };
+      throw new ApiError("You are not authorized to delete this task", 403);
     }
 
     await db.delete(schema.tasks)
-      .where(eq(schema.tasks.id, id))
+      .where(eq(schema.tasks.id, params.id))
       .run();
 
     await db.insert(schema.auditLog).values({
@@ -412,59 +388,13 @@ const taskHandlers = {
       actor: user.id,
       action: "delete_task",
       resourceType: "task",
-      resourceId: id,
+      resourceId: params.id,
       details: "Deleted task",
       createdAt: new Date().toISOString(),
     }).run();
 
-    return { status: 200, body: { success: true } };
-  },
-};
-
-// Routes
-tasksRouter.openapi(
-  listTasksRoute,
-  wrapHandler(listTasksRoute, async (c, { query }) => {
-    const result = await taskHandlers.listTasks({ query, params: {}, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-tasksRouter.openapi(
-  createTaskRoute,
-  wrapHandler(createTaskRoute, async (c, { body }) => {
-    const result = await taskHandlers.createTask({ query: {}, params: {}, body }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-tasksRouter.openapi(
-  reorderTasksRoute,
-  wrapHandler(reorderTasksRoute, async (c, { body }) => {
-    const result = await taskHandlers.reorderTasks({ query: {}, params: {}, body }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-tasksRouter.openapi(
-  updateTaskRoute,
-  wrapHandler(updateTaskRoute, async (c, { params, body }) => {
-    const result = await taskHandlers.updateTask({ query: {}, params, body }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-tasksRouter.openapi(
-  deleteTaskRoute,
-  wrapHandler(deleteTaskRoute, async (c, { params }) => {
-    const result = await taskHandlers.deleteTask({ query: {}, params, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
+    return c.json({ success: true }, 200);
+  }
 );
 
 export default tasksRouter;

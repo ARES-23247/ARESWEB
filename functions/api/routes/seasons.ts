@@ -1,4 +1,3 @@
-import { createTypedHandler } from "../utils/handler-native";
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, and } from "drizzle-orm";
@@ -32,7 +31,7 @@ seasonsRouter.use("*", async (c, next) => {
 // Apply admin protection and rate limiting to admin routes
 seasonsRouter.use("/admin/*", ensureAdmin);
 
-seasonsRouter.openapi(listSeasonsRoute, createTypedHandler(listSeasonsRoute, async (c) => {
+seasonsRouter.openapi(listSeasonsRoute, async (c) => {
   const db = getDb(c);
   const results = await db
     .select({
@@ -68,9 +67,9 @@ seasonsRouter.openapi(listSeasonsRoute, createTypedHandler(listSeasonsRoute, asy
   }));
 
   return c.json({ seasons }, 200);
-}));
+});
 
-seasonsRouter.openapi(adminListSeasonsRoute, createTypedHandler(adminListSeasonsRoute, async (c) => {
+seasonsRouter.openapi(adminListSeasonsRoute, async (c) => {
   const db = getDb(c);
   const results = await db
     .select({
@@ -100,9 +99,10 @@ seasonsRouter.openapi(adminListSeasonsRoute, createTypedHandler(adminListSeasons
   }));
 
   return c.json({ seasons }, 200);
-}));
+});
 
-seasonsRouter.openapi(adminDetailSeasonRoute, createTypedHandler(adminDetailSeasonRoute, async (c, { params }) => {
+seasonsRouter.openapi(adminDetailSeasonRoute, async (c) => {
+  const params = c.req.valid("param");
   const { id } = params;
   const db = getDb(c);
   const year = parseInt(id, 10);
@@ -138,9 +138,10 @@ seasonsRouter.openapi(adminDetailSeasonRoute, createTypedHandler(adminDetailSeas
   };
 
   return c.json({ season }, 200);
-}));
+});
 
-seasonsRouter.openapi(getSeasonDetailRoute, createTypedHandler(getSeasonDetailRoute, async (c, { params }) => {
+seasonsRouter.openapi(getSeasonDetailRoute, async (c) => {
+  const params = c.req.valid("param");
   const { year } = params;
   const db = getDb(c);
   const yearNum = parseInt(year, 10);
@@ -262,9 +263,10 @@ seasonsRouter.openapi(getSeasonDetailRoute, createTypedHandler(getSeasonDetailRo
   };
 
   return c.json({ season, awards, events, posts, outreach }, 200);
-}));
+});
 
-seasonsRouter.openapi(saveSeasonRoute, createTypedHandler(saveSeasonRoute, async (c, { body }) => {
+seasonsRouter.openapi(saveSeasonRoute, async (c) => {
+  const body = c.req.valid("json");
   const db = getDb(c);
   const targetYear = body.originalYear ?? body.startYear;
 
@@ -337,9 +339,10 @@ seasonsRouter.openapi(saveSeasonRoute, createTypedHandler(saveSeasonRoute, async
   }
   triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
   return c.json({ success: true }, 200);
-}));
+});
 
-seasonsRouter.openapi(deleteSeasonRoute, createTypedHandler(deleteSeasonRoute, async (c, { params }) => {
+seasonsRouter.openapi(deleteSeasonRoute, async (c) => {
+  const params = c.req.valid("param");
   const { id } = params;
   const db = getDb(c);
   const year = parseInt(id, 10);
@@ -351,9 +354,10 @@ seasonsRouter.openapi(deleteSeasonRoute, createTypedHandler(deleteSeasonRoute, a
 
   triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
   return c.json({ success: true }, 200);
-}));
+});
 
-seasonsRouter.openapi(undeleteSeasonRoute, createTypedHandler(undeleteSeasonRoute, async (c, { params }) => {
+seasonsRouter.openapi(undeleteSeasonRoute, async (c) => {
+  const params = c.req.valid("param");
   const { id } = params;
   const db = getDb(c);
   const year = parseInt(id, 10);
@@ -363,9 +367,10 @@ seasonsRouter.openapi(undeleteSeasonRoute, createTypedHandler(undeleteSeasonRout
     .where(eq(schema.seasons.startYear, year));
   c.executionCtx.waitUntil(logAuditAction(c, "season_restored", "seasons", id, `Season "${id}" restored`));
   return c.json({ success: true }, 200);
-}));
+});
 
-seasonsRouter.openapi(purgeSeasonRoute, createTypedHandler(purgeSeasonRoute, async (c, { params }) => {
+seasonsRouter.openapi(purgeSeasonRoute, async (c) => {
+  const params = c.req.valid("param");
   const { id } = params;
   const db = getDb(c);
   const year = parseInt(id, 10);
@@ -374,6 +379,6 @@ seasonsRouter.openapi(purgeSeasonRoute, createTypedHandler(purgeSeasonRoute, asy
     .where(eq(schema.seasons.startYear, year));
   c.executionCtx.waitUntil(logAuditAction(c, "season_purged", "seasons", id, `Season "${id}" permanently deleted`));
   return c.json({ success: true }, 200);
-}));
+});
 
 export default seasonsRouter;

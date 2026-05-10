@@ -5,11 +5,9 @@
  */
 
 import { ApiError } from "../middleware/errorHandler";
-import { wrapHandler } from "../utils/handler-native";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Context } from "hono";
 
 import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
@@ -41,11 +39,8 @@ sponsorsRouter.use("*", rateLimitMiddleware(15, 60));
 // WR-01 FIX: Standardize on /admin/* pattern (remove redundant /admin patterns)
 sponsorsRouter.use("/admin/*", ensureAdmin);
 
-// Handler functions
-type HandlerInput = { query?: Record<string, unknown>; params?: Record<string, unknown>; body?: Record<string, unknown> };
-
-const sponsorHandlers = {
-  getSponsors: async (input: HandlerInput, c: Context<AppEnv>) => {
+// Routes
+sponsorsRouter.openapi(getSponsorsRoute, async (c) => {
     const db = getDb(c);
     const results = await db
       .select({
@@ -72,20 +67,21 @@ const sponsorHandlers = {
       createdAt: s.createdAt ?? null,
     }));
 
-    return { status: 200, body: { sponsors } };
-  },
+    return c.json({ sponsors }, 200);
+  }
+);
 
-  getRoi: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { token } = input.params as { token: string };
+sponsorsRouter.openapi(getRoiRoute, async (c) => {
+    const params = c.req.valid("param");
     const db = getDb(c);
     const tokens = await db
       .select({ sponsorId: schema.sponsorTokens.sponsorId })
       .from(schema.sponsorTokens)
-      .where(eq(schema.sponsorTokens.token, token))
+      .where(eq(schema.sponsorTokens.token, params.token))
       .all();
 
     if (!tokens || tokens.length === 0) {
-      return { status: 403, body: { error: "Invalid token" } };
+      throw new ApiError("Invalid token", 403);
     }
     const sponsorId = tokens[0].sponsorId;
 
@@ -104,7 +100,7 @@ const sponsorHandlers = {
       .get();
 
     if (!sponsorRow) {
-      return { status: 403, body: { error: "Sponsor not found" } };
+      throw new ApiError("Sponsor not found", 403);
     }
 
     const metricsRow = await db
@@ -138,10 +134,11 @@ const sponsorHandlers = {
       yearMonth: m.yearMonth,
     }));
 
-    return { status: 200, body: { sponsor, metrics } };
-  },
+    return c.json({ sponsor, metrics }, 200);
+  }
+);
 
-  adminListSponsors: async (input: HandlerInput, c: Context<AppEnv>) => {
+sponsorsRouter.openapi(adminListSponsorsRoute, async (c) => {
     const db = getDb(c);
     const sponsors = await db.select({
         id: schema.sponsors.id,
@@ -163,11 +160,12 @@ const sponsorHandlers = {
       createdAt: s.createdAt ?? null,
     }));
 
-    return { status: 200, body: { sponsors: mappedSponsors } };
-  },
+    return c.json({ sponsors: mappedSponsors }, 200);
+  }
+);
 
-  saveSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const body = input.body as { id?: string; name: string; tier: string; logoUrl?: string; websiteUrl?: string; isActive?: number };
+sponsorsRouter.openapi(saveSponsorRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
     const id = body.id || crypto.randomUUID();
 
@@ -201,20 +199,22 @@ const sponsorHandlers = {
       );
     }
 
-    return { status: 200, body: { success: true, id } };
-  },
+    return c.json({ success: true, id }, 200);
+  }
+);
 
-  deleteSponsor: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { id } = input.params as { id: string };
+sponsorsRouter.openapi(deleteSponsorRoute, async (c) => {
+    const params = c.req.valid("param");
     const db = getDb(c);
 
-    await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id)).run();
-    c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", id));
+    await db.delete(schema.sponsors).where(eq(schema.sponsors.id, params.id)).run();
+    c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", params.id));
 
-    return { status: 200, body: { success: true } };
-  },
+    return c.json({ success: true }, 200);
+  }
+);
 
-  getAdminTokens: async (input: HandlerInput, c: Context<AppEnv>) => {
+sponsorsRouter.openapi(getAdminTokensRoute, async (c) => {
     const db = getDb(c);
     const results = await db
       .select({
@@ -236,91 +236,28 @@ const sponsorHandlers = {
       lastUsed: null,
     }));
 
-    return { status: 200, body: { tokens } };
-  },
+    return c.json({ tokens }, 200);
+  }
+);
 
-  generateToken: async (input: HandlerInput, c: Context<AppEnv>) => {
-    const { sponsorId } = input.body as { sponsorId: string };
+sponsorsRouter.openapi(generateTokenRoute, async (c) => {
+    const body = c.req.valid("json");
     const db = getDb(c);
 
     const token = crypto.randomUUID();
-    await db.insert(schema.sponsorTokens).values({ token, sponsorId }).run();
+    await db.insert(schema.sponsorTokens).values({ token, sponsorId: body.sponsorId }).run();
 
-    c.executionCtx.waitUntil(logAuditAction(c, "generate_token", "sponsor_tokens", sponsorId));
+    c.executionCtx.waitUntil(logAuditAction(c, "generate_token", "sponsor_tokens", body.sponsorId));
 
     const sRes = await db
       .select({ name: schema.sponsors.name })
       .from(schema.sponsors)
-      .where(eq(schema.sponsors.id, sponsorId))
+      .where(eq(schema.sponsors.id, body.sponsorId))
       .get();
     if (sRes) await sendZulipAlert(c.env, "Sponsor", "ROI Token Generated", `ROI token for **${sRes.name}**.`);
 
-    return { status: 200, body: { success: true, token } };
-  },
-};
-
-// Routes
-sponsorsRouter.openapi(
-  getSponsorsRoute,
-  wrapHandler(getSponsorsRoute, async (c) => {
-    const result = await sponsorHandlers.getSponsors({ query: {}, params: {}, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  getRoiRoute,
-  wrapHandler(getRoiRoute, async (c, { params }) => {
-    const result = await sponsorHandlers.getRoi({ query: {}, params, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  adminListSponsorsRoute,
-  wrapHandler(adminListSponsorsRoute, async (c) => {
-    const result = await sponsorHandlers.adminListSponsors({ query: {}, params: {}, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  saveSponsorRoute,
-  wrapHandler(saveSponsorRoute, async (c, { body }) => {
-    const result = await sponsorHandlers.saveSponsor({ query: {}, params: {}, body }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  deleteSponsorRoute,
-  wrapHandler(deleteSponsorRoute, async (c, { params }) => {
-    const result = await sponsorHandlers.deleteSponsor({ query: {}, params, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  getAdminTokensRoute,
-  wrapHandler(getAdminTokensRoute, async (c) => {
-    const result = await sponsorHandlers.getAdminTokens({ query: {}, params: {}, body: {} }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
-);
-
-sponsorsRouter.openapi(
-  generateTokenRoute,
-  wrapHandler(generateTokenRoute, async (c, { body }) => {
-    const result = await sponsorHandlers.generateToken({ query: {}, params: {}, body }, c);
-    if (result.status === 200) return c.json(result.body, 200);
-    throw new ApiError((result.body as { error?: string })?.error || "Request failed", result.status);
-  })
+    return c.json({ success: true, token }, 200);
+  }
 );
 
 export default sponsorsRouter;
