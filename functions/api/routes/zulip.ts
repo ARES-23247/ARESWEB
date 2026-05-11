@@ -81,8 +81,8 @@ zulipRouter.openapi(getPresenceRoute, async (c) => {
       }
     }
 
-    let userNames: Record<string, string> = {};
-    let userAvatars: Record<string, string> = {};
+    const userNames: Record<string, string> = {};
+    const userAvatars: Record<string, string> = {};
     
     if (usersRes.ok) {
       const usersData = (await usersRes.json()) as {
