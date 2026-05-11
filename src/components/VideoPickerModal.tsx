@@ -114,7 +114,7 @@ export default function VideoPickerModal({
           setUrlError("Invalid video URL");
           return;
         }
-      } catch (err) {
+      } catch (_err) {
         setUrlError("Invalid video URL");
         return;
       }
