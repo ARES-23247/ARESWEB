@@ -29,7 +29,8 @@
       "Read(//c/Users/david/.claude/projects/c--Users-david-dev-robotics-ftc-ARESWEB/.claude/**)",
       "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")",
       "Bash(curl -v \"https://aresfirst.org/api/openapi.json\")",
-      "mcp__web-reader__webReader"
+      "mcp__web-reader__webReader",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

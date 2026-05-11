@@ -1,6 +1,6 @@
 import SEO from "../components/SEO";
 import ResponsiveImage from "../components/ResponsiveImage";
-import { ImageLightbox } from "../components/ImagePickerModal";
+import ImageLightbox from "../components/ImageLightbox";
 import { useGetMedia, useGetPublicSettings, type R2MediaItem } from "../api";
 import { useState } from "react";
 
@@ -95,10 +95,11 @@ export default function Gallery() {
             const altText = generateImageAlt(photo.key, index);
 
             return (
-              <div
+              <button
                 key={photo.key}
                 onClick={() => openLightbox(imageUrl, altText)}
-                className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
+                aria-label={`View ${altText} in full screen`}
+                className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect} p-0 border-0 bg-transparent`}
               >
                 <ResponsiveImage
                    src={imageUrl}
@@ -116,9 +117,9 @@ export default function Gallery() {
                     </svg>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+                </button>
+              );
+            })}
         </div>
       )}
       </div>

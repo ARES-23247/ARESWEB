@@ -29,15 +29,16 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
       address: "",
       mapsUrl: "",
       isDeleted: 0
+    },
+    onSubmit: async ({ value }) => {
+      setErrorMsg("");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      saveMutation.mutate({ ...value, id: undefined } as any);
     }
   });
 
-
   const resetForm = useCallback(() => {
-    form.setFieldValue("name", "");
-    form.setFieldValue("address", "");
-    form.setFieldValue("mapsUrl", "");
-    form.setFieldValue("isDeleted", 0);
+    form.reset();
     setSuggestions([]);
     setErrorMsg("");
   }, [form]);
@@ -90,10 +91,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   }, [resetForm, onClose]);
 
   const onFormSubmit = () => {
-    setErrorMsg("");
-    const formValue = form.state.values;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    saveMutation.mutate({ ...formValue, id: undefined } as any);
+    form.handleSubmit();
   };
 
   return (

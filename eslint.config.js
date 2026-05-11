@@ -14,12 +14,12 @@ export default ts.config(
   {
     ignores: [
       ".claude/**",
+      ".agents/**", // Ignore AI agent skills and configs
       "dist",
       "coverage",
       ".wrangler",
       "ci-report",
       "playwright-report",
-
       "pw-report*/**",
       "test-results",
       "Roo-Code/**",
@@ -29,6 +29,7 @@ export default ts.config(
       "scripts/*.cjs", // Ignore scripts
       "*.mjs", // Ignore ESM utility scripts at root
       "scratch/**", // Ignore scratch directory
+      ".planning/scratch/**", // Ignore planning scratch files
       ".scripts/**", // Ignore utility scripts
       "public/vendor/**", // Ignore vendored third-party UMD bundles (React, ReactDOM)
       "src/components/generated/**", // Ignore auto-generated files
