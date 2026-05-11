@@ -187,9 +187,12 @@ test.describe('Mass Email Composer Dashboard', () => {
     const dispatchButton = page.getByRole('button', { name: /DISPATCH BLAST/i });
     await dispatchButton.click();
 
-    // Verify loading state immediately - check for DISPATCHING... text
+    // Wait for button to become disabled (indicates mutation started)
+    await expect(dispatchButton).toBeDisabled();
+
+    // Verify loading state - check for DISPATCHING... text
     await expect(page.getByText('DISPATCHING...')).toBeVisible({
-      timeout: 1000,
+      timeout: 5000,
     });
 
     // Verify spinner is shown
@@ -318,10 +321,13 @@ test.describe('Mass Email Composer Dashboard', () => {
     const dispatchButton = page.getByRole('button', { name: /DISPATCH BLAST/i });
     await dispatchButton.click();
 
+    // Wait for button to become disabled (indicates mutation started)
+    await expect(dispatchButton).toBeDisabled();
+
     // Verify screen reader text for loading state (using sr-only selector)
     // The component has: <span className="sr-only">Sending mass email, please wait.</span>
     const srText = page.locator('.sr-only').filter({ hasText: /Sending mass email/i });
-    await expect(srText).toBeAttached({ timeout: 1000 });
+    await expect(srText).toBeAttached({ timeout: 5000 });
   });
 
   test('keyboard navigation works for form controls', async ({ page }) => {

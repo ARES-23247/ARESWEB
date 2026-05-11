@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { X, Play, Plus } from "lucide-react";
+import { X, Play, Plus, ImagePlus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetVideos, useParseVideoUrlMutation } from "../api";
 import { useMutation } from "@tanstack/react-query";
-import { uploadFile } from "../utils/apiClient";
+import { client, unwrapResponse } from "../api/honoClient";
+import AssetPickerModal from "./AssetPickerModal";
+import { toast } from "sonner";
 
 interface Video {
   id: string;
@@ -33,8 +35,9 @@ export default function VideoPickerModal({
   const [videoUrl, setVideoUrl] = useState("");
   const [platform, setPlatform] = useState<"youtube" | "vimeo" | "other">("youtube");
   const [parsedVideoId, setParsedVideoId] = useState("");
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [thumbnailKey, setThumbnailKey] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [urlError, setUrlError] = useState("");
 
   const { data: videosResponse, isLoading, refetch } = useGetVideos({
@@ -67,20 +70,21 @@ export default function VideoPickerModal({
       videoId: string;
       thumbnailKey?: string;
     }) => {
-      const res = await fetch("/api/videos/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const res = await client.videos.admin.$post({
+        json: payload,
       });
-      if (!res.ok) throw new Error("Failed to create video");
-      return res.json() as Promise<{ video: Video }>;
+      return unwrapResponse<{ video: Video }>(res);
     },
     onSuccess: (data) => {
       refetch();
       setIsCreating(false);
       resetForm();
       onSelect(data.video.id, data.video.title);
+      toast.success("Video added successfully");
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create video");
+    }
   });
 
   const resetForm = () => {
@@ -89,35 +93,20 @@ export default function VideoPickerModal({
     setVideoUrl("");
     setPlatform("youtube");
     setParsedVideoId("");
-    setThumbnailFile(null);
+    setThumbnailKey(null);
+    setThumbnailUrl(null);
     setUrlError("");
   };
 
   const handleCreate = async () => {
     if (!newTitle.trim() || !parsedVideoId.trim()) return;
 
-    let thumbnailKey: string | undefined;
-    if (thumbnailFile) {
-      setIsUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", thumbnailFile);
-        formData.append("folder", "video");
-        const data = await uploadFile<{ key?: string }>("/api/media/admin/upload", formData);
-        thumbnailKey = data.key;
-      } catch {
-        setIsUploading(false);
-        return;
-      }
-      setIsUploading(false);
-    }
-
     createMutation.mutate({
       title: newTitle.trim(),
       description: newDescription.trim() || undefined,
       platform,
       videoId: parsedVideoId,
-      thumbnailKey,
+      thumbnailKey: thumbnailKey || undefined,
     });
   };
 
@@ -249,34 +238,48 @@ export default function VideoPickerModal({
                   />
                 </div>
                 <div>
-                  <label htmlFor="thumbnailFile" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                  <div className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Custom Thumbnail
-                  </label>
+                  </div>
                   <div className="flex items-center gap-4">
-                    <label className="flex-1">
-                      <input
-                        id="thumbnailFile"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                      />
-                      <div className="px-4 py-3 bg-black border border-dashed border-white/20 ares-cut-sm text-center cursor-pointer hover:border-ares-red/50 transition-colors">
-                        {thumbnailFile ? (
-                          <span className="text-ares-danger-soft text-sm">{thumbnailFile.name}</span>
-                        ) : (
-                          <span className="text-white/40 text-sm">Click to select an image...</span>
-                        )}
-                      </div>
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAssetPickerOpen(true)}
+                      className="flex-1 px-4 py-3 bg-black border border-dashed border-white/20 ares-cut-sm text-center cursor-pointer hover:border-ares-red/50 transition-colors group"
+                    >
+                      {thumbnailUrl ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <img src={thumbnailUrl} alt="Thumbnail preview" className="h-8 w-auto object-cover rounded shadow-sm" />
+                          <span className="text-ares-danger-soft text-sm truncate">{thumbnailKey}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 text-white/40 group-hover:text-ares-danger-soft transition-colors">
+                          <ImagePlus size={16} />
+                          <span className="text-sm">Select from R2 Vault...</span>
+                        </div>
+                      )}
+                    </button>
+                    {thumbnailUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThumbnailKey(null);
+                          setThumbnailUrl(null);
+                        }}
+                        className="p-3 bg-black border border-white/10 ares-cut-sm text-white/40 hover:text-ares-red hover:border-ares-red/50 transition-colors"
+                        title="Remove thumbnail"
+                      >
+                        <X size={20} />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={handleCreate}
-                  disabled={!newTitle.trim() || !parsedVideoId || createMutation.isPending || isUploading}
-                  className="w-full px-6 py-3 bg-ares-red hover:bg-ares-red/80 text-white font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={!newTitle.trim() || !parsedVideoId || createMutation.isPending}
+                  className="px-6 py-3 bg-ares-red hover:bg-ares-red/90 text-black font-black ares-cut-sm uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full mt-4"
                 >
-                  {(createMutation.isPending || isUploading) ? "Adding..." : "Add Video"}
+                  {createMutation.isPending ? "Adding Video..." : "Add Video"}
                 </button>
               </div>
             ) : isLoading ? (
@@ -343,6 +346,21 @@ export default function VideoPickerModal({
           )}
         </Dialog.Content>
       </Dialog.Portal>
+
+      {/* R2 Asset Picker for Thumbnails */}
+      {isAssetPickerOpen && (
+        <AssetPickerModal
+          isOpen={isAssetPickerOpen}
+          onClose={() => setIsAssetPickerOpen(false)}
+          onSelect={(url, altText, key) => {
+            setThumbnailUrl(url);
+            // If the key is not explicitly provided, attempt to extract it from the URL
+            const finalKey = key || (url.includes("/api/media/") ? url.split("/api/media/")[1] : url);
+            setThumbnailKey(finalKey);
+            setIsAssetPickerOpen(false);
+          }}
+        />
+      )}
     </Dialog.Root>
   );
 }

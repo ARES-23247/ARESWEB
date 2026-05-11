@@ -5,10 +5,12 @@ interface MediaAsset {
   tags?: string;
   size?: number;
 }
-import { useState } from "react";
-import { X, ImagePlus, Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, ImagePlus, Plus, UploadCloud, Loader2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetAdminMedia } from "../api";
+import { uploadFile } from "../utils/apiClient";
+import { toast } from "sonner";
 
 export type R2Asset = {
   key: string;
@@ -30,10 +32,32 @@ export default function AssetPickerModal({
   onSelect: (url: string, altText: string) => void;
 }) {
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: mediaResponse, isLoading } = useGetAdminMedia({
+  const { data: mediaResponse, isLoading, refetch } = useGetAdminMedia({
     enabled: isOpen,
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "video"); // Default folder for thumbnails
+      const data = await uploadFile<{ key?: string, url?: string }>("/api/media/admin/upload", formData);
+      toast.success("Asset uploaded successfully");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload asset");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
    
   const assets = (mediaResponse as unknown as { media: MediaAsset[] })?.media ?? [];
@@ -59,14 +83,31 @@ export default function AssetPickerModal({
                 <Dialog.Description className="text-xs text-white/60 font-mono m-0">Inject multimedia into the rich text block</Dialog.Description>
               </div>
             </div>
-            <Dialog.Close asChild>
+            <div className="flex items-center gap-3">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleFileUpload}
+              />
               <button
-                aria-label="Close modal"
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-4 py-2 bg-ares-gold/20 hover:bg-ares-gold/30 text-ares-gold ares-cut-sm text-sm font-bold transition-all border border-ares-gold/30 flex items-center gap-2 disabled:opacity-50"
               >
-                <X size={20} aria-hidden="true" />
+                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
+                Upload New
               </button>
-            </Dialog.Close>
+              <Dialog.Close asChild>
+                <button
+                  aria-label="Close modal"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <X size={20} aria-hidden="true" />
+                </button>
+              </Dialog.Close>
+            </div>
           </div>
 
           {/* Filters */}

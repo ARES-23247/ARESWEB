@@ -28,7 +28,8 @@
       "Read(//c/Users/david/AppData/Roaming/Claude/**)",
       "Read(//c/Users/david/.claude/projects/c--Users-david-dev-robotics-ftc-ARESWEB/.claude/**)",
       "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")",
-      "Bash(curl -v \"https://aresfirst.org/api/openapi.json\")"
+      "Bash(curl -v \"https://aresfirst.org/api/openapi.json\")",
+      "mcp__web-reader__webReader"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
