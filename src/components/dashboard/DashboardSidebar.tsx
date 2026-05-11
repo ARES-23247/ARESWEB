@@ -199,29 +199,6 @@ export default function DashboardSidebar({
 
         {/* Scrollable Navigation */}
         <div className="flex-1 overflow-y-auto py-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          <div>
-            <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Personal</h4>
-            <div className="space-y-1 px-3">
-              <Link
-                to="/"
-                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
-              >
-                <Globe size={18} className="text-ares-cyan/80 group-hover:text-white" />
-                <span className="truncate">Public Site</span>
-              </Link>
-              <Link
-                to="/developers/api"
-                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-gold hover:bg-ares-gold/10 hover:text-white border border-transparent hover:border-ares-gold/20"
-              >
-                <BookOpen size={18} className="text-ares-gold/80 group-hover:text-white" />
-                <span className="truncate">Developer API</span>
-              </Link>
-              <div className="h-px bg-white/5 mx-2 my-1" />
-              <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
-              <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />
-            </div>
-          </div>
-
           {canSeeTasks && (
             <div>
               <h4 className="text-xs uppercase font-black tracking-widest text-ares-cyan mb-2 px-6">Team Workspace</h4>
@@ -301,6 +278,29 @@ export default function DashboardSidebar({
               </div>
             </div>
           )}
+
+          <div>
+            <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Personal</h4>
+            <div className="space-y-1 px-3">
+              <Link
+                to="/"
+                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
+              >
+                <Globe size={18} className="text-ares-cyan/80 group-hover:text-white" />
+                <span className="truncate">Public Site</span>
+              </Link>
+              <Link
+                to="/developers/api"
+                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-gold hover:bg-ares-gold/10 hover:text-white border border-transparent hover:border-ares-gold/20"
+              >
+                <BookOpen size={18} className="text-ares-gold/80 group-hover:text-white" />
+                <span className="truncate">Developer API</span>
+              </Link>
+              <div className="h-px bg-white/5 mx-2 my-1" />
+              <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
+              <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />
+            </div>
+          </div>
         </div>
 
         <div className="p-4 border-t border-white/5 shrink-0 bg-black/20">
