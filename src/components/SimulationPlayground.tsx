@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize } from "lucide-react";
+import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
@@ -88,12 +88,21 @@ export default function SimulationPlayground() {
   const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [fps, setFps] = useState<number | null>(null);  // fps used in JSX
+  const [bottomRightTab, setBottomRightTab] = useState<'console' | 'ai'>('console');
 
   // AI Chat Logic
   const {
+    chatMessages,
     setChatMessages,
+    chatInput,
+    setChatInput,
+    isChatLoading,
     setAttachedImage,
+    chatEndRef,
+    chatInputRef,
+    handleChatSend,
     handleFixWithAI,
+    handleChatKeyDown,
     resetChat
   } = useSimulationChat({
     simId,
@@ -559,15 +568,103 @@ export default function SimulationPlayground() {
               </PanelResizeHandle>
 
               <Panel defaultSize={40} minSize={20}>
-                <SimConsole
-                  logs={consoleLogs}
-                  testResults={testResults}
-                  onClear={() => {
-                    setConsoleLogs([]);
-                    setTestResults([]);
-                  }}
-                  onFixWithAI={handleFixWithAI}
-                />
+                <div className="flex flex-col h-full">
+                  {/* Tab bar */}
+                  <div className="flex items-center border-b border-white/10 bg-obsidian-dark shrink-0">
+                    <button
+                      onClick={() => setBottomRightTab('console')}
+                      className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                        bottomRightTab === 'console'
+                          ? 'text-ares-cyan border-b-2 border-ares-cyan bg-white/5'
+                          : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      Console
+                    </button>
+                    <button
+                      onClick={() => setBottomRightTab('ai')}
+                      className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                        bottomRightTab === 'ai'
+                          ? 'text-indigo-400 border-b-2 border-indigo-400 bg-white/5'
+                          : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      <Sparkles className="w-3 h-3" /> AI Chat
+                    </button>
+                  </div>
+
+                  {/* Tab content */}
+                  <div className="flex-1 min-h-0">
+                    {bottomRightTab === 'console' ? (
+                      <SimConsole
+                        logs={consoleLogs}
+                        testResults={testResults}
+                        onClear={() => {
+                          setConsoleLogs([]);
+                          setTestResults([]);
+                        }}
+                        onFixWithAI={handleFixWithAI}
+                      />
+                    ) : (
+                      <div className="flex flex-col h-full">
+                        {/* Chat messages */}
+                        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-zinc-700">
+                          {chatMessages.map((msg, i) => (
+                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${
+                                msg.role === 'user'
+                                  ? 'bg-indigo-600/30 text-white border border-indigo-500/20'
+                                  : 'bg-zinc-800 text-zinc-200 border border-white/5'
+                              }`}>
+                                {msg.role === 'assistant' && (
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">z.AI</span>
+                                  </div>
+                                )}
+                                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                              </div>
+                            </div>
+                          ))}
+                          {isChatLoading && (
+                            <div className="flex justify-start">
+                              <div className="bg-zinc-800 border border-white/5 px-3 py-2 rounded-xl">
+                                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                                  Thinking...
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
+                        </div>
+
+                        {/* Chat input */}
+                        <div className="p-2 border-t border-white/10 bg-obsidian-dark shrink-0">
+                          <div className="flex items-end gap-2">
+                            <textarea
+                              ref={chatInputRef}
+                              value={chatInput}
+                              onChange={(e) => setChatInput(e.target.value)}
+                              onKeyDown={handleChatKeyDown}
+                              placeholder="Describe what to build or fix..."
+                              rows={1}
+                              className="flex-1 bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 resize-none focus:outline-none focus:border-indigo-500/50 transition-colors"
+                            />
+                            <button
+                              onClick={() => handleChatSend()}
+                              disabled={isChatLoading || !chatInput.trim()}
+                              className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors shrink-0"
+                              aria-label="Send message"
+                            >
+                              <Send className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Panel>
             </PanelGroup>
           </Panel>
