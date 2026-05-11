@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Send, Loader2, MessageSquare, RefreshCcw, User } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Send, Loader2, MessageSquare, User } from "lucide-react";
 import { useSendMessage, useGetTopicMessages } from "../../api/zulip";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -23,7 +23,7 @@ export default function ZulipQuickChat({
     { refetchInterval: 10000 } // Poll every 10 seconds
   );
 
-  const messages = data?.messages || [];
+  const messages = useMemo(() => data?.messages || [], [data?.messages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
