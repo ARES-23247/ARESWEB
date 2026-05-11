@@ -18,7 +18,7 @@ test.describe('Collaboration', () => {
     page.on('console', (msg) => console.log('BROWSER CONSOLE:', msg.text()));
     page.on('pageerror', (err) => console.log('BROWSER ERROR:', err.message));
 
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('INT-01: All editors display Live badge when connected', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('Collaboration', () => {
 
     // Setup auth and routes for both contexts
     for (const contextPage of [user1Page, user2Page]) {
-      await setupMockAuth(contextPage, { useRealAuth: true });
+      await setupMockAuth(contextPage);
     }
 
     const dashboard1 = new DashboardPage(user1Page);
@@ -77,7 +77,7 @@ test.describe('Collaboration', () => {
   });
 
   test('INT-03: Document editor persists after reload', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     const dashboard = new DashboardPage(page);
 

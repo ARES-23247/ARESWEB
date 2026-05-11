@@ -13,7 +13,7 @@ test.describe('Calendar Repair API Integration', () => {
   test.skip(!!process.env.CI, 'Requires writable API — not available in CI preview');
 
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     await page.goto('/');
   });
 

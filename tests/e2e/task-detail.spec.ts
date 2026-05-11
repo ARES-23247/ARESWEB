@@ -47,7 +47,7 @@ async function gotoTaskAndCheckLoaded(page: import('@playwright/test').Page): Pr
 test.describe('Task Detail Page', () => {
   test.beforeEach(async ({ page }) => {
     // Set up real authentication - tests now hit real APIs with seeded test data
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('should load task detail page successfully and display core elements', async ({ page }) => {

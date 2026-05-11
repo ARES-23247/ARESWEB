@@ -97,9 +97,9 @@ notificationsRouter.openapi(getPendingCountsRoute, async (c) => {
   const db = getDb(c);
   // Example logic for pending counts based on status fields
   const inquiriesCount = await db.select({ count: sql<number>`count(*)` }).from(schema.inquiries).where(eq(schema.inquiries.status, 'pending')).get();
-  const postsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.posts).where(eq(schema.posts.status, 'draft')).get();
-  const eventsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.events).where(eq(schema.events.status, 'draft')).get();
-  const docsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.docs).where(eq(schema.docs.status, 'draft')).get();
+  const postsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.posts).where(and(eq(schema.posts.status, 'draft'), eq(schema.posts.isDeleted, 0))).get();
+  const eventsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.events).where(and(eq(schema.events.status, 'draft'), eq(schema.events.isDeleted, 0))).get();
+  const docsCount = await db.select({ count: sql<number>`count(*)` }).from(schema.docs).where(and(eq(schema.docs.status, 'draft'), eq(schema.docs.isDeleted, 0))).get();
 
   return c.json({
     inquiries: inquiriesCount?.count || 0,
@@ -114,9 +114,9 @@ notificationsRouter.openapi(getDashboardActionItemsRoute, async (c) => {
   const db = getDb(c);
 
   const pendingInquiries = await db.select().from(schema.inquiries).where(eq(schema.inquiries.status, 'pending')).limit(10).all();
-  const pendingPosts = await db.select().from(schema.posts).where(eq(schema.posts.status, 'draft')).limit(10).all();
-  const pendingEvents = await db.select().from(schema.events).where(eq(schema.events.status, 'draft')).limit(10).all();
-  const pendingDocs = await db.select().from(schema.docs).where(eq(schema.docs.status, 'draft')).limit(10).all();
+  const pendingPosts = await db.select().from(schema.posts).where(and(eq(schema.posts.status, 'draft'), eq(schema.posts.isDeleted, 0))).limit(10).all();
+  const pendingEvents = await db.select().from(schema.events).where(and(eq(schema.events.status, 'draft'), eq(schema.events.isDeleted, 0))).limit(10).all();
+  const pendingDocs = await db.select().from(schema.docs).where(and(eq(schema.docs.status, 'draft'), eq(schema.docs.isDeleted, 0))).limit(10).all();
 
   return c.json({
     inquiries: pendingInquiries.map(i => ({

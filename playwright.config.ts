@@ -3,7 +3,10 @@
  *
  * ⚡ DEBUGGING TIP: Use remote testing mode to avoid heavy local builds
  *
- *   PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote
+ *   PREVIEW_URL=https://<your-branch-hash>.aresweb.pages.dev npm run test:e2e:remote
+ *
+ * 🚨 WARNING: NEVER use https://aresweb.pages.dev as the PREVIEW_URL! That is the live production 
+ * environment and will cause test data to pollute the production database.
  *
  * This runs tests against the deployed site without building/running locally.
  * See playwright.remote.config.ts for the remote configuration.

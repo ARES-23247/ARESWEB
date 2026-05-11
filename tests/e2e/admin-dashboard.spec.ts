@@ -4,7 +4,7 @@ import { setupMockAuth } from '../fixtures/auth';
 
 test.describe('Admin Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('Admin dashboard loads and displays authorized management hubs', async ({ page }) => {

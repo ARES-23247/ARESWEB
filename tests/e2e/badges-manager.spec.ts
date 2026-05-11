@@ -15,7 +15,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Badges Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('BADGES-01: Badge list displays correctly', async ({ page }) => {

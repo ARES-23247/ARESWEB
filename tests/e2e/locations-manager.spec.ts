@@ -20,7 +20,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Locations Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     // Mock OpenStreetMap Nominatim API for address auto-suggest (external service)
     await page.route('**/nominatim.openstreetmap.org/**', async (_route) => {

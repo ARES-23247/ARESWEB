@@ -18,7 +18,7 @@ test.describe('Integrations Manager', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('Admin-only access: non-admin users see Access Denied message', async ({ page }) => {

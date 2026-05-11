@@ -13,7 +13,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Docs Editor E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.describe('New Document Creation Workflow', () => {

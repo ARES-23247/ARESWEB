@@ -11,7 +11,7 @@ test.describe('Analytics Dashboard', () => {
     dashboardPage = new DashboardPage(page);
 
     // Set up real authentication - tests now hit real APIs with seeded test data
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -177,7 +177,7 @@ test.describe('Analytics Dashboard', () => {
 
 test.describe('Analytics Dashboard - Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -211,7 +211,7 @@ test.describe('Analytics Dashboard - Keyboard Navigation', () => {
 
 test.describe('Analytics Dashboard - Responsive Design', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.afterEach(async ({ page }) => {

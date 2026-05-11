@@ -14,7 +14,7 @@ test.describe('Store Page', () => {
     dashboardPage = new DashboardPage(page);
 
     // Set up mock authentication for consistency
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('should load successfully and display page title', async ({ page }) => {
@@ -249,7 +249,7 @@ test.describe('Store Page', () => {
 
 test.describe('Store Page - Interactive Features', () => {
   test('should add items to cart when Add button is clicked', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     await page.goto('/store');
 
     // Wait for products to load from real API
@@ -272,7 +272,7 @@ test.describe('Store Page - Interactive Features', () => {
   });
 
   test('should open cart drawer when View Cart is clicked', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     await page.goto('/store');
 
     // Wait for products to load from real API

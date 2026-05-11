@@ -9,7 +9,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Store Orders Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('loads and displays orders list', async ({ page }) => {
@@ -334,7 +334,7 @@ test.describe('Store Orders - Permissions', () => {
     // The test login endpoint will be used to authenticate as admin
     // Permission tests now use real database role checks
 
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     await page.goto('/dashboard/store_orders');
 
     // Wait for response
@@ -349,7 +349,7 @@ test.describe('Store Orders - Permissions', () => {
 
 test.describe('Store Orders - Keyboard Interaction', () => {
   test('supports keyboard navigation through action buttons', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/store_orders');
 
@@ -377,7 +377,7 @@ test.describe('Store Orders - Keyboard Interaction', () => {
   });
 
   test('has visible focus states on interactive elements', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/store_orders');
 

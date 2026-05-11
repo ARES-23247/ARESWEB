@@ -9,7 +9,7 @@ test.describe('Kanban Task Board', () => {
 
   test.beforeEach(async ({ page }) => {
     // Set up real authentication - tests now hit real APIs with seeded test data
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('Creates, edits, and moves a Kanban task', async ({ page }) => {

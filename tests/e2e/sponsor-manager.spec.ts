@@ -17,7 +17,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Sponsor Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('SPONSORS-01: Sponsor list displays correctly', async ({ page }) => {
@@ -50,11 +50,11 @@ test.describe('Sponsor Manager', () => {
     await page.getByLabel(/Logo/i).fill('https://example.com/logo.png');
     await page.getByLabel(/Website/i).fill('https://example.com');
 
-    // Submit the form
-    await page.getByRole('button', { name: /Commit/i }).click();
+    // Submit the form - actual button text is "Commit Partner to D1"
+    await page.getByRole('button', { name: /Commit Partner to D1|Commit/i }).click();
 
-    // Wait for mutation to complete
-    await page.waitForTimeout(500);
+    // Wait for mutation to complete and form to close
+    await page.waitForTimeout(1000);
 
     // Verify the form was closed (Add Partner button should be visible again)
     await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
@@ -80,8 +80,8 @@ test.describe('Sponsor Manager', () => {
       // Modify the sponsor data
       await page.getByLabel(/Partner Name/i).fill(`Updated Sponsor ${Date.now()}`);
 
-      // Submit the form
-      await page.getByRole('button', { name: /Update/i }).click();
+      // Submit the form - actual button text is "Update Partner in D1"
+      await page.getByRole('button', { name: /Update Partner in D1|Update/i }).click();
 
       // Wait for mutation to complete
       await page.waitForTimeout(500);
@@ -140,8 +140,8 @@ test.describe('Sponsor Manager', () => {
     // Click "Add Partner" button to expand creation form
     await page.getByRole('button', { name: /Add Partner/i }).click();
 
-    // Verify the submit button is visible after opening the form
-    const submitButton = page.getByRole('button', { name: /Commit/i });
+    // Verify the submit button is visible after opening the form - actual text is "Commit Partner to D1"
+    const submitButton = page.getByRole('button', { name: /Commit Partner to D1|Commit/i });
     await expect(submitButton).toBeVisible();
 
     // Verify form fields are present and can be filled

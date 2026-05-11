@@ -14,7 +14,7 @@ import { MediaManagerPage } from '../pages/MediaManagerPage';
 
 test.describe('Media Manager - Advanced Scenarios', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('DEF-01: Copy URL button copies asset URL to clipboard', async ({ page }) => {

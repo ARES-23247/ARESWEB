@@ -9,6 +9,37 @@ export function isRemoteTesting(): boolean {
 }
 
 /**
+ * Get the base URL for testing, handling both local and remote environments.
+ */
+export function getBaseUrl(): string {
+  const previewUrl = process.env.PREVIEW_URL;
+  if (previewUrl) {
+    // Remove trailing slash for consistency
+    return previewUrl.endsWith('/') ? previewUrl.slice(0, -1) : previewUrl;
+  }
+  return 'http://127.0.0.1:8788';
+}
+
+/**
+ * Get the appropriate cookie domain for the current test environment.
+ * Returns undefined for localhost (browser handles correctly) or hostname for remote domains.
+ */
+export function getCookieDomain(): string | undefined {
+  const baseUrl = getBaseUrl();
+  try {
+    const url = new URL(baseUrl);
+    // For localhost/127.0.0.1, use undefined (browser handles correctly)
+    // For remote domains, use the hostname
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      return undefined;
+    }
+    return url.hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Test credentials for real authentication in remote testing mode.
  * These credentials should exist in the seeded database.
  */
@@ -84,8 +115,12 @@ interface SetupMockAuthOptions {
  * Sets up mocked authentication for a Playwright page.
  * This eliminates the ~60 lines of duplicated auth mocking across test files.
  *
- * When useRealAuth is true (or in remote testing mode), calls the test-login
- * endpoint to get a real session token from the deployed backend.
+ * NOTE: Mock auth works for both local and remote testing. Playwright's route()
+ * intercepts network requests before they leave the browser, so it works with
+ * deployed URLs too. This avoids D1 database bottlenecks when multiple test
+ * shards run in parallel.
+ *
+ * To use real auth (e.g., testing actual session creation), set useRealAuth: true.
  *
  * @param page - Playwright page object
  * @param options - Configuration options
@@ -97,7 +132,8 @@ export async function setupMockAuth(
   // Support legacy signature where second arg was userId string
   const userId = typeof options === 'string' ? options : options.userId ?? MOCK_ADMIN_USER.id;
   const skipProfileMock = typeof options === 'string' ? false : options.skipProfileMock ?? false;
-  const useRealAuth = typeof options === 'string' ? false : (options.useRealAuth ?? isRemoteTesting());
+  // Default to mock auth even in remote mode to avoid D1 bottlenecks
+  const useRealAuth = typeof options === 'string' ? false : (options.useRealAuth ?? false);
   const role = typeof options === 'string' ? undefined : options.role;
 
   // Set test flag
@@ -129,13 +165,21 @@ export async function setupMockAuth(
     });
   }
 
-  // Set auth cookie
+  // Set auth cookie with dynamic domain for remote testing
+  const cookieDomain = getCookieDomain();
+  const baseUrl = getBaseUrl();
+  const isSecure = baseUrl.startsWith('https://');
+  const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
+
   await page.context().addCookies([
     {
-      name: 'better-auth.session_token',
+      name: cookieName,
       value: 'mockup-session-id',
-      domain: 'localhost',
+      domain: cookieDomain,
       path: '/',
+      httpOnly: true,
+      sameSite: 'Lax' as const,
+      secure: isSecure,
     },
   ]);
 }
@@ -144,14 +188,14 @@ export async function setupMockAuth(
  * Sets up real authentication by calling the test-login endpoint.
  * This creates a real session in the database and sets the auth cookie.
  *
+ * NOTE: This is now opt-in via useRealAuth option. Default is to use mock auth.
+ *
  * @param page - Playwright page object
  * @param userId - User ID to authenticate as
  * @param role - User role (for looking up seeded test users)
  */
 async function setupRealAuth(page: Page, userId: string, role?: string): Promise<void> {
-  const baseUrlStr = process.env.PREVIEW_URL || 'http://127.0.0.1:8788';
-  // Ensure we don't have double slashes like https://foo.pages.dev//api/auth
-  const baseUrl = baseUrlStr.endsWith('/') ? baseUrlStr.slice(0, -1) : baseUrlStr;
+  const baseUrl = getBaseUrl();
   const testLoginUrl = `${baseUrl}/api/auth/test-login`;
 
   try {
@@ -161,24 +205,44 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       testUserId = 'test-user-author'; // Should exist in seeded data
     }
 
-    // Call test-login endpoint to get session, with retry for 502s/500s during dev server boot or transient DB errors
+    // Call test-login endpoint to get session, with retry for 502s/500s
+    // Use exponential backoff to handle concurrent requests from parallel test shards
     let response;
-    for (let attempts = 0; attempts < 5; attempts++) {
-      response = await page.context().request.post(testLoginUrl, {
-        headers: {
-          'x-test-bypass-auth': 'true', // Enable test mode
-        },
-        data: { userId: testUserId },
-      });
+    const maxAttempts = 8; // Increased from 5 to handle more concurrent load
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+      try {
+        response = await page.context().request.post(testLoginUrl, {
+          headers: {
+            'x-test-bypass-auth': 'true', // Enable test mode
+          },
+          data: { userId: testUserId },
+          timeout: 30000, // 30s timeout
+        });
+      } catch (err) {
+        // Network errors (ECONNRESET, ETIMEDOUT, etc.) - retry with backoff
+        if (attempts < maxAttempts - 1) {
+          const delay = Math.min(1000 * Math.pow(2, attempts), 10000); // Exponential backoff, max 10s
+          console.log(`[Auth] Network error to ${testLoginUrl}, retrying in ${delay}ms (attempt ${attempts + 1}/${maxAttempts})...`, err);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        throw new Error(`Test login failed after ${maxAttempts} attempts: ${err}`);
+      }
 
       if (response.ok()) break;
 
-      if (response.status() === 502 || response.status() === 500) {
-        const retryReason = response.status() === 502 ? 'backend booting' : 'transient DB error';
-        console.log(`[Auth] Got ${response.status()} from ${testLoginUrl} (${retryReason}), retrying (attempt ${attempts + 1}/5)...`);
-        await new Promise(r => setTimeout(r, 2000));
+      // Retry on server errors with exponential backoff
+      if (response.status() >= 500 || response.status() === 429) {
+        const delay = Math.min(1000 * Math.pow(2, attempts), 10000); // Exponential backoff, max 10s
+        const retryReason = response.status() === 502 ? 'backend booting' :
+                           response.status() === 429 ? 'rate limited' :
+                           'transient DB error';
+        console.log(`[Auth] Got ${response.status()} from ${testLoginUrl} (${retryReason}), retrying in ${delay}ms (attempt ${attempts + 1}/${maxAttempts})...`);
+        await new Promise(r => setTimeout(r, delay));
       } else {
-        throw new Error(`Test login failed: ${response.status()} ${await response.text()}`);
+        // Don't retry on client errors (4xx except 429)
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Test login failed: ${response.status()} ${errorText}`);
       }
     }
 
@@ -197,8 +261,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
     }
 
     // Set the session cookie from the response
-    const urlObj = new URL(baseUrl);
-    const cookieDomain = urlObj.hostname;
+    const cookieDomain = getCookieDomain();
     const isSecure = baseUrl.startsWith('https://');
     const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
 
@@ -206,7 +269,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       {
         name: cookieName,
         value: data.sessionToken,
-        domain: cookieDomain || (baseUrl.match(/:\/\/([^/]+)/)?.[1] || 'localhost'),
+        domain: cookieDomain,
         path: '/',
         httpOnly: true,
         sameSite: 'Lax' as const,

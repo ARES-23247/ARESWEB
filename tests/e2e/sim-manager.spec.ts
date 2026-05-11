@@ -10,7 +10,7 @@ test.describe('Sim Manager Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     dashboardPage = new DashboardPage(page);
     // Use real authentication - tests hit the deployed backend
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('SIM-01: Sim manager page loads and displays simulation registry', async ({ page }) => {
@@ -192,7 +192,7 @@ test.describe('Sim Manager Dashboard', () => {
 
 test.describe('Sim Manager - Keyboard Navigation', () => {
   test('SIM-KB-01: Tab navigation works through simulation cards', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/sims');
 
@@ -210,7 +210,7 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
   });
 
   test('SIM-KB-02: Escape key closes preview modal', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/sims');
 
@@ -241,7 +241,7 @@ test.describe('Sim Manager - Keyboard Navigation', () => {
 
 test.describe('Sim Manager - Color Contrast (WCAG)', () => {
   test('SIM-CC-01: All text meets minimum contrast requirements', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/sims');
 
@@ -263,7 +263,7 @@ test.describe('Sim Manager - Color Contrast (WCAG)', () => {
   });
 
   test('SIM-CC-02: Badge backgrounds provide sufficient contrast for text', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/sims');
 

@@ -10,7 +10,7 @@ import { setupMockAuth } from '../fixtures/auth';
 
 test.describe('Event Editor E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     // Navigate to create event page
     await page.goto('/dashboard/event');
   });

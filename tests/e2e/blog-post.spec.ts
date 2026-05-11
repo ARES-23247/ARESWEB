@@ -16,7 +16,7 @@ test.describe('Blog Post Detail Page E2E', () => {
   const testPostSlug = 'test-blog-post';
 
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.describe('Page Load and Basic Rendering', () => {
@@ -98,7 +98,7 @@ test.describe('Blog Post Detail Page E2E', () => {
   test.describe('Editor Features', () => {
     test('should show edit button for admin users', async ({ page }) => {
       // Set up admin user with real auth
-      await setupMockAuth(page, { useRealAuth: true, userId: 'admin-user' });
+      await setupMockAuth(page, { userId: 'admin-user' });
 
       await page.goto(`/blog/${testPostSlug}`);
 
@@ -110,7 +110,7 @@ test.describe('Blog Post Detail Page E2E', () => {
 
     test('should navigate to editor when edit button is clicked', async ({ page }) => {
       // Set up admin user with real auth
-      await setupMockAuth(page, { useRealAuth: true, userId: 'admin-user' });
+      await setupMockAuth(page, { userId: 'admin-user' });
 
       await page.goto(`/blog/${testPostSlug}`);
 

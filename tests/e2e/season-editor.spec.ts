@@ -5,7 +5,7 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Season/Award Editor E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test.describe('Season Creation Workflow', () => {

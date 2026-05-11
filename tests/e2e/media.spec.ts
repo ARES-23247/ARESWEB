@@ -16,7 +16,7 @@ import { AssetVaultPage } from '../pages/AssetVaultPage';
 
 test.describe('Media Manager - Asset Vault', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('DEF-01: Asset Vault loads and displays upload interface', async ({ page }) => {

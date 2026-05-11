@@ -7,7 +7,7 @@ test.describe('Member Impact Dashboard', () => {
   let dashboardPage: DashboardPage;
 
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     dashboardPage = new DashboardPage(page);
   });
 

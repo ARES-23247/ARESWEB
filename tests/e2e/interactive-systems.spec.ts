@@ -73,7 +73,7 @@ test.describe('Interactive Systems & Workflows', () => {
 
   test('Interactive Zulip threads render inline and allow replies', async ({ page }) => {
     test.skip(!!process.env.CI, 'Requires live Zulip integration — not available in CI preview');
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/events/test-event');
 

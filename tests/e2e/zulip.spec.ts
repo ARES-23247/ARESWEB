@@ -3,7 +3,7 @@ import { setupMockAuth } from '../fixtures/auth';
 
 test.describe('Zulip Audit API Integration', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
     await page.goto('/');
   });
 

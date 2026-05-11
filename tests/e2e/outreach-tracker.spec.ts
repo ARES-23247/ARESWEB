@@ -12,7 +12,7 @@ test.describe('Outreach Tracker Dashboard', () => {
       }
     });
 
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('Outreach tracker loads and displays impact metrics', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('Outreach Tracker Dashboard', () => {
     });
 
     // Verify the toast contains "synchronized" text
-    await expect(page.getByText(/synchronized/i)).toBeVisible();
+    await expect(page.getByText(/Impact record synchronized|synchronized/i)).toBeVisible();
 
     // Verify form is closed after successful submission
     await expect(page.getByLabel(/Event Title/i)).not.toBeVisible();
@@ -72,26 +72,27 @@ test.describe('Outreach Tracker Dashboard', () => {
     const logOutreachButton = page.getByRole('button', { name: /Log Outreach/i });
     await logOutreachButton.click();
 
-    // Toggle mentoring checkbox - use the visible label
-    const mentoringLabel = page.getByText(/Mentoring Session/i).or(page.getByText(/Mentoring/i)).first();
+    // Toggle mentoring checkbox - click on the label containing "Mentoring Session"
+    const mentoringLabel = page.locator('label').filter({ hasText: /Mentoring Session/i }).first();
     await mentoringLabel.click();
 
-    // Mentored team number input should appear - match actual placeholder "e.g. 23247"
-    await expect(page.getByPlaceholder(/23247/i)).toBeVisible();
+    // Mentored team number input should appear - use exact placeholder match
+    const teamInput = page.getByPlaceholder('e.g. 23247');
+    await expect(teamInput).toBeVisible();
 
     // Fill mentoring-specific fields
     await page.getByLabel(/Event Title/i).fill(`FTC Team Mentoring Session ${Date.now()}`);
-    await page.getByPlaceholder(/23247/i).fill('12345');
+    await teamInput.fill('12345');
     await page.getByLabel(/Date/i).fill('2025-04-15');
     await page.getByLabel(/Hours Logged/i).fill('2');
     await page.getByLabel(/Reach Count/i).fill('10');
     await page.getByLabel(/Students Participating/i).fill('3');
 
-    // Submit the form
+    // Submit the form - button text is "Finalize Impact Entry"
     await page.getByRole('button', { name: /Finalize/i }).click();
 
     // Verify success
-    await expect(page.getByText(/synchronized/i)).toBeVisible();
+    await expect(page.getByText(/Impact record synchronized|synchronized/i)).toBeVisible();
   });
 
   test('Outreach event logging workflow - validation errors', async ({ page }) => {
@@ -135,7 +136,7 @@ test.describe('Outreach Tracker Dashboard', () => {
       await page.getByRole('button', { name: /Finalize/i }).click();
 
       // Verify success
-      await expect(page.getByText(/synchronized/i)).toBeVisible();
+      await expect(page.getByText(/Impact record synchronized|synchronized/i)).toBeVisible();
     }
   });
 

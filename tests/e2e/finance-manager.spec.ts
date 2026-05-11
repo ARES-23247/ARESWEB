@@ -11,7 +11,7 @@ test.describe('Finance Manager Dashboard', () => {
     dashboardPage = new DashboardPage(page);
 
     // Set up mock authentication
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
   });
 
   test('should load finance dashboard and display summary metrics', async ({ page }) => {
@@ -285,7 +285,7 @@ test.describe('Finance Manager Dashboard', () => {
 
 test.describe('Finance Manager - Keyboard Navigation', () => {
   test('should support keyboard navigation through tabs', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/finance');
 
@@ -310,7 +310,7 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
   });
 
   test('should have visible focus states on interactive elements', async ({ page }) => {
-    await setupMockAuth(page, { useRealAuth: true });
+    await setupMockAuth(page);
 
     await page.goto('/dashboard/finance');
 
