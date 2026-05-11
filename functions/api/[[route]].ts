@@ -324,6 +324,8 @@ const routes = new OpenAPIHono<AppEnv>()
     return c.json({ logs }, 200);
   });
 
+apiRouter.route("/", routes);
+
 // ── Health / Environment Info ────────────
 apiRouter.get("/health", (c) => {
   const hostname = new URL(c.req.url).hostname;
