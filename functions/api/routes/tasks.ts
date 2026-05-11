@@ -89,8 +89,30 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
 
     const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-    type TaskQueryResult = Awaited<ReturnType<typeof finalQuery.all>>;
-    let tasks: TaskQueryResult;
+    // Explicit type definition to avoid `any` inference in certain TypeScript versions
+    interface TaskQueryResult {
+      id: string;
+      title: string;
+      description: string | null;
+      status: string | null;
+      priority: string | null;
+      subteam: string | null;
+      dueDate: string | null;
+      startDate: string | null;
+      estimatedMinutes: number | null;
+      coverImage: string | null;
+      sortOrder: number;
+      parentId: string | null;
+      timeSpentSeconds: number;
+      createdBy: string;
+      createdAt: string;
+      updatedAt: string;
+      creatorName: string | null;
+      assigneeName: string | null;
+      assignedTo: string | null;
+      assignees_json: string | null;
+    }
+    let tasks: TaskQueryResult[];
     try {
       tasks = await finalQuery
         .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
