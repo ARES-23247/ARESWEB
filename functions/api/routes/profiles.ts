@@ -156,7 +156,7 @@ profilesRouter.openapi(getMeRoute, async (c) => {
   };
 
   if (profileRow) {
-    const secret = c.env.ENCRYPTION_SECRET;
+    const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
     // W3A-SEC-03: Check for encryption marker before attempting decryption
     // Encrypted values have format "salt_hex:iv_hex:ciphertext_hex"
     const safeDecrypt = async (val: string | null) => {
@@ -265,7 +265,7 @@ profilesRouter.openapi(getTeamRosterRoute, async (c) => {
     ))
     .all();
 
-  const secret = c.env.ENCRYPTION_SECRET;
+  const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
   const safeDecrypt = async (val: string | null) => {
     if (!val || !val.includes(":")) return val || null;
     try {
@@ -560,7 +560,7 @@ profilesRouter.openapi(getPublicProfileRoute, async (c) => {
       .get();
 
     if (sensitive) {
-      const secret = c.env.ENCRYPTION_SECRET;
+      const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
       // W3A-SEC-03: Helper to safely decrypt only if data has encryption marker
       const safeDecryptValue = async (val: string | null): Promise<string | null> => {
         if (!val || !val.includes(":")) return val || null;

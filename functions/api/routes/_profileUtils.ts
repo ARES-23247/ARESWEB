@@ -18,7 +18,7 @@ export async function upsertProfile(
   userId: string,
   data: Record<string, unknown>
 ) {
-  const secret = c.env.ENCRYPTION_SECRET;
+  const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
   const sessionUser = await getSessionUser(c);
   const db = getDb(c);
 
