@@ -22,11 +22,11 @@ export async function upsertProfile(
   const sessionUser = await getSessionUser(c);
   const db = getDb(c);
 
-  const [existing] = await db
+  const existing = await db
     .select()
     .from(schema.userProfiles)
     .where(eq(schema.userProfiles.userId, userId))
-    .limit(1);
+    .get();
 
   const isTargetingSelf = sessionUser?.id === userId;
   const isAdmin = sessionUser?.role === "admin" || sessionUser?.memberType === "coach" || sessionUser?.memberType === "mentor";
@@ -114,7 +114,8 @@ export async function upsertProfile(
     .onConflictDoUpdate({
       target: schema.userProfiles.userId,
       set: updateSet as typeof schema.userProfiles.$inferInsert
-    });
+    })
+    .run();
 }
 
 
