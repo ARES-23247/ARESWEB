@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useGetVideos, useDeleteVideo } from '../../api'
-import { Pencil, Trash2, Play, Plus, ExternalLink } from 'lucide-react'
+import { useGetVideos, useDeleteVideo, useSyncYoutubeVideosMutation } from '../../api'
+import { Pencil, Trash2, Play, Plus, ExternalLink, RefreshCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useModal } from '../../contexts/ModalContext'
 import VideoPickerModal from '../../components/VideoPickerModal'
 
@@ -22,6 +23,24 @@ function RouteComponent() {
       toast.error("Failed to delete video")
     }
   })
+
+  const syncYoutubeMutation = useSyncYoutubeVideosMutation()
+  const queryClient = useQueryClient()
+
+  const handleSyncYoutube = async () => {
+    try {
+      const result = await syncYoutubeMutation.mutateAsync()
+      if (result.added > 0) {
+        toast.success(`Synced ${result.added} new videos from YouTube!`)
+      } else {
+        toast.info("No new videos found on YouTube.")
+      }
+      queryClient.invalidateQueries({ queryKey: ["videos"] })
+    } catch (error) {
+      toast.error("Failed to sync videos from YouTube.")
+      console.error(error)
+    }
+  }
 
   const videos = (videosResponse as unknown as { videos: Array<{ id: string, title: string, description: string | null, platform: string, videoId: string, thumbnailUrl: string | null, embedUrl: string }> })?.videos ?? []
 
@@ -60,13 +79,24 @@ function RouteComponent() {
           <p className="text-marble/60 text-sm mt-1">Link and manage videos from YouTube, Vimeo, and other platforms.</p>
         </div>
 
-        <button
-          onClick={() => setIsPickerOpen(true)}
-          className="px-4 py-2 bg-ares-red hover:bg-ares-red/80 text-white font-black uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Add Video
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSyncYoutube}
+            disabled={syncYoutubeMutation.isPending}
+            className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan font-black uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 border border-ares-cyan/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw size={16} className={syncYoutubeMutation.isPending ? "animate-spin" : ""} />
+            {syncYoutubeMutation.isPending ? "Syncing..." : "Sync YouTube"}
+          </button>
+          
+          <button
+            onClick={() => setIsPickerOpen(true)}
+            className="px-4 py-2 bg-ares-red hover:bg-ares-red/80 text-white font-black uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Video
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
