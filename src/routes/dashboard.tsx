@@ -62,7 +62,7 @@ export default function Dashboard() {
       <SEO title="Command Center" description="ARES 23247 Administrative Dashboard and Team Portal." />
       <DashboardSidebar session={session} permissions={permissions} notifications={notifications} />
 
-      <main className="flex-1 flex flex-col min-w-0 relative">
+      <main className="flex-1 flex flex-col min-w-0 relative pt-16 md:pt-0">
         <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] mix-blend-overlay" />
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-ares-red/5 via-transparent to-transparent pointer-events-none" />
 

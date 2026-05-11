@@ -39,9 +39,9 @@ export default function Home() {
               <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading mb-4">
                 Appalachian Robotics & Engineering Society
               </p>
-              <h1 className="text-6xl md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
+              <h1 className="text-[3.5rem] md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
                 <span className="block mb-2 text-white">Engineered</span>
-                <span className="bg-ares-red px-6 py-2 pb-3 mt-2 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white font-bold">To Inspire</span>
+                <span className="bg-ares-red px-3 sm:px-6 py-2 pb-3 mt-2 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white font-bold">To Inspire</span>
               </h1>
             </div>
           </div>

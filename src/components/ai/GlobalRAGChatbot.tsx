@@ -148,7 +148,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
         drag
         dragMomentum={false}
         onClick={() => setChatbotOpen(!isChatbotOpen)}
-        className={`fixed bottom-8 right-8 z-[110] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors duration-500 group overflow-hidden cursor-grab active:cursor-grabbing ${
+        className={`fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[110] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors duration-500 group overflow-hidden cursor-grab active:cursor-grabbing ${
           isChatbotOpen 
             ? "bg-ares-red" 
             : "bg-indigo-600 hover:bg-indigo-500"
@@ -172,7 +172,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
         dragListener={false}
         dragControls={dragControls}
         dragMomentum={false}
-        className={`fixed bottom-24 right-8 w-[24rem] h-[36rem] bg-zinc-900 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col transition-opacity duration-300 z-[100] overflow-hidden ${
+        className={`fixed bottom-20 right-4 left-4 sm:left-auto sm:bottom-24 sm:right-8 w-auto sm:w-[24rem] h-[75dvh] sm:h-[36rem] bg-zinc-900 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col transition-opacity duration-300 z-[100] overflow-hidden ${
           isChatbotOpen 
             ? 'opacity-100' 
             : 'opacity-0 pointer-events-none hidden'
