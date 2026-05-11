@@ -12,6 +12,15 @@ import { zulipPresenceSchema } from "@shared/routes/zulip";
 // Infer TypeScript types from Zod schemas
 export type ZulipPresence = z.infer<typeof zulipPresenceSchema>;
 
+export interface ZulipMessage {
+  id: number;
+  sender_full_name: string;
+  avatar_url: string;
+  content: string;
+  timestamp: number;
+  sender_email: string;
+}
+
 
 // ============================================
 // Zulip Presence & Messaging
@@ -58,13 +67,13 @@ export function useSendMessage(
  */
 export function useGetTopicMessages(
   query: { stream: string; topic: string },
-  options?: Omit<UseQueryOptions<{ success: boolean; messages: unknown[] }>, "queryKey" | "queryFn" | "enabled">
+  options?: Omit<UseQueryOptions<{ success: boolean; messages: ZulipMessage[] }>, "queryKey" | "queryFn" | "enabled">
 ) {
-  return useQuery<{ success: boolean; messages: unknown[] }>({
-    queryKey: ["zulip", "topic", query],
+  return useQuery<{ success: boolean; messages: ZulipMessage[] }>({
+    queryKey: ["zulip", "topic", query.stream, query.topic],
     queryFn: async () => {
       const response = await client.zulip.topic.$get({ query });
-      return unwrapResponse<{ success: boolean; messages: unknown[] }>(response);
+      return unwrapResponse<{ success: boolean; messages: ZulipMessage[] }>(response);
     },
     enabled: !!(query.stream && query.topic),
     ...options,
