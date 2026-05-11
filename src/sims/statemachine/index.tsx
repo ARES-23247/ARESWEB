@@ -46,7 +46,7 @@ export default function StateMachineSim() {
             goalElev = 0;
             if (ePos > 0.1) {
                 goalPivot = 0;
-                currentLogs.push("âš ï¸ BLOCKED: Lower Elevator first");
+                currentLogs.push("⚠️ BLOCKED: Lower Elevator first");
                 currentLogs.push("-> Lowering Elevator...");
             } else {
                 goalPivot = 1;
@@ -58,7 +58,7 @@ export default function StateMachineSim() {
             goalPivot = 0;
             if (pAng > 0.1) {
                 goalElev = 0;
-                currentLogs.push("âš ï¸ BLOCKED: Intake MUST stow first");
+                currentLogs.push("⚠️ BLOCKED: Intake MUST stow first");
                 currentLogs.push("-> Stowing Intake Pivot...");
             } else {
                 goalElev = 1;
@@ -78,7 +78,7 @@ export default function StateMachineSim() {
         smCtx.fillRect(60, 160, 100, 30); // Base
         smCtx.fillStyle = 'var(--obsidian)';
         smCtx.fillRect(85, 40, 15, 120);  // Elevator track
-
+        
         const carY = 140 - (elevPosRef.current * 80);
         smCtx.fillStyle = 'var(--ares-red)'; // var(--mars-red-light) roughly
         smCtx.fillRect(75, carY, 35, 20); // Elevator car

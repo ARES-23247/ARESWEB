@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
 import { DEFAULT_coverImage } from "../../utils/constants";
@@ -69,7 +69,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
               onClick={(e) => e.stopPropagation()}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${event.category === 'internal' ? 'bg-ares-red' : event.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'} opacity-50`}></span>
-              {event.location} â†—
+              {event.location} ↗
             </a>
           )}
         </div>

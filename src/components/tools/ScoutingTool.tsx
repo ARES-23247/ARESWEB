@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Crosshair, Search, Globe, Sparkles, RefreshCw, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { scoutingApi, type TOATeam, type TOARanking, type AnalysisResponse } from "../../lib/scouting-api";
@@ -512,7 +512,7 @@ function EmptyState({
   );
 }
 
-/** Minimal markdown â†’ HTML converter */
+/** Minimal markdown → HTML converter */
 function markdownToHtml(md: string): string {
   let html = md
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")

@@ -64,7 +64,7 @@ export default function PhysicsSim() {
         balls.forEach(b => {
             if (b.x - b.radius < goal.w && b.y > goal.y && b.y < goal.y + goal.h) {
                 scoreRef.current++;
-                localLogMsg = "âš½ GOAL SCORED! Resetting ball...";
+                localLogMsg = "⚽ GOAL SCORED! Resetting ball...";
                 collisionTriggered = true;
                 b.x = 400 + Math.random() * 300;
                 b.y = 50 + Math.random() * 300;

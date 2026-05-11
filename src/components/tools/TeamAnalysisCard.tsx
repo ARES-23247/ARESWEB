@@ -225,7 +225,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
   );
 }
 
-/** Minimal markdown â†’ HTML converter for AI analysis responses */
+/** Minimal markdown → HTML converter for AI analysis responses */
 function markdownToHtml(md: string): string {
   let html = md
     // Headers
