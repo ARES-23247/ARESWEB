@@ -90,7 +90,7 @@ export default function Events() {
       className="w-full flex-grow flex flex-col bg-obsidian min-h-screen"
     >
       <SEO title="Event Schedule" description="Upcoming competitions, outreach demos, and build sessions for ARES 23247." />
-      {/* â”€â”€â”€ HEADER â”€â”€â”€ */}
+      {/* ─── HEADER ─── */}
       <section className="relative w-full py-24 px-6 overflow-hidden flex flex-col items-center text-center">
         <div className="absolute inset-0 w-full h-full">
           <div className="absolute inset-0 bg-ares-red/10 mix-blend-screen pointer-events-none"></div>
@@ -113,7 +113,7 @@ export default function Events() {
         </motion.div>
       </section>
 
-      {/* â”€â”€â”€ EVENTS CONTAINER â”€â”€â”€ */}
+      {/* ─── EVENTS CONTAINER ─── */}
       <section className="w-full max-w-5xl mx-auto px-6 pb-32 flex flex-col gap-16">
         {isLoading ? (
           <div className="flex justify-center items-center py-20">

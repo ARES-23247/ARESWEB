@@ -85,7 +85,12 @@ function TaskEditorInner({ initialContent, onDescriptionChange }: { initialConte
       try {
         const parsed = JSON.parse(initialContent);
         if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
-          editor.commands.setContent(parsed);
+          try {
+            editor.commands.setContent(parsed);
+          } catch (renderErr) {
+            console.error("Tiptap render error on AST", renderErr);
+            editor.commands.setContent(initialContent);
+          }
         } else {
           editor.commands.setContent(initialContent);
         }

@@ -57,12 +57,18 @@ export default function SeasonEditor() {
           try {
             const parsed = JSON.parse(s.robotDescription);
             if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
-              editor.commands.setContent(parsed);
+              try {
+                editor.commands.setContent(parsed);
+              } catch (renderErr) {
+                console.error("Tiptap render error on AST", renderErr);
+                editor.commands.setContent(`<p>${s.robotDescription}</p>`);
+              }
             } else {
               editor.commands.setContent(`<p>${s.robotDescription}</p>`);
             }
           } catch (e) {
             console.error("Failed to parse existing AST", e);
+            editor.commands.setContent(`<p>${s.robotDescription}</p>`);
           }
         }
       }

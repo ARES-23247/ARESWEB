@@ -14,8 +14,8 @@ test.describe('Outreach Tracker Dashboard', () => {
 
     await setupMockAuth(page);
 
-    // Mock outreach API endpoints - match actual Hono client paths
-    await page.route('**/api/outreach/admin/list', async (route) => {
+    // Mock outreach API endpoints - use wildcards to catch all variations
+    await page.route('**/api/outreach/admin/list**', async (route) => {
       await route.fulfill({
         status: 200,
         json: {
@@ -41,7 +41,7 @@ test.describe('Outreach Tracker Dashboard', () => {
       });
     });
 
-    await page.route('**/api/outreach/admin/save', async (route) => {
+    await page.route('**/api/outreach/admin/save**', async (route) => {
       await route.fulfill({
         status: 200,
         json: { success: true, id: '1' },
@@ -60,7 +60,7 @@ test.describe('Outreach Tracker Dashboard', () => {
       route.continue();
     });
 
-    // Mock seasons API for the SeasonPicker component
+    // Mock seasons API for the SeasonPicker component - catch all season queries
     await page.route('**/api/seasons**', async (route) => {
       await route.fulfill({
         status: 200,

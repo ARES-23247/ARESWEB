@@ -35,7 +35,12 @@ function ReadOnlyPreview({ content }: { content: string }) {
         parsed = JSON.parse(content);
       // eslint-disable-next-line no-empty
       } catch {}
-      previewEditor.commands.setContent(parsed);
+      try {
+        previewEditor.commands.setContent(parsed);
+      } catch (err) {
+        console.error("Tiptap render error on history preview", err);
+        previewEditor.commands.setContent(content);
+      }
       previewEditor.setEditable(false);
     }
   }, [previewEditor, content]);
@@ -75,7 +80,12 @@ export default function VersionHistorySidebar({ roomId, editor, onClose, history
         parsed = JSON.parse(snapshot.content);
       // eslint-disable-next-line no-empty
       } catch {}
-      editor.commands.setContent(parsed);
+      try {
+        editor.commands.setContent(parsed);
+      } catch (err) {
+        console.error("Tiptap render error on history restore", err);
+        editor.commands.setContent(snapshot.content);
+      }
       toast.success("Draft restored to selected version.");
       onClose();
     } catch (err) {

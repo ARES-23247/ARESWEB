@@ -53,7 +53,7 @@ export default function Academy() {
       <SEO title={currentDoc?.title ? `${currentDoc.title} — ARES Academy` : "ARES Academy"} description={currentDoc?.description || "ARES Academy lessons and interactive simulations."} />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
-      {/* â”€â”€ Search Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Search Overlay ─────────────────────────────────────────── */}
       <AnimatePresence>
         {searchOpen && (
           <motion.div
@@ -108,7 +108,7 @@ export default function Academy() {
       </AnimatePresence>
 
       <div className="flex flex-1">
-        {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Sidebar ─────────────────────────────────────────────── */}
         <DocsSidebar
           groupedDocs={groupedDocs}
           currentSlug={slug}
@@ -263,7 +263,7 @@ export default function Academy() {
                 </div>
               )}
 
-              {/* â”€â”€ Documentation Feedback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Documentation Feedback ───────────────────────────── */}
               <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
                   <BookOpen size={64} className="text-ares-gold rotate-12" />
@@ -311,7 +311,7 @@ export default function Academy() {
                 </div>
               </div>
 
-              {/* â”€â”€ Documentation Discussion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Documentation Discussion ───────────────────────────── */}
               {slug && session && <ZulipThread stream="announcements" topic={`Doc: ${currentDoc.title}`} />}
             </motion.article>
           )}

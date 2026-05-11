@@ -69,7 +69,7 @@ export default function PrintPortfolio() {
 
   return (
     <div className="print-layout bg-white text-black min-h-screen">
-      {/* â”€â”€ COVER PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── COVER PAGE ─────────────────────────────────────────────────── */}
       <div className="print-cover flex flex-col items-center justify-center h-screen border-[12px] border-ares-red p-12 text-center page-break-after">
         <div className="w-32 h-32 mb-8 bg-black ares-cut-sm flex items-center justify-center p-4">
            {/* Fallback to text logo for print reliability */}
@@ -86,7 +86,7 @@ export default function PrintPortfolio() {
         </div>
       </div>
 
-      {/* â”€â”€ EXECUTIVE SUMMARIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── EXECUTIVE SUMMARIES ────────────────────────────────────────── */}
       {execDocs.length > 0 && (
         <div className="print-section">
           <div className="print-section-header">
@@ -108,7 +108,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* â”€â”€ TECHNICAL PORTFOLIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── TECHNICAL PORTFOLIO ────────────────────────────────────────── */}
       {techDocs.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header flex items-center gap-4 border-b-4 border-black pb-4 mb-8">
@@ -135,7 +135,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* â”€â”€ OUTREACH & IMPACT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── OUTREACH & IMPACT ──────────────────────────────────────────── */}
       {portfolio.outreach && portfolio.outreach.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">
@@ -180,7 +180,7 @@ export default function PrintPortfolio() {
         </div>
       )}
 
-      {/* â”€â”€ AWARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── AWARDS ─────────────────────────────────────────────────────── */}
       {portfolio?.awards && portfolio.awards.length > 0 && (
         <div className="print-section page-break-before">
           <div className="print-section-header border-b-4 border-black pb-4 mb-8">

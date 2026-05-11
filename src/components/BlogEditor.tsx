@@ -87,12 +87,18 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
           try {
             const parsed = JSON.parse(post.ast);
             if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
-              editor.commands.setContent(parsed);
+              try {
+                editor.commands.setContent(parsed);
+              } catch (renderErr) {
+                console.error("Tiptap render error on AST", renderErr);
+                editor.commands.setContent(`<p>${post.ast}</p>`);
+              }
             } else {
               editor.commands.setContent(`<p>${post.ast}</p>`);
             }
           } catch (e) {
             console.error("Failed to parse existing AST", e);
+            editor.commands.setContent(`<p>${post.ast}</p>`);
           }
         }
       }

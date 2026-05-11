@@ -175,7 +175,12 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
               const parsed = JSON.parse(event.description);
               // Validate it's a proper Tiptap document with a content array
               if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
-                editor.commands.setContent(parsed);
+                try {
+                  editor.commands.setContent(parsed);
+                } catch (renderErr) {
+                  console.error("Tiptap render error on AST", renderErr);
+                  editor.commands.setContent(`<p>${event.description}</p>`);
+                }
               } else {
                 // Valid JSON but not a Tiptap AST — render as HTML
                 editor.commands.setContent(`<p>${event.description}</p>`);

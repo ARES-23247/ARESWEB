@@ -1,11 +1,11 @@
-﻿// â”€â”€ Scouting API Client â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+﻿// ── Scouting API Client ──────────────────────────────────────────────
 // Typed fetch wrappers for the scouting proxy endpoints.
 // All requests go through /api/scouting which proxies to TOA/FTC Events
 // with server-side API key injection.
 
 const BASE = "/api/scouting";
 
-// â”€â”€ TOA Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── TOA Types ────────────────────────────────────────────────────────
 
 export interface TOATeam {
   team_key: string;
@@ -89,7 +89,7 @@ export interface TOAEvent {
   venue: string;
 }
 
-// â”€â”€ Analysis Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Analysis Types ───────────────────────────────────────────────────
 
 export type AnalysisMode = "team_analysis" | "match_prediction" | "event_overview";
 
@@ -107,7 +107,7 @@ export interface AnalysisResponse {
   tokensUsed?: number;
 }
 
-// â”€â”€ FTC Events Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FTC Events Types ─────────────────────────────────────────────────
 
 export interface FTCEvent {
   eventId: number;
@@ -141,7 +141,7 @@ export interface FTCEventsResponse {
   eventCount: number;
 }
 
-// â”€â”€ Fetch Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Fetch Helpers ────────────────────────────────────────────────────
 
 async function fetchJSON<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -152,10 +152,10 @@ async function fetchJSON<T>(url: string): Promise<T> {
   return res.json();
 }
 
-// â”€â”€ API Methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── API Methods ──────────────────────────────────────────────────────
 
 export const scoutingApi = {
-  // â”€â”€ TOA Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── TOA Endpoints ────────────────────────────────────────────────
   getTeam: async (teamNumber: number): Promise<TOATeam> => {
     const res = await fetchJSON<TOATeam | TOATeam[]>(`${BASE}/toa/team/${teamNumber}`);
     return Array.isArray(res) ? res[0] : res;
@@ -176,7 +176,7 @@ export const scoutingApi = {
   getSeasonEvents: (seasonKey: string) =>
     fetchJSON<TOAEvent[]>(`${BASE}/toa/event?season_key=${seasonKey}`),
 
-  // â”€â”€ FTC Events Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── FTC Events Endpoints ─────────────────────────────────────────
   getFTCSeasonEvents: (season: number) =>
     fetchJSON<FTCEventsResponse>(`${BASE}/ftcevents/${season}/events`),
 
@@ -189,7 +189,7 @@ export const scoutingApi = {
   getFTCEventTeams: (season: number, eventCode: string) =>
     fetchJSON<unknown>(`${BASE}/ftcevents/${season}/teams?eventCode=${eventCode}`),
 
-  // â”€â”€ AI Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AI Analysis ──────────────────────────────────────────────────
   analyze: async (req: AnalysisRequest): Promise<AnalysisResponse> => {
     const res = await fetch(`${BASE}/analyze`, {
       method: "POST",

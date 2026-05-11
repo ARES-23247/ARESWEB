@@ -24,7 +24,7 @@ import {
   useDeleteFinanceTransaction 
 } from "../api";
 
-// â”€â”€ Status config for Sponsorship â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Status config for Sponsorship ─────────────────────────────────────
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
 
 const pipelineConfig: Record<string, KanbanColumnConfig> = {
@@ -45,7 +45,7 @@ export default function FinanceManager() {
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
   const [searchQuery, _setSearchQuery] = useState("");
 
-  // â”€â”€ Queries â”€â”€
+  // ── Queries ──
   const { data: summaryRes, error: summaryError } = useGetFinanceSummary(selectedSeason);
   const { data: pipelineDataRes, error: pipelineError } = useListSponsorshipPipeline(selectedSeason);
   const { data: transactionsDataRes, error: transactionsError } = useListFinanceTransactions(selectedSeason);
@@ -55,7 +55,7 @@ export default function FinanceManager() {
   const transactions = transactionsDataRes?.transactions || [];
   const isError = !!(summaryError || pipelineError || transactionsError);
 
-  // â”€â”€ Mutations â”€â”€
+  // ── Mutations ──
   const savePipeline = useSaveSponsorshipPipeline();
   const saveTransaction = useSaveFinanceTransaction();
   const deleteTransaction = useDeleteFinanceTransaction();

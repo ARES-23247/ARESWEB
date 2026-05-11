@@ -12,14 +12,14 @@ const SEASON_KEY = "25-26";
 export default function ScoutingTool() {
   const [activeTab, setActiveTab] = useState<Tab>("team");
 
-  // â”€â”€ Team Search State â”€â”€
+  // ── Team Search State ──
   const [teamSearch, setTeamSearch] = useState("");
   const [teamData, setTeamData] = useState<TOATeam | null>(null);
   const [teamRanking, setTeamRanking] = useState<TOARanking | undefined>(undefined);
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
 
-  // â”€â”€ Event Browser State â”€â”€
+  // ── Event Browser State ──
   const [selectedEventKey, setSelectedEventKey] = useState<string>("");
   const [selectedEventName, setSelectedEventName] = useState<string>("");
   const [eventRankings, setEventRankings] = useState<TOARanking[]>([]);
@@ -28,7 +28,7 @@ export default function ScoutingTool() {
   const [eventError, setEventError] = useState<string | null>(null);
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
-  // â”€â”€ Event Analysis State â”€â”€
+  // ── Event Analysis State ──
   const [analysisEventKey, setAnalysisEventKey] = useState<string>("");
   const [analysisEventName, setAnalysisEventName] = useState<string>("");
   const [eventAnalysis, setEventAnalysis] = useState<AnalysisResponse & { createdAt?: string } | null>(null);
@@ -66,7 +66,7 @@ export default function ScoutingTool() {
     return () => { mounted = false; };
   }, [analysisEventKey]);
 
-  // â”€â”€ Team Search Handler â”€â”€
+  // ── Team Search Handler ──
   const handleTeamSearch = useCallback(async () => {
     const num = parseInt(teamSearch, 10);
     if (isNaN(num) || num <= 0) {
@@ -103,7 +103,7 @@ export default function ScoutingTool() {
     }
   }, [teamSearch]);
 
-  // â”€â”€ Event Select Handler â”€â”€
+  // ── Event Select Handler ──
   const handleEventSelect = useCallback(async (eventKey: string, eventName: string) => {
     setSelectedEventKey(eventKey);
     setSelectedEventName(eventName);
@@ -125,7 +125,7 @@ export default function ScoutingTool() {
     }
   }, []);
 
-  // â”€â”€ Event Analysis Handler â”€â”€
+  // ── Event Analysis Handler ──
   const handleEventAnalysis = useCallback(async () => {
     if (!analysisEventKey) return;
 
@@ -404,7 +404,7 @@ export default function ScoutingTool() {
                 Generating event analysis...
               </p>
               <p className="text-xs text-marble/30 mt-1">
-                This may take 10â€“20 seconds
+                This may take 10–20 seconds
               </p>
             </div>
           )}
@@ -471,7 +471,7 @@ export default function ScoutingTool() {
   );
 }
 
-// â”€â”€ Shared Sub-Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared Sub-Components ────────────────────────────────────────────
 
 function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
