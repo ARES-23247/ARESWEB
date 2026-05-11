@@ -343,8 +343,9 @@ test.describe('Integrations Manager', () => {
 
     await integrationsPage.waitForLoadState();
 
-    // Verify main form has proper role (use first to avoid strict mode violation)
-    const form = page.locator('form').first();
+    // Verify main form has proper role - target form containing zulip_url input
+    // This avoids the hidden GlobalRAGChatbot form that has class="flex items-center gap-2"
+    const form = page.locator('form').filter({ has: page.locator('#zulip_url') });
     await expect(form).toBeVisible();
 
     // Verify inputs have proper labels

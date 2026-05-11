@@ -166,7 +166,7 @@ export function QuickAddEventModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg bg-obsidian border border-white/10 shadow-2xl ares-cut overflow-hidden"
+            className="relative w-full max-w-4xl bg-obsidian border border-white/10 shadow-2xl ares-cut overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -197,113 +197,118 @@ export function QuickAddEventModal({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6">
               {error && (
-                <div className="p-3 bg-ares-danger/10 border border-ares-danger/30 rounded text-ares-danger text-sm">
+                <div className="mb-5 p-3 bg-ares-danger/10 border border-ares-danger/30 rounded text-ares-danger text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Title */}
-              <div>
-                <label htmlFor="quick-event-title-input" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                  Event Title <span className="text-ares-red">*</span>
-                </label>
-                <input
-                  id="quick-event-title-input"
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => updateField("title", e.target.value)}
-                  placeholder="e.g., Team Practice, Outreach Demo"
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all"
-                  required
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label htmlFor="quick-event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                  Category
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["internal", "outreach", "external"] as const).map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => updateField("category", cat)}
-                      className={`px-3 py-2 text-xs font-bold uppercase tracking-wider ares-cut-sm transition-all ${
-                        formData.category === cat
-                          ? cat === "internal"
-                            ? "bg-ares-red text-white"
-                            : cat === "outreach"
-                            ? "bg-ares-gold text-black"
-                            : "bg-ares-cyan text-black"
-                          : "bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      {cat === "internal" ? "Practice" : cat === "outreach" ? "Outreach" : "Community"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Date/Time Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="quick-event-start" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                    Start <span className="text-ares-red">*</span>
-                  </label>
-                  <input
-                    id="quick-event-start"
-                    type="datetime-local"
-                    value={formData.dateStart}
-                    onChange={(e) => updateField("dateStart", e.target.value)}
-                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="quick-event-end" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                    End
-                  </label>
-                  <input
-                    id="quick-event-end"
-                    type="datetime-local"
-                    value={formData.dateEnd}
-                    onChange={(e) => updateField("dateEnd", e.target.value)}
-                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                  />
-                </div>
-              </div>
-
-              {/* Location */}
-              <div>
-                <div className="col-span-2">
-                  <label htmlFor="quick-event-location" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>Location</span>
-                    <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
-                  </label>
-                  <div className="relative group">
-                    <LocationCombobox
-                      id="quick-event-location"
-                      locations={locations}
-                      value={formData.location || ''}
-                      onChange={(val) => updateField("location", val)}
-                      onCustomClick={() => setIsLocationModalOpen(true)}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-6">
+                {/* Left Column: Core Details */}
+                <div className="space-y-5">
+                  {/* Title */}
+                  <div>
+                    <label htmlFor="quick-event-title-input" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                      Event Title <span className="text-ares-red">*</span>
+                    </label>
+                    <input
+                      id="quick-event-title-input"
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => updateField("title", e.target.value)}
+                      placeholder="e.g., Team Practice, Outreach Demo"
+                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all"
+                      required
                     />
                   </div>
-                </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <div className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                  Description
+                  {/* Category */}
+                  <div>
+                    <label htmlFor="quick-event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                      Category
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["internal", "outreach", "external"] as const).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => updateField("category", cat)}
+                          className={`px-3 py-2 text-xs font-bold uppercase tracking-wider ares-cut-sm transition-all ${
+                            formData.category === cat
+                              ? cat === "internal"
+                                ? "bg-ares-red text-white"
+                                : cat === "outreach"
+                                ? "bg-ares-gold text-black"
+                                : "bg-ares-cyan text-black"
+                              : "bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          {cat === "internal" ? "Practice" : cat === "outreach" ? "Outreach" : "Community"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date/Time Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="quick-event-start" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                        Start <span className="text-ares-red">*</span>
+                      </label>
+                      <input
+                        id="quick-event-start"
+                        type="datetime-local"
+                        value={formData.dateStart}
+                        onChange={(e) => updateField("dateStart", e.target.value)}
+                        className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="quick-event-end" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                        End
+                      </label>
+                      <input
+                        id="quick-event-end"
+                        type="datetime-local"
+                        value={formData.dateEnd}
+                        onChange={(e) => updateField("dateEnd", e.target.value)}
+                        className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label htmlFor="quick-event-location" className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span>Location</span>
+                      <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
+                    </label>
+                    <div className="relative group">
+                      <LocationCombobox
+                        id="quick-event-location"
+                        locations={locations}
+                        value={formData.location || ''}
+                        onChange={(val) => updateField("location", val)}
+                        onCustomClick={() => setIsLocationModalOpen(true)}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col border border-white/10 ares-cut-sm bg-black/40 overflow-hidden min-h-[150px]">
-                  {editor && <CompactEditorToolbar editor={editor} />}
-                  <div className="flex-1 overflow-y-auto p-3 custom-scrollbar bg-obsidian max-h-[250px]">
-                    <EditorContent editor={editor} className="prose prose-sm prose-invert max-w-none focus:outline-none" />
+
+                {/* Right Column: Description */}
+                <div className="space-y-5 h-full flex flex-col">
+                  <div>
+                    <div className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                      Description
+                    </div>
+                    <div className="flex flex-col border border-white/10 ares-cut-sm bg-black/40 overflow-hidden h-[330px]">
+                      {editor && <CompactEditorToolbar editor={editor} />}
+                      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar bg-obsidian">
+                        <EditorContent editor={editor} className="prose prose-sm prose-invert max-w-none focus:outline-none" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -323,7 +328,7 @@ export function QuickAddEventModal({
               />
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-white/10">
                 <button
                   type="button"
                   onClick={onClose}
