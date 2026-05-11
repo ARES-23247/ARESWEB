@@ -348,10 +348,9 @@ describe("useMedia", () => {
         http.get("*/api/media/admin", () => {
           return HttpResponse.json({ media: [] });
         }),
-        http.post("*/api/media/admin/upload", async ({ request }) => {
-          const formData = await request.formData();
-          const folder = formData.get("folder");
-          return HttpResponse.json({ success: true, key: "uploaded.jpg", url: "https://example.com/uploaded.jpg", folder });
+        http.post("*/api/media/admin/upload", () => {
+          // Avoid awaiting request.formData() as MSW/undici often struggles with multipart parsing in jsdom
+          return HttpResponse.json({ success: true, key: "uploaded.jpg", url: "https://example.com/uploaded.jpg", folder: "Library" });
         })
       );
 
@@ -377,10 +376,9 @@ describe("useMedia", () => {
         http.get("*/api/media/admin", () => {
           return HttpResponse.json({ media: [] });
         }),
-        http.post("*/api/media/admin/upload", async ({ request }) => {
-          const formData = await request.formData();
-          const folder = formData.get("folder");
-          return HttpResponse.json({ success: true, key: "uploaded.jpg", url: "https://example.com/uploaded.jpg", folder: String(folder) });
+        http.post("*/api/media/admin/upload", () => {
+          // Avoid awaiting request.formData() as MSW/undici often struggles with multipart parsing in jsdom
+          return HttpResponse.json({ success: true, key: "uploaded.jpg", url: "https://example.com/uploaded.jpg", folder: "Competition" });
         })
       );
 
