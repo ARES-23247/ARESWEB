@@ -46,11 +46,21 @@ describe("useMonacoEditor", () => {
             setCompilerOptions: vi.fn(),
             addExtraLib: vi.fn(),
           },
+          typescriptDefaults: {
+            setCompilerOptions: vi.fn(),
+            addExtraLib: vi.fn(),
+          },
           ScriptTarget: {
             ESNext: 99,
           },
           JsxEmit: {
             React: 2,
+          },
+          ModuleResolutionKind: {
+            NodeJs: 2,
+          },
+          ModuleKind: {
+            CommonJS: 1,
           },
         },
         registerInlineCompletionsProvider: vi.fn(() => ({
