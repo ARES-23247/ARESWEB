@@ -100,7 +100,12 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
         if (shouldSetContent) {
           try {
-            editor.commands.setContent(JSON.parse(doc.content));
+            const parsed = JSON.parse(doc.content);
+            if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
+              editor.commands.setContent(parsed);
+            } else {
+              editor.commands.setContent(doc.content);
+            }
           } catch {
             editor.commands.setContent(doc.content);
           }

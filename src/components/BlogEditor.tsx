@@ -85,7 +85,12 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
         if (shouldSetContent) {
           try {
-            editor.commands.setContent(JSON.parse(post.ast));
+            const parsed = JSON.parse(post.ast);
+            if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
+              editor.commands.setContent(parsed);
+            } else {
+              editor.commands.setContent(`<p>${post.ast}</p>`);
+            }
           } catch (e) {
             console.error("Failed to parse existing AST", e);
           }

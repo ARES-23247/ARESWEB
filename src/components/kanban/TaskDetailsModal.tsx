@@ -83,7 +83,12 @@ function TaskEditorInner({ initialContent, onDescriptionChange }: { initialConte
 
     if (shouldSetContent) {
       try {
-        editor.commands.setContent(JSON.parse(initialContent));
+        const parsed = JSON.parse(initialContent);
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
+          editor.commands.setContent(parsed);
+        } else {
+          editor.commands.setContent(initialContent);
+        }
       } catch {
         editor.commands.setContent(initialContent);
       }

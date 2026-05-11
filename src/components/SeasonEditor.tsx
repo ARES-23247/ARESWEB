@@ -55,7 +55,12 @@ export default function SeasonEditor() {
         setAlbumCoverUrl(s.albumCover || "");
         if (editor && s.robotDescription) {
           try {
-            editor.commands.setContent(JSON.parse(s.robotDescription));
+            const parsed = JSON.parse(s.robotDescription);
+            if (parsed && typeof parsed === 'object' && Array.isArray(parsed.content)) {
+              editor.commands.setContent(parsed);
+            } else {
+              editor.commands.setContent(`<p>${s.robotDescription}</p>`);
+            }
           } catch (e) {
             console.error("Failed to parse existing AST", e);
           }
