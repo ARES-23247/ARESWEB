@@ -4,8 +4,28 @@ import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useGetLocations } from "../../api/locations";
+import { useGetAdminLocations } from "../../api/locations";
 import { useSaveEvent } from "../../api/events";
+import { useRichEditor } from "../editor/useRichEditor";
+import { EditorContent, type Editor } from "@tiptap/react";
+
+function CompactEditorToolbar({ editor }: { editor: Editor }) {
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("bold") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>B</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2 py-1 text-xs italic ares-cut-sm transition-all ${editor.isActive("italic") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>I</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2 py-1 text-xs line-through ares-cut-sm transition-all ${editor.isActive("strike") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>S</button>
+      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>H2</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>• List</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>☑️</button>
+      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
+      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
+    </div>
+  );
+}
 
 interface QuickAddEventModalProps {
   isOpen: boolean;
@@ -52,16 +72,30 @@ export function QuickAddEventModal({
   const { modalRef } = useFocusTrap({ isOpen, onClose });
 
   // Fetch locations from registry (only when modal is open)
-  const { data: locationsData } = useGetLocations({ enabled: isOpen, staleTime: 5 * 60 * 1000 });
+  const { data: locationsData } = useGetAdminLocations({ enabled: isOpen, staleTime: 0 });
   const locations = locationsData?.locations || [];
   const saveEvent = useSaveEvent({
     onSuccess: () => {
       toast.success("Event created successfully!");
       setFormData(DEFAULT_FORM_DATA);
+      if (editor) {
+        editor.commands.setContent("");
+      }
       onClose();
       onSuccess?.();
     }
   });
+
+  const editor = useRichEditor({
+    placeholder: "<p>Add event description or notes...</p>",
+  });
+
+  // Reset editor when modal closes
+  useEffect(() => {
+    if (!isOpen && editor) {
+      editor.commands.setContent("");
+    }
+  }, [isOpen, editor]);
 
   // Initialize form with selected date when modal opens or date changes
   useEffect(() => {
@@ -89,6 +123,7 @@ export function QuickAddEventModal({
 
     try {
       const locationValue = formData.location === "CUSTOM" ? undefined : formData.location;
+      const descJson = editor ? JSON.stringify(editor.getJSON()) : "";
 
       await saveEvent.mutateAsync({
         title: formData.title,
@@ -96,7 +131,7 @@ export function QuickAddEventModal({
         dateEnd: formData.dateEnd || undefined,
         location: locationValue || undefined,
         category: formData.category,
-        description: "",
+        description: descJson,
         isDraft: false,
         isPotluck: false,
         isVolunteer: false,
@@ -256,6 +291,19 @@ export function QuickAddEventModal({
                       onChange={(val) => updateField("location", val)}
                       onCustomClick={() => setIsLocationModalOpen(true)}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <div className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+                  Description
+                </div>
+                <div className="flex flex-col border border-white/10 ares-cut-sm bg-black/40 overflow-hidden min-h-[150px]">
+                  {editor && <CompactEditorToolbar editor={editor} />}
+                  <div className="flex-1 overflow-y-auto p-3 custom-scrollbar bg-obsidian max-h-[250px]">
+                    <EditorContent editor={editor} className="prose prose-sm prose-invert max-w-none focus:outline-none" />
                   </div>
                 </div>
               </div>
