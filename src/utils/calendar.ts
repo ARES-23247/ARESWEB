@@ -1,4 +1,6 @@
-﻿export const downloadICS = (event: {
+import { parseISO } from "date-fns";
+
+export const downloadICS = (event: {
   title: string;
   dateStart: string;
   dateEnd?: string | null;
@@ -6,12 +8,12 @@
   locationAddress?: string | null;
 }) => {
   if (!event) return;
-  const startStr = new Date(event.dateStart).toISOString().replace(/-|:|\.\d+/g, '');
+  const startStr = parseISO(event.dateStart).toISOString().replace(/-|:|\.\d+/g, '');
   let endStr: string;
   if (event.dateEnd) {
-    endStr = new Date(event.dateEnd).toISOString().replace(/-|:|\.\d+/g, '');
+    endStr = parseISO(event.dateEnd).toISOString().replace(/-|:|\.\d+/g, '');
   } else {
-    const end = new Date(event.dateStart);
+    const end = parseISO(event.dateStart);
     end.setHours(end.getHours() + 2);
     endStr = end.toISOString().replace(/-|:|\.\d+/g, '');
   }

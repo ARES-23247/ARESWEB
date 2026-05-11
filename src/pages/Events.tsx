@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { addMonths, subMonths, format, addHours, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { addMonths, subMonths, format, addHours, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List } from "lucide-react";
 import SEO from "../components/SEO";
 import { useGetEvents } from "../api";
@@ -47,9 +47,9 @@ export default function Events() {
     return fullEvents
       .filter((e) => e.dateStart != null) // Filter out events without valid start date
       .map((e) => {
-        const start = new Date(e.dateStart);
+        const start = parseISO(e.dateStart);
         // If no end date is provided, default to 1 hour after start
-        const end = e.dateEnd ? new Date(e.dateEnd) : addHours(start, 1);
+        const end = e.dateEnd ? parseISO(e.dateEnd) : addHours(start, 1);
       
       let type: "internal" | "outreach" | "external" = "internal";
       if (e.category === "outreach" || e.category === "external") {

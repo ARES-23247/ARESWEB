@@ -1,5 +1,5 @@
 import { useParams, Link } from "@tanstack/react-router";
-import { format, isBefore } from "date-fns";
+import { format, isBefore, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import TiptapRenderer, { type ASTNode } from "../components/TiptapRenderer";
 import EventSignups from "../components/EventSignups";
@@ -41,7 +41,7 @@ export default function EventDetail() {
   if (isLoading) return <div className="w-full min-h-[50vh] flex items-center justify-center text-ares-gold animate-pulse font-heading tracking-widest">Consulting the Oracle...</div>;
   if (isError || !event) return <div className="w-full max-w-4xl mx-auto px-6 py-24 text-white font-mono text-center">Event Record Erased or Unfound.</div>;
 
-  const isPast = isBefore(new Date(event.dateStart), new Date());
+  const isPast = isBefore(parseISO(event.dateStart), new Date());
   
   const handleSaveToCalendar = () => {
     if (event) {
@@ -68,7 +68,7 @@ export default function EventDetail() {
     }
   }
 
-  const startDate = new Date(event.dateStart);
+  const startDate = parseISO(event.dateStart);
 
   return (
     <motion.div 
@@ -139,7 +139,7 @@ export default function EventDetail() {
               </p>
               {event.dateEnd && (
                 <p className="flex items-center gap-2">
-                  <span className="text-white">End:</span> {format(new Date(event.dateEnd), "EEEE, MMMM do, yyyy 'at' h:mm a")}
+                  <span className="text-white">End:</span> {format(parseISO(event.dateEnd), "EEEE, MMMM do, yyyy 'at' h:mm a")}
                 </p>
               )}
             </div>

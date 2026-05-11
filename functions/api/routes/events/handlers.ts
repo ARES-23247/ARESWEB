@@ -58,6 +58,25 @@ function normalizeCategory(category: string | null | undefined): "internal" | "o
   return result.success ? result.data : "internal";
 }
 
+/**
+ * Normalize a date string from D1 to timezone-naive local time.
+ * Strips Z suffix and timezone offsets that may have been stored by
+ * earlier GCal sync, ensuring the frontend receives consistent
+ * "YYYY-MM-DDTHH:MM:SS" strings without timezone info.
+ */
+function normalizeDateTime(dt: string | null | undefined): string | null {
+  if (!dt) return null;
+  // Replace space separator with T (SQLite datetime format)
+  let normalized = dt.replace(" ", "T");
+  // Strip trailing Z
+  if (normalized.endsWith("Z")) {
+    normalized = normalized.slice(0, -1);
+  }
+  // Strip timezone offset (+HH:MM, -HH:MM, +HHMM, -HHMM) at end of string
+  normalized = normalized.replace(/[+-]\d{2}:?\d{2}$/, "");
+  return normalized;
+}
+
 // Type for Hono context with ARES environment
 type AresContext = HonoContext;
 
@@ -204,8 +223,8 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
-          dateStart: (e.dateStart as string).replace(" ", "T"),
-          dateEnd: e.dateEnd ? (e.dateEnd as string).replace(" ", "T") : null,
+          dateStart: normalizeDateTime(e.dateStart as string) ?? "",
+          dateEnd: normalizeDateTime(e.dateEnd as string),
           category: normalizeCategory(e.category) ?? "internal",
           seasonId: e.seasonId ? Number(e.seasonId) : null,
           isDeleted: Number(e.isDeleted || 0),
@@ -283,9 +302,9 @@ export const eventHandlers = {
 
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
-        // Map Drizzle camelCase back to snake_case for API consumers
-        dateStart: (e.dateStart ?? e.dateStart ?? "").replace(" ", "T"),
-        dateEnd: e.dateEnd ? e.dateEnd.replace(" ", "T") : (e.dateEnd ? e.dateEnd.replace(" ", "T") : null),
+        // Normalize dates to timezone-naive local time strings
+        dateStart: normalizeDateTime(e.dateStart) ?? "",
+        dateEnd: normalizeDateTime(e.dateEnd),
         coverImage: e.coverImage ?? e.coverImage ?? null,
         tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
         seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
@@ -410,9 +429,9 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            dateStart: (row.dateStart as string).replace(" ", "T"),
+            dateStart: normalizeDateTime(row.dateStart) ?? "",
             category: normalizeCategory(row.category) ?? "internal",
-            dateEnd: row.dateEnd ? row.dateEnd.replace(" ", "T") : null,
+            dateEnd: normalizeDateTime(row.dateEnd),
             coverImage: row.coverImage ?? null,
             tbaEventKey: row.tbaEventKey ?? null,
             seasonId: row.seasonId ? Number(row.seasonId) : null,
@@ -513,8 +532,8 @@ export const eventHandlers = {
 
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
-        dateStart: (e.dateStart ?? e.dateStart ?? "").replace(" ", "T"),
-        dateEnd: e.dateEnd ? e.dateEnd.replace(" ", "T") : (e.dateEnd ? e.dateEnd.replace(" ", "T") : null),
+        dateStart: normalizeDateTime(e.dateStart) ?? "",
+        dateEnd: normalizeDateTime(e.dateEnd),
         coverImage: e.coverImage ?? e.coverImage ?? null,
         tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
         seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
@@ -598,8 +617,8 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            dateStart: ((rowData.dateStart ?? rowData.dateStart ?? "") as string).replace(" ", "T"),
-            dateEnd: rowData.dateEnd ? (rowData.dateEnd as string).replace(" ", "T") : (rowData.dateEnd ? (rowData.dateEnd as string).replace(" ", "T") : null),
+            dateStart: normalizeDateTime(rowData.dateStart as string) ?? "",
+            dateEnd: normalizeDateTime(rowData.dateEnd as string),
             coverImage: (rowData.coverImage ?? rowData.coverImage ?? null) as string | null,
             tbaEventKey: (rowData.tbaEventKey ?? rowData.tbaEventKey ?? null) as string | null,
             seasonId: rowData.seasonId ? Number(rowData.seasonId) : (rowData.seasonId ? Number(rowData.seasonId) : null) as number | null,

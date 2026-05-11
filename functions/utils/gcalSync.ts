@@ -220,6 +220,34 @@ export async function deleteEventFromGcal(gcal_id: string, config: GCalConfig) {
 }
 
 /**
+ * Normalize a timezone-aware datetime string to a timezone-naive
+ * America/New_York wall-clock string (e.g. "2026-05-10T18:00:00").
+ * This ensures D1 stores uniform format regardless of source.
+ */
+function normalizeToLocalNaive(dt: string): string {
+  if (!dt) return dt;
+  // If it's a date-only string (YYYY-MM-DD), return as-is
+  if (!dt.includes("T")) return dt;
+  // If already timezone-naive (no Z, no +/- offset after time), return as-is
+  const timePart = dt.split("T")[1] || "";
+  const hasTimezone = dt.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(dt) || /[+-]\d{4}$/.test(dt);
+  if (!hasTimezone) return dt;
+  // Convert to America/New_York local time
+  const d = new Date(dt);
+  if (isNaN(d.getTime())) return dt;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (type: string) => parts.find(p => p.type === type)?.value || "00";
+  // Handle midnight being reported as "24" in some locales
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}:${get("second")}`;
+}
+
+/**
  * Pull events from Google Calendar (Inbound Sync)
  * Returns a list of standardized events to merge into D1.
  */
@@ -277,8 +305,8 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
   return allItems.map((item: GCalItem) => ({
     id: `gcal-${item.id}`,
     title: item.summary || "Untitled Event",
-    dateStart: item.start?.dateTime || item.start?.date || "",
-    dateEnd: item.end?.dateTime || item.end?.date || "",
+    dateStart: normalizeToLocalNaive(item.start?.dateTime || item.start?.date || ""),
+    dateEnd: normalizeToLocalNaive(item.end?.dateTime || item.end?.date || ""),
     location: item.location || "",
     description: item.description || "",
     gcalEventId: item.id,
