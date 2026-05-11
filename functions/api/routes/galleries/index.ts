@@ -7,6 +7,7 @@ import {
   createGalleryRoute,
   updateGalleryRoute,
   deleteGalleryRoute,
+  getGalleryMediaRoute,
   type gallerySchema,
 } from "@shared/routes/galleries";
 import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
@@ -52,6 +53,53 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   }
 
   return c.json({ gallery: serializeGallery(result[0]) }, 200);
+})
+
+// GET /galleries/:id/media - Get all media for a specific gallery
+.openapi(getGalleryMediaRoute, async (c) => {
+  const { id } = c.req.valid("param");
+  const db = getDb(c);
+
+  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+  if (existing.length === 0) {
+    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
+  }
+
+  // Get all media tags for this gallery ID
+  const tags = await db
+    .select({
+      key: schema.mediaTags.key,
+      folder: schema.mediaTags.folder,
+      tags: schema.mediaTags.tags
+    })
+    .from(schema.mediaTags)
+    .where(eq(schema.mediaTags.folder, id))
+    .execute();
+
+  const publicKeys = new Set(tags.map(t => t.key));
+
+  const objects = await c.env.ARES_STORAGE.list();
+
+  const media = objects.objects
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((obj: any) => publicKeys.has(obj.key))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((obj: any) => {
+      const tagInfo = tags.find(t => t.key === obj.key);
+      return {
+        key: obj.key,
+        size: obj.size,
+        uploaded: obj.uploaded.toISOString(),
+        httpEtag: obj.httpEtag,
+        url: `/api/media/${obj.key}`,
+        folder: tagInfo?.folder ?? null,
+        tags: tagInfo?.tags ?? null,
+      };
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
+
+  return c.json({ media }, 200);
 })
 
 // POST /galleries/admin - Create a gallery (admin only)

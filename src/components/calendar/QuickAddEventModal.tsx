@@ -4,7 +4,7 @@ import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { X, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useGetAdminLocations } from "../../api/locations";
+import { useGetLocations } from "../../api/locations";
 import { useSaveEvent } from "../../api/events";
 import { useRichEditor } from "../editor/useRichEditor";
 import { EditorContent, type Editor } from "@tiptap/react";
@@ -72,7 +72,7 @@ export function QuickAddEventModal({
   const { modalRef } = useFocusTrap({ isOpen, onClose });
 
   // Fetch locations from registry (only when modal is open)
-  const { data: locationsData } = useGetAdminLocations({ enabled: isOpen, staleTime: 0 });
+  const { data: locationsData } = useGetLocations({ enabled: isOpen, staleTime: 0 });
   const locations = locationsData?.locations || [];
   const saveEvent = useSaveEvent({
     onSuccess: () => {

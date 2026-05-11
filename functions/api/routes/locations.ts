@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, or, isNull } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { z } from "zod";
 import {
@@ -59,7 +59,7 @@ export const locationsRouter = _locationsRouter
             isDeleted: schema.locations.isDeleted
           })
           .from(schema.locations)
-          .where(eq(schema.locations.isDeleted, 0))
+          .where(or(eq(schema.locations.isDeleted, 0), isNull(schema.locations.isDeleted)))
           .orderBy(asc(schema.locations.name))
           .all();
 
@@ -122,11 +122,10 @@ export const locationsRouter = _locationsRouter
     .openapi(deleteLocationRoute, async (c) => {
         const { id } = c.req.valid("param");
         const db = getDb(c);
-        await db.update(schema.locations)
-          .set({ isDeleted: 1 })
+        await db.delete(schema.locations)
           .where(eq(schema.locations.id, id))
           .run();
-        c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location soft-deleted"));
+        c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location permanently deleted"));
         return c.json({ success: true } satisfies DeleteLocationSuccess, 200);
     });
 export default locationsRouter;

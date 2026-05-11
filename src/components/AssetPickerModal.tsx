@@ -8,7 +8,7 @@ interface MediaAsset {
 import { useState, useRef } from "react";
 import { X, ImagePlus, Plus, UploadCloud, Loader2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetAdminMedia } from "../api";
+import { useGetAdminMedia, useGetGalleries } from "../api";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
 
@@ -35,9 +35,19 @@ export default function AssetPickerModal({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: mediaResponse, isLoading, refetch } = useGetAdminMedia({
+  const { data: mediaResponse, isLoading: isLoadingMedia, refetch } = useGetAdminMedia({
     enabled: isOpen,
   });
+
+  const { data: galleriesResponse, isLoading: isLoadingGalleries } = useGetGalleries({
+    enabled: isOpen,
+  });
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const galleries = (galleriesResponse as unknown as { galleries: any[] })?.galleries ?? [];
+  const galleryMap = new Map(galleries.map(g => [g.id, g.title]));
+
+  const isLoading = isLoadingMedia || isLoadingGalleries;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -117,15 +127,18 @@ export default function AssetPickerModal({
                 onClick={() => setSelectedFolderFilter("All")}
                 className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest ares-cut-sm border transition-all ${selectedFolderFilter === "All" ? "bg-ares-gold border-ares-gold text-black shadow-md" : "bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"}`}
               >All Assets</button>
-              {uniqueFolders.map(folder => (
-                <button 
-                  key={folder as string}
-                  onClick={() => setSelectedFolderFilter(folder as string)}
-                  className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 ares-cut-sm transition-colors
-                    ${selectedFolderFilter === folder ? 'bg-ares-cyan text-black' : 'bg-white/5 text-marble/60 hover:text-white hover:bg-white/10 border border-white/10'}
-                  `}
-                >{folder as string}</button>
-              ))}
+              {uniqueFolders.map(folder => {
+                const folderName = galleryMap.get(folder as string) || folder as string;
+                return (
+                  <button 
+                    key={folder as string}
+                    onClick={() => setSelectedFolderFilter(folder as string)}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 ares-cut-sm transition-colors
+                      ${selectedFolderFilter === folder ? 'bg-ares-cyan text-black' : 'bg-white/5 text-marble/60 hover:text-white hover:bg-white/10 border border-white/10'}
+                    `}
+                  >{folderName}</button>
+                )
+              })}
             </div>
           )}
 
@@ -164,7 +177,7 @@ export default function AssetPickerModal({
                           {((asset.size || 0) / 1024).toFixed(0)} KB
                         </span>
                         {asset.folder && (
-                           <span className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded font-bold uppercase">{asset.folder}</span>
+                           <span className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded font-bold uppercase">{galleryMap.get(asset.folder) || asset.folder}</span>
                         )}
                       </div>
                     </div>

@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useGetGalleries, useDeleteGallery } from '../../api'
-import { Pencil, Trash2, Images, Plus, ExternalLink } from 'lucide-react'
+import { Pencil, Trash2, Images, Plus } from 'lucide-react'
 import { useModal } from '../../contexts/ModalContext'
 import GalleryPickerModal from '../../components/GalleryPickerModal'
 
@@ -40,8 +40,8 @@ function RouteComponent() {
     <div className="flex-1 w-full flex flex-col min-h-0">
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Photo Galleries</h2>
-          <p className="text-marble/60 text-sm mt-1">Create and manage photo galleries linked to Google Photos.</p>
+          <h2 className="text-2xl font-bold text-white tracking-tighter">Manage Photo Albums</h2>
+          <p className="text-marble/60 text-sm mt-1">Create and manage internal photo albums hosted on ARESWEB.</p>
         </div>
 
         <button
@@ -88,17 +88,13 @@ function RouteComponent() {
                   <p className="text-white/60 text-sm mb-3 line-clamp-2">{gallery.description}</p>
                 )}
                 <div className="flex items-center justify-between">
-                  {gallery.googlePhotosUrl && (
-                    <a
-                      href={gallery.googlePhotosUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-ares-cyan hover:text-white transition-colors flex items-center gap-1"
-                    >
-                      <ExternalLink size={12} />
-                      View on Google Photos
-                    </a>
-                  )}
+                  <Link
+                    to="/dashboard/manage_galleries/$id"
+                    params={{ id: gallery.id }}
+                    className="text-xs text-ares-gold hover:text-white transition-colors flex items-center gap-1 font-black uppercase tracking-widest"
+                  >
+                    Manage Album
+                  </Link>
                   <div className="flex items-center gap-2 ml-auto">
                     <button
                       onClick={() => {/* TODO: Edit functionality */}}

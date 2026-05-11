@@ -30,7 +30,8 @@
       "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")",
       "Bash(curl -v \"https://aresfirst.org/api/openapi.json\")",
       "mcp__web-reader__webReader",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(PREVIEW_URL=https://9549e224.aresweb.pages.dev npx playwright test tests/e2e/mass-email.spec.ts -g \"shows loading state while dispatching email|dispatch button has accessible loading state\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

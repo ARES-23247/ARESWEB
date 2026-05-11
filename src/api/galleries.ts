@@ -67,6 +67,27 @@ export function useGetGallery(
   });
 }
 
+/**
+ * GET /api/galleries/:id/media - Get media for a specific gallery
+ */
+export function useGetGalleryMedia(
+  id: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  options?: Omit<UseQueryOptions<{ media: any[] }>, "queryKey" | "queryFn" | "enabled">
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return useQuery<{ media: any[] }>({
+    queryKey: ["galleries", id, "media"],
+    queryFn: async () => {
+      const response = await client.galleries[":id"].media.$get({ param: { id } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return unwrapResponse<{ media: any[] }>(response);
+    },
+    enabled: !!id,
+    ...options,
+  });
+}
+
 // ============================================
 // Admin Galleries
 // ============================================

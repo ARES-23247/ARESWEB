@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const https = require("https");
 https.get("https://www.youtube.com/@ARESFTC", (res) => {
   let data = "";

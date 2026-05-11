@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
+import { assetSchema } from "./media";
 
 export const galleryInputSchema = z.object({
   title: z.string().min(1, "Title is required").openapi({ example: "2025 Season Kickoff Gallery" }),
@@ -67,6 +68,38 @@ export const getGalleryRoute = createRoute({
         },
       },
       description: "Single gallery",
+    },
+    404: {
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
+      description: "Gallery not found",
+    },
+  },
+  tags: ["galleries"],
+});
+
+export const getGalleryMediaRoute = createRoute({
+  method: "get",
+  path: "/{id}/media",
+  request: {
+    params: z.object({
+      id: z.string().openapi({ example: "abc123" }),
+    }),
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            media: z.array(assetSchema),
+          }),
+        },
+      },
+      description: "List of gallery media",
     },
     404: {
       content: {

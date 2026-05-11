@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Images, Plus, ExternalLink } from "lucide-react";
+import { X, Images, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetGalleries } from "../api";
 import { useMutation } from "@tanstack/react-query";
@@ -29,7 +29,6 @@ export default function GalleryPickerModal({
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newGooglePhotosUrl, setNewGooglePhotosUrl] = useState("");
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -43,7 +42,6 @@ export default function GalleryPickerModal({
     mutationFn: async (payload: {
       title: string;
       description?: string;
-      googlePhotosUrl?: string;
       heroImageKey?: string;
     }) => {
       const res = await fetch("/api/galleries/admin", {
@@ -59,7 +57,6 @@ export default function GalleryPickerModal({
       setIsCreating(false);
       setNewTitle("");
       setNewDescription("");
-      setNewGooglePhotosUrl("");
       setHeroImageFile(null);
       onSelect(data.gallery.id, data.gallery.title);
     },
@@ -87,7 +84,6 @@ export default function GalleryPickerModal({
     createMutation.mutate({
       title: newTitle.trim(),
       description: newDescription.trim() || undefined,
-      googlePhotosUrl: newGooglePhotosUrl.trim() || undefined,
       heroImageKey,
     });
   };
@@ -121,7 +117,6 @@ export default function GalleryPickerModal({
                   setIsCreating(false);
                   setNewTitle("");
                   setNewDescription("");
-                  setNewGooglePhotosUrl("");
                   setHeroImageFile(null);
                 }}
                 className="text-xs text-white/60 hover:text-white transition-colors"
@@ -169,19 +164,7 @@ export default function GalleryPickerModal({
                     className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-gold focus:outline-none focus:ring-1 focus:ring-ares-gold transition-all resize-none"
                   />
                 </div>
-                <div>
-                  <label htmlFor="newGooglePhotosUrl" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
-                    Google Photos Link
-                  </label>
-                  <input
-                    id="newGooglePhotosUrl"
-                    type="url"
-                    value={newGooglePhotosUrl}
-                    onChange={(e) => setNewGooglePhotosUrl(e.target.value)}
-                    placeholder="https://photos.app.goo.gl/..."
-                    className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-gold focus:outline-none focus:ring-1 focus:ring-ares-gold transition-all"
-                  />
-                </div>
+
                 <div>
                   <label htmlFor="heroImageFile" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
                     Hero Image
@@ -252,12 +235,7 @@ export default function GalleryPickerModal({
                       {gallery.description && (
                         <p className="text-white/60 text-xs mt-1 line-clamp-2">{gallery.description}</p>
                       )}
-                      {gallery.googlePhotosUrl && (
-                        <div className="flex items-center gap-1 mt-2 text-ares-cyan text-[10px] uppercase font-bold tracking-wider">
-                          <ExternalLink size={10} />
-                          Google Photos
-                        </div>
-                      )}
+
                     </div>
                   </button>
                 ))}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation } from "lucide-react";
 import { toast } from "sonner";
@@ -53,27 +53,24 @@ export default function LocationsManager() {
     }
   });
 
-  // Debounced OSM Geocoding
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      const addressQuery = form.getFieldValue("address");
-      if (!addressQuery || addressQuery.length < 4) {
-        setSuggestions([]);
-        return;
-      }
-      setIsSearchingOSM(true);
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressQuery)}&format=json&addressdetails=1&limit=5`);
-        const data = await res.json() as { display_name: string }[];
-        setSuggestions(data);
-      } catch (err) {
-        console.error("OSM Err:", err);
-      } finally {
-        setIsSearchingOSM(false);
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [form, form.state.values.address]);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const fetchOSM = async (query: string) => {
+    if (!query || query.length < 4) {
+      setSuggestions([]);
+      return;
+    }
+    setIsSearchingOSM(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`);
+      const data = await res.json() as { display_name: string }[];
+      setSuggestions(data);
+    } catch (err) {
+      console.error("OSM Err:", err);
+    } finally {
+      setIsSearchingOSM(false);
+    }
+  };
 
   const resetForm = () => {
     setIsAdding(false);
@@ -153,7 +150,7 @@ export default function LocationsManager() {
                       ) : (
                         <>
                           <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => { if (l.id) deleteMutation.mutate(l.id); }} title="Delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
+                          <button onClick={() => { if (l.id && confirm("Permanently delete this location?")) deleteMutation.mutate(l.id); }} title="Permanently delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>
@@ -216,7 +213,11 @@ export default function LocationsManager() {
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        onChange={(e) => {
+                          field.handleChange(e.target.value);
+                          if (debounceTimer) clearTimeout(debounceTimer);
+                          setDebounceTimer(setTimeout(() => fetchOSM(e.target.value), 600));
+                        }}
                         type="text"
                         className="w-full bg-obsidian border border-white/10 rounded p-3 text-white focus:border-ares-cyan outline-none"
                         placeholder="Start typing an address..."
