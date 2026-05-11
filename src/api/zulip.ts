@@ -70,7 +70,7 @@ export function useGetTopicMessages(
   options?: Omit<UseQueryOptions<{ success: boolean; messages: ZulipMessage[] }>, "queryKey" | "queryFn" | "enabled">
 ) {
   return useQuery<{ success: boolean; messages: ZulipMessage[] }>({
-    queryKey: ["zulip", "topic", query.stream, query.topic],
+    queryKey: ["zulip", "topic", query],
     queryFn: async () => {
       const response = await client.zulip.topic.$get({ query });
       return unwrapResponse<{ success: boolean; messages: ZulipMessage[] }>(response);
