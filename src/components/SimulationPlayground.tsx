@@ -403,7 +403,7 @@ export default function SimulationPlayground() {
       className={isFullscreen ? "fixed inset-0 z-[100] bg-obsidian flex flex-col w-full h-full overflow-hidden" : "w-full h-full"}
     >
       <div
-        className={isFullscreen ? "flex flex-col w-full h-full p-2 md:p-6" : "flex flex-col h-[calc(100vh-[var(--header-height,80px)])]"}
+        className={isFullscreen ? "flex flex-col w-full h-full p-2 md:p-6" : "flex flex-col h-[calc(100vh-80px)]"}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={async (e) => {
           e.preventDefault();
