@@ -47,6 +47,8 @@ import pointsRouter from "./routes/points";
 import { aiRouter } from "./routes/ai/index";
 import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
+import galleriesRouter from "./routes/galleries/index";
+import videosRouter from "./routes/videos/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 
 import { logger } from "hono/logger";
@@ -205,7 +207,9 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/judges", judgesRouter)
   .route("/profile", profilesRouter)
   .route("/logistics", logisticsRouter)
-  .route("/users", usersRouter);
+  .route("/users", usersRouter)
+  .route("/galleries", galleriesRouter)
+  .route("/videos", videosRouter);
 
 export const group3 = new OpenAPIHono<AppEnv>()
   .route("/badges", badgesRouter)

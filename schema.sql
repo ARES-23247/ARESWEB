@@ -865,3 +865,33 @@ CREATE TABLE IF NOT EXISTS task_labels (
 CREATE INDEX IF NOT EXISTS idx_task_labels_task ON task_labels(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_labels_label ON task_labels(label_id);
 
+
+-- ─── Photo Galleries ─────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS galleries (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    google_photos_url TEXT,
+    hero_image_key TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_galleries_created ON galleries(created_at DESC);
+
+
+-- ─── Videos ───────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS videos (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    platform TEXT NOT NULL,
+    video_id TEXT NOT NULL,
+    thumbnail_key TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_videos_platform ON videos(platform);
+

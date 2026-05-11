@@ -804,3 +804,31 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
 	timestamp: text().notNull(),
 });
 
+export const galleries = sqliteTable("galleries", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	googlePhotosUrl: text("google_photos_url"),
+	heroImageKey: text("hero_image_key"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_galleries_created").on(table.createdAt),
+]);
+
+export const videos = sqliteTable("videos", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	platform: text().notNull(),
+	videoId: text("video_id").notNull(),
+	thumbnailKey: text("thumbnail_key"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_videos_created").on(table.createdAt),
+	index("idx_videos_platform").on(table.platform),
+]);
+
