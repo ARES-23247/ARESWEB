@@ -1,6 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { AppEnv } from "../../middleware";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const aiToolsRouter = new OpenAPIHono<AppEnv>();
 
@@ -196,7 +195,6 @@ aiToolsRouter.get("/typescript", async (c) => {
   for (const tool of tools) {
     const params = Object.keys(tool.parameters.properties || {});
     const required = tool.parameters.required || [];
-    const optionalParams = params.filter(p => !required.includes(p));
 
     ts += `export interface ${tool.name.charAt(0).toUpperCase() + tool.name.slice(1)}Params {\n`;
     for (const param of params) {

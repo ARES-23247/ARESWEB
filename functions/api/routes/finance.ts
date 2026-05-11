@@ -1,7 +1,7 @@
 import { eq, desc, inArray, sum, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
+
 
 import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb, ApiError } from "../middleware";
 
@@ -19,8 +19,7 @@ interface SponsorshipAssignment {
   userId: string;
 }
 
-// Helper types for strict casting
-type RouteResponse<T> = T extends { responses: { 200: { content: { "application/json": { schema: infer S } } } } } ? (S extends z.ZodTypeAny ? z.infer<S> : never) : never;
+
 
 // GET /finance/summary - Get financial summary for a season
 export const financeRouter = _financeRouter
@@ -95,7 +94,7 @@ export const financeRouter = _financeRouter
           createdAt: p.createdAt,
         }));
 
-        return c.json({ pipeline: result as any }, 200); })
+        return c.json({ pipeline: result }, 200); })
     .openapi(financeRoutes.savePipelineRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
@@ -226,7 +225,7 @@ export const financeRouter = _financeRouter
           loggedBy: t.loggedBy,
         }));
 
-        return c.json({ transactions: result as any }, 200);
+        return c.json({ transactions: result }, 200);
     })
     .openapi(financeRoutes.saveTransactionRoute, async (c) => {
         const body = c.req.valid("json");
@@ -249,7 +248,7 @@ export const financeRouter = _financeRouter
         }
 
         const validTypes = ["income", "expense"] as const;
-        if (!body.type || !validTypes.includes(body.type as any)) {
+        if (!body.type || !validTypes.includes(body.type as "income" | "expense")) {
           throw new ApiError("Invalid transaction type: must be 'income' or 'expense'", 400);
         }
 

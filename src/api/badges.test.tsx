@@ -29,6 +29,11 @@ vi.mock("./honoClient", () => ({
       },
     },
     users: {
+      admin: {
+        list: {
+          $get: vi.fn(),
+        },
+      },
       $get: vi.fn(),
     },
   },
@@ -73,6 +78,11 @@ const mockClient = honoClient.client as unknown as {
     };
   };
   users: {
+    admin: {
+      list: {
+        $get: ReturnType<typeof vi.fn>;
+      };
+    };
     $get: ReturnType<typeof vi.fn>;
   };
 };
@@ -307,7 +317,7 @@ describe("Badges API", () => {
         { id: "2", name: "User 2", nickname: null, email: "user2@test.com" },
       ];
       const mockResponse: BadgeUsersListResponse = { users: mockUsers };
-      mockClient.users.$get.mockResolvedValue({ ok: true });
+      mockClient.users.admin.list.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => badgesApi.useGetUsersForBadges(), { wrapper });

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { X, Images, Plus, ExternalLink } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetGalleries } from "../api";
-import { useModal } from "../contexts/ModalContext";
 import { useMutation } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
 
@@ -26,7 +25,7 @@ export default function GalleryPickerModal({
   onClose: () => void;
   onSelect: (galleryId: string, title: string) => void;
 }) {
-  const modal = useModal();
+
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -145,10 +144,11 @@ export default function GalleryPickerModal({
             {isCreating ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
+                  <label htmlFor="newTitle" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
                     Gallery Title *
                   </label>
                   <input
+                    id="newTitle"
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
@@ -157,10 +157,11 @@ export default function GalleryPickerModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
+                  <label htmlFor="newDescription" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
                     Description
                   </label>
                   <textarea
+                    id="newDescription"
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="Brief description of this gallery..."
@@ -169,10 +170,11 @@ export default function GalleryPickerModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
+                  <label htmlFor="newGooglePhotosUrl" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
                     Google Photos Link
                   </label>
                   <input
+                    id="newGooglePhotosUrl"
                     type="url"
                     value={newGooglePhotosUrl}
                     onChange={(e) => setNewGooglePhotosUrl(e.target.value)}
@@ -181,12 +183,13 @@ export default function GalleryPickerModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
+                  <label htmlFor="heroImageFile" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
                     Hero Image
                   </label>
                   <div className="flex items-center gap-4">
                     <label className="flex-1">
                       <input
+                        id="heroImageFile"
                         type="file"
                         accept="image/*"
                         className="hidden"

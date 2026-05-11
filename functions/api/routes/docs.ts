@@ -15,7 +15,6 @@ import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 import type { HonoContext, RouteResponse } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
-import { z } from "zod";
 
 const _docsRouter = new OpenAPIHono<AppEnv>();
 
@@ -91,7 +90,7 @@ type PartialDoc = {
 };
 
 type DocSearchCacheEntry = {
-  data: any; // Using any for cache internal data to avoid circular complexity
+  data: unknown; // Using unknown for cache internal data to avoid circular complexity
   expiresAt: number;
 };
 

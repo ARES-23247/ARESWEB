@@ -1,5 +1,5 @@
 import { ApiError } from "../../middleware/errorHandler";
-import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, getDb } from "../../middleware";
+import { getSocialConfig, getSessionUser, getDbSettings, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { dispatchSocials } from "../../../utils/socialSync";
@@ -134,34 +134,34 @@ interface EventSaveBody {
 /**
  * Maps a database event row to the standard API response format.
  */
-function mapToEventResponse(e: Record<string, any>, locationMap: Record<string, string> = {}): FormattedEvent {
+function mapToEventResponse(e: Record<string, unknown>, locationMap: Record<string, string> = {}): FormattedEvent {
   return {
     id: String(e.id),
     title: String(e.title || ""),
-    category: normalizeCategory(e.category) ?? "internal",
+    category: normalizeCategory(e.category as string) ?? "internal",
     dateStart: normalizeDateTime(e.dateStart as string) ?? "",
     dateEnd: normalizeDateTime(e.dateEnd as string),
-    location: e.location ?? null,
-    locationAddress: e.location ? (locationMap[e.location] || null) : null,
-    description: e.description ?? null,
-    coverImage: e.coverImage ?? null,
+    location: (e.location as string) ?? null,
+    locationAddress: e.location ? (locationMap[e.location as string] || null) : null,
+    description: (e.description as string) ?? null,
+    coverImage: (e.coverImage as string) ?? null,
     status: (e.status ?? "published") as FormattedEvent["status"],
     isDeleted: Number(e.isDeleted || 0),
     seasonId: e.seasonId ? Number(e.seasonId) : null,
-    meetingNotes: e.meetingNotes ?? null,
-    tbaEventKey: e.tbaEventKey ?? null,
+    meetingNotes: (e.meetingNotes as string) ?? null,
+    tbaEventKey: (e.tbaEventKey as string) ?? null,
     isPotluck: Number(e.isPotluck || 0),
     isVolunteer: Number(e.isVolunteer || 0),
-    recurringGroupId: e.recurringGroupId ?? null,
-    rrule: e.rrule ?? null,
-    zulipStream: e.zulipStream ?? null,
-    zulipTopic: e.zulipTopic ?? null,
+    recurringGroupId: (e.recurringGroupId as string) ?? null,
+    rrule: (e.rrule as string) ?? null,
+    zulipStream: (e.zulipStream as string) ?? null,
+    zulipTopic: (e.zulipTopic as string) ?? null,
     recurringException: e.recurringException ? Number(e.recurringException) : null,
-    contentDraft: e.contentDraft ?? null,
-    gcalEventId: e.gcalEventId ?? null,
-    updatedAt: e.updatedAt ?? null,
-    revisionOf: e.revisionOf ?? null,
-    publishedAt: e.publishedAt ?? null,
+    contentDraft: (e.contentDraft as string) ?? null,
+    gcalEventId: (e.gcalEventId as string) ?? null,
+    updatedAt: (e.updatedAt as string) ?? null,
+    revisionOf: (e.revisionOf as string) ?? null,
+    publishedAt: (e.publishedAt as string) ?? null,
   };
 }
 
@@ -174,7 +174,7 @@ export const eventHandlers = {
 
     if (q) {
       const cleanQ = sanitizeFtsQuery(String(q || ''));
-      const results = await db.all<any>(sql`
+      const results = await db.all<Record<string, unknown>>(sql`
         SELECT e.* FROM events_fts f
         JOIN events e ON f.id = e.id
         WHERE e.isDeleted = 0 AND e.status = 'published' AND (e.publishedAt IS NULL OR datetime(e.publishedAt) <= datetime('now'))
@@ -283,7 +283,7 @@ export const eventHandlers = {
       .orderBy(desc(schema.events.dateStart))
       .limit(Number(limit) || 100);
 
-    let results: any[];
+    let results: Record<string, unknown>[];
     if (cursor) {
       results = await baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`).all();
     } else {
@@ -369,7 +369,7 @@ export const eventHandlers = {
     if (!user) throw new ApiError("Authentication required", 401);
     const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-    let instances: any[] = [];
+    let instances: (typeof schema.events.$inferInsert)[] = [];
 
     if (rrule) {
       try {
@@ -790,7 +790,7 @@ export const eventHandlers = {
 
     const { eventSignups: results } = await queryHelpers.getEventSignups(db, eventId);
 
-    const signups = isVerified ? results.map((rec: any) => ({
+    const signups = isVerified ? results.map((rec: Record<string, unknown>) => ({
       userId: rec.userId,
       nickname: rec.profileNickname || null,
       bringing: rec.bringing || null,
@@ -801,9 +801,9 @@ export const eventHandlers = {
     })) : [];
 
     const dietarySummary: Record<string, number> = {};
-    results.forEach((r: any) => {
+    results.forEach((r: Record<string, unknown>) => {
       if (r.dietaryRestrictions) {
-        const restrictions = r.dietaryRestrictions.split(',').map((st: string) => st.trim());
+        const restrictions = (r.dietaryRestrictions as string).split(',').map((st: string) => st.trim());
         restrictions.forEach((res: string) => {
           if (res) dietarySummary[res] = (dietarySummary[res] || 0) + 1;
         });

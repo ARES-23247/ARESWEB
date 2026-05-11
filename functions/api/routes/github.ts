@@ -8,6 +8,9 @@ import { safeWaitUntil } from "../utils/safeWaitUntil";
 
 const _githubRouter = new OpenAPIHono<AppEnv>();
 
+// Apply ensureAdmin middleware to /projects/* routes BEFORE adding routes
+_githubRouter.use("/projects/*", ensureAdmin);
+
 interface WeekData {
   total: number;
   week: number;
@@ -159,7 +162,7 @@ export const githubRouter = _githubRouter
         await createProjectItem(ghConfig, title);
         return c.json({ success: true }, 200);
     });
-_githubRouter.use("/projects/*", ensureAdmin);
+
 export default githubRouter;
 
 

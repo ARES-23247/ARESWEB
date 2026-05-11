@@ -74,6 +74,9 @@ type DeleteJudgeCodeSuccess = z.infer<typeof deleteJudgeCodeRoute.responses[200]
 
 const _judgesRouter = new OpenAPIHono<AppEnv>();
 
+// Apply ensureAdmin middleware to /admin/* routes BEFORE adding routes
+_judgesRouter.use("/admin/*", ensureAdmin);
+
 /**
  * Strips internal metadata and TODOs from content before judge consumption.
  * Ensures the printed portfolio is championship-ready.
@@ -309,6 +312,5 @@ export const judgesRouter = _judgesRouter
 
         return c.json({ success: true } satisfies DeleteJudgeCodeSuccess, 200);
     });
-// Admin routes require ensureAdmin middleware
-_judgesRouter.use("/admin/*", ensureAdmin);
+
 export default judgesRouter;

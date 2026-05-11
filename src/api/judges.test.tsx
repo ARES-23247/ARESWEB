@@ -142,7 +142,7 @@ describe("Judges API", () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
       expect(mockClient.judges.portfolio.$get).toHaveBeenCalledWith({
-        headers: { "x-judge-code": "JUDGE-ABC-123" },
+        header: { "x-judge-code": "JUDGE-ABC-123" },
       });
     });
 

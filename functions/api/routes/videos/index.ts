@@ -9,9 +9,8 @@ import {
   updateVideoRoute,
   deleteVideoRoute,
   type videoSchema,
-  videoPlatformSchema,
 } from "@shared/routes/videos";
-import { AppEnv, ensureAdmin, getSessionUser, getDb, logAuditAction } from "../../middleware";
+import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 

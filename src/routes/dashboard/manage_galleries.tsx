@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useGetGalleries, useDeleteGallery } from '../../api'
-import { useDashboardSession } from '../../hooks/useDashboardSession'
 import { Pencil, Trash2, Images, Plus, ExternalLink } from 'lucide-react'
 import { useModal } from '../../contexts/ModalContext'
 import GalleryPickerModal from '../../components/GalleryPickerModal'
@@ -12,7 +11,6 @@ export const Route = createFileRoute('/dashboard/manage_galleries')({
 })
 
 function RouteComponent() {
-  const { session, permissions } = useDashboardSession()
   const modal = useModal()
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const { data: galleriesResponse, isLoading } = useGetGalleries()

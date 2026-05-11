@@ -122,7 +122,7 @@ apiRouter.doc('/openapi.json', {
 apiRouter.get('/reference', apiReference({
   url: '/api/openapi.json',
   theme: 'moon',
-} as any)); // eslint-disable-line @typescript-eslint/no-explicit-any -- Scalar API types are version-sensitive
+} as any));
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
@@ -263,7 +263,7 @@ interface FTSResult {
   snippet: string;
 }
 
-const routes = apiRouter
+const routes = new OpenAPIHono<AppEnv>()
   .route("/", group1)
   .route("/", group2)
   .route("/", group3)

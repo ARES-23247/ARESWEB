@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * Inquiries API - Contact Form, Student/Mentor Inquiries
  *

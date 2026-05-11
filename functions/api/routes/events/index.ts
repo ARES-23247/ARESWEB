@@ -105,7 +105,7 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(saveEventRoute, async (c) => {
-  const result = await eventHandlers.saveEvent({ body: c.req.valid("json") as any, query: {}, params: {} }, c); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const result = await eventHandlers.saveEvent({ body: c.req.valid("json") as any, query: {}, params: {} }, c);
   return c.json(result.body, result.status) as any;
 })
 

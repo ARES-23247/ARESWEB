@@ -18,6 +18,9 @@ _awardsRouter.use("*", async (c, next) => {
   return edgeCacheMiddleware(180, 60, 300)(c, next);
 });
 
+// Apply ensureAdmin middleware to /admin/* routes BEFORE adding routes
+_awardsRouter.use("/admin/*", ensureAdmin);
+
 // Get awards list
 export const awardsRouter = _awardsRouter
     .openapi(getAwardsRoute, async (c) => {
@@ -136,5 +139,5 @@ export const awardsRouter = _awardsRouter
         c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
         return c.json({ success: true }, 200);
     });
-_awardsRouter.use("/admin/*", ensureAdmin);
+
 export default awardsRouter;

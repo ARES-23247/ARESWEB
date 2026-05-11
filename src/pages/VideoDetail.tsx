@@ -1,6 +1,6 @@
 import SEO from "../components/SEO";
 import { useGetVideo, type Video } from "../api";
-import { Play, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export default function VideoDetail({ id }: { id: string }) {

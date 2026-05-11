@@ -143,7 +143,6 @@ const SCHEMA_MAP: Record<string, unknown> = {
 export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async (c) => {
   const rl = rateLimitMiddleware(5, 300);
   const res = await rl(c as any, async () => {});
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (res instanceof Response) return res as any;
   const db = getDb(c);
   try {
@@ -188,7 +187,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
               selectObj[col.name as string] = col;
             }
           });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           query = db.select(selectObj as any).from(tableSchema as never);
         } else {
           query = db.select().from(tableSchema as never);
@@ -199,7 +198,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
         if (tableName === "inquiries") {
           return {
             tableName,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
             data: ((data as any[]) || []).map((r: any) => {
               return { ...r, name: r.name ? String(r.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
             }),

@@ -15,16 +15,9 @@ import {
   getPostRoute,
   getAdminPostsRoute,
   getAdminPostRoute,
-  savePostRoute,
-  updatePostRoute,
   deletePostRoute,
   undeletePostRoute,
   purgePostRoute,
-  approvePostRoute,
-  rejectPostRoute,
-  getPostHistoryRoute,
-  restorePostHistoryRoute,
-  repushSocialsRoute,
 } from "../../../../shared/routes/posts";
 
 // Type for documentHistory inserts (only fields we provide, id auto-increments)

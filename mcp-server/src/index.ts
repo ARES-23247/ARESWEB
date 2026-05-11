@@ -18,6 +18,13 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
+interface OpenAPISchema {
+  type?: string;
+  properties?: Record<string, unknown>;
+  required?: string[];
+  [key: string]: unknown;
+}
+
 interface OpenAPISpec {
   openapi: string;
   info: { title: string; version: string };
@@ -30,14 +37,14 @@ interface OpenAPISpec {
     parameters?: Array<{
       name: string;
       in: string;
-      schema: any;
+      schema: OpenAPISchema;
       required?: boolean;
     }>;
     requestBody?: {
-      content: Record<string, { schema: any }>;
+      content: Record<string, { schema: OpenAPISchema }>;
     };
     responses: Record<string, {
-      content: Record<string, { schema: any }>;
+      content: Record<string, { schema: OpenAPISchema }>;
     }>;
   }>>;
 }
@@ -122,11 +129,10 @@ class ARESMCPServer {
         if (method === "parameters" || !operation) continue;
 
         const operationId = operation.operationId || `${method}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        const tags = operation.tags || [];
-        const isWrite = ["post", "put", "patch", "delete"].includes(method.toLowerCase());
+
 
         // Build JSON Schema for input
-        const properties: Record<string, any> = {};
+        const properties: Record<string, unknown> = {};
         const required: string[] = [];
 
         // Path parameters
@@ -159,7 +165,7 @@ class ARESMCPServer {
           description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
           inputSchema: {
             type: "object",
-            properties: properties || {},
+            properties: properties as Record<string, object>,
             required: required || [],
           },
         });
@@ -195,7 +201,7 @@ class ARESMCPServer {
       const spec = this.cache.spec!;
       let targetPath: string | undefined;
       let targetMethod: string | undefined;
-      let targetOperation: any;
+      let targetOperation: OpenAPISpec["paths"][string][string] | undefined;
 
       for (const [path, methods] of Object.entries(spec.paths)) {
         for (const [method, operation] of Object.entries(methods)) {
@@ -225,7 +231,7 @@ class ARESMCPServer {
 
       // Extract query parameters
       const queryParams = new URLSearchParams();
-      const bodyParams: Record<string, any> = {};
+      const bodyParams: Record<string, unknown> = {};
 
       for (const param of (targetOperation.parameters || [])) {
         const value = (args || {})[param.name];

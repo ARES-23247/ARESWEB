@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Play, Plus, ExternalLink } from "lucide-react";
+import { X, Play, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetVideos, useParseVideoUrlMutation } from "../api";
 import { useMutation } from "@tanstack/react-query";
@@ -192,11 +192,12 @@ export default function VideoPickerModal({
             {isCreating ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                  <label htmlFor="videoUrl" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Video URL *
                   </label>
                   <div className="flex gap-2">
                     <input
+                      id="videoUrl"
                       type="url"
                       value={videoUrl}
                       onChange={(e) => {
@@ -222,10 +223,11 @@ export default function VideoPickerModal({
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                  <label htmlFor="newTitle" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Video Title *
                   </label>
                   <input
+                    id="newTitle"
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
@@ -234,10 +236,11 @@ export default function VideoPickerModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                  <label htmlFor="newDescription" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Description
                   </label>
                   <textarea
+                    id="newDescription"
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="Brief description of this video..."
@@ -246,12 +249,13 @@ export default function VideoPickerModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                  <label htmlFor="thumbnailFile" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Custom Thumbnail
                   </label>
                   <div className="flex items-center gap-4">
                     <label className="flex-1">
                       <input
+                        id="thumbnailFile"
                         type="file"
                         accept="image/*"
                         className="hidden"
