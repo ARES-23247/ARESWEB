@@ -12,7 +12,14 @@
       "Bash(node ./node_modules/@gsd-build/sdk/dist/cli.js query config-get workflow._auto_chain_active)",
       "Bash(node ./node_modules/@gsd-build/sdk/dist/cli.js query config-get workflow.auto_advance)",
       "Bash(cat \"C:\\\\Users\\\\david\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-david-dev-robotics-ftc\\\\ARESWEB\\\\dc89e9a2-5738-468a-930b-e9608678547e\\\\tasks\\\\baitd4raq.output\" 2>/dev/null | tail -20 || echo \"No output yet\")",
-      "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users-david-dev-robotics-ftc/ARESWEB/dc89e9a2-5738-468a-930b-e9608678547e/tasks/**)"
+      "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users-david-dev-robotics-ftc/ARESWEB/dc89e9a2-5738-468a-930b-e9608678547e/tasks/**)",
+      "Bash(mkdir -p /c/Users/david/.claude/gsd-user-files-backup)",
+      "Bash(cp /c/Users/david/.claude/agents/code-simplifier.md /c/Users/david/.claude/gsd-user-files-backup/agents/code-simplifier.md)",
+      "Bash(cp /c/Users/david/.claude/agents/code-simplifier.md __TRACKED_VAR__/agents/code-simplifier.md)",
+      "Bash(# Clear update cache from all runtime directories *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\david\\.claude\\cache"
     ]
   }
 }

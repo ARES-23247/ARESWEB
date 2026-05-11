@@ -39,7 +39,7 @@
 
 **Depends on**: v7.3 ESLint Sanitization
 
-- [ ] **Phase 69: Restructure `[[route]].ts`** — Chain all `.route()` calls for type propagation
+- [x] **Phase 69: Restructure `[[route]].ts`** — Chain all `.route()` calls for type propagation (completed 2026-05-11)
 - [ ] **Phase 70: Handler Return Type Alignment** — Remove `as any` casts from all `c.json()` returns (~30 route files)
 - [ ] **Phase 71: Client Type Safety** — Remove `: any` from `honoClient.ts`, verify inference
 - [ ] **Phase 72: Performance Validation** — Measure TS compiler impact, split AppType if needed
@@ -91,6 +91,16 @@ This work completes the v7.1 Drizzle ORM migration goals that were previously ma
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 68 to break down)
+
+### Phase 69: Rapid fixes to Profiles, Simulation Playground, and Zulip integration
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 68
+**Plans:** 1/1 plans complete
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 69 to break down)
 
 ---
 

@@ -30,32 +30,55 @@ export function useMonacoEditor() {
       jsx: monaco.languages.typescript.JsxEmit.React,
     });
 
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      jsx: monaco.languages.typescript.JsxEmit.React,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.CommonJS,
+    });
+
     try {
       // Load ARESLib types
       const aresRes = await fetch('/types/areslib.d.ts');
       if (aresRes.ok) {
+        const aresLibStr = await aresRes.text();
         monaco.languages.typescript.javascriptDefaults.addExtraLib(
-          await aresRes.text(),
+          aresLibStr,
+          'file:///node_modules/@types/areslib/index.d.ts'
+        );
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          aresLibStr,
           'file:///node_modules/@types/areslib/index.d.ts'
         );
       }
 
       // Load minimal React types
+      const reactLibStr = `declare module "react" {
+        export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
+        export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
+        export function useRef<T>(initialValue: T): { current: T };
+        export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
+        export function useMemo<T>(factory: () => T, deps: unknown[]): T;
+        export function Suspense(props: { children: any; fallback: any }): any;
+        export function lazy<T>(factory: () => Promise<{ default: T }>): T;
+      }
+      declare namespace React {
+        export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
+        export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
+        export function useRef<T>(initialValue: T): { current: T };
+        export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
+        export function useMemo<T>(factory: () => T, deps: unknown[]): T;
+        export function Suspense(props: { children: any; fallback: any }): any;
+        export function lazy<T>(factory: () => Promise<{ default: T }>): T;
+      }`;
+      
       monaco.languages.typescript.javascriptDefaults.addExtraLib(
-        `declare module "react" {
-          export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
-          export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
-          export function useRef<T>(initialValue: T): { current: T };
-          export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
-          export function useMemo<T>(factory: () => T, deps: unknown[]): T;
-        }
-        declare namespace React {
-          export function useState<T>(initialState: T | (() => T)): [T, (newState: T | ((prevState: T) => T)) => void];
-          export function useEffect(effect: () => void | (() => void), deps?: unknown[]): void;
-          export function useRef<T>(initialValue: T): { current: T };
-          export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
-          export function useMemo<T>(factory: () => T, deps: unknown[]): T;
-        }`,
+        reactLibStr,
+        'file:///node_modules/@types/react/index.d.ts'
+      );
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        reactLibStr,
         'file:///node_modules/@types/react/index.d.ts'
       );
 
