@@ -1,105 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v7.3-eslint-sanitization
-milestone_name: Full Codebase ESLint Sanitization
+milestone: v8.0-end-to-end-hono-rpc-type-safety
+milestone_name: End-to-End Hono RPC Type Safety
 status: ready_to_plan
-last_updated: "2026-05-10T22:11:55.210Z"
-last_activity: 2026-05-10 -- Phase 68 execution started
+last_updated: "2026-05-11T16:19:00.000Z"
+last_activity: 2026-05-11 -- Phase 71 context gathered
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 0
-  percent: 33
+  total_phases: 4
+  completed_phases: 2
+  total_plans: 1
+  completed_plans: 1
+  percent: 50
 ---
 
 # System State
 
-**Current Milestone**: Maintenance Mode
-**Status**: All major milestones complete
-**Last activity**: 2026-05-08
+**Current Milestone**: v8.0 End-to-End Hono RPC Type Safety
+**Status**: Context gathered for Phase 71; proceeding to planning
+**Last activity**: 2026-05-11
 
 ## Recent Completions
 
-- **Phase 65: Backend Sanitization** (2026-05-09) — Verified zero-error ESLint compliance across `functions/api/`; confirmed prior automated fixes fully resolved all technical debt in the backend handlers.
-- **Phase 64: Analysis & Automated Fixes** (2026-05-08) — Audited 364 problems; fixed syntax error in `social-hub.spec.ts`; applied `--fix` resolving 15 items; categorized debt for manual cleanup.
-
-**v7.2 — TypeScript Safety & ESLint Compliance** ✅ SHIPPED 2026-05-08
-
-- Zero TypeScript compiler errors (241 → 0)
-- Zero ESLint errors and warnings
-- All `as any` casts eliminated from production code
-- `typedHandler` pattern for type-safe API routes
-- Throw-only error handling architecture
-- 834+ unit tests passing with full type safety
-
-**v6.9 — Type Safety Debt Elimination** ✅ SHIPPED 2026-05-06
-
-- `typedHandler<R>()` wrapper introduced
-- ~50 `as any` casts eliminated
-- ~40 file-level eslint-disables removed
+- **Phase 71 Context** (2026-05-11) — Gathered decisions on `AppType` consolidation, handler return alignment, and `unwrapResponse` hardening.
+- **Phase 70: Restore End-to-End Type Safety** (2026-05-11) — Standardized backend routers.
 
 ## Current Position
 
-Phase: 999.64
+Phase: 71
 Plan: Not started
 Status: Ready to plan
 Last activity: 2026-05-11
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-07)
+See: .planning/PROJECT.md
 
 **Core value:** Championship-grade FIRST Robotics team management platform
-**Current focus:** Phase 68 — kanban-feature-parity-with-google-integrations
-
-## Accumulated Context
-
-### Roadmap Evolution
-
-- Phase 73 added: Dashboard Boilerplate Cleanup
-- Phase 72 added: Component State and Forms
-- Phase 71 added: API Route Hardening
-- Phase 70 added: Restore End-to-End Type Safety
-- Phase 69 added: Rapid fixes to Profiles, Simulation Playground, and Zulip integration
-- Phase 68 added: Kanban Feature Parity with Google Integrations
-- v7.2 added: TypeScript Safety & ESLint Compliance — complete type safety achieved
-- v7.0-v7.1 marked as planned but not executed (phantom milestones from documentation drift)
-
-### Key Decisions (v7.2)
-
-1. **Throw-only error handling**: Using `throw ApiError` instead of returning error objects restores type inference in Hono handlers
-2. **typedHandler pattern**: Central wrapper eliminates boundary `any` casts across all routes
-3. **Test mocks use interfaces**: Proper mock types instead of `any` improves test reliability
-4. **Batched refactoring**: TSC errors reduced systematically (241→170→121→84→78→71→63→56→48→40→26→19→0)
-5. **ESLint strictness**: Achieved zero errors and zero warnings for championship-grade code quality
-
-### Quality Metrics (2026-05-08)
-
-**Type Safety**:
-
-- TSC Errors: 0 (down from 241)
-- ESLint Errors: 0
-- ESLint Warnings: 0
-- `as any` casts (production): 0
-- `@ts-ignore` directives: 0
-
-**Tests**:
-
-- Unit Tests: 834+ passing
-- E2E Tests: 55/55 passing
-- Pa11y Accessibility: 16/16 URLs passing
-
-### Anti-Patterns to Avoid
-
-1. Replacing `as any` with `as unknown as T` — that's just hiding the problem
-2. Creating overly broad generic types that lose specificity
-3. Breaking runtime behavior to satisfy the type checker
-4. Removing eslint-disable without actually fixing the underlying type issue
-5. Adding `@ts-ignore` to "fix" type errors — this is technical debt
-
-## Session Continuity
-
-**Last session**: Created v7.2 TypeScript Safety & ESLint Compliance milestone documenting actual work completed from 2026-05-01 to 2026-05-08
-**Documentation correction**: v7.0 and v7.1 were marked as shipped in previous STATE.md but were not actually executed — these have been archived as "planned but not executed"
-**Next step**: Maintenance mode — awaiting feature requirements or bug reports
+**Current focus:** Phase 71 — Client Type Safety
