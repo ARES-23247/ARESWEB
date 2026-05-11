@@ -142,7 +142,7 @@ export default function SimulationPlayground() {
     setFiles(updatedFiles);
     setPendingAiChanges(null);
     compileCode(updatedFiles);
-    setChatMessages(prev => [...prev, { role: "assistant", content: "âœ… Changes accepted and compiled successfully!" }]);
+    setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Changes accepted and compiled successfully!" }]);
   }, [pendingAiChanges, files, compileCode, setChatMessages]);
 
   // TODO: add AI change accept/reject UI buttons

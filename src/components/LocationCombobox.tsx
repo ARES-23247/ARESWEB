@@ -23,12 +23,14 @@ export function LocationCombobox({
   const [query, setQuery] = useState('');
 
   const filteredLocations =
-    query === ''
-      ? locations
-      : locations.filter((loc) => {
-          return loc.name.toLowerCase().includes(query.toLowerCase()) || 
-                 (loc.address || "").toLowerCase().includes(query.toLowerCase());
-        });
+    (!Array.isArray(locations))
+      ? []
+      : query === ''
+        ? locations
+        : locations.filter((loc) => {
+            return loc.name.toLowerCase().includes(query.toLowerCase()) || 
+                   (loc.address || "").toLowerCase().includes(query.toLowerCase());
+          });
 
   return (
     <Combobox value={value || ''} onChange={(val: string | null) => {
@@ -54,7 +56,7 @@ export function LocationCombobox({
           transition
           className="absolute z-50 mt-1 max-h-60 w-full overflow-auto bg-obsidian border border-white/10 ares-cut-sm shadow-xl focus:outline-none data-[closed]:opacity-0 transition duration-200"
         >
-          {filteredLocations.map((loc) => (
+          {Array.isArray(filteredLocations) && filteredLocations.map((loc) => (
             <ComboboxOption
               key={loc.id}
               value={loc.name}

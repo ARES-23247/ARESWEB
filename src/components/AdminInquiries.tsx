@@ -97,8 +97,11 @@ export default function AdminInquiries() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: res, isLoading, isError } = useGetAdminInquiries({ limit: 100, offset: 0 });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const inquiries = useMemo(() => (res?.inquiries || []) as any as Inquiry[], [res?.inquiries]);
+  const inquiries = useMemo(() => {
+    const raw = res?.inquiries;
+    if (!Array.isArray(raw)) return [] as Inquiry[];
+    return raw as Inquiry[];
+  }, [res?.inquiries]);
 
   const filtered = useMemo(() => {
     let result = inquiries as Inquiry[];
@@ -230,7 +233,7 @@ export default function AdminInquiries() {
                 </div>
 
                 {/* Metadata Preview */}
-                {meta && (
+                {meta && typeof meta === 'object' && !Array.isArray(meta) && (
                   <div className="flex flex-wrap gap-2 text-[11px] text-marble/50">
                     {Object.entries(meta).map(([k, v]) => (
                       <span key={k} className="bg-white/5 border border-white/10 px-2 py-0.5 ares-cut-xs">

@@ -64,7 +64,7 @@ function validateUrl(url: string, type: 'image' | 'video'): string {
 
 const renderText = (node: ASTNode) => {
   let text: ReactNode = node.text;
-  if (!node.marks) return text;
+  if (!node.marks || !Array.isArray(node.marks)) return text;
 
   node.marks.forEach((mark) => {
     if (mark.type === "bold") text = <strong key={typeof text === "string" ? text + "b" : "b"}>{text}</strong>;
@@ -101,7 +101,7 @@ const renderHeading = (node: ASTNode, children: ReactNode) => {
   if (level === 3) className = "text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative border-none pb-0";
   if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
 
-  const textValue = node.content ? node.content.map(c => c.text || "").join("") : "";
+  const textValue = (node.content && Array.isArray(node.content)) ? node.content.map(c => c.text || "").join("") : "";
   const id = textValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   return (
@@ -210,7 +210,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     return <>{renderText(node)}</>;
   }
 
-  const children = node.content ? node.content.map((c, i) => <TiptapRenderer key={i} node={c} />) : null;
+  const children = (node.content && Array.isArray(node.content)) ? node.content.map((c, i) => <TiptapRenderer key={i} node={c} />) : null;
 
   switch (node.type) {
     case "doc": return <>{children}</>;

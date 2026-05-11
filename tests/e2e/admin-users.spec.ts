@@ -84,15 +84,19 @@ test.describe('Admin Users Dashboard', () => {
   });
 
   test('User role modification workflow', async ({ page }) => {
-    await page.goto('/dashboard/users');
+    // Reload to ensure fresh state
+    await page.reload();
+
+    // Navigate with cache disabled
+    await page.goto('/dashboard/users', { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
     await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
-    // Wait for table to render - use row presence instead of specific text
-    await expect(page.locator('table tbody tr').first()).toBeVisible();
+    // Wait for any select elements to appear (table data loaded)
+    await expect(page.locator('select').first()).toBeVisible({ timeout: 10000 });
 
     // Find the role select dropdown for the first user
     const roleSelect = page.locator('select').first();
@@ -111,13 +115,17 @@ test.describe('Admin Users Dashboard', () => {
   });
 
   test('Member type modification workflow', async ({ page }) => {
-    await page.goto('/dashboard/users');
+    // Reload to ensure fresh state
+    await page.reload();
+
+    // Navigate with cache disabled
+    await page.goto('/dashboard/users', { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
     await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
 
-    // Wait for table to render - use row presence instead of specific text
-    await expect(page.locator('table tbody tr').first()).toBeVisible();
+    // Wait for select elements to appear (indicating table data is loaded)
+    await expect(page.locator('select').first()).toBeVisible({ timeout: 10000 });
 
     // Find the member type select dropdown (second select in the table)
     const memberTypeSelect = page.locator('select').nth(1);

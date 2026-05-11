@@ -5,7 +5,7 @@ const memberTypeS = [
   { value: "student", label: "Student", icon: "📚" },
   { value: "alumni", label: "Alumni", icon: "🎓" },
   { value: "mentor", label: "Mentor", icon: "🔧" },
-  { value: "coach", label: "Coach", icon: "ðŸ†" },
+  { value: "coach", label: "Coach", icon: "🏆" },
   { value: "parent", label: "Parent", icon: "👪" },
 ];
 

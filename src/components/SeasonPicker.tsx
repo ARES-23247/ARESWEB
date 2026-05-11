@@ -10,7 +10,7 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
   const { data: rawSeasons } = useGetSeasons();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const seasons = (rawSeasons?.seasons || []) as any[];
+  const seasons = (rawSeasons?.seasons && Array.isArray(rawSeasons.seasons) ? rawSeasons.seasons : []) as any[];
 
   return (
     <div className="w-full">

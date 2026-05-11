@@ -184,7 +184,7 @@ export default function DashboardSidebar({
               </span>
               <div className="flex flex-col gap-1">
                 <span className="text-ares-gold text-xs font-black uppercase tracking-widest truncate">
-                  {role} â€¢ {memberType}
+                  {role} • {memberType}
                 </span>
                 {permissions.isUnverified && (
                   <span className="w-fit px-1.5 py-0.5 bg-ares-red text-white text-[8px] font-black rounded uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-[0_0_10px_rgba(192,0,0,0.3)]">

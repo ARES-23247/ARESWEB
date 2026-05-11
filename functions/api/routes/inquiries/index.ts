@@ -102,10 +102,14 @@ inquiriesRouter.openapi(listInquiriesRoute, async (c) => {
   const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
   const { maskPII, filterOutreach } = shouldMaskData(user);
 
-  const results = await fetchInquiries(db, limit, offset, filterOutreach);
-  const inquiries = await decryptAndMaskInquiries(results, secret, maskPII);
-
-  return c.json({ inquiries }, 200);
+  try {
+    const results = await fetchInquiries(db, limit, offset, filterOutreach);
+    const inquiries = await decryptAndMaskInquiries(results, secret, maskPII);
+    return c.json({ inquiries }, 200);
+  } catch (err) {
+    console.error("[Inquiries] Failed to synchronize inquiries:", err);
+    return c.json({ inquiries: [], error: String(err) }, 200);
+  }
 });
 
 // Update inquiry status (Admin)
