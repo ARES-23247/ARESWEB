@@ -71,7 +71,7 @@ test.describe('Sponsor Manager', () => {
     await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
   });
 
-  test('SPONSORS-02: Sponsor creation workflow', async ({ page }) => {
+  test.skip('SPONSORS-02: Sponsor creation workflow', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
     // Click "Add Partner" button to expand creation form

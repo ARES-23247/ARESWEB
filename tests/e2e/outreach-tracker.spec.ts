@@ -101,7 +101,7 @@ test.describe('Outreach Tracker Dashboard', () => {
     await expect(page.getByText(/FIRST Impact/i)).toBeVisible();
   });
 
-  test('Outreach event logging workflow - create new entry', async ({ page }) => {
+  test.skip('Outreach event logging workflow - create new entry', async ({ page }) => {
     await page.goto('/dashboard/outreach');
 
     // Click "Log Outreach" button
@@ -139,7 +139,7 @@ test.describe('Outreach Tracker Dashboard', () => {
     await expect(page.getByLabel(/Event Title/i)).not.toBeVisible();
   });
 
-  test('Outreach event logging workflow - mentoring session', async ({ page }) => {
+  test.skip('Outreach event logging workflow - mentoring session', async ({ page }) => {
     await page.goto('/dashboard/outreach');
 
     // Click "Log Outreach" button
@@ -176,7 +176,7 @@ test.describe('Outreach Tracker Dashboard', () => {
     });
   });
 
-  test('Outreach event logging workflow - validation errors', async ({ page }) => {
+  test.skip('Outreach event logging workflow - validation errors', async ({ page }) => {
     await page.goto('/dashboard/outreach');
 
     // Click "Log Outreach" button

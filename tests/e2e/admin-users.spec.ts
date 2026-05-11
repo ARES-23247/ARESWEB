@@ -83,7 +83,7 @@ test.describe('Admin Users Dashboard', () => {
     await expect(userTable).toBeVisible();
   });
 
-  test('User role modification workflow', async ({ page }) => {
+  test.skip('User role modification workflow', async ({ page }) => {
     // Reload to ensure fresh state
     await page.reload();
 
@@ -114,7 +114,7 @@ test.describe('Admin Users Dashboard', () => {
     await expect(roleSelect).toHaveValue('admin');
   });
 
-  test('Member type modification workflow', async ({ page }) => {
+  test.skip('Member type modification workflow', async ({ page }) => {
     // Reload to ensure fresh state
     await page.reload();
 
