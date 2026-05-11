@@ -24,16 +24,24 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const confirm = useCallback((options: ConfirmOptions) => {
     lastActiveElement.current = document.activeElement as HTMLElement;
     return new Promise<boolean>((resolve) => {
+      // Resolve any stale pending confirmation with false to prevent zombie promises
+      setConfirmResolver((prev: ((value: boolean) => void) | null) => {
+        if (prev) prev(false);
+        return resolve;
+      });
       setConfirmOptions(options);
-      setConfirmResolver(() => resolve);
     });
   }, []);
 
   const prompt = useCallback((options: PromptOptions) => {
     lastActiveElement.current = document.activeElement as HTMLElement;
     return new Promise<string | null>((resolve) => {
+      // Resolve any stale pending prompt with null to prevent zombie promises
+      setPromptResolver((prev: ((value: string | null) => void) | null) => {
+        if (prev) prev(null);
+        return resolve;
+      });
       setPromptOptions(options);
-      setPromptResolver(() => resolve);
     });
   }, []);
 

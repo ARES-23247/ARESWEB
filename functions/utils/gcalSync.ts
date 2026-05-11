@@ -229,7 +229,6 @@ function normalizeToLocalNaive(dt: string): string {
   // If it's a date-only string (YYYY-MM-DD), return as-is
   if (!dt.includes("T")) return dt;
   // If already timezone-naive (no Z, no +/- offset after time), return as-is
-  const timePart = dt.split("T")[1] || "";
   const hasTimezone = dt.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(dt) || /[+-]\d{4}$/.test(dt);
   if (!hasTimezone) return dt;
   // Convert to America/New_York local time

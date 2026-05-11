@@ -80,7 +80,13 @@ export default function SponsorEditor() {
   });
 
   const deleteMutation = useDeleteSponsor({
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] })
+    onSuccess: () => {
+      toast.success("Partner removed.");
+      queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Delete failed: ${err.message}`);
+    }
   });
 
   // Handlers moved to form onSubmit
@@ -129,6 +135,8 @@ export default function SponsorEditor() {
   };
 
   const handleDelete = async (s: { id: string; name: string }) => {
+    // Prevent rapid-fire deletes while a mutation is in-flight
+    if (deleteMutation.isPending) return;
     const confirmed = await modal.confirm({
       title: "Delete Partner",
       description: `Are you sure you want to permanently remove ${s.name} from the ARES registry?`,
@@ -323,8 +331,9 @@ export default function SponsorEditor() {
                 </button>
                 <button
                   onClick={() => handleDelete(s)}
+                  disabled={deleteMutation.isPending}
                   aria-label={`Delete ${s.name}`}
-                  className="text-white/60 hover:text-ares-red transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red rounded"
+                  className="text-white/60 hover:text-ares-red transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red rounded disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={16} />
                 </button>
