@@ -16,6 +16,84 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 test.describe('Badges Manager', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock badges API endpoints
+    await page.route('**/api/badges**', async (route) => {
+      const method = route.request().method();
+
+      // GET /api/badges - return list of badges
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            badges: [
+              {
+                id: 'outreach-mvp',
+                name: 'Outreach MVP',
+                description: 'Awarded to members who attain top 3 in outreach hours.',
+                icon: 'Award',
+                colorTheme: 'text-ares-gold',
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: 'safety-certified',
+                name: 'Safety Certified',
+                description: 'Completed all safety training modules.',
+                icon: 'Shield',
+                colorTheme: 'text-green-500',
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          },
+        });
+        return;
+      }
+
+      // POST /api/badges/admin - create badge
+      if (method === 'POST' && route.request().url().includes('/admin')) {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      // DELETE /api/badges/admin/:id - delete badge
+      if (method === 'DELETE') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+
+    // Mock users API for badge assignment
+    await page.route('**/api/users**', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            users: [
+              { id: 'user1', name: 'Test User 1', nickname: 'Testy', email: 'test1@ares.org' },
+              { id: 'user2', name: 'Test User 2', nickname: 'Tester', email: 'test2@ares.org' },
+            ],
+          },
+        });
+        return;
+      }
+      route.continue();
+    });
+
+    // Mock badge grant endpoint
+    await page.route('**/api/badges/admin/grant**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: { success: true },
+      });
+    });
   });
 
   test('BADGES-01: Badge list displays correctly', async ({ page }) => {

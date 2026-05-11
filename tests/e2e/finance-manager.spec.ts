@@ -12,6 +12,85 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Set up mock authentication
     await setupMockAuth(page);
+
+    // Mock finance API endpoints
+    await page.route('**/api/finance/**', async (route) => {
+      const method = route.request().method();
+      const url = route.request().url();
+
+      // GET /api/finance/summary - return finance summary
+      if (method === 'GET' && url.includes('/summary')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            totalIncome: 50000,
+            totalExpenses: 15000,
+            cashBalance: 35000,
+          },
+        });
+        return;
+      }
+
+      // GET /api/finance/sponsorship - return pipeline
+      if (method === 'GET' && url.includes('/sponsorship')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            pipeline: [],
+          },
+        });
+        return;
+      }
+
+      // GET /api/finance/transactions - return transactions
+      if (method === 'GET' && url.includes('/transactions')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            transactions: [],
+          },
+        });
+        return;
+      }
+
+      // POST /api/finance/sponsorship - save pipeline item
+      if (method === 'POST' && url.includes('/sponsorship')) {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, id: 'new-pipeline-id' },
+        });
+        return;
+      }
+
+      // DELETE /api/finance/sponsorship/:id - delete pipeline item
+      if (method === 'DELETE' && url.includes('/sponsorship')) {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      // POST /api/finance/transactions - save transaction
+      if (method === 'POST' && url.includes('/transactions')) {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, id: 'new-transaction-id' },
+        });
+        return;
+      }
+
+      // DELETE /api/finance/transactions/:id - delete transaction
+      if (method === 'DELETE' && url.includes('/transactions')) {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      route.continue();
+    });
   });
 
   test('should load finance dashboard and display summary metrics', async ({ page }) => {
