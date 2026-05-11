@@ -9,6 +9,7 @@ Allow: /
 
 # Disallow admin/private areas
 Disallow: /dashboard/
+Allow: /api/sitemap.xml
 Disallow: /api/
 Disallow: /login
 Disallow: /profile
