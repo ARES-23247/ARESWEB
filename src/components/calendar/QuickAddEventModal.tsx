@@ -318,11 +318,6 @@ export function QuickAddEventModal({
                 }}
                 onSuccess={(newName) => {
                   setIsLocationModalOpen(false);
-                  const selectEl = document.getElementById('quick-event-location');
-                  if (selectEl instanceof HTMLSelectElement && !Array.from(selectEl.options).some(opt => opt.value === newName)) {
-                    const tempOpt = new Option(newName, newName);
-                    selectEl.add(tempOpt, selectEl.options[selectEl.options.length - 1]);
-                  }
                   updateField("location", newName);
                 }}
               />
