@@ -49,6 +49,7 @@ import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
 import galleriesRouter from "./routes/galleries/index";
 import videosRouter from "./routes/videos/index";
+import { aiToolsRouter } from "./routes/ai-tools/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 
 import { logger } from "hono/logger";
@@ -98,11 +99,32 @@ apiRouter.use("*", async (c, next) => {
 // Mount OpenAPI documentation
 apiRouter.doc('/openapi.json', {
   openapi: '3.1.0',
-  info: { title: 'ARESWEB API', version: 'v6.8' }
+  info: {
+    title: 'ARESWEB API',
+    version: 'v6.8',
+    description: 'REST API for the ARES 23247 Web Portal'
+  },
+  servers: [
+    {
+      url: '/api',
+      description: 'API Endpoint'
+    }
+  ],
+  tags: [
+    { name: 'galleries', description: 'Photo gallery management' },
+    { name: 'videos', description: 'Video library management' },
+    { name: 'posts', description: 'Blog posts and news' },
+    { name: 'events', description: 'Calendar events' },
+    { name: 'admin', description: 'Administrative operations' },
+  ]
 });
 
-const scalarConfig = { spec: { url: '/api/openapi.json' }, theme: 'moon' as const };
-apiRouter.get('/reference', apiReference(scalarConfig as unknown as Parameters<typeof apiReference>[0]));
+apiRouter.get('/reference', apiReference({
+  spec: {
+    url: '/api/openapi.json',
+  },
+  theme: 'moon',
+}));
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
@@ -221,7 +243,8 @@ export const group3 = new OpenAPIHono<AppEnv>()
   .route("/zulip", zulipRouter)
   .route("/internal/gc", gcRouter)
   .route("/tasks", tasksRouter)
-  .route("/store", storeHandler);
+  .route("/store", storeHandler)
+  .route("/ai-tools", aiToolsRouter);
 
 export const group4 = new OpenAPIHono<AppEnv>()
   .route("/points", pointsRouter)
@@ -270,7 +293,7 @@ const routes = apiRouter
       ]
     }, 200);
   })
-  .openapi(auditLogRoute, (async (c: any) => {
+  .openapi(auditLogRoute, async (c) => {
     const { limit: l, offset: o } = c.req.valid("query");
     const limit = l ? parseInt(l, 10) : 50;
     const offset = o ? parseInt(o, 10) : 0;
@@ -291,19 +314,17 @@ const routes = apiRouter
       .offset(offset)
       .all();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logs = results.map((r: any) => ({
+    const logs = results.map((r) => ({
       ...r,
       id: r.id || crypto.randomUUID(),
       createdAt: r.createdAt || new Date().toISOString(),
-      resourceType: r.resourceType || null,
+      resourceType: String(r.resourceType || "unknown"),
       resourceId: r.resourceId || null,
       details: (r.details || "").substring(0, 500)
     }));
 
     return c.json({ logs }, 200);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }) as any);
+  });
 
 // ── Health / Environment Info ────────────
 apiRouter.get("/health", (c) => {

@@ -26,17 +26,21 @@ import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VideosIndexRouteImport } from './routes/videos/index'
 import { Route as SponsorsIndexRouteImport } from './routes/sponsors/index'
 import { Route as LocationsIndexRouteImport } from './routes/locations/index'
 import { Route as JudgesIndexRouteImport } from './routes/judges/index'
+import { Route as GalleriesIndexRouteImport } from './routes/galleries/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AcademyIndexRouteImport } from './routes/academy/index'
+import { Route as VideosIdRouteImport } from './routes/videos/$id'
 import { Route as ProfileUserIdRouteImport } from './routes/profile/$userId'
 import { Route as LocationsMorgantownRouteImport } from './routes/locations/morgantown'
 import { Route as JudgesPrintRouteImport } from './routes/judges/print'
+import { Route as GalleriesIdRouteImport } from './routes/galleries/$id'
 import { Route as EventsIdRouteImport } from './routes/events/$id'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DevelopersApiRouteImport } from './routes/developers/api'
@@ -52,7 +56,9 @@ import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile
 import { Route as DashboardPerformanceRouteImport } from './routes/dashboard/performance'
 import { Route as DashboardOutreachRouteImport } from './routes/dashboard/outreach'
 import { Route as DashboardMass_emailRouteImport } from './routes/dashboard/mass_email'
+import { Route as DashboardManage_videosRouteImport } from './routes/dashboard/manage_videos'
 import { Route as DashboardManage_seasonsRouteImport } from './routes/dashboard/manage_seasons'
+import { Route as DashboardManage_galleriesRouteImport } from './routes/dashboard/manage_galleries'
 import { Route as DashboardManage_eventRouteImport } from './routes/dashboard/manage_event'
 import { Route as DashboardManage_docsRouteImport } from './routes/dashboard/manage_docs'
 import { Route as DashboardManage_blogRouteImport } from './routes/dashboard/manage_blog'
@@ -63,6 +69,7 @@ import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/in
 import { Route as DashboardInquiriesRouteImport } from './routes/dashboard/inquiries'
 import { Route as DashboardImpact_rosterRouteImport } from './routes/dashboard/impact_roster'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
+import { Route as DashboardDb_studioRouteImport } from './routes/dashboard/db_studio'
 import { Route as DashboardCommand_centerRouteImport } from './routes/dashboard/command_center'
 import { Route as DashboardBadgesRouteImport } from './routes/dashboard/badges'
 import { Route as DashboardAssetsRouteImport } from './routes/dashboard/assets'
@@ -166,6 +173,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VideosIndexRoute = VideosIndexRouteImport.update({
+  id: '/videos/',
+  path: '/videos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SponsorsIndexRoute = SponsorsIndexRouteImport.update({
   id: '/sponsors/',
   path: '/sponsors/',
@@ -179,6 +191,11 @@ const LocationsIndexRoute = LocationsIndexRouteImport.update({
 const JudgesIndexRoute = JudgesIndexRouteImport.update({
   id: '/judges/',
   path: '/judges/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleriesIndexRoute = GalleriesIndexRouteImport.update({
+  id: '/galleries/',
+  path: '/galleries/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
@@ -206,6 +223,11 @@ const AcademyIndexRoute = AcademyIndexRouteImport.update({
   path: '/academy/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VideosIdRoute = VideosIdRouteImport.update({
+  id: '/videos/$id',
+  path: '/videos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileUserIdRoute = ProfileUserIdRouteImport.update({
   id: '/profile/$userId',
   path: '/profile/$userId',
@@ -219,6 +241,11 @@ const LocationsMorgantownRoute = LocationsMorgantownRouteImport.update({
 const JudgesPrintRoute = JudgesPrintRouteImport.update({
   id: '/judges/print',
   path: '/judges/print',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleriesIdRoute = GalleriesIdRouteImport.update({
+  id: '/galleries/$id',
+  path: '/galleries/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIdRoute = EventsIdRouteImport.update({
@@ -296,11 +323,22 @@ const DashboardMass_emailRoute = DashboardMass_emailRouteImport.update({
   path: '/mass_email',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManage_videosRoute = DashboardManage_videosRouteImport.update({
+  id: '/manage_videos',
+  path: '/manage_videos',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardManage_seasonsRoute = DashboardManage_seasonsRouteImport.update({
   id: '/manage_seasons',
   path: '/manage_seasons',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManage_galleriesRoute =
+  DashboardManage_galleriesRouteImport.update({
+    id: '/manage_galleries',
+    path: '/manage_galleries',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardManage_eventRoute = DashboardManage_eventRouteImport.update({
   id: '/manage_event',
   path: '/manage_event',
@@ -349,6 +387,11 @@ const DashboardImpact_rosterRoute = DashboardImpact_rosterRouteImport.update({
 const DashboardFinanceRoute = DashboardFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardDb_studioRoute = DashboardDb_studioRouteImport.update({
+  id: '/db_studio',
+  path: '/db_studio',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCommand_centerRoute = DashboardCommand_centerRouteImport.update({
@@ -461,6 +504,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
+  '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -471,7 +515,9 @@ export interface FileRoutesByFullPath {
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
+  '/dashboard/manage_galleries': typeof DashboardManage_galleriesRoute
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
+  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -487,17 +533,21 @@ export interface FileRoutesByFullPath {
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/galleries/': typeof GalleriesIndexRoute
   '/judges/': typeof JudgesIndexRoute
   '/locations/': typeof LocationsIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
+  '/videos/': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
@@ -533,6 +583,7 @@ export interface FileRoutesByTo {
   '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
+  '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -543,7 +594,9 @@ export interface FileRoutesByTo {
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
+  '/dashboard/manage_galleries': typeof DashboardManage_galleriesRoute
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
+  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -559,17 +612,21 @@ export interface FileRoutesByTo {
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/videos/$id': typeof VideosIdRoute
   '/academy': typeof AcademyIndexRoute
   '/blog': typeof BlogIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/events': typeof EventsIndexRoute
+  '/galleries': typeof GalleriesIndexRoute
   '/judges': typeof JudgesIndexRoute
   '/locations': typeof LocationsIndexRoute
   '/sponsors': typeof SponsorsIndexRoute
+  '/videos': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
@@ -607,6 +664,7 @@ export interface FileRoutesById {
   '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
+  '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -617,7 +675,9 @@ export interface FileRoutesById {
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
+  '/dashboard/manage_galleries': typeof DashboardManage_galleriesRoute
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
+  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -633,17 +693,21 @@ export interface FileRoutesById {
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
+  '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/galleries/': typeof GalleriesIndexRoute
   '/judges/': typeof JudgesIndexRoute
   '/locations/': typeof LocationsIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
+  '/videos/': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
@@ -682,6 +746,7 @@ export interface FileRouteTypes {
     | '/dashboard/assets'
     | '/dashboard/badges'
     | '/dashboard/command_center'
+    | '/dashboard/db_studio'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -692,7 +757,9 @@ export interface FileRouteTypes {
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
+    | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
+    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -708,17 +775,21 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
+    | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
     | '/profile/$userId'
+    | '/videos/$id'
     | '/academy/'
     | '/blog/'
     | '/dashboard/'
     | '/docs/'
     | '/events/'
+    | '/galleries/'
     | '/judges/'
     | '/locations/'
     | '/sponsors/'
+    | '/videos/'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
@@ -754,6 +825,7 @@ export interface FileRouteTypes {
     | '/dashboard/assets'
     | '/dashboard/badges'
     | '/dashboard/command_center'
+    | '/dashboard/db_studio'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -764,7 +836,9 @@ export interface FileRouteTypes {
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
+    | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
+    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -780,17 +854,21 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
+    | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
     | '/profile/$userId'
+    | '/videos/$id'
     | '/academy'
     | '/blog'
     | '/dashboard'
     | '/docs'
     | '/events'
+    | '/galleries'
     | '/judges'
     | '/locations'
     | '/sponsors'
+    | '/videos'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
@@ -827,6 +905,7 @@ export interface FileRouteTypes {
     | '/dashboard/assets'
     | '/dashboard/badges'
     | '/dashboard/command_center'
+    | '/dashboard/db_studio'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -837,7 +916,9 @@ export interface FileRouteTypes {
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
+    | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
+    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -853,17 +934,21 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
+    | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
     | '/profile/$userId'
+    | '/videos/$id'
     | '/academy/'
     | '/blog/'
     | '/dashboard/'
     | '/docs/'
     | '/events/'
+    | '/galleries/'
     | '/judges/'
     | '/locations/'
     | '/sponsors/'
+    | '/videos/'
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
@@ -900,16 +985,20 @@ export interface RootRouteChildren {
   DevelopersApiRoute: typeof DevelopersApiRoute
   DocsSlugRoute: typeof DocsSlugRoute
   EventsIdRoute: typeof EventsIdRoute
+  GalleriesIdRoute: typeof GalleriesIdRoute
   JudgesPrintRoute: typeof JudgesPrintRoute
   LocationsMorgantownRoute: typeof LocationsMorgantownRoute
   ProfileUserIdRoute: typeof ProfileUserIdRoute
+  VideosIdRoute: typeof VideosIdRoute
   AcademyIndexRoute: typeof AcademyIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  GalleriesIndexRoute: typeof GalleriesIndexRoute
   JudgesIndexRoute: typeof JudgesIndexRoute
   LocationsIndexRoute: typeof LocationsIndexRoute
   SponsorsIndexRoute: typeof SponsorsIndexRoute
+  VideosIndexRoute: typeof VideosIndexRoute
   SponsorsRoiTokenIdRoute: typeof SponsorsRoiTokenIdRoute
 }
 
@@ -1034,6 +1123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/videos/': {
+      id: '/videos/'
+      path: '/videos'
+      fullPath: '/videos/'
+      preLoaderRoute: typeof VideosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sponsors/': {
       id: '/sponsors/'
       path: '/sponsors'
@@ -1053,6 +1149,13 @@ declare module '@tanstack/react-router' {
       path: '/judges'
       fullPath: '/judges/'
       preLoaderRoute: typeof JudgesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/': {
+      id: '/galleries/'
+      path: '/galleries'
+      fullPath: '/galleries/'
+      preLoaderRoute: typeof GalleriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/': {
@@ -1090,6 +1193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcademyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/videos/$id': {
+      id: '/videos/$id'
+      path: '/videos/$id'
+      fullPath: '/videos/$id'
+      preLoaderRoute: typeof VideosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/$userId': {
       id: '/profile/$userId'
       path: '/profile/$userId'
@@ -1109,6 +1219,13 @@ declare module '@tanstack/react-router' {
       path: '/judges/print'
       fullPath: '/judges/print'
       preLoaderRoute: typeof JudgesPrintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/galleries/$id': {
+      id: '/galleries/$id'
+      path: '/galleries/$id'
+      fullPath: '/galleries/$id'
+      preLoaderRoute: typeof GalleriesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$id': {
@@ -1216,11 +1333,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMass_emailRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/manage_videos': {
+      id: '/dashboard/manage_videos'
+      path: '/manage_videos'
+      fullPath: '/dashboard/manage_videos'
+      preLoaderRoute: typeof DashboardManage_videosRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/manage_seasons': {
       id: '/dashboard/manage_seasons'
       path: '/manage_seasons'
       fullPath: '/dashboard/manage_seasons'
       preLoaderRoute: typeof DashboardManage_seasonsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/manage_galleries': {
+      id: '/dashboard/manage_galleries'
+      path: '/manage_galleries'
+      fullPath: '/dashboard/manage_galleries'
+      preLoaderRoute: typeof DashboardManage_galleriesRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/manage_event': {
@@ -1291,6 +1422,13 @@ declare module '@tanstack/react-router' {
       path: '/finance'
       fullPath: '/dashboard/finance'
       preLoaderRoute: typeof DashboardFinanceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/db_studio': {
+      id: '/dashboard/db_studio'
+      path: '/db_studio'
+      fullPath: '/dashboard/db_studio'
+      preLoaderRoute: typeof DashboardDb_studioRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/command_center': {
@@ -1420,6 +1558,7 @@ interface DashboardRouteChildren {
   DashboardAssetsRoute: typeof DashboardAssetsRoute
   DashboardBadgesRoute: typeof DashboardBadgesRoute
   DashboardCommand_centerRoute: typeof DashboardCommand_centerRoute
+  DashboardDb_studioRoute: typeof DashboardDb_studioRoute
   DashboardFinanceRoute: typeof DashboardFinanceRoute
   DashboardImpact_rosterRoute: typeof DashboardImpact_rosterRoute
   DashboardInquiriesRoute: typeof DashboardInquiriesRoute
@@ -1430,7 +1569,9 @@ interface DashboardRouteChildren {
   DashboardManage_blogRoute: typeof DashboardManage_blogRoute
   DashboardManage_docsRoute: typeof DashboardManage_docsRoute
   DashboardManage_eventRoute: typeof DashboardManage_eventRoute
+  DashboardManage_galleriesRoute: typeof DashboardManage_galleriesRoute
   DashboardManage_seasonsRoute: typeof DashboardManage_seasonsRoute
+  DashboardManage_videosRoute: typeof DashboardManage_videosRoute
   DashboardMass_emailRoute: typeof DashboardMass_emailRoute
   DashboardOutreachRoute: typeof DashboardOutreachRoute
   DashboardPerformanceRoute: typeof DashboardPerformanceRoute
@@ -1461,6 +1602,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAssetsRoute: DashboardAssetsRoute,
   DashboardBadgesRoute: DashboardBadgesRoute,
   DashboardCommand_centerRoute: DashboardCommand_centerRoute,
+  DashboardDb_studioRoute: DashboardDb_studioRoute,
   DashboardFinanceRoute: DashboardFinanceRoute,
   DashboardImpact_rosterRoute: DashboardImpact_rosterRoute,
   DashboardInquiriesRoute: DashboardInquiriesRoute,
@@ -1471,7 +1613,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardManage_blogRoute: DashboardManage_blogRoute,
   DashboardManage_docsRoute: DashboardManage_docsRoute,
   DashboardManage_eventRoute: DashboardManage_eventRoute,
+  DashboardManage_galleriesRoute: DashboardManage_galleriesRoute,
   DashboardManage_seasonsRoute: DashboardManage_seasonsRoute,
+  DashboardManage_videosRoute: DashboardManage_videosRoute,
   DashboardMass_emailRoute: DashboardMass_emailRoute,
   DashboardOutreachRoute: DashboardOutreachRoute,
   DashboardPerformanceRoute: DashboardPerformanceRoute,
@@ -1524,16 +1668,20 @@ const rootRouteChildren: RootRouteChildren = {
   DevelopersApiRoute: DevelopersApiRoute,
   DocsSlugRoute: DocsSlugRoute,
   EventsIdRoute: EventsIdRoute,
+  GalleriesIdRoute: GalleriesIdRoute,
   JudgesPrintRoute: JudgesPrintRoute,
   LocationsMorgantownRoute: LocationsMorgantownRoute,
   ProfileUserIdRoute: ProfileUserIdRoute,
+  VideosIdRoute: VideosIdRoute,
   AcademyIndexRoute: AcademyIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
+  GalleriesIndexRoute: GalleriesIndexRoute,
   JudgesIndexRoute: JudgesIndexRoute,
   LocationsIndexRoute: LocationsIndexRoute,
   SponsorsIndexRoute: SponsorsIndexRoute,
+  VideosIndexRoute: VideosIndexRoute,
   SponsorsRoiTokenIdRoute: SponsorsRoiTokenIdRoute,
 }
 export const routeTree = rootRouteImport

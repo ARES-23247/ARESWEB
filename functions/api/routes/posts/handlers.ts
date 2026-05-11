@@ -9,7 +9,23 @@ import { eq, and, or, isNull, lte, desc, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { siteConfig } from "../../../utils/site.config";
 import { queryHelpers } from "@/db/query-helpers";
-import type { HandlerInput, HonoContext } from "@shared/types/api";
+import type { HandlerInput, HonoContext, ApiResponse } from "@shared/types/api";
+import {
+  getPostsRoute,
+  getPostRoute,
+  getAdminPostsRoute,
+  getAdminPostRoute,
+  savePostRoute,
+  updatePostRoute,
+  deletePostRoute,
+  undeletePostRoute,
+  purgePostRoute,
+  approvePostRoute,
+  rejectPostRoute,
+  getPostHistoryRoute,
+  restorePostHistoryRoute,
+  repushSocialsRoute,
+} from "../../../../shared/routes/posts";
 
 // Type for documentHistory inserts (only fields we provide, id auto-increments)
 interface DocumentHistoryInsert {
@@ -76,7 +92,7 @@ export const postHandlers = {
    * @query offset - Number of posts to skip for pagination (default: 0)
    * @returns Paginated list of published posts with author details
    */
-  getPosts: async (input: HandlerInput, c: HonoContext) => {
+  getPosts: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof getPostsRoute>> => {
     try {
       const { query } = input;
       const { limit = 10, offset = 0, q } = query;
@@ -102,6 +118,7 @@ export const postHandlers = {
           publishedAt: string | null;
         }>`
           SELECT p.slug, p.title, p.date, p.snippet, p.thumbnail, p.status, p.seasonId, p.author,
+                  p.cf_email as cfEmail, p.is_portfolio as isPortfolio, p.zulip_stream as zulipStream, p.zulip_topic as zulipTopic,
                   uP.nickname as authorNickname, u.image as authorAvatar, p.publishedAt
            FROM posts_fts f
            JOIN posts p ON f.slug = p.slug
@@ -124,6 +141,10 @@ export const postHandlers = {
           authorNickname: string | null;
           authorAvatar: string | null;
           publishedAt: string | null;
+          cfEmail: string | null;
+          isPortfolio: number | null;
+          zulipStream: string | null;
+          zulipTopic: string | null;
         };
 
         const rows = (results as unknown as { rows: FtsPostRow[] }).rows || [];
@@ -140,7 +161,10 @@ export const postHandlers = {
           publishedAt: p.publishedAt,
           seasonId: p.seasonId ? Number(p.seasonId) : null,
           isDeleted: 0,
-          isPortfolio: 0,
+          cfEmail: p.cfEmail,
+          isPortfolio: p.isPortfolio ? 1 : 0,
+          zulipStream: p.zulipStream,
+          zulipTopic: p.zulipTopic,
         }));
 
         return { status: 200 as const, body: { posts } };
@@ -169,7 +193,10 @@ export const postHandlers = {
           publishedAt: p.publishedAt,
           seasonId: p.seasonId ? Number(p.seasonId) : null,
           isDeleted: 0,
-          isPortfolio: 0,
+          cfEmail: p.cfEmail,
+          isPortfolio: p.isPortfolio ? 1 : 0,
+          zulipStream: p.zulipStream,
+          zulipTopic: p.zulipTopic,
         }));
 
       return { status: 200 as const, body: { posts } };
@@ -185,7 +212,7 @@ export const postHandlers = {
    * @param slug - Unique post identifier
    * @returns Full post details including AST content and author info
    */
-  getPost: async (input: HandlerInput, c: HonoContext) => {
+  getPost: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof getPostRoute>> => {
     try {
       const { params } = input;
       const { slug } = params;
@@ -203,6 +230,8 @@ export const postHandlers = {
           author: schema.posts.author,
           seasonId: schema.posts.seasonId,
           publishedAt: schema.posts.publishedAt,
+          cfEmail: schema.posts.cfEmail,
+          isPortfolio: schema.posts.isPortfolio,
           zulipStream: schema.posts.zulipStream,
           zulipTopic: schema.posts.zulipTopic,
           authorNickname: schema.userProfiles.nickname,
@@ -269,7 +298,7 @@ export const postHandlers = {
    * @returns List of all posts regardless of status
    * @requires Admin or Author role
    */
-  getAdminPosts: async (input: HandlerInput, c: HonoContext) => {
+  getAdminPosts: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof getAdminPostsRoute>> => {
     try {
       const { query } = input;
       const { limit = 50, offset = 0 } = query;
@@ -356,7 +385,7 @@ export const postHandlers = {
    * @returns Full post details with AST content for editing
    * @requires Admin or Author role
    */
-  getAdminPost: async (input: HandlerInput, c: HonoContext) => {
+  getAdminPost: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof getAdminPostRoute>> => {
     try {
       const { params } = input;
       const { slug } = params;
@@ -750,7 +779,7 @@ export const postHandlers = {
    * @returns Success status
    * @requires Admin or Author role
    */
-  deletePost: async (input: HandlerInput, c: HonoContext) => {
+  deletePost: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof deletePostRoute>> => {
     try {
       const { params } = input;
       const { slug } = params;
@@ -771,7 +800,7 @@ export const postHandlers = {
     }
   },
 
-  undeletePost: async (input: HandlerInput, c: HonoContext) => {
+  undeletePost: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof undeletePostRoute>> => {
     try {
       const { params } = input;
       const { slug } = params;
@@ -790,7 +819,7 @@ export const postHandlers = {
     }
   },
 
-  purgePost: async (input: HandlerInput, c: HonoContext) => {
+  purgePost: async (input: HandlerInput, c: HonoContext): Promise<ApiResponse<typeof purgePostRoute>> => {
     try {
       const { params } = input;
       const { slug } = params;

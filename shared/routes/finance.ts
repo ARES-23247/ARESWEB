@@ -38,6 +38,7 @@ export const TransactionTypeSchema = z.enum(["income", "expense"]);
 export const SponsorshipPipelineSchema = selectSponsorshipPipelineSchema.extend({
   status: SponsorshipStatusSchema,
   createdAt: z.string().nullable().optional(),
+  assignees: z.array(z.string()).optional().default([]),
 });
 
 /**

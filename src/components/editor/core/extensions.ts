@@ -23,6 +23,8 @@ import { Reveal } from '../extensions/Reveal';
 import { SlashCommands } from '../extensions/SlashCommands';
 import { MermaidBlock } from '../extensions/MermaidBlock';
 import { InteractiveComponent } from '../extensions/InteractiveComponent';
+import { GalleryEmbed } from '../extensions/GalleryEmbed';
+import { VideoEmbed } from '../extensions/VideoEmbed';
 import { CommandsList } from '../CommandsList';
 import { MentionList } from '../MentionList';
 import { suggestionRenderer } from '../suggestionRenderer';
@@ -69,6 +71,8 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
   Callout,
   Reveal,
   InteractiveComponent,
+  GalleryEmbed,
+  VideoEmbed,
 
   SlashCommands.configure({
     suggestion: {

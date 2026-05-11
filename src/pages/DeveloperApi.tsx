@@ -19,7 +19,7 @@ export default function DeveloperApi() {
         <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-ares-gold to-yellow-600 mb-4">
           Developer API
         </h1>
-        <p className="text-lg text-ares-light max-w-3xl">
+        <p className="text-lg text-gray-200 max-w-3xl">
           Welcome to the ARES 23247 developer portal. Explore our REST API, test endpoints interactively, and integrate our data into your own applications.
         </p>
       </div>
@@ -35,16 +35,16 @@ export default function DeveloperApi() {
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
               <Key className="text-ares-gold w-6 h-6" /> Authentication
             </h2>
-            <p className="text-ares-light mb-4">
+            <p className="text-gray-100 mb-4">
               Most endpoints require a valid Bearer token. To authenticate your requests:
             </p>
-            <ol className="list-decimal list-inside space-y-2 text-ares-light/80 font-mono text-sm">
+            <ol className="list-decimal list-inside space-y-2 text-white font-mono text-sm">
               <li>Log in to your ARESWEB account.</li>
               <li>Navigate to your Profile settings.</li>
               <li>Generate a new Personal Access Token.</li>
               <li>Include the token in your request headers.</li>
             </ol>
-            <div className="mt-4 bg-ares-black p-3 rounded font-mono text-xs text-ares-gold/90 border border-ares-darker overflow-x-auto">
+            <div className="mt-4 bg-ares-black p-3 rounded font-mono text-xs text-yellow-300 border border-yellow-500/30 overflow-x-auto">
               Authorization: Bearer {'<your_token>'}
             </div>
           </div>
@@ -53,34 +53,34 @@ export default function DeveloperApi() {
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
               <ShieldAlert className="text-red-500 w-6 h-6" /> Rate Limiting
             </h2>
-            <p className="text-ares-light">
+            <p className="text-gray-100">
               To ensure stability during competitions, the API enforces strict rate limits.
             </p>
-            <ul className="mt-4 space-y-2 text-sm text-ares-light/80">
-              <li className="flex justify-between border-b border-ares-darker pb-2">
+            <ul className="mt-4 space-y-2 text-sm text-white">
+              <li className="flex justify-between border-b border-gray-700 pb-2">
                 <span>Public Routes</span>
-                <span className="font-mono text-ares-gold">100 / min</span>
+                <span className="font-mono text-yellow-300">100 / min</span>
               </li>
-              <li className="flex justify-between border-b border-ares-darker pb-2">
+              <li className="flex justify-between border-b border-gray-700 pb-2">
                 <span>TBA Proxy</span>
-                <span className="font-mono text-ares-gold">30 / min</span>
+                <span className="font-mono text-yellow-300">30 / min</span>
               </li>
               <li className="flex justify-between pt-2">
                 <span>Authentication</span>
-                <span className="font-mono text-ares-gold">5 / min</span>
+                <span className="font-mono text-yellow-300">5 / min</span>
               </li>
             </ul>
           </div>
-          
+
           <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl text-center">
             <BookOpen className="w-12 h-12 text-ares-gold mx-auto mb-4" />
             <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-            <p className="text-sm text-ares-light mb-4">
+            <p className="text-sm text-gray-100 mb-4">
               Join the #engineering stream on Zulip to ask questions about API usage or request new endpoints.
             </p>
-            <a 
-              href="https://ares23247.zulipchat.com" 
-              target="_blank" 
+            <a
+              href="https://ares23247.zulipchat.com"
+              target="_blank"
               rel="noreferrer"
               className="inline-block w-full py-2 bg-ares-gold text-ares-black font-bold uppercase rounded hover:bg-ares-gold/80 transition-colors"
             >
@@ -97,11 +97,11 @@ export default function DeveloperApi() {
                 <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
                 Interactive API Explorer
               </h2>
-              <a 
-                href="/api/reference" 
-                target="_blank" 
+              <a
+                href="/api/reference"
+                target="_blank"
                 rel="noreferrer"
-                className="text-xs font-mono text-ares-light hover:text-ares-white transition-colors"
+                className="text-xs font-mono text-gray-200 hover:text-white transition-colors"
               >
                 Open Fullscreen ↗
               </a>

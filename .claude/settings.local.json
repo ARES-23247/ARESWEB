@@ -19,10 +19,19 @@
       "Bash(# Clear update cache from all runtime directories *)",
       "mcp__zai-mcp-server__diagnose_error_screenshot",
       "Bash(curl -I \"https://aresfirst.org/api/sitemap.xml\")",
-      "Bash(curl -s \"https://aresfirst.org/robots.txt\")"
+      "Bash(curl -s \"https://aresfirst.org/robots.txt\")",
+      "WebSearch",
+      "Bash(npx @tanstack/router-cli generate)",
+      "Bash(powershell -Command \"[Environment]::GetFolderPath\\('ApplicationData'\\)\")",
+      "Bash(powershell -Command \"Test-Path 'C:\\\\Users\\\\david\\\\AppData\\\\Roaming\\\\Claude'\")",
+      "Bash(powershell -Command \"Test-Path 'C:\\\\Users\\\\david\\\\AppData\\\\Roaming\\\\Claude\\\\claude_desktop_config.json'\")",
+      "Read(//c/Users/david/AppData/Roaming/Claude/**)",
+      "Read(//c/Users/david/.claude/projects/c--Users-david-dev-robotics-ftc-ARESWEB/.claude/**)",
+      "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")"
     ],
     "additionalDirectories": [
-      "C:\\Users\\david\\.claude\\cache"
+      "C:\\Users\\david\\.claude\\cache",
+      "C:\\Users\\david\\AppData\\Roaming\\Claude"
     ]
   }
 }

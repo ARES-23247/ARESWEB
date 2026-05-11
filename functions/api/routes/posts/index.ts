@@ -5,7 +5,6 @@
  */
 
 import { OpenAPIHono } from "@hono/zod-openapi";
-
 import { AppEnv, ensureAdmin, edgeCacheMiddleware } from "../../middleware";
 import { postHandlers } from "./handlers";
 import {
@@ -46,24 +45,15 @@ postsRouter.use("/admin/*", ensureAdmin);
 export const finalPostsRouter = postsRouter.openapi(
   getPostsRoute,
   async (c) => {
-    const query = c.req.valid("query");
-    const result = await postHandlers.getPosts({ query, params: {}, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.getPosts({ query: c.req.valid("query"), params: {}, body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   getPostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.getPost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.getPost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
 )
 
@@ -71,147 +61,85 @@ export const finalPostsRouter = postsRouter.openapi(
 .openapi(
   getAdminPostsRoute,
   async (c) => {
-    const query = c.req.valid("query");
-    const result = await postHandlers.getAdminPosts({ query, params: {}, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.getAdminPosts({ query: c.req.valid("query"), params: {}, body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   getAdminPostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.getAdminPost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.getAdminPost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   savePostRoute,
   async (c) => {
-    const body = c.req.valid("json");
-    const result = await postHandlers.savePost({ query: {}, params: {}, body }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.savePost({ query: {}, params: {}, body: c.req.valid("json") }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   updatePostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
-    const result = await postHandlers.updatePost({ query: {}, params, body }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.updatePost({ query: {}, params: c.req.valid("param"), body: c.req.valid("json") }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   deletePostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.deletePost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.deletePost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   undeletePostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.undeletePost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.undeletePost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   purgePostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.purgePost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.purgePost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   approvePostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.approvePost({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.approvePost({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   rejectPostRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
-    const result = await postHandlers.rejectPost({ query: {}, params, body }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.rejectPost({ query: {}, params: c.req.valid("param"), body: c.req.valid("json") }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   getPostHistoryRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.getPostHistory({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.getPostHistory({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   restorePostHistoryRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const result = await postHandlers.restorePostHistory({ query: {}, params, body: {} }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.restorePostHistory({ query: {}, params: c.req.valid("param"), body: {} }, c);
+    return c.json(result.body, result.status);
   }
-
 )
 .openapi(
   repushSocialsRoute,
   async (c) => {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
-    const result = await postHandlers.repushSocials({ query: {}, params, body }, c);
-    // Response boundary: Drizzle return type diverges from Zod schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result.status === 200) return c.json(result.body as any, 200);
-    throw new Error((result.body as { error?: string })?.error || "Request failed");
+    const result = await postHandlers.repushSocials({ query: {}, params: c.req.valid("param"), body: c.req.valid("json") }, c);
+    return c.json(result.body, result.status);
   }
 );
 

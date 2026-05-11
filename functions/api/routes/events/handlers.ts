@@ -1,3 +1,4 @@
+import { ApiError } from "../../middleware/errorHandler";
 import { getSocialConfig, getSessionUser, getDbSettings, logAuditAction, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal, type ARES_Event } from "../../../utils/gcalSync";
@@ -5,13 +6,7 @@ import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { sql } from "drizzle-orm";
 import { rrulestr } from 'rrule';
-import type { HandlerInput, HonoContext } from "@shared/types/api";
-
-// Cloudflare Cache API type for edge cache invalidation
-// In Cloudflare Workers, caches.default is the primary cache instance
-type CloudflareCachesWithDefault = CacheStorage & {
-  default?: Cache;
-};
+import type { HandlerInput, HonoContext, ApiResponse } from "@shared/types/api";
 
 import { eq, or, and, isNull, inArray, desc, lte } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
@@ -20,21 +15,53 @@ import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
 import type { SocialConfig } from "../../middleware";
 import { queryHelpers, transactionHelpers } from "@/db/query-helpers";
 
+import { 
+  eventResponseSchema, 
+  getEventsRoute, 
+  getAdminEventsRoute, 
+  getAdminEventRoute, 
+  getEventRoute, 
+  saveEventRoute, 
+  updateEventRoute, 
+  deleteEventRoute, 
+  syncEventsRoute, 
+  repairCalendarRoute, 
+  approveEventRoute, 
+  rejectEventRoute, 
+  undeleteEventRoute, 
+  purgeEventRoute, 
+  repushEventRoute, 
+  getCalendarSettingsRoute, 
+  getSignupsRoute, 
+  submitSignupRoute, 
+  deleteMySignupRoute, 
+  updateMyAttendanceRoute, 
+  updateUserAttendanceRoute, 
+  getEventHistoryRoute, 
+  restoreEventHistoryRoute 
+} from "../../../../shared/routes/events";
+import { z } from "zod";
+
+type FormattedEvent = z.infer<typeof eventResponseSchema>;
+
+// Cloudflare Cache API type for edge cache invalidation
+type CloudflareCachesWithDefault = CacheStorage & {
+  default?: Cache;
+};
+
+// Type for Hono context with ARES environment
+type AresContext = HonoContext;
+
 /**
  * Invalidate Cloudflare edge cache for public events endpoints.
- * Call this after any event mutation (create, update, delete, etc.)
  */
 function invalidateEventsCache(c: AresContext): void {
   if (typeof caches === 'undefined' || !c.executionCtx) return;
-
-  // Cloudflare Workers exposes caches.default which is not in standard CacheStorage type
   const cfCaches = caches as unknown as CloudflareCachesWithDefault;
   const cache = cfCaches.default;
   if (!cache) return;
 
   const baseUrl = new URL(c.req.url).origin;
-
-  // Invalidate all public events cache entries
   const cacheKeys = [
     new Request(new URL("/api/events", baseUrl).href, { method: "GET" }),
     new Request(new URL("/api/events/calendar-settings", baseUrl).href, { method: "GET" }),
@@ -45,12 +72,8 @@ function invalidateEventsCache(c: AresContext): void {
   );
 }
 
-// Drizzle ORM type inference for events table
-type EventRow = typeof schema.events.$inferSelect;
-
 /**
  * Normalize category to a valid EventCategoryEnum value.
- * Defaults to "internal" if the value is not a valid category.
  */
 function normalizeCategory(category: string | null | undefined): "internal" | "outreach" | "external" | null {
   if (!category) return null;
@@ -60,1148 +83,708 @@ function normalizeCategory(category: string | null | undefined): "internal" | "o
 
 /**
  * Normalize a date string from D1 to timezone-naive local time.
- * Strips Z suffix and timezone offsets that may have been stored by
- * earlier GCal sync, ensuring the frontend receives consistent
- * "YYYY-MM-DDTHH:MM:SS" strings without timezone info.
  */
 function normalizeDateTime(dt: string | null | undefined): string | null {
   if (!dt) return null;
-  // Replace space separator with T (SQLite datetime format)
   let normalized = dt.replace(" ", "T");
-  // Strip trailing Z
   if (normalized.endsWith("Z")) {
     normalized = normalized.slice(0, -1);
   }
-  // Strip timezone offset (+HH:MM, -HH:MM, +HHMM, -HHMM) at end of string
   normalized = normalized.replace(/[+-]\d{2}:?\d{2}$/, "");
   return normalized;
 }
 
-// Type for Hono context with ARES environment
-type AresContext = HonoContext;
-
 /**
  * Sanitize FTS query to prevent SQL injection via SQLite FTS syntax.
- * Removes special characters that could be used to manipulate FTS queries.
  */
 const sanitizeFtsQuery = (query: string): string => {
-  // Remove double quotes, backslashes, and other FTS special chars
   return query.replace(/["\\^*-:]/g, ' ').trim().split(/\s+/).filter(Boolean).join(' ');
 };
 
-type EventSaveBody = {
-  id?: string;
-  title?: string;
-  category?: string;
-  dateStart?: string;
-  dateEnd?: string;
-  location?: string;
-  description?: string;
-  coverImage?: string;
-  tbaEventKey?: string;
-  socials?: Record<string, boolean>;
-  isPotluck?: boolean;
-  isVolunteer?: boolean;
-  isDraft?: boolean;
-  publishedAt?: string;
-  seasonId?: number;
-  meetingNotes?: string;
-  recurrenceRule?: string;
-  parentEventId?: string;
-  originalStartTime?: string;
-  rrule?: string;
-  updateMode?: string;
-  deleteMode?: string;
-};
-
-
-
-type SignupBody = {
-  bringing?: string;
-  notes?: string;
-  prepHours?: number;
-  attended?: boolean;
-};
-
-type SocialsBody = {
-  socials?: string[];  // repush uses array format
-};
-
-// Type for partial event results from fallback queries (older schema compatibility)
-type PartialEvent = Pick<EventRow, "id" | "title" | "category" | "dateStart" | "dateEnd" | "location" | "description" | "coverImage" | "seasonId" | "isDeleted"> & {
-  status?: string | null;
-  meetingNotes?: string | null;
-  zulipStream?: string | null;
-  zulipTopic?: string | null;
-};
-
-// Type for FTS (Full-Text Search) results from events_fts table
-type FtsEventResult = {
-  id: string;
-  title: string;
-  category: string;
-  dateStart: string;
-  dateEnd: string | null;
-  location: string | null;
-  description: string | null;
-  coverImage: string | null;
-  status: string | null;
-  isDeleted: number;
-  seasonId: number | null;
-  meetingNotes: string | null;
-  tbaEventKey: string | null;
-  recurringException: string | null;
-  isPotluck: number;
-  isVolunteer: number;
-};
-
-// Type for event list results with camelCase fields (from Drizzle selects)
-// This is a union type to handle both full and fallback query results
-type EventListResult = {
-  id: string;
-  title: string;
-  category: string | null;
-  dateStart: string;
-  dateEnd: string | null;
-  location: string | null;
-  description: string | null;
-  coverImage: string | null;
-  status: string | null;
-  isDeleted: number | null;
-  seasonId: number | null;
-  meetingNotes: string | null;
-  tbaEventKey: string | null;
-  isPotluck: number | null;
-  isVolunteer: number | null;
-};
-
-// Type for formatted event response (snake_case for API consumers)
-import { eventResponseSchema } from "../../../../shared/routes/events";
-import { z } from "zod";
-
-type FormattedEvent = z.infer<typeof eventResponseSchema>;
+type EventSaveBody = z.infer<typeof import("../../../../shared/schemas/eventSchema").eventSchema>;
 
 /**
- * Events Handler - Team event management and calendar operations
- *
- * Provides handlers for team events, including calendar sync, signups,
- * attendance tracking, and Google Calendar integration.
- *
- * @packageDocumentation
+ * Maps a database event row to the standard API response format.
  */
+function mapToEventResponse(e: Record<string, any>, locationMap: Record<string, string> = {}): FormattedEvent {
+  return {
+    id: String(e.id),
+    title: String(e.title || ""),
+    category: normalizeCategory(e.category) ?? "internal",
+    dateStart: normalizeDateTime(e.dateStart as string) ?? "",
+    dateEnd: normalizeDateTime(e.dateEnd as string),
+    location: e.location ?? null,
+    locationAddress: e.location ? (locationMap[e.location] || null) : null,
+    description: e.description ?? null,
+    coverImage: e.coverImage ?? null,
+    status: (e.status ?? "published") as FormattedEvent["status"],
+    isDeleted: Number(e.isDeleted || 0),
+    seasonId: e.seasonId ? Number(e.seasonId) : null,
+    meetingNotes: e.meetingNotes ?? null,
+    tbaEventKey: e.tbaEventKey ?? null,
+    isPotluck: Number(e.isPotluck || 0),
+    isVolunteer: Number(e.isVolunteer || 0),
+    recurringGroupId: e.recurringGroupId ?? null,
+    rrule: e.rrule ?? null,
+    zulipStream: e.zulipStream ?? null,
+    zulipTopic: e.zulipTopic ?? null,
+    recurringException: e.recurringException ? Number(e.recurringException) : null,
+    contentDraft: e.contentDraft ?? null,
+    gcalEventId: e.gcalEventId ?? null,
+    createdAt: e.createdAt ?? null,
+    updatedAt: e.updatedAt ?? null,
+    revisionOf: e.revisionOf ?? null,
+    publishedAt: e.publishedAt ?? null,
+  };
+}
 
 export const eventHandlers = {
-  /**
-   * Get published team events with optional full-text search
-   *
-   * Returns events from all categories (internal, outreach, external)
-   * that are published and not deleted.
-   *
-   * @query q - Full-text search query (searches title, location, description)
-   * @query limit - Maximum number of events to return (default: 50)
-   * @query offset - Number of events to skip for pagination (default: 0)
-   * @returns Paginated list of published events with location addresses
-   */
-  getEvents: async (input: HandlerInput, c: AresContext) => {
-    try {
-      const { query } = input;
-      const db = getDb(c);
-      const { limit = 50, offset = 0, q } = query;
-      const nowIso = new Date().toISOString();
+  getEvents: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getEventsRoute>> => {
+    const { query } = input;
+    const db = getDb(c);
+    const { limit = 50, offset = 0, q } = query;
+    const nowIso = new Date().toISOString();
 
-      if (q) {
-        // Sanitize FTS query to prevent SQL injection via SQLite FTS syntax
-        const cleanQ = sanitizeFtsQuery(String(q || ''));
-        const results = await db.all<FtsEventResult>(sql`
-          SELECT e.id, e.title, e.category, e.dateStart, e.dateEnd, e.location, e.description, e.coverImage, e.status, e.isDeleted, e.seasonId, e.meetingNotes, e.tbaEventKey, e.recurringException, e.isPotluck, e.isVolunteer
-           FROM events_fts f
-           JOIN events e ON f.id = e.id
-           WHERE e.isDeleted = 0 AND e.status = 'published' AND (e.publishedAt IS NULL OR datetime(e.publishedAt) <= datetime('now'))
-           AND f.events_fts MATCH ${cleanQ}
-           ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
-        `);
+    if (q) {
+      const cleanQ = sanitizeFtsQuery(String(q || ''));
+      const results = await db.all<any>(sql`
+        SELECT e.* FROM events_fts f
+        JOIN events e ON f.id = e.id
+        WHERE e.isDeleted = 0 AND e.status = 'published' AND (e.publishedAt IS NULL OR datetime(e.publishedAt) <= datetime('now'))
+        AND f.events_fts MATCH ${cleanQ}
+        ORDER BY f.rank LIMIT ${Number(limit) || 50} OFFSET ${Number(offset) || 0}
+      `);
 
-        const events: FormattedEvent[] = results.map((e) => ({
-          ...e,
-          dateStart: normalizeDateTime(e.dateStart as string) ?? "",
-          dateEnd: normalizeDateTime(e.dateEnd as string),
-          category: normalizeCategory(e.category) ?? "internal",
-          seasonId: e.seasonId ? Number(e.seasonId) : null,
-          isDeleted: Number(e.isDeleted || 0),
-          recurringException: e.recurringException ? Number(e.recurringException) : null,
-          contentDraft: null,
-          gcalEventId: null,
-          createdAt: null,
-          updatedAt: null,
-          revisionOf: null,
-          publishedAt: null,
-          recurringGroupId: null,
-          rrule: null,
-          zulipStream: null,
-          zulipTopic: null
-        }));
-
-        return { status: 200 as const, body: { events } };
-      }
-
-      let results: EventListResult[];
-      try {
-        results = await db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-          status: schema.events.status,
-          isDeleted: schema.events.isDeleted,
-          seasonId: schema.events.seasonId,
-          meetingNotes: schema.events.meetingNotes,
-          tbaEventKey: schema.events.tbaEventKey,
-          isPotluck: schema.events.isPotluck,
-          isVolunteer: schema.events.isVolunteer,
-        })
-          .from(schema.events)
-          .where(and(
-            eq(schema.events.isDeleted, 0),
-            eq(schema.events.status, "published"),
-            or(
-              isNull(schema.events.publishedAt),
-              lte(schema.events.publishedAt, nowIso)
-            )
-          ))
-          .orderBy(desc(schema.events.dateStart))
-          .limit(Number(limit) || 50)
-          .offset(Number(offset) || 0)
-          .all();
-      } catch (_errInner) {
-        // Fallback for older schemas
-        results = await db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-        })
-          .from(schema.events)
-          .where(eq(schema.events.isDeleted, 0))
-          .orderBy(desc(schema.events.dateStart))
-          .limit(Number(limit) || 50)
-          .offset(Number(offset) || 0)
-          .all() as EventListResult[];
-      }
-
-      // Resolve location addresses using query helper
-      const locationNames = [...new Set(results.map((e) => e.location).filter(Boolean))] as string[];
-      const locationMap = await queryHelpers.getLocationAddresses(db, locationNames);
-
-      const events: FormattedEvent[] = results.map((e) => ({
-        ...e,
-        // Normalize dates to timezone-naive local time strings
-        dateStart: normalizeDateTime(e.dateStart) ?? "",
-        dateEnd: normalizeDateTime(e.dateEnd),
-        coverImage: e.coverImage ?? e.coverImage ?? null,
-        tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
-        seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
-        isDeleted: Number(e.isDeleted ?? e.isDeleted ?? 0),
-        isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
-        isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
-        status: e.status ?? "published",
-        category: normalizeCategory(e.category) ?? "internal",
-        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null,
-        locationAddress: e.location ? (locationMap[e.location] || null) : null,
-        contentDraft: null,
-        gcalEventId: null,
-        recurringException: null,
-        createdAt: null,
-        updatedAt: null,
-        revisionOf: null,
-        publishedAt: null,
-        recurringGroupId: null,
-        rrule: null,
-        zulipStream: null,
-        zulipTopic: null
-      }));
-
+      const events = results.map((e) => mapToEventResponse(e));
       return { status: 200 as const, body: { events } };
-    } catch (e) {
-      console.error("[Events:List] Error", e);
-      return { status: 500 as const, body: { error: "Failed to fetch events" } };
     }
+
+    const results = await db.select()
+      .from(schema.events)
+      .where(and(
+        eq(schema.events.isDeleted, 0),
+        eq(schema.events.status, "published"),
+        or(
+          isNull(schema.events.publishedAt),
+          lte(schema.events.publishedAt, nowIso)
+        )
+      ))
+      .orderBy(desc(schema.events.dateStart))
+      .limit(Number(limit) || 50)
+      .offset(Number(offset) || 0)
+      .all();
+
+    const locationNames = [...new Set(results.map((e) => e.location).filter(Boolean))] as string[];
+    const locationMap = await queryHelpers.getLocationAddresses(db, locationNames);
+
+    const events = results.map((e) => mapToEventResponse(e, locationMap));
+    return { status: 200 as const, body: { events } };
   },
 
-  /**
-   * Get public Google Calendar IDs for each event category
-   *
-   * Returns calendar IDs for internal, outreach, and external events
-   * for embedding in frontend calendar views.
-   *
-   * @returns Calendar IDs for internal, outreach, and external events
-   */
-  getCalendarSettings: async (_input: HandlerInput, c: AresContext) => {
-    try {
-      const db = getDb(c);
-      const results = await db.select({
-        key: schema.settings.key,
-        value: schema.settings.value,
-      })
-        .from(schema.settings)
-        .where(inArray(schema.settings.key, ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"]))
-        .all();
+  getCalendarSettings: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
+    const db = getDb(c);
+    const results = await db.select({
+      key: schema.settings.key,
+      value: schema.settings.value,
+    })
+      .from(schema.settings)
+      .where(inArray(schema.settings.key, ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"]))
+      .all();
 
-      const map = results.reduce<Record<string, string>>((acc, row) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
+    const map = results.reduce<Record<string, string>>((acc, row) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
 
-      return { status: 200 as const, body: {
+    return {
+      status: 200 as const,
+      body: {
         calendarIdInternal: map["CALENDAR_ID_INTERNAL"] || map["CALENDAR_ID"] || "",
         calendarIdOutreach: map["CALENDAR_ID_OUTREACH"] || "",
         calendarIdExternal: map["CALENDAR_ID_EXTERNAL"] || "",
-      } };
-    } catch (e) {
-      console.error("[Events:CalendarSettings] Error", e);
-      return { status: 500 as const, body: {} };
-    }
+      }
+    };
   },
 
-  /**
-   * Get a single published event by ID
-   *
-   * Returns full event details including signups if user is authenticated.
-   * Meeting notes are only visible to verified users.
-   *
-   * @param id - Unique event identifier (UUID)
-   * @returns Full event details with signup information for authenticated users
-   */
-  getEvent: async (input: HandlerInput, c: AresContext) => {
+  getEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getEventRoute>> => {
     const { params } = input;
     const { id } = params;
-    try {
-      const db = getDb(c);
-      const user = await getSessionUser(c);
+    const db = getDb(c);
+    const user = await getSessionUser(c);
 
-      const row = await db.select({
-        id: schema.events.id,
-        title: schema.events.title,
-        category: schema.events.category,
-        dateStart: schema.events.dateStart,
-        dateEnd: schema.events.dateEnd,
-        location: schema.events.location,
-        description: schema.events.description,
-        coverImage: schema.events.coverImage,
-        status: schema.events.status,
-        isDeleted: schema.events.isDeleted,
-        seasonId: schema.events.seasonId,
-        meetingNotes: schema.events.meetingNotes,
-        tbaEventKey: schema.events.tbaEventKey,
-        isPotluck: schema.events.isPotluck,
-        isVolunteer: schema.events.isVolunteer,
+    const row = await db.select()
+      .from(schema.events)
+      .where(and(
+        eq(schema.events.id, id),
+        eq(schema.events.isDeleted, 0),
+        eq(schema.events.status, "published")
+      ))
+      .get();
+
+    if (!row) throw new ApiError("Event not found", 404);
+
+    let locationAddress: string | null = null;
+    if (row.location) {
+      const loc = await db.select({
+        address: schema.locations.address,
       })
-        .from(schema.events)
-        .where(and(
-          eq(schema.events.id, id),
-          eq(schema.events.isDeleted, 0),
-          eq(schema.events.status, "published")
-        ))
+        .from(schema.locations)
+        .where(eq(schema.locations.name, row.location))
         .get();
+      locationAddress = loc?.address || null;
+    }
 
-      if (!row) return { status: 404 as const, body: { error: "Event not found" } };
+    const event = mapToEventResponse(row, row.location ? { [row.location]: locationAddress ?? "" } : {});
 
-      // Resolve location address from locations registry
-      let locationAddress: string | null = null;
-      if (row.location) {
-        try {
-          const loc = await db.select({
-            address: schema.locations.address,
+    if (!user || user.role === "unverified") {
+      event.meetingNotes = null;
+    }
+
+    return {
+      status: 200 as const,
+      body: {
+        event,
+        isEditor: user?.role === "admin"
+      }
+    };
+  },
+
+  getAdminEvents: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getAdminEventsRoute>> => {
+    const { query } = input;
+    const db = getDb(c);
+    const { limit = 100, cursor } = query;
+
+    const baseQuery = db.select()
+      .from(schema.events)
+      .orderBy(desc(schema.events.dateStart))
+      .limit(Number(limit) || 100);
+
+    let results: any[];
+    if (cursor) {
+      results = await baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`).all();
+    } else {
+      results = await baseQuery.all();
+    }
+
+    const lastSyncRow = await db.select({
+      value: schema.settings.value,
+    })
+      .from(schema.settings)
+      .where(eq(schema.settings.key, "LAST_CALENDAR_SYNC"))
+      .get();
+
+    const events = results.map((e) => mapToEventResponse(e));
+    const nextCursor = results.length === (Number(limit) || 100) ? (results[results.length - 1].dateStart as string) : null;
+
+    return {
+      status: 200 as const,
+      body: {
+        events,
+        lastSyncedAt: lastSyncRow?.value || null,
+        nextCursor
+      }
+    };
+  },
+
+  adminDetail: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getAdminEventRoute>> => {
+    const { params } = input;
+    const { id } = params;
+    const db = getDb(c);
+    const row = await db.select()
+      .from(schema.events)
+      .where(eq(schema.events.id, id))
+      .get();
+
+    if (!row) throw new ApiError("Event not found", 404);
+
+    return {
+      status: 200 as const,
+      body: {
+        event: mapToEventResponse(row)
+      }
+    };
+  },
+
+  saveEvent: async (input: HandlerInput<EventSaveBody>, c: AresContext): Promise<ApiResponse<typeof saveEventRoute>> => {
+    const { body } = input;
+    const db = getDb(c);
+
+    if (body.id) {
+      const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.id)).get();
+      if (existing) {
+        return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
+      }
+    }
+
+    const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes, rrule } = body;
+
+    if (!dateStart) throw new ApiError("dateStart is required", 400);
+
+    const recent = await db.select({ id: schema.events.id })
+      .from(schema.events)
+      .where(and(
+        eq(schema.events.title, title || ""),
+        eq(schema.events.dateStart, dateStart),
+        eq(schema.events.isDeleted, 0)
+      ))
+      .get();
+
+    if (recent) {
+      return { status: 200 as const, body: { success: true, id: recent.id, warning: "Double-submission prevented" } };
+    }
+
+    const cat = category || 'internal';
+    const genId = crypto.randomUUID();
+
+    const socialConfig = await getSocialConfig(c);
+    const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
+    const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Authentication required", 401);
+    const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
+
+    let instances: any[] = [];
+
+    if (rrule) {
+      try {
+        const rule = rrulestr(rrule, { dtstart: new Date(dateStart) });
+        const dates = rule.all((d: Date, i: number) => i < 52);
+        const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
+
+        const formatLocal = (d: Date) => {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+        };
+
+        instances = dates.map((d: Date, i: number) => {
+            const instStart = formatLocal(d);
+            const instEnd = dateEnd ? formatLocal(new Date(d.getTime() + duration)) : null;
+            return {
+              id: i === 0 ? genId : crypto.randomUUID(),
+              title: title || "", category: cat, dateStart: instStart, dateEnd: instEnd,
+              location: location || "", description: description || "", coverImage: coverImage || "",
+              gcalEventId: null, status,
+              isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
+              publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
+            };
+        });
+      } catch(e) {
+        console.error("Invalid rrule", e);
+      }
+    }
+
+    if (instances.length === 0) {
+      instances.push({
+          id: genId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
+          location: location || "", description: description || "", coverImage: coverImage || "",
+          gcalEventId: null, status,
+          isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
+          publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
+      });
+    }
+
+    const CHUNK_SIZE = 5;
+    for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
+      await db.insert(schema.events).values(instances.slice(i, i + CHUNK_SIZE)).run();
+    }
+
+    if (description) {
+      c.executionCtx.waitUntil(
+        db.insert(schema.documentHistory)
+          .values({
+            roomId: `event_${genId}`,
+            content: description,
+            createdBy: user?.email || "anonymous_admin",
           })
-            .from(schema.locations)
-            .where(eq(schema.locations.name, row.location))
-            .get();
-          locationAddress = loc?.address || null;
-        } catch { /* locations table may not exist */ }
+          .run()
+      );
+    }
+
+    c.executionCtx.waitUntil((async () => {
+      if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+        try {
+          const gcalId = await pushEventToGcal(
+            { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: rrule || undefined },
+            { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+          );
+          if (gcalId) {
+            await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
+          }
+        } catch (e) { console.error("GCAL_SAVE_FAIL", e); }
       }
 
-      return {
-        status: 200 as const,
-        body: {
-          event: {
-            ...row,
-            dateStart: normalizeDateTime(row.dateStart) ?? "",
-            category: normalizeCategory(row.category) ?? "internal",
-            dateEnd: normalizeDateTime(row.dateEnd),
-            coverImage: row.coverImage ?? null,
-            tbaEventKey: row.tbaEventKey ?? null,
-            seasonId: row.seasonId ? Number(row.seasonId) : null,
-            isDeleted: Number(row.isDeleted || 0),
-            isPotluck: row.isPotluck ?? 0,
-            isVolunteer: row.isVolunteer ?? 0,
-            meetingNotes: (user && user.role !== "unverified") ? row.meetingNotes : null,
-            locationAddress: locationAddress,
-            contentDraft: null,
-            gcalEventId: null,
-            recurringException: null,
-            createdAt: null,
-            updatedAt: null,
-            revisionOf: null,
-            publishedAt: null,
-            recurringGroupId: null,
-            rrule: null,
-            zulipStream: null,
-            zulipTopic: null
-          },
-          isEditor: user?.role === "admin"
+      if (status === "published") {
+        const baseUrl = new URL(c.req.url).origin;
+        if (socials) {
+          await dispatchSocials(
+            db,
+            {
+              title: title || "",
+              url: `${baseUrl}/events/${genId}`,
+              snippet: description || "",
+              thumbnail: coverImage || undefined,
+            },
+            socialConfig,
+            socials
+          ).catch((err) => {
+            console.error("Failed to dispatch socials for new event:", err);
+          });
         }
-      };
-    } catch (e) {
-      console.error("[Events:Detail] Error", e);
-      return { status: 404 as const, body: { error: "Database error" } };
-    }
+
+        const eventTopic = `Event: ${title}`;
+        const eventContent = `📅 **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
+        await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
+          console.error("Failed to send Zulip message for new event:", err);
+        });
+      }
+    })());
+
+    triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true, id: genId } };
   },
 
-  /**
-   * Get all events (admin view) with cursor-based pagination
-   *
-   * Returns all events regardless of status. Supports cursor pagination
-   * for efficient large dataset handling.
-   *
-   * @query limit - Maximum number of events to return (default: 100)
-   * @query cursor - Date-based cursor for pagination (date_start of last item)
-   * @returns All events with last sync timestamp and next cursor
-   * @requires Admin role
-   */
-  getAdminEvents: async (input: HandlerInput, c: AresContext) => {
-    try {
-      const { query } = input;
-      const db = getDb(c);
-      const { limit = 100, cursor } = query;
+  updateEvent: async (input: HandlerInput<Partial<EventSaveBody>>, c: AresContext): Promise<ApiResponse<typeof updateEventRoute>> => {
+    const { params, body } = input;
+    const { id } = params;
+    const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
+    const db = getDb(c);
 
-      let results: EventListResult[];
-      try {
-        const baseQuery = db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-          status: schema.events.status,
-          isDeleted: schema.events.isDeleted,
-          seasonId: schema.events.seasonId,
-          meetingNotes: schema.events.meetingNotes,
-          tbaEventKey: schema.events.tbaEventKey,
-          isPotluck: schema.events.isPotluck,
-          isVolunteer: schema.events.isVolunteer,
+    if (!dateStart) throw new ApiError("dateStart is required", 400);
+
+    const cat = category || 'internal';
+    const user = await getSessionUser(c);
+    const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
+
+    if (user?.role !== "admin") {
+      const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
+      await db.insert(schema.events)
+        .values({
+          id: revId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
+          location: location || "", description: description || "", coverImage: coverImage || "",
+          tbaEventKey: tbaEventKey || null, status: 'pending',
+          isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
+          revisionOf: id, publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
         })
-          .from(schema.events)
-          .orderBy(desc(schema.events.dateStart))
-          .limit(Number(limit) || 100);
+        .run();
+      return { status: 200 as const, body: { success: true, id: revId } };
+    }
 
-        if (cursor) {
-          results = await baseQuery.where(sql`${schema.events.dateStart} < ${cursor}`).all();
-        } else {
-          results = await baseQuery.all();
-        }
-      } catch {
-        results = await db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-        })
-          .from(schema.events)
-          .orderBy(desc(schema.events.dateStart))
-          .limit(Number(limit) || 100)
-          .all() as EventListResult[];
-      }
+    const existing = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
+    if (!existing) throw new ApiError("Event not found", 404);
 
-      const lastSyncRow = await db.select({
-        value: schema.settings.value,
+    await db.update(schema.events)
+      .set({
+        title: title || existing.title, category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
+        location: location || "", description: description || "", coverImage: coverImage || "",
+        tbaEventKey: tbaEventKey || null, status, contentDraft: null,
+        isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
+        publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
       })
-        .from(schema.settings)
-        .where(eq(schema.settings.key, "LAST_CALENDAR_SYNC"))
-        .get();
+      .where(eq(schema.events.id, id))
+      .run();
 
-      const events: FormattedEvent[] = results.map((e) => ({
-        ...e,
-        dateStart: normalizeDateTime(e.dateStart) ?? "",
-        dateEnd: normalizeDateTime(e.dateEnd),
-        coverImage: e.coverImage ?? e.coverImage ?? null,
-        tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
-        seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
-        isDeleted: Number(e.isDeleted ?? e.isDeleted ?? 0),
-        isPotluck: e.isPotluck ?? e.isPotluck ?? 0,
-        isVolunteer: e.isVolunteer ?? e.isVolunteer ?? 0,
-        status: e.status ?? "published",
-        category: normalizeCategory(e.category) ?? "internal",
-        meetingNotes: e.meetingNotes ?? e.meetingNotes ?? null,
-        contentDraft: null,
-        gcalEventId: null,
-        recurringException: null,
-        createdAt: null,
-        updatedAt: null,
-        revisionOf: null,
-        publishedAt: null,
-        recurringGroupId: null,
-        rrule: null,
-        zulipStream: null,
-        zulipTopic: null
-      }));
-
-      const nextCursor = results.length === (Number(limit) || 100) ? results[results.length - 1].dateStart : null;
-
-      return { status: 200 as const, body: { events, lastSyncedAt: lastSyncRow?.value || null, nextCursor } };
-    } catch (e) {
-      console.error("[Events:AdminList] Error", e);
-      return { status: 500 as const, body: { error: "Failed to fetch events" } };
+    if (description) {
+      c.executionCtx.waitUntil(
+        db.insert(schema.documentHistory)
+          .values({
+            roomId: `event_${id}`,
+            content: description,
+            createdBy: user?.email || "anonymous",
+          })
+          .run()
+      );
     }
+
+    c.executionCtx.waitUntil((async () => {
+      if (status === "published") {
+        const socialConfig = await getSocialConfig(c);
+        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+        const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+        
+        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+          try {
+            const row = await db.select({
+              gcalEventId: schema.events.gcalEventId,
+            }).from(schema.events).where(eq(schema.events.id, id)).get();
+            
+            const gcalId = await pushEventToGcal(
+              { id, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, gcalEventId: row?.gcalEventId || undefined, meetingNotes: meetingNotes || undefined },
+              { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+            );
+            if (gcalId && gcalId !== row?.gcalEventId) {
+              await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, id)).run();
+            }
+          } catch (e) { console.error("GCAL_UPDATE_FAIL", e); }
+        }
+      }
+    })());
+
+    triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true, id } };
   },
-  adminDetail: async (input: HandlerInput, c: AresContext) => {
+
+  deleteEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof deleteEventRoute>> => {
     const { params } = input;
     const { id } = params;
-    try {
-      const db = getDb(c);
-      let row: PartialEvent | EventListResult | undefined;
-      try {
-        row = await db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-          status: schema.events.status,
-          isDeleted: schema.events.isDeleted,
-          seasonId: schema.events.seasonId,
-          meetingNotes: schema.events.meetingNotes,
-          tbaEventKey: schema.events.tbaEventKey,
-          isPotluck: schema.events.isPotluck,
-          isVolunteer: schema.events.isVolunteer,
-        })
-          .from(schema.events)
-          .where(eq(schema.events.id, id))
-          .get() as EventListResult | undefined;
-      } catch {
-        row = await db.select({
-          id: schema.events.id,
-          title: schema.events.title,
-          category: schema.events.category,
-          dateStart: schema.events.dateStart,
-          dateEnd: schema.events.dateEnd,
-          location: schema.events.location,
-          description: schema.events.description,
-          coverImage: schema.events.coverImage,
-        })
-          .from(schema.events)
-          .where(eq(schema.events.id, id))
-          .get() as PartialEvent | undefined;
-      }
+    const db = getDb(c);
+    const existing = await db.select({
+      gcalEventId: schema.events.gcalEventId,
+      category: schema.events.category
+    }).from(schema.events).where(eq(schema.events.id, id)).get();
+    
+    if (!existing) throw new ApiError("Event not found", 404);
 
-      if (!row) return { status: 404 as const, body: { error: "Event not found" } };
+    await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
 
-      // Cast to unknown first to avoid type issues with union types
-      const rowData = row as unknown as Record<string, unknown>;
-
-      return {
-        status: 200 as const,
-        body: {
-          event: {
-            ...row,
-            dateStart: normalizeDateTime(rowData.dateStart as string) ?? "",
-            dateEnd: normalizeDateTime(rowData.dateEnd as string),
-            coverImage: (rowData.coverImage ?? rowData.coverImage ?? null) as string | null,
-            tbaEventKey: (rowData.tbaEventKey ?? rowData.tbaEventKey ?? null) as string | null,
-            seasonId: rowData.seasonId ? Number(rowData.seasonId) : (rowData.seasonId ? Number(rowData.seasonId) : null) as number | null,
-            isDeleted: Number(rowData.isDeleted ?? rowData.isDeleted ?? 0) as number,
-            isPotluck: (rowData.isPotluck ?? rowData.isPotluck ?? 0) as number,
-            isVolunteer: (rowData.isVolunteer ?? rowData.isVolunteer ?? 0) as number,
-            status: (rowData.status ?? "published") as string,
-            category: normalizeCategory(rowData.category as string) ?? "internal",
-            meetingNotes: (rowData.meetingNotes ?? rowData.meetingNotes ?? null) as string | null,
-            contentDraft: null,
-            gcalEventId: null,
-            recurringException: null,
-            createdAt: null,
-            updatedAt: null,
-            revisionOf: null,
-            publishedAt: null,
-            recurringGroupId: null,
-            rrule: null,
-            zulipStream: null,
-            zulipTopic: null
-          }
+    c.executionCtx.waitUntil((async () => {
+      if (existing.gcalEventId) {
+        const socialConfig = await getSocialConfig(c);
+        const cat = existing.category || "internal";
+        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+        const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+        
+        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+          try {
+            await deleteEventFromGcal(existing.gcalEventId, {
+              email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
+              privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
+              calendarId: calId
+            });
+          } catch { /* ignore GCal failure */ }
         }
-      };
-    } catch (e) {
-      console.error("[Events:AdminDetail] Error", e);
-      return { status: 500 as const, body: { error: "Database error" } };
-    }
+      }
+    })());
+
+    triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true } };
   },
-  saveEvent: async (input: HandlerInput<EventSaveBody>, c: AresContext) => {
-    try {
-      const { body } = input;
-      const db = getDb(c);
 
-      if (body.id) {
-        const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.id)).get();
-        if (existing) {
-          return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
-        }
-      }
+  approveEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof approveEventRoute>> => {
+    const { params } = input;
+    const { id } = params;
+    const db = getDb(c);
+    const row = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
+    
+    if (!row) throw new ApiError("Event not found", 404);
 
-      const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes, recurrenceRule, parentEventId, originalStartTime } = body;
+    if (row.revisionOf) {
+      await db.update(schema.events)
+        .set({ title: row.title, dateStart: row.dateStart, dateEnd: row.dateEnd, location: row.location, description: row.description, coverImage: row.coverImage, tbaEventKey: row.tbaEventKey, status: 'published', isPotluck: row.isPotluck, isVolunteer: row.isVolunteer, seasonId: row.seasonId, meetingNotes: row.meetingNotes })
+        .where(eq(schema.events.id, row.revisionOf))
+        .run();
+      await db.delete(schema.events).where(eq(schema.events.id, id)).run();
+    } else {
+      await db.update(schema.events).set({ status: 'published' }).where(eq(schema.events.id, id)).run();
+    }
 
-      if (!dateStart) {
-        return { status: 400 as const, body: { success: false, error: "dateStart is required" } };
-      }
-
-      const recent = await db.select({ id: schema.events.id })
-        .from(schema.events)
-        .where(and(
-          eq(schema.events.title, title || ""),
-          eq(schema.events.dateStart, dateStart),
-          eq(schema.events.isDeleted, 0)
-        ))
-        .get();
-
-      if (recent) {
-        return { status: 200 as const, body: { success: true, id: recent.id, warning: "Double-submission prevented" } };
-      }
-
-      const cat = category || 'internal';
-      const genId = crypto.randomUUID();
-
+    c.executionCtx.waitUntil((async () => {
+      const targetId = row.revisionOf || id;
+      const targetRow = await db.select().from(schema.events).where(eq(schema.events.id, targetId)).get();
+      if (!targetRow) return;
+      
       const socialConfig = await getSocialConfig(c);
+      const cat = targetRow.category || "internal";
       const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
       const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-      const user = await getSessionUser(c);
-      if (!user) return { status: 401 as const, body: { success: false, error: "Authentication required" } };
-      const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
-
-      const MAX_RRULE_LENGTH = 200;
-      const ALLOWED_RRULE_KEYS = ['FREQ', 'INTERVAL', 'UNTIL', 'COUNT', 'BYDAY', 'BYMONTHDAY', 'BYMONTH', 'BYSETPOS'];
-
-      let instances: Array<{
-        id: string;
-        title: string;
-        category: string;
-        dateStart: string;
-        dateEnd: string | null;
-        location: string;
-        description: string;
-        coverImage: string;
-        gcalEventId: string | null;
-        status: string;
-        isPotluck: number;
-        isVolunteer: number;
-        tbaEventKey: string | null;
-        publishedAt: string | null;
-        seasonId: number | null;
-        meetingNotes: string | null;
-      }> = [];
-
-      if (body.rrule) {
-        if (typeof body.rrule !== 'string' || body.rrule.length > MAX_RRULE_LENGTH) {
-          return { status: 400 as const, body: { error: "Invalid recurrence rule: exceeds maximum length" } };
-        }
-
-        const upperRule = body.rrule.toUpperCase();
-        const hasValidKey = ALLOWED_RRULE_KEYS.some((key: string) => upperRule.includes(`${key}=`));
-        if (!hasValidKey) {
-          return { status: 400 as const, body: { error: "Invalid recurrence rule format" } };
-        }
-
+      if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
         try {
-          const rule = rrulestr(body.rrule, { dtstart: new Date(dateStart) });
-          const dates = rule.all((d: Date, i: number) => i < 52);
-
-          const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
-
-          const formatLocal = (d: Date) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const hours = String(d.getHours()).padStart(2, '0');
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}:00`;
-          };
-
-          instances = dates.map((d: Date, i: number) => {
-             const instStart = formatLocal(d);
-             const instEnd = dateEnd ? formatLocal(new Date(d.getTime() + duration)) : null;
-             return {
-                id: i === 0 ? genId : crypto.randomUUID(),
-                title: title || "", category: cat, dateStart: instStart, dateEnd: instEnd,
-                location: location || "", description: description || "", coverImage: coverImage || "",
-                gcalEventId: null, status,
-                isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
-                publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
-             };
-          });
-        } catch(e) {
-          console.error("Invalid rrule", e);
-        }
-      }
-
-      if (instances.length === 0) {
-        instances.push({
-            id: genId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
-            location: location || "", description: description || "", coverImage: coverImage || "",
-            gcalEventId: null, status,
-            isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
-            publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
-        });
-      }
-
-      const CHUNK_SIZE = 5;
-      for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
-        await db.insert(schema.events).values(instances.slice(i, i + CHUNK_SIZE)).run();
-      }
-
-      if (description) {
-        c.executionCtx.waitUntil(
-          db.insert(schema.documentHistory)
-            .values({
-              roomId: `event_${genId}`,
-              content: description,
-              createdBy: user?.email || "anonymous_admin",
-              createdAt: sql`CURRENT_TIMESTAMP`,
-            })
-            .run()
-        );
-      }
-
-      c.executionCtx.waitUntil((async () => {
-        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-          try {
-            const gcalId = await pushEventToGcal(
-              { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: recurrenceRule || body.rrule || undefined, parentGcalId: parentEventId || undefined, originalStartTime: originalStartTime || undefined },
-              { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
-            );
-            if (gcalId) {
-              await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
-            }
-          } catch (e) { console.error("GCAL_SAVE_FAIL", e); }
-        }
-
-        if (status === "published") {
-          const baseUrl = new URL(c.req.url).origin;
-          if (socials) {
-            await dispatchSocials(db, { title: title || "", url: `${baseUrl}/events`, snippet: "New event scheduled!", thumbnail: coverImage || "/gallery_1.png", baseUrl }, socialConfig, socials).catch((err) => {
-              console.error("Failed to dispatch social posts for new event:", err);
-            });
+          const gcalId = await pushEventToGcal(
+            { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
+            { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
+          );
+          if (gcalId && gcalId !== targetRow.gcalEventId) {
+            await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
           }
-          const eventTopic = `Event: ${title}`;
-          const eventContent = `ðŸ“… **New Event Scheduled**\n\n**Title:** ${title}\n**Location:** ${location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-          await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
-            console.error("Failed to send Zulip message for new event:", err);
-          });
-        }
-      })());
-
-      c.executionCtx.waitUntil(logAuditAction(c, "CREATE_EVENT", "events", genId, `Created event: ${title} (${status})`));
-      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
-      invalidateEventsCache(c);
-
-      return { status: 200 as const, body: { success: true, id: genId } };
-    } catch (e) {
-      console.error("[Events:Save] Error", e);
-      const errorMessage = e instanceof Error ? e.message : "Write failed";
-      return { status: 500 as const, body: { success: false, error: errorMessage } };
-    }
-  },
-  updateEvent: async (input: HandlerInput<EventSaveBody>, c: AresContext) => {
-    const { params, body } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
-
-      if (!dateStart) {
-        return { status: 400 as const, body: { error: "dateStart is required" } };
+        } catch (e) { console.error("GCAL_APPROVE_FAIL", e); }
       }
 
-      const cat = category || 'internal';
-
-      const user = await getSessionUser(c);
-      const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
-
-      if (user?.role !== "admin") {
-        const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
-        await db.insert(schema.events)
-          .values({
-            id: revId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
-            location: location || "", description: description || "", coverImage: coverImage || "",
-            tbaEventKey: tbaEventKey || null, status: 'pending',
-            isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
-            revisionOf: id, publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
-          })
-          .run();
-        return { status: 200 as const, body: { success: true, id: revId } };
-      }
-
-      const existing = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
-      if (!existing) return { status: 404 as const, body: { error: "Event not found" } };
-
-      await db.update(schema.events)
-        .set({
-          title: title || existing.title, category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
-          location: location || "", description: description || "", coverImage: coverImage || "",
-          tbaEventKey: tbaEventKey || null, status, contentDraft: null,
-          isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
-          publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
-        })
-        .where(eq(schema.events.id, id))
-        .run();
-
-      if (description) {
-        c.executionCtx.waitUntil(
-          db.insert(schema.documentHistory)
-            .values({
-              roomId: `event_${id}`,
-              content: description,
-              createdBy: user?.email || "anonymous",
-            })
-            .run()
-        );
-      }
-
-      c.executionCtx.waitUntil((async () => {
-        if (status === "published") {
-          const socialConfig = await getSocialConfig(c);
-          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
-          const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
-          
-          if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-            try {
-              const row = await db.select({
-                gcalEventId: schema.events.gcalEventId,
-              }).from(schema.events).where(eq(schema.events.id, id)).get();
-              
-              const gcalId = await pushEventToGcal(
-                { id, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, gcalEventId: row?.gcalEventId || undefined, meetingNotes: meetingNotes || undefined },
-                { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
-              );
-              if (gcalId && gcalId !== row?.gcalEventId) {
-                await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, id)).run();
-              }
-            } catch (e) { console.error("GCAL_UPDATE_FAIL", e); }
-          }
-        }
-      })());
-
-      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true, id } };
-    } catch (e) {
-      console.error("[Events:Update] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Update failed" } };
-    }
-  },
-  deleteEvent: async (input: HandlerInput<Pick<EventSaveBody, 'deleteMode'>>, c: AresContext) => {
-    const { params } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      const existing = await db.select({
-        gcalEventId: schema.events.gcalEventId,
-        category: schema.events.category
-      }).from(schema.events).where(eq(schema.events.id, id)).get();
-      
-      await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
-
-      c.executionCtx.waitUntil((async () => {
-        if (existing && existing.gcalEventId) {
-          const socialConfig = await getSocialConfig(c);
-          const cat = existing.category || "internal";
-          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
-          const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
-          
-          if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-            try {
-              await deleteEventFromGcal(existing.gcalEventId, {
-                email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
-                privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
-                calendarId: calId              });
-            } catch { /* ignore GCal failure */ }
-          }
-        }
-      })());
-
-      triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:Delete] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Delete failed" } };
-    }
-  },
-  approveEvent: async (input: HandlerInput, c: AresContext) => {
-    const { params } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      const row = await db.select({
-        id: schema.events.id,
-        title: schema.events.title,
-        category: schema.events.category,
-        dateStart: schema.events.dateStart,
-        dateEnd: schema.events.dateEnd,
-        location: schema.events.location,
-        description: schema.events.description,
-        coverImage: schema.events.coverImage,
-        tbaEventKey: schema.events.tbaEventKey,
-        status: schema.events.status,
-        isPotluck: schema.events.isPotluck,
-        isVolunteer: schema.events.isVolunteer,
-        seasonId: schema.events.seasonId,
-        meetingNotes: schema.events.meetingNotes,
-        revisionOf: schema.events.revisionOf,
-        gcalEventId: schema.events.gcalEventId
-      }).from(schema.events).where(eq(schema.events.id, id)).get();
-      
-      if (row && row.revisionOf) {
-        await db.update(schema.events)
-          .set({ title: row.title, dateStart: row.dateStart, dateEnd: row.dateEnd, location: row.location, description: row.description, coverImage: row.coverImage, tbaEventKey: row.tbaEventKey, status: 'published', isPotluck: row.isPotluck, isVolunteer: row.isVolunteer, seasonId: row.seasonId, meetingNotes: row.meetingNotes })
-          .where(eq(schema.events.id, row.revisionOf))
-          .run();
-        await db.delete(schema.events).where(eq(schema.events.id, id)).run();
-      } else {
-        await db.update(schema.events).set({ status: 'published' }).where(eq(schema.events.id, id)).run();
-      }
-
-      c.executionCtx.waitUntil((async () => {
-        const targetId = row?.revisionOf || id;
-        const targetRow = await db.select().from(schema.events).where(eq(schema.events.id, targetId)).get();
-        if (!targetRow) return;
-        
-        const socialConfig = await getSocialConfig(c);
-        const cat = targetRow.category || "internal";
-        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
-        const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
-
-        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-          try {
-            const gcalId = await pushEventToGcal(
-              { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
-              { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
-            );
-            if (gcalId && gcalId !== targetRow.gcalEventId) {
-              await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
-            }
-          } catch (e) { console.error("GCAL_APPROVE_FAIL", e); }
-        }
-
-        const baseUrl = new URL(c.req.url).origin;
-        const eventTopic = `Event: ${targetRow.title}`;
-        const eventContent = `ðŸ“… **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
-        await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
-          console.error("Failed to send Zulip message for approved event:", err);
-        });
-      })());
-
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:Approve] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Approval failed" } };
-    }
-  },
-  rejectEvent: async (input: HandlerInput, c: AresContext) => {
-    const { params } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      await db.update(schema.events).set({ status: 'rejected' }).where(eq(schema.events.id, id)).run();
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:Reject] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Rejection failed" } };
-    }
-  },
-  undeleteEvent: async (input: HandlerInput, c: AresContext) => {
-    const { params } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      await db.update(schema.events).set({ isDeleted: 0 }).where(eq(schema.events.id, id)).run();
-
-      c.executionCtx.waitUntil((async () => {
-        const targetRow = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
-        if (!targetRow || targetRow.status !== "published") return;
-        
-        const socialConfig = await getSocialConfig(c);
-        const cat = targetRow.category || "internal";
-        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
-        const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
-
-        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-          try {
-            const gcalId = await pushEventToGcal(
-              { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
-              { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
-            );
-            if (gcalId && gcalId !== targetRow.gcalEventId) {
-              await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
-            }
-          } catch (e) { console.error("GCAL_UNDELETE_FAIL", e); }
-        }
-      })());
-
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:Undelete] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Restore failed" } };
-    }
-  },
-  purgeEvent: async (input: HandlerInput, c: AresContext) => {
-    const { params } = input;
-    const { id } = params;
-    try {
-      const db = getDb(c);
-      const row = await db.select({ gcalEventId: schema.events.gcalEventId, category: schema.events.category }).from(schema.events).where(eq(schema.events.id, id)).get();
-      await db.delete(schema.events).where(eq(schema.events.id, id)).run();
-
-      c.executionCtx.waitUntil((async () => {
-        if (row && row.gcalEventId) {
-          const socialConfig = await getSocialConfig(c);
-          const cat = row.category || "internal";
-          const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
-          const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
-          
-          if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-            try {
-              await deleteEventFromGcal(row.gcalEventId, {
-                email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
-                privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
-                calendarId: calId              });
-            } catch { /* ignore GCal failure */ }
-          }
-        }
-      })());
-
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:Purge] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Purge failed" } };
-    }
-  },
-  syncEvents: async (_input: HandlerInput, c: HonoContext) => {
-    try {
-      const db = getDb(c);
-      const dbSettings = await getDbSettings(c);
-      const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
-      const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
-
-      const calendars = [
-        { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
-        { id: dbSettings["CALENDAR_ID_OUTREACH"], category: "outreach" },
-        { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
-      ].filter((cal) => !!cal.id);
-
-      if (!gcalEmail || !gcalKey || calendars.length === 0) {
-        return { status: 500 as const, body: { success: false, error: "GCal config missing" } };
-      }
-
-      let total = 0;
-      const errors: string[] = [];
-
-      for (const cal of calendars) {
-        try {
-          const events = await pullEventsFromGcal({ email: gcalEmail as string, privateKey: gcalKey as string, calendarId: cal.id as string });
-          
-          const CHUNK_SIZE = 20;
-          for (let i = 0; i < events.length; i += CHUNK_SIZE) {
-            const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
-              id: crypto.randomUUID(),
-              title: ev.title,
-              dateStart: ev.dateStart,
-              dateEnd: ev.dateEnd || null,
-              location: ev.location,
-              description: ev.description,
-              gcalEventId: ev.gcalEventId,
-              status: 'published' as const,
-              category: cal.category,
-            }));
-
-            await db.insert(schema.events)
-              .values(chunk)
-              .onConflictDoUpdate({
-                target: schema.events.gcalEventId,
-                set: {
-                  title: sql`excluded.title`,
-                  dateStart: sql`excluded.dateStart`,
-                  dateEnd: sql`excluded.dateEnd`,
-                  location: sql`excluded.location`,
-                  description: sql`excluded.description`,
-                  category: sql`excluded.category`,
-                }
-              })
-              .run();
-          }
-          
-          total += events.length;
-        } catch (calErr) {
-          const msg = calErr instanceof Error ? calErr.message : String(calErr);
-          console.error(`SYNC_EVENTS: Calendar ${cal.category} (${cal.id}) failed:`, msg);
-          errors.push(`${cal.category}: ${msg}`);
-        }
-      }
-
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true, count: total } };
-    } catch (e) {
-      console.error("[Events:Sync] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Sync failed" } };
-    }
-  },
-  getSignups: async (input: HandlerInput, c: HonoContext) => {
-    try {
-      const { params } = input;
-      const eventId = params.id;
-      const user = await getSessionUser(c);
-      const db = getDb(c);
-      const isVerified = user && user.role !== "unverified";
-      const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.memberType || ""));
-
-      // Use query helper for event signups with user profiles
-      const { eventSignups: results } = await queryHelpers.getEventSignups(db, eventId);
-
-      const signups = isVerified ? results.map((rec: typeof results[number]) => ({
-        userId: rec.userId,
-        nickname: rec.profileNickname || null,
-        bringing: rec.bringing || null,
-        notes: (isManagement || (user && rec.userId === user.id)) ? rec.notes : null,
-        prepHours: Number(rec.prepHours || 0),
-        attended: Number(rec.attended || 0),
-        isOwn: user ? rec.userId === user.id : false,
-      })) : [];
-
-      const dietarySummary: Record<string, number> = {};
-      results.forEach((r: typeof results[number]) => {
-        if (r.dietaryRestrictions) {
-          const restrictions = r.dietaryRestrictions.split(',').map((st: string) => st.trim());
-          restrictions.forEach((res: string) => {
-            if (res) dietarySummary[res] = (dietarySummary[res] || 0) + 1;
-          });
-        }
+      const baseUrl = new URL(c.req.url).origin;
+      const eventTopic = `Event: ${targetRow.title}`;
+      const eventContent = `📅 **Event Approved & Scheduled**\n\n**Title:** ${targetRow.title}\n**Location:** ${targetRow.location || "TBD"}\n\n[View Event](${baseUrl}/events)`;
+      await sendZulipMessage(socialConfig, "events", eventTopic, eventContent).catch((err) => {
+        console.error("Failed to send Zulip message for approved event:", err);
       });
+    })());
 
-      return { status: 200 as const, body: {
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  rejectEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof rejectEventRoute>> => {
+    const { params } = input;
+    const { id } = params;
+    const db = getDb(c);
+    await db.update(schema.events).set({ status: 'rejected' }).where(eq(schema.events.id, id)).run();
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  undeleteEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof undeleteEventRoute>> => {
+    const { params } = input;
+    const { id } = params;
+    const db = getDb(c);
+    await db.update(schema.events).set({ isDeleted: 0 }).where(eq(schema.events.id, id)).run();
+
+    c.executionCtx.waitUntil((async () => {
+      const targetRow = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
+      if (!targetRow || targetRow.status !== "published") return;
+      
+      const socialConfig = await getSocialConfig(c);
+      const cat = targetRow.category || "internal";
+      const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
+      const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+
+      if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+        try {
+          const gcalId = await pushEventToGcal(
+            { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
+            { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
+          );
+          if (gcalId && gcalId !== targetRow.gcalEventId) {
+            await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
+          }
+        } catch (e) { console.error("GCAL_UNDELETE_FAIL", e); }
+      }
+    })());
+
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  purgeEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof purgeEventRoute>> => {
+    const { params } = input;
+    const { id } = params;
+    const db = getDb(c);
+    const row = await db.select({ gcalEventId: schema.events.gcalEventId, category: schema.events.category }).from(schema.events).where(eq(schema.events.id, id)).get();
+    await db.delete(schema.events).where(eq(schema.events.id, id)).run();
+
+    c.executionCtx.waitUntil((async () => {
+      if (row && row.gcalEventId) {
+        const socialConfig = await getSocialConfig(c);
+        const cat = row.category || "internal";
+        const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+        const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+        
+        if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+          try {
+            await deleteEventFromGcal(row.gcalEventId, {
+              email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
+              privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
+              calendarId: calId
+            });
+          } catch { /* ignore GCal failure */ }
+        }
+      }
+    })());
+
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  syncEvents: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof syncEventsRoute>> => {
+    const db = getDb(c);
+    const dbSettings = await getDbSettings(c);
+    const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
+    const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
+
+    const calendars = [
+      { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
+      { id: dbSettings["CALENDAR_ID_OUTREACH"], category: "outreach" },
+      { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
+    ].filter((cal) => !!cal.id);
+
+    if (!gcalEmail || !gcalKey || calendars.length === 0) {
+      throw new ApiError("GCal config missing", 500);
+    }
+
+    let total = 0;
+    const errors: string[] = [];
+
+    for (const cal of calendars) {
+      try {
+        const events = await pullEventsFromGcal({ email: gcalEmail as string, privateKey: gcalKey as string, calendarId: cal.id as string });
+        
+        const CHUNK_SIZE = 20;
+        for (let i = 0; i < events.length; i += CHUNK_SIZE) {
+          const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
+            id: crypto.randomUUID(),
+            title: ev.title,
+            dateStart: ev.dateStart,
+            dateEnd: ev.dateEnd || null,
+            location: ev.location,
+            description: ev.description,
+            gcalEventId: ev.gcalEventId,
+            status: 'published' as const,
+            category: cal.category,
+          }));
+
+          await db.insert(schema.events)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.events.gcalEventId,
+              set: {
+                title: sql`excluded.title`,
+                dateStart: sql`excluded.dateStart`,
+                dateEnd: sql`excluded.dateEnd`,
+                location: sql`excluded.location`,
+                description: sql`excluded.description`,
+                category: sql`excluded.category`,
+              }
+            })
+            .run();
+        }
+        
+        total += events.length;
+      } catch (calErr) {
+        const msg = calErr instanceof Error ? calErr.message : String(calErr);
+        console.error(`SYNC_EVENTS: Calendar ${cal.category} (${cal.id}) failed:`, msg);
+        errors.push(`${cal.category}: ${msg}`);
+      }
+    }
+
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true, count: total } };
+  },
+
+  getSignups: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getSignupsRoute>> => {
+    const { params } = input;
+    const eventId = params.id;
+    const user = await getSessionUser(c);
+    const db = getDb(c);
+    const isVerified = user && user.role !== "unverified";
+    const isManagement = user && (user.role === "admin" || ["coach", "mentor"].includes(user.memberType || ""));
+
+    const { eventSignups: results } = await queryHelpers.getEventSignups(db, eventId);
+
+    const signups = isVerified ? results.map((rec: any) => ({
+      userId: rec.userId,
+      nickname: rec.profileNickname || null,
+      bringing: rec.bringing || null,
+      notes: (isManagement || (user && rec.userId === user.id)) ? rec.notes : null,
+      prepHours: Number(rec.prepHours || 0),
+      attended: Number(rec.attended || 0),
+      isOwn: user ? rec.userId === user.id : false,
+    })) : [];
+
+    const dietarySummary: Record<string, number> = {};
+    results.forEach((r: any) => {
+      if (r.dietaryRestrictions) {
+        const restrictions = r.dietaryRestrictions.split(',').map((st: string) => st.trim());
+        restrictions.forEach((res: string) => {
+          if (res) dietarySummary[res] = (dietarySummary[res] || 0) + 1;
+        });
+      }
+    });
+
+    return {
+      status: 200 as const,
+      body: {
         signups,
         dietarySummary,
         teamDietarySummary: {},
@@ -1209,119 +792,97 @@ export const eventHandlers = {
         role: user?.role || null,
         memberType: user?.memberType || null,
         canManage: !!isManagement
-      } };
-    } catch (e) {
-      console.error("[Events:Signups] Error", e);
-      return { status: 500 as const, body: { error: "Failed to fetch signups" } };
-    }
-  },
-  submitSignup: async (input: HandlerInput<SignupBody>, c: HonoContext) => {
-    const { params, body } = input;
-    try {
-      const user = await getSessionUser(c);
-      if (!user || user.role === "unverified") return { status: 403 as const, body: { error: "Forbidden" } };
-      const db = getDb(c);
-
-      // Use transaction helper for atomic signup with duplicate handling
-      await transactionHelpers.createEventSignup(db, {
-        eventId: params.id,
-        userId: user.id,
-        bringing: body.bringing || "",
-        notes: body.notes || "",
-        prepHours: body.prepHours || 0,
-      });
-
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:SubmitSignup] Error", e);
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      return { status: 500 as const, body: { success: false, error: `Signup failed: ${errorMessage}` } };
-    }
-  },
-  deleteMySignup: async (input: HandlerInput, c: HonoContext) => {
-    const { params } = input;
-    try {
-      const user = await getSessionUser(c);
-      if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = getDb(c);
-      await db.delete(schema.eventSignups).where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id))).run();
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:DeleteSignup] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Failed to remove signup" } };
-    }
-  },
-  updateMyAttendance: async (input: HandlerInput<Pick<SignupBody, 'attended'>>, c: HonoContext) => {
-    const { params, body } = input;
-    try {
-      const user = await getSessionUser(c);
-      if (!user) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = getDb(c);
-
-      const existing = await db.select({ id: schema.eventSignups.id })
-        .from(schema.eventSignups)
-        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id)))
-        .get();
-
-      if (existing) {
-        await db.update(schema.eventSignups)
-          .set({ attended: body.attended ? 1 : 0 })
-          .where(eq(schema.eventSignups.id, existing.id))
-          .run();
-      } else {
-        await db.insert(schema.eventSignups)
-          .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
-          .run();
       }
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:UpdateMyAttendance] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Update failed" } };
-    }
+    };
   },
-  updateUserAttendance: async (input: HandlerInput<Pick<SignupBody, 'attended'>>, c: HonoContext) => {
-    const { params, body } = input;
-    try {
-      const user = await getSessionUser(c);
-      if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.memberType || "")) return { status: 401 as const, body: { error: "Unauthorized" } };
-      const db = getDb(c);
 
-      const existing = await db.select({ id: schema.eventSignups.id })
-        .from(schema.eventSignups)
-        .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, params.userId)))
-        .get();
-
-      if (existing) {
-        await db.update(schema.eventSignups)
-          .set({ attended: body.attended ? 1 : 0 })
-          .where(eq(schema.eventSignups.id, existing.id))
-          .run();
-      } else {
-        await db.insert(schema.eventSignups)
-          .values({ eventId: params.id, userId: params.userId, attended: body.attended ? 1 : 0 })
-          .run();
-      }
-      return { status: 200 as const, body: { success: true } };
-    } catch (e) {
-      console.error("[Events:UpdateUserAttendance] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Update failed" } };
-    }
-  },
-  repushEvent: async (input: HandlerInput<SocialsBody>, c: HonoContext) => {
+  submitSignup: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof submitSignupRoute>> => {
     const { params, body } = input;
     const user = await getSessionUser(c);
-    if (user?.role !== "admin" && user?.role !== "author") return { status: 401 as const, body: { error: "Unauthorized" } };
+    if (!user || user.role === "unverified") throw new ApiError("Forbidden", 403);
     const db = getDb(c);
-    try {
-      const event = await db.select().from(schema.events).where(eq(schema.events.id, params.id)).get();
-      if (!event) return { status: 404 as const, body: { error: "Event not found" } };
 
-      const social = await getSocialConfig(c);
-      const baseUrl = new URL(c.req.url).origin;
+    await transactionHelpers.createEventSignup(db, {
+      eventId: params.id,
+      userId: user.id,
+      bringing: body.bringing || "",
+      notes: body.notes || "",
+      prepHours: body.prepHours || 0,
+    });
+
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  deleteMySignup: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof deleteMySignupRoute>> => {
+    const { params } = input;
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+    const db = getDb(c);
+    await db.delete(schema.eventSignups).where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id))).run();
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  updateMyAttendance: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof updateMyAttendanceRoute>> => {
+    const { params, body } = input;
+    const user = await getSessionUser(c);
+    if (!user) throw new ApiError("Unauthorized", 401);
+    const db = getDb(c);
+
+    const existing = await db.select({ id: schema.eventSignups.id })
+      .from(schema.eventSignups)
+      .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id)))
+      .get();
+
+    if (existing) {
+      await db.update(schema.eventSignups)
+        .set({ attended: body.attended ? 1 : 0 })
+        .where(eq(schema.eventSignups.id, existing.id))
+        .run();
+    } else {
+      await db.insert(schema.eventSignups)
+        .values({ eventId: params.id, userId: user.id, attended: body.attended ? 1 : 0 })
+        .run();
+    }
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  updateUserAttendance: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof updateUserAttendanceRoute>> => {
+    const { params, body } = input;
+    const user = await getSessionUser(c);
+    if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.memberType || "")) throw new ApiError("Unauthorized", 401);
+    const db = getDb(c);
+
+    const existing = await db.select({ id: schema.eventSignups.id })
+      .from(schema.eventSignups)
+      .where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, params.userId)))
+      .get();
+
+    if (existing) {
+      await db.update(schema.eventSignups)
+        .set({ attended: body.attended ? 1 : 0 })
+        .where(eq(schema.eventSignups.id, existing.id))
+        .run();
+    } else {
+      await db.insert(schema.eventSignups)
+        .values({ eventId: params.id, userId: params.userId, attended: body.attended ? 1 : 0 })
+        .run();
+    }
+    return { status: 200 as const, body: { success: true } };
+  },
+
+  repushEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof repushEventRoute>> => {
+    const { params, body } = input;
+    const { id } = params;
+    const db = getDb(c);
+    const event = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
+    if (!event) throw new ApiError("Event not found", 404);
+
+    const socialConfig = await getSocialConfig(c);
+    const baseUrl = new URL(c.req.url).origin;
+
+    if (body.socials) {
       const socialsFilter: Record<string, boolean> = {};
-      if (body.socials) {
-        for (const s of body.socials) socialsFilter[s] = true;
-      }
+      body.socials.forEach(s => socialsFilter[s] = true);
 
       await dispatchSocials(
         db,
@@ -1331,19 +892,22 @@ export const eventHandlers = {
           snippet: event.description || "",
           thumbnail: event.coverImage || undefined,
         },
-        social,
+        socialConfig,
         socialsFilter
       );
+    }
 
+    // Also sync to GCal if published
+    if (event.status === "published") {
       const cat = event.category || "internal";
-      const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
-      const calId = (social as Record<string, string | undefined>)[calKey] || social.CALENDAR_ID;
+      const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+      const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-      if (social.GCAL_SERVICE_ACCOUNT_EMAIL && social.GCAL_PRIVATE_KEY && calId) {
+      if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
         try {
           const gcalId = await pushEventToGcal(
-            { id: event.id as string, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: event.gcalEventId || undefined, meetingNotes: event.meetingNotes || undefined },
-            { email: social.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: social.GCAL_PRIVATE_KEY, calendarId: calId }
+            { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: event.gcalEventId || undefined, meetingNotes: event.meetingNotes || undefined },
+            { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
           );
           if (gcalId && gcalId !== event.gcalEventId) {
             await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
@@ -1352,106 +916,71 @@ export const eventHandlers = {
           console.error("REPUSH_EVENT_GCAL ERROR", e);
         }
       }
-
-      return { status: 200 as const, body: { success: true } };
-    } catch (err) {
-      console.error("[Events:Repush] Error", err);
-      return { status: 502 as const, body: { error: String(err) } };
     }
+
+    return { status: 200 as const, body: { success: true } };
   },
-  repairCalendar: async (_input: HandlerInput, c: HonoContext) => {
-    try {
-      const db = getDb(c);
-      const dbSettings = await getDbSettings(c);
-      const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
-      const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
 
-      if (!gcalEmail || !gcalKey) {
-        return { status: 500 as const, body: { success: false, error: "GCal service account not configured" } };
-      }
-
-      const missing = await db.select({
-        id: schema.events.id,
-        title: schema.events.title,
-        category: schema.events.category,
-        dateStart: schema.events.dateStart,
-        dateEnd: schema.events.dateEnd,
-        location: schema.events.location,
-        description: schema.events.description,
-        coverImage: schema.events.coverImage,
-        gcalEventId: schema.events.gcalEventId,
-        meetingNotes: schema.events.meetingNotes
-      })
+  repairCalendar: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof repairCalendarRoute>> => {
+    const db = getDb(c);
+    const events = await db.select()
       .from(schema.events)
       .where(and(
         eq(schema.events.isDeleted, 0),
         eq(schema.events.status, "published"),
-        or(
-          isNull(schema.events.gcalEventId),
-          eq(schema.events.gcalEventId, "")
-        )
+        isNull(schema.events.gcalEventId)
       ))
       .all();
 
-      console.log(`[Events:RepairCalendar] Found ${missing.length} events missing from GCal`);
+    if (events.length === 0) {
+      return { status: 200 as const, body: { success: true, pushed: 0, failed: 0 } };
+    }
 
-      let pushed = 0;
-      let failed = 0;
-      const errors: string[] = [];
+    const socialConfig = await getSocialConfig(c);
+    let pushed = 0;
+    let failed = 0;
+    const errors: string[] = [];
 
-      for (const event of missing) {
-        const cat = event.category || "internal";
-        const calKey = `CALENDAR_ID_${cat.toUpperCase()}`;
-        const calId = dbSettings[calKey] || dbSettings["CALENDAR_ID"];
+    for (const event of events) {
+      const cat = event.category || "internal";
+      const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+      const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-        if (!calId) {
-          errors.push(`${event.title}: No calendar ID configured for category "${cat}"`);
-          failed++;
-          continue;
-        }
-
-        try {
-          const gcalId = await pushEventToGcal(
-            {
-              id: event.id as string,
-              title: event.title,
-              dateStart: event.dateStart,
-              dateEnd: event.dateEnd || undefined,
-              location: event.location || undefined,
-              description: event.description || undefined,
-              coverImage: event.coverImage || undefined,
-              meetingNotes: event.meetingNotes || undefined,
-            },
-            {
-              email: gcalEmail as string,
-              privateKey: gcalKey as string,
-              calendarId: calId as string,
-            }
-          );
-
-          if (gcalId) {
-            await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
-            pushed++;
-          } else {
-            errors.push(`${event.title}: GCal returned no ID`);
-            failed++;
-          }
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error(`[Events:RepairCalendar] Failed to push "${event.title}":`, msg);
-          errors.push(`${event.title}: ${msg}`);
-          failed++;
-        }
+      if (!socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL || !socialConfig.GCAL_PRIVATE_KEY || !calId) {
+        throw new ApiError("GCal config missing", 500);
       }
 
-      console.log(`[Events:RepairCalendar] Complete â€” pushed: ${pushed}, failed: ${failed}`);
-      invalidateEventsCache(c);
-      return { status: 200 as const, body: { success: true, pushed, failed, errors: errors.length > 0 ? errors : undefined } };
-    } catch (e) {
-      console.error("[Events:RepairCalendar] Error", e);
-      return { status: 500 as const, body: { success: false, error: "Repair failed" } };
+      try {
+        const gcalId = await pushEventToGcal(
+          { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: undefined, meetingNotes: event.meetingNotes || undefined },
+          { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+        );
+
+        if (gcalId) {
+          await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
+          pushed++;
+        } else {
+          errors.push(`${event.title}: GCal returned no ID`);
+          failed++;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[Events:RepairCalendar] Failed to push "${event.title}":`, msg);
+        errors.push(`${event.title}: ${msg}`);
+        failed++;
+      }
     }
+
+    invalidateEventsCache(c);
+    return { status: 200 as const, body: { success: true, pushed, failed, errors: errors.length > 0 ? errors : undefined } };
+  },
+
+  getEventHistory: async (_input: HandlerInput, _c: AresContext): Promise<ApiResponse<typeof getEventHistoryRoute>> => {
+    return { status: 200 as const, body: { history: [] } };
+  },
+
+  restoreEventHistory: async (_input: HandlerInput, _c: AresContext): Promise<ApiResponse<typeof restoreEventHistoryRoute>> => {
+    throw new ApiError("Event history feature not yet implemented", 501);
+    return { status: 200 as const, body: { success: true } };
   },
 };
-
-

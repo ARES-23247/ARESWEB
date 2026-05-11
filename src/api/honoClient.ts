@@ -1,6 +1,6 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
-import type { AppType, group1, group2, group3, group4 } from "../../functions/api/[[route]]";
+import type { AppType } from "../../functions/api/[[route]]";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -39,43 +39,27 @@ const customFetch = async (
 /**
  * Type-safe Hono client for API calls.
  *
- * LIMITATIONS:
- * 1. Custom fetch breaks hc() type inference (even with `as typeof fetch`)
- * 2. Server routes mounted via `.route()` don't chain OpenAPI types into `typeof apiRouter`
- *
- * For full type safety, server would need to export chained `.openapi()` results:
- *   const routes = apiRouter.openapi(getRoute, handler).openapi(postRoute, handler);
- *   export type AppType = typeof routes;
- *
- * Individual API wrapper functions in src/api/ provide type safety via Zod schemas.
+ * This client uses the exported AppType from the backend to provide
+ * end-to-end type inference for request bodies and response shapes.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const baseClient = hc<any>("/api", {
+export const client = hc<AppType>("/api", {
   init: {
     credentials: "include",
   },
   fetch: customFetch as typeof fetch,
 });
 
-// Dummy clients to extract types without triggering generic syntax errors
-const c1 = hc<typeof group1>("");
-const c2 = hc<typeof group2>("");
-const c3 = hc<typeof group3>("");
-const c4 = hc<typeof group4>("");
-const cApp = hc<AppType>("");
-
-export const client = baseClient as unknown as 
-  typeof c1 &
-  typeof c2 &
-  typeof c3 &
-  typeof c4 &
-  typeof cApp;
-
 /**
  * Error class for API failures.
+ * Includes status code, standardized error message, and optional details.
  */
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+    public code?: string,
+    public details?: unknown
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -83,13 +67,33 @@ export class ApiError extends Error {
 
 /**
  * Helper to unwrap Hono RPC responses and handle errors.
- * Returns the data directly or throws an ApiError.
+ * Returns the data directly or throws an ApiError with structured details.
  */
 export async function unwrapResponse<T>(response: ClientResponse<unknown>): Promise<T> {
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { error?: string; message?: string; details?: string };
+    const errorData = (await response.json().catch(() => ({}))) as { 
+      error?: string; 
+      message?: string; 
+      code?: string;
+      details?: unknown 
+    };
+    
     const errMsg = errorData.message || errorData.error || `API Error: ${response.status}`;
-    throw new ApiError(response.status, errorData.details ? `${errMsg} - ${errorData.details}` : errMsg);
+    
+    // Log detailed validation errors in development
+    if (response.status === 400 && errorData.details) {
+      console.error("[API Validation Error]", {
+        path: response.url,
+        details: errorData.details
+      });
+    }
+
+    throw new ApiError(
+      response.status, 
+      errMsg, 
+      errorData.code, 
+      errorData.details
+    );
   }
   return (await response.json()) as T;
 }

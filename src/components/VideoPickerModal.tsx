@@ -1,0 +1,345 @@
+import { useState } from "react";
+import { X, Play, Plus, ExternalLink } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useGetVideos, useParseVideoUrl } from "../api";
+import { useMutation } from "@tanstack/react-query";
+import { uploadFile } from "../utils/apiClient";
+
+interface Video {
+  id: string;
+  title: string;
+  description: string | null;
+  platform: "youtube" | "vimeo" | "other";
+  videoId: string;
+  thumbnailKey: string | null;
+  thumbnailUrl: string | null;
+  embedUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function VideoPickerModal({
+  isOpen,
+  onClose,
+  onSelect,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (videoId: string, title: string) => void;
+}) {
+  const [isCreating, setIsCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [platform, setPlatform] = useState<"youtube" | "vimeo" | "other">("youtube");
+  const [parsedVideoId, setParsedVideoId] = useState("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [urlError, setUrlError] = useState("");
+
+  const { data: videosResponse, isLoading, refetch } = useGetVideos({
+    enabled: isOpen,
+  });
+
+  const { data: parseResponse, refetch: parseUrl } = useParseVideoUrl({ enabled: false });
+
+  const videos = (videosResponse as unknown as { videos: Video[] })?.videos ?? [];
+
+  const handleParseUrl = async () => {
+    if (!videoUrl.trim()) {
+      setUrlError("Please enter a video URL");
+      return;
+    }
+    setUrlError("");
+    await parseUrl({ url: videoUrl.trim() });
+  };
+
+  // When parse response comes back, update the form
+  if (parseResponse && !parsedVideoId) {
+    setPlatform(parseResponse.platform);
+    setParsedVideoId(parseResponse.videoId);
+  }
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: {
+      title: string;
+      description?: string;
+      platform: "youtube" | "vimeo" | "other";
+      videoId: string;
+      thumbnailKey?: string;
+    }) => {
+      const res = await fetch("/api/videos/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to create video");
+      return res.json() as Promise<{ video: Video }>;
+    },
+    onSuccess: (data) => {
+      refetch();
+      setIsCreating(false);
+      resetForm();
+      onSelect(data.video.id, data.video.title);
+    },
+  });
+
+  const resetForm = () => {
+    setNewTitle("");
+    setNewDescription("");
+    setVideoUrl("");
+    setPlatform("youtube");
+    setParsedVideoId("");
+    setThumbnailFile(null);
+    setUrlError("");
+  };
+
+  const handleCreate = async () => {
+    if (!newTitle.trim() || !parsedVideoId.trim()) return;
+
+    let thumbnailKey: string | undefined;
+    if (thumbnailFile) {
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", thumbnailFile);
+        formData.append("folder", "video");
+        const data = await uploadFile<{ key?: string }>("/api/media/admin/upload", formData);
+        thumbnailKey = data.key;
+      } catch {
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    createMutation.mutate({
+      title: newTitle.trim(),
+      description: newDescription.trim() || undefined,
+      platform,
+      videoId: parsedVideoId,
+      thumbnailKey,
+    });
+  };
+
+  const getPlatformIcon = (p: "youtube" | "vimeo" | "other") => {
+    switch (p) {
+      case "youtube":
+        return "▶";
+      case "vimeo":
+        return "v";
+      default:
+        return "▶";
+    }
+  };
+
+  const getPlatformColor = (p: "youtube" | "vimeo" | "other") => {
+    switch (p) {
+      case "youtube":
+        return "text-ares-red";
+      case "vimeo":
+        return "text-ares-cyan";
+      default:
+      return "text-white/60";
+    }
+  };
+
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-asset-picker data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="fixed left-[50%] top-[50%] z-asset-picker translate-x-[-50%] translate-y-[-50%] bg-obsidian border border-white/10 shadow-2xl ares-cut-lg w-[calc(100%-2rem)] max-w-3xl max-h-[80vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] focus:outline-none"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-ares-red/20 flex items-center justify-center ares-cut-sm border border-ares-red/30">
+                <Play className="text-ares-danger-soft" size={20} aria-hidden="true" />
+              </div>
+              <div>
+                <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">
+                  {isCreating ? "Add Video" : "Select Video"}
+                </Dialog.Title>
+                <Dialog.Description className="text-xs text-white/60 font-mono m-0">
+                  {isCreating ? "Link a video from YouTube, Vimeo, or other platform" : "Choose a video to embed"}
+                </Dialog.Description>
+              </div>
+            </div>
+            {isCreating && (
+              <button
+                onClick={() => {
+                  setIsCreating(false);
+                  resetForm();
+                }}
+                className="text-xs text-white/60 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+            <Dialog.Close asChild>
+              <button
+                aria-label="Close modal"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 bg-obsidian">
+            {isCreating ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                    Video URL *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={videoUrl}
+                      onChange={(e) => {
+                        setVideoUrl(e.target.value);
+                        setUrlError("");
+                      }}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className={`flex-1 bg-black border ${urlError ? 'border-ares-red' : 'border-white/10'} ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all`}
+                    />
+                    <button
+                      onClick={handleParseUrl}
+                      className="px-4 py-3 bg-ares-red/20 hover:bg-ares-red/30 text-ares-danger-soft ares-cut-sm text-sm font-bold transition-all border border-ares-red/30 whitespace-nowrap"
+                    >
+                      Parse
+                    </button>
+                  </div>
+                  {urlError && <p className="text-ares-red text-xs mt-1">{urlError}</p>}
+                  {parsedVideoId && (
+                    <div className="flex items-center gap-2 mt-2 text-xs text-ares-cyan">
+                      <span className="bg-ares-cyan/20 px-2 py-1 rounded">{platform}</span>
+                      <span className="font-mono">{parsedVideoId}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                    Video Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="e.g. Robot Reveal 2025"
+                    className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Brief description of this video..."
+                    rows={2}
+                    className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                    Custom Thumbnail
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                      />
+                      <div className="px-4 py-3 bg-black border border-dashed border-white/20 ares-cut-sm text-center cursor-pointer hover:border-ares-red/50 transition-colors">
+                        {thumbnailFile ? (
+                          <span className="text-ares-danger-soft text-sm">{thumbnailFile.name}</span>
+                        ) : (
+                          <span className="text-white/40 text-sm">Click to select an image...</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreate}
+                  disabled={!newTitle.trim() || !parsedVideoId || createMutation.isPending || isUploading}
+                  className="w-full px-6 py-3 bg-ares-red hover:bg-ares-red/80 text-white font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {(createMutation.isPending || isUploading) ? "Adding..." : "Add Video"}
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
+                <p className="text-xs font-bold uppercase tracking-widest text-ares-danger-soft animate-pulse">Loading videos...</p>
+              </div>
+            ) : videos.length === 0 ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/20 gap-4">
+                <Play size={48} className="opacity-50" aria-hidden="true" />
+                <p className="font-mono text-sm">No videos available.</p>
+                <button
+                  onClick={() => setIsCreating(true)}
+                  className="px-4 py-2 bg-ares-red/20 hover:bg-ares-red/30 text-ares-danger-soft ares-cut-sm text-sm font-bold transition-all border border-ares-red/30"
+                >
+                  Add your first video
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {videos.map((video) => (
+                  <button
+                    key={video.id}
+                    onClick={() => onSelect(video.id, video.title)}
+                    className="relative bg-black/50 border border-white/10 ares-cut-sm overflow-hidden group cursor-pointer hover:border-ares-red/50 transition-colors text-left"
+                  >
+                    <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/60 transition-opacity">
+                      <Plus className="text-ares-danger-soft w-8 h-8" />
+                    </div>
+                    {video.thumbnailUrl ? (
+                      <img src={video.thumbnailUrl} alt={video.title} className="w-full h-32 object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-32 bg-ares-red/10 flex items-center justify-center">
+                        <span className={`text-4xl ${getPlatformColor(video.platform)}`}>{getPlatformIcon(video.platform)}</span>
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] uppercase font-bold tracking-wider ${getPlatformColor(video.platform)}`}>
+                          {video.platform}
+                        </span>
+                      </div>
+                      <p className="text-white font-bold text-sm truncate">{video.title}</p>
+                      {video.description && (
+                        <p className="text-white/60 text-xs mt-1 line-clamp-2">{video.description}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {!isCreating && (
+            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-center">
+              <button
+                onClick={() => setIsCreating(true)}
+                className="px-4 py-2 bg-ares-red/20 hover:bg-ares-red/30 text-ares-danger-soft ares-cut-sm text-sm font-bold transition-all border border-ares-red/30 flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add New Video
+              </button>
+            </div>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

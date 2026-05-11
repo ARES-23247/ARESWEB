@@ -67,3 +67,38 @@ export type ServerInferRequest<T> = {
   query: T extends { query: infer Q } ? InferZodOrType<Q> : never;
   headers: T extends { headers: infer H } ? InferZodOrType<H> : never;
 };
+
+/**
+ * Extract the body type for a specific status code from an OpenAPI route definition.
+ */
+export type RouteResponseBody<T, Status extends number = 200> = T extends {
+  responses: { [K in Status]: { content: { "application/json": { schema: infer S } } } };
+}
+  ? S extends z.ZodTypeAny
+    ? z.infer<S>
+    : never
+  : never;
+
+/**
+ * Custom RouteResponse type for OpenAPI route inference.
+ * Extracts the 200 response JSON body type from an OpenAPI route definition.
+ * Kept for backward compatibility with existing code that expects just the body.
+ */
+export type RouteResponse<T> = RouteResponseBody<T, 200>;
+
+/**
+ * Full response type for an OpenAPI route handler, including status and body.
+ * Supports all status codes defined in the route responses.
+ */
+export type ApiResponse<T> = T extends { responses: infer R }
+  ? {
+      [K in keyof R & number]: {
+        status: K;
+        body: R[K] extends { content: { "application/json": { schema: infer S } } }
+          ? S extends z.ZodTypeAny
+            ? z.infer<S>
+            : never
+          : never;
+      };
+    }[keyof R & number]
+  : never;

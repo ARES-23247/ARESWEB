@@ -1,8 +1,8 @@
 import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Globe,
+  PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Globe, Play, Database,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";
@@ -202,12 +202,19 @@ export default function DashboardSidebar({
           <div>
             <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Personal</h4>
             <div className="space-y-1 px-3">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
               >
                 <Globe size={18} className="text-ares-cyan/80 group-hover:text-white" />
                 <span className="truncate">Public Site</span>
+              </Link>
+              <Link
+                to="/developers/api"
+                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-gold hover:bg-ares-gold/10 hover:text-white border border-transparent hover:border-ares-gold/20"
+              >
+                <BookOpen size={18} className="text-ares-gold/80 group-hover:text-white" />
+                <span className="truncate">Developer API</span>
               </Link>
               <div className="h-px bg-white/5 mx-2 my-1" />
               <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
@@ -256,6 +263,8 @@ export default function DashboardSidebar({
                 <NavButton tab="manage_seasons" label="4. Seasonal Legacies" sub={true} currentPath={location.pathname} />
                 <div className="h-px bg-white/5 my-3 mx-4" />
                 <NavButton tab="assets" icon={Image} label="Media Gallery" currentPath={location.pathname} />
+                <NavButton tab="manage_galleries" icon={Image} label="Photo Galleries" sub={true} currentPath={location.pathname} />
+                <NavButton tab="manage_videos" icon={Play} label="Video Library" sub={true} currentPath={location.pathname} />
                 <NavButton tab="legacy" icon={Trophy} label="Trophy Case Archive" currentPath={location.pathname} />
               </div>
             </div>
@@ -283,6 +292,7 @@ export default function DashboardSidebar({
               <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
+                {isAdmin && <NavButton tab="db_studio" icon={Database} label="Database Studio" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="badges" icon={Award} label="Badges & Awards" currentPath={location.pathname} />}

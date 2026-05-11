@@ -1,4 +1,4 @@
-﻿import { ApiError } from "../middleware/errorHandler";
+import { ApiError } from "../middleware/errorHandler";
 import { QUERY_LIMITS } from "../utils/queryLimits";
 import { sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
@@ -13,12 +13,9 @@ import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 import { safeWaitUntil } from "../utils/safeWaitUntil";
 
-import type { HonoContext } from "@shared/types/api";
+import type { HonoContext, RouteResponse } from "@shared/types/api";
 import * as docsRoutes from "../../../shared/routes/docs";
 import { z } from "zod";
-
-// Infer response types from route schemas
-type SearchDocsResponse = z.infer<typeof docsRoutes.searchDocsRoute.responses[200]["content"]["application/json"]["schema"]>;
 
 const _docsRouter = new OpenAPIHono<AppEnv>();
 
@@ -94,7 +91,7 @@ type PartialDoc = {
 };
 
 type DocSearchCacheEntry = {
-  data: SearchDocsResponse;
+  data: any; // Using any for cache internal data to avoid circular complexity
   expiresAt: number;
 };
 
@@ -215,16 +212,16 @@ export const docsRouter = _docsRouter
           isDeleted: Number(d.isDeleted ?? 0),
           status: d.status ?? null,
           revisionOf: d.revisionOf ?? null,
-          zulipStream: undefined,
-          zulipTopic: undefined,
+          zulipStream: null,
+          zulipTopic: null,
           displayInAreslib: Number(d.displayInAreslib ?? 0),
           displayInMathCorner: Number(d.displayInMathCorner ?? 0),
           displayInScienceCorner: Number(d.displayInScienceCorner ?? 0),
-          originalAuthorNickname: ('originalAuthorNickname' in d ? d.originalAuthorNickname : undefined),
-          originalAuthorAvatar: ('originalAuthorAvatar' in d ? d.originalAuthorAvatar : undefined)
+          originalAuthorNickname: ('originalAuthorNickname' in d ? d.originalAuthorNickname : null),
+          originalAuthorAvatar: ('originalAuthorAvatar' in d ? d.originalAuthorAvatar : null)
         }));
 
-        return c.json({ docs }, 200);
+        return c.json({ docs: docs as RouteResponse<typeof docsRoutes.getDocsRoute>["docs"] }, 200);
     })
     .openapi(docsRoutes.searchDocsRoute, async (c) => {
       const query = c.req.valid("query");
@@ -241,7 +238,7 @@ export const docsRouter = _docsRouter
         const now = Date.now();
         const cached = docSearchCache.get(q);
         if (cached && cached.expiresAt > now) {
-          return c.json(cached.data, 200);
+          return c.json(cached.data as RouteResponse<typeof docsRoutes.searchDocsRoute>, 200);
         }
 
         // Sanitize FTS query to prevent SQL injection
@@ -273,7 +270,7 @@ export const docsRouter = _docsRouter
 
         const payload = { results: mapped };
         setCache(q, { data: payload, expiresAt: now + 60000 });
-        return c.json(payload, 200);
+        return c.json(payload as RouteResponse<typeof docsRoutes.searchDocsRoute>, 200);
     })
     .openapi(docsRoutes.adminListRoute, async (c) => {
         const db = getDb(c);
@@ -326,14 +323,16 @@ export const docsRouter = _docsRouter
           isDeleted: Number(d.isDeleted ?? 0),
           status: d.status ?? null,
           revisionOf: d.revisionOf ?? null,
-          zulipStream: undefined,
-          zulipTopic: undefined,
+          zulipStream: null,
+          zulipTopic: null,
           displayInAreslib: Number(d.displayInAreslib ?? 0),
           displayInMathCorner: Number(d.displayInMathCorner ?? 0),
-          displayInScienceCorner: Number(d.displayInScienceCorner ?? 0)
+          displayInScienceCorner: Number(d.displayInScienceCorner ?? 0),
+          originalAuthorNickname: null,
+          originalAuthorAvatar: null
         }));
 
-        return c.json({ docs }, 200);
+        return c.json({ docs: docs as RouteResponse<typeof docsRoutes.adminListRoute>["docs"] }, 200);
     })
     .openapi(docsRoutes.adminDetailRoute, async (c) => {
       const params = c.req.valid("param");
@@ -404,7 +403,7 @@ export const docsRouter = _docsRouter
           displayInScienceCorner: Number(row.displayInScienceCorner ?? 0)
         };
 
-        return c.json({ doc }, 200);
+        return c.json({ doc: doc as RouteResponse<typeof docsRoutes.adminDetailRoute>["doc"] }, 200);
     })
     .openapi(docsRoutes.getDocRoute, async (c) => {
       const params = c.req.valid("param");
@@ -504,11 +503,14 @@ export const docsRouter = _docsRouter
           displayInMathCorner: Number(row.displayInMathCorner ?? 0),
           displayInScienceCorner: Number(row.displayInScienceCorner ?? 0),
           updatedAt: row.updatedAt ?? undefined,
-          originalAuthorNickname: row.originalAuthorNickname ?? undefined,
-          originalAuthorAvatar: row.originalAuthorAvatar ?? undefined
+          originalAuthorNickname: row.originalAuthorNickname ?? null,
+          originalAuthorAvatar: row.originalAuthorAvatar ?? null
         };
 
-        return c.json({ doc, contributors }, 200);
+        return c.json({ 
+          doc: doc as RouteResponse<typeof docsRoutes.getDocRoute>["doc"], 
+          contributors: contributors as RouteResponse<typeof docsRoutes.getDocRoute>["contributors"]
+        }, 200);
     })
     .openapi(docsRoutes.deleteDocRoute, async (c) => {
       const params = c.req.valid("param");
@@ -588,7 +590,7 @@ export const docsRouter = _docsRouter
             .run();
 
           safeWaitUntil(c.executionCtx, notifyByRole(c, ["admin", "coach", "mentor"], {
-            title: "Ã°Å¸â€œÂ Doc Revision Pending",
+            title: "📄 Doc Revision Pending",
             message: `"${title}" revised by ${email} needs admin approval.`,
             link: "/dashboard/manage_docs",
             external: true,
@@ -662,13 +664,13 @@ export const docsRouter = _docsRouter
           const action = existing ? "updated" : "created";
           safeWaitUntil(c.executionCtx, (async () => {
             const socialConfig = await getSocialConfig(c);
-            await sendZulipMessage(socialConfig, "engineering", `Doc: ${title}`, `Ã°Å¸â€œÂ **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`);
+            await sendZulipMessage(socialConfig, "engineering", `Doc: ${title}`, `📄 **Doc ${action}:** [${title}](${siteConfig.urls.base}/docs/${slug}) (${category})`);
           })(), "Failed to send Zulip message for published doc");
         }
 
         if (status === "pending") {
           safeWaitUntil(c.executionCtx, notifyByRole(c, ["admin", "coach", "mentor"], {
-            title: "Ã°Å¸â€œÂ Pending Document",
+            title: "📄 Pending Document",
             message: `"${title}" submitted by ${email} needs review.`,
             link: "/dashboard/manage_docs",
             external: true,
@@ -737,7 +739,7 @@ export const docsRouter = _docsRouter
           createdAt: h.createdAt ?? "" // Ensure createdAt is never null
         }));
 
-        return c.json({ history }, 200);
+        return c.json({ history: history as RouteResponse<typeof docsRoutes.getHistoryRoute>["history"] }, 200);
     })
     .openapi(docsRoutes.restoreHistoryRoute, async (c) => {
       const params = c.req.valid("param");
@@ -800,26 +802,47 @@ export const docsRouter = _docsRouter
               slug: original.slug,
               title: original.title,
               category: original.category,
-              description: original.description,
+              description: original.description ?? "",
               content: original.content,
-              authorEmail: doc.cfEmail,
+              authorEmail: original.cfEmail ?? "system"
             }).run();
 
-            // 3. Update original doc with new content and metadata
+            // 3. Update original document with revision content
             await db.update(schema.docs).set({
-              content: doc.content,
               title: doc.title,
               category: doc.category,
               description: doc.description,
+              content: doc.content,
               updatedAt: new Date().toISOString(),
+              isPortfolio: doc.isPortfolio,
+              isExecutiveSummary: doc.isExecutiveSummary,
+              displayInAreslib: doc.displayInAreslib,
+              displayInMathCorner: doc.displayInMathCorner,
+              displayInScienceCorner: doc.displayInScienceCorner,
             }).where(eq(schema.docs.slug, original.slug)).run();
 
-            // 4. Delete the revision draft
+            // 4. Delete the revision document
             await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
 
+            safeWaitUntil(c.executionCtx, (async () => {
+              const socialConfig = await getSocialConfig(c);
+              await sendZulipMessage(socialConfig, "engineering", `Doc Approved: ${doc.title}`, `✅ **Revision Approved:** [${doc.title}](${siteConfig.urls.base}/docs/${original.slug})`);
+            })(), "Failed to send Zulip message for approved revision");
+
+            triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
             return c.json({ success: true }, 200);
           }
         }
+
+        // Normal approval for a new document
+        await db.update(schema.docs).set({ status: "published", updatedAt: new Date().toISOString() }).where(eq(schema.docs.slug, slug)).run();
+
+        safeWaitUntil(c.executionCtx, (async () => {
+          const socialConfig = await getSocialConfig(c);
+          await sendZulipMessage(socialConfig, "engineering", `Doc Approved: ${doc.title}`, `✅ **Doc Approved:** [${doc.title}](${siteConfig.urls.base}/docs/${slug})`);
+        })(), "Failed to send Zulip message for approved doc");
+
+        triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
         return c.json({ success: true }, 200);
     })
     .openapi(docsRoutes.rejectDocRoute, async (c) => {
@@ -828,15 +851,14 @@ export const docsRouter = _docsRouter
       const { slug } = params;
       const { reason } = body;
         const db = getDb(c);
-        const row = await db.select({
-          title: schema.docs.title,
-          cfEmail: schema.docs.cfEmail
-        })
-          .from(schema.docs)
-          .where(eq(schema.docs.slug, slug))
-          .get();
-        await db.update(schema.docs).set({ status: "rejected" }).where(eq(schema.docs.slug, slug)).run();
-        if (row?.cfEmail) {
+        const row = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
+        if (!row) {
+          throw new ApiError("Doc not found", 404);
+        }
+
+        await db.update(schema.docs).set({ status: "draft" }).where(eq(schema.docs.slug, slug)).run();
+
+        if (row.cfEmail) {
           const author = await db.select({ id: schema.user.id })
             .from(schema.user)
             .where(eq(schema.user.email, row.cfEmail))
@@ -885,8 +907,6 @@ export const docsRouter = _docsRouter
         }
 
         // 3. Database Cleanup
-        // SQLite enforces foreign keys if PRAGMA foreign_keys = ON is set
-        // But Cloudflare D1 doesn't consistently apply ON DELETE CASCADE, so we manually clean up
         await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
         c.executionCtx?.waitUntil?.(db.delete(schema.docsHistory).where(eq(schema.docsHistory.slug, slug)).run());
         c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
@@ -911,16 +931,16 @@ export const docsRouter = _docsRouter
             isDeleted: Number(row.isDeleted ?? 0),
             status: row.status ?? null,
             revisionOf: row.revisionOf ?? null,
-            zulipStream: row.zulipStream ?? undefined,
-            zulipTopic: row.zulipTopic ?? undefined,
+            zulipStream: row.zulipStream ?? null,
+            zulipTopic: row.zulipTopic ?? null,
             displayInAreslib: Number(row.displayInAreslib ?? 0),
             displayInMathCorner: Number(row.displayInMathCorner ?? 0),
             displayInScienceCorner: Number(row.displayInScienceCorner ?? 0),
             updatedAt: row.updatedAt ?? undefined,
-            originalAuthorNickname: undefined,
-            originalAuthorAvatar: undefined
+            originalAuthorNickname: null,
+            originalAuthorAvatar: null
         }));
-        return c.json({ docs }, 200);
+        return c.json({ docs: docs as RouteResponse<typeof docsRoutes.exportAllDocsRoute>["docs"] }, 200);
     })
     .openapi(docsRoutes.exportSingleDocRoute, async (c) => {
       const params = c.req.valid("param");
@@ -951,22 +971,7 @@ export const docsRouter = _docsRouter
         const markdown = `# ${doc.title ?? slug}\n\n**Category:** ${doc.category ?? "General"}\n\n${markdownContent}`;
         return c.text(markdown, 200, { "Content-Type": "text/plain; charset=utf-8" });
     });
-// GET /docs/search - Search docs
-// GET /docs/admin/list - List all docs (admin view)
-// GET /docs/admin/{slug}/detail - Get doc detail (admin view)
-// GET /docs/{slug} - Get single doc with contributors
-// DELETE /docs/admin/{slug} - Delete doc (soft delete)
-// POST /docs/admin/save - Save or update doc
-// PATCH /docs/admin/{slug}/sort - Update doc sort order
-// POST /docs/{slug}/feedback - Submit doc feedback
-// GET /docs/admin/{slug}/history - Get doc history
-// PATCH /docs/admin/{slug}/history/{id}/restore - Restore doc from history
-// POST /docs/admin/{slug}/approve - Approve doc
-// POST /docs/admin/{slug}/reject - Reject doc
-// POST /docs/admin/{slug}/undelete - Undelete doc
-// POST /docs/admin/{slug}/purge - Permanently delete doc
-// Export all docs as JSON
-// Export single doc as Markdown
+
 // TipTap node types
 interface TipTapTextNode {
   type: "text";
@@ -1034,8 +1039,3 @@ function tiptapToMarkdown(node: TipTapNode | TipTapTextNode): string {
 }
 
 export default docsRouter;
-
-
-
-
-

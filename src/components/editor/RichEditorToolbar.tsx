@@ -15,6 +15,8 @@ import { compressImage as _compressImage } from "../../utils/imageProcessor";
 import { Maximize, Minimize } from "lucide-react";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";
+import GalleryPickerModal from "../GalleryPickerModal";
+import VideoPickerModal from "../VideoPickerModal";
 import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
 
@@ -119,6 +121,8 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
+  const [isGalleryPickerOpen, setIsGalleryPickerOpen] = useState(false);
+  const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"Saved ✓" | "Saving...">("Saved ✓");
@@ -237,6 +241,8 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
 
         {/* Media */}
         <button type="button" aria-label="Select Image" title="Select Image" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
+        <button type="button" aria-label="Insert Gallery" title="Insert Photo Gallery" onClick={() => setIsGalleryPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📷 Gallery</button>
+        <button type="button" aria-label="Insert Video" title="Insert Video" onClick={() => setIsVideoPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-danger-soft hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🎬 Video</button>
         <button type="button" aria-label="Insert Simulator" title="Insert Simulator" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-danger-soft hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
         <Sep />
 
@@ -446,6 +452,30 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
             attrs: { componentName: simId }
           }).run();
           setIsSimPickerOpen(false);
+        }}
+      />
+
+      <GalleryPickerModal
+        isOpen={isGalleryPickerOpen}
+        onClose={() => setIsGalleryPickerOpen(false)}
+        onSelect={(galleryId, title) => {
+          editor.chain().focus().insertContent({
+            type: 'galleryEmbed',
+            attrs: { galleryId, title }
+          }).run();
+          setIsGalleryPickerOpen(false);
+        }}
+      />
+
+      <VideoPickerModal
+        isOpen={isVideoPickerOpen}
+        onClose={() => setIsVideoPickerOpen(false)}
+        onSelect={(videoId, title) => {
+          editor.chain().focus().insertContent({
+            type: 'videoEmbed',
+            attrs: { videoId, title }
+          }).run();
+          setIsVideoPickerOpen(false);
         }}
       />
     </div>

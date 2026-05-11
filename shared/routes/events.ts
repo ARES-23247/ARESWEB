@@ -8,13 +8,16 @@ import { toCamelCaseResponse } from "../db/schema-openapi";
 // Response schema derived from Drizzle selectEventSchema
 export const eventResponseSchema = toCamelCaseResponse(
   selectEventSchema
-).openapi({
+).extend({
+  locationAddress: z.string().nullable().optional(),
+}).openapi({
   example: {
     id: "abc123",
     title: "Team Meeting",
     dateStart: "2025-01-15T18:00:00Z",
     dateEnd: "2025-01-15T20:00:00Z",
     location: "ARES Lab",
+    locationAddress: "123 Robot Lane, City, ST 12345",
     description: "Weekly team meeting to discuss upcoming competitions...",
     coverImage: "/images/team-meeting.jpg",
     status: "published",

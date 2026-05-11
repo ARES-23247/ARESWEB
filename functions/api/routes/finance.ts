@@ -1,8 +1,9 @@
 import { eq, desc, inArray, sum, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { z } from "zod";
 
-import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb } from "../middleware";
+import { AppEnv, ensureAdmin, rateLimitMiddleware, logAuditAction, getSessionUser, getDb, ApiError } from "../middleware";
 
 import * as financeRoutes from "../../../shared/routes/finance";
 
@@ -17,6 +18,9 @@ interface SponsorshipAssignment {
   sponsorshipId: string;
   userId: string;
 }
+
+// Helper types for strict casting
+type RouteResponse<T> = T extends { responses: { 200: { content: { "application/json": { schema: infer S } } } } } ? (S extends z.ZodTypeAny ? z.infer<S> : never) : never;
 
 // GET /finance/summary - Get financial summary for a season
 export const financeRouter = _financeRouter
@@ -70,7 +74,7 @@ export const financeRouter = _financeRouter
           queryBuilder = queryBuilder.where(eq(schema.sponsorshipPipeline.seasonId, Number(seasonId)));
         }
         const pipeline = await queryBuilder.orderBy(desc(schema.sponsorshipPipeline.createdAt)).all();
-        const pipelineIds = pipeline.map((p) => p.id).filter(Boolean);
+        const pipelineIds = pipeline.map((p) => p.id).filter((id): id is string => !!id);
 
         let assignments: SponsorshipAssignment[] = [];
         if (pipelineIds.length > 0) {
@@ -91,18 +95,17 @@ export const financeRouter = _financeRouter
           createdAt: p.createdAt,
         }));
 
-        return c.json({ pipeline: result }, 200); })
+        return c.json({ pipeline: result as any }, 200); })
     .openapi(financeRoutes.savePipelineRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
         const user = await getSessionUser(c);
 
-        // CR-05 FIX: Require proper authorization for pipeline modifications
         if (!user) {
-          return c.json({ error: "Unauthorized" }, 401);
+          throw new ApiError("Unauthorized", 401);
         }
         if (user.role !== "admin" && user.memberType !== "mentor" && user.memberType !== "coach") {
-          return c.json({ error: "Forbidden" }, 403);
+          throw new ApiError("Forbidden", 403);
         }
 
         const id = body.id || crypto.randomUUID();
@@ -223,33 +226,31 @@ export const financeRouter = _financeRouter
           loggedBy: t.loggedBy,
         }));
 
-        return c.json({ transactions: result }, 200);
+        return c.json({ transactions: result as any }, 200);
     })
     .openapi(financeRoutes.saveTransactionRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
         const user = await getSessionUser(c);
 
-        // CR-05 FIX: Require proper authorization for transaction modifications
         if (!user) {
-          return c.json({ error: "Unauthorized" }, 401);
+          throw new ApiError("Unauthorized", 401);
         }
         if (user.role !== "admin" && user.memberType !== "mentor" && user.memberType !== "coach") {
-          return c.json({ error: "Forbidden" }, 403);
+          throw new ApiError("Forbidden", 403);
         }
 
         const id = body.id ?? crypto.randomUUID();
         const isNew = !body.id;
 
-        // WR-15: Validate transaction amount and type
         const amount = Number(body.amount);
         if (Number.isNaN(amount) || amount < 0 || amount > 1000000) {
-          return c.json({ error: "Invalid amount: must be between 0 and 1,000,000" }, 400);
+          throw new ApiError("Invalid amount: must be between 0 and 1,000,000", 400);
         }
 
-        const validTypes: readonly ["income", "expense"] = ["income", "expense"] as const;
-        if (!body.type || !validTypes.includes(body.type)) {
-          return c.json({ error: "Invalid transaction type: must be 'income' or 'expense'" }, 400);
+        const validTypes = ["income", "expense"] as const;
+        if (!body.type || !validTypes.includes(body.type as any)) {
+          throw new ApiError("Invalid transaction type: must be 'income' or 'expense'", 400);
         }
 
         const data = {
@@ -284,7 +285,7 @@ export const financeRouter = _financeRouter
           .get();
 
         if (!tx) {
-          return c.json({ error: "Transaction not found" }, 404);
+          throw new ApiError("Transaction not found", 404);
         }
 
         await db.delete(schema.financeTransactions).where(eq(schema.financeTransactions.id, id)).run();
@@ -303,10 +304,5 @@ export const financeRouter = _financeRouter
         await logAuditAction(c, "delete", "finance_transactions", id);
         return c.json({ success: true }, 200);
     });
-// GET /finance/sponsorship - List sponsorship pipeline items
-// POST /finance/sponsorship - Create or update a sponsorship pipeline item
-// DELETE /finance/sponsorship/{id} - Delete a sponsorship pipeline item
-// GET /finance/transactions - List financial transactions
-// POST /finance/transactions - Create or update a financial transaction
-// DELETE /finance/transactions/{id} - Delete a financial transaction
+
 export default financeRouter;
