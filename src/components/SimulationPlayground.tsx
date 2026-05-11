@@ -507,7 +507,7 @@ export default function SimulationPlayground() {
 
               <Panel defaultSize={60} minSize={25}>
                 {/* Monaco Editor */}
-                <div className="flex-1 min-h-0 bg-obsidian-surface flex flex-col">
+                <div className="h-full w-full bg-obsidian-surface flex flex-col overflow-hidden">
                   <Suspense fallback={<textarea className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
                     <MonacoEditor
                       height="100%"
