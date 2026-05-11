@@ -49,7 +49,7 @@ export default function LocationsManager() {
 
   const deleteMutation = useDeleteLocation({
     onSuccess: () => {
-      toast.success("Venue deactivated.");
+      toast.success("Venue permanently deleted.");
     }
   });
 
@@ -83,13 +83,12 @@ export default function LocationsManager() {
   const handleEdit = (l: Location) => {
     setEditingId(l.id !== undefined ? l.id : null);
     setIsAdding(true);
-    form.reset({
-      id: l.id,
-      name: l.name,
-      address: l.address ?? "",
-      mapsUrl: l.mapsUrl ?? "",
-      isDeleted: l.isDeleted ?? 0
-    });
+    // Use setFieldValue instead of reset for better form state management
+    form.setFieldValue("id", l.id);
+    form.setFieldValue("name", l.name);
+    form.setFieldValue("address", l.address ?? "");
+    form.setFieldValue("mapsUrl", l.mapsUrl ?? "");
+    form.setFieldValue("isDeleted", l.isDeleted ?? 0);
   };
 
   // Form submission handled in form definition
@@ -146,11 +145,14 @@ export default function LocationsManager() {
                     </div>
                     <div className="flex items-center gap-2">
                       {l.isDeleted ? (
-                        <button onClick={() => saveMutation.mutate({ ...l, isDeleted: 0 } as Location)} className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm">RESTORE</button>
+                        <>
+                          <button onClick={() => saveMutation.mutate({ ...l, isDeleted: 0 } as Location)} className="p-2 text-xs text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm font-bold">RESTORE</button>
+                          <button onClick={() => { if (l.id && confirm("Permanently delete this location? This cannot be undone.")) deleteMutation.mutate(l.id); }} title="Permanently delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
+                        </>
                       ) : (
                         <>
                           <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => { if (l.id && confirm("Permanently delete this location?")) deleteMutation.mutate(l.id); }} title="Permanently delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
+                          <button onClick={() => { if (l.id && confirm("Deactivate this location?")) saveMutation.mutate({ ...l, isDeleted: 1 } as Location); }} title="Deactivate venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
                         </>
                       )}
                     </div>
