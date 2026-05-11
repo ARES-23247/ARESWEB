@@ -12,21 +12,23 @@ import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 // Schema for validation
+const numericFieldSchema = z.union([z.string(), z.number()]).refine(val => val === "" || Number(val) >= 0, "Must be a positive number");
+
 const outreachSchema = z.object({
   id: z.number().nullable().optional(),
   title: z.string().min(1, "Title is required"),
   date: z.string(),
   location: z.string().nullable().optional(),
-  studentsCount: z.coerce.number().min(0),
-  hours: z.coerce.number().min(0),
-  peopleReached: z.coerce.number().min(0),
+  studentsCount: numericFieldSchema,
+  hours: numericFieldSchema,
+  peopleReached: numericFieldSchema,
   impactSummary: z.string().nullable().optional(),
   isMentoring: z.boolean().optional(),
   mentoredTeamNumber: z.string().nullable().optional(),
   seasonId: z.number().nullable().optional(),
   eventId: z.string().nullable().optional(),
-  mentorCount: z.coerce.number().optional(),
-  mentorHours: z.coerce.number().optional(),
+  mentorCount: numericFieldSchema.optional(),
+  mentorHours: numericFieldSchema.optional(),
 });
 
 interface OutreachLog {
