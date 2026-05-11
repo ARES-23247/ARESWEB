@@ -168,11 +168,6 @@ test.describe('Mass Email Composer Dashboard', () => {
     await editor.click();
     await editor.fill('Test email content for loading state verification.');
 
-    // Mock window.confirm to accept the send
-    await page.evaluate(() => {
-      window.confirm = () => true;
-    });
-
     // Intercept the API call to delay response for testing loading state
     await page.route('**/api/communications/admin/mass-email', async (route) => {
       // Delay the response to ensure loading state is visible (increased from 500ms)
@@ -181,6 +176,11 @@ test.describe('Mass Email Composer Dashboard', () => {
         status: 200,
         json: { success: true, message: 'Emails dispatched successfully', recipientCount: 42 },
       });
+    });
+
+    // Handle the confirm dialog by auto-accepting it
+    page.on('dialog', async dialog => {
+      await dialog.accept();
     });
 
     // Click dispatch button
@@ -303,11 +303,6 @@ test.describe('Mass Email Composer Dashboard', () => {
     await editor.click();
     await editor.fill('Test email content for accessibility testing.');
 
-    // Mock window.confirm to accept the send
-    await page.evaluate(() => {
-      window.confirm = () => true;
-    });
-
     // Intercept the API call to delay response
     await page.route('**/api/communications/admin/mass-email', async (route) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -315,6 +310,11 @@ test.describe('Mass Email Composer Dashboard', () => {
         status: 200,
         json: { success: true, message: 'Emails dispatched successfully', recipientCount: 42 },
       });
+    });
+
+    // Handle the confirm dialog by auto-accepting it
+    page.on('dialog', async dialog => {
+      await dialog.accept();
     });
 
     // Click dispatch button

@@ -72,13 +72,26 @@ export class ApiError extends Error {
 export async function unwrapResponse<T>(response: ClientResponse<unknown>): Promise<T> {
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as { 
-      error?: string; 
+      error?: string | { issues?: { path?: (string | number)[]; message?: string }[] }; 
       message?: string; 
       code?: string;
       details?: unknown 
     };
     
-    const errMsg = errorData.message || errorData.error || `API Error: ${response.status}`;
+    let errMsg = `API Error: ${response.status}`;
+    if (typeof errorData.message === "string") {
+      errMsg = errorData.message;
+    } else if (typeof errorData.error === "string") {
+      errMsg = errorData.error;
+    } else if (errorData.error && typeof errorData.error === "object") {
+      if (Array.isArray(errorData.error.issues)) {
+        errMsg = errorData.error.issues
+          .map((i) => `${i.path && i.path.length > 0 ? i.path.join(".") + ": " : ""}${i.message}`)
+          .join(", ");
+      } else {
+        errMsg = JSON.stringify(errorData.error);
+      }
+    }
     
     // Log detailed validation errors in development
     if (response.status === 400 && errorData.details) {

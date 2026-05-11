@@ -108,7 +108,7 @@ export const saveLocationRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: locationSchema.openapi({
+          schema: locationSchema.extend({ id: z.string().optional() }).openapi({
             description: "Location to create or update. Include id to update existing location.",
           }),
         },

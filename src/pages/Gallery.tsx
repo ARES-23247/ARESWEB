@@ -1,6 +1,8 @@
 import SEO from "../components/SEO";
 import ResponsiveImage from "../components/ResponsiveImage";
+import { ImageLightbox } from "../components/ImagePickerModal";
 import { useGetMedia, useGetPublicSettings, type R2MediaItem } from "../api";
+import { useState } from "react";
 
 // Generate descriptive alt text for images with location context
 function generateImageAlt(key: string, index: number): string {
@@ -20,6 +22,19 @@ export default function Gallery() {
   const { data: mediaRes, isLoading, isError } = useGetMedia();
 
   const { data: settingsRes } = useGetPublicSettings();
+
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+  const [lightboxImageAlt, setLightboxImageAlt] = useState<string>("");
+
+  const openLightbox = (imageUrl: string, altText: string) => {
+    setLightboxImageUrl(imageUrl);
+    setLightboxImageAlt(altText);
+  };
+
+  const closeLightbox = () => {
+    setLightboxImageUrl(null);
+    setLightboxImageAlt("");
+  };
 
   const data = mediaRes || null;
   const photoDriveUrl = settingsRes?.settings?.["COMMUNITY_PHOTO_DRIVE_URL"] || null;
@@ -76,20 +91,30 @@ export default function Gallery() {
             // Assign varying aspect ratios for masonry visualization
             const aspects = ["aspect-video", "aspect-[3/4]", "aspect-[4/5]", "aspect-square"];
             const assignedAspect = aspects[index % aspects.length];
+            const imageUrl = `/api/media/${photo.key}`;
+            const altText = generateImageAlt(photo.key, index);
 
             return (
               <div
                 key={photo.key}
+                onClick={() => openLightbox(imageUrl, altText)}
                 className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect}`}
               >
                 <ResponsiveImage
-                   src={`/api/media/${photo.key}`}
-                   alt={generateImageAlt(photo.key, index)}
+                   src={imageUrl}
+                   alt={altText}
                    className="absolute inset-0 w-full h-full"
                    imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
                   <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{photo.key.split("-").slice(1).join("-")}</p>
+                </div>
+                <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v2m0-2h3m-3 0H7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             );
@@ -97,6 +122,16 @@ export default function Gallery() {
         </div>
       )}
       </div>
+
+      {/* Lightbox for viewing images */}
+      {lightboxImageUrl && (
+        <ImageLightbox
+          isOpen={!!lightboxImageUrl}
+          onClose={closeLightbox}
+          imageUrl={lightboxImageUrl}
+          imageAlt={lightboxImageAlt}
+        />
+      )}
     </main>
   );
 }
