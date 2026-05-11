@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, lazy, Suspense, useEffect } from "react";
+import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, AlertTriangle } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -148,7 +148,7 @@ export default function SimulationPlayground() {
   // TODO: add AI change accept/reject UI buttons
   const _handleRejectAiChanges = useCallback(() => {
     setPendingAiChanges(null);
-    setChatMessages(prev => [...prev, { role: "assistant", content: "âŒ Changes rejected. The original code has been restored." }]);
+    setChatMessages(prev => [...prev, { role: "assistant", content: "❌ Changes rejected. The original code has been restored." }]);
   }, [setChatMessages]);
 
   const handleToggleLibrary = useCallback(() => {
@@ -437,7 +437,7 @@ export default function SimulationPlayground() {
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-obsidian">
           <div className="flex items-center gap-2 flex-1">
-            <span className="text-ares-gold font-black text-xs uppercase tracking-[0.2em]">âš¡ Sim Playground</span>
+            <span className="text-ares-gold font-black text-xs uppercase tracking-[0.2em]">⚡ Sim Playground</span>
             <input
               type="text"
               value={simName}

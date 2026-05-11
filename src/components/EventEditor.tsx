@@ -141,8 +141,22 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         form.setFieldValue("publishedAt", (event as any).publishedAt || "");
         form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const socials = (eventRes as any).socials;
-        form.setFieldValue("socials", (socials && typeof socials === 'object' && !Array.isArray(socials) ? socials : {}) as Record<string, boolean>);
+        const defaultSocials = {
+          discord: true,
+          bluesky: true,
+          slack: false,
+          teams: false,
+          gchat: false,
+          facebook: false,
+          twitter: false,
+          instagram: false
+        };
+        const rawSocials = (eventRes as any).socials;
+        const mergedSocials = {
+          ...defaultSocials,
+          ...(rawSocials && typeof rawSocials === 'object' && !Array.isArray(rawSocials) ? rawSocials : {})
+        };
+        form.setFieldValue("socials", mergedSocials as any);
 
         // Parse rrule
         let parsedFreq = "";
