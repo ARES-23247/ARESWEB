@@ -57,8 +57,9 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 			if (isSavingRef.current) return;
 			isSavingRef.current = true;
 
+			const { email: _email, ...profileFields } = value;
 			const formatted = {
-				...value,
+				...profileFields,
 				subteams: JSON.stringify(value.subteams),
 				dietaryRestrictions: JSON.stringify(value.dietaryRestrictions),
 				colleges: JSON.stringify(value.colleges),
