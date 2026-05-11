@@ -48,6 +48,10 @@ export default function Navbar() {
     setActiveDropdown(activeDropdown === name ? null : name);
   };
 
+  const isDashboard = location.pathname.startsWith("/dashboard");
+
+  if (isDashboard) return null;
+
   return (
     <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
       <a
@@ -128,13 +132,7 @@ export default function Navbar() {
         </div>
 
         <button
-          onClick={() => {
-            if (window.innerWidth < 768) {
-              setSidebarOpen(true);
-            } else {
-              setOpen(!open);
-            }
-          }}
+          onClick={() => setOpen(!open)}
           className="md:hidden text-ares-gold w-10 h-10 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded transition-colors group"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           {...(open ? { "aria-expanded": true } : { "aria-expanded": false })}

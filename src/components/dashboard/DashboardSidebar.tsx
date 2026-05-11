@@ -1,4 +1,4 @@
-﻿import { Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
@@ -9,6 +9,7 @@ import { signOut, useSession } from "../../utils/auth-client";
 import { DashboardSession, DashboardPermissions } from "../../hooks/useDashboardSession";
 import { lazy } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUIStore } from "../../store/uiStore";
 
 const AvatarEditor = lazy(() => import("../AvatarEditor"));
 
@@ -91,7 +92,7 @@ export default function DashboardSidebar({
   };
 }) {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { isSidebarOpen, setSidebarOpen } = useUIStore();
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -129,7 +130,7 @@ export default function DashboardSidebar({
           </h1>
         </div>
         <button
-          onClick={() => setIsSidebarOpen(true)}
+          onClick={() => setSidebarOpen(true)}
           className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble transition-colors"
           aria-label="Open sidebar"
         >
@@ -142,7 +143,7 @@ export default function DashboardSidebar({
         <div
           role="presentation"
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
@@ -156,7 +157,7 @@ export default function DashboardSidebar({
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
             <span className="text-xs font-black text-marble/60 uppercase tracking-widest">Navigation Menu</span>
-            <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setIsSidebarOpen(false)} aria-label="Close sidebar">
+            <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
               <X size={16} />
             </button>
           </div>
