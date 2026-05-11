@@ -432,7 +432,7 @@ describe("TaskDetailsModal Component", () => {
 
     const input = screen.getByPlaceholderText("Add a new subtask...");
     fireEvent.change(input, { target: { value: "New subtask" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
 
     // Should have called mutateAsync (via the mocked hook)
     expect((input as HTMLInputElement).value).toBe(""); // Cleared after submission
