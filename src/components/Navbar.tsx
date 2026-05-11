@@ -10,7 +10,6 @@ import { NavbarMobileMenu } from "./navigation/NavbarMobileMenu";
 import { TeamDropdown } from "./navigation/NavDropdown";
 
 export default function Navbar() {
-  const { setSidebarOpen } = useUIStore();
   const [open, setOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navbarRef = useRef<HTMLElement>(null);
