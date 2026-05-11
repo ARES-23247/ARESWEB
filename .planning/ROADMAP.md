@@ -106,15 +106,12 @@ This work completes the v7.1 Drizzle ORM migration goals that were previously ma
 **Goal:** [Completed] Standardized all 30+ backend routers to use `.openapi()` chaining for type propagation.
 **Plans:** 1/1 plans complete (executed inline)
 
-### Phase 71: API Route Hardening 🚧
-**Goal:** Remove `any` from `honoClient.ts` and ensure full end-to-end type inference.
+### Phase 71: API Route Hardening ✅
+**Goal:** [Completed] Remove `any` from `honoClient.ts` and ensure full end-to-end type inference.
 **Depends on:** Phase 70
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete (executed inline)
 
-Plans:
-- [ ] TBD (run /gsd-plan-phase 71 to break down)
-
-### Phase 72: Component State and Forms
+### Phase 72: Component State and Forms 🚧
 
 **Goal:** [To be planned]
 **Requirements**: TBD
