@@ -89,15 +89,16 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
 
     const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-    let tasks: any[];
+    type TaskQueryResult = Awaited<ReturnType<typeof finalQuery.all>>;
+    let tasks: TaskQueryResult;
     try {
       tasks = await finalQuery
         .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
         .limit(limit)
         .offset(Number(offset))
         .all();
-    } catch (e: any) {
-      console.error("SQL ERROR EXACT:", e.message, e.cause);
+    } catch (e: unknown) {
+      console.error("SQL ERROR EXACT:", e instanceof Error ? e.message : String(e));
       throw e;
     }
 

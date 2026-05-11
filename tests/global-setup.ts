@@ -29,8 +29,8 @@ async function globalSetup(_config: FullConfig) {
       }
       console.log(`[E2E Fail-Safe] Environment verified as safe: '${data.environment}'`);
     }
-  } catch (error: any) {
-    if (error.message.includes("ABORTING")) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes("ABORTING")) {
       throw error; // Re-throw the explicit abort
     }
     // If fetch fails entirely (e.g. ECONNREFUSED), the tests will fail anyway.
