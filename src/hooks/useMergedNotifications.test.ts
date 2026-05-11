@@ -1,4 +1,4 @@
-﻿ 
+ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderWithProviders } from "../test/utils";
 import { useMergedNotifications } from "./useMergedNotifications";
@@ -216,7 +216,7 @@ describe("useMergedNotifications Hook", () => {
             notifications: [
               {
                 id: "notif-1",
-                title: "ðŸ“ Pending Blog Post",
+                title: "📍 Pending Blog Post",
                 message: "Pending post",
                 is_read: false,
               },
@@ -256,13 +256,13 @@ describe("useMergedNotifications Hook", () => {
             notifications: [
               {
                 id: "notif-1",
-                title: "ðŸ“ Pending Document",
+                title: "📍 Pending Document",
                 message: "Pending doc",
                 is_read: false,
               },
               {
                 id: "notif-2",
-                title: "ðŸ“ Doc Revision Pending",
+                title: "📍 Doc Revision Pending",
                 message: "Pending revision",
                 is_read: false,
               },

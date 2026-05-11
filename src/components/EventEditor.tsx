@@ -17,7 +17,7 @@ import { useModal } from "../contexts/ModalContext";
 import { DEFAULT_coverImage } from "../utils/constants";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent } from "../api";
+import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent, type Event } from "../api";
 
 import { type Location } from "../api/locations";
 
@@ -118,7 +118,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       if (!active) return;
       
       if (eventRes?.event) {
-        const event = eventRes.event;
+        const event = eventRes.event as Event & { publishedAt?: string; socials?: Record<string, boolean> };
         const formatForInput = (d: string | null | undefined) => {
           if (!d) return "";
           if (d.length === 10) return d + "T00:00";
@@ -137,11 +137,10 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         form.setFieldValue("tbaEventKey", event.tbaEventKey || "");
         form.setFieldValue("isPotluck", event.isPotluck === 1);
         form.setFieldValue("isVolunteer", event.isVolunteer === 1);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        form.setFieldValue("publishedAt", (event as any).publishedAt || "");
+        form.setFieldValue("publishedAt", event.publishedAt || "");
         form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const defaultSocials = {
+
+        const defaultSocials: Record<string, boolean> = {
           discord: true,
           bluesky: true,
           slack: false,
@@ -151,12 +150,12 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
           twitter: false,
           instagram: false
         };
-        const rawSocials = (eventRes as any).socials;
+        const rawSocials = event.socials;
         const mergedSocials = {
           ...defaultSocials,
           ...(rawSocials && typeof rawSocials === 'object' && !Array.isArray(rawSocials) ? rawSocials : {})
         };
-        form.setFieldValue("socials", mergedSocials as any);
+        form.setFieldValue("socials", mergedSocials);
 
         // Parse rrule
         let parsedFreq = "";
