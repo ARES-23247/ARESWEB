@@ -37,14 +37,21 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editing workflow - update name and bio', async ({ page }) => {
-    // Add delay to the profile update API to ensure loading state is visible
+    // Mock the PUT endpoint to return success and add delay for loading state
     // This is needed because mock auth resolves too quickly
-    await page.route('**/profile*/me', async (route) => {
+    await page.route('**/api/profile/me', async (route) => {
       if (route.request().method() === 'PUT') {
         // Add small delay to make the loading state visible
         await new Promise(resolve => setTimeout(resolve, 100));
+        // Return success response
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+      } else {
+        // For GET requests, continue to the default mock
+        route.continue();
       }
-      route.continue();
     });
 
     await page.goto('/dashboard/profile');

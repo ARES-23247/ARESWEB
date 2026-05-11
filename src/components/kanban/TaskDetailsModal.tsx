@@ -329,33 +329,44 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                     ))}
                   </div>
                 )}
-                <div className="flex items-center gap-2 mt-2">
+                <form 
+                  className="flex items-center gap-2 mt-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const input = form.elements.namedItem("subtaskTitle") as HTMLInputElement;
+                    const title = input.value.trim();
+                    if (!title) return;
+                    input.value = "";
+                    input.disabled = true;
+                    try {
+                      await createSubtaskMutation.mutateAsync({ title, parentId: task.id });
+                    } catch (err) {
+                      console.error("Failed to create subtask:", err);
+                    } finally {
+                      if (input) {
+                        input.disabled = false;
+                        input.focus();
+                      }
+                    }
+                  }}
+                >
                   <input
                     type="text"
+                    name="subtaskTitle"
                     id="new-subtask-input"
                     placeholder="Add a new subtask..."
                     className="flex-1 bg-black/40 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
-                    onKeyDown={async (e) => {
-                      if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                        const target = e.currentTarget;
-                        const title = target.value.trim();
-                        target.value = "";
-                        target.disabled = true;
-                        try {
-                          await createSubtaskMutation.mutateAsync({ title, parentId: task.id });
-                        } catch (err) {
-                          console.error("Failed to create subtask:", err);
-                        } finally {
-                          // Check if element still exists before accessing it
-                          if (target) {
-                            target.disabled = false;
-                            target.focus();
-                          }
-                        }
-                      }
-                    }}
                   />
-                </div>
+                  <button
+                    type="submit"
+                    className="bg-ares-cyan hover:bg-ares-cyan/80 text-black p-2.5 ares-cut-sm font-bold flex items-center justify-center transition-colors disabled:opacity-50"
+                    disabled={createSubtaskMutation.isPending}
+                    title="Add Subtask"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </form>
               </div>
             </div>
 
@@ -393,20 +404,35 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                   </div>
                 ))}
                 
-                <input
-                  type="text"
-                  value={newChecklist}
-                  onChange={(e) => setNewChecklist(e.target.value)}
-                  placeholder="Add an item..."
-                  className="bg-black/40 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 mt-1 transition-colors w-full"
-                  onKeyDown={async (e) => {
-                    if (e.key === "Enter" && newChecklist.trim()) {
-                      await createChecklistMutation.mutateAsync({ id: task.id, content: newChecklist.trim() });
-                      setNewChecklist("");
-                    }
-                  }}
-                />
-              </div>
+              <form 
+                className="mt-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (newChecklist.trim()) {
+                    await createChecklistMutation.mutateAsync({ id: task.id, content: newChecklist.trim() });
+                    setNewChecklist("");
+                  }
+                }}
+              >
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={newChecklist}
+                    onChange={(e) => setNewChecklist(e.target.value)}
+                    placeholder="Add an item..."
+                    className="flex-1 bg-black/40 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-ares-cyan hover:bg-ares-cyan/80 text-black p-2.5 ares-cut-sm font-bold flex items-center justify-center transition-colors disabled:opacity-50"
+                    disabled={!newChecklist.trim() || createChecklistMutation.isPending}
+                    title="Add Checklist Item"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </form>
+            </div>
             </div>
 
             {/* Attachments */}

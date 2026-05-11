@@ -118,7 +118,7 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
         .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
         .limit(limit)
         .offset(Number(offset))
-        .all();
+        .all() as any;
     } catch (e: unknown) {
       console.error("SQL ERROR EXACT:", e instanceof Error ? e.message : String(e));
       throw e;

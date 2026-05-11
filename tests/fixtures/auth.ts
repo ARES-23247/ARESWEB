@@ -21,25 +21,6 @@ export function getBaseUrl(): string {
 }
 
 /**
- * Get the appropriate cookie domain for the current test environment.
- * Returns undefined for localhost (browser handles correctly) or hostname for remote domains.
- */
-export function getCookieDomain(): string | undefined {
-  const baseUrl = getBaseUrl();
-  try {
-    const url = new URL(baseUrl);
-    // For localhost/127.0.0.1, use undefined (browser handles correctly)
-    // For remote domains, use the hostname
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-      return undefined;
-    }
-    return url.hostname;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
  * Test credentials for real authentication in remote testing mode.
  * These credentials should exist in the seeded database.
  */
@@ -156,9 +137,16 @@ export async function setupMockAuth(
   });
 
   // Mock /profile/me and /profiles/me endpoints (unless skipped)
-  // The API uses /api/profiles/me, so we need to mock both patterns
+  // The API uses /api/profile/me (singular), so we need to match both patterns
   if (!skipProfileMock) {
-    await page.route('**/profile*/me', async (route) => {
+    // Match both /api/profile/me and /api/profiles/me for compatibility
+    await page.route('**/api/profile/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: createMockProfile(userId),
+      });
+    });
+    await page.route('**/api/profiles/me', async (route) => {
       await route.fulfill({
         status: 200,
         json: createMockProfile(userId),
@@ -166,18 +154,17 @@ export async function setupMockAuth(
     });
   }
 
-  // Set auth cookie with dynamic domain for remote testing
-  const cookieDomain = getCookieDomain();
+  // Set auth cookie with dynamic url for both local and remote testing
   const baseUrl = getBaseUrl();
   const isSecure = baseUrl.startsWith('https://');
   const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
 
+  // Use url for cookies (works for both localhost and remote domains)
   await page.context().addCookies([
     {
       name: cookieName,
       value: 'mockup-session-id',
-      domain: cookieDomain,
-      path: '/',
+      url: baseUrl,
       httpOnly: true,
       sameSite: 'Lax' as const,
       secure: isSecure,
@@ -262,7 +249,6 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
     }
 
     // Set the session cookie from the response
-    const cookieDomain = getCookieDomain();
     const isSecure = baseUrl.startsWith('https://');
     const cookieName = isSecure ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
 
@@ -270,8 +256,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
       {
         name: cookieName,
         value: data.sessionToken,
-        domain: cookieDomain,
-        path: '/',
+        url: baseUrl,
         httpOnly: true,
         sameSite: 'Lax' as const,
         secure: isSecure,
@@ -290,9 +275,9 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
 
     if (!hasSession) {
       console.error(`[Auth] Cookie verification FAILED! get-session returned:`, JSON.stringify(verifyData).slice(0, 200));
-      console.error(`[Auth] Cookie details: name=${cookieName}, domain=${cookieDomain}, secure=${isSecure}`);
+      console.error(`[Auth] Cookie details: name=${cookieName}, url=${baseUrl}, secure=${isSecure}`);
       console.error(`[Auth] Token preview: ${data.sessionToken.slice(0, 40)}...`);
-      throw new Error(`Auth cookie not accepted by server. Cookie: ${cookieName}, Domain: ${cookieDomain}`);
+      throw new Error(`Auth cookie not accepted by server. Cookie: ${cookieName}, URL: ${baseUrl}`);
     }
 
     console.log(`[Auth] Real auth setup for user: ${data.user.email} (${data.user.role}) [verified]`);

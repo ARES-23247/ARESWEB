@@ -29,7 +29,17 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
       const res = await fetch(`/api/zulip/topic?stream=${encodeURIComponent(stream)}&topic=${encodeURIComponent(topic)}`);
       if (!res.ok) {
         if (res.status === 403) throw new Error("Bot not subscribed to this stream.");
-        throw new Error("Failed to fetch messages.");
+        
+        let errorMsg = "Failed to fetch messages.";
+        try {
+          const errData = (await res.json()) as { error?: string };
+          if (errData && errData.error) {
+            errorMsg = errData.error;
+          }
+        } catch (_e) {
+          // ignore parse error
+        }
+        throw new Error(errorMsg);
       }
       const json = await res.json() as { success: boolean, messages: ZulipMessage[] };
       return json.messages || [];
