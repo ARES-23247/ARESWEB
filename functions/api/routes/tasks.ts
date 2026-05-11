@@ -101,12 +101,12 @@ tasksRouter.openapi(listTasksRoute, async (c) => {
       startDate: string | null;
       estimatedMinutes: number | null;
       coverImage: string | null;
-      sortOrder: number;
+      sortOrder: number | null;
       parentId: string | null;
-      timeSpentSeconds: number;
+      timeSpentSeconds: number | null;
       createdBy: string;
-      createdAt: string;
-      updatedAt: string;
+      createdAt: string | null;
+      updatedAt: string | null;
       creatorName: string | null;
       assigneeName: string | null;
       assignedTo: string | null;
