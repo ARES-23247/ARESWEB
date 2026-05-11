@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles } from "lucide-react";
+import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles, X, Globe, Clock } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
@@ -46,12 +46,18 @@ interface GithubSim {
 export default function SimulationPlayground() {
   // File Management Hook
   const {
+    savedSims,
+    githubSims,
+    isLoadingSims,
+    isLoadingGithubSims,
     simId,
     setSimId,
     simName,
     setSimName,
     fetchSavedSims,
     fetchGithubSims,
+    handleLoadSim,
+    handleLoadGithubSim,
   } = useSimulationFiles(() => Promise.resolve(null));
 
   // Code Compiler Hook
@@ -412,7 +418,7 @@ export default function SimulationPlayground() {
       className={isFullscreen ? "fixed inset-0 z-[100] bg-obsidian flex flex-col w-full h-full overflow-hidden" : "w-full h-full"}
     >
       <div
-        className={isFullscreen ? "flex flex-col w-full h-full p-2 md:p-6" : "flex flex-col h-[calc(100vh-80px)]"}
+        className={isFullscreen ? "relative flex flex-col w-full h-full p-2 md:p-6" : "relative flex flex-col h-[calc(100vh-80px)]"}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={async (e) => {
           e.preventDefault();
@@ -486,6 +492,87 @@ export default function SimulationPlayground() {
             </button>
           </div>
         </div>
+
+        {/* Simulation Library Overlay */}
+        {showLibrary && (
+          <div className="absolute inset-0 z-50 bg-obsidian/95 backdrop-blur-sm overflow-y-auto p-4 md:p-6">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-white">Simulation Library</h2>
+                <button
+                  onClick={() => setShowLibrary(false)}
+                  className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  aria-label="Close library"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Saved Simulations */}
+              <div className="mb-8">
+                <h3 className="text-sm font-bold text-ares-gold uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Your Saved Simulations
+                </h3>
+                {isLoadingSims ? (
+                  <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+                  </div>
+                ) : savedSims.length === 0 ? (
+                  <p className="text-zinc-500 text-sm py-4">No saved simulations yet. Create one and hit Save!</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {savedSims.map((sim) => (
+                      <button
+                        key={sim.id}
+                        onClick={() => {
+                          handleLoadSim(sim.id, setFiles, setActiveFile);
+                          setShowLibrary(false);
+                        }}
+                        className="text-left p-4 bg-zinc-800/50 border border-white/10 rounded-xl hover:border-ares-gold/40 hover:bg-zinc-800 transition-all group"
+                      >
+                        <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">{sim.name}</div>
+                        <div className="text-[11px] text-zinc-500 mt-1">
+                          {sim.type && <span className="text-ares-cyan/60 mr-2">{sim.type}</span>}
+                          {new Date(sim.updatedAt).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* GitHub Official Sims */}
+              <div>
+                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> Official ARES Simulations
+                </h3>
+                {isLoadingGithubSims ? (
+                  <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading from GitHub...
+                  </div>
+                ) : githubSims.length === 0 ? (
+                  <p className="text-zinc-500 text-sm py-4">No official simulations found in the repository.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {githubSims.map((sim) => (
+                      <button
+                        key={sim.id}
+                        onClick={() => {
+                          handleLoadGithubSim(sim, setFiles, setActiveFile);
+                          setShowLibrary(false);
+                        }}
+                        className="text-left p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl hover:border-indigo-400/40 hover:bg-indigo-900/30 transition-all group"
+                      >
+                        <div className="font-semibold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">{sim.name}</div>
+                        <div className="text-[11px] text-zinc-500 mt-1">Official • {sim.path}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main content panels */}
         <PanelGroup orientation="vertical" id="playground-main-v2">
