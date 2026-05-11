@@ -151,7 +151,7 @@ test.describe('Admin Users Dashboard', () => {
     });
 
     // Mock profile with author role
-    await page.route('**/profile/me', async (route) => {
+    await page.route('**/profile*/me', async (route) => {
       await route.fulfill({
         status: 200,
         json: {

@@ -67,7 +67,7 @@ export function SortableTaskCard({
           </button>
           {showMenu && (
             <div className="absolute right-0 top-6 z-50 bg-obsidian border border-white/10 ares-cut-sm py-1 min-w-[120px] shadow-xl">
-              {COLUMNS.filter((s: string) => s !== task.status).map((s: string) => (
+              {COLUMNS.filter((s: string) => s !== (task.status || "todo").replace("-", "_")).map((s: string) => (
                 <button
                   key={s}
                   onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, s); setShowMenu(false); }}

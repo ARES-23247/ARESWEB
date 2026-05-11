@@ -347,7 +347,7 @@ test.describe('Profile Editor Dashboard', () => {
     test.skip(true, 'Save button loading state test requires real auth with network delays');
 
     // Intercept the profile update API call to delay it slightly
-    await page.route('**/profile/me', async route => {
+    await page.route('**/profile*/me', async route => {
       if (route.request().method() === 'PUT' || route.request().method() === 'PATCH' || route.request().method() === 'POST') {
         // Small delay to make loading state visible
         await new Promise(resolve => setTimeout(resolve, 200));
