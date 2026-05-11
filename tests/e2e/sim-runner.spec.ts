@@ -220,6 +220,10 @@ test.describe('Sim Runner Page', () => {
       // Verify interactive segments have role and aria-label
       // The nn-intro sim uses role="button" and aria-label on interactive divs
       const interactiveButtons = page.locator('[role="button"]');
+      
+      // Wait for at least one interactive button to render
+      await expect(interactiveButtons.first()).toBeVisible();
+
       const count = await interactiveButtons.count();
 
       // Should have at least some interactive buttons (the 7-segment display controls)
