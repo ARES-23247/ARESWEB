@@ -16,19 +16,19 @@ progress:
 # System State
 
 **Current Milestone**: v8.0 End-to-End Hono RPC Type Safety
-**Status**: Ready to discuss Phase 72
+**Status**: Context gathered for Phase 72; proceeding to planning
 **Last activity**: 2026-05-11
 
 ## Recent Completions
 
+- **Phase 72 Context** (2026-05-11) — Gathered decisions on TanStack Forms migration, targeted scope, and reusable wrapper component architecture.
 - **Phase 71: API Route Hardening** (2026-05-11) — Migrated YouTube sync and scrubbed `any` overrides from root routes and client. OOM threshold preserved at Drizzle-Hono boundary.
-- **Phase 70: Restore End-to-End Type Safety** (2026-05-11) — Standardized backend routers.
 
 ## Current Position
 
 Phase: 72
 Plan: Not started
-Status: Ready to discuss
+Status: Ready to plan
 Last activity: 2026-05-11
 
 ## Project Reference
