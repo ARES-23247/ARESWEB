@@ -257,8 +257,12 @@ apiRouter.openapi(searchRoute, async (c) => {
 
 // ── Health / Environment Info ────────────
 apiRouter.get("/health", (c) => {
-  return c.json({ 
-    environment: c.env?.ENVIRONMENT || "production",
+  const hostname = new URL(c.req.url).hostname;
+  // Detect preview deployments by hostname
+  const detectedEnv = c.env?.ENVIRONMENT || (hostname.endsWith(".pages.dev") && !hostname.startsWith("aresweb.")) ? "preview" : "production";
+  return c.json({
+    environment: detectedEnv,
+    hostname,
     status: "ok"
   }, 200);
 });
