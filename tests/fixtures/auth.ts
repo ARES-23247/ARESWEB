@@ -226,7 +226,7 @@ async function setupRealAuth(page: Page, userId: string, role?: string): Promise
           await new Promise(r => setTimeout(r, delay));
           continue;
         }
-        throw new Error(`Test login failed after ${maxAttempts} attempts: ${err}`);
+        throw new Error(`Test login failed after ${maxAttempts} attempts: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
       }
 
       if (response.ok()) break;
