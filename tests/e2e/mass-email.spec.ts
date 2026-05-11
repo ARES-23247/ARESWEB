@@ -11,8 +11,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('loads and displays email composer interface', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible({
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -36,8 +36,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('displays active user count in audience roster', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Verify audience roster section
     await expect(page.getByText('Audience Roster')).toBeVisible();
@@ -50,8 +50,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('dispatch button is disabled when subject is empty', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Verify dispatch button is disabled initially
     const dispatchButton = page.getByRole('button', { name: /DISPATCH BLAST/i });
@@ -61,8 +61,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('dispatch button is enabled when subject is entered', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Enter subject
     const subjectInput = page.getByLabel('Email Subject');
@@ -76,8 +76,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('shows validation error when sending without content', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Enter subject only (no content)
     const subjectInput = page.getByLabel('Email Subject');
@@ -99,8 +99,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('completes full email composition workflow', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - use text content split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Check if there are active recipients
     const noRecipientsMsg = page.getByText(/No active recipients found/i).first();
@@ -138,8 +138,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('shows loading state while dispatching email', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - use text content split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Check if there are active recipients
     const noRecipientsMsg = page.getByText(/No active recipients found/i).first();
@@ -201,8 +201,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('passes WCAG 2.1 AA accessibility audit', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to fully load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible({
+    // Wait for page to fully load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -229,8 +229,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('has accessible form controls with proper labels', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Verify subject input has accessible label
     const subjectInput = page.getByLabel('Email Subject');
@@ -253,8 +253,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('subject input has sufficient color contrast', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Verify input placeholder text is visible
     const subjectInput = page.getByLabel('Email Subject');
@@ -264,8 +264,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('dispatch button has accessible loading state', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - use text content split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Check if there are active recipients
     const noRecipientsMsg = page.getByText(/No active recipients found/i).first();
@@ -308,8 +308,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('keyboard navigation works for form controls', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Focus subject input directly
     const subjectInput = page.getByLabel('Email Subject');
@@ -330,8 +330,8 @@ test.describe('Mass Email Composer Dashboard', () => {
   test('audience roster card displays with proper hierarchy', async ({ page }) => {
     await page.goto('/dashboard/mass_email');
 
-    // Wait for page to load - heading text is split across spans
-    await expect(page.getByRole('heading').filter({ hasText: /Team/i })).toBeVisible();
+    // Wait for page to load - use unique subtitle
+    await expect(page.getByText('ARES Mass Email Composer')).toBeVisible();
 
     // Verify audience roster heading hierarchy
     await expect(page.getByText('Audience Roster')).toBeVisible();

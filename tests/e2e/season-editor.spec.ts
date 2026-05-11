@@ -71,8 +71,8 @@ test.describe('Season/Award Editor E2E', () => {
       // Save as draft
       await page.getByRole('button', { name: /SAVE AS DRAFT/i }).click();
 
-      // Should redirect to manage seasons page after successful save
-      await expect(page).toHaveURL(/\/dashboard\/manage_seasons/, {
+      // Should redirect to seasons page after successful save
+      await expect(page).toHaveURL(/\/dashboard\/seasons/, {
         timeout: TEST_TIMEOUTS.SLOW_PAGE,
       });
     });
@@ -88,8 +88,8 @@ test.describe('Season/Award Editor E2E', () => {
       // Publish season
       await page.getByRole('button', { name: /Establish Legacy/i }).click();
 
-      // Should redirect to manage seasons page after successful publish
-      await expect(page).toHaveURL(/\/dashboard\/manage_seasons/, {
+      // Should redirect to seasons page after successful publish
+      await expect(page).toHaveURL(/\/dashboard\/seasons/, {
         timeout: TEST_TIMEOUTS.SLOW_PAGE,
       });
     });
@@ -169,6 +169,9 @@ test.describe('Season/Award Editor E2E', () => {
       // Click Add Award button
       await page.getByRole('button', { name: /Add Award/i }).click();
 
+      // Wait for form to appear
+      await expect(page.getByLabel(/Award Title/i)).toBeVisible();
+
       // Fill award form
       await page.getByLabel(/Award Title/i).fill('Innovative Design');
       await page.getByLabel(/Event Name/i).fill('World Championship');
@@ -177,7 +180,9 @@ test.describe('Season/Award Editor E2E', () => {
       // Submit form
       await page.getByRole('button', { name: /Commemorate Achievement/i }).click();
 
-      // Form should close after submission
+      // Form should close after submission - wait for Add Award button to reappear
+      // This indicates the form closed successfully
+      await page.waitForTimeout(500); // Allow form animation to complete
       await expect(page.getByRole('button', { name: /Add Award/i })).toBeVisible({
         timeout: TEST_TIMEOUTS.DEFAULT,
       });

@@ -155,9 +155,10 @@ export async function setupMockAuth(
     });
   });
 
-  // Mock /profile/me endpoint (unless skipped)
+  // Mock /profile/me and /profiles/me endpoints (unless skipped)
+  // The API uses /api/profiles/me, so we need to mock both patterns
   if (!skipProfileMock) {
-    await page.route('**/profile/me', async (route) => {
+    await page.route('**/profile*/me', async (route) => {
       await route.fulfill({
         status: 200,
         json: createMockProfile(userId),

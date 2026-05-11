@@ -1,7 +1,50 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type Route } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth } from '../fixtures/auth';
 import { TEST_TIMEOUTS } from '../fixtures/mock-data';
+
+/**
+ * Mock analytics data for E2E tests.
+ */
+const MOCK_ANALYTICS_DATA = {
+  totalPosts: 156,
+  totalSent: 142,
+  totalPending: 8,
+  totalFailed: 6,
+  byPlatform: {
+    twitter: 45,
+    bluesky: 38,
+    facebook: 22,
+    instagram: 18,
+    discord: 12,
+    slack: 8,
+    linkedin: 6,
+    tiktok: 4,
+    band: 3,
+    teams: 0,
+    gchat: 0,
+  },
+  engagement: {
+    totalImpressions: 45230,
+    totalLikes: 3840,
+    totalShares: 920,
+    totalComments: 340,
+  },
+};
+
+/**
+ * Sets up mocked analytics API endpoint for E2E tests.
+ * This is needed when testing against remote previews where
+ * the mock session token doesn't exist in the real database.
+ */
+async function setupMockAnalytics(page: Page) {
+  await page.route('**/api/social-queue/analytics*', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      json: MOCK_ANALYTICS_DATA,
+    });
+  });
+}
 
 /**
  * E2E tests for Social Hub dashboard route.
@@ -169,6 +212,9 @@ test.describe('Social Hub', () => {
   });
 
   test('Social hub analytics tab displays metrics', async ({ page }) => {
+    // Mock analytics API endpoint
+    await setupMockAnalytics(page);
+
     await page.goto('/dashboard/social');
 
     // Wait for page to load
@@ -201,6 +247,9 @@ test.describe('Social Hub', () => {
   });
 
   test('Social hub analytics supports date range filtering', async ({ page }) => {
+    // Mock analytics API endpoint
+    await setupMockAnalytics(page);
+
     await page.goto('/dashboard/social');
 
     // Wait for page to load
@@ -245,6 +294,9 @@ test.describe('Social Hub', () => {
   });
 
   test('Social hub tab switching preserves state', async ({ page }) => {
+    // Mock analytics API endpoint
+    await setupMockAnalytics(page);
+
     await page.goto('/dashboard/social');
 
     // Wait for page to load
@@ -327,6 +379,9 @@ test.describe('Social Hub', () => {
   });
 
   test('Accessibility audit - WCAG 2.1 AA compliance for Analytics tab', async ({ page }) => {
+    // Mock analytics API endpoint
+    await setupMockAnalytics(page);
+
     await page.goto('/dashboard/social');
 
     // Wait for page to fully load

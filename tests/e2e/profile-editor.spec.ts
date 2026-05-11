@@ -37,6 +37,16 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editing workflow - update name and bio', async ({ page }) => {
+    // Add delay to the profile update API to ensure loading state is visible
+    // This is needed because mock auth resolves too quickly
+    await page.route('**/profile*/me', async (route) => {
+      if (route.request().method() === 'PUT') {
+        // Add small delay to make the loading state visible
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      route.continue();
+    });
+
     await page.goto('/dashboard/profile');
 
     // Wait for the profile form to load
@@ -270,7 +280,7 @@ test.describe('Profile Editor Dashboard', () => {
     });
 
     // Mock profile as student
-    await page.route('**/profile/me', async (_route) => {
+    await page.route('**/profile*/me', async (_route) => {
       await _route.fulfill({
         status: 200,
         json: {
@@ -313,7 +323,7 @@ test.describe('Profile Editor Dashboard', () => {
     test.skip(true, 'Loading state test requires real auth with network delays');
 
     // Intercept and delay the profile API call to ensure loading state is visible
-    await page.route('**/profile/me', async route => {
+    await page.route('**/profile*/me', async route => {
       // Delay the response by 1 second to ensure loading state is visible
       await new Promise(resolve => setTimeout(resolve, 1000));
       route.continue();
