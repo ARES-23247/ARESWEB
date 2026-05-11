@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, AlertTriangle } from "lucide-react";
+import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
@@ -403,7 +403,7 @@ export default function SimulationPlayground() {
       className={isFullscreen ? "fixed inset-0 z-[100] bg-obsidian flex flex-col w-full h-full overflow-hidden" : "w-full h-full"}
     >
       <div
-        className={isFullscreen ? "hidden md:flex flex-col w-full h-full p-4 md:p-6" : "hidden md:flex flex-col h-[calc(100vh-80px)]"}
+        className={isFullscreen ? "flex flex-col w-full h-full p-2 md:p-6" : "flex flex-col h-[calc(100vh-[var(--header-height,80px)])]"}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={async (e) => {
           e.preventDefault();
@@ -574,15 +574,7 @@ export default function SimulationPlayground() {
         </PanelGroup>
       </div>
 
-      <div className="flex md:hidden flex-col items-center justify-center p-8 h-full min-h-[calc(100vh-80px)] text-center bg-obsidian">
-        <div className="bg-ares-red/10 p-4 rounded-full mb-4">
-          <AlertTriangle className="text-ares-red" size={48} />
-        </div>
-        <h2 className="text-2xl font-bold font-heading text-white mb-2">Desktop Recommended</h2>
-        <p className="text-white/60 mb-6">
-          The ARES Simulation IDE requires a larger screen and hardware acceleration to run optimally. Please open this page on a desktop or laptop device.
-        </p>
-      </div>
+
     </div>
   );
 

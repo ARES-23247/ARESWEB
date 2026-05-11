@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared constants for ARESWEB frontend.
  */
 
@@ -16,8 +16,8 @@ export const DEFAULT_coverImage = (import.meta.env.VITE_DEFAULT_coverImage as st
 export const GITHUB_REPO = {
   owner: (import.meta.env.VITE_GITHUB_REPO_OWNER as string) || 'ARES-23247',
   repo: (import.meta.env.VITE_GITHUB_REPO_NAME as string) || 'ARESWEB',
-  branch: (import.meta.env.VITE_GITHUB_BRANCH as string) || 'main',
+  branch: (import.meta.env.VITE_GITHUB_BRANCH as string) || 'master',
   apiUrl: `https://api.github.com/repos/${(import.meta.env.VITE_GITHUB_REPO_OWNER as string) || 'ARES-23247'}/${(import.meta.env.VITE_GITHUB_REPO_NAME as string) || 'ARESWEB'}`,
-  rawUrl: `https://raw.githubusercontent.com/${(import.meta.env.VITE_GITHUB_REPO_OWNER as string) || 'ARES-23247'}/${(import.meta.env.VITE_GITHUB_REPO_NAME as string) || 'ARESWEB'}/${(import.meta.env.VITE_GITHUB_BRANCH as string) || 'main'}`,
+  rawUrl: `https://raw.githubusercontent.com/${(import.meta.env.VITE_GITHUB_REPO_OWNER as string) || 'ARES-23247'}/${(import.meta.env.VITE_GITHUB_REPO_NAME as string) || 'ARESWEB'}/${(import.meta.env.VITE_GITHUB_BRANCH as string) || 'master'}`,
 } as const;
 

@@ -172,10 +172,10 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
         dragListener={false}
         dragControls={dragControls}
         dragMomentum={false}
-        className={`fixed bottom-20 right-4 left-4 sm:left-auto sm:bottom-24 sm:right-8 w-auto sm:w-[24rem] h-[75dvh] sm:h-[36rem] bg-zinc-900 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col transition-opacity duration-300 z-[100] overflow-hidden ${
+        className={`fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-8 w-full sm:w-[24rem] h-full sm:h-[36rem] bg-zinc-900 sm:border border-white/10 sm:shadow-[0_20px_50px_rgba(0,0,0,0.5)] sm:rounded-2xl flex flex-col transition-opacity duration-300 z-[120] overflow-hidden ${
           isChatbotOpen 
             ? 'opacity-100' 
-            : 'opacity-0 pointer-events-none hidden'
+            : 'opacity-0 pointer-events-none'
         }`}
       >
         <div 
@@ -196,6 +196,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
           <div className="flex items-center gap-1">
             <GripHorizontal className="w-5 h-5 text-zinc-500 mr-2 pointer-events-none" />
             <button 
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setChatbotOpen(false)} 
               aria-label="Close AI Assistant" 
               className="text-zinc-400 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
