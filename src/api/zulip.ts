@@ -21,13 +21,13 @@ export type ZulipPresence = z.infer<typeof zulipPresenceSchema>;
  * GET /api/zulip/presence - Get team presence data
  */
 export function useGetPresence(
-  options?: Omit<UseQueryOptions<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string> }>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string>; userAvatars?: Record<string, string> }>, "queryKey" | "queryFn">
 ) {
-  return useQuery<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string> }>({
+  return useQuery<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string>; userAvatars?: Record<string, string> }>({
     queryKey: ["zulip", "presence"],
     queryFn: async () => {
       const response = await client.zulip.presence.$get();
-      return unwrapResponse<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string> }>(response);
+      return unwrapResponse<{ success: boolean; presence: ZulipPresence; userNames?: Record<string, string>; userAvatars?: Record<string, string> }>(response);
     },
     ...options,
   });

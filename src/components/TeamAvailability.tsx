@@ -10,6 +10,7 @@ interface PresenceData {
 
 export default function TeamAvailability() {
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [_isPending, startTransition] = useTransition();
 
@@ -29,6 +30,9 @@ export default function TeamAvailability() {
     startTransition(() => {
       if (data?.userNames) {
         setUserNames(data.userNames);
+      }
+      if (data?.userAvatars) {
+        setUserAvatars(data.userAvatars);
       }
     });
   }, [data]);
@@ -127,9 +131,9 @@ export default function TeamAvailability() {
                 >
                   <div className="relative">
                     <img
-                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`}
+                      src={userAvatars[member.email] || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`}
                       alt={`${userNames[member.email] || member.email.split("@")[0]}'s avatar`}
-                      className="w-8 h-8 rounded-full border border-white/10 bg-obsidian"
+                      className="w-8 h-8 rounded-full border border-white/10 bg-obsidian object-cover"
                     />
                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-obsidian ${getStatusColor(member.status)}`} />
                   </div>

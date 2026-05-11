@@ -72,6 +72,10 @@ export const getPresenceRoute = createRoute({
               .record(z.string(), z.string())
               .optional()
               .openapi({ description: "Map of user IDs to display names" }),
+            userAvatars: z
+              .record(z.string(), z.string())
+              .optional()
+              .openapi({ description: "Map of user IDs to avatar URLs" }),
           }),
         },
       },

@@ -68,16 +68,45 @@ zulipRouter.openapi(getPresenceRoute, async (c) => {
       }
     );
 
+    const db = getDb(c);
+    const aresUsers = await db
+      .select({ email: schema.user.email, image: schema.user.image })
+      .from(schema.user)
+      .all();
+    
+    const aresImageMap = new Map<string, string>();
+    for (const u of aresUsers) {
+      if (u.email && u.image) {
+        aresImageMap.set(normalizeEmail(u.email), u.image);
+      }
+    }
+
     let userNames: Record<string, string> = {};
+    let userAvatars: Record<string, string> = {};
+    
     if (usersRes.ok) {
       const usersData = (await usersRes.json()) as {
-        members: Array<{ email: string; full_name: string }>;
+        members: Array<{ email: string; full_name: string; avatar_url?: string; delivery_email?: string }>;
       };
       if (usersData.members) {
-        userNames = usersData.members.reduce((acc: Record<string, string>, user: { email: string; full_name: string }) => {
-          acc[user.email] = user.full_name;
-          return acc;
-        }, {} as Record<string, string>);
+        for (const user of usersData.members) {
+          const rawEmail = user.email;
+          userNames[rawEmail] = user.full_name;
+          
+          const normalized = normalizeEmail(user.delivery_email || user.email || "");
+          const aresImage = aresImageMap.get(normalized);
+          
+          if (aresImage) {
+            userAvatars[rawEmail] = aresImage;
+          } else if (user.avatar_url) {
+            let avatarUrl = user.avatar_url;
+            if (avatarUrl.startsWith("/")) {
+              const baseUrl = config.ZULIP_URL || "https://aresfirst.zulipchat.com";
+              avatarUrl = `${baseUrl}${avatarUrl}`;
+            }
+            userAvatars[rawEmail] = avatarUrl;
+          }
+        }
       }
     }
 
@@ -85,7 +114,7 @@ zulipRouter.openapi(getPresenceRoute, async (c) => {
       result: string;
       presences: z.infer<typeof zulipPresenceSchema>;
     };
-    return c.json({ success: true, presence: data.presences, userNames }, 200);
+    return c.json({ success: true, presence: data.presences, userNames, userAvatars }, 200);
 });
 
 zulipRouter.openapi(sendMessageRoute, async (c) => {
