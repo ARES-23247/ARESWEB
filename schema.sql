@@ -116,8 +116,11 @@ CREATE TABLE IF NOT EXISTS events (
     revision_of TEXT,
     published_at TEXT,
     meeting_notes TEXT,
-
-
+    recurring_group_id TEXT,
+    rrule TEXT,
+    recurring_exception INTEGER DEFAULT 0,
+    zulip_stream TEXT,
+    zulip_topic TEXT,
     season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_season ON events(season_id);
@@ -217,6 +220,7 @@ CREATE TABLE IF NOT EXISTS docs_feedback (
     slug TEXT NOT NULL REFERENCES docs(slug) ON DELETE CASCADE,
     is_helpful INTEGER,
     comment TEXT,
+    is_resolved INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_docs_feedback_slug ON docs_feedback(slug);
@@ -245,6 +249,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     colleges TEXT DEFAULT '[]',
     employers TEXT DEFAULT '[]',
     show_on_about INTEGER DEFAULT 1,
+    hours INTEGER DEFAULT 0 NOT NULL,
     favorite_robot_mechanism TEXT,
     pre_match_superstition TEXT,
     leadership_role TEXT,
@@ -484,10 +489,14 @@ CREATE TABLE IF NOT EXISTS tasks (
     subteam TEXT,
     sort_order INTEGER DEFAULT 0,
     assigned_to TEXT,
+    parent_id TEXT,
+    time_spent_seconds INTEGER DEFAULT 0,
     created_by TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
     due_date TEXT,
-
-
+    start_date TEXT,
+    estimated_minutes INTEGER,
+    cover_image TEXT,
+    is_deleted INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -817,3 +826,42 @@ CREATE TABLE IF NOT EXISTS usage_metrics (
 );
 CREATE INDEX IF NOT EXISTS idx_usage_metrics_timestamp ON usage_metrics(timestamp);
 CREATE INDEX IF NOT EXISTS idx_usage_metrics_endpoint ON usage_metrics(endpoint);
+
+
+-- ── Tasks Relationships ──────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS labels (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS task_attachments (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    file_name TEXT NOT NULL,
+    file_url TEXT NOT NULL,
+    uploaded_by TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_task_attachments_task ON task_attachments(task_id);
+
+CREATE TABLE IF NOT EXISTS task_checklists (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    is_completed INTEGER DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_task_checklists_task ON task_checklists(task_id);
+
+CREATE TABLE IF NOT EXISTS task_labels (
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    label_id TEXT NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, label_id)
+);
+CREATE INDEX IF NOT EXISTS idx_task_labels_task ON task_labels(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_labels_label ON task_labels(label_id);
+
