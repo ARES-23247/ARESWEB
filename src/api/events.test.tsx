@@ -1,77 +1,11 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
 import * as eventsApi from "./events";
 import type { EventPayload } from "./events";
 
-// Define types for the mocked client
-interface MockEventsClient {
-  $get: ReturnType<typeof vi.fn>;
-  ":id": {
-    $get: ReturnType<typeof vi.fn>;
-    signups: {
-      $get: ReturnType<typeof vi.fn>;
-      $post: ReturnType<typeof vi.fn>;
-      $delete: ReturnType<typeof vi.fn>;
-      me: {
-        attendance: {
-          $patch: ReturnType<typeof vi.fn>;
-        };
-      };
-    };
-    $patch: ReturnType<typeof vi.fn>;
-    $delete: ReturnType<typeof vi.fn>;
-  };
-  "calendar-settings": {
-    $get: ReturnType<typeof vi.fn>;
-  };
-  admin: {
-    list: {
-      $get: ReturnType<typeof vi.fn>;
-    };
-    ":id": {
-      $get: ReturnType<typeof vi.fn>;
-      $patch: ReturnType<typeof vi.fn>;
-      $delete: ReturnType<typeof vi.fn>;
-      approve: {
-        $post: ReturnType<typeof vi.fn>;
-      };
-      reject: {
-        $post: ReturnType<typeof vi.fn>;
-      };
-      restore: {
-        $post: ReturnType<typeof vi.fn>;
-      };
-      purge: {
-        $delete: ReturnType<typeof vi.fn>;
-      };
-      repush: {
-        $post: ReturnType<typeof vi.fn>;
-      };
-      signups: {
-        ":userId": {
-          attendance: {
-            $patch: ReturnType<typeof vi.fn>;
-          };
-        };
-      };
-    };
-    save: {
-      $post: ReturnType<typeof vi.fn>;
-    };
-    sync: {
-      $post: ReturnType<typeof vi.fn>;
-    };
-    "repair-calendar": {
-      $post: ReturnType<typeof vi.fn>;
-    };
-  };
-}
 
-interface MockHonoClient {
-  events: MockEventsClient;
-}
 
 // Mock the honoClient module
 vi.mock("./honoClient", () => ({
@@ -160,7 +94,8 @@ vi.mock("./honoClient", () => ({
   ) => ({ onSuccess: internal })) as typeof import("./honoClient").wrapOnSuccess),
 }));
 
-const mockClient = honoClient.client as unknown as MockHonoClient;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 // Type aliases for mutation parameters (derived from the hook signatures)

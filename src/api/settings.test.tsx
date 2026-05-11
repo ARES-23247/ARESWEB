@@ -46,18 +46,8 @@ vi.mock("./honoClient", () => ({
   }),
 }));
 
-const mockClient = honoClient.client as {
-  settings: {
-    admin: {
-      settings: { $get: ReturnType<typeof vi.fn>; $patch: ReturnType<typeof vi.fn> };
-      stats: { $get: ReturnType<typeof vi.fn> };
-      backup: { $get: ReturnType<typeof vi.fn> };
-    };
-    public: {
-      settings: { $get: ReturnType<typeof vi.fn> };
-    };
-  };
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>

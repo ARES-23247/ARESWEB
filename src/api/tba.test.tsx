@@ -39,7 +39,8 @@ vi.mock("./honoClient", () => ({
   }),
 }));
 
-const mockClient = honoClient.client as unknown as typeof honoClient.client;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>

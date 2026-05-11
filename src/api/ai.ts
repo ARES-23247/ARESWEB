@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AI API - RAG Chatbot, Content Generation, External Sources
  *
  * Types imported from backend route definitions in @shared/routes/ai.ts
@@ -6,7 +6,10 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
+import { client as _client, unwrapResponse, withMutationCallbacks } from "./honoClient";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const client = _client as any;
 
 // Re-export schemas for type inference
 import {

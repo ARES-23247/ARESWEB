@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Events API - Events, Signups, Calendar Integration
  *
@@ -66,7 +67,7 @@ export function useGetEvents(
   return useQuery<EventsResponse>({
     queryKey: ["events", query],
     queryFn: async () => {
-      const response = await client.events.$get({ query });
+      const response = await client.events.$get({ query: query || {} });
       return unwrapResponse<EventsResponse>(response);
     },
     ...options,
@@ -205,7 +206,7 @@ export function useGetAdminEvents(
   return useQuery<AdminEventsResponse>({
     queryKey: ["admin_events", query],
     queryFn: async () => {
-      const response = await client.events.admin.list.$get({ query });
+      const response = await client.events.admin.list.$get({ query: query || {} });
       return unwrapResponse<AdminEventsResponse>(response);
     },
     ...options,
@@ -293,7 +294,7 @@ export function useDeleteEvent(
 
   return useMutation<MutationData, Error, MutationVariables, MutationContext>({
     mutationFn: async ({ id, deleteMode }) => {
-      const response = await client.events.admin[":id"].$delete({ param: { id }, json: { deleteMode } });
+      const response = await client.events.admin[":id"].$delete({ param: { id }, json: { deleteMode } } as any);
       return unwrapResponse<{ success: boolean }>(response);
     },
     ...wrapOnSuccess(options, (_data, _variables) => {

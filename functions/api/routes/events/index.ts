@@ -54,98 +54,98 @@ eventsRouter.use("/admin/*", ensureAdmin);
 eventsRouter.use("/:id/signups", ensureAuth);
 
 // ─── Public Routes ───────────────────────────────────────────────────────
-eventsRouter.openapi(getEventsRoute, async (c) => {
+export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) => {
   return toResponse(await eventHandlers.getEvents({ query: c.req.valid("query"), body: undefined, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(getCalendarSettingsRoute, async (c) => {
+.openapi(getCalendarSettingsRoute, async (c) => {
   return toResponse(await eventHandlers.getCalendarSettings({ query: {}, body: undefined, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(getEventRoute, async (c) => {
+.openapi(getEventRoute, async (c) => {
   // @ts-expect-error - Type inference issue with eventHandler params order
   return toResponse(await eventHandlers.getEvent({ params: c.req.valid("param"), query: c.req.valid("query"), body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(getSignupsRoute, async (c) => {
+.openapi(getSignupsRoute, async (c) => {
   return toResponse(await eventHandlers.getSignups({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(submitSignupRoute, async (c) => {
+.openapi(submitSignupRoute, async (c) => {
   return toResponse(await eventHandlers.submitSignup({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(deleteMySignupRoute, async (c) => {
+.openapi(deleteMySignupRoute, async (c) => {
   return toResponse(await eventHandlers.deleteMySignup({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(updateMyAttendanceRoute, async (c) => {
+.openapi(updateMyAttendanceRoute, async (c) => {
   return toResponse(await eventHandlers.updateMyAttendance({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c), c);
-});
+})
 
 // ─── Admin Routes ────────────────────────────────────────────────────────
-eventsRouter.openapi(getAdminEventsRoute, async (c) => {
+.openapi(getAdminEventsRoute, async (c) => {
   return toResponse(await eventHandlers.getAdminEvents({ query: c.req.valid("query"), body: undefined, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(getAdminEventRoute, async (c) => {
+.openapi(getAdminEventRoute, async (c) => {
   return toResponse(await eventHandlers.adminDetail({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(saveEventRoute, async (c) => {
+.openapi(saveEventRoute, async (c) => {
   return toResponse(await eventHandlers.saveEvent({ body: c.req.valid("json"), query: {}, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(updateEventRoute, async (c) => {
+.openapi(updateEventRoute, async (c) => {
   return toResponse(await eventHandlers.updateEvent({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(deleteEventRoute, async (c) => {
+.openapi(deleteEventRoute, async (c) => {
   return toResponse(await eventHandlers.deleteEvent({ params: c.req.valid("param"), query: {}, body: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(syncEventsRoute, async (c) => {
+.openapi(syncEventsRoute, async (c) => {
   // @ts-expect-error - Type inference issue with json body
   return toResponse(await eventHandlers.syncEvents({ body: c.req.valid("json"), query: {}, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(repairCalendarRoute, async (c) => {
+.openapi(repairCalendarRoute, async (c) => {
   // @ts-expect-error - Type inference issue with json body
   return toResponse(await eventHandlers.repairCalendar({ body: c.req.valid("json"), query: {}, params: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(approveEventRoute, async (c) => {
+.openapi(approveEventRoute, async (c) => {
   return toResponse(await eventHandlers.approveEvent({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(rejectEventRoute, async (c) => {
+.openapi(rejectEventRoute, async (c) => {
   return toResponse(await eventHandlers.rejectEvent({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(undeleteEventRoute, async (c) => {
+.openapi(undeleteEventRoute, async (c) => {
   return toResponse(await eventHandlers.undeleteEvent({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(purgeEventRoute, async (c) => {
+.openapi(purgeEventRoute, async (c) => {
   return toResponse(await eventHandlers.purgeEvent({ params: c.req.valid("param"), query: {}, body: undefined }, c), c);
-});
+})
 
-eventsRouter.openapi(repushEventRoute, async (c) => {
+.openapi(repushEventRoute, async (c) => {
   return toResponse(await eventHandlers.repushEvent({ params: c.req.valid("param"), query: {}, body: {} }, c), c);
-});
+})
 
-eventsRouter.openapi(updateUserAttendanceRoute, async (c) => {
+.openapi(updateUserAttendanceRoute, async (c) => {
   return toResponse(await eventHandlers.updateUserAttendance({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c), c);
-});
+})
 
 // ─── Event Version History ──────────────────────────────────────────────
 // NOTE: Event history feature not yet implemented - requires migration
-eventsRouter.openapi(getEventHistoryRoute, async (_c) => {
+.openapi(getEventHistoryRoute, async (_c) => {
     return { history: [] } as never;
-  });
+  })
 
-eventsRouter.openapi(restoreEventHistoryRoute, async (_c) => {
+.openapi(restoreEventHistoryRoute, async (_c) => {
     throw new ApiError("Event history feature not yet implemented", 501);
   });
 
-export default eventsRouter;
+export default finalEventsRouter;

@@ -43,29 +43,8 @@ vi.mock("./honoClient", () => ({
   }),
 }));
 
-// Mock types for the Hono client
-interface MockStoreClient {
-  products: {
-    $get: ReturnType<typeof vi.fn>;
-  };
-  checkout: {
-    $post: ReturnType<typeof vi.fn>;
-  };
-  orders: {
-    $get: ReturnType<typeof vi.fn>;
-    ":id": {
-      status: {
-        $patch: ReturnType<typeof vi.fn>;
-      };
-    };
-  };
-}
-
-interface MockClient {
-  store: MockStoreClient;
-}
-
-const mockClient = honoClient.client as MockClient;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>

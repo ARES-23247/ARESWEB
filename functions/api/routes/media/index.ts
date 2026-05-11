@@ -130,7 +130,7 @@ async function listAllObjects(bucket: R2Bucket | undefined, options?: R2ListOpti
 }
 
 // Register OpenAPI routes with native Hono type inference
-mediaRouter.openapi(getMediaRoute, async (c) => {
+export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => {
   const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
   const ua = c.req.header("user-agent") || "unknown";
   const rl = await checkPersistentRateLimit(getDb(c), `media_list_${ip}`, ua, 30, 60);
@@ -190,9 +190,9 @@ mediaRouter.openapi(getMediaRoute, async (c) => {
 
     return response;
   }
-);
+)
 
-mediaRouter.openapi(getAdminMediaRoute, async (c) => {
+.openapi(getAdminMediaRoute, async (c) => {
     const db = getDb(c);
     const [objects, results] = await Promise.all([
       listAllObjects(c.env.ARES_STORAGE),
@@ -222,9 +222,9 @@ mediaRouter.openapi(getAdminMediaRoute, async (c) => {
 
     return c.json({ media }, 200);
   }
-);
+)
 
-mediaRouter.openapi(uploadMediaRoute, async (c) => {
+.openapi(uploadMediaRoute, async (c) => {
     const formData = await c.req.parseBody();
     const file = formData["file"] as File | undefined;
     const folder = formData["folder"] as string | undefined;
@@ -307,9 +307,9 @@ mediaRouter.openapi(uploadMediaRoute, async (c) => {
 
     return c.json({ success: true, key, url: `/api/media/${key}`, altText }, 200);
   }
-);
+)
 
-mediaRouter.openapi(moveMediaRoute, async (c) => {
+.openapi(moveMediaRoute, async (c) => {
   const { key } = c.req.valid("param");
   const { folder } = c.req.valid("json");
 
@@ -345,9 +345,9 @@ mediaRouter.openapi(moveMediaRoute, async (c) => {
 
     return c.json({ success: true, newKey }, 200);
   }
-);
+)
 
-mediaRouter.openapi(deleteMediaRoute, async (c) => {
+.openapi(deleteMediaRoute, async (c) => {
   const { key } = c.req.valid("param");
 
     if (c.env.ARES_STORAGE) {
@@ -360,9 +360,9 @@ mediaRouter.openapi(deleteMediaRoute, async (c) => {
     }
     return c.json({ success: true }, 200);
   }
-);
+)
 
-mediaRouter.openapi(syndicateMediaRoute, async (c) => {
+.openapi(syndicateMediaRoute, async (c) => {
   const { key, caption } = c.req.valid("json");
 
     const config = await getDbSettings(c);
@@ -428,4 +428,4 @@ mediaRouter.get("/:key{.+$}", async (c) => {
   }
 });
 
-export default mediaRouter;
+export default finalMediaRouter;

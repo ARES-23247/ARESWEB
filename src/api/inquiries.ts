@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Inquiries API - Contact Form, Student/Mentor Inquiries
  *
@@ -38,7 +39,7 @@ export function useGetAdminInquiries(
   return useQuery<InquiriesResponse>({
     queryKey: ["admin_inquiries", query],
     queryFn: async () => {
-      const response = await client.inquiries.admin.list.$get({ query });
+      const response = await client.inquiries.admin.list.$get({ query: query || {} });
       return unwrapResponse<InquiriesResponse>(response);
     },
     ...options,
@@ -77,7 +78,7 @@ export function useUpdateInquiryStatus(
     mutationFn: async ({ id, status }) => {
       const response = await client.inquiries.admin[":id"].status.$patch({
         param: { id },
-        json: { status }
+        json: { status: status as "pending" | "rejected" | "approved" | "resolved" }
       });
       return unwrapResponse<{ success: boolean; status?: string }>(response);
     },

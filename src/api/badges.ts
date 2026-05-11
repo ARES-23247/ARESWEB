@@ -165,7 +165,7 @@ export function useGetUsersForBadges(
   return useQuery<BadgeUsersListResponse>({
     queryKey: ["users", "list"],
     queryFn: async () => {
-      const response = await client.users.$get();
+      const response = await client.users.admin.list.$get({ query: {} });
       return unwrapResponse<BadgeUsersListResponse>(response);
     },
     ...options,

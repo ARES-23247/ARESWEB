@@ -5,101 +5,100 @@ import { AppEnv, getDb } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { getSitemapRoute } from "../../../shared/routes/sitemap";
 
-export const sitemapRouter = new OpenAPIHono<AppEnv>();
+const _sitemapRouter = new OpenAPIHono<AppEnv>();
 
 // SEC-DoW: Cache sitemap to prevent repeated D1 queries from bots/crawlers
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
+export const sitemapRouter = _sitemapRouter
+    .openapi(getSitemapRoute, async (c) => {
+      const db = getDb(c);
+        const now = Date.now();
+        if (sitemapCache && sitemapCache.expiresAt > now) {
+          return c.text(sitemapCache.xml, 200, {
+            "Content-Type": "application/xml",
+            "Cache-Control": "public, s-maxage=900, max-age=900",
+          });
+        }
 
-sitemapRouter.openapi(getSitemapRoute, async (c) => {
-  const db = getDb(c);
-    const now = Date.now();
-    if (sitemapCache && sitemapCache.expiresAt > now) {
-      return c.text(sitemapCache.xml, 200, {
-        "Content-Type": "application/xml",
-        "Cache-Control": "public, s-maxage=900, max-age=900",
-      });
-    }
+        const baseUrl = siteConfig.urls.base;
+        
+        // Fetch published docs, posts, and events
+        const [docs, posts, events] = await Promise.all([
+          db.select({ slug: schema.docs.slug })
+            .from(schema.docs)
+            .where(
+              and(
+                eq(schema.docs.isDeleted, 0),
+                eq(schema.docs.status, "published")
+              )
+            )
+            .all(),
+          db.select({ slug: schema.posts.slug })
+            .from(schema.posts)
+            .where(
+              and(
+                eq(schema.posts.isDeleted, 0),
+                eq(schema.posts.status, "published")
+              )
+            )
+            .all(),
+          db.select({ id: schema.events.id })
+            .from(schema.events)
+            .where(eq(schema.events.isDeleted, 0))
+            .all()
+        ]);
 
-    const baseUrl = siteConfig.urls.base;
-    
-    // Fetch published docs, posts, and events
-    const [docs, posts, events] = await Promise.all([
-      db.select({ slug: schema.docs.slug })
-        .from(schema.docs)
-        .where(
-          and(
-            eq(schema.docs.isDeleted, 0),
-            eq(schema.docs.status, "published")
-          )
-        )
-        .all(),
-      db.select({ slug: schema.posts.slug })
-        .from(schema.posts)
-        .where(
-          and(
-            eq(schema.posts.isDeleted, 0),
-            eq(schema.posts.status, "published")
-          )
-        )
-        .all(),
-      db.select({ id: schema.events.id })
-        .from(schema.events)
-        .where(eq(schema.events.isDeleted, 0))
-        .all()
-    ]);
+        const staticRoutes = [
+          "",
+          "/events",
+          "/blog",
+          "/docs",
+          "/about",
+          "/sponsors",
+          "/inquiry",
+          "/seasons",
+          "/outreach",
+          "/gallery",
+          "/tech-stack",
+          "/academy",
+          "/sim-runner",
+          "/join",
+          "/store",
+          "/leaderboard",
+          "/locations/morgantown"
+        ];
 
-    const staticRoutes = [
-      "",
-      "/events",
-      "/blog",
-      "/docs",
-      "/about",
-      "/sponsors",
-      "/inquiry",
-      "/seasons",
-      "/outreach",
-      "/gallery",
-      "/tech-stack",
-      "/academy",
-      "/sim-runner",
-      "/join",
-      "/store",
-      "/leaderboard",
-      "/locations/morgantown"
-    ];
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+        // Static Routes
+        for (const route of staticRoutes) {
+          xml += `  <url><loc>${baseUrl}${route}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
+        }
 
-    // Static Routes
-    for (const route of staticRoutes) {
-      xml += `  <url><loc>${baseUrl}${route}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
-    }
+        // Docs
+        for (const doc of docs) {
+          xml += `  <url><loc>${baseUrl}/docs/${doc.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+        }
 
-    // Docs
-    for (const doc of docs) {
-      xml += `  <url><loc>${baseUrl}/docs/${doc.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
-    }
+        // Posts
+        for (const post of posts) {
+          xml += `  <url><loc>${baseUrl}/blog/${post.slug}</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n`;
+        }
 
-    // Posts
-    for (const post of posts) {
-      xml += `  <url><loc>${baseUrl}/blog/${post.slug}</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n`;
-    }
+        // Events
+        for (const event of events) {
+          xml += `  <url><loc>${baseUrl}/events/${event.id}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+        }
 
-    // Events
-    for (const event of events) {
-      xml += `  <url><loc>${baseUrl}/events/${event.id}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
-    }
+        xml += `</urlset>`;
 
-    xml += `</urlset>`;
+        sitemapCache = { xml, expiresAt: now + 900000 };
 
-    sitemapCache = { xml, expiresAt: now + 900000 };
-
-    return c.text(xml, 200, {
-      "Content-Type": "application/xml",
-      "Cache-Control": "public, s-maxage=900, max-age=900",
+        return c.text(xml, 200, {
+          "Content-Type": "application/xml",
+          "Cache-Control": "public, s-maxage=900, max-age=900",
+        });
     });
-});
-
 export default sitemapRouter;
 

@@ -35,7 +35,7 @@ export function useSendMassEmail(
 ) {
   return useMutation<MassEmailSendResponse, Error, MassEmailRequest>({
     mutationFn: async (data) => {
-      const response = await client.communications.admin["mass-email"].$post({ json: data });
+      const response = await client.communications["mass-email"].$post({ json: data });
       return unwrapResponse<MassEmailSendResponse>(response);
     },
     ...options,
@@ -51,7 +51,7 @@ export function useGetMassEmailStats(
   return useQuery<MassEmailStatsResponse>({
     queryKey: ["communications", "admin", "stats"],
     queryFn: async () => {
-      const response = await client.communications.admin.stats.$get();
+      const response = await client.communications.stats.$get();
       return unwrapResponse<MassEmailStatsResponse>(response);
     },
     ...options,

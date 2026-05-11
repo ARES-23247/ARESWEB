@@ -1,4 +1,5 @@
 import { ApiError } from "../middleware/errorHandler";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { eq, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -22,7 +23,7 @@ import {
 } from "../../../shared/routes/settings";
 import { z } from "zod";
 
-export const settingsRouter = new OpenAPIHono<AppEnv>();
+const _settingsRouter = new OpenAPIHono<AppEnv>();
 
 const SENSITIVE_KEYS = new Set([
   "ENCRYPTION_SECRET", "BETTER_AUTH_SECRET", "BLUESKY_APP_PASSWORD",
@@ -39,85 +40,82 @@ function maskSecret(value: string): string {
 
 const settingsSchema = z.record(z.string(), z.string().max(10000));
 
-settingsRouter.use("/admin/*", ensureAdmin);
+_settingsRouter.use("/admin/*", ensureAdmin);
 
-settingsRouter.openapi(getSettingsRoute, async (c) => {
-  const settings = await getDbSettings(c);
-  const masked: Record<string, string> = {};
-  for (const [key, value] of Object.entries(settings)) {
-    masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
-  }
-  return c.json({ success: true, settings: masked }, 200);
-});
+export const settingsRouter = _settingsRouter
+    .openapi(getSettingsRoute, async (c) => {
+      const settings = await getDbSettings(c);
+      const masked: Record<string, string> = {};
+      for (const [key, value] of Object.entries(settings)) {
+        masked[key] = SENSITIVE_KEYS.has(key) ? maskSecret(value) : value;
+      }
+      return c.json({ success: true, settings: masked }, 200);
+    })
+    .openapi(updateSettingsRoute, async (c) => {
+      const db = getDb(c);
+      const body = c.req.valid("json");
+      const validationResult = settingsSchema.safeParse(body);
+      if (!validationResult.success) {
+        throw new ApiError("Invalid settings format: ", 400);
+      }
 
-settingsRouter.openapi(updateSettingsRoute, async (c) => {
-  const db = getDb(c);
-  const body = c.req.valid("json");
-  const validationResult = settingsSchema.safeParse(body);
-  if (!validationResult.success) {
-    throw new ApiError("Invalid settings format: ", 400);
-  }
+      const entries = Object.entries(validationResult.data) as [string, string][];
+      let updatedCount = 0;
+      const sensitiveKeysUpdated: string[] = [];
+      for (const [key, value] of entries) {
+        if (SENSITIVE_KEYS.has(key)) {
+          if (value.startsWith("â€¢â€¢â€¢â€¢")) continue;
+          throw new ApiError(`Cannot update ${key} via API. Please use the admin console.`, 403);
+        }
 
-  const entries = Object.entries(validationResult.data) as [string, string][];
-  let updatedCount = 0;
-  const sensitiveKeysUpdated: string[] = [];
-  for (const [key, value] of entries) {
-    if (SENSITIVE_KEYS.has(key)) {
-      if (value.startsWith("â€¢â€¢â€¢â€¢")) continue;
-      throw new ApiError(`Cannot update ${key} via API. Please use the admin console.`, 403);
-    }
+        const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
+        if (error) throw new ApiError(error, 400);
 
-    const error = validateLength(value, MAX_INPUT_LENGTHS.generic, key);
-    if (error) throw new ApiError(error, 400);
+        await db
+          .insert(schema.settings)
+          .values({ key, value, updatedAt: new Date().toISOString() })
+          .onConflictDoUpdate({
+            target: schema.settings.key,
+            set: { value, updatedAt: new Date().toISOString() }
+          });
 
-    await db
-      .insert(schema.settings)
-      .values({ key, value, updatedAt: new Date().toISOString() })
-      .onConflictDoUpdate({
-        target: schema.settings.key,
-        set: { value, updatedAt: new Date().toISOString() }
-      });
+        updatedCount++;
+        if (SENSITIVE_KEYS.has(key)) sensitiveKeysUpdated.push(key);
+      }
 
-    updatedCount++;
-    if (SENSITIVE_KEYS.has(key)) sensitiveKeysUpdated.push(key);
-  }
+      const auditMessage = sensitiveKeysUpdated.length > 0
+        ? `Updated ${updatedCount} integration keys (sensitive: ${sensitiveKeysUpdated.join(", ")})`
+        : `Updated ${updatedCount} integration keys.`;
 
-  const auditMessage = sensitiveKeysUpdated.length > 0
-    ? `Updated ${updatedCount} integration keys (sensitive: ${sensitiveKeysUpdated.join(", ")})`
-    : `Updated ${updatedCount} integration keys.`;
-
-  c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
-  return c.json({ success: true, updated: updatedCount }, 200);
-});
-
-settingsRouter.openapi(getStatsRoute, async (c) => {
-  const db = getDb(c);
-  const [posts, events, docs, inquiries, users] = await Promise.all([
-    db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
-    db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
-    db.select({ count: count(schema.docs.slug) }).from(schema.docs).where(eq(schema.docs.isDeleted, 0)).get(),
-    db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get(),
-    db.select({ count: count(schema.user.id) }).from(schema.user).get(),
-  ]);
-  return c.json({
-    posts: Number(posts?.count || 0),
-    events: Number(events?.count || 0),
-    docs: Number(docs?.count || 0),
-    inquiries: Number(inquiries?.count || 0),
-    users: Number(users?.count || 0),
-  }, 200);
-});
-
-settingsRouter.openapi(getPublicSettingsRoute, async (c) => {
-  const settings = await getDbSettings(c);
-  const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
-  const publicSettings: Record<string, string> = {};
-  for (const key of publicKeys) {
-    if (settings[key]) publicSettings[key] = settings[key];
-  }
-  return c.json({ success: true, settings: publicSettings }, 200);
-});
-
+      c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
+      return c.json({ success: true, updated: updatedCount }, 200);
+    })
+    .openapi(getStatsRoute, async (c) => {
+      const db = getDb(c);
+      const [posts, events, docs, inquiries, users] = await Promise.all([
+        db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
+        db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
+        db.select({ count: count(schema.docs.slug) }).from(schema.docs).where(eq(schema.docs.isDeleted, 0)).get(),
+        db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get(),
+        db.select({ count: count(schema.user.id) }).from(schema.user).get(),
+      ]);
+      return c.json({
+        posts: Number(posts?.count || 0),
+        events: Number(events?.count || 0),
+        docs: Number(docs?.count || 0),
+        inquiries: Number(inquiries?.count || 0),
+        users: Number(users?.count || 0),
+      }, 200);
+    })
+    .openapi(getPublicSettingsRoute, async (c) => {
+      const settings = await getDbSettings(c);
+      const publicKeys = ["COMMUNITY_PHOTO_DRIVE_URL", "COMMUNITY_DOCS_URL"];
+      const publicSettings: Record<string, string> = {};
+      for (const key of publicKeys) {
+        if (settings[key]) publicSettings[key] = settings[key];
+      }
+      return c.json({ success: true, settings: publicSettings }, 200);
+    });
 const SCHEMA_MAP: Record<string, unknown> = {
   posts: schema.posts,
   events: schema.events,
@@ -142,7 +140,11 @@ const SCHEMA_MAP: Record<string, unknown> = {
 };
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
-settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
+export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async (c) => {
+  const rl = rateLimitMiddleware(5, 300);
+  const res = await rl(c as any, async () => {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (res instanceof Response) return res as any;
   const db = getDb(c);
   try {
     const SAFE_TABLES = [
@@ -221,4 +223,4 @@ settingsRouter.get("/admin/backup", rateLimitMiddleware(5, 300), async (c) => {
   }
 });
 
-export default settingsRouter;
+export default finalSettingsRouter;

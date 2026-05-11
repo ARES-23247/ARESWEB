@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Awards API - Team Awards and Recognition
  *
  * Types imported from backend route definitions in @shared/routes/awards.ts
@@ -40,7 +40,7 @@ export function useGetAwards(
   return useQuery<AwardsResponse>({
     queryKey: ["awards", query],
     queryFn: async () => {
-      const response = await client.awards.$get({ query });
+      const response = await client.awards.$get({ query: query || {} });
       return unwrapResponse<AwardsResponse>(response);
     },
     ...options,

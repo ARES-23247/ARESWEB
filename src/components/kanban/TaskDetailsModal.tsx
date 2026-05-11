@@ -201,11 +201,11 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
     try {
       const updates: import("../../api").UpdateTaskRequest = {};
       if (title !== task.title) updates.title = title;
-      if (description !== (task.description || "")) updates.description = description || null;
+      if (description !== (task.description || "")) updates.description = description || undefined;
       if (status !== task.status) updates.status = status as "todo" | "in_progress" | "done" | "blocked";
       if (priority !== task.priority) updates.priority = priority as "low" | "normal" | "high" | "urgent";
       if (subteam !== (task.subteam || "")) updates.subteam = subteam || null;
-      if (dueDate !== (task.dueDate || "")) updates.dueDate = dueDate || null;
+      if (dueDate !== (task.dueDate || "")) updates.dueDate = dueDate || undefined;
       
       const currentIds = task.assignees?.map((a: { id: string }) => a.id) || [];
       const hasAssigneeChange = assigneeIds.length !== currentIds.length || 
@@ -756,7 +756,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                     min="0"
                     placeholder="Total Minutes"
                     value={task.estimatedMinutes || ""}
-                    onChange={(e) => onSave(task.id, { estimatedMinutes: parseInt(e.target.value) || null })}
+                    onChange={(e) => onSave(task.id, { estimatedMinutes: parseInt(e.target.value) || undefined })}
                     className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2 ares-cut-sm outline-none focus:border-white/30 transition-colors"
                   />
                 </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Outreach API - Outreach Logs, Community Engagement
  *
@@ -66,7 +67,7 @@ export function useSaveOutreach(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; id?: string }, Error, OutreachPayload>({
     mutationFn: async (payload) => {
-      const response = await client.outreach.admin.save.$post({ json: payload });
+      const response = await client.outreach.admin.save.$post({ json: payload as any });
       return unwrapResponse<{ success: boolean; id?: string }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {

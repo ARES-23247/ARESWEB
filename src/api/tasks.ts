@@ -18,18 +18,18 @@ export interface TasksResponse {
 
 export interface CreateTaskRequest {
   title: string;
-  description?: string | null;
+  description?: string;
   status?: "todo" | "in_progress" | "done" | "blocked";
   priority?: "low" | "normal" | "high" | "urgent";
   subteam?: string | null;
   assignees?: string[];
-  dueDate?: string | null;
+  dueDate?: string;
   parentId?: string | null;
   timeSpentSeconds?: number;
   assignedTo?: string | null;
-  startDate?: string | null;
-  estimatedMinutes?: number | null;
-  coverImage?: string | null;
+  startDate?: string;
+  estimatedMinutes?: number;
+  coverImage?: string;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
@@ -55,7 +55,7 @@ export function useGetTasks(
   return useQuery<TasksResponse>({
     queryKey: ["tasks", query],
     queryFn: async function getTasks() {
-      const response = await client.tasks.$get({ query });
+      const response = await client.tasks.$get({ query: query || {} });
       return unwrapResponse<TasksResponse>(response);
     },
     ...options,

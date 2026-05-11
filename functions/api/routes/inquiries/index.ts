@@ -46,7 +46,7 @@ inquiriesRouter.use(
   turnstileMiddleware()
 );
 
-inquiriesRouter.openapi(submitInquiryRoute, async (c) => {
+export const finalInquiriesRouter = inquiriesRouter.openapi(submitInquiryRoute, async (c) => {
   const { type, name, email, metadata } = c.req.valid("json");
   const db = getDb(c);
   const secret = c.get("env")?.ENCRYPTION_SECRET || c.env.ENCRYPTION_SECRET;
@@ -85,14 +85,14 @@ inquiriesRouter.openapi(submitInquiryRoute, async (c) => {
   await processInquiryInBackground(c, type, name, email, id, metadata);
 
   return c.json({ success: true, id }, 200);
-});
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
 
 // List inquiries (Admin)
-inquiriesRouter.openapi(listInquiriesRoute, async (c) => {
+.openapi(listInquiriesRoute, async (c) => {
   const { limit = 50, offset = 0 } = c.req.valid("query");
   const db = getDb(c);
   const user = c.get("sessionUser");
@@ -110,10 +110,10 @@ inquiriesRouter.openapi(listInquiriesRoute, async (c) => {
     console.error("[Inquiries] Failed to synchronize inquiries:", err);
     return c.json({ inquiries: [], error: String(err) }, 200);
   }
-});
+})
 
 // Update inquiry status (Admin)
-inquiriesRouter.openapi(updateInquiryStatusRoute, async (c) => {
+.openapi(updateInquiryStatusRoute, async (c) => {
   const { id } = c.req.valid("param");
   const { status } = c.req.valid("json");
   const db = getDb(c);
@@ -125,10 +125,10 @@ inquiriesRouter.openapi(updateInquiryStatusRoute, async (c) => {
 
   c.executionCtx.waitUntil(logAuditAction(c, "inquiry_status_change", "inquiries", id, `Status changed to ${status}`));
   return c.json({ success: true, status }, 200);
-});
+})
 
 // Update inquiry notes (Admin)
-inquiriesRouter.openapi(updateInquiryNotesRoute, async (c) => {
+.openapi(updateInquiryNotesRoute, async (c) => {
   const { id } = c.req.valid("param");
   const { notes } = c.req.valid("json");
   const db = getDb(c);
@@ -140,10 +140,10 @@ inquiriesRouter.openapi(updateInquiryNotesRoute, async (c) => {
 
   c.executionCtx.waitUntil(logAuditAction(c, "inquiry_notes_change", "inquiries", id, `Notes updated`));
   return c.json({ success: true }, 200);
-});
+})
 
 // Delete inquiry (Admin)
-inquiriesRouter.openapi(deleteInquiryRoute, async (c) => {
+.openapi(deleteInquiryRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
@@ -417,4 +417,4 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
   return { deleted: res.meta?.changes ?? 0 };
 }
 
-export default inquiriesRouter;
+export default finalInquiriesRouter;

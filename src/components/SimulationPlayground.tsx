@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, RotateCcw, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles, X, Globe, Clock } from "lucide-react";
+import { Play, Save, Loader2, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles, X, Globe, Clock } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
@@ -465,9 +465,14 @@ export default function SimulationPlayground() {
 
           <div className="flex items-center gap-2">
             {/* Control buttons - simplified for brevity */}
+            <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors">
+              <Sparkles className="w-3.5 h-3.5" />
+              New Sim
+            </button>
+
             <button onClick={handleToggleLibrary} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-indigo-600/30 transition-colors">
               <FolderOpen className="w-3.5 h-3.5" />
-              Open
+              Open Library
             </button>
 
             <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-cyan/30 transition-colors">
@@ -476,10 +481,6 @@ export default function SimulationPlayground() {
 
             <button onClick={handleCopy} aria-label="Copy code" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-
-            <button onClick={handleReset} aria-label="Reset simulation" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
-              <RotateCcw className="w-3.5 h-3.5" />
             </button>
 
             <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors disabled:opacity-50">

@@ -43,7 +43,7 @@ postsRouter.use("/admin/:slug/history/*", ensureAdmin);
 postsRouter.use("/admin/*", ensureAdmin);
 
 // Public Routes
-postsRouter.openapi(
+export const finalPostsRouter = postsRouter.openapi(
   getPostsRoute,
   async (c) => {
     const query = c.req.valid("query");
@@ -53,9 +53,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   getPostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -65,10 +65,10 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
+)
 
 // Admin Routes
-postsRouter.openapi(
+.openapi(
   getAdminPostsRoute,
   async (c) => {
     const query = c.req.valid("query");
@@ -78,9 +78,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   getAdminPostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -90,9 +90,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   savePostRoute,
   async (c) => {
     const body = c.req.valid("json");
@@ -102,9 +102,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   updatePostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -115,9 +115,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   deletePostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -127,9 +127,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   undeletePostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -139,9 +139,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   purgePostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -151,9 +151,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   approvePostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -163,9 +163,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   rejectPostRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -176,9 +176,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   getPostHistoryRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -188,9 +188,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   restorePostHistoryRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -200,9 +200,9 @@ postsRouter.openapi(
     if (result.status === 200) return c.json(result.body as any, 200);
     throw new Error((result.body as { error?: string })?.error || "Request failed");
   }
-);
 
-postsRouter.openapi(
+)
+.openapi(
   repushSocialsRoute,
   async (c) => {
     const params = c.req.valid("param");
@@ -215,4 +215,4 @@ postsRouter.openapi(
   }
 );
 
-export default postsRouter;
+export default finalPostsRouter;

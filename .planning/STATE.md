@@ -57,6 +57,10 @@ See: .planning/PROJECT.md (updated 2026-05-07)
 
 ### Roadmap Evolution
 
+- Phase 73 added: Dashboard Boilerplate Cleanup
+- Phase 72 added: Component State and Forms
+- Phase 71 added: API Route Hardening
+- Phase 70 added: Restore End-to-End Type Safety
 - Phase 69 added: Rapid fixes to Profiles, Simulation Playground, and Zulip integration
 - Phase 68 added: Kanban Feature Parity with Google Integrations
 - v7.2 added: TypeScript Safety & ESLint Compliance — complete type safety achieved

@@ -54,6 +54,7 @@ import { sentry } from "@hono/sentry";
 import { secureHeaders } from "hono/secure-headers";
 import { etag } from "hono/etag";
 import { OpenAPIHono } from "@hono/zod-openapi";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiReference } from "@scalar/hono-api-reference";
 
 const app = new Hono<AppEnv>();
@@ -179,48 +180,54 @@ apiRouter.use("/comments/*", persistentRateLimitMiddleware(20, 60));
 
 
 // ── Mount Domain Routers ─────────────────────────────────────────────
-apiRouter.route("/auth", authRouter);
-apiRouter.route("/finance", financeRouter);
-apiRouter.route("/entities", entitiesRouter);
-apiRouter.route("/posts", postsRouter);
-apiRouter.route("/docs", docsRouter);
-apiRouter.route("/events", eventsRouter);
-apiRouter.route("/render", renderRouter);
-apiRouter.route("/comments", commentsRouter);
-apiRouter.route("/inquiries", inquiriesRouter);
-apiRouter.route("/locations", locationsRouter);
-apiRouter.route("/sponsors", sponsorsRouter);
-apiRouter.route("/media", mediaRouter);
-apiRouter.route("/awards", awardsRouter);
-apiRouter.route("/outreach", outreachRouter);
-apiRouter.route("/seasons", seasonsRouter);
-apiRouter.route("/tba", tbaRouter);
-apiRouter.route("/judges", judgesRouter);
-apiRouter.route("/profile", profilesRouter);
-apiRouter.route("/logistics", logisticsRouter);
-apiRouter.route("/users", usersRouter);
-apiRouter.route("/badges", badgesRouter);
-apiRouter.route("/settings", settingsRouter);
-apiRouter.route("/", sitemapRouter);
-apiRouter.route("/notifications", notificationsRouter);
-apiRouter.route("/analytics", analyticsRouter);
-apiRouter.route("/github", githubRouter);
-apiRouter.route("/zulip", zulipRouter);
-apiRouter.route("/internal/gc", gcRouter);
-apiRouter.route("/tasks", tasksRouter);
-apiRouter.route("/store", storeHandler);
-apiRouter.route("/points", pointsRouter);
-apiRouter.route("/ai", aiRouter);
-apiRouter.route("/social-queue", socialQueueRouter);
-apiRouter.route("/scouting", scoutingRouter);
-
 import { simulationsRouter } from "./routes/simulations";
-apiRouter.route("/simulations", simulationsRouter);
-
 import { communicationsRouter } from "./routes/communications";
-apiRouter.route("/webhooks/github", githubWebhookRouter);
-apiRouter.route("/webhooks/zulip", zulipWebhookRouter);
-apiRouter.route("/communications", communicationsRouter);
+
+export const group1 = new OpenAPIHono<AppEnv>()
+  .route("/auth", authRouter)
+  .route("/finance", financeRouter)
+  .route("/entities", entitiesRouter)
+  .route("/posts", postsRouter)
+  .route("/docs", docsRouter)
+  .route("/events", eventsRouter)
+  .route("/render", renderRouter)
+  .route("/comments", commentsRouter)
+  .route("/inquiries", inquiriesRouter)
+  .route("/locations", locationsRouter);
+
+export const group2 = new OpenAPIHono<AppEnv>()
+  .route("/sponsors", sponsorsRouter)
+  .route("/media", mediaRouter)
+  .route("/awards", awardsRouter)
+  .route("/outreach", outreachRouter)
+  .route("/seasons", seasonsRouter)
+  .route("/tba", tbaRouter)
+  .route("/judges", judgesRouter)
+  .route("/profile", profilesRouter)
+  .route("/logistics", logisticsRouter)
+  .route("/users", usersRouter);
+
+export const group3 = new OpenAPIHono<AppEnv>()
+  .route("/badges", badgesRouter)
+  .route("/settings", settingsRouter)
+  .route("/", sitemapRouter)
+  .route("/notifications", notificationsRouter)
+  .route("/analytics", analyticsRouter)
+  .route("/github", githubRouter)
+  .route("/zulip", zulipRouter)
+  .route("/internal/gc", gcRouter)
+  .route("/tasks", tasksRouter)
+  .route("/store", storeHandler);
+
+export const group4 = new OpenAPIHono<AppEnv>()
+  .route("/points", pointsRouter)
+  .route("/ai", aiRouter)
+  .route("/social-queue", socialQueueRouter)
+  .route("/scouting", scoutingRouter)
+  .route("/simulations", simulationsRouter)
+  .route("/webhooks/github", githubWebhookRouter)
+  .route("/webhooks/zulip", zulipWebhookRouter)
+  .route("/communications", communicationsRouter);
 
 // ── Global Search ───
 // D1 FTS result shape from raw SQL queries
@@ -231,29 +238,68 @@ interface FTSResult {
   snippet: string;
 }
 
-apiRouter.openapi(searchRoute, async (c) => {
-  const { q } = c.req.valid("query");
-  const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
-  if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
-  const ftsQ = qClean.replace(/\*/g, '') + '*';
-  const db = c.get("db");
-  // FTS MATCH requires literal string, not parameter binding
-  const postsQuery = `SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
-  const eventsQuery = `SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
-  const docsQuery = `SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
-  const [postsReq, eventsReq, docsReq] = await Promise.all([
-    db.all(postsQuery).then(r => (r || []) as FTSResult[]),
-    db.all(eventsQuery).then(r => (r || []) as FTSResult[]),
-    db.all(docsQuery).then(r => (r || []) as FTSResult[])
-  ]);
-  return c.json({
-    results: [
-      ...postsReq.map((r: FTSResult) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
-      ...eventsReq.map((r: FTSResult) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
-      ...docsReq.map((r: FTSResult) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
-    ]
-  }, 200);
-});
+const routes = apiRouter
+  .route("/", group1)
+  .route("/", group2)
+  .route("/", group3)
+  .route("/", group4)
+  .openapi(searchRoute, async (c) => {
+    const { q } = c.req.valid("query");
+    const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
+    if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
+    const ftsQ = qClean.replace(/\*/g, '') + '*';
+    const db = c.get("db");
+    // FTS MATCH requires literal string, not parameter binding
+    const postsQuery = `SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
+    const eventsQuery = `SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
+    const docsQuery = `SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
+    const [postsReq, eventsReq, docsReq] = await Promise.all([
+      db.all(postsQuery).then(r => (r || []) as FTSResult[]),
+      db.all(eventsQuery).then(r => (r || []) as FTSResult[]),
+      db.all(docsQuery).then(r => (r || []) as FTSResult[])
+    ]);
+    return c.json({
+      results: [
+        ...postsReq.map((r: FTSResult) => ({ ...r, type: 'blog' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+        ...eventsReq.map((r: FTSResult) => ({ ...r, type: 'event' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) })),
+        ...docsReq.map((r: FTSResult) => ({ ...r, type: 'doc' as const, id: String(r.id), title: String(r.title), snippet: String(r.snippet) }))
+      ]
+    }, 200);
+  })
+  .openapi(auditLogRoute, (async (c: any) => {
+    const { limit: l, offset: o } = c.req.valid("query");
+    const limit = l ? parseInt(l, 10) : 50;
+    const offset = o ? parseInt(o, 10) : 0;
+
+    const db = c.get("db");
+    const results = await db.select({
+        id: schema.auditLog.id,
+        actor: schema.auditLog.actor,
+        action: schema.auditLog.action,
+        resourceType: schema.auditLog.resourceType,
+        resourceId: schema.auditLog.resourceId,
+        createdAt: schema.auditLog.createdAt,
+        details: schema.auditLog.details
+      })
+      .from(schema.auditLog)
+      .orderBy(desc(schema.auditLog.createdAt))
+      .limit(limit)
+      .offset(offset)
+      .all();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logs = results.map((r: any) => ({
+      ...r,
+      id: r.id || crypto.randomUUID(),
+      createdAt: r.createdAt || new Date().toISOString(),
+      resourceType: r.resourceType || null,
+      resourceId: r.resourceId || null,
+      details: (r.details || "").substring(0, 500)
+    }));
+
+    return c.json({ logs }, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any);
 
 // ── Health / Environment Info ────────────
 apiRouter.get("/health", (c) => {
@@ -266,44 +312,6 @@ apiRouter.get("/health", (c) => {
     status: "ok"
   }, 200);
 });
-
-
-// ── Audit Log ────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-apiRouter.openapi(auditLogRoute, (async (c: any) => {
-  const { limit: l, offset: o } = c.req.valid("query");
-  const limit = l ? parseInt(l, 10) : 50;
-  const offset = o ? parseInt(o, 10) : 0;
-
-  const db = c.get("db");
-  const results = await db.select({
-      id: schema.auditLog.id,
-      actor: schema.auditLog.actor,
-      action: schema.auditLog.action,
-      resourceType: schema.auditLog.resourceType,
-      resourceId: schema.auditLog.resourceId,
-      createdAt: schema.auditLog.createdAt,
-      details: schema.auditLog.details
-    })
-    .from(schema.auditLog)
-    .orderBy(desc(schema.auditLog.createdAt))
-    .limit(limit)
-    .offset(offset)
-    .all();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = results.map((r: any) => ({
-    ...r,
-    id: r.id || crypto.randomUUID(),
-    createdAt: r.createdAt || new Date().toISOString(),
-    resourceType: r.resourceType || null,
-    resourceId: r.resourceId || null,
-    details: (r.details || "").substring(0, 500)
-  }));
-
-  return c.json({ logs }, 200);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-}) as any);
 
 app.onError(async (err, c) => {
   // Import ApiError dynamically to avoid circular deps
@@ -468,5 +476,5 @@ export const scheduled = async (event: ScheduledEvent, env: Bindings) => {
 };
 
 export { apiRouter };
-export type AppType = typeof apiRouter;
+export type AppType = typeof routes;
 export default app;

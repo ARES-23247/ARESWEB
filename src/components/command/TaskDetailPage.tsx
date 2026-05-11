@@ -266,7 +266,7 @@ export default function TaskDetailPage() {
               placeholder="Due Date"
               type="date"
               value={(getValue("dueDate") as string) || ""}
-              onChange={(e) => setField("dueDate", e.target.value || null)}
+              onChange={(e) => setField("dueDate", e.target.value || undefined)}
               className={`w-full bg-ares-gray-dark/50 border text-sm px-3 py-2.5 ares-cut-sm outline-none transition-colors ${
                 isOverdue
                   ? "border-ares-red/40 text-ares-red focus:border-ares-red/60"

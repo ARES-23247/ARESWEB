@@ -1,6 +1,6 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
-import type { AppType } from "../../functions/api/[[route]]";
+import type { AppType, group1, group2, group3, group4 } from "../../functions/api/[[route]]";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -50,12 +50,26 @@ const customFetch = async (
  * Individual API wrapper functions in src/api/ provide type safety via Zod schemas.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const client: any = hc<AppType>("/api", {
+const baseClient = hc<any>("/api", {
   init: {
     credentials: "include",
   },
   fetch: customFetch as typeof fetch,
 });
+
+// Dummy clients to extract types without triggering generic syntax errors
+const c1 = hc<typeof group1>("");
+const c2 = hc<typeof group2>("");
+const c3 = hc<typeof group3>("");
+const c4 = hc<typeof group4>("");
+const cApp = hc<AppType>("");
+
+export const client = baseClient as unknown as 
+  typeof c1 &
+  typeof c2 &
+  typeof c3 &
+  typeof c4 &
+  typeof cApp;
 
 /**
  * Error class for API failures.

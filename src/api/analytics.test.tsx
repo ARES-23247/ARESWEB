@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -52,38 +52,10 @@ vi.mock("./honoClient", () => ({
   }),
 }));
 
-// Mock types for the Hono client
-interface MockAnalyticsClient {
-  track: {
-    $post: ReturnType<typeof vi.fn>;
-  };
-  "sponsor-click": {
-    $post: ReturnType<typeof vi.fn>;
-  };
-  leaderboard: {
-    $get: ReturnType<typeof vi.fn>;
-  };
-  admin: {
-    stats: {
-      $get: ReturnType<typeof vi.fn>;
-    };
-    "platform-analytics": {
-      $get: ReturnType<typeof vi.fn>;
-    };
-    "roster-stats": {
-      $get: ReturnType<typeof vi.fn>;
-    };
-  };
-  search: {
-    $get: ReturnType<typeof vi.fn>;
-  };
-}
 
-interface MockClient {
-  analytics: MockAnalyticsClient;
-}
 
-const mockClient = honoClient.client as MockClient;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>

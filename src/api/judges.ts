@@ -88,7 +88,7 @@ export function useGetJudgePortfolio(
     queryKey: ["judges", "portfolio", code],
     queryFn: async () => {
       const response = await client.judges.portfolio.$get({
-        headers: { "x-judge-code": code }
+        header: { "x-judge-code": code }
       });
       return unwrapResponse<JudgePortfolioResponse>(response);
     },

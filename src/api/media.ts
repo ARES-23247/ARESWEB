@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Media API - R2 Media Gallery, Upload, Management
  *
@@ -75,9 +76,10 @@ export function useUploadMedia(
   return useMutation<{ success: boolean; key: string; url: string; altText?: string }, Error, UploadFormData>({
     mutationFn: async (uploadFormData) => {
       const response = await client.media.admin.upload.$post({
-        // Hono client expects FormData but doesn't infer it correctly from OpenAPIHono types.
-        // The UploadFormData wrapper ensures we pass actual FormData at runtime.
-        body: uploadFormData.data as never
+        form: {
+          file: uploadFormData.data.get("file") as any,
+          folder: (uploadFormData.data.get("folder") as string) || undefined,
+        }
       });
       return unwrapResponse<{ success: boolean; key: string; url: string; altText?: string }>(response);
     },

@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Docs API - Documentation, Knowledge Base
  *
@@ -208,7 +208,7 @@ export function useSaveDoc(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; slug?: string }, Error, DocPayload>({
     mutationFn: async (data) => {
-      const response = await client.docs.admin.save.$post({ json: data });
+      const response = await client.docs.admin.save.$post({ json: data as any });
       return unwrapResponse<{ success: boolean; slug?: string }>(response);
     },
     ...wrapOnSuccess(options, () => {

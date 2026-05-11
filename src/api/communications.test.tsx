@@ -8,13 +8,11 @@ import * as communicationsApi from "./communications";
 vi.mock("./honoClient", () => ({
   client: {
     communications: {
-      admin: {
-        "mass-email": {
-          $post: vi.fn(),
-        },
-        stats: {
-          $get: vi.fn(),
-        },
+      "mass-email": {
+        $post: vi.fn(),
+      },
+      stats: {
+        $get: vi.fn(),
       },
     },
   },
@@ -37,23 +35,8 @@ vi.mock("./honoClient", () => ({
   }),
 }));
 
-// Mock types for the Hono client
-interface MockCommunicationsClient {
-  admin: {
-    "mass-email": {
-      $post: ReturnType<typeof vi.fn>;
-    };
-    stats: {
-      $get: ReturnType<typeof vi.fn>;
-    };
-  };
-}
-
-interface MockClient {
-  communications: MockCommunicationsClient;
-}
-
-const mockClient = honoClient.client as MockClient;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockClient = honoClient.client as any;
 const mockUnwrapResponse = honoClient.unwrapResponse as ReturnType<typeof vi.fn>;
 
 const createQueryClient = () =>
@@ -80,7 +63,7 @@ describe("Communications API", () => {
         subject: "Team Update",
         htmlContent: "<p>Hello team!</p>",
       };
-      mockClient.communications.admin["mass-email"].$post.mockResolvedValue({ ok: true });
+      mockClient.communications["mass-email"].$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
@@ -88,7 +71,7 @@ describe("Communications API", () => {
       result.current.mutate(emailData);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mockClient.communications.admin["mass-email"].$post).toHaveBeenCalledWith({
+      expect(mockClient.communications["mass-email"].$post).toHaveBeenCalledWith({
         json: emailData,
       });
       expect(result.current.data?.recipientCount).toBe(150);
@@ -96,7 +79,7 @@ describe("Communications API", () => {
 
     it("should handle email with message", async () => {
       const mockResponse = { success: true, message: "Email queued for delivery" };
-      mockClient.communications.admin["mass-email"].$post.mockResolvedValue({ ok: true });
+      mockClient.communications["mass-email"].$post.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
@@ -109,7 +92,7 @@ describe("Communications API", () => {
 
     it("should handle send errors", async () => {
       const mockResponse = { success: false, error: "Failed to send email" };
-      mockClient.communications.admin["mass-email"].$post.mockResolvedValue({ ok: false });
+      mockClient.communications["mass-email"].$post.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(new Error(mockResponse.error));
 
       const { result } = renderHook(() => communicationsApi.useSendMassEmail(), { wrapper });
@@ -123,7 +106,7 @@ describe("Communications API", () => {
   describe("useGetMassEmailStats", () => {
     it("should fetch mass email stats successfully", async () => {
       const mockStats = { activeUsers: 42 };
-      mockClient.communications.admin.stats.$get.mockResolvedValue({ ok: true });
+      mockClient.communications.stats.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockStats);
 
       const { result } = renderHook(() => communicationsApi.useGetMassEmailStats(), { wrapper });
@@ -135,7 +118,7 @@ describe("Communications API", () => {
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch stats");
-      mockClient.communications.admin.stats.$get.mockResolvedValue({ ok: false });
+      mockClient.communications.stats.$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => communicationsApi.useGetMassEmailStats(), { wrapper });
@@ -146,7 +129,7 @@ describe("Communications API", () => {
 
     it("should handle zero active users", async () => {
       const mockStats = { activeUsers: 0 };
-      mockClient.communications.admin.stats.$get.mockResolvedValue({ ok: true });
+      mockClient.communications.stats.$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockStats);
 
       const { result } = renderHook(() => communicationsApi.useGetMassEmailStats(), { wrapper });

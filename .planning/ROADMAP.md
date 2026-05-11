@@ -102,6 +102,46 @@ Plans:
 Plans:
 - [ ] TBD (run /gsd-plan-phase 69 to break down)
 
+### Phase 70: Restore End-to-End Type Safety
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 69
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 70 to break down)
+
+### Phase 71: API Route Hardening
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 70
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 71 to break down)
+
+### Phase 72: Component State and Forms
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 71
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 72 to break down)
+
+### Phase 73: Dashboard Boilerplate Cleanup
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 72
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 73 to break down)
+
 ---
 
 ## Backlog

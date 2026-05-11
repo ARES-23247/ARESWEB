@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Users API - User Management
  *
  * Types imported from backend route definitions in @shared/routes/users.ts
@@ -38,7 +38,7 @@ export function useGetUsers(
   return useQuery<UsersListResponse>({
     queryKey: ["users", "admin", "list", query],
     queryFn: async function getUsersList() {
-      const response = await client.users.admin.list.$get({ query });
+      const response = await client.users.admin.list.$get({ query: query || {} });
       return unwrapResponse<UsersListResponse>(response);
     },
     ...options,
