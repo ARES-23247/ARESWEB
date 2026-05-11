@@ -76,6 +76,7 @@ const persister = createAsyncStoragePersister({
 
 import * as Sentry from "@sentry/react";
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { useSession } from "./utils/auth-client";
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -88,6 +89,19 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+function DevTools() {
+  const { data } = useSession();
+  
+  if (data?.user?.role !== "admin") return null;
+
+  return (
+    <>
+      {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
+      {TanStackRouterDevtools && <TanStackRouterDevtools router={router} initialIsOpen={false} position="top-right" />}
+    </>
+  );
 }
 
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -111,8 +125,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ModalProvider>
           <RouterProvider router={router} />
         </ModalProvider>
-        {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
-        {TanStackRouterDevtools && <TanStackRouterDevtools router={router} initialIsOpen={false} position="bottom-right" />}
+        <DevTools />
       </PersistQueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>

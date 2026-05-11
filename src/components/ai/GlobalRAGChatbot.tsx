@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, memo } from "react";
-import { X, Send, Bot, ShieldAlert, RefreshCw } from "lucide-react";
+import { X, Send, Bot, ShieldAlert, RefreshCw, GripHorizontal } from "lucide-react";
+import { motion, useDragControls } from "framer-motion";
 import Turnstile, { TurnstileRef } from "../Turnstile";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -24,6 +25,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileRef>(null);
+  const dragControls = useDragControls();
   const [sessionId] = useState(() => {
     if (typeof window !== "undefined") {
       const existing =       sessionStorage.getItem(STORAGE_KEYS.RAG_SESSION);
@@ -142,35 +144,44 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
   return (
     <>
       {/* Floating Trigger Button */}
-      <button
+      <motion.button
+        drag
+        dragMomentum={false}
         onClick={() => setChatbotOpen(!isChatbotOpen)}
-        className={`fixed bottom-8 right-8 z-[110] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 group overflow-hidden ${
+        className={`fixed bottom-8 right-8 z-[110] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors duration-500 group overflow-hidden cursor-grab active:cursor-grabbing ${
           isChatbotOpen 
-            ? "bg-ares-red rotate-90 scale-90" 
+            ? "bg-ares-red" 
             : "bg-indigo-600 hover:bg-indigo-500"
         }`}
         aria-label={isChatbotOpen ? "Close AI Assistant" : "Open AI Assistant"}
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         {isChatbotOpen ? (
-          <X className="w-6 h-6 text-white" />
+          <X className="w-6 h-6 text-white pointer-events-none" />
         ) : (
-          <div className="relative">
+          <div className="relative pointer-events-none">
             <Bot className="w-7 h-7 text-white" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-ares-cyan rounded-full border-2 border-indigo-600 animate-pulse" />
           </div>
         )}
-      </button>
+      </motion.button>
 
       {/* Chat Window */}
-      <div 
-        className={`fixed bottom-24 right-8 w-[24rem] h-[36rem] bg-zinc-900 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col transition-all duration-500 origin-bottom-right z-[100] overflow-hidden ${
+      <motion.div 
+        drag
+        dragListener={false}
+        dragControls={dragControls}
+        dragMomentum={false}
+        className={`fixed bottom-24 right-8 w-[24rem] h-[36rem] bg-zinc-900 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex flex-col transition-opacity duration-300 z-[100] overflow-hidden ${
           isChatbotOpen 
-            ? 'translate-y-0 scale-100 opacity-100' 
-            : 'translate-y-10 scale-90 opacity-0 pointer-events-none'
+            ? 'opacity-100' 
+            : 'opacity-0 pointer-events-none hidden'
         }`}
       >
-        <div className="flex items-center justify-between p-4 bg-zinc-800/80 backdrop-blur-md border-b border-white/10">
+        <div 
+          className="flex items-center justify-between p-4 bg-zinc-800/80 backdrop-blur-md border-b border-white/10 cursor-move touch-none"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-indigo-500/10 rounded-lg">
               <Bot className="w-5 h-5 text-indigo-400" />
@@ -182,13 +193,16 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
               </div>
             </div>
           </div>
-          <button 
-            onClick={() => setChatbotOpen(false)} 
-            aria-label="Close AI Assistant" 
-            className="text-zinc-400 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <GripHorizontal className="w-5 h-5 text-zinc-500 mr-2 pointer-events-none" />
+            <button 
+              onClick={() => setChatbotOpen(false)} 
+              aria-label="Close AI Assistant" 
+              className="text-zinc-400 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div aria-live="polite" className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-700">
@@ -267,7 +281,7 @@ export const GlobalRAGChatbot = memo(function GlobalRAGChatbot() {
             </button>
           </form>
         </div>
-      </div>
+      </motion.div>
     </>
   );
 });
