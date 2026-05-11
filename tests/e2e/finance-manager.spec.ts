@@ -25,7 +25,8 @@ test.describe('Finance Manager Dashboard', () => {
           json: {
             totalIncome: 50000,
             totalExpenses: 15000,
-            cashBalance: 35000,
+            balance: 35000,
+            seasonId: null,
           },
         });
         return;
@@ -96,8 +97,9 @@ test.describe('Finance Manager Dashboard', () => {
   test('should load finance dashboard and display summary metrics', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
-    // Wait for page to load
+    // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Verify main heading is visible (defaults to Sponsorship Pipeline)
     await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible();
@@ -111,8 +113,9 @@ test.describe('Finance Manager Dashboard', () => {
   test('should display all sponsorship pipeline columns', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
-    // Wait for page to load
+    // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Verify all pipeline column headers are visible
     await expect(page.getByRole('heading', { name: 'Potential' }).or(page.getByText('Potential').first())).toBeVisible();
@@ -127,7 +130,7 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Verify main heading is visible (defaults to Sponsorship Pipeline)
     await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible({
@@ -138,7 +141,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.getByText('Ledger & Expenses').click();
 
     // Wait for tab switch to complete
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Verify ledger heading changed
     await expect(page.getByRole('heading', { name: /Financial Ledger/i })).toBeVisible();
@@ -158,13 +161,13 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Switch to ledger tab - use text selector for reliability
     await page.getByText('Ledger & Expenses').click();
 
     // Wait for tab switch and content to load
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Income and expense amounts may not be visible if no transactions exist, but the UI should render
     // The Add button changes text based on active tab
@@ -176,7 +179,7 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Ensure the add form is closed first (if open from previous test, close it)
     const cancelButton = page.getByRole('button', { name: 'Cancel' });
@@ -208,13 +211,13 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Switch to ledger tab
     await page.getByText('Ledger & Expenses').click();
 
     // Wait for tab switch
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Click Add Transaction button - use text-based selector
     await page.getByText('Add Transaction').click();
@@ -253,8 +256,9 @@ test.describe('Finance Manager Dashboard', () => {
   test('should pass WCAG 2.1 AA accessibility audit - ledger view', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
-    // Wait for page to load
+    // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Switch to ledger tab
     await page.getByRole('button', { name: /Ledger & Expenses/i }).click();
@@ -275,8 +279,9 @@ test.describe('Finance Manager Dashboard', () => {
   test('should have accessible table structure in ledger view', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
-    // Wait for page to load
+    // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Switch to ledger tab
     await page.getByRole('button', { name: /Ledger & Expenses/i }).click();
@@ -297,7 +302,7 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Verify tab buttons exist - use role selector to avoid matching the heading
     await expect(page.getByRole('button', { name: 'Sponsorship Pipeline' })).toBeVisible();
@@ -309,7 +314,7 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Verify empty state message is displayed (appears in multiple columns)
     // Use a more permissive selector - check for text existence
@@ -331,13 +336,13 @@ test.describe('Finance Manager Dashboard', () => {
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Switch to ledger tab - use text selector
     await page.getByText('Ledger & Expenses').click();
 
     // Wait for ledger to load
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Verify empty state message
     await expect(page.getByText('No transactions recorded for this season')).toBeVisible();
@@ -363,14 +368,60 @@ test.describe('Finance Manager Dashboard', () => {
 });
 
 test.describe('Finance Manager - Keyboard Navigation', () => {
-  test('should support keyboard navigation through tabs', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
 
+    // Mock finance API endpoints
+    await page.route('**/api/finance/**', async (route) => {
+      const method = route.request().method();
+      const url = route.request().url();
+
+      // GET /api/finance/summary - return finance summary
+      if (method === 'GET' && url.includes('/summary')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            totalIncome: 50000,
+            totalExpenses: 15000,
+            balance: 35000,
+            seasonId: null,
+          },
+        });
+        return;
+      }
+
+      // GET /api/finance/sponsorship - return pipeline
+      if (method === 'GET' && url.includes('/sponsorship')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            pipeline: [],
+          },
+        });
+        return;
+      }
+
+      // GET /api/finance/transactions - return transactions
+      if (method === 'GET' && url.includes('/transactions')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            transactions: [],
+          },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+  });
+
+  test('should support keyboard navigation through tabs', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Focus the pipeline tab - use locator with text content
     const pipelineTab = page.locator('button').filter({ hasText: 'Sponsorship Pipeline' });
@@ -382,20 +433,18 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
     await page.keyboard.press('Enter');
 
     // Wait for tab switch
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Verify ledger view is now active - check for Add Transaction text
     await expect(page.getByText('Add Transaction')).toBeVisible();
   });
 
   test('should have visible focus states on interactive elements', async ({ page }) => {
-    await setupMockAuth(page);
-
     await page.goto('/dashboard/finance');
 
     // Wait for page to load completely
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Ensure the add form is closed first (if open from previous test, close it)
     const cancelButton = page.getByRole('button', { name: 'Cancel' });

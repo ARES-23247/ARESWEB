@@ -204,6 +204,8 @@ export const eventHandlers = {
 
         const events: FormattedEvent[] = results.map((e) => ({
           ...e,
+          dateStart: (e.dateStart as string).replace(" ", "T"),
+          dateEnd: e.dateEnd ? (e.dateEnd as string).replace(" ", "T") : null,
           category: normalizeCategory(e.category) ?? "internal",
           seasonId: e.seasonId ? Number(e.seasonId) : null,
           isDeleted: Number(e.isDeleted || 0),
@@ -282,8 +284,8 @@ export const eventHandlers = {
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
         // Map Drizzle camelCase back to snake_case for API consumers
-        dateStart: e.dateStart ?? e.dateStart ?? null,
-        dateEnd: e.dateEnd ?? e.dateEnd ?? null,
+        dateStart: (e.dateStart ?? e.dateStart ?? "").replace(" ", "T"),
+        dateEnd: e.dateEnd ? e.dateEnd.replace(" ", "T") : (e.dateEnd ? e.dateEnd.replace(" ", "T") : null),
         coverImage: e.coverImage ?? e.coverImage ?? null,
         tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
         seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
@@ -408,9 +410,9 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            dateStart: row.dateStart as string,
+            dateStart: (row.dateStart as string).replace(" ", "T"),
             category: normalizeCategory(row.category) ?? "internal",
-            dateEnd: row.dateEnd ?? null,
+            dateEnd: row.dateEnd ? row.dateEnd.replace(" ", "T") : null,
             coverImage: row.coverImage ?? null,
             tbaEventKey: row.tbaEventKey ?? null,
             seasonId: row.seasonId ? Number(row.seasonId) : null,
@@ -511,8 +513,8 @@ export const eventHandlers = {
 
       const events: FormattedEvent[] = results.map((e) => ({
         ...e,
-        dateStart: e.dateStart ?? e.dateStart ?? null,
-        dateEnd: e.dateEnd ?? e.dateEnd ?? null,
+        dateStart: (e.dateStart ?? e.dateStart ?? "").replace(" ", "T"),
+        dateEnd: e.dateEnd ? e.dateEnd.replace(" ", "T") : (e.dateEnd ? e.dateEnd.replace(" ", "T") : null),
         coverImage: e.coverImage ?? e.coverImage ?? null,
         tbaEventKey: e.tbaEventKey ?? e.tbaEventKey ?? null,
         seasonId: e.seasonId ? Number(e.seasonId) : (e.seasonId ? Number(e.seasonId) : null),
@@ -596,8 +598,8 @@ export const eventHandlers = {
         body: {
           event: {
             ...row,
-            dateStart: (rowData.dateStart ?? rowData.dateStart ?? "") as string,
-            dateEnd: (rowData.dateEnd ?? rowData.dateEnd ?? null) as string | null,
+            dateStart: ((rowData.dateStart ?? rowData.dateStart ?? "") as string).replace(" ", "T"),
+            dateEnd: rowData.dateEnd ? (rowData.dateEnd as string).replace(" ", "T") : (rowData.dateEnd ? (rowData.dateEnd as string).replace(" ", "T") : null),
             coverImage: (rowData.coverImage ?? rowData.coverImage ?? null) as string | null,
             tbaEventKey: (rowData.tbaEventKey ?? rowData.tbaEventKey ?? null) as string | null,
             seasonId: rowData.seasonId ? Number(rowData.seasonId) : (rowData.seasonId ? Number(rowData.seasonId) : null) as number | null,
@@ -707,9 +709,18 @@ export const eventHandlers = {
 
           const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
 
+          const formatLocal = (d: Date) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+          };
+
           instances = dates.map((d: Date, i: number) => {
-             const instStart = d.toISOString();
-             const instEnd = dateEnd ? new Date(d.getTime() + duration).toISOString() : null;
+             const instStart = formatLocal(d);
+             const instEnd = dateEnd ? formatLocal(new Date(d.getTime() + duration)) : null;
              return {
                 id: i === 0 ? genId : crypto.randomUUID(),
                 title: title || "", category: cat, dateStart: instStart, dateEnd: instEnd,

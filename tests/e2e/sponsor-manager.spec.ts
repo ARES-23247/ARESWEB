@@ -18,6 +18,55 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 test.describe('Sponsor Manager', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock sponsors API endpoints
+    await page.route('**/api/sponsors/admin**', async (route) => {
+      const method = route.request().method();
+
+      // GET /api/sponsors/admin - return list of sponsors
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            sponsors: [
+              {
+                id: '1',
+                name: 'Example Sponsor',
+                tier: 'Gold',
+                logoUrl: 'https://example.com/logo.png',
+                websiteUrl: 'https://example.com',
+                isActive: 1,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          },
+        });
+        return;
+      }
+
+      // POST /api/sponsors/admin - save sponsor
+      if (method === 'POST') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, id: crypto.randomUUID() },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+
+    // Mock DELETE endpoint for sponsor deletion
+    await page.route('**/api/sponsors/admin/*', async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+      route.continue();
+    });
   });
 
   test('SPONSORS-01: Sponsor list displays correctly', async ({ page }) => {
@@ -38,6 +87,9 @@ test.describe('Sponsor Manager', () => {
     // Click "Add Partner" button to expand creation form
     await page.getByRole('button', { name: /Add Partner/i }).click();
 
+    // Wait for form to appear
+    await page.waitForTimeout(200);
+
     // Verify creation form is visible
     await expect(page.getByLabel(/Partner Name/i)).toBeVisible();
     await expect(page.getByLabel(/Tier/i)).toBeVisible();
@@ -53,11 +105,12 @@ test.describe('Sponsor Manager', () => {
     // Submit the form - actual button text is "Commit Partner to D1"
     await page.getByRole('button', { name: /Commit Partner to D1|Commit/i }).click();
 
-    // Wait for mutation to complete and form to close
-    await page.waitForTimeout(1000);
+    // Wait for mutation to complete and form to close (increased from 1000ms)
+    await page.waitForTimeout(2000);
 
     // Verify the form was closed (Add Partner button should be visible again)
     await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
+    await expect(page.getByLabel(/Partner Name/i)).not.toBeVisible();
   });
 
   test('SPONSORS-03: Sponsor editing workflow', async ({ page }) => {

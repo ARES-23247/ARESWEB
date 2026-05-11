@@ -13,6 +13,68 @@ test.describe('Outreach Tracker Dashboard', () => {
     });
 
     await setupMockAuth(page);
+
+    // Mock outreach API endpoints
+    await page.route('**/api/outreach**', async (route) => {
+      const method = route.request().method();
+
+      // GET /api/outreach - return list of outreach entries
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            outreach: [
+              {
+                id: 1,
+                title: 'Robot Demo at Science Fair',
+                date: '2025-04-20',
+                hours: 4.5,
+                peopleReached: 75,
+                studentsCount: 6,
+                mentorCount: 2,
+                mentorHours: 9,
+                impactSummary: 'Demonstrated robot programming and mechanics to interested students and parents.',
+                isMentoring: 0,
+                mentoredTeamNumber: null,
+                seasonId: null,
+                eventId: null,
+                location: null,
+              },
+            ],
+          },
+        });
+        return;
+      }
+
+      // POST /api/outreach - save outreach entry
+      if (method === 'POST') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, id: '1' },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+
+    // Mock seasons API for the SeasonPicker component
+    await page.route('**/api/seasons**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          seasons: [
+            {
+              id: 1,
+              challengeName: 'Into the Deep',
+              startYear: 2024,
+              endYear: 2025,
+              isActive: 1,
+            },
+          ],
+        },
+      });
+    });
   });
 
   test('Outreach tracker loads and displays impact metrics', async ({ page }) => {
@@ -35,6 +97,9 @@ test.describe('Outreach Tracker Dashboard', () => {
     await expect(logOutreachButton).toBeVisible();
     await logOutreachButton.click();
 
+    // Wait for form to appear
+    await page.waitForTimeout(200);
+
     // Verify form is visible
     await expect(page.getByLabel(/Event Title/i)).toBeVisible();
 
@@ -48,18 +113,15 @@ test.describe('Outreach Tracker Dashboard', () => {
     await page.getByLabel(/Mentor Hours/i).fill('9');
     await page.getByPlaceholder(/Summarize/i).fill('Demonstrated robot programming and mechanics to interested students and parents.');
 
-    // Submit the form
+    // Submit the form - button text is "Finalize Impact Entry"
     const submitButton = page.getByRole('button', { name: /Finalize/i });
+    await expect(submitButton).toBeVisible();
     await submitButton.click();
 
-    // Verify success toast/notification using sonner toast selector
-    const toastSelector = page.locator('[data-sonner-toast]').first();
-    await expect(toastSelector).toBeVisible({
+    // Verify success toast/notification - wait for toast to appear
+    await expect(page.getByText('Impact record synchronized')).toBeVisible({
       timeout: TEST_TIMEOUTS.DEFAULT,
     });
-
-    // Verify the toast contains "synchronized" text
-    await expect(page.getByText(/Impact record synchronized|synchronized/i)).toBeVisible();
 
     // Verify form is closed after successful submission
     await expect(page.getByLabel(/Event Title/i)).not.toBeVisible();
@@ -71,6 +133,9 @@ test.describe('Outreach Tracker Dashboard', () => {
     // Click "Log Outreach" button
     const logOutreachButton = page.getByRole('button', { name: /Log Outreach/i });
     await logOutreachButton.click();
+
+    // Wait for form to appear
+    await page.waitForTimeout(200);
 
     // Toggle mentoring checkbox - click on the label containing "Mentoring Session"
     const mentoringLabel = page.locator('label').filter({ hasText: /Mentoring Session/i }).first();
@@ -89,10 +154,14 @@ test.describe('Outreach Tracker Dashboard', () => {
     await page.getByLabel(/Students Participating/i).fill('3');
 
     // Submit the form - button text is "Finalize Impact Entry"
-    await page.getByRole('button', { name: /Finalize/i }).click();
+    const submitButton = page.getByRole('button', { name: /Finalize/i });
+    await expect(submitButton).toBeVisible();
+    await submitButton.click();
 
-    // Verify success
-    await expect(page.getByText(/Impact record synchronized|synchronized/i)).toBeVisible();
+    // Verify success - the toast shows "Impact record synchronized."
+    await expect(page.getByText('Impact record synchronized')).toBeVisible({
+      timeout: TEST_TIMEOUTS.DEFAULT,
+    });
   });
 
   test('Outreach event logging workflow - validation errors', async ({ page }) => {
@@ -101,14 +170,23 @@ test.describe('Outreach Tracker Dashboard', () => {
     // Click "Log Outreach" button
     await page.getByRole('button', { name: /Log Outreach/i }).click();
 
-    // Try to submit without filling the form
+    // Wait for form to appear
+    await page.waitForTimeout(200);
+
+    // Try to submit without filling the form properly
     const titleInput = page.getByLabel(/Event Title/i);
     await titleInput.fill('Test');
     await titleInput.fill('');
-    await page.getByRole('button', { name: /Finalize/i }).click();
+
+    // Find the submit button - it should be visible even with empty title
+    const submitButton = page.getByRole('button', { name: /Finalize/i });
+    await expect(submitButton).toBeVisible();
+    await submitButton.click();
 
     // Verify validation message for title
-    await expect(page.getByText(/Title is required/i)).toBeVisible();
+    await expect(page.getByText(/Title is required/i)).toBeVisible({
+      timeout: TEST_TIMEOUTS.DEFAULT,
+    });
   });
 
   test('Outreach tracker - edit existing entry', async ({ page }) => {

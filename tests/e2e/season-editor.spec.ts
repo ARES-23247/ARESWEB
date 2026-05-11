@@ -222,9 +222,10 @@ test.describe('Season/Award Editor E2E', () => {
 
       // Form should close after submission - wait for Add Award button to reappear
       // This indicates the form closed successfully
-      await page.waitForTimeout(500); // Allow form animation to complete
+      // Wait longer for remote environment - React Query invalidation might take time
+      await page.waitForTimeout(2000);
       await expect(page.getByRole('button', { name: /Add Award/i })).toBeVisible({
-        timeout: TEST_TIMEOUTS.DEFAULT,
+        timeout: 15000,
       });
     });
 

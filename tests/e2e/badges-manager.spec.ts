@@ -116,6 +116,10 @@ test.describe('Badges Manager', () => {
   test('BADGES-02: Badge creation workflow', async ({ page }) => {
     await page.goto('/dashboard/badges');
 
+    // Wait for page to load completely
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
+
     // Click "New Badge Type" button to expand creation form
     await page.getByRole('button', { name: /New Badge Type/i }).click();
 
@@ -136,8 +140,11 @@ test.describe('Badges Manager', () => {
     // Submit the form
     await page.getByRole('button', { name: /Save Badge/i }).click();
 
-    // Verify the form was closed by waiting for the "New Badge Type" button to be visible again
-    await expect(page.getByRole('button', { name: /New Badge Type/i })).toBeVisible();
+    // Wait for mutation to complete and form to close
+    await page.waitForTimeout(500);
+
+    // Verify the form was closed by checking the Badge ID input is not visible
+    await expect(page.getByLabel(/Badge ID/i)).not.toBeVisible();
   });
 
   test('BADGES-03: Badge assignment workflow', async ({ page }) => {
@@ -183,8 +190,10 @@ test.describe('Badges Manager', () => {
   test('BADGES-04: Badge deletion workflow', async ({ page }) => {
     await page.goto('/dashboard/badges');
 
-    // Wait for badges to load
+    // Wait for badges to load completely
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByRole('heading', { name: /Badge Management/i })).toBeVisible();
+    await page.waitForTimeout(500);
 
     // Find a badge card by looking for items with an ID label and locate its delete button
     const badgeCard = page.locator('[class*="bg-ares-gray-dark"]').filter({ hasText: /ID:/ }).first();
@@ -273,8 +282,10 @@ test.describe('Badges Manager', () => {
   test('BADGES-09: Badge ID and technical details are displayed', async ({ page }) => {
     await page.goto('/dashboard/badges');
 
-    // Wait for badges to load
+    // Wait for badges to load completely
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByRole('heading', { name: /Badge Management/i })).toBeVisible();
+    await page.waitForTimeout(500);
 
     // Verify at least one badge is displayed with its ID
     const badgeId = page.getByText(/ID:/i);

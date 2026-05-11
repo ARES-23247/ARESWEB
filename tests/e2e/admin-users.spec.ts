@@ -88,7 +88,12 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users');
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({
+      timeout: TEST_TIMEOUTS.SLOW_PAGE,
+    });
+
+    // Wait for the table to render with user data
+    await page.waitForTimeout(1000);
 
     // Find the role select dropdown for the test user
     const roleSelect = page.locator('select').first();

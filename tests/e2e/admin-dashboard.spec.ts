@@ -1,10 +1,46 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { setupMockAuth } from '../fixtures/auth';
+import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 
 test.describe('Admin Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock logistics API endpoints
+    await page.route('**/api/logistics/admin/**', async (route) => {
+      const url = route.request().url();
+
+      // GET /api/logistics/admin/summary - return logistics summary
+      if (url.includes('/summary')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            dietary: { 'Vegetarian': 3, 'Gluten-Free': 1, 'No Restrictions': 8 },
+            tshirts: { 'S': 2, 'M': 4, 'L': 3, 'XL': 2 },
+            totalCount: 12,
+            staleProfiles: [],
+          },
+        });
+        return;
+      }
+
+      // GET /api/logistics/admin/export-emails - return user emails
+      if (url.includes('/export-emails')) {
+        await route.fulfill({
+          status: 200,
+          json: {
+            users: [
+              { name: 'Test User 1', email: 'test1@ares.org', role: 'admin', emergencyName: 'Jane Doe', emergencyPhone: '555-0100' },
+              { name: 'Test User 2', email: 'test2@ares.org', role: 'member', emergencyName: 'John Smith', emergencyPhone: '555-0101' },
+            ],
+          },
+        });
+        return;
+      }
+
+      route.continue();
+    });
   });
 
   test('Admin dashboard loads and displays authorized management hubs', async ({ page }) => {
@@ -47,8 +83,10 @@ test.describe('Admin Dashboard', () => {
   test('Logistics tab supports email export', async ({ page }) => {
     await page.goto('/dashboard/logistics');
 
-    // Wait for the DietarySummary component to load
-    await expect(page.getByText(/Team Logistics/i)).toBeVisible();
+    // Wait for the DietarySummary component to load - the header text is "Team Logistics Summary"
+    await expect(page.getByText(/Team Logistics Summary/i)).toBeVisible({
+      timeout: TEST_TIMEOUTS.SLOW_PAGE,
+    });
 
     // Click export emails
     await page.getByRole('button', { name: /Export Roster Emails/i }).click();

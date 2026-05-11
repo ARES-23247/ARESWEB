@@ -6,6 +6,14 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 test.describe('Mass Email Composer Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock mass email stats endpoint
+    await page.route('**/api/communications/admin/stats', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: { activeUsers: 42 },
+      });
+    });
   });
 
   test('loads and displays email composer interface', async ({ page }) => {
@@ -155,28 +163,34 @@ test.describe('Mass Email Composer Dashboard', () => {
     const subjectInput = page.getByLabel('Email Subject');
     await subjectInput.fill('Test Email');
 
+    // Enter content in the rich text editor
+    const editor = page.locator('.ProseMirror').or(page.locator('[contenteditable="true"]')).first();
+    await editor.click();
+    await editor.fill('Test email content for loading state verification.');
+
     // Mock window.confirm to accept the send
     await page.evaluate(() => {
       window.confirm = () => true;
     });
 
     // Intercept the API call to delay response for testing loading state
-    await page.route('**/api/mass-email/send', async (route) => {
-      // Delay the response to ensure loading state is visible
-      setTimeout(async () => {
-        await route.fulfill({
-          status: 200,
-          json: { success: true, recipientCount: 1 },
-        });
-      }, 500);
+    await page.route('**/api/communications/admin/mass-email', async (route) => {
+      // Delay the response to ensure loading state is visible (increased from 500ms)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await route.fulfill({
+        status: 200,
+        json: { success: true, message: 'Emails dispatched successfully', recipientCount: 42 },
+      });
     });
 
     // Click dispatch button
     const dispatchButton = page.getByRole('button', { name: /DISPATCH BLAST/i });
     await dispatchButton.click();
 
-    // Verify loading state
-    await expect(page.getByText('DISPATCHING...')).toBeVisible();
+    // Verify loading state immediately - check for DISPATCHING... text
+    await expect(page.getByText('DISPATCHING...')).toBeVisible({
+      timeout: 1000,
+    });
 
     // Verify spinner is shown
     await expect(page.locator('.animate-spin').or(page.getByRole('progressbar'))).toBeVisible();
@@ -281,19 +295,23 @@ test.describe('Mass Email Composer Dashboard', () => {
     const subjectInput = page.getByLabel('Email Subject');
     await subjectInput.fill('Test Email');
 
+    // Enter content in the rich text editor
+    const editor = page.locator('.ProseMirror').or(page.locator('[contenteditable="true"]')).first();
+    await editor.click();
+    await editor.fill('Test email content for accessibility testing.');
+
     // Mock window.confirm to accept the send
     await page.evaluate(() => {
       window.confirm = () => true;
     });
 
     // Intercept the API call to delay response
-    await page.route('**/api/mass-email/send', async (route) => {
-      setTimeout(async () => {
-        await route.fulfill({
-          status: 200,
-          json: { success: true, recipientCount: 1 },
-        });
-      }, 500);
+    await page.route('**/api/communications/admin/mass-email', async (route) => {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await route.fulfill({
+        status: 200,
+        json: { success: true, message: 'Emails dispatched successfully', recipientCount: 42 },
+      });
     });
 
     // Click dispatch button
@@ -301,8 +319,9 @@ test.describe('Mass Email Composer Dashboard', () => {
     await dispatchButton.click();
 
     // Verify screen reader text for loading state (using sr-only selector)
+    // The component has: <span className="sr-only">Sending mass email, please wait.</span>
     const srText = page.locator('.sr-only').filter({ hasText: /Sending mass email/i });
-    await expect(srText).toBeAttached();
+    await expect(srText).toBeAttached({ timeout: 1000 });
   });
 
   test('keyboard navigation works for form controls', async ({ page }) => {
