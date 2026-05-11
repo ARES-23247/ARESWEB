@@ -113,7 +113,7 @@ export async function upsertProfile(
     await db.insert(schema.userProfiles)
       .values(values as typeof schema.userProfiles.$inferInsert)
       .onConflictDoUpdate({
-        target: schema.userProfiles.userId,
+        target: sql`user_id`,
         set: {
           ...(updateSet as typeof schema.userProfiles.$inferInsert),
           updatedAt: sql`CURRENT_TIMESTAMP`
