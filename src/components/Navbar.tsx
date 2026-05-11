@@ -4,7 +4,6 @@ import { Search, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap } f
 
 import { GreekMeander } from "./GreekMeander";
 import { useDashboardSession } from "../hooks/useDashboardSession";
-import { useUIStore } from "../store/uiStore";
 import { NavbarNotifications } from "./navigation/NavbarNotifications";
 import { NavbarMobileMenu } from "./navigation/NavbarMobileMenu";
 import { TeamDropdown } from "./navigation/NavDropdown";
