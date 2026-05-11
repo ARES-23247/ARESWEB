@@ -17,6 +17,46 @@ import { AssetVaultPage } from '../pages/AssetVaultPage';
 test.describe('Media Manager - Asset Vault', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock media API endpoints - match actual Hono client paths
+    await page.route('**/api/media/admin', async (route) => {
+      const method = route.request().method();
+
+      // GET /api/media/admin - return list of media
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            media: [
+              {
+                key: 'test-image.png',
+                url: 'https://example.com/test-image.png',
+                altText: 'Test image',
+                folder: 'Gallery',
+                uploadedAt: new Date().toISOString(),
+                size: 12345,
+                contentType: 'image/png',
+              },
+            ],
+          },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+
+    // Mock DELETE endpoint for media deletion
+    await page.route('**/api/media/admin/*', async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+      route.continue();
+    });
   });
 
   test('DEF-01: Asset Vault loads and displays upload interface', async ({ page }) => {

@@ -760,8 +760,8 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
               {/* Zulip Thread */}
               <div className="flex-1 min-h-[400px] border-t border-white/5 bg-obsidian flex flex-col">
                 <div className="flex-1 overflow-hidden">
-                  <ZulipThread 
-                    stream={task.zulipStream || "tasks"} 
+                  <ZulipThread
+                    stream={task.zulipStream || "kanban"}
                     topic={task.zulipTopic || `Task: ${task.title}`} 
                     className="m-0 border-none bg-transparent shadow-none max-h-none h-full"
                   />

@@ -95,12 +95,11 @@ test.describe('Sponsor Manager', () => {
     // Submit the form - actual button text is "Commit Partner to D1"
     await page.getByRole('button', { name: /Commit Partner to D1|Commit/i }).click();
 
-    // Wait for mutation to complete and form to close (increased from 1000ms)
-    await page.waitForTimeout(2000);
+    // Wait for form to close (partner name input should disappear)
+    await expect(page.getByLabel(/Partner Name/i)).not.toBeVisible({ timeout: 5000 });
 
     // Verify the form was closed (Add Partner button should be visible again)
     await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
-    await expect(page.getByLabel(/Partner Name/i)).not.toBeVisible();
   });
 
   test('SPONSORS-03: Sponsor editing workflow', async ({ page }) => {

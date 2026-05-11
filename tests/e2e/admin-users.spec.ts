@@ -19,7 +19,7 @@ test.describe('Admin Users Dashboard', () => {
               email: 'test1@ares.org',
               role: 'user',
               memberType: 'student',
-              nickname: 'Testy',
+              nickname: null, // No nickname so name is displayed
               createdAt: Date.now(),
               image: 'https://api.dicebear.com/9.x/bottts/svg?seed=test1',
             },
@@ -29,7 +29,7 @@ test.describe('Admin Users Dashboard', () => {
               email: 'test2@ares.org',
               role: 'admin',
               memberType: 'mentor',
-              nickname: 'Tester',
+              nickname: null,
               createdAt: Date.now(),
               image: 'https://api.dicebear.com/9.x/bottts/svg?seed=test2',
             },

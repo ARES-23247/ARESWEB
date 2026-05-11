@@ -8,6 +8,45 @@ test.describe('Member Impact Dashboard', () => {
 
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock roster stats API endpoint
+    await page.route('**/api/analytics/admin/roster-stats', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          roster: [
+            {
+              userId: '1',
+              nickname: 'Test Student 1',
+              memberType: 'student',
+              avatar: 'https://api.dicebear.com/9.x/bottts/svg?seed=test1',
+              attendedEvents: 5,
+              manualPrepHours: 2,
+              eventVolunteerHours: 8,
+            },
+            {
+              userId: '2',
+              nickname: 'Test Student 2',
+              memberType: 'student',
+              avatar: 'https://api.dicebear.com/9.x/bottts/svg?seed=test2',
+              attendedEvents: 3,
+              manualPrepHours: 1,
+              eventVolunteerHours: 5,
+            },
+            {
+              userId: '3',
+              nickname: 'Test Mentor',
+              memberType: 'mentor',
+              avatar: 'https://api.dicebear.com/9.x/bottts/svg?seed=mentor',
+              attendedEvents: 8,
+              manualPrepHours: 5,
+              eventVolunteerHours: 12,
+            },
+          ],
+        },
+      });
+    });
+
     dashboardPage = new DashboardPage(page);
   });
 

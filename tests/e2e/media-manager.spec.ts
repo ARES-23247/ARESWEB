@@ -15,6 +15,58 @@ import { MediaManagerPage } from '../pages/MediaManagerPage';
 test.describe('Media Manager - Advanced Scenarios', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock media API endpoints - match actual Hono client paths
+    await page.route('**/api/media/admin', async (route) => {
+      const method = route.request().method();
+
+      // GET /api/media/admin - return list of media
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          json: {
+            media: [
+              {
+                key: 'test-image.png',
+                url: 'https://example.com/test-image.png',
+                altText: 'Test image',
+                folder: 'Gallery',
+                uploadedAt: new Date().toISOString(),
+                size: 12345,
+                contentType: 'image/png',
+              },
+            ],
+          },
+        });
+        return;
+      }
+
+      route.continue();
+    });
+
+    // Mock POST /api/media/admin/syndicate
+    await page.route('**/api/media/admin/syndicate', async (route) => {
+      if (route.request().method() === 'POST') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, message: 'Syndicated successfully' },
+        });
+        return;
+      }
+      route.continue();
+    });
+
+    // Mock PUT /api/media/admin/move/:key
+    await page.route('**/api/media/admin/move/**', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, newKey: 'Gallery/test-image.png' },
+        });
+        return;
+      }
+      route.continue();
+    });
   });
 
   test('DEF-01: Copy URL button copies asset URL to clipboard', async ({ page }) => {

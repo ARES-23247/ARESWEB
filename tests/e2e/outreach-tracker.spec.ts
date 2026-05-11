@@ -48,6 +48,18 @@ test.describe('Outreach Tracker Dashboard', () => {
       });
     });
 
+    // Mock delete endpoint for outreach entries
+    await page.route('**/api/outreach/admin/**', async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true, message: 'Entry purged' },
+        });
+        return;
+      }
+      route.continue();
+    });
+
     // Mock seasons API for the SeasonPicker component
     await page.route('**/api/seasons**', async (route) => {
       await route.fulfill({
