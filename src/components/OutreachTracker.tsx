@@ -17,16 +17,16 @@ const outreachSchema = z.object({
   title: z.string().min(1, "Title is required"),
   date: z.string(),
   location: z.string().nullable().optional(),
-  studentsCount: z.number().min(0),
-  hours: z.number().min(0),
-  peopleReached: z.number().min(0),
+  studentsCount: z.coerce.number().min(0),
+  hours: z.coerce.number().min(0),
+  peopleReached: z.coerce.number().min(0),
   impactSummary: z.string().nullable().optional(),
   isMentoring: z.boolean().optional(),
   mentoredTeamNumber: z.string().nullable().optional(),
   seasonId: z.number().nullable().optional(),
   eventId: z.string().nullable().optional(),
-  mentorCount: z.number().optional(),
-  mentorHours: z.number().optional(),
+  mentorCount: z.coerce.number().optional(),
+  mentorHours: z.coerce.number().optional(),
 });
 
 interface OutreachLog {
@@ -60,23 +60,25 @@ export default function OutreachTracker() {
       title: "",
       date: new Date().toISOString().split('T')[0],
       location: "",
-      studentsCount: 0,
-      hours: 0,
-      peopleReached: 0,
+      studentsCount: "" as number | string,
+      hours: "" as number | string,
+      peopleReached: "" as number | string,
       impactSummary: "",
       isMentoring: false,
       mentoredTeamNumber: "",
       seasonId: null as number | null,
       eventId: null as string | null,
-      mentorCount: 0,
-      mentorHours: 0
+      mentorCount: "" as number | string,
+      mentorHours: "" as number | string
     },
     onSubmit: async ({ value }) => {
       const submitData: Record<string, unknown> = {
         ...value,
-        studentsCount: value.studentsCount || 0,
-        hours: value.hours || 0,
-        peopleReached: value.peopleReached || 0,
+        studentsCount: Number(value.studentsCount) || 0,
+        hours: Number(value.hours) || 0,
+        peopleReached: Number(value.peopleReached) || 0,
+        mentorCount: Number(value.mentorCount) || 0,
+        mentorHours: Number(value.mentorHours) || 0,
         impactSummary: value.impactSummary === "" ? null : value.impactSummary,
         location: value.location === "" ? null : value.location,
         mentoredTeamNumber: value.mentoredTeamNumber === "" ? null : value.mentoredTeamNumber,
@@ -246,7 +248,7 @@ export default function OutreachTracker() {
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-red"
                   />
@@ -268,7 +270,7 @@ export default function OutreachTracker() {
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-red"
                   />
@@ -289,7 +291,7 @@ export default function OutreachTracker() {
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-red"
                   />
@@ -305,7 +307,7 @@ export default function OutreachTracker() {
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-bronze"
                   />
@@ -322,7 +324,7 @@ export default function OutreachTracker() {
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     error={field.state.meta.errors?.[0] as string | undefined}
                     focusColor="ares-bronze"
                   />
@@ -528,15 +530,15 @@ export default function OutreachTracker() {
                     form.setFieldValue("title", log.title);
                     form.setFieldValue("date", log.date.split('T')[0]);
                     form.setFieldValue("location", log.location || "");
-                    form.setFieldValue("studentsCount", log.studentsCount || 0);
-                    form.setFieldValue("hours", log.hours || 0);
-                    form.setFieldValue("peopleReached", log.peopleReached || 0);
+                    form.setFieldValue("studentsCount", log.studentsCount || "");
+                    form.setFieldValue("hours", log.hours || "");
+                    form.setFieldValue("peopleReached", log.peopleReached || "");
                     form.setFieldValue("impactSummary", log.impactSummary || "");
                     form.setFieldValue("isMentoring", !!log.isMentoring);
                     form.setFieldValue("mentoredTeamNumber", log.mentoredTeamNumber || "");
                     form.setFieldValue("seasonId", log.seasonId || null);
-                    form.setFieldValue("mentorCount", log.mentorCount || 0);
-                    form.setFieldValue("mentorHours", log.mentorHours || 0);
+                    form.setFieldValue("mentorCount", log.mentorCount || "");
+                    form.setFieldValue("mentorHours", log.mentorHours || "");
                     form.setFieldValue("eventId", log.isDynamic ? (log.eventId || log.id.toString()) : null);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
