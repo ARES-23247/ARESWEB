@@ -92,13 +92,13 @@ test.describe('Admin Users Dashboard', () => {
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
-    // Wait for the table to render with user data
-    await page.waitForTimeout(1000);
+    // Wait for user data to be rendered in the table
+    await expect(page.getByText('Test User 1')).toBeVisible();
 
-    // Find the role select dropdown for the test user
+    // Find the role select dropdown for the first user
     const roleSelect = page.locator('select').first();
 
-    // Verify initial role exists
+    // Verify initial role exists and is visible
     await expect(roleSelect).toBeVisible();
 
     // Change the role to admin
@@ -117,10 +117,13 @@ test.describe('Admin Users Dashboard', () => {
     // Wait for the page to load
     await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
 
-    // Find a member type select dropdown
+    // Wait for user data to be rendered in the table
+    await expect(page.getByText('Test User 1')).toBeVisible();
+
+    // Find the member type select dropdown (second select in the table)
     const memberTypeSelect = page.locator('select').nth(1);
 
-    // Verify member type select exists
+    // Verify member type select exists and is visible
     await expect(memberTypeSelect).toBeVisible();
 
     // Change the member type to mentor

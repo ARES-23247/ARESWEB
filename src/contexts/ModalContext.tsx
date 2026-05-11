@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useRef } from "react";
+import React, { createContext, useContext, useState, ReactNode, useRef } from "react";
 import ConfirmModal, { ConfirmOptions } from "../components/modals/ConfirmModal";
 import PromptModal, { PromptOptions } from "../components/modals/PromptModal";
 
@@ -21,7 +21,8 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const [promptOptions, setPromptOptions] = useState<PromptOptions | null>(null);
   const [promptResolver, setPromptResolver] = useState<((value: string | null) => void) | null>(null);
 
-  const confirm = useCallback((options: ConfirmOptions) => {
+  // Note: React Compiler automatically memoizes these functions
+  function confirm(options: ConfirmOptions) {
     lastActiveElement.current = document.activeElement as HTMLElement;
     return new Promise<boolean>((resolve) => {
       // Resolve any stale pending confirmation with false to prevent zombie promises
@@ -31,9 +32,9 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       });
       setConfirmOptions(options);
     });
-  }, []);
+  }
 
-  const prompt = useCallback((options: PromptOptions) => {
+  function prompt(options: PromptOptions) {
     lastActiveElement.current = document.activeElement as HTMLElement;
     return new Promise<string | null>((resolve) => {
       // Resolve any stale pending prompt with null to prevent zombie promises
@@ -43,45 +44,45 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       });
       setPromptOptions(options);
     });
-  }, []);
+  }
 
-  const restoreFocus = useCallback(() => {
+  function restoreFocus() {
     if (lastActiveElement.current) {
       lastActiveElement.current.focus();
       lastActiveElement.current = null;
     }
-  }, []);
+  }
 
-  const handleConfirmAction = useCallback(() => {
+  function handleConfirmAction() {
     if (confirmResolver) confirmResolver(true);
     setConfirmOptions(null);
     setConfirmResolver(null);
     restoreFocus();
-  }, [confirmResolver, restoreFocus]);
+  }
 
-  const handleConfirmCancel = useCallback(() => {
+  function handleConfirmCancel() {
     if (confirmResolver) confirmResolver(false);
     setConfirmOptions(null);
     setConfirmResolver(null);
     restoreFocus();
-  }, [confirmResolver, restoreFocus]);
+  }
 
-  const handlePromptSubmit = useCallback((value: string) => {
+  function handlePromptSubmit(value: string) {
     if (promptResolver) promptResolver(value);
     setPromptOptions(null);
     setPromptResolver(null);
     restoreFocus();
-  }, [promptResolver, restoreFocus]);
+  }
 
-  const handlePromptCancel = useCallback(() => {
+  function handlePromptCancel() {
     if (promptResolver) promptResolver(null);
     setPromptOptions(null);
     setPromptResolver(null);
     restoreFocus();
-  }, [promptResolver, restoreFocus]);
+  }
 
-  // EFF-D02: Memoize context value to prevent full-app re-renders on state change
-  const value = useMemo(() => ({ confirm, prompt }), [confirm, prompt]);
+  // Context value - React Compiler automatically optimizes this to prevent unnecessary re-renders
+  const value = { confirm, prompt };
 
   return (
     <ModalContext.Provider value={value}>

@@ -19,41 +19,31 @@ test.describe('Sponsor Manager', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
 
-    // Mock sponsors API endpoints
-    await page.route('**/api/sponsors/admin**', async (route) => {
-      const method = route.request().method();
+    // Mock sponsors API endpoints - match actual Hono client paths
+    await page.route('**/api/sponsors/admin/list', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          sponsors: [
+            {
+              id: '1',
+              name: 'Example Sponsor',
+              tier: 'Gold',
+              logoUrl: 'https://example.com/logo.png',
+              websiteUrl: 'https://example.com',
+              isActive: 1,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+    });
 
-      // GET /api/sponsors/admin - return list of sponsors
-      if (method === 'GET') {
-        await route.fulfill({
-          status: 200,
-          json: {
-            sponsors: [
-              {
-                id: '1',
-                name: 'Example Sponsor',
-                tier: 'Gold',
-                logoUrl: 'https://example.com/logo.png',
-                websiteUrl: 'https://example.com',
-                isActive: 1,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          },
-        });
-        return;
-      }
-
-      // POST /api/sponsors/admin - save sponsor
-      if (method === 'POST') {
-        await route.fulfill({
-          status: 200,
-          json: { success: true, id: crypto.randomUUID() },
-        });
-        return;
-      }
-
-      route.continue();
+    await page.route('**/api/sponsors/admin/save', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: { success: true, id: crypto.randomUUID() },
+      });
     });
 
     // Mock DELETE endpoint for sponsor deletion

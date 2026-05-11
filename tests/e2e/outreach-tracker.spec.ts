@@ -14,48 +14,38 @@ test.describe('Outreach Tracker Dashboard', () => {
 
     await setupMockAuth(page);
 
-    // Mock outreach API endpoints
-    await page.route('**/api/outreach**', async (route) => {
-      const method = route.request().method();
+    // Mock outreach API endpoints - match actual Hono client paths
+    await page.route('**/api/outreach/admin/list', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          logs: [
+            {
+              id: 1,
+              title: 'Robot Demo at Science Fair',
+              date: '2025-04-20',
+              hours: 4.5,
+              peopleReached: 75,
+              studentsCount: 6,
+              mentorCount: 2,
+              mentorHours: 9,
+              impactSummary: 'Demonstrated robot programming and mechanics to interested students and parents.',
+              isMentoring: 0,
+              mentoredTeamNumber: null,
+              seasonId: null,
+              eventId: null,
+              location: null,
+            },
+          ],
+        },
+      });
+    });
 
-      // GET /api/outreach - return list of outreach entries
-      if (method === 'GET') {
-        await route.fulfill({
-          status: 200,
-          json: {
-            outreach: [
-              {
-                id: 1,
-                title: 'Robot Demo at Science Fair',
-                date: '2025-04-20',
-                hours: 4.5,
-                peopleReached: 75,
-                studentsCount: 6,
-                mentorCount: 2,
-                mentorHours: 9,
-                impactSummary: 'Demonstrated robot programming and mechanics to interested students and parents.',
-                isMentoring: 0,
-                mentoredTeamNumber: null,
-                seasonId: null,
-                eventId: null,
-                location: null,
-              },
-            ],
-          },
-        });
-        return;
-      }
-
-      // POST /api/outreach - save outreach entry
-      if (method === 'POST') {
-        await route.fulfill({
-          status: 200,
-          json: { success: true, id: '1' },
-        });
-        return;
-      }
-
-      route.continue();
+    await page.route('**/api/outreach/admin/save', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: { success: true, id: '1' },
+      });
     });
 
     // Mock seasons API for the SeasonPicker component
