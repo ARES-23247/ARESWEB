@@ -207,6 +207,7 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
       throw new ApiError("Failed to fetch from YouTube API", 500, "INTERNAL_ERROR");
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
     const items = data.items || [];
 
@@ -223,12 +224,7 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
       if (!existingIds.has(videoId)) {
         const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
         
-        // Get the best thumbnail
-        let thumbUrl = null;
-        if (snippet.thumbnails) {
-          thumbUrl = snippet.thumbnails.maxres?.url || snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url;
-        }
-        
+
         // Note: For thumbnailKey, we usually store an R2 key. 
         // For YouTube sync, we might just store the external URL or leave it null, 
         // as the UI can fallback to the YouTube thumbnail using the videoId.
