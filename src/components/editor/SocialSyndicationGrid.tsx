@@ -15,7 +15,7 @@ export default function SocialSyndicationGrid({ availableSocials, socials, onCha
          <span className="text-xs font-bold text-ares-gray uppercase tracking-widest">Broadcast & Social Syndication</span>
       </div>
       <div className="flex flex-wrap gap-4">
-        {availableSocials.map(platform => (
+        {Array.isArray(availableSocials) && availableSocials.map(platform => (
           <label key={platform} className="flex items-center gap-2 cursor-pointer group">
             <input 
               type="checkbox" 

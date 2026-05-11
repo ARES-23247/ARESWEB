@@ -77,6 +77,16 @@ test.describe('Outreach Tracker Dashboard', () => {
         },
       });
     });
+
+    // Mock public outreach endpoint (fetched after save for query invalidation)
+    await page.route('**/api/outreaches**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          outreach: [],
+        },
+      });
+    });
   });
 
   test('Outreach tracker loads and displays impact metrics', async ({ page }) => {

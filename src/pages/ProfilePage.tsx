@@ -153,7 +153,7 @@ export default function ProfilePage() {
   }
 
   const memberLabel = { student: "Student", alumni: "Alumni", mentor: "Mentor", coach: "Coach" }[profile.memberType] || "Member";
-  const memberIcon = { student: "📚", alumni: "🎓", mentor: "🔧", coach: "ðŸ†" }[profile.memberType] || "👤";
+  const memberIcon = { student: "📚", alumni: "🎓", mentor: "🔧", coach: "🏆" }[profile.memberType] || "👤";
 
   const subteams = typeof profile.subteams === "string" ? JSON.parse(profile.subteams || "[]") : (profile.subteams || []);
   const colleges = typeof profile.colleges === "string" ? JSON.parse(profile.colleges || "[]") : (profile.colleges || []);
@@ -378,7 +378,7 @@ export default function ProfilePage() {
                     <BrandLogo domain={col.domain} fallbackIcon={GraduationCap} className="w-8 h-8" />
                     <div>
                       <p className="text-white text-sm font-bold">{col.name}</p>
-                      <p className="text-marble text-xs">{[col.degree, col.years].filter(Boolean).join(" Â· ")}</p>
+                      <p className="text-marble text-xs">{[col.degree, col.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}
@@ -396,8 +396,8 @@ export default function ProfilePage() {
                   <div key={i} className="flex items-center gap-3">
                     <BrandLogo domain={emp.domain} fallbackIcon={Briefcase} className="w-8 h-8" />
                     <div>
-                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-xs ml-1">â— Current</span>}</p>
-                      <p className="text-marble text-xs">{[emp.title, emp.years].filter(Boolean).join(" Â· ")}</p>
+                      <p className="text-white text-sm font-bold">{emp.name} {emp.current && <span className="text-ares-gold text-xs ml-1">● Current</span>}</p>
+                      <p className="text-marble text-xs">{[emp.title, emp.years].filter(Boolean).join(" · ")}</p>
                     </div>
                   </div>
                 ))}

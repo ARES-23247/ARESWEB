@@ -108,7 +108,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
             <div className="flex items-center gap-2 mt-1">
               {team.city && (
                 <span className="text-xs text-marble/60 font-semibold">
-                  ðŸ“ {team.city}, {team.state_prov}{team.country && team.country !== "USA" ? `, ${team.country}` : ""}
+                  📍 {team.city}, {team.state_prov}{team.country && team.country !== "USA" ? `, ${team.country}` : ""}
                 </span>
               )}
               {team.robot_name && (
@@ -197,7 +197,7 @@ export default function TeamAnalysisCard({ team, ranking, seasonKey }: TeamAnaly
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-semibold text-marble/30">
-                  {analysis.model} {analysis.tokensUsed ? `â€¢ ${analysis.tokensUsed} tokens` : ""}
+                  {analysis.model} {analysis.tokensUsed ? `• ${analysis.tokensUsed} tokens` : ""}
                 </span>
                 <button
                   onClick={handleAnalyze}

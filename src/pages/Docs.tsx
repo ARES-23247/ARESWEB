@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "../components/SEO";
@@ -285,7 +285,7 @@ export default function Docs() {
                       disabled={feedbackMutation.isPending}
                       className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">ðŸ‘</span> Yes, it was
+                      <span className="text-lg">👍</span> Yes, it was
                     </button>
                     <button
                       onClick={async () => {

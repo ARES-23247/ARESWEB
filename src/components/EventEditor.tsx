@@ -97,7 +97,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         const res = await fetch("/api/locations");
         if (res.ok) {
           const data = (await res.json()) as { locations?: Location[] };
-          return data.locations || [];
+          return Array.isArray(data.locations) ? data.locations : [];
         }
         return [];
       } catch {
@@ -141,7 +141,22 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         form.setFieldValue("publishedAt", (event as any).publishedAt || "");
         form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        form.setFieldValue("socials", ((eventRes as any).socials || {}) as any);
+        const defaultSocials = {
+          discord: true,
+          bluesky: true,
+          slack: false,
+          teams: false,
+          gchat: false,
+          facebook: false,
+          twitter: false,
+          instagram: false
+        };
+        const rawSocials = (eventRes as any).socials;
+        const mergedSocials = {
+          ...defaultSocials,
+          ...(rawSocials && typeof rawSocials === 'object' && !Array.isArray(rawSocials) ? rawSocials : {})
+        };
+        form.setFieldValue("socials", mergedSocials as any);
 
         // Parse rrule
         let parsedFreq = "";
