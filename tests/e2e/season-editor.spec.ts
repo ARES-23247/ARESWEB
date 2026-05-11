@@ -154,6 +154,41 @@ test.describe('Season/Award Editor E2E', () => {
   });
 
   test.describe('Award Editor Integration', () => {
+    test.beforeEach(async ({ page }) => {
+      // Mock the awards API endpoints for all tests in this describe block
+      await page.route('**/api/awards**', async (route) => {
+        // GET /api/awards - return empty list
+        if (route.request().method() === 'GET') {
+          await route.fulfill({
+            status: 200,
+            json: { awards: [] },
+          });
+          return;
+        }
+
+        // POST /api/awards/admin/save - return success
+        if (route.request().method() === 'POST') {
+          await route.fulfill({
+            status: 200,
+            json: { success: true, id: 'new-award-id' },
+          });
+          return;
+        }
+
+        // DELETE /api/awards/admin/:id - return success
+        if (route.request().method() === 'DELETE') {
+          await route.fulfill({
+            status: 200,
+            json: { success: true },
+          });
+          return;
+        }
+
+        // Continue with default for other methods
+        route.continue();
+      });
+    });
+
     test('should load award editor from dashboard', async ({ page }) => {
       await page.goto('/dashboard/legacy');
 

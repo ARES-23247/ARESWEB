@@ -67,13 +67,15 @@ export const createMockSession = (userId: string = MOCK_ADMIN_USER.id) => ({
 
 /**
  * Mock profile data for E2E tests.
+ * NOTE: The API returns camelCase property names (firstName, lastName) to match
+ * the Drizzle ORM schema, even though the database columns are snake_case.
  */
 export const createMockProfile = (userId: string = MOCK_ADMIN_USER.id) => ({
-  user_id: userId,
+  userId,
   nickname: MOCK_ADMIN_USER.name,
-  first_name: 'Admin',
-  last_name: 'User',
-  member_type: 'mentor',
+  firstName: 'Admin',
+  lastName: 'User',
+  memberType: 'mentor',
   auth: {
     id: userId,
     email: MOCK_ADMIN_USER.email,
@@ -81,6 +83,17 @@ export const createMockProfile = (userId: string = MOCK_ADMIN_USER.id) => ({
     image: MOCK_ADMIN_USER.image,
     role: MOCK_ADMIN_USER.role,
   },
+  bio: '',
+  pronouns: '',
+  favoriteFood: '',
+  funFact: '',
+  showEmail: 0,
+  showPhone: 0,
+  showOnAbout: 1,
+  subteams: '[]',
+  dietaryRestrictions: '[]',
+  colleges: '[]',
+  employers: '[]',
 });
 
 interface SetupMockAuthOptions {
