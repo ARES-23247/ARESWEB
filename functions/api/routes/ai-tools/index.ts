@@ -14,6 +14,7 @@ export const aiToolsRouter = new OpenAPIHono<AppEnv>();
  */
 
 // Helper to extract tools from the OpenAPI router
+/* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic OpenAPI spec processing */
 function extractToolsFromSpec(spec: any) {
   const tools: Array<{
     name: string;
@@ -26,7 +27,7 @@ function extractToolsFromSpec(spec: any) {
   if (!spec?.paths) return tools;
 
   for (const [path, methods] of Object.entries(spec.paths)) {
-    for (const [method, operation] of Object.entries(methods)) {
+    for (const [method, operation] of Object.entries(methods as Record<string, any>)) {
       if (method === "parameters" || !operation) continue;
 
       const operationId = operation.operationId || `${method}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -95,7 +96,7 @@ function convertSchemaToJson(schema: any): any {
 aiToolsRouter.get("/", async (c) => {
   const specUrl = `${new URL(c.req.url).origin}/api/openapi.json`;
   const specResponse = await fetch(specUrl);
-  const spec = await specResponse.json();
+  const spec: any = await specResponse.json();
 
   const tools = extractToolsFromSpec(spec);
 

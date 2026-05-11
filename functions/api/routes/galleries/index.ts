@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { ApiError } from "../../middleware/errorHandler";
 import {
@@ -7,10 +8,10 @@ import {
   updateGalleryRoute,
   deleteGalleryRoute,
   type gallerySchema,
-} from "../../../../../shared/routes/galleries";
+} from "@shared/routes/galleries";
 import { AppEnv, ensureAdmin, getSessionUser, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
-import * as schema from "../../../../../src/db/schema";
+import * as schema from "../../../../src/db/schema";
 
 export const galleriesRouter = new OpenAPIHono<AppEnv>();
 
@@ -18,7 +19,7 @@ export const galleriesRouter = new OpenAPIHono<AppEnv>();
 galleriesRouter.use("/admin/*", ensureAdmin);
 galleriesRouter.use("/admin", ensureAdmin);
 
-const serializeGallery = (g: typeof schema.galleries.$inferSelect): Zod.infer<typeof gallerySchema> => ({
+const serializeGallery = (g: typeof schema.galleries.$inferSelect): z.infer<typeof gallerySchema> => ({
   id: g.id,
   title: g.title,
   description: g.description ?? null,

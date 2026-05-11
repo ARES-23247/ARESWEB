@@ -31,6 +31,18 @@
 - [ ] **Phase 67: Test Suite Sanitization** — Resolve remaining errors in `tests/` and unit test files.
 - [ ] **Phase 68: Final Audit & Lock** — Verify zero-problem state and ensure CI enforcement.
 
+### Phase 64: Analysis & Automated Fixes ✅
+**Goal:** [Completed] Audit all current errors and run `eslint --fix` for low-hanging fruit.
+
+### Phase 65: Backend Sanitization ✅
+**Goal:** [Completed] Resolve remaining errors in `functions/api/` (handlers, middleware, utils).
+
+### Phase 66: Frontend Sanitization
+**Goal:** [To be planned] Resolve remaining errors in `src/` (components, hooks, pages).
+
+### Phase 67: Test Suite Sanitization
+**Goal:** [To be planned] Resolve remaining errors in `tests/` and unit test files.
+
 ---
 
 ## v8.0 End-to-End Hono RPC Type Safety 📋 PLANNED
@@ -126,18 +138,3 @@ Plans:
 
 ## Backlog
 
-### Phase 999.64: Follow-up — Phase 64 incomplete plans (BACKLOG)
-
-**Goal:** Resolve plans that ran without producing summaries during Phase 64 execution
-**Source phase:** 64
-**Deferred at:** 2026-05-09 during /gsd-next advancement to Phase 66
-**Plans:**
-- [ ] 64-1: analysis-and-automated-fixes (ran, no SUMMARY.md)
-
-### Phase 999.65: Follow-up — Phase 65 incomplete plans (BACKLOG)
-
-**Goal:** Create execution plans for Phase 65 context
-**Source phase:** 65
-**Deferred at:** 2026-05-09 during /gsd-next advancement to Phase 66
-**Plans:**
-- [ ] Needs planning (CONTEXT.md exists but no PLAN.md)

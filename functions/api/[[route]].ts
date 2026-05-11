@@ -120,11 +120,9 @@ apiRouter.doc('/openapi.json', {
 });
 
 apiRouter.get('/reference', apiReference({
-  spec: {
-    url: '/api/openapi.json',
-  },
+  url: '/api/openapi.json',
   theme: 'moon',
-}));
+} as any)); // eslint-disable-line @typescript-eslint/no-explicit-any -- Scalar API types are version-sensitive
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
@@ -319,7 +317,7 @@ const routes = apiRouter
       id: r.id || crypto.randomUUID(),
       createdAt: r.createdAt || new Date().toISOString(),
       resourceType: String(r.resourceType || "unknown"),
-      resourceId: r.resourceId || null,
+      resourceId: r.resourceId || "",
       details: (r.details || "").substring(0, 500)
     }));
 

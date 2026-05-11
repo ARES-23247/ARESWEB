@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Play, Plus, ExternalLink } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetVideos, useParseVideoUrl } from "../api";
+import { useGetVideos, useParseVideoUrlMutation } from "../api";
 import { useMutation } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
 
@@ -41,7 +41,7 @@ export default function VideoPickerModal({
     enabled: isOpen,
   });
 
-  const { data: parseResponse, refetch: parseUrl } = useParseVideoUrl({ enabled: false });
+  const parseUrlMutation = useParseVideoUrlMutation();
 
   const videos = (videosResponse as unknown as { videos: Video[] })?.videos ?? [];
 
@@ -50,15 +50,14 @@ export default function VideoPickerModal({
       setUrlError("Please enter a video URL");
       return;
     }
-    setUrlError("");
-    await parseUrl({ url: videoUrl.trim() });
+    const parseResult = await parseUrlMutation.mutateAsync({ url: videoUrl.trim() });
+    if (parseResult) {
+      setPlatform(parseResult.platform);
+      setParsedVideoId(parseResult.videoId);
+    }
   };
 
-  // When parse response comes back, update the form
-  if (parseResponse && !parsedVideoId) {
-    setPlatform(parseResponse.platform);
-    setParsedVideoId(parseResponse.videoId);
-  }
+
 
   const createMutation = useMutation({
     mutationFn: async (payload: {

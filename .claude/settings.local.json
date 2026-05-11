@@ -27,7 +27,8 @@
       "Bash(powershell -Command \"Test-Path 'C:\\\\Users\\\\david\\\\AppData\\\\Roaming\\\\Claude\\\\claude_desktop_config.json'\")",
       "Read(//c/Users/david/AppData/Roaming/Claude/**)",
       "Read(//c/Users/david/.claude/projects/c--Users-david-dev-robotics-ftc-ARESWEB/.claude/**)",
-      "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")"
+      "Bash(curl -s \"https://aresfirst.org/api/openapi.json\")",
+      "Bash(curl -v \"https://aresfirst.org/api/openapi.json\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

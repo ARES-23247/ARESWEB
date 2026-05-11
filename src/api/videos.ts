@@ -50,7 +50,7 @@ export function useGetVideos(
   return useQuery<VideosResponse>({
     queryKey: ["videos"],
     queryFn: async () => {
-      const response = await client.videos.$get();
+      const response = await client.videos.$get({ query: {} });
       return unwrapResponse<VideosResponse>(response);
     },
     ...options,
@@ -84,7 +84,7 @@ export function useParseVideoUrl(
   return useQuery<ParseVideoUrlResponse, Error>({
     queryKey: ["parse_video_url"],
     queryFn: async () => {
-      const response = await client.videos["parse-url"].$post();
+      const response = await client.videos["parse-url"].$post({ json: { url: "" } });
       return unwrapResponse<ParseVideoUrlResponse>(response);
     },
     enabled: false, // Only run when manually triggered
@@ -140,7 +140,7 @@ export function useUpdateVideo(
   const queryClient = useQueryClient();
   return useMutation<VideoResponse, Error, { id: string } & UpdateVideoPayload>({
     mutationFn: async ({ id, ...data }) => {
-      const response = await client.videos.admin[":id"].$put({ param: { id }, json: data });
+      const response = await client.videos.admin[":id"].$patch({ param: { id }, json: data });
       return unwrapResponse<VideoResponse>(response);
     },
     ...withMutationCallbacks(queryClient, options, {

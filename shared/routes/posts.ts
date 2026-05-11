@@ -59,7 +59,9 @@ export const postResponseSchema = toCamelCaseResponse(
     zulipStream: true,
     zulipTopic: true,
   })
-).openapi({
+).extend({
+  authorNickname: z.string().nullable().optional(),
+}).openapi({
   example: {
     slug: "match-preview",
     title: "Match Preview",
@@ -76,6 +78,7 @@ export const postResponseSchema = toCamelCaseResponse(
     isPortfolio: 0,
     zulipStream: "blog",
     zulipTopic: "Blog: Match Preview",
+    authorNickname: "John",
   },
 });
 

@@ -101,7 +101,35 @@ const sanitizeFtsQuery = (query: string): string => {
   return query.replace(/["\\^*-:]/g, ' ').trim().split(/\s+/).filter(Boolean).join(' ');
 };
 
-type EventSaveBody = z.infer<typeof import("../../../../shared/schemas/eventSchema").eventSchema>;
+// Explicit type for event save/update body — matches the eventSchema from shared/schemas/eventSchema.ts
+// Defined explicitly to avoid TypeScript inference issues with the dynamic extendSchema builder pattern
+interface EventSaveBody {
+  id?: string;
+  title: string;
+  category?: string;
+  dateStart: string;
+  dateEnd?: string | null;
+  location?: string | null;
+  description?: string | null;
+  coverImage?: string | null;
+  tbaEventKey?: string | null;
+  socials?: Record<string, boolean>;
+  isPotluck?: boolean;
+  isVolunteer?: boolean;
+  isDraft?: boolean;
+  publishedAt?: string | null;
+  seasonId?: number | null;
+  meetingNotes?: string | null;
+  rrule?: string | null;
+  recurrenceRule?: string | null;
+  parentEventId?: string | null;
+  originalStartTime?: string | null;
+  recurringGroupId?: string | null;
+  recurringException?: boolean | null;
+  updateMode?: "single" | "following";
+  deleteMode?: "single" | "following";
+  status?: string;
+}
 
 /**
  * Maps a database event row to the standard API response format.
@@ -131,7 +159,6 @@ function mapToEventResponse(e: Record<string, any>, locationMap: Record<string, 
     recurringException: e.recurringException ? Number(e.recurringException) : null,
     contentDraft: e.contentDraft ?? null,
     gcalEventId: e.gcalEventId ?? null,
-    createdAt: e.createdAt ?? null,
     updatedAt: e.updatedAt ?? null,
     revisionOf: e.revisionOf ?? null,
     publishedAt: e.publishedAt ?? null,
@@ -307,7 +334,8 @@ export const eventHandlers = {
     const db = getDb(c);
 
     if (body.id) {
-      const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.id)).get();
+      const idStr = String(body.id);
+      const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, idStr)).get();
       if (existing) {
         return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
       }
@@ -785,7 +813,7 @@ export const eventHandlers = {
     return {
       status: 200 as const,
       body: {
-        signups,
+        signups: signups as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- Handler projects subset of signup schema fields
         dietarySummary,
         teamDietarySummary: {},
         authenticated: !!user,
@@ -796,7 +824,7 @@ export const eventHandlers = {
     };
   },
 
-  submitSignup: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof submitSignupRoute>> => {
+  submitSignup: async (input: HandlerInput<{ bringing?: string; notes?: string; prepHours?: number }>, c: AresContext): Promise<ApiResponse<typeof submitSignupRoute>> => {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (!user || user.role === "unverified") throw new ApiError("Forbidden", 403);
@@ -822,7 +850,7 @@ export const eventHandlers = {
     return { status: 200 as const, body: { success: true } };
   },
 
-  updateMyAttendance: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof updateMyAttendanceRoute>> => {
+  updateMyAttendance: async (input: HandlerInput<{ attended: boolean }>, c: AresContext): Promise<ApiResponse<typeof updateMyAttendanceRoute>> => {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (!user) throw new ApiError("Unauthorized", 401);
@@ -846,7 +874,7 @@ export const eventHandlers = {
     return { status: 200 as const, body: { success: true } };
   },
 
-  updateUserAttendance: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof updateUserAttendanceRoute>> => {
+  updateUserAttendance: async (input: HandlerInput<{ attended: boolean }>, c: AresContext): Promise<ApiResponse<typeof updateUserAttendanceRoute>> => {
     const { params, body } = input;
     const user = await getSessionUser(c);
     if (user?.role !== "admin" && !["coach", "mentor"].includes(user?.memberType || "")) throw new ApiError("Unauthorized", 401);
@@ -870,7 +898,7 @@ export const eventHandlers = {
     return { status: 200 as const, body: { success: true } };
   },
 
-  repushEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof repushEventRoute>> => {
+  repushEvent: async (input: HandlerInput<{ socials?: string[] }>, c: AresContext): Promise<ApiResponse<typeof repushEventRoute>> => {
     const { params, body } = input;
     const { id } = params;
     const db = getDb(c);

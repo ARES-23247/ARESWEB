@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { ApiError } from "../../middleware/errorHandler";
 import {
@@ -9,10 +10,10 @@ import {
   deleteVideoRoute,
   type videoSchema,
   videoPlatformSchema,
-} from "../../../../../shared/routes/videos";
+} from "@shared/routes/videos";
 import { AppEnv, ensureAdmin, getSessionUser, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
-import * as schema from "../../../../../src/db/schema";
+import * as schema from "../../../../src/db/schema";
 
 export const videosRouter = new OpenAPIHono<AppEnv>();
 
@@ -55,13 +56,13 @@ function parseVideoUrl(url: string): { platform: "youtube" | "vimeo" | "other"; 
   return { platform: "other", videoId: trimmedUrl, embedUrl: trimmedUrl };
 }
 
-const serializeVideo = (v: typeof schema.videos.$inferSelect): Zod.infer<typeof videoSchema> => {
+const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof videoSchema> => {
   const parsed = parseVideoUrl(v.videoId);
   return {
     id: v.id,
     title: v.title,
     description: v.description ?? null,
-    platform: v.platform,
+    platform: v.platform as "youtube" | "vimeo" | "other",
     videoId: v.videoId,
     thumbnailKey: v.thumbnailKey ?? null,
     thumbnailUrl: v.thumbnailKey ? `/api/media/${v.thumbnailKey}` : null,

@@ -42,7 +42,7 @@ export function useGetGalleries(
   return useQuery<GalleriesResponse>({
     queryKey: ["galleries"],
     queryFn: async () => {
-      const response = await client.galleries.$get();
+      const response = await client.galleries.$get({ query: {} });
       return unwrapResponse<GalleriesResponse>(response);
     },
     ...options,
@@ -100,7 +100,7 @@ export function useUpdateGallery(
   const queryClient = useQueryClient();
   return useMutation<GalleryResponse, Error, { id: string } & UpdateGalleryPayload>({
     mutationFn: async ({ id, ...data }) => {
-      const response = await client.galleries.admin[":id"].$put({ param: { id }, json: data });
+      const response = await client.galleries.admin[":id"].$patch({ param: { id }, json: data });
       return unwrapResponse<GalleryResponse>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
