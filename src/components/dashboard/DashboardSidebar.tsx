@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Home, Globe,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";
@@ -202,6 +202,14 @@ export default function DashboardSidebar({
           <div>
             <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Personal</h4>
             <div className="space-y-1 px-3">
+              <Link 
+                to="/" 
+                className="w-full flex items-center gap-3 px-4 py-2.5 ares-cut-sm transition-all font-semibold text-left text-sm text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
+              >
+                <Globe size={18} className="text-ares-cyan/80 group-hover:text-white" />
+                <span className="truncate">Public Site</span>
+              </Link>
+              <div className="h-px bg-white/5 mx-2 my-1" />
               <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
               <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />
             </div>
