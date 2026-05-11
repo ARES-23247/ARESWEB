@@ -10,7 +10,9 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(node ./node_modules/@gsd-build/sdk/dist/cli.js query config-get workflow._auto_chain_active)",
-      "Bash(node ./node_modules/@gsd-build/sdk/dist/cli.js query config-get workflow.auto_advance)"
+      "Bash(node ./node_modules/@gsd-build/sdk/dist/cli.js query config-get workflow.auto_advance)",
+      "Bash(cat \"C:\\\\Users\\\\david\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-david-dev-robotics-ftc\\\\ARESWEB\\\\dc89e9a2-5738-468a-930b-e9608678547e\\\\tasks\\\\baitd4raq.output\" 2>/dev/null | tail -20 || echo \"No output yet\")",
+      "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users-david-dev-robotics-ftc/ARESWEB/dc89e9a2-5738-468a-930b-e9608678547e/tasks/**)"
     ]
   }
 }

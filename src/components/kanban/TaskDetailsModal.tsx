@@ -44,7 +44,7 @@ const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent", color: "bg-ares-red/20 text-ares-red" },
 ];
 
-// Compact toolbar for the task modal â€“ only essential formatting buttons, no import/export/fullscreen/editor-content
+// Compact toolbar for the task modal – only essential formatting buttons, no import/export/fullscreen/editor-content
 function CompactEditorToolbar({ editor }: { editor: Editor }) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
@@ -54,11 +54,11 @@ function CompactEditorToolbar({ editor }: { editor: Editor }) {
       <div className="w-px h-4 bg-white/10 mx-0.5" />
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>H2</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>• List</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>â˜‘</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>☑️</button>
       <div className="w-px h-4 bg-white/10 mx-0.5" />
       <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
-      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">â€•</button>
+      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
     </div>
   );
 }

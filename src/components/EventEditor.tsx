@@ -140,7 +140,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         form.setFieldValue("publishedAt", event.publishedAt || "");
         form.setFieldValue("seasonId", event.seasonId ? Number(event.seasonId) : undefined);
 
-        const defaultSocials: Record<string, boolean> = {
+        const defaultSocials = {
           discord: true,
           bluesky: true,
           slack: false,
@@ -154,7 +154,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         const mergedSocials = {
           ...defaultSocials,
           ...(rawSocials && typeof rawSocials === 'object' && !Array.isArray(rawSocials) ? rawSocials : {})
-        };
+        } as typeof defaultSocials;
         form.setFieldValue("socials", mergedSocials);
 
         // Parse rrule
