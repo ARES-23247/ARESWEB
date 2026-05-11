@@ -8,6 +8,7 @@ import {
   createVideoRoute,
   updateVideoRoute,
   deleteVideoRoute,
+  syncYoutubeVideosRoute,
   type videoSchema,
 } from "@shared/routes/videos";
 import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
@@ -181,6 +182,88 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   }
 
   return c.json({ success: true }, 200);
+})
+
+// POST /videos/admin/sync - Sync videos from YouTube
+.openapi(syncYoutubeVideosRoute, async (c) => {
+  const db = getDb(c);
+  const apiKey = c.env.YOUTUBE_API_KEY;
+  
+  if (!apiKey) {
+    throw new ApiError("YouTube API Key not configured", 500, "INTERNAL_ERROR");
+  }
+
+  // ARESFTC Uploads playlist ID (replace UC with UU in the channel ID)
+  const playlistId = "UUre4FN7UThyVd-biFk0n-Ig";
+  const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}`;
+
+  let addedCount = 0;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("YouTube API Error:", errText);
+      throw new ApiError("Failed to fetch from YouTube API", 500, "INTERNAL_ERROR");
+    }
+
+    const data: any = await response.json();
+    const items = data.items || [];
+
+    // Fetch existing video IDs to prevent duplicates
+    const existingVideos = await db.select({ videoId: schema.videos.videoId }).from(schema.videos).where(eq(schema.videos.platform, "youtube")).execute();
+    const existingIds = new Set(existingVideos.map(v => v.videoId));
+
+    const newVideosToInsert = [];
+
+    for (const item of items) {
+      const snippet = item.snippet;
+      const videoId = snippet.resourceId.videoId;
+
+      if (!existingIds.has(videoId)) {
+        const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
+        
+        // Get the best thumbnail
+        let thumbUrl = null;
+        if (snippet.thumbnails) {
+          thumbUrl = snippet.thumbnails.maxres?.url || snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url || snippet.thumbnails.default?.url;
+        }
+        
+        // Note: For thumbnailKey, we usually store an R2 key. 
+        // For YouTube sync, we might just store the external URL or leave it null, 
+        // as the UI can fallback to the YouTube thumbnail using the videoId.
+        // The schema allows nullish thumbnailKey.
+
+        newVideosToInsert.push({
+          id,
+          title: snippet.title,
+          description: snippet.description || null,
+          platform: "youtube" as const,
+          videoId: videoId,
+          thumbnailKey: null,
+          createdAt: snippet.publishedAt,
+          updatedAt: new Date().toISOString()
+        });
+        
+        existingIds.add(videoId);
+      }
+    }
+
+    if (newVideosToInsert.length > 0) {
+      await db.insert(schema.videos).values(newVideosToInsert).execute();
+      addedCount = newVideosToInsert.length;
+      
+      if (c.executionCtx) {
+        c.executionCtx.waitUntil(logAuditAction(c, "youtube_sync", "video", null, `Synced ${addedCount} new videos from YouTube`));
+      }
+    }
+
+    return c.json({ success: true, added: addedCount }, 200);
+  } catch (error) {
+    console.error("Error syncing YouTube videos:", error);
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("An error occurred during YouTube sync", 500, "INTERNAL_ERROR");
+  }
 });
 
 export default finalVideosRouter;

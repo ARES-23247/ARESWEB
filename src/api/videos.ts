@@ -170,3 +170,23 @@ export function useDeleteVideo(
     })
   });
 }
+
+/**
+ * POST /api/videos/admin/sync - Sync videos from YouTube
+ */
+export function useSyncYoutubeVideosMutation(
+  options?: Omit<UseMutationOptions<{ success: boolean; added: number }, Error, void>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean; added: number }, Error, void>({
+    mutationFn: async () => {
+      const response = await client.videos.admin.sync.$post();
+      return unwrapResponse<{ success: boolean; added: number }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["videos"] });
+      }
+    })
+  });
+}

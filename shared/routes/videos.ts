@@ -220,3 +220,31 @@ export const deleteVideoRoute = createRoute({
   },
   tags: ["videos", "admin"],
 });
+
+export const syncYoutubeVideosRoute = createRoute({
+  method: "post",
+  path: "/admin/sync",
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+            added: z.coerce.number(),
+          }),
+        },
+      },
+      description: "Videos synced successfully",
+    },
+    500: {
+      content: {
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
+      description: "Failed to sync videos",
+    },
+  },
+  tags: ["videos", "admin"],
+});

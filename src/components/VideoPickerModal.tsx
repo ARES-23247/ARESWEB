@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X, Play, Plus, ImagePlus } from "lucide-react";
+import { X, Play, Plus, ImagePlus, RefreshCw } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetVideos, useParseVideoUrlMutation } from "../api";
+import { useGetVideos, useParseVideoUrlMutation, useSyncYoutubeVideosMutation } from "../api";
 import { useMutation } from "@tanstack/react-query";
 import { client, unwrapResponse } from "../api/honoClient";
 import AssetPickerModal from "./AssetPickerModal";
@@ -45,8 +45,24 @@ export default function VideoPickerModal({
   });
 
   const parseUrlMutation = useParseVideoUrlMutation();
+  const syncYoutubeMutation = useSyncYoutubeVideosMutation();
 
   const videos = (videosResponse as unknown as { videos: Video[] })?.videos ?? [];
+
+  const handleSyncYoutube = async () => {
+    try {
+      const result = await syncYoutubeMutation.mutateAsync();
+      if (result.added > 0) {
+        toast.success(`Synced ${result.added} new videos from YouTube!`);
+      } else {
+        toast.info("No new videos found on YouTube.");
+      }
+      refetch();
+    } catch (error) {
+      toast.error("Failed to sync videos from YouTube.");
+      console.error(error);
+    }
+  };
 
   const handleParseUrl = async () => {
     if (!videoUrl.trim()) {
@@ -355,13 +371,21 @@ export default function VideoPickerModal({
           </div>
 
           {!isCreating && (
-            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-center">
+            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-center gap-4">
               <button
                 onClick={() => setIsCreating(true)}
                 className="px-4 py-2 bg-ares-red/20 hover:bg-ares-red/30 text-ares-danger-soft ares-cut-sm text-sm font-bold transition-all border border-ares-red/30 flex items-center gap-2"
               >
                 <Plus size={16} />
                 Add New Video
+              </button>
+              <button
+                onClick={handleSyncYoutube}
+                disabled={syncYoutubeMutation.isPending}
+                className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan ares-cut-sm text-sm font-bold transition-all border border-ares-cyan/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw size={16} className={syncYoutubeMutation.isPending ? "animate-spin" : ""} />
+                {syncYoutubeMutation.isPending ? "Syncing..." : "Sync from YouTube"}
               </button>
             </div>
           )}

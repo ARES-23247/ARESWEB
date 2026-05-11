@@ -62,6 +62,7 @@ export type Bindings = {
   FTC_EVENTS_USERNAME?: string;
   FTC_EVENTS_API_KEY?: string;
   AUDIT_LOG_RETENTION_DAYS?: string;
+  YOUTUBE_API_KEY?: string;
 };
 
 export type Variables = {
