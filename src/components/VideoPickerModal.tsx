@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X, Play, Plus, ImagePlus, RefreshCw } from "lucide-react";
+import { X, Play, Plus, ImagePlus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetVideos, useParseVideoUrlMutation, useSyncYoutubeVideosMutation } from "../api";
+import { useGetVideos, useParseVideoUrlMutation } from "../api";
 import { useMutation } from "@tanstack/react-query";
 import { client, unwrapResponse } from "../api/honoClient";
 import AssetPickerModal from "./AssetPickerModal";

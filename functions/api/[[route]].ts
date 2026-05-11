@@ -57,7 +57,6 @@ import { sentry } from "@hono/sentry";
 import { secureHeaders } from "hono/secure-headers";
 import { etag } from "hono/etag";
 import { OpenAPIHono } from "@hono/zod-openapi";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiReference } from "@scalar/hono-api-reference";
 
 const app = new Hono<AppEnv>();
@@ -122,7 +121,7 @@ apiRouter.doc('/openapi.json', {
 apiRouter.get('/reference', apiReference({
   url: '/api/openapi.json',
   theme: 'moon',
-} as any));
+}));
 
 // ── Usage Metrics Logging (Phase 10) ──
 import { SessionUser } from "./middleware";
