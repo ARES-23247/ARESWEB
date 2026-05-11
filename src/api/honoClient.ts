@@ -73,8 +73,9 @@ export class ApiError extends Error {
  */
 export async function unwrapResponse<T>(response: ClientResponse<unknown>): Promise<T> {
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(response.status, errorData.error || `API Error: ${response.status}`);
+    const errorData = (await response.json().catch(() => ({}))) as { error?: string; message?: string; details?: string };
+    const errMsg = errorData.message || errorData.error || `API Error: ${response.status}`;
+    throw new ApiError(response.status, errorData.details ? `${errMsg} - ${errorData.details}` : errMsg);
   }
   return (await response.json()) as T;
 }

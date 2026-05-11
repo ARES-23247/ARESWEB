@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { AppEnv, getSessionUser, getDb } from "../middleware";
 import { encrypt } from "../../utils/crypto";
 import { safeJSONStringify } from "../../utils/json";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
 /**
@@ -87,7 +87,7 @@ export async function upsertProfile(
     showOnAbout: (await getMergedValue("showOnAbout", false, 1)) ?? 1,
     showEmail: (await getMergedValue("showEmail", false, 0)) ?? 0,
     showPhone: (await getMergedValue("showPhone", false, 0)) ?? 0,
-    memberType: memberType ?? "student",
+    memberType: (await getMergedValue("memberType")) ?? memberType ?? "student",
     gradeYear: (await getMergedValue("gradeYear")) ?? "",
     colleges: (await getMergedValue("colleges", false, "[]")) ?? "[]",
     employers: (await getMergedValue("employers", false, "[]")) ?? "[]",
@@ -109,13 +109,21 @@ export async function upsertProfile(
 
   const { userId: _, ...updateSet } = values;
 
-  await db.insert(schema.userProfiles)
-    .values(values as typeof schema.userProfiles.$inferInsert)
-    .onConflictDoUpdate({
-      target: schema.userProfiles.userId,
-      set: updateSet as typeof schema.userProfiles.$inferInsert
-    })
-    .run();
+  try {
+    await db.insert(schema.userProfiles)
+      .values(values as typeof schema.userProfiles.$inferInsert)
+      .onConflictDoUpdate({
+        target: schema.userProfiles.userId,
+        set: {
+          ...(updateSet as typeof schema.userProfiles.$inferInsert),
+          updatedAt: sql`CURRENT_TIMESTAMP`
+        }
+      })
+      .run();
+  } catch (err: unknown) {
+    console.error("[Profile:Upsert] Database error:", err);
+    throw err;
+  }
 }
 
 

@@ -16,7 +16,10 @@
       "Bash(mkdir -p /c/Users/david/.claude/gsd-user-files-backup)",
       "Bash(cp /c/Users/david/.claude/agents/code-simplifier.md /c/Users/david/.claude/gsd-user-files-backup/agents/code-simplifier.md)",
       "Bash(cp /c/Users/david/.claude/agents/code-simplifier.md __TRACKED_VAR__/agents/code-simplifier.md)",
-      "Bash(# Clear update cache from all runtime directories *)"
+      "Bash(# Clear update cache from all runtime directories *)",
+      "mcp__zai-mcp-server__diagnose_error_screenshot",
+      "Bash(curl -I \"https://aresfirst.org/api/sitemap.xml\")",
+      "Bash(curl -s \"https://aresfirst.org/robots.txt\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache"
