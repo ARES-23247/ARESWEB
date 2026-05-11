@@ -26,6 +26,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const location = useLocation();
   const modal = useModal();
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
   React.useEffect(() => {
     initWebVitals();
@@ -53,10 +54,10 @@ function RootComponent() {
         <ScrollToTop />
         <PWAInstallPrompt />
         <CommandPalette />
-        <MobileQuickActions />
+        {!isDashboard && <MobileQuickActions />}
         <Suspense fallback={null}><GlobalRAGChatbot /></Suspense>
-        <Navbar />
-        <main id="main-content" role="main" className="flex-1 flex flex-col pt-16">
+        {!isDashboard && <Navbar />}
+        <main id="main-content" role="main" className={`flex-1 flex flex-col ${isDashboard ? '' : 'pt-16'}`}>
           <AnimatePresence mode="wait">
             <ErrorBoundary>
               <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-ares-gold border-t-transparent" /></div>}>
@@ -65,7 +66,7 @@ function RootComponent() {
             </ErrorBoundary>
           </AnimatePresence>
         </main>
-        <Footer />
+        {!isDashboard && <Footer />}
       </ErrorBoundary>
     </NuqsAdapter>
   );

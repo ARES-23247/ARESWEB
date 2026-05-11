@@ -46,10 +46,6 @@ export default function Navbar() {
     setActiveDropdown(activeDropdown === name ? null : name);
   };
 
-  const isDashboard = location.pathname.startsWith("/dashboard");
-
-  if (isDashboard) return null;
-
   return (
     <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
       <a
