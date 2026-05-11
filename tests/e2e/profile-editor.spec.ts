@@ -37,8 +37,8 @@ test.describe('Profile Editor Dashboard', () => {
   });
 
   test('Profile editing workflow - update name and bio', async ({ page }) => {
-    // Mock the PUT endpoint to return success and add delay for loading state
-    // This is needed because mock auth resolves too quickly
+    // Mock the PUT endpoint to return success and add delay for loading state.
+    // This must return the full profile data on GET to avoid overriding the mock auth.
     await page.route('**/api/profile/me', async (route) => {
       if (route.request().method() === 'PUT') {
         // Add small delay to make the loading state visible
@@ -49,8 +49,37 @@ test.describe('Profile Editor Dashboard', () => {
           json: { success: true },
         });
       } else {
-        // For GET requests, continue to the default mock
-        route.continue();
+        // For GET requests during this test, return the full mock profile data.
+        // We can't use route.continue() because it would bypass the mock auth handler.
+        // We need to return the same data as setupMockAuth to keep form populated.
+        await route.fulfill({
+          status: 200,
+          json: {
+            userId: 'admin-user',
+            nickname: 'Admin User',
+            firstName: 'Admin',
+            lastName: 'User',
+            memberType: 'mentor',
+            auth: {
+              id: 'admin-user',
+              email: 'admin@ares.org',
+              name: 'Admin User',
+              image: 'https://api.dicebear.com/9.x/bottts/svg?seed=admin',
+              role: 'admin',
+            },
+            bio: '',
+            pronouns: '',
+            favoriteFood: '',
+            funFact: '',
+            showEmail: 0,
+            showPhone: 0,
+            showOnAbout: 1,
+            subteams: '[]',
+            dietaryRestrictions: '[]',
+            colleges: '[]',
+            employers: '[]',
+          },
+        });
       }
     });
 
@@ -298,12 +327,12 @@ test.describe('Profile Editor Dashboard', () => {
             image: 'https://api.dicebear.com/9.x/bottts/svg?seed=student',
             role: 'member',
           },
-          user_id: 'student-user',
-          member_type: 'student',
-          first_name: 'Student',
-          last_name: 'User',
+          userId: 'student-user',
+          memberType: 'student',
+          firstName: 'Student',
+          lastName: 'User',
           nickname: 'Student User',
-          grade_year: '2025',
+          gradeYear: '2025',
         },
       });
     });

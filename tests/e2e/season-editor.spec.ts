@@ -201,6 +201,11 @@ test.describe('Season/Award Editor E2E', () => {
     test('should add new award', async ({ page }) => {
       await page.goto('/dashboard/legacy');
 
+      // Wait for the page to load before interacting with it
+      await expect(page.getByRole('heading', { name: /Trophy Case Management/i })).toBeVisible({
+        timeout: TEST_TIMEOUTS.DEFAULT,
+      });
+
       // Click Add Award button
       await page.getByRole('button', { name: /Add Award/i }).click();
 

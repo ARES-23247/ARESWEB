@@ -6,6 +6,63 @@ import { TEST_TIMEOUTS } from '../fixtures/mock-data';
 test.describe('Admin Users Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await setupMockAuth(page);
+
+    // Mock users API endpoints
+    await page.route('**/api/users/admin/list**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          users: [
+            {
+              id: 'user1',
+              name: 'Test User 1',
+              email: 'test1@ares.org',
+              role: 'user',
+              memberType: 'student',
+              nickname: 'Testy',
+              createdAt: Date.now(),
+              image: 'https://api.dicebear.com/9.x/bottts/svg?seed=test1',
+            },
+            {
+              id: 'user2',
+              name: 'Test User 2',
+              email: 'test2@ares.org',
+              role: 'admin',
+              memberType: 'mentor',
+              nickname: 'Tester',
+              createdAt: Date.now(),
+              image: 'https://api.dicebear.com/9.x/bottts/svg?seed=test2',
+            },
+          ],
+          nextCursor: null,
+        },
+      });
+    });
+
+    // Mock user patch endpoint
+    await page.route('**/api/users/admin/*', async (route) => {
+      const method = route.request().method();
+
+      // PATCH /api/users/admin/:id - update user
+      if (method === 'PATCH') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      // DELETE /api/users/admin/:id - delete user
+      if (method === 'DELETE') {
+        await route.fulfill({
+          status: 200,
+          json: { success: true },
+        });
+        return;
+      }
+
+      route.continue();
+    });
   });
 
   test.afterEach(async ({ page }) => {
@@ -155,11 +212,11 @@ test.describe('Admin Users Dashboard', () => {
       await route.fulfill({
         status: 200,
         json: {
-          user_id: 'author-user',
+          userId: 'author-user',
           nickname: 'Author User',
-          first_name: 'Author',
-          last_name: 'User',
-          member_type: 'mentor',
+          firstName: 'Author',
+          lastName: 'User',
+          memberType: 'mentor',
           auth: {
             role: 'author',
           },
