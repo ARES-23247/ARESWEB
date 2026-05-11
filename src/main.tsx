@@ -6,7 +6,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { get, set, del } from "idb-keyval";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/router-devtools";
 import { HelmetProvider } from "react-helmet-async";
 import { ModalProvider } from "./contexts/ModalContext";
 import "./index.css";
@@ -93,8 +93,11 @@ declare module '@tanstack/react-router' {
 
 import { motion } from "framer-motion";
 
+
+
 function DevTools() {
   const { data } = useSession();
+  const [isRouterDevToolsOpen, setIsRouterDevToolsOpen] = React.useState(false);
   
   if ((data?.user as unknown as { role?: string })?.role !== "admin") return null;
 
@@ -102,27 +105,37 @@ function DevTools() {
     <>
       {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
       
+      {/* Draggable Toggle Button */}
       <motion.div 
         drag 
         dragMomentum={false}
         className="fixed bottom-4 right-[100px] z-[9999]"
         style={{ touchAction: 'none' }}
       >
-        {TanStackRouterDevtools && (
-          <TanStackRouterDevtools 
-            router={router} 
-            initialIsOpen={false} 
-            position="bottom-right"
-            toggleButtonProps={{
-              style: {
-                position: 'static',
-                margin: 0,
-                cursor: 'grab'
-              }
-            }}
-          />
-        )}
+        <button
+          onClick={() => setIsRouterDevToolsOpen(!isRouterDevToolsOpen)}
+          className="flex items-center justify-center w-10 h-10 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl cursor-grab active:cursor-grabbing hover:bg-[#1e293b] transition-colors"
+          title="Toggle TanStack Router DevTools"
+        >
+          <div className="flex flex-col items-center leading-none">
+            <span className="text-[10px] font-bold text-[#00e599]">TAN</span>
+            <span className="text-[10px] font-bold text-[#00e599]">STACK</span>
+          </div>
+        </button>
       </motion.div>
+
+      {/* The Panel - rendered at the viewport level to ensure correct formatting */}
+      {isRouterDevToolsOpen && (
+        <div className="fixed bottom-0 left-0 right-0 h-[400px] z-[9998] shadow-2xl">
+          {TanStackRouterDevtoolsPanel && (
+            <TanStackRouterDevtoolsPanel 
+              router={router} 
+              isOpen={isRouterDevToolsOpen}
+              setIsOpen={setIsRouterDevToolsOpen}
+            />
+          )}
+        </div>
+      )}
     </>
   );
 }
