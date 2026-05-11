@@ -91,6 +91,8 @@ declare module '@tanstack/react-router' {
   }
 }
 
+import { motion } from "framer-motion";
+
 function DevTools() {
   const { data } = useSession();
   
@@ -99,7 +101,28 @@ function DevTools() {
   return (
     <>
       {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
-      {TanStackRouterDevtools && <TanStackRouterDevtools router={router} initialIsOpen={false} position="top-right" />}
+      
+      <motion.div 
+        drag 
+        dragMomentum={false}
+        className="fixed bottom-4 right-[100px] z-[9999]"
+        style={{ touchAction: 'none' }}
+      >
+        {TanStackRouterDevtools && (
+          <TanStackRouterDevtools 
+            router={router} 
+            initialIsOpen={false} 
+            position="bottom-right"
+            toggleButtonProps={{
+              style: {
+                position: 'static',
+                margin: 0,
+                cursor: 'grab'
+              }
+            }}
+          />
+        )}
+      </motion.div>
     </>
   );
 }
