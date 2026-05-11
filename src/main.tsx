@@ -94,7 +94,7 @@ declare module '@tanstack/react-router' {
 function DevTools() {
   const { data } = useSession();
   
-  if (data?.user?.role !== "admin") return null;
+  if ((data?.user as unknown as { role?: string })?.role !== "admin") return null;
 
   return (
     <>
