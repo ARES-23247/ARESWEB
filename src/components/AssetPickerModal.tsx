@@ -29,7 +29,7 @@ export default function AssetPickerModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (url: string, altText: string) => void;
+  onSelect: (url: string, altText: string, key?: string) => void;
 }) {
   const [selectedFolderFilter, setSelectedFolderFilter] = useState<string>("All");
   const [isUploading, setIsUploading] = useState(false);
@@ -48,7 +48,7 @@ export default function AssetPickerModal({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "video"); // Default folder for thumbnails
-      const data = await uploadFile<{ key?: string, url?: string }>("/api/media/admin/upload", formData);
+      await uploadFile<{ key?: string, url?: string }>("/api/media/admin/upload", formData);
       toast.success("Asset uploaded successfully");
       refetch();
     } catch (err) {
