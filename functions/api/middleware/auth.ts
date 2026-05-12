@@ -33,7 +33,7 @@ export function isDevBypassEnabled(c: Context<AppEnv>): boolean {
   // CRITICAL-004 FIX: PRIMARY SECURITY CHECK - Environment must be development
   // This MUST be checked before any hostname-based logic to prevent bypass
   // in preview deployments where hostname might be spoofable
-  const isDev = c.env.ENVIRONMENT === "development" || ((globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === "test");
+  const isDev = c.env.ENVIRONMENT === "development" || (globalThis as unknown as Record<string, unknown>).process !== undefined && ((globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === "test");
   if (!isDev) return false;
 
   // SECONDARY CHECK: Only allow bypass on localhost (not on preview domains)

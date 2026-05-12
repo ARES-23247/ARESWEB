@@ -1,4 +1,4 @@
-﻿import { OpenAPIHono } from "@hono/zod-openapi";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, getDb } from "../middleware";
@@ -71,20 +71,17 @@ export const sitemapRouter = _sitemapRouter
         }
 
         // Docs
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const doc of docs as any[]) {
+        for (const doc of docs as { slug: string }[]) {
           xml += `  <url><loc>${baseUrl}/docs/${doc.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
         }
 
         // Posts
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const post of posts as any[]) {
+        for (const post of posts as { slug: string }[]) {
           xml += `  <url><loc>${baseUrl}/blog/${post.slug}</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n`;
         }
 
         // Events
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const event of events as any[]) {
+        for (const event of events as { id: string }[]) {
           xml += `  <url><loc>${baseUrl}/events/${event.id}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
         }
 

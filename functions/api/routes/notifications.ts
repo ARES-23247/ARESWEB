@@ -119,8 +119,7 @@ export const notificationsRouter = _notificationsRouter
         });
 
         return c.json({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            inquiries: pendingInquiries.map((i: any) => ({
+            inquiries: (pendingInquiries as (typeof schema.inquiries.$inferSelect)[]).map((i) => ({
                 id: i.id,
                 type: i.type,
                 name: i.name,
@@ -128,22 +127,19 @@ export const notificationsRouter = _notificationsRouter
                 status: i.status || 'pending',
                 createdAt: i.createdAt || new Date().toISOString(),
             })),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            posts: pendingPosts.map((p: any) => ({
+            posts: (pendingPosts as (typeof schema.posts.$inferSelect)[]).map((p) => ({
                 id: p.slug,
                 title: p.title,
                 authorName: p.author || 'Unknown',
                 createdAt: p.updatedAt || new Date().toISOString(),
             })),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            events: pendingEvents.map((e: any) => ({
+            events: (pendingEvents as (typeof schema.events.$inferSelect)[]).map((e) => ({
                 id: e.id,
                 title: e.title,
                 dateStart: e.dateStart,
                 createdAt: e.updatedAt || new Date().toISOString(),
             })),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            docs: pendingDocs.map((d: any) => ({
+            docs: (pendingDocs as (typeof schema.docs.$inferSelect)[]).map((d) => ({
                 slug: d.slug,
                 title: d.title,
                 category: d.category,

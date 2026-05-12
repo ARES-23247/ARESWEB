@@ -24,6 +24,22 @@ import {
 
 const _sponsorsRouter = new OpenAPIHono<AppEnv>();
 
+// Drizzle sponsor row type
+type SponsorRow = typeof schema.sponsors.$inferSelect;
+
+/** Normalize a Drizzle sponsor row into the API response shape. */
+function formatSponsor(s: SponsorRow) {
+  return {
+    id: s.id ?? "",
+    name: s.name,
+    tier: (s.tier || "In-Kind") as string,
+    logoUrl: s.logoUrl ?? null,
+    websiteUrl: s.websiteUrl ?? null,
+    isActive: s.isActive ? 1 : 0,
+    createdAt: s.createdAt ?? null,
+  };
+}
+
 // Apply edge caching to public GET routes (non-admin, non-signups)
 _sponsorsRouter.use("*", async (c, next) => {
   const path = c.req.path;
@@ -50,15 +66,7 @@ export const sponsorsRouter = _sponsorsRouter
           .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
           .all();
 
-        const sponsors = results.map((s) => ({
-          id: s.id ?? "",
-          name: s.name,
-          tier: (s.tier || "In-Kind") as string,
-          logoUrl: s.logoUrl ?? null,
-          websiteUrl: s.websiteUrl ?? null,
-          isActive: s.isActive ? 1 : 0,
-          createdAt: s.createdAt ?? null,
-        }));
+        const sponsors = results.map(formatSponsor);
 
         // Response boundary: Drizzle return type diverges from Zod schema
         return typedJson(c, { sponsors }, 200);
@@ -95,15 +103,7 @@ export const sponsorsRouter = _sponsorsRouter
           .orderBy(asc(schema.sponsorMetrics.createdAt))
           .all();
 
-        const sponsor = {
-          id: sponsorRow.id ?? "",
-          name: sponsorRow.name,
-          tier: (sponsorRow.tier || "In-Kind") as string,
-          logoUrl: sponsorRow.logoUrl ?? null,
-          websiteUrl: sponsorRow.websiteUrl ?? null,
-          isActive: sponsorRow.isActive ? 1 : 0,
-          createdAt: sponsorRow.createdAt ?? null,
-        };
+        const sponsor = formatSponsor(sponsorRow);
 
         const metrics = metricsRow.map((m) => ({
           id: m.id ?? null,
@@ -121,15 +121,7 @@ export const sponsorsRouter = _sponsorsRouter
         const db = getDb(c);
         const sponsors = await db.select().from(schema.sponsors).all();
 
-        const mappedSponsors = sponsors.map((s) => ({
-          id: s.id ?? "",
-          name: s.name,
-          tier: (s.tier || "In-Kind") as string,
-          logoUrl: s.logoUrl ?? null,
-          websiteUrl: s.websiteUrl ?? null,
-          isActive: s.isActive ? 1 : 0,
-          createdAt: s.createdAt ?? null,
-        }));
+        const mappedSponsors = sponsors.map(formatSponsor);
 
         // Response boundary: Drizzle return type diverges from Zod schema
         return typedJson(c, { sponsors: mappedSponsors }, 200);

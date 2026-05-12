@@ -1,5 +1,5 @@
 import { ApiError } from "../middleware/errorHandler";
-import { eq, desc, and, gte, lte, count } from "drizzle-orm";
+import { eq, desc, and, gte, lte, count, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
@@ -23,7 +23,11 @@ const _socialQueueRouter = new OpenAPIHono<AppEnv>();
 _socialQueueRouter.use("*", originIntegrityMiddleware());
 _socialQueueRouter.use("*", ensureAuth);
 
-const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
+// Drizzle inferred row type
+type SocialQueueRow = typeof schema.socialQueue.$inferSelect;
+
+/** Convert a Drizzle row to the API SocialQueuePost shape. */
+const toSocialQueuePost = (r: SocialQueueRow): SocialQueuePost => ({
     id: String(r.id),
     content: String(r.content),
     mediaUrls: r.mediaUrls ? JSON.parse(String(r.mediaUrls)) : undefined,
@@ -32,12 +36,19 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
     analytics: r.analytics ? JSON.parse(String(r.analytics)) : null,
     status: r.status as SocialQueuePost["status"],
     linkedType: (r.linkedType as SocialQueuePost["linkedType"]) || null,
-    linkedId: (r.linkedId as string) || null,
+    linkedId: r.linkedId || null,
     createdAt: r.createdAt ? String(r.createdAt) : new Date().toISOString(),
-    sentAt: (r.sentAt as string) || null,
-    errorMessage: (r.errorMessage as string) || null,
-    createdBy: (r.createdBy as string) || null,
+    sentAt: r.sentAt || null,
+    errorMessage: r.errorMessage || null,
+    createdBy: r.createdBy || null,
 });
+
+/** Guard: throw 403 if user is not the owner or admin. */
+function ensureOwnerOrAdmin(user: { role: string; id: string }, ownerId: string | null) {
+    if (user.role !== "admin" && ownerId !== user.id) {
+        throw new ApiError("Forbidden", 403);
+    }
+}
 
 // List posts
 export const socialQueueRouter = _socialQueueRouter
@@ -46,22 +57,17 @@ export const socialQueueRouter = _socialQueueRouter
         const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
         const db = getDb(c);
 
-        let condition = undefined;
         const conditions = [];
 
         if (status !== "all") {
-            // Response boundary: Drizzle return type diverges from Zod schema
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            conditions.push(eq(schema.socialQueue.status, status as any));
+            conditions.push(eq(schema.socialQueue.status, status));
         }
 
         if (user.role !== "admin") {
             conditions.push(eq(schema.socialQueue.createdBy, user.id));
         }
 
-        if (conditions.length > 0) {
-            condition = and(...conditions);
-        }
+        const condition = conditions.length > 0 ? and(...conditions) : undefined;
 
         const totalResult = await db
             .select({ count: count(schema.socialQueue.id) })
@@ -127,7 +133,13 @@ export const socialQueueRouter = _socialQueueRouter
 
         await db.insert(schema.socialQueue).values(newPostValues).run();
 
-        const post = toSocialQueuePost({ ...newPostValues, analytics: null, sentAt: null, errorMessage: null });
+        const inserted = await db
+            .select()
+            .from(schema.socialQueue)
+            .where(eq(schema.socialQueue.id, id))
+            .get();
+
+        const post = inserted ? toSocialQueuePost(inserted) : toSocialQueuePost({ ...newPostValues, analytics: null, sentAt: null, errorMessage: null, updatedAt: null } as SocialQueueRow);
 
         return c.json({ success: true, post }, 200);
     })
@@ -148,16 +160,13 @@ export const socialQueueRouter = _socialQueueRouter
             throw new ApiError("Post not found", 404);
         }
 
-        if (user.role !== "admin" && existing.createdBy !== user.id) {
-            throw new ApiError("Forbidden", 403);
-        }
+        ensureOwnerOrAdmin(user, existing.createdBy);
 
         if (existing.status === "sent") {
             throw new ApiError("Cannot edit a post that has already been sent", 400);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const update: any = {};
+        const update: Partial<typeof schema.socialQueue.$inferInsert> = {};
         if (body.content !== undefined) update.content = body.content;
         if (body.mediaUrls !== undefined) update.mediaUrls = body.mediaUrls ? JSON.stringify(body.mediaUrls) : null;
         if (body.scheduledFor !== undefined) update.scheduledFor = body.scheduledFor;
@@ -172,9 +181,9 @@ export const socialQueueRouter = _socialQueueRouter
             .where(eq(schema.socialQueue.id, id))
             .get();
 
-        // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true, post: toSocialQueuePost(updatedRow as any) }, 200);
+        if (!updatedRow) throw new ApiError("Post not found after update", 404);
+
+        return c.json({ success: true, post: toSocialQueuePost(updatedRow) }, 200);
     })
     .openapi(deleteSocialQueueRoute, async (c) => {
         const user = c.get('sessionUser')!
@@ -192,9 +201,7 @@ export const socialQueueRouter = _socialQueueRouter
             throw new ApiError("Post not found", 404);
         }
 
-        if (user.role !== "admin" && existing.createdBy !== user.id) {
-            throw new ApiError("Forbidden", 403);
-        }
+        ensureOwnerOrAdmin(user, existing.createdBy);
 
         await db.delete(schema.socialQueue).where(eq(schema.socialQueue.id, id)).run();
 
@@ -220,14 +227,12 @@ export const socialQueueRouter = _socialQueueRouter
             throw new ApiError("Post not found", 404);
         }
 
-        const post = toSocialQueuePost(row as Record<string, unknown>);
+        const post = toSocialQueuePost(row);
         const config = {
             TWITTER_BEARER_TOKEN: c.env.TWITTER_BEARER_TOKEN,
             BLUESKY_IDENTIFIER: c.env.BLUESKY_IDENTIFIER,
             BLUESKY_PASSWORD: c.env.BLUESKY_PASSWORD,
-            // Type boundary: Env mapping to SocialMediaConfig interface
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any;
+        } as Parameters<typeof dispatchQueuePost>[2];
 
         await dispatchQueuePost(db, post, config);
 
@@ -242,48 +247,56 @@ export const socialQueueRouter = _socialQueueRouter
         const { start, end } = c.req.valid("query");
         const db = getDb(c);
 
-        const conditions = [];
-        if (start) conditions.push(gte(schema.socialQueue.scheduledFor, start));
-        if (end) conditions.push(lte(schema.socialQueue.scheduledFor, end));
+        // EFF-01: Use SQL GROUP BY instead of fetching all rows and filtering in JS
+        const dateConditions = [];
+        if (start) dateConditions.push(gte(schema.socialQueue.scheduledFor, start));
+        if (end) dateConditions.push(lte(schema.socialQueue.scheduledFor, end));
+        const dateFilter = dateConditions.length > 0 ? and(...dateConditions) : undefined;
 
-        let results;
-        if (conditions.length > 0) {
-            results = await db.select().from(schema.socialQueue).where(and(...conditions)).all();
-        } else {
-            results = await db.select().from(schema.socialQueue).all();
+        // Get status counts in a single query
+        const statusCounts = await db
+            .select({
+                status: schema.socialQueue.status,
+                count: count(schema.socialQueue.id),
+            })
+            .from(schema.socialQueue)
+            .where(dateFilter)
+            .groupBy(schema.socialQueue.status)
+            .all();
+
+        let totalPosts = 0;
+        let totalSent = 0;
+        let totalPending = 0;
+        let totalFailed = 0;
+
+        for (const row of statusCounts) {
+            const c = Number(row.count);
+            totalPosts += c;
+            if (row.status === "sent") totalSent = c;
+            else if (row.status === "pending") totalPending = c;
+            else if (row.status === "failed") totalFailed = c;
         }
 
-        const totalPosts = results.length;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalSent = results.filter((r: any) => r.status === "sent").length;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalPending = results.filter((r: any) => r.status === "pending").length;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalFailed = results.filter((r: any) => r.status === "failed").length;
+        // Platform breakdown still needs row-level data (platforms is JSON)
+        const platformRows = await db
+            .select({ platforms: schema.socialQueue.platforms })
+            .from(schema.socialQueue)
+            .where(dateFilter)
+            .all();
 
         const byPlatform = {
-            twitter: 0,
-            bluesky: 0,
-            facebook: 0,
-            instagram: 0,
-            discord: 0,
-            slack: 0,
-            teams: 0,
-            gchat: 0,
-            linkedin: 0,
-            tiktok: 0,
-            band: 0,
+            twitter: 0, bluesky: 0, facebook: 0, instagram: 0, discord: 0,
+            slack: 0, teams: 0, gchat: 0, linkedin: 0, tiktok: 0, band: 0,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        results.forEach((r: any) => {
-            const platforms = JSON.parse(String(r.platforms));
-            Object.entries(platforms).forEach(([key, value]) => {
+        for (const r of platformRows) {
+            const platforms = JSON.parse(String(r.platforms)) as Record<string, boolean>;
+            for (const [key, value] of Object.entries(platforms)) {
                 if (value && key in byPlatform) {
                     (byPlatform as Record<string, number>)[key]++;
                 }
-            });
-        });
+            }
+        }
 
         return c.json({
             totalPosts,
@@ -299,10 +312,5 @@ export const socialQueueRouter = _socialQueueRouter
             },
         }, 200);
     });
-// Calendar view
-// Create post
-// Update post
-// Delete post
-// Send post now
-// Analytics
+
 export default socialQueueRouter;
