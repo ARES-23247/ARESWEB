@@ -21,6 +21,7 @@ import { queryHelpers } from "@/db/query-helpers";
 
 
 type UserResponse = z.infer<typeof userResponseSchema>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatUserResponse(u: any): UserResponse {
   return {
     id: String(u.id),
@@ -63,36 +64,7 @@ export const usersRouter = _usersRouter
         const hasNextPage = results.length > limit;
         const usersData = hasNextPage ? results.slice(0, limit) : results;
 
-        const users = usersData.map((u) => ({
-          id: String(u.id),
-          name: u.name || null,
-          email: u.email,
-          emailVerified: !!u.emailVerified,
-          image: u.image || null,
-          role: String(u.role || "user"),
-          createdAt:
-            u.createdAt instanceof Date
-              ? u.createdAt.getTime()
-              : typeof u.createdAt === "number"
-              ? u.createdAt
-              : new Date(u.createdAt as unknown as string).getTime() || 0,
-          updatedAt:
-            u.updatedAt instanceof Date
-              ? u.updatedAt.getTime()
-              : typeof u.updatedAt === "number"
-              ? u.updatedAt
-              : new Date(u.updatedAt as unknown as string).getTime() || 0,
-          nickname: u.nickname || null,
-          memberType: (u.memberType as
-            | "student"
-            | "mentor"
-            | "coach"
-            | "parent"
-            | "alumnus"
-            | "alumni"
-            | "sponsor"
-            | "other" | null) || null,
-        }));
+        const users = usersData.map(formatUserResponse);
 
         const nextCursor =
           hasNextPage && usersData.length > 0
@@ -130,31 +102,7 @@ export const usersRouter = _usersRouter
 
         const user = row[0];
 
-        return c.json(
-          {
-            user: {
-              id: String(user.id),
-              name: user.name || null,
-              email: user.email,
-              emailVerified: !!user.emailVerified,
-              image: user.image || null,
-              role: String(user.role || "user"),
-              createdAt:
-                user.createdAt instanceof Date
-                  ? user.createdAt.getTime()
-                  : typeof user.createdAt === "number"
-                  ? user.createdAt
-                  : new Date(user.createdAt as unknown as string).getTime(),
-              updatedAt:
-                user.updatedAt instanceof Date
-                  ? user.updatedAt.getTime()
-                  : typeof user.updatedAt === "number"
-                  ? user.updatedAt
-                  : new Date(user.updatedAt as unknown as string).getTime(),
-              nickname: user.nickname || null,
-              memberType: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
-            },
-          }, 200);
+        return c.json({ user: formatUserResponse(user) }, 200);
     })
     .openapi(patchUserRoute, async (c) => {
         const params = c.req.valid("param");
