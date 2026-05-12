@@ -21,6 +21,7 @@ import { queryHelpers } from "@/db/query-helpers";
 
 
 type UserResponse = z.infer<typeof userResponseSchema>;
+ 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatUserResponse(u: any): UserResponse {
   return {
