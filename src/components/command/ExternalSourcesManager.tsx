@@ -53,7 +53,8 @@ export default function ExternalSourcesManager() {
           allErrors.push(`Sync failed for ${src.url}: ${data.error || "Unknown error"}`);
         }
       } catch (e) {
-        allErrors.push(`Network request failed for ${src.url}: ${e}`);
+        const err = e instanceof Error ? e.message : String(e);
+        allErrors.push(`${src.url}: ${err}`);
       }
     }
 
