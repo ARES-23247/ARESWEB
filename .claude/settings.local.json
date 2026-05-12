@@ -44,7 +44,8 @@
       "Bash(git revert *)",
       "Bash(grep -E \"^\\\\w.*\\\\.ts$|error.*any\")",
       "Bash(awk '/\\\\.ts$/{file=$0} /error.*any/ && file !~ /test\\\\.ts$/ && file !~ /auth\\\\.test\\\\.ts$/ && file !~ /errorHandler\\\\.ts$/ && file !~ /events\\\\/index\\\\.ts$/{print file \":\" $0}')",
-      "Bash(set NODE_OPTIONS=--max-old-space-size=8192)"
+      "Bash(set NODE_OPTIONS=--max-old-space-size=8192)",
+      "Bash(npx drizzle-kit *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

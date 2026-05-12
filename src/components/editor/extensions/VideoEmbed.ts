@@ -19,6 +19,9 @@ export const VideoEmbed = Node.create({
       platform: {
         default: 'youtube',
       },
+      mediaId: {
+        default: null,
+      },
     };
   },
 
@@ -43,6 +46,7 @@ export const VideoEmbed = Node.create({
         'data-video-embed': HTMLAttributes.videoId,
         'data-video-title': HTMLAttributes.title || 'Video',
         'data-video-platform': HTMLAttributes.platform || 'youtube',
+        'data-video-media-id': HTMLAttributes.mediaId || '',
         class: 'bg-obsidian border border-ares-red/30 hover:border-ares-red ares-cut-sm p-4 my-4 font-mono text-center flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-colors select-none',
         contenteditable: 'false',
       }),
