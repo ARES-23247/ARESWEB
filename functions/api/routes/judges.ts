@@ -16,24 +16,7 @@ import type { z } from "zod";
 
 // Types for database query results
 
-interface PortfolioDocResult {
-  slug: string;
-  title: string;
-  category: string;
-  description: string | null;
-  content: string;
-}
 
-interface OutreachResult {
-  id: number;
-  title: string;
-  date: string;
-  location: string | null;
-  studentsCount: number | null;
-  hoursLogged: number | null;
-  reachCount: number | null;
-  description: string | null;
-}
 
 
 
@@ -233,7 +216,8 @@ export const judgesRouter = _judgesRouter
         ]);
 
         const payload: JudgePortfolioSuccess = {
-          portfolioDocs: portfolioDocs.map((d: any): PortfolioDocResult => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          portfolioDocs: portfolioDocs.map((d: any) => ({
             slug: d.slug,
             title: d.title,
             category: d.category,
@@ -241,7 +225,8 @@ export const judgesRouter = _judgesRouter
             content: sanitizeJudgeContent(d.content),
             isExecutiveSummary: d.category === "Executive Summary" ? 1 : undefined,
           })),
-          outreach: outreach.map((o: any): OutreachResult => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          outreach: outreach.map((o: any) => ({
             id: o.id,
             title: o.title,
             date: o.date,
@@ -251,6 +236,7 @@ export const judgesRouter = _judgesRouter
             reachCount: Number(o.reachCount),
             description: sanitizeJudgeContent(o.description || ""),
           })),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
           awards: awards.map((a: any) => ({
             id: a.id,
             title: a.title,

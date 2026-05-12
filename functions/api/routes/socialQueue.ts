@@ -43,7 +43,7 @@ const toSocialQueuePost = (r: Record<string, unknown>): SocialQueuePost => ({
 // List posts
 export const socialQueueRouter = _socialQueueRouter
     .openapi(listSocialQueueRoute, async (c) => {
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const { status = "all", limit = 20, offset = 0 } = c.req.valid("query");
         const db = getDb(c);
 
@@ -86,7 +86,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ posts, total }, 200);
     })
     .openapi(calendarSocialQueueRoute, async (c) => {
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const { start, end } = c.req.valid("query");
         const db = getDb(c);
 
@@ -107,7 +107,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ posts }, 200);
     })
     .openapi(createSocialQueueRoute, async (c) => {
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const body = c.req.valid("json");
         const db = getDb(c);
         const id = nanoid();
@@ -133,7 +133,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ success: true, post }, 200);
     })
     .openapi(updateSocialQueueRoute, async (c) => {
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
@@ -178,7 +178,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ success: true, post: toSocialQueuePost(updatedRow as any) }, 200);
     })
     .openapi(deleteSocialQueueRoute, async (c) => {
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const params = c.req.valid("param");
         const db = getDb(c);
         const { id } = params;
@@ -202,7 +202,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ success: true }, 200);
     })
     .openapi(sendNowSocialQueueRoute, async (c) => {
-        const user = await getSessionUser(c);
+        const user = c.get('sessionUser')!
         if (!user || user.role !== "admin") {
             throw new ApiError("Unauthorized", 401);
         }
@@ -235,7 +235,7 @@ export const socialQueueRouter = _socialQueueRouter
         return c.json({ success: true }, 200);
     })
     .openapi(analyticsSocialQueueRoute, async (c) => {
-        const user = await getSessionUser(c);
+        const user = c.get('sessionUser')!
         if (!user || user.role !== "admin") {
             throw new ApiError("Unauthorized", 401);
         }

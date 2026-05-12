@@ -17,6 +17,7 @@ import {
   deleteUserRoute,
   UserRoleEnum,
   MemberTypeEnum,
+  userResponseSchema,
 } from "../../../shared/routes/users";
 import { queryHelpers } from "@/db/query-helpers";
 

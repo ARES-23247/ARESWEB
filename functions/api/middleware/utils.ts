@@ -457,3 +457,14 @@ export function sanitizeProfileForPublic(profile: Record<string, unknown>, membe
     gradeYear: profile.gradeYear,
   };
 }
+
+// ── Response Formatting Helper ───────────────────────────────────────
+/**
+ * Utility to bypass Drizzle -> OpenAPI type mismatches without cluttering
+ * route handlers with eslint disable comments and "any" casts.
+ */
+export function typedJson(c: Context<AppEnv>, data: unknown, status = 200) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.json(data as any, status as any);
+}
+

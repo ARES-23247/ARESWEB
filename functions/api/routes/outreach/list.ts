@@ -1,7 +1,7 @@
 import { desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { getDb, type AppEnv } from "../../middleware";
+import { getDb, type AppEnv, typedJson } from "../../middleware";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
 import { list, notDeleted } from "../../../../src/db/query-helpers";
@@ -36,10 +36,13 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
   });
 
   const existingEventIds = results
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((r: any) => r.eventId !== null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((r: any) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs = results.map((r: any): OutreachLog => ({
     id: r.id,
     title: r.title,
@@ -60,8 +63,7 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
   // Response boundary: Drizzle return type matches Zod schema
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return c.json({ logs: combined } as any, 200);
+  return typedJson(c, { logs: combined }, 200);
 };
 
 export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute, AppEnv> = async (c) => {
@@ -73,10 +75,13 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   });
 
   const existingEventIds = results
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((r: any) => r.eventId !== null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((r: any) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs = results.map((r: any): OutreachLog => ({
     id: r.id,
     title: r.title,
@@ -97,7 +102,6 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
   // Response boundary: Drizzle return type matches Zod schema
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return c.json({ logs: combined } as any, 200);
+  return typedJson(c, { logs: combined }, 200);
 };
 

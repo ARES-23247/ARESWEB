@@ -46,7 +46,8 @@ export const awardsRouter = _awardsRouter
             useAll: true
         });
 
-        const awards = results.map((a) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const awards = results.map((a: any) => ({
             id: String(a.id),
             title: a.title,
             year: Number(a.date),

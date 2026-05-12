@@ -10,7 +10,7 @@ import {
     getOrdersRoute,
     updateOrderStatusRoute,
 } from "../../../shared/routes/store";
-import { getDb, AppEnv, getSessionUser } from "../middleware";
+import { getDb, AppEnv, getSessionUser, typedJson } from "../middleware";
 import { requireAuth } from "../middleware/auth";
 
 const _storeRouter = new OpenAPIHono<AppEnv>();
@@ -69,8 +69,7 @@ export const storeRouter = _storeRouter
     .openapi(getProductsRoute, async (c) => {
         const db = getDb(c);
         const products = await db.select().from(schema.products).where(eq(schema.products.active, 1)).all();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json(products as any, 200);
+        return typedJson(c, products, 200);
     })
     .openapi(createCheckoutSessionRoute, async (c) => {
         const body = c.req.valid("json");
@@ -134,8 +133,7 @@ export const storeRouter = _storeRouter
         }).run();
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ sessionId: session.id, url: session.url || "" } as any, 200);
+        return typedJson(c, { sessionId: session.id, url: session.url || "" }, 200);
     })
     .openapi(getOrdersRoute, async (c) => {
         const sessionUser = await requireAuth(c);
@@ -143,8 +141,7 @@ export const storeRouter = _storeRouter
         const db = getDb(c);
         const orders = await db.select().from(schema.orders).orderBy(desc(schema.orders.createdAt)).all();
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ orders } as any, 200);
+        return typedJson(c, { orders }, 200);
     })
     .openapi(updateOrderStatusRoute, async (c) => {
         const sessionUser = await requireAuth(c);
@@ -164,8 +161,7 @@ export const storeRouter = _storeRouter
             .run();
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     });
 // Create checkout session
 // Get orders (admin only)

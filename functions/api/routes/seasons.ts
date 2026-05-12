@@ -3,7 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq, desc, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 
-import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, getDb, typedJson } from "../middleware";
 import { triggerBackgroundReindex } from "./ai/autoReindex";
 import {
   listSeasonsRoute,
@@ -44,6 +44,7 @@ export const seasonsRouter = _seasonsRouter
         useAll: true
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const seasons = results.map((r: any) => ({
         ...r,
         startYear: Number(r.startYear),
@@ -55,8 +56,7 @@ export const seasonsRouter = _seasonsRouter
       }));
 
       // Response boundary: Drizzle return type diverges from Zod schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json({ seasons } as any, 200);
+      return typedJson(c, { seasons }, 200);
     })
     .openapi(adminListSeasonsRoute, async (c) => {
       const db = getDb(c);
@@ -65,6 +65,7 @@ export const seasonsRouter = _seasonsRouter
         useAll: true
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const seasons = results.map((r: any) => ({
         ...r,
         startYear: Number(r.startYear),
@@ -76,8 +77,7 @@ export const seasonsRouter = _seasonsRouter
       }));
 
       // Response boundary: Drizzle return type diverges from Zod schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json({ seasons } as any, 200);
+      return typedJson(c, { seasons }, 200);
     })
     .openapi(adminDetailSeasonRoute, async (c) => {
       const params = c.req.valid("param");
@@ -105,8 +105,7 @@ export const seasonsRouter = _seasonsRouter
       };
 
       // Response boundary: Drizzle return type diverges from Zod schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json({ season } as any, 200);
+      return typedJson(c, { season }, 200);
     })
     .openapi(getSeasonDetailRoute, async (c) => {
       const params = c.req.valid("param");
@@ -212,8 +211,7 @@ export const seasonsRouter = _seasonsRouter
       };
 
       // Response boundary: Drizzle return type diverges from Zod schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return c.json({ season, awards, events, posts, outreach } as any, 200);
+      return typedJson(c, { season, awards, events, posts, outreach }, 200);
     })
     .openapi(saveSeasonRoute, async (c) => {
       const body = c.req.valid("json");

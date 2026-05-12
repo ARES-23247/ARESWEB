@@ -7,9 +7,9 @@
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc, desc, and, inArray, sql, aliasedTable } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, getSocialConfig, getSessionUser, originIntegrityMiddleware, getDb } from "../middleware";
+import { AppEnv, getSocialConfig, originIntegrityMiddleware, getDb, typedJson } from "../middleware";
 import { parsePagination } from "../middleware/utils";
 import {
     listTasksRoute,
@@ -27,12 +27,15 @@ import {
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 import { safeWaitUntil } from "../utils/safeWaitUntil";
-import { requireAuth } from "../middleware/auth";
+import { ensureAuth } from "../middleware/auth";
+import { queryHelpers } from "../../../src/db/query-helpers";
 
 const _tasksRouter = new OpenAPIHono<AppEnv>();
 
 // WR-11: Add origin integrity to prevent CSRF attacks on task operations
 _tasksRouter.use("*", originIntegrityMiddleware());
+// Refactor manual authentication checks to centralized router-level middleware
+_tasksRouter.use("*", ensureAuth);
 
 // Routes
 export const tasksRouter = _tasksRouter
@@ -40,56 +43,6 @@ export const tasksRouter = _tasksRouter
         const query = c.req.valid("query");
         const db = getDb(c);
         const { limit, offset } = parsePagination(c, 50, 200);
-
-        const conditions = [];
-        if (query.status) {
-            conditions.push(eq(schema.tasks.status, query.status));
-        }
-        if (query.parentId) {
-            conditions.push(eq(schema.tasks.parentId, query.parentId));
-        }
-        if (query.assignedTo) {
-            conditions.push(eq(schema.tasks.assignedTo, query.assignedTo));
-        }
-
-        const creatorProfile = aliasedTable(schema.userProfiles, "creatorProfile");
-        const baseQuery = db.select({
-            id: schema.tasks.id,
-            title: schema.tasks.title,
-            description: schema.tasks.description,
-            status: schema.tasks.status,
-            priority: schema.tasks.priority,
-            subteam: schema.tasks.subteam,
-            dueDate: schema.tasks.dueDate,
-            startDate: schema.tasks.startDate,
-            estimatedMinutes: schema.tasks.estimatedMinutes,
-            coverImage: schema.tasks.coverImage,
-            sortOrder: schema.tasks.sortOrder,
-            parentId: schema.tasks.parentId,
-            timeSpentSeconds: schema.tasks.timeSpentSeconds,
-            createdBy: schema.tasks.createdBy,
-            createdAt: schema.tasks.createdAt,
-            updatedAt: schema.tasks.updatedAt,
-            creatorName: creatorProfile.nickname,
-            assigneeName: schema.userProfiles.nickname,
-            assignedTo: schema.userProfiles.userId,
-            assignees_json: sql<string>`(
-          SELECT json_group_array(
-            json_object(
-              'id', ta.user_id,
-              'nickname', up.nickname
-            )
-          )
-          FROM task_assignments ta
-          LEFT JOIN user_profiles up ON ta.user_id = up.user_id
-          WHERE ta.task_id = ${schema.tasks.id}
-        )`,
-        })
-            .from(schema.tasks)
-            .leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId))
-            .leftJoin(creatorProfile, eq(schema.tasks.createdBy, creatorProfile.userId));
-
-        const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
         // Explicit type definition to avoid `any` inference in certain TypeScript versions
         interface TaskQueryResult {
@@ -114,13 +67,16 @@ export const tasksRouter = _tasksRouter
             assignedTo: string | null;
             assignees_json: string | null;
         }
+
         let tasks: TaskQueryResult[];
         try {
-            tasks = await finalQuery
-                .orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
-                .limit(limit)
-                .offset(Number(offset))
-                .all() as unknown as TaskQueryResult[];
+            tasks = await queryHelpers.getTasksList(db, {
+                limit,
+                offset: Number(offset),
+                status: query.status,
+                parentId: query.parentId,
+                assignedTo: query.assignedTo,
+            }) as unknown as TaskQueryResult[];
         } catch (e: unknown) {
             console.error("SQL ERROR EXACT:", e instanceof Error ? e.message : String(e));
             throw e;
@@ -157,14 +113,13 @@ export const tasksRouter = _tasksRouter
         });
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ tasks: formattedTasks } as any, 200);
+        return typedJson(c, { tasks: formattedTasks }, 200);
     }
     )
     .openapi(createTaskRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
 
@@ -257,14 +212,12 @@ export const tasksRouter = _tasksRouter
         };
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true, task: createdTask } as any, 200);
+        return typedJson(c, { success: true, task: createdTask }, 200);
     }
     )
     .openapi(reorderTasksRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
         // Batch update sort orders
         await Promise.all(body.items.map((o: { id: string; sortOrder: number }) =>
             db.update(schema.tasks)
@@ -274,15 +227,14 @@ export const tasksRouter = _tasksRouter
         ));
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     }
     )
     .openapi(updateTaskRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const existing = await db.select({
             id: schema.tasks.id,
             title: schema.tasks.title,
@@ -395,14 +347,13 @@ export const tasksRouter = _tasksRouter
         }).run();
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     }
     )
     .openapi(deleteTaskRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        const user = await requireAuth(c);
+        const user = c.get('sessionUser')!
         const existing = await db.select({ createdBy: schema.tasks.createdBy })
             .from(schema.tasks)
             .where(eq(schema.tasks.id, params.id))
@@ -434,15 +385,13 @@ export const tasksRouter = _tasksRouter
         }).run();
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     }
     )
     .openapi(createTaskAttachmentRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
         let title = body.url;
         let type = "link";
 
@@ -489,22 +438,18 @@ export const tasksRouter = _tasksRouter
             safeWaitUntil(c.executionCtx, sendZulipMessage(env, "kanban", `Task-${params.id.split("-")[0]}: ${task.title}`, `📎 **New Attachment Added:** [${title}](${body.url})`), "Failed to send attachment notification");
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     })
     .openapi(deleteTaskAttachmentRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        const user = await requireAuth(c);
         await db.delete(schema.taskAttachments).where(and(eq(schema.taskAttachments.id, params.attachmentId), eq(schema.taskAttachments.taskId, params.id))).run();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     })
     .openapi(createTaskChecklistRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
         const id = crypto.randomUUID();
         await db.insert(schema.taskChecklists).values({
             id,
@@ -514,14 +459,12 @@ export const tasksRouter = _tasksRouter
             sortOrder: 0,
         }).run();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     })
     .openapi(updateTaskChecklistRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
         type ChecklistUpdates = {
             isCompleted?: number;
             content?: string;
@@ -550,22 +493,18 @@ export const tasksRouter = _tasksRouter
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     })
     .openapi(deleteTaskChecklistRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        const user = await requireAuth(c);
         await db.delete(schema.taskChecklists).where(and(eq(schema.taskChecklists.id, params.checklistId), eq(schema.taskChecklists.taskId, params.id))).run();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     })
     .openapi(setTaskLabelsRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        const user = await requireAuth(c);
         await db.delete(schema.taskLabels).where(eq(schema.taskLabels.taskId, params.id)).run();
 
         if (body.labelIds.length > 0) {
@@ -576,7 +515,6 @@ export const tasksRouter = _tasksRouter
             await db.insert(schema.taskLabels).values(inserts).run();
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return typedJson(c, { success: true }, 200);
     });
 export default tasksRouter;

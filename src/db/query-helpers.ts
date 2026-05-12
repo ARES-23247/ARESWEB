@@ -1,4 +1,5 @@
-import { eq, and, desc, sql, inArray, or, isNull } from "drizzle-orm";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { eq, and, desc, asc, sql, inArray, or, isNull, aliasedTable } from "drizzle-orm";
 import * as schema from "./schema";
 import type { DrizzleDB } from "./types";
 import { ApiError } from "../../functions/api/middleware/errorHandler";
@@ -15,6 +16,7 @@ import { ApiError } from "../../functions/api/middleware/errorHandler";
  * @example
  * await db.select().from(table).where(notDeleted(table))
  */
+ 
 export function notDeleted(table: { isDeleted: any }) {
   return or(eq(table.isDeleted, 0), isNull(table.isDeleted));
 }
@@ -46,9 +48,11 @@ export function notDeleted(table: { isDeleted: any }) {
  *   useAll: true
  * });
  */
+ 
 export async function list<T>(
   db: DrizzleDB,
   table: any,
+   
   options?: {
     select?: Record<string, any>,
     where?: any,
@@ -58,7 +62,7 @@ export async function list<T>(
     useAll?: boolean
   }
 ): Promise<T[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let query: any = options?.select
     ? db.select(options.select).from(table)
     : db.select().from(table);
@@ -397,6 +401,73 @@ export const queryHelpers = {
 			...t,
 			taskAssignments: assigneesByTask[t.id] || [],
 		}));
+	},
+
+	/**
+	 * Get advanced tasks list with filters, pagination, and JSON aggregation.
+	 */
+	getTasksList: async (db: DrizzleDB, options: {
+		limit?: number;
+		offset?: number;
+		status?: string;
+		parentId?: string;
+		assignedTo?: string;
+	}) => {
+		const conditions = [];
+		if (options.status) {
+			conditions.push(eq(schema.tasks.status, options.status));
+		}
+		if (options.parentId) {
+			conditions.push(eq(schema.tasks.parentId, options.parentId));
+		}
+		if (options.assignedTo) {
+			conditions.push(eq(schema.tasks.assignedTo, options.assignedTo));
+		}
+
+		const creatorProfile = aliasedTable(schema.userProfiles, "creatorProfile");
+		const baseQuery = db.select({
+			id: schema.tasks.id,
+			title: schema.tasks.title,
+			description: schema.tasks.description,
+			status: schema.tasks.status,
+			priority: schema.tasks.priority,
+			subteam: schema.tasks.subteam,
+			dueDate: schema.tasks.dueDate,
+			startDate: schema.tasks.startDate,
+			estimatedMinutes: schema.tasks.estimatedMinutes,
+			coverImage: schema.tasks.coverImage,
+			sortOrder: schema.tasks.sortOrder,
+			parentId: schema.tasks.parentId,
+			timeSpentSeconds: schema.tasks.timeSpentSeconds,
+			createdBy: schema.tasks.createdBy,
+			createdAt: schema.tasks.createdAt,
+			updatedAt: schema.tasks.updatedAt,
+			creatorName: creatorProfile.nickname,
+			assigneeName: schema.userProfiles.nickname,
+			assignedTo: schema.userProfiles.userId,
+			assignees_json: sql<string>`(
+          SELECT json_group_array(
+            json_object(
+              'id', ta.user_id,
+              'nickname', up.nickname
+            )
+          )
+          FROM task_assignments ta
+          LEFT JOIN user_profiles up ON ta.user_id = up.user_id
+          WHERE ta.task_id = ${schema.tasks.id}
+        )`,
+		})
+			.from(schema.tasks)
+			.leftJoin(schema.userProfiles, eq(schema.tasks.assignedTo, schema.userProfiles.userId))
+			.leftJoin(creatorProfile, eq(schema.tasks.createdBy, creatorProfile.userId));
+
+		const finalQuery = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+
+		return finalQuery
+			.orderBy(asc(schema.tasks.sortOrder), desc(schema.tasks.createdAt))
+			.limit(options.limit || 50)
+			.offset(options.offset || 0)
+			.all();
 	},
 
 	/**

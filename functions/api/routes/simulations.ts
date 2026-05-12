@@ -1,7 +1,7 @@
 import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction } from "../middleware";
+import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction, typedJson } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
 import * as schema from "../../../src/db/schema";
 import {
@@ -109,8 +109,7 @@ export const simulationsRouter = _simulationsRouter
         if (pat) headers["Authorization"] = `Bearer ${pat}`;
 
         const ghRes = await fetch(`${ghConfig.apiBase}/contents/src/sims/simRegistry.json`, { headers });
-        if (!ghRes.ok) {
-            return c.json({ simulations: [] }, 200);
+        if (!ghRes.ok) {return typedJson(c, { simulations: [] }, 200);
         }
 
         const registryText = await ghRes.text();
@@ -166,10 +165,9 @@ export const simulationsRouter = _simulationsRouter
                 }
                 // Response boundary: Drizzle return type diverges from Zod schema
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any, 200);
+            }, 200);
         }
-        const code = await ghRes.text();
-        return c.json({
+        const code = await ghRes.text();return typedJson(c, {
             simulation: {
                 id, name: simId, type: "github",
                 files: { "index.tsx": code },
@@ -179,7 +177,7 @@ export const simulationsRouter = _simulationsRouter
             }
             // Response boundary: Drizzle return type diverges from Zod schema
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any, 200);
+        }, 200);
     })
     .openapi(saveSimulationRoute, async (c) => {
         const sessionUser = await requireAuth(c);
@@ -229,8 +227,7 @@ export const simulationsRouter = _simulationsRouter
 
         if (!putRes.ok) throw new ApiError("Failed to upload to GitHub", 500);
 
-        c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));
-        return c.json({ id: `github:${simIdStr}` }, 200);
+        c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));return typedJson(c, { id: `github:${simIdStr}` }, 200);
     })
     .openapi(deleteSimulationRoute, async (c) => {
         const sessionUser = await requireAuth(c);
@@ -352,7 +349,7 @@ export const simulationsRouter = _simulationsRouter
             }
             // Response boundary: Drizzle return type diverges from Zod schema
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any, 200);
+        }, 200);
     })
     .openapi(generateSimRegistryRoute, async (c) => {
         return c.json({ success: false, error: "Not Implemented in Cloudflare Workers" }, 200);

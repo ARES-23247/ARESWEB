@@ -9,7 +9,7 @@ import { eq, asc, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, rateLimitMiddleware, getDb, typedJson } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { sendZulipAlert } from "../../utils/zulipSync";
 import {
@@ -61,8 +61,7 @@ export const sponsorsRouter = _sponsorsRouter
         }));
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ sponsors } as any, 200);
+        return typedJson(c, { sponsors }, 200);
       }
     )
     .openapi(getRoiRoute, async (c) => {
@@ -115,8 +114,7 @@ export const sponsorsRouter = _sponsorsRouter
         }));
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ sponsor, metrics } as any, 200);
+        return typedJson(c, { sponsor, metrics }, 200);
       }
     )
     .openapi(adminListSponsorsRoute, async (c) => {
@@ -134,8 +132,7 @@ export const sponsorsRouter = _sponsorsRouter
         }));
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ sponsors: mappedSponsors } as any, 200);
+        return typedJson(c, { sponsors: mappedSponsors }, 200);
       }
     )
     .openapi(saveSponsorRoute, async (c) => {
@@ -211,8 +208,7 @@ export const sponsorsRouter = _sponsorsRouter
         }));
 
         // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ tokens } as any, 200);
+        return typedJson(c, { tokens }, 200);
       }
     )
     .openapi(generateTokenRoute, async (c) => {

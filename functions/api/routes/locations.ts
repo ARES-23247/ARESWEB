@@ -65,6 +65,7 @@ export const locationsRouter = _locationsRouter
             useAll: true
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const locations = results.map((r: any) => ({
           ...r,
           id: r.id || undefined,
@@ -87,6 +88,7 @@ export const locationsRouter = _locationsRouter
             useAll: true
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const locations = results.map((r: any) => ({
           ...r,
           id: r.id || undefined,

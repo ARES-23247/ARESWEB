@@ -6,17 +6,6 @@ import { list, notDeleted } from "../../../../src/db/query-helpers";
 export const SNIPPET_LENGTH = 200;
 
 /**
- * Raw database result from volunteer events query
- */
-interface VolunteerEventDbResult {
-  id: string;
-  title: string;
-  date: string;
-  location: string | null;
-  seasonId: number | null;
-}
-
-/**
  * Mapped volunteer event for outreach display
  */
 interface VolunteerEvent {
@@ -56,8 +45,10 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       useAll: true
     });
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filteredResults = results.filter((r: any) => !existingEventIds.includes(String(r.id)));
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return filteredResults.map((r: any): VolunteerEvent => ({
       id: r.id,
       title: r.title,

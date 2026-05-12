@@ -2,12 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Context } from 'hono';
 import { ZodError, z } from 'zod';
 import {
-  errorHandlerMiddleware,
-  asyncHandler,
   ApiError,
+  globalErrorHandler,
   throwErrors,
 } from './errorHandler';
-// import { createErrorResponse } from '../../../shared/errors/api'; // Mocked below
 import type { AppEnv } from './utils';
 
 // Mock the shared errors module
@@ -58,31 +56,14 @@ describe('errorHandler', () => {
     });
   });
 
-  describe('errorHandlerMiddleware', () => {
-    it('passes through successful requests', async () => {
-      const mockContext = {
-        req: { path: '/test', method: 'GET' },
-        json: vi.fn().mockResolvedValue({ success: true }),
-      } as unknown as Context<AppEnv>;
+  describe('globalErrorHandler', () => {
+    const mockContext = {
+      json: vi.fn().mockReturnThis(),
+    } as unknown as Context<AppEnv>;
 
-      const next = vi.fn().mockResolvedValue(undefined);
-
-      await errorHandlerMiddleware(mockContext, next);
-
-      expect(next).toHaveBeenCalled();
-      expect(mockContext.json).not.toHaveBeenCalled();
-    });
-
-    it('handles ApiError correctly', async () => {
-      const mockContext = {
-        req: { path: '/test', method: 'POST' },
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
-
+    it('handles ApiError correctly', () => {
       const error = new ApiError('Not found', 404, 'NOT_FOUND');
-      const next = vi.fn().mockRejectedValue(error);
-
-      await errorHandlerMiddleware(mockContext, next);
+      globalErrorHandler(error, mockContext);
 
       expect(mockContext.json).toHaveBeenCalledWith(
         { error: 'Not found', code: 'NOT_FOUND' },
@@ -90,20 +71,23 @@ describe('errorHandler', () => {
       );
     });
 
-    it('handles ZodError correctly', async () => {
-      const mockContext = {
-        req: { path: '/test', method: 'POST' },
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
+    it('handles ApiError with details', () => {
+      const error = new ApiError('Validation failed', 400, 'VALIDATION_ERROR', { email: 'Invalid format' });
+      globalErrorHandler(error, mockContext);
 
+      expect(mockContext.json).toHaveBeenCalledWith(
+        { error: 'Validation failed', code: 'VALIDATION_ERROR', details: { email: 'Invalid format' } },
+        400
+      );
+    });
+
+    it('handles ZodError correctly', () => {
       // Create a ZodError by actually using zod validation
       const EmailSchema = z.string().email();
       const result = EmailSchema.safeParse('not-an-email');
       const zodError = result.error ? new ZodError(result.error.issues) : new ZodError([]);
 
-      const next = vi.fn().mockRejectedValue(zodError);
-
-      await errorHandlerMiddleware(mockContext, next);
+      globalErrorHandler(zodError, mockContext);
 
       expect(mockContext.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -114,80 +98,12 @@ describe('errorHandler', () => {
       );
     });
 
-    it('handles generic Error correctly', async () => {
-      const mockContext = {
-        req: { path: '/test', method: 'GET' },
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
-
+    it('handles generic Error correctly', () => {
       const error = new Error('Something went wrong');
-      const next = vi.fn().mockRejectedValue(error);
-
-      await errorHandlerMiddleware(mockContext, next);
+      globalErrorHandler(error, mockContext);
 
       expect(mockContext.json).toHaveBeenCalledWith(
-        { error: 'Something went wrong' },
-        500
-      );
-    });
-
-    it('handles string errors correctly', async () => {
-      const mockContext = {
-        req: { path: '/test', method: 'GET' },
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
-
-      const error = 'String error message';
-      const next = vi.fn().mockRejectedValue(error);
-
-      await errorHandlerMiddleware(mockContext, next);
-
-      expect(mockContext.json).toHaveBeenCalledWith(
-        { error: 'String error message' },
-        500
-      );
-    });
-  });
-
-  describe('asyncHandler', () => {
-    it('wraps successful async handlers', async () => {
-      const mockContext = {} as Context<AppEnv>;
-      const handler = vi.fn().mockResolvedValue({ json: vi.fn().mockReturnValue('success') });
-
-      const wrapped = asyncHandler(handler);
-      const _result = await wrapped(mockContext);
-
-      expect(handler).toHaveBeenCalledWith(mockContext);
-    });
-
-    it('catches ApiError in wrapped handlers', async () => {
-      const mockContext = {
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
-
-      const handler = vi.fn().mockRejectedValue(new ApiError('Unauthorized', 401, 'UNAUTHORIZED'));
-
-      const wrapped = asyncHandler(handler);
-      await wrapped(mockContext);
-
-      expect(mockContext.json).toHaveBeenCalledWith(
-        { error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        401
-      );
-    });
-
-    it('catches generic errors in wrapped handlers', async () => {
-      const mockContext = {
-        json: vi.fn().mockReturnThis(),
-      } as unknown as Context<AppEnv>;
-
-      const handler = vi.fn().mockRejectedValue(new Error('Database error'));
-
-      const wrapped = asyncHandler(handler);
-      await wrapped(mockContext);
-
-      expect(mockContext.json).toHaveBeenCalledWith(
-        { error: 'Database error' },
+        { error: 'Internal Server Error' },
         500
       );
     });

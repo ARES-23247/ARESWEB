@@ -8,7 +8,6 @@
 
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Response } from "hono";
 
 import { AppEnv, ensureAdmin, ensureAuth } from "../../middleware";
 import { eventHandlers } from "./handlers";
@@ -62,8 +61,10 @@ eventsRouter.use("/:id/signups", ensureAuth);
  * converted to Hono's Response type.
  */
 function handlerResponse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result: any
-): Response {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any {
   return new Response(JSON.stringify(result.body), {
     status: result.status,
     headers: { "Content-Type": "application/json" },
@@ -118,12 +119,14 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(saveEventRoute, async (c) => {
-  const result = await eventHandlers.saveEvent({ body: c.req.valid("json"), query: {}, params: {} }, c);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await eventHandlers.saveEvent({ body: c.req.valid("json") as any, query: {}, params: {} }, c);
   return handlerResponse(result);
 })
 
 .openapi(updateEventRoute, async (c) => {
-  const result = await eventHandlers.updateEvent({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await eventHandlers.updateEvent({ params: c.req.valid("param"), body: c.req.valid("json") as any, query: {} }, c);
   return handlerResponse(result);
 })
 
@@ -168,7 +171,8 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(updateUserAttendanceRoute, async (c) => {
-  const result = await eventHandlers.updateUserAttendance({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await eventHandlers.updateUserAttendance({ params: c.req.valid("param"), body: c.req.valid("json") as any, query: {} }, c);
   return handlerResponse(result);
 })
 

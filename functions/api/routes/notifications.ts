@@ -2,7 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, desc, and, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
-import { AppEnv, getSessionUser, getDb, requireAuth } from "../middleware";
+import { AppEnv, getSessionUser, getDb, ensureAuth } from "../middleware";
 import {
     getNotificationsRoute,
     markNotificationReadRoute,
@@ -15,10 +15,7 @@ import { list, notDeleted } from "../../../src/db/query-helpers";
 const _notificationsRouter = new OpenAPIHono<AppEnv>();
 
 // Middleware to ensure user is logged in
-_notificationsRouter.use("*", async (c, next) => {
-    await requireAuth(c);
-    return next();
-});
+_notificationsRouter.use("*", ensureAuth);
 
 // List notifications - types auto-inferred from route definition
 export const notificationsRouter = _notificationsRouter
@@ -122,6 +119,7 @@ export const notificationsRouter = _notificationsRouter
         });
 
         return c.json({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             inquiries: pendingInquiries.map((i: any) => ({
                 id: i.id,
                 type: i.type,
@@ -130,18 +128,21 @@ export const notificationsRouter = _notificationsRouter
                 status: i.status || 'pending',
                 createdAt: i.createdAt || new Date().toISOString(),
             })),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             posts: pendingPosts.map((p: any) => ({
                 id: p.slug,
                 title: p.title,
                 authorName: p.author || 'Unknown',
                 createdAt: p.updatedAt || new Date().toISOString(),
             })),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             events: pendingEvents.map((e: any) => ({
                 id: e.id,
                 title: e.title,
                 dateStart: e.dateStart,
                 createdAt: e.updatedAt || new Date().toISOString(),
             })),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             docs: pendingDocs.map((d: any) => ({
                 slug: d.slug,
                 title: d.title,
