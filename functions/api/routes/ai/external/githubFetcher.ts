@@ -54,7 +54,6 @@ export async function fetchGithubRepoFiles(
     allowedExtensions: string[],
     githubPat?: string
 ): Promise<{ files: GitHubFile[], commitSha: string, error?: string }> {
-    const isAuthenticated = !!githubPat;
     const headers: Record<string, string> = {
         "User-Agent": "ARESWEB-RAG-Indexer",
         "Accept": "application/vnd.github.v3+json"
