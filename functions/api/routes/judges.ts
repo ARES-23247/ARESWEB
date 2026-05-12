@@ -216,14 +216,14 @@ export const judgesRouter = _judgesRouter
         ]);
 
         const payload: JudgePortfolioSuccess = {
-          portfolioDocs: portfolioDocs.map((d: Record<string, unknown>) => ({
+          portfolioDocs: (portfolioDocs as { slug: string | null; title: string | null; category: string | null; description: string | null; content: string | null }[]).map(d => ({
             slug: String(d.slug),
             title: String(d.title),
             category: String(d.category),
             description: d.description ? String(d.description) : "",
-            content: sanitizeJudgeContent(d.content),
+            content: sanitizeJudgeContent(d.content || ""),
           })),
-          outreach: outreach.map((o: Record<string, unknown>) => ({
+          outreach: (outreach as { id: number; title: string | null; date: string | null; location: string | null; studentsCount: number | null; hoursLogged: number | null; reachCount: number | null; description: string | null }[]).map(o => ({
             id: Number(o.id),
             title: String(o.title),
             date: String(o.date),
@@ -233,8 +233,8 @@ export const judgesRouter = _judgesRouter
             reachCount: Number(o.reachCount),
             description: sanitizeJudgeContent(o.description || ""),
           })),
-          awards: awards.map((a: Record<string, unknown>) => ({
-            id: String(a.id),
+          awards: (awards as { id: number; title: string | null; date: string | null; eventName: string | null; imageUrl: string | null; description: string | null }[]).map(a => ({
+            id: Number(a.id),
             title: String(a.title),
             date: String(a.date),
             eventName: a.eventName ? String(a.eventName) : "",

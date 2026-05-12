@@ -147,7 +147,7 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
 
     if (cache) {
         const cached = await cache.match(cacheKey);
-        if (cached) return cached;
+        if (cached) return cached as unknown as never; // Bypass TS check for cached Response to satisfy Hono Type inference
     }
 
     const db = getDb(c);
@@ -183,20 +183,20 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
         }));
 
     const responseData = { media };
+    c.header("Cache-Control", "public, max-age=300");
+    c.header("Vary", "Accept");
+    
     if (cache && c.executionCtx) {
-        c.executionCtx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(responseData), { 
-            headers: { 
-                "Content-Type": "application/json", 
-                "Cache-Control": "public, max-age=300", 
-                "Vary": "Accept" 
-            } 
+        c.executionCtx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(responseData), {
+            headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "public, max-age=300",
+                "Vary": "Accept"
+            }
         })));
     }
 
-    return c.json(responseData, 200, {
-        "Cache-Control": "public, max-age=300",
-        "Vary": "Accept"
-    });
+    return c.json(responseData, 200);
 }
 )
 
