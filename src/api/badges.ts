@@ -158,10 +158,10 @@ export function useDeleteBadge(
         const previous = queryClient.getQueryData(["badges"]) as BadgesResponse | undefined;
 
         // Optimistically update to the new value
-        queryClient.setQueryData(["badges"], (old: any) => ({
+        queryClient.setQueryData(["badges"], (old: BadgesResponse | undefined) => old ? {
           ...old,
-          badges: old?.badges?.filter((b: any) => b.id !== id)
-        }));
+          badges: old.badges.filter((b: Badge) => b.id !== id)
+        } : old);
 
         return { previous };
       },

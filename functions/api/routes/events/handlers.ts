@@ -473,11 +473,11 @@ export const eventHandlers = {
         triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
         invalidateEventsCache(c);
         return { status: 200 as const, body: { success: true, id: genId } };
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save event:", error);
             if (error instanceof ApiError) throw error;
             throw new ApiError(
-                `Failed to save event: ${error.message || "Unknown database error"}`,
+                `Failed to save event: ${error instanceof Error ? error.message : "Unknown database error"}`,
                 500,
                 "EVENT_SAVE_FAILED"
             );
@@ -564,11 +564,11 @@ export const eventHandlers = {
         triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
         invalidateEventsCache(c);
         return { status: 200 as const, body: { success: true, id } };
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to update event:", error);
             if (error instanceof ApiError) throw error;
             throw new ApiError(
-                `Failed to update event: ${error.message || "Unknown database error"}`,
+                `Failed to update event: ${error instanceof Error ? error.message : "Unknown database error"}`,
                 500,
                 "EVENT_UPDATE_FAILED"
             );
@@ -612,11 +612,11 @@ export const eventHandlers = {
             triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
             invalidateEventsCache(c);
             return { status: 200 as const, body: { success: true } };
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to delete event:", error);
             if (error instanceof ApiError) throw error;
             throw new ApiError(
-                `Failed to delete event: ${error.message || "Unknown database error"}`,
+                `Failed to delete event: ${error instanceof Error ? error.message : "Unknown database error"}`,
                 500,
                 "EVENT_DELETE_FAILED"
             );

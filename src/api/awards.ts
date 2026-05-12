@@ -97,7 +97,7 @@ export function useDeleteAward(
       // Return a context object with the snapshotted value
       return { previousAwards };
     },
-    onError: (err, id, context: any) => {
+    onError: (err, id, context: { previousAwards?: { awards: Award[] } } | undefined) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousAwards) {
         queryClient.setQueryData(["awards"], context.previousAwards);

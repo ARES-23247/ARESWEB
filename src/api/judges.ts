@@ -163,10 +163,10 @@ export function useDeleteJudgeCode(
         const previous = queryClient.getQueryData(["judge_codes"]) as ListJudgeCodesResponse | undefined;
 
         // Optimistically update to the new value
-        queryClient.setQueryData(["judge_codes"], (old: any) => ({
+        queryClient.setQueryData(["judge_codes"], (old: ListJudgeCodesResponse | undefined) => old ? {
           ...old,
-          codes: old?.codes?.filter((c: any) => c.id !== id)
-        }));
+          codes: old.codes.filter((c: JudgeCode) => c.id !== id)
+        } : old);
 
         return { previous };
       },

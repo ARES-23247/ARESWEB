@@ -130,10 +130,10 @@ export function useDeleteSponsor(
         const previous = queryClient.getQueryData(["admin_sponsors"]) as SponsorsResponse | undefined;
 
         // Optimistically update to the new value
-        queryClient.setQueryData(["admin_sponsors"], (old: any) => ({
+        queryClient.setQueryData(["admin_sponsors"], (old: SponsorsResponse | undefined) => old ? {
           ...old,
-          sponsors: old?.sponsors?.filter((s: any) => s.id !== id)
-        }));
+          sponsors: old.sponsors.filter((s: Sponsor) => s.id !== id)
+        } : old);
 
         return { previous };
       },

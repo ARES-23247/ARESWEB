@@ -208,8 +208,8 @@ export function withMutationCallbacks<TData, TError, TVariables, TContext = unkn
       // but we need both if they both return objects, or just return an object containing both)
       // For TanStack Query, the return of onMutate is the context passed to other handlers.
       return { 
-        ...((typeof internalContext === 'object' ? internalContext : {}) as any),
-        ...((typeof userContext === 'object' ? userContext : {}) as any),
+        ...((typeof internalContext === 'object' && internalContext !== null ? internalContext : {}) as Record<string, unknown>),
+        ...((typeof userContext === 'object' && userContext !== null ? userContext : {}) as Record<string, unknown>),
         _internal: internalContext,
         _user: userContext
       } as TContext;

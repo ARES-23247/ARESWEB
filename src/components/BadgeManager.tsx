@@ -20,13 +20,14 @@ interface BadgeItemProps {
 function BadgeItem({ badge: b }: BadgeItemProps) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const deleteBadgeMutation = useDeleteBadge();
-  const IconComp = getLucideIcon(b.icon);
   const isPending = deleteBadgeMutation.isPending;
+  const iconRef = getLucideIcon(b.icon);
 
   return (
     <div className={`bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4 transition-all ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
       <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.colorTheme.replace("text-", "")}`}>
-        <IconComp size={24} />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {iconRef({ size: 24 } as any)}
       </div>
       <div className="flex-1">
         <h4 className="text-white font-bold">{b.name}</h4>

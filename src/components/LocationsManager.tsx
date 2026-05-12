@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { toastApiError } from "../api/honoClient";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
-import { locationSchema } from "@shared/routes/locations";
+
 import { useGetAdminLocations, useSaveLocation, useDeleteLocation, type Location } from "../api/locations";
 
 interface LocationRowProps {

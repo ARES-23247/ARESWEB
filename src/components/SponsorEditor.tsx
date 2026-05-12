@@ -4,7 +4,7 @@ import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package, UploadCloud, Loader2, Star, TrendingUp, ExternalLink, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package, UploadCloud, Loader2, Star, TrendingUp, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { toastApiError } from "../api/honoClient";
 import { motion, AnimatePresence } from "framer-motion";
@@ -53,13 +53,13 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
   };
 
   const handleRestore = () => {
-    saveMutation.mutate({ ...s, isActive: 1 } as any, {
+    saveMutation.mutate({ ...s, isActive: 1 } as Sponsor, {
       onSuccess: () => toast.success(`${s.name} restored to active status.`)
     });
   };
 
   const handleDeactivate = () => {
-    saveMutation.mutate({ ...s, isActive: 0 } as any, {
+    saveMutation.mutate({ ...s, isActive: 0 } as Sponsor, {
       onSuccess: () => toast.success(`${s.name} deactivated.`)
     });
   };

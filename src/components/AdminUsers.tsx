@@ -205,7 +205,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("createdAt", {
       header: "Joined",
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : "—"}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as string | number | Date).toLocaleDateString() : "—"}</span>,
     }),
     columnHelper.display({
       id: "actions",

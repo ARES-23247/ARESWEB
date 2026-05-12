@@ -71,6 +71,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     savePipeline.mutate(result.data as any, {
       onSuccess: () => {
         toast.success("Sponsorship updated.");
@@ -90,6 +91,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     saveTransaction.mutate(result.data as any, {
       onSuccess: () => {
         toast.success("Transaction recorded.");

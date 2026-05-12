@@ -119,10 +119,10 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
     audit(c, "video_create", "video", video.id, `Created video: ${body.title}`);
 
     return c.json({ video: serializeVideo(video) }, 200);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create video:", error);
     throw new ApiError(
-      `Failed to create video: ${error.message || "Unknown database error"}`,
+      `Failed to create video: ${error instanceof Error ? error.message : "Unknown database error"}`,
       500,
       "VIDEO_CREATE_FAILED"
     );
@@ -150,10 +150,10 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         audit(c, "video_update", "video", id, `Updated video: ${body.title || video.title}`);
 
         return c.json({ video: serializeVideo(video) }, 200);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Failed to update video:", error);
         throw new ApiError(
-          `Failed to update video: ${error.message || "Unknown database error"}`,
+          `Failed to update video: ${error instanceof Error ? error.message : "Unknown database error"}`,
           500,
           "VIDEO_UPDATE_FAILED"
         );
@@ -172,10 +172,10 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         audit(c, "video_delete", "video", id, `Deleted video: ${existing.title}`);
 
         return c.json({ success: true }, 200);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Failed to delete video:", error);
         throw new ApiError(
-          `Failed to delete video: ${error.message || "Unknown database error"}`,
+          `Failed to delete video: ${error instanceof Error ? error.message : "Unknown database error"}`,
           500,
           "VIDEO_DELETE_FAILED"
         );

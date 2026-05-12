@@ -102,10 +102,10 @@ export function useDeleteLocation(
       onMutate: async (id) => {
         await queryClient.cancelQueries({ queryKey: ["admin_locations"] });
         const previous = queryClient.getQueryData(["admin_locations"]) as LocationsResponse | undefined;
-        queryClient.setQueryData(["admin_locations"], (old: any) => ({
+        queryClient.setQueryData(["admin_locations"], (old: LocationsResponse | undefined) => old ? {
           ...old,
-          locations: old?.locations?.filter((l: any) => l.id !== id)
-        }));
+          locations: old.locations.filter((l: Location) => l.id !== id)
+        } : old);
         return { previous };
       },
       onError: (qc, err, id, context) => {

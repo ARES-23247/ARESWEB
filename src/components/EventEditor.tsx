@@ -648,6 +648,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 <SocialSyndicationGrid
                   availableSocials={availableSocials}
                   socials={socials as Record<string, boolean>}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
                   isEdit={!!editId}
                 />

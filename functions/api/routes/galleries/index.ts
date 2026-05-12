@@ -113,10 +113,10 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
 
     audit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);
     return c.json({ gallery: serializeGallery(gallery) }, 200);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Galleries] Create failed:", error);
     throw new ApiError(
-      `Failed to create gallery: ${error.message || "Unknown database error"}`,
+      `Failed to create gallery: ${error instanceof Error ? error.message : "Unknown database error"}`,
       500,
       "GALLERY_CREATE_FAILED"
     );
@@ -142,10 +142,10 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
 
     audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
     return c.json({ gallery: serializeGallery(gallery) }, 200);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Galleries] Update failed:", error);
     throw new ApiError(
-      `Failed to update gallery: ${error.message || "Unknown database error"}`,
+      `Failed to update gallery: ${error instanceof Error ? error.message : "Unknown database error"}`,
       500,
       "GALLERY_UPDATE_FAILED"
     );
@@ -164,11 +164,11 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
     audit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing.title}`);
 
     return c.json({ success: true }, 200);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Galleries] Delete failed:", error);
     if (error instanceof ApiError) throw error;
     throw new ApiError(
-      `Failed to delete gallery: ${error.message || "Unknown database error"}`,
+      `Failed to delete gallery: ${error instanceof Error ? error.message : "Unknown database error"}`,
       500,
       "GALLERY_DELETE_FAILED"
     );

@@ -285,7 +285,7 @@ export const judgesRouter = _judgesRouter
               expiresAt: expiresAt || null
             })
             .run();
-        } catch (err) {
+        } catch {
           throw new ApiError("Failed to generate access code.", 500, "JUDGE_CODE_CREATE_FAILED");
         }
 
@@ -301,7 +301,7 @@ export const judgesRouter = _judgesRouter
         const { id } = c.req.valid("param");
         try {
           await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
-        } catch (err) {
+        } catch {
           throw new ApiError("Failed to revoke access code.", 500, "JUDGE_CODE_DELETE_FAILED");
         }
 
