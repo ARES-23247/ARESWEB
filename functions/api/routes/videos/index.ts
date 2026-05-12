@@ -14,6 +14,7 @@ import {
 import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
+import { findOne, findMany, insertOne, updateOne, deleteOneAndReturn, logAudit } from "../../utils/drizzle-helpers";
 
 const baseRouter = new OpenAPIHono<AppEnv>();
 
@@ -82,26 +83,19 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
 
 // GET / - List all videos (public)
 const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
-  const db = getDb(c);
-  const results = await db.select().from(schema.videos).orderBy(schema.videos.createdAt).execute();
+  const videos = await findMany(c, schema.videos, {
+    orderBy: schema.videos.createdAt,
+  });
 
-  const videos = results.map(serializeVideo);
-
-  return c.json({ videos }, 200);
+  return c.json({ videos: videos.map(serializeVideo) }, 200);
 })
 
 // GET /:id - Get a single video (public)
 .openapi(getVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
-  const db = getDb(c);
+  const video = await findOne(c, schema.videos, id);
 
-  const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
-
-  if (result.length === 0) {
-    throw new ApiError("Video not found", 404, "NOT_FOUND");
-  }
-
-  return c.json({ video: serializeVideo(result[0]) }, 200);
+  return c.json({ video: serializeVideo(video) }, 200);
 })
 
 // POST /parse-url - Parse a video URL (public, for editor convenience)
@@ -117,41 +111,24 @@ const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
 // POST / - Create a video
 const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   const body = c.req.valid("json");
-  const db = getDb(c);
 
-  const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
-
-  const newVideo = {
-    id,
+  const video = await insertOne(c, schema.videos, {
     title: body.title,
     description: body.description ?? null,
     platform: body.platform,
     videoId: body.videoId,
     thumbnailKey: body.thumbnailKey ?? null,
-  };
+  }, { idPrefix: "vid_" });
 
-  await db.insert(schema.videos).values(newVideo).execute();
+  logAudit(c, "video_create", "video", video.id, `Created video: ${body.title}`);
 
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "video_create", "video", id, `Created video: ${body.title}`));
-  }
-
-  const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
-
-  return c.json({ video: serializeVideo(result[0]) }, 200);
+  return c.json({ video: serializeVideo(video) }, 200);
 })
 
 // PATCH /:id - Update a video
 .openapi(updateVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
-  const db = getDb(c);
-
-  const existing = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
-
-  if (existing.length === 0) {
-    throw new ApiError("Video not found", 404, "NOT_FOUND");
-  }
 
   const updates: Record<string, unknown> = {
     ...(body.title !== undefined && { title: body.title }),
@@ -162,33 +139,20 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
     updatedAt: new Date().toISOString(),
   };
 
-  await db.update(schema.videos).set(updates).where(eq(schema.videos.id, id)).execute();
+  const video = await updateOne(c, schema.videos, id, updates);
 
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "video_update", "video", id, `Updated video: ${body.title || existing[0].title}`));
-  }
+  logAudit(c, "video_update", "video", id, `Updated video: ${body.title || video.title}`);
 
-  const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
-
-  return c.json({ video: serializeVideo(result[0]) }, 200);
+  return c.json({ video: serializeVideo(video) }, 200);
 })
 
 // DELETE /:id - Delete a video
 .openapi(deleteVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
-  const db = getDb(c);
 
-  const existing = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
+  const video = await deleteOneAndReturn(c, schema.videos, id);
 
-  if (existing.length === 0) {
-    throw new ApiError("Video not found", 404, "NOT_FOUND");
-  }
-
-  await db.delete(schema.videos).where(eq(schema.videos.id, id)).execute();
-
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "video_delete", "video", id, `Deleted video: ${existing[0].title}`));
-  }
+  logAudit(c, "video_delete", "video", id, `Deleted video: ${video.title}`);
 
   return c.json({ success: true }, 200);
 })
@@ -303,8 +267,10 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
     const items = data.items || [];
 
     // Fetch existing video IDs to prevent duplicates
-    const existingVideos = await db.select({ videoId: schema.videos.videoId }).from(schema.videos).where(eq(schema.videos.platform, "youtube")).execute();
-    const existingIds = new Set(existingVideos.map(v => v.videoId));
+    const existingVideos = await findMany(c, schema.videos, {
+      where: eq(schema.videos.platform, "youtube"),
+    });
+    const existingIds = new Set(existingVideos.map((v) => v.videoId));
 
     const newVideosToInsert = [];
 
@@ -339,9 +305,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
       await db.insert(schema.videos).values(newVideosToInsert).execute();
       addedCount = newVideosToInsert.length;
 
-      if (c.executionCtx) {
-        c.executionCtx.waitUntil(logAuditAction(c, "youtube_sync", "video", null, `Synced ${addedCount} new videos from YouTube`));
-      }
+      logAudit(c, "youtube_sync", "video", null, `Synced ${addedCount} new videos from YouTube`);
     }
 
     return c.json({ success: true, added: addedCount, total: items.length }, 200);
