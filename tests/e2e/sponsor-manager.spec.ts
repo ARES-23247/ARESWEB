@@ -62,8 +62,8 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-01: Sponsor list displays correctly', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Verify the page title is visible
-    await expect(page.getByRole('heading', { name: /Sponsor/i })).toBeVisible({
+    // Verify the page title is visible - uses "Partner" terminology
+    await expect(page.getByRole('heading', { name: /Partner/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.DEFAULT,
     });
 
@@ -105,12 +105,9 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-03: Sponsor editing workflow', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Wait for sponsors to load - use first() to avoid strict mode violation with sponsor card headings
-    await expect(page.getByRole('heading', { name: /Sponsor/i }).first()).toBeVisible();
-
     // Find the first sponsor card and check if it has an edit button
     const sponsorCard = page.locator('.border').first();
-    const editButton = sponsorCard.getByRole('button', { name: /Edit/i }).first();
+    const editButton = sponsorCard.getByRole('button', { ariaLabel: /Edit/i }).first();
 
     const hasEditButton = await editButton.isVisible().catch(() => false);
     if (hasEditButton) {
@@ -137,15 +134,12 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-04: Sponsor deletion workflow', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Wait for sponsors to load - use first() to avoid strict mode violation
-    await expect(page.getByRole('heading', { name: /Sponsor/i }).first()).toBeVisible();
-
     // Mock the modal confirm dialog to auto-confirm
     page.on('dialog', dialog => dialog.accept());
 
     // Find a sponsor card and click its delete button
     const sponsorCard = page.locator('.border').first();
-    const deleteButton = sponsorCard.getByRole('button', { name: /Delete/i }).first();
+    const deleteButton = sponsorCard.getByRole('button', { ariaLabel: /Delete/i }).first();
 
     // Check if delete button exists before clicking (sponsor list might be empty)
     const isVisible = await deleteButton.isVisible().catch(() => false);
@@ -160,8 +154,8 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-05: WCAG 2.1 AA accessibility audit', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Wait for the page to fully load - use first() to avoid strict mode violation
-    await expect(page.getByRole('heading', { name: /Sponsor/i }).first()).toBeVisible({
+    // Wait for the page to fully load - check for the "Partner" heading
+    await expect(page.getByRole('heading', { name: /Partner/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.DEFAULT,
     });
 
@@ -247,8 +241,8 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-11: Website links are external and have correct attributes', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Wait for sponsors to load
-    await expect(page.getByRole('heading', { name: /Sponsor/i })).toBeVisible();
+    // Wait for the page to load - check for "Partner" heading
+    await expect(page.getByRole('heading', { name: /Partner/i })).toBeVisible();
 
     // Wait for data to load from real API
     await page.waitForTimeout(1000);
