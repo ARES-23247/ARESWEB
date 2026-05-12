@@ -120,7 +120,7 @@ export default function VideoPickerModal({
       refetch();
       setIsCreating(false);
       resetForm();
-      onSelect(data.video.id, data.video.title);
+      onSelect(data.video.videoId, data.video.title, data.video.platform, data.video.id);
       toast.success("Video added successfully");
     },
     onError: (error) => {
