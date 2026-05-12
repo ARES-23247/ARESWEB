@@ -54,7 +54,6 @@ import { Route as DashboardSimulationsRouteImport } from './routes/dashboard/sim
 import { Route as DashboardSimsRouteImport } from './routes/dashboard/sims'
 import { Route as DashboardScoutingRouteImport } from './routes/dashboard/scouting'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
-import { Route as DashboardPerformanceRouteImport } from './routes/dashboard/performance'
 import { Route as DashboardOutreachRouteImport } from './routes/dashboard/outreach'
 import { Route as DashboardMass_emailRouteImport } from './routes/dashboard/mass_email'
 import { Route as DashboardManage_seasonsRouteImport } from './routes/dashboard/manage_seasons'
@@ -315,11 +314,6 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardPerformanceRoute = DashboardPerformanceRouteImport.update({
-  id: '/performance',
-  path: '/performance',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardOutreachRoute = DashboardOutreachRouteImport.update({
   id: '/outreach',
   path: '/outreach',
@@ -533,7 +527,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
-  '/dashboard/performance': typeof DashboardPerformanceRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -614,7 +607,6 @@ export interface FileRoutesByTo {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
-  '/dashboard/performance': typeof DashboardPerformanceRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -697,7 +689,6 @@ export interface FileRoutesById {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
-  '/dashboard/performance': typeof DashboardPerformanceRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -781,7 +772,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
-    | '/dashboard/performance'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -862,7 +852,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
-    | '/dashboard/performance'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -944,7 +933,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
-    | '/dashboard/performance'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -1344,13 +1332,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/performance': {
-      id: '/dashboard/performance'
-      path: '/performance'
-      fullPath: '/dashboard/performance'
-      preLoaderRoute: typeof DashboardPerformanceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/outreach': {
       id: '/dashboard/outreach'
       path: '/outreach'
@@ -1627,7 +1608,6 @@ interface DashboardRouteChildren {
   DashboardManage_seasonsRoute: typeof DashboardManage_seasonsRoute
   DashboardMass_emailRoute: typeof DashboardMass_emailRoute
   DashboardOutreachRoute: typeof DashboardOutreachRoute
-  DashboardPerformanceRoute: typeof DashboardPerformanceRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardScoutingRoute: typeof DashboardScoutingRoute
   DashboardSimsRoute: typeof DashboardSimsRoute
@@ -1672,7 +1652,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardManage_seasonsRoute: DashboardManage_seasonsRoute,
   DashboardMass_emailRoute: DashboardMass_emailRoute,
   DashboardOutreachRoute: DashboardOutreachRoute,
-  DashboardPerformanceRoute: DashboardPerformanceRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardScoutingRoute: DashboardScoutingRoute,
   DashboardSimsRoute: DashboardSimsRoute,

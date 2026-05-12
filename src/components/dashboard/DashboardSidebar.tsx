@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Globe, Play, Database,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";
@@ -279,8 +279,7 @@ export default function DashboardSidebar({
                 {isAdmin && <NavButton tab="finance" icon={DollarSign} label="Finance & Budget" currentPath={location.pathname} />}
                 <NavButton tab="sponsors" icon={Gem} label="Sponsors & Funding" currentPath={location.pathname} />
                 {isAdmin && <NavButton tab="sponsor_tokens" icon={Gem} label="Sponsor ROI Tokens" currentPath={location.pathname} />}
-                <NavButton tab="analytics" icon={BarChart3} label="Platform Analytics" currentPath={location.pathname} />
-                <NavButton tab="performance" icon={Zap} label="Platform Performance" currentPath={location.pathname} />
+                <NavButton tab="analytics" icon={BarChart3} label="Analytics & Performance" currentPath={location.pathname} />
               </div>
             </div>
           )}

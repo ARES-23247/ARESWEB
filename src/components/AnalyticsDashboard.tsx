@@ -1,6 +1,7 @@
-import { BarChart3, TrendingUp, Clock, ExternalLink, Activity, Users, Database, Server } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, ExternalLink, Activity, Users, Database, Server, Zap, Cpu } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useGetPlatformAnalytics } from "../api";
+import { useQuery } from "@tanstack/react-query";
 import { BarList, Card, Title, Text, DonutChart, Flex, LineChart } from "@tremor/react";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
@@ -203,7 +204,119 @@ export default function AnalyticsDashboard() {
           </div>
         </Card>
       </div>
+      {/* Core Web Vitals */}
+      <CoreWebVitals />
     </div>
   );
 }
 
+// ─── Core Web Vitals Section ─────────────────────────────────────────────────
+
+interface PerformanceSummary {
+  lcp?: number;
+  inp?: number;
+  cls?: number;
+  fcp?: number;
+}
+
+function VitalCard({ name, value, threshold, unit, icon }: {
+  name: string;
+  value?: number;
+  threshold: { good: number; poor: number };
+  unit: string;
+  icon: React.ReactNode;
+}) {
+  if (value === undefined) {
+    return (
+      <Card className="bg-black/40 border-white/5 ares-cut-lg">
+        <div className="flex items-center justify-between pb-2">
+          <h3 className="text-sm font-bold text-white">{name}</h3>
+          {icon}
+        </div>
+        <div>
+          <div className="text-2xl font-black text-marble/60">-</div>
+          <p className="text-xs text-marble/60 uppercase tracking-wider mt-1">No data available</p>
+        </div>
+      </Card>
+    );
+  }
+
+  const isGood = value <= threshold.good;
+  const isPoor = value > threshold.poor;
+  const color = isGood ? "text-green-500" : isPoor ? "text-ares-red" : "text-ares-gold";
+  const status = isGood ? "Good" : isPoor ? "Poor" : "Needs Improvement";
+
+  return (
+    <Card className="bg-black/40 border-white/5 ares-cut-lg">
+      <div className="flex items-center justify-between pb-2">
+        <h3 className="text-sm font-bold text-white">{name}</h3>
+        {icon}
+      </div>
+      <div>
+        <div className={`text-2xl font-black ${color}`}>
+          {name === 'CLS' ? value.toFixed(3) : value.toFixed(0)} {unit}
+        </div>
+        <p className="text-xs text-marble/60 uppercase tracking-wider mt-1">{status}</p>
+      </div>
+    </Card>
+  );
+}
+
+function CoreWebVitals() {
+  const { data: metrics, error } = useQuery<PerformanceSummary>({
+    queryKey: ['performance-metrics'],
+    queryFn: async () => {
+      const res = await fetch('/api/analytics/performance/summary');
+      if (!res.ok) throw new Error('Failed to fetch metrics');
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+        <Cpu className="text-ares-red" size={20} />
+        Core Web Vitals
+      </h3>
+
+      {error ? (
+        <div className="bg-ares-red/10 border border-ares-red/30 ares-cut-sm p-3 flex gap-2 text-ares-red text-xs font-bold">
+          <Zap className="h-4 w-4 shrink-0" />
+          Failed to load performance metrics.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <VitalCard
+            name="Largest Contentful Paint (LCP)"
+            value={metrics?.lcp}
+            threshold={{ good: 2500, poor: 4000 }}
+            unit="ms"
+            icon={<Zap className="h-4 w-4 text-marble/60" />}
+          />
+          <VitalCard
+            name="Interaction to Next Paint (INP)"
+            value={metrics?.inp}
+            threshold={{ good: 200, poor: 500 }}
+            unit="ms"
+            icon={<Activity className="h-4 w-4 text-marble/60" />}
+          />
+          <VitalCard
+            name="Cumulative Layout Shift (CLS)"
+            value={metrics?.cls}
+            threshold={{ good: 0.1, poor: 0.25 }}
+            unit=""
+            icon={<TrendingUp className="h-4 w-4 text-marble/60" />}
+          />
+          <VitalCard
+            name="First Contentful Paint (FCP)"
+            value={metrics?.fcp}
+            threshold={{ good: 1800, poor: 3000 }}
+            unit="ms"
+            icon={<Zap className="h-4 w-4 text-marble/60" />}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
