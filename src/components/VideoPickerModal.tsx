@@ -11,7 +11,7 @@ interface Video {
   id: string;
   title: string;
   description: string | null;
-  platform: "youtube" | "vimeo" | "other";
+  platform: "youtube" | "other";
   videoId: string;
   thumbnailKey: string | null;
   thumbnailUrl: string | null;
@@ -28,7 +28,7 @@ export default function VideoPickerModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onVideoSelected: (actualVideoId: string, title: string, platform: string, mediaId: string) => void;
+  onVideoSelected: (actualVideoId: string, title: string, platform: "youtube" | "other", mediaId: string) => void;
   editVideoId?: string;
 }) {
   const queryClient = useQueryClient();
@@ -36,7 +36,7 @@ export default function VideoPickerModal({
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [platform, setPlatform] = useState<"youtube" | "vimeo" | "other">("youtube");
+  const [platform, setPlatform] = useState<"youtube" | "other">("youtube");
   const [parsedVideoId, setParsedVideoId] = useState("");
   const [thumbnailKey, setThumbnailKey] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export default function VideoPickerModal({
     mutationFn: async (payload: {
       title: string;
       description?: string;
-      platform: "youtube" | "vimeo" | "other";
+      platform: "youtube" | "other";
       videoId: string;
       thumbnailKey?: string;
     }) => {
@@ -185,8 +185,6 @@ export default function VideoPickerModal({
     switch (p) {
       case "youtube":
         return "▶";
-      case "vimeo":
-        return "v";
       default:
         return "▶";
     }
@@ -196,8 +194,6 @@ export default function VideoPickerModal({
     switch (p) {
       case "youtube":
         return "text-ares-red";
-      case "vimeo":
-        return "text-ares-cyan";
       default:
       return "text-white/60";
     }

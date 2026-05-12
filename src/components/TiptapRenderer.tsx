@@ -81,8 +81,7 @@ function validateUrl(url: string, type: 'image' | 'video'): string {
     // Fallback domain whitelist for non-HTTPS or specific legacy cases
     const allowedDomains = [
       "aresnetwork.dev", "aresfirst.org", "youtube.com", "youtu.be", "googleusercontent.com",
-      "cloudflare-ipfs.com", "raw.githubusercontent.com", "pages.dev", "google.com", "gstatic.com",
-      "vimeo.com"
+      "cloudflare-ipfs.com", "raw.githubusercontent.com", "pages.dev", "google.com", "gstatic.com"
     ];
 
     const hostname = parsed.hostname.toLowerCase();
@@ -253,8 +252,6 @@ const renderVideoEmbed = (node: ASTNode) => {
   // Generate embed URL based on platform
   let embedSrc = platform === 'youtube'
     ? `https://www.youtube.com/embed/${videoId}`
-    : platform === 'vimeo'
-    ? `https://player.vimeo.com/video/${videoId}`
     : '';
 
   if (!embedSrc) return null;

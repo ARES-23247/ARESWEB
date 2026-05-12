@@ -90,7 +90,6 @@ function RouteComponent() {
   const getPlatformColor = (platform: string) => {
     switch (platform) {
       case "youtube": return "text-ares-red"
-      case "vimeo": return "text-ares-cyan"
       default: return "text-white/60"
     }
   }
@@ -98,7 +97,6 @@ function RouteComponent() {
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
       case "youtube": return "▶"
-      case "vimeo": return "v"
       default: return "▶"
     }
   }
