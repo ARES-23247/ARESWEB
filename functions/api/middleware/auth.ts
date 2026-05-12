@@ -3,6 +3,7 @@ import { getAuth } from "../../utils/auth";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, UserRole, SessionUser, DrizzleDB } from "./utils";
+import { ApiError } from "./errorHandler";
 
 // Extended user type from Lucia with custom role property
 interface LuciaUserWithRole {
@@ -74,7 +75,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
   });
 
   if (!session || !session.user) {
-    return c.json({ error: "Unauthorized: Please log in." }, 401);
+    throw new ApiError("Unauthorized: Please log in.", 401);
   }
 
   // RBAC: Granular path-based role checks
@@ -122,7 +123,7 @@ export const ensureAdmin = async (c: Context<AppEnv>, next: Next) => {
          details: JSON.stringify({ path: url.pathname, role, memberType })
        }).execute().catch(console.error)
      );
-     return c.json({ error: `Forbidden: Requires one of [${allowedRoles.join(", ")}] privileges or adult leader status.` }, 403);
+     throw new ApiError(`Forbidden: Requires one of [${allowedRoles.join(", ")}] privileges or adult leader status.`, 403);
   }
 
   c.set("sessionUser", {
@@ -147,7 +148,7 @@ export const ensureAuth = async (c: Context<AppEnv>, next: Next) => {
 
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ error: "Unauthorized: Please log in." }, 401);
+    throw new ApiError("Unauthorized: Please log in.", 401);
   }
 
   // EFF-F05: Store fetched user in context to satisfy subsequent getSessionUser() calls
@@ -198,4 +199,17 @@ export async function getSessionUser(c: Context<AppEnv>): Promise<SessionUser | 
     return null;
   }
   return null;
+}
+
+// ── Require Auth Helper ───────────────────────────────────────────────
+/**
+ * Synchronous-like helper that enforces authentication and throws ApiError if missing.
+ * Eliminates the boilerplate `if (!user) throw ...` in route handlers.
+ */
+export async function requireAuth(c: Context<AppEnv>): Promise<SessionUser> {
+  const user = await getSessionUser(c);
+  if (!user) {
+    throw new ApiError("Unauthorized: Please log in.", 401);
+  }
+  return user;
 }

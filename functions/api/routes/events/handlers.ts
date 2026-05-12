@@ -1,4 +1,4 @@
-import { ApiError } from "../../middleware/errorHandler";
+import { ApiError, requireAuth } from "../../middleware/errorHandler";
 import { getSocialConfig, getSessionUser, getDbSettings, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal, type ARES_Event } from "../../../utils/gcalSync";
@@ -365,8 +365,7 @@ export const eventHandlers = {
         const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
         const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-        const user = await getSessionUser(c);
-        if (!user) throw new ApiError("Authentication required", 401);
+        const user = await requireAuth(c);
         const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
         let instances: (typeof schema.events.$inferInsert)[] = [];
@@ -843,8 +842,7 @@ export const eventHandlers = {
 
     deleteMySignup: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof deleteMySignupRoute>> => {
         const { params } = input;
-        const user = await getSessionUser(c);
-        if (!user) throw new ApiError("Unauthorized", 401);
+        const user = await requireAuth(c);
         const db = getDb(c);
         await db.delete(schema.eventSignups).where(and(eq(schema.eventSignups.eventId, params.id), eq(schema.eventSignups.userId, user.id))).run();
         return { status: 200 as const, body: { success: true } };
@@ -852,8 +850,7 @@ export const eventHandlers = {
 
     updateMyAttendance: async (input: HandlerInput<{ attended: boolean }>, c: AresContext): Promise<ApiResponse<typeof updateMyAttendanceRoute>> => {
         const { params, body } = input;
-        const user = await getSessionUser(c);
-        if (!user) throw new ApiError("Unauthorized", 401);
+        const user = await requireAuth(c);
         const db = getDb(c);
 
         const existing = await db.select({ id: schema.eventSignups.id })

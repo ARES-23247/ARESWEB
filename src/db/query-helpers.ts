@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, or, isNull } from "drizzle-orm";
 import * as schema from "./schema";
 import type { DrizzleDB } from "./types";
 import { ApiError } from "../../functions/api/middleware/errorHandler";
@@ -7,6 +7,61 @@ import { ApiError } from "../../functions/api/middleware/errorHandler";
  * Query helpers for common multi-table fetches.
  * Note: Drizzle v2's relational query API has limited support, so we use manual joins.
  */
+
+/**
+ * Filter for non-deleted records (soft delete pattern).
+ * Use with .where() to exclude records where isDeleted = 1.
+ *
+ * @example
+ * await db.select().from(table).where(notDeleted(table))
+ */
+export function notDeleted(table: { isDeleted: any }) {
+  return or(eq(table.isDeleted, 0), isNull(table.isDeleted));
+}
+
+/**
+ * List records with optional filtering, ordering, and pagination.
+ * Combines select/from/where/orderBy/limit into one call.
+ *
+ * @param db - Drizzle database instance
+ * @param table - Drizzle table to query
+ * @param options - Optional where, orderBy, limit, offset
+ * @returns Array of records
+ *
+ * @example
+ * const videos = await list(db, schema.videos, {
+ *   where: eq(schema.videos.platform, "youtube"),
+ *   orderBy: desc(schema.videos.createdAt),
+ *   limit: 10
+ * });
+ */
+export async function list<T>(
+  db: DrizzleDB,
+  table: any,
+  options?: {
+    where?: any,
+    orderBy?: any,
+    limit?: number,
+    offset?: number
+  }
+): Promise<T[]> {
+  let query = db.select().from(table);
+
+  if (options?.where) {
+    query = query.where(options.where);
+  }
+  if (options?.orderBy) {
+    query = query.orderBy(options.orderBy);
+  }
+  if (options?.limit !== undefined) {
+    query = query.limit(options.limit);
+  }
+  if (options?.offset !== undefined) {
+    query = query.offset(options.offset);
+  }
+
+  return query.execute() as Promise<T[]>;
+}
 
 /**
  * Generate a unique ID with an optional prefix.

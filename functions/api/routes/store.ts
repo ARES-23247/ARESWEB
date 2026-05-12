@@ -1,4 +1,4 @@
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError, requireAuth } from "../middleware/errorHandler";
 import { eq, desc, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -137,8 +137,7 @@ export const storeRouter = _storeRouter
         return c.json({ sessionId: session.id, url: session.url || "" } as any, 200);
     })
     .openapi(getOrdersRoute, async (c) => {
-        const sessionUser = await getSessionUser(c);
-        if (!sessionUser) throw new ApiError("Unauthorized", 401);
+        const sessionUser = await requireAuth(c);
         if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
         const db = getDb(c);
         const orders = await db.select().from(schema.orders).orderBy(desc(schema.orders.createdAt)).all();
@@ -147,8 +146,7 @@ export const storeRouter = _storeRouter
         return c.json({ orders } as any, 200);
     })
     .openapi(updateOrderStatusRoute, async (c) => {
-        const sessionUser = await getSessionUser(c);
-        if (!sessionUser) throw new ApiError("Unauthorized", 401);
+        const sessionUser = await requireAuth(c);
         if (sessionUser.role !== "admin") throw new ApiError("Forbidden", 403);
         const params = c.req.valid("param");
         const body = c.req.valid("json");

@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { ApiError } from "../../middleware/errorHandler";
+import { ApiError, requireAuth } from "../../middleware/errorHandler";
 import {
     getMediaRoute,
     getAdminMediaRoute,
@@ -384,10 +384,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     const folder = key.includes("/") ? key.split("/")[0] : "Uncategorized";
     const publicFolders = ["Gallery", "Library"];
     if (!publicFolders.includes(folder)) {
-        const user = await getSessionUser(c);
-        if (!user) {
-            throw new ApiError("Unauthorized", 401);
-        }
+        await requireAuth(c);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
     const cache = typeof caches !== 'undefined' ? (caches as any).default : null;

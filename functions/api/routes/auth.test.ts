@@ -10,7 +10,6 @@ import { Hono } from 'hono';
 import authRouter from './auth';
 import { createMockDb, createTestEnv, mockSingleResult, createTestDbMiddleware } from '../../test/test-env';
 import { AppEnv } from '../middleware';
-import * as authUtils from '../middleware/auth';
 import { globalErrorHandler } from '../middleware/errorHandler';
 import type { SessionUser } from '../middleware/utils';
 

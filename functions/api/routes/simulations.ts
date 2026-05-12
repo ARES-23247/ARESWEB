@@ -1,7 +1,7 @@
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError, requireAuth } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction, getSessionUser } from "../middleware";
+import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction } from "../middleware";
 import type { SessionUser } from "../middleware/utils";
 import * as schema from "../../../src/db/schema";
 import {
@@ -181,9 +181,7 @@ export const simulationsRouter = _simulationsRouter
         } as any, 200);
     })
     .openapi(saveSimulationRoute, async (c) => {
-        const sessionUser = await getSessionUser(c);
-        if (!sessionUser) throw new ApiError("Unauthorized", 401);
-
+        const sessionUser = await requireAuth(c);
         const { name, files } = c.req.valid("json");
         if (Object.keys(files).length === 0) throw new ApiError("No files provided", 400);
 
@@ -234,9 +232,7 @@ export const simulationsRouter = _simulationsRouter
         return c.json({ id: `github:${simIdStr}` }, 200);
     })
     .openapi(deleteSimulationRoute, async (c) => {
-        const sessionUser = await getSessionUser(c);
-        if (!sessionUser) throw new ApiError("Unauthorized", 401);
-
+        const sessionUser = await requireAuth(c);
         const { id } = c.req.valid("param");
         if (!id || !id.startsWith("github:")) throw new ApiError("Not found", 404);
 

@@ -31,7 +31,15 @@ vi.mock('../middleware/auth', async () => {
       c.set('sessionUser', user);
       return next();
     }),
-  };
+      requireAuth: vi.fn(async (c: import('hono').Context) => {
+                    const user = c.get('sessionUser') || globalThis.__mockSessionUser || null;
+                    if (!user) {
+                      const { ApiError } = await vi.importActual('../middleware/errorHandler');
+                      throw new ApiError("Unauthorized: Please log in.", 401);
+                    }
+                    return user;
+                  })
+};
 });
 
 // Import tbaRouter after mocking

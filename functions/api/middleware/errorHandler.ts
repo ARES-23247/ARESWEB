@@ -57,8 +57,8 @@ function getErrorMessage(error: unknown): string {
  * Extract status code from various error types
  */
 function getStatusCode(error: unknown): number {
-  if (error instanceof ApiError) {
-    return error.status;
+  if (error instanceof ApiError || (error && typeof error === "object" && (error as any).name === "ApiError")) {
+    return (error as ApiError).status;
   }
   if (error instanceof ZodError) {
     return 400;
