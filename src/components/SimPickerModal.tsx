@@ -1,6 +1,7 @@
 import { X, TerminalSquare, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useForm } from "@tanstack/react-form";
+import React from "react";
 import registry from "../sims/simRegistry.json";
 import { AresField } from "./ui/forms/AresField";
 
@@ -19,10 +20,14 @@ export default function SimPickerModal({
     },
   });
 
-  const searchQuery = form.useStore((state) => state.values.searchQuery);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  const sims = registry.simulators.filter(sim => 
-    sim.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const updateSearchQuery = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const sims = registry.simulators.filter(sim =>
+    sim.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sim.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -30,7 +35,7 @@ export default function SimPickerModal({
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content 
+        <Dialog.Content
           aria-describedby={undefined}
           className="fixed left-[50%] top-[50%] z-[10000] translate-x-[-50%] translate-y-[-50%] bg-obsidian border border-white/10 shadow-2xl ares-cut-lg w-[calc(100%-2rem)] max-w-4xl h-[70vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] focus:outline-none"
         >
@@ -67,6 +72,7 @@ export default function SimPickerModal({
                    type="text"
                    placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
                    className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
+                   onChange={(value) => updateSearchQuery(value as string)}
                  />
                )}
              </form.Field>

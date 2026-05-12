@@ -3,8 +3,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { PointsManager } from "./PointsManager";
 
 describe("PointsManager Component", () => {
-  let mockOnSubmit: ReturnType<typeof vi.fn>;
-  let mockOnClose: ReturnType<typeof vi.fn>;
+  let mockOnSubmit: ReturnType<typeof vi.fn<(userId: string, delta: number, reason: string) => void>>;
+  let mockOnClose: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     mockOnSubmit = vi.fn();

@@ -141,9 +141,12 @@ function renderWithQueryClient(component: React.ReactElement) {
 }
 
 describe("TaskDetailsModal Component", () => {
-  let mockOnSave: ReturnType<typeof vi.fn>;
-  let mockOnDelete: ReturnType<typeof vi.fn>;
-  let mockOnClose: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockOnSave: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockOnDelete: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockOnClose: any;
 
   beforeEach(() => {
     vi.clearAllMocks();

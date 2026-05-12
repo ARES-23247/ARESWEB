@@ -1,4 +1,4 @@
-﻿ 
+ 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useSimulationFiles, SavedSim, GithubSim } from "./useSimulationFiles";
@@ -53,9 +53,9 @@ describe("useSimulationFiles hook", () => {
     mockLocation.search = "";
     mockHistory.replaceState.mockClear();
 
-    // Mock fetch
+    // Mock fetch — vi.stubGlobal handles vitest v4 stricter Mock types
     mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    vi.stubGlobal('fetch', mockFetch);
 
     // Mock dynamic import of sonner
     vi.doMock("sonner", () => ({

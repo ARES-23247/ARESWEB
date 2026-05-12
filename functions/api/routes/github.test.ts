@@ -282,7 +282,7 @@ describe('GitHub Integration Routes', () => {
       const app = createTestApp();
 
       // Mock buildGitHubConfig to return null (missing config)
-      vi.mocked(buildGitHubConfig).mockReturnValue(null);
+      vi.mocked(buildGitHubConfig).mockReturnValueOnce(null);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
@@ -411,7 +411,7 @@ describe('GitHub Integration Routes', () => {
       const app = createTestApp();
 
       // Mock buildGitHubConfig to return null (missing config)
-      vi.mocked(buildGitHubConfig).mockReturnValue(null);
+      vi.mocked(buildGitHubConfig).mockReturnValueOnce(null);
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],

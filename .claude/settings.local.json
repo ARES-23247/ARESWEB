@@ -35,7 +35,10 @@
       "Bash(cd /home/runner/work/ARESWEB/ARESWEB && npm run lint 2>&1 | head -50)",
       "Read(//home/runner/work/ARESWEB/**)",
       "Bash(sleep 30 && cat \"C:\\\\Users\\\\david\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users\\\\david-dev-robotics-ftc-ARESWEB\\\\b9937c6f-1565-4e4c-bd48-09a0c53da987\\\\tasks\\\\b15uumrwt.output\")",
-      "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users/david-dev-robotics-ftc-ARESWEB/b9937c6f-1565-4e4c-bd48-09a0c53da987/tasks/**)"
+      "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users/david-dev-robotics-ftc-ARESWEB/b9937c6f-1565-4e4c-bd48-09a0c53da987/tasks/**)",
+      "mcp__zread__search_doc",
+      "Bash(curl -s \"https://github.com/advisories/GHSA-rmmr-r34h-pfm5\")",
+      "mcp__web-search-prime__web_search_prime"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

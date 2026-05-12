@@ -61,16 +61,18 @@ vi.mock("lowlight", () => ({
 
 // Mock yjs
 vi.mock("yjs", () => ({
-  Doc: vi.fn(() => ({
-    getText: vi.fn(() => ({
-      toString: vi.fn(() => ""),
-      insert: vi.fn(),
-      delete: vi.fn(),
-    })),
-    getMap: vi.fn(() => new Map()),
-    on: vi.fn(),
-    off: vi.fn(),
-  })),
+  Doc: class MockDoc {
+    getText() {
+      return {
+        toString: vi.fn(() => ""),
+        insert: vi.fn(),
+        delete: vi.fn(),
+      };
+    }
+    getMap() { return new Map(); }
+    on() {}
+    off() {}
+  },
 }));
 
 describe("useRichEditor", () => {
@@ -130,7 +132,8 @@ describe("useRichEditor", () => {
     });
 
     it("should return null editor during initialization", () => {
-      mockUseEditor.mockReturnValueOnce(null as unknown as ReturnType<typeof mockUseEditor>);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockUseEditor.mockReturnValueOnce(null as any);
 
       const { result } = renderHook(() => useRichEditor());
 

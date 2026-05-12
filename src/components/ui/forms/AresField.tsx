@@ -8,9 +8,15 @@ interface AresFieldProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  onChange?: (value: unknown) => void;
 }
 
-export function AresField({ field, label, type = "text", placeholder, required, className }: AresFieldProps) {
+export function AresField({ field, label, type = "text", placeholder, required, className, onChange }: AresFieldProps) {
+  const handleChange = (value: unknown) => {
+    field.handleChange(value);
+    onChange?.(value);
+  };
+
   return (
     <div className="w-full">
       {label && (
@@ -24,7 +30,7 @@ export function AresField({ field, label, type = "text", placeholder, required, 
           name={field.name}
           value={field.state.value as string | number | readonly string[] | undefined}
           onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           className={className || "w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all min-h-[100px]"}
         />
@@ -35,7 +41,7 @@ export function AresField({ field, label, type = "text", placeholder, required, 
           type={type}
           value={field.state.value as string | number | readonly string[] | undefined}
           onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           className={className || "w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all"}
         />

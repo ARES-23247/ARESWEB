@@ -4,11 +4,12 @@ import { dispatchBluesky } from './bluesky';
 import type { SocialConfig, PostPayload } from '../socialSync';
 
 // Mock @atproto/api
-vi.mock('@atproto/api', () => ({
-  BskyAgent: vi.fn().mockImplementation(() => ({
-    login: vi.fn().mockResolvedValue(undefined),
-    post: vi.fn().mockResolvedValue({ uri: 'at://did:plc:123/app.bsky.feed.post/123' }),
-    uploadBlob: vi.fn().mockResolvedValue({
+vi.mock('@atproto/api', () => {
+   
+  const BskyAgent = vi.fn(function (this: any) {
+    this.login = vi.fn().mockResolvedValue(undefined);
+    this.post = vi.fn().mockResolvedValue({ uri: 'at://did:plc:123/app.bsky.feed.post/123' });
+    this.uploadBlob = vi.fn().mockResolvedValue({
       data: {
         blob: {
           $type: 'blob',
@@ -16,17 +17,19 @@ vi.mock('@atproto/api', () => ({
           mimeType: 'image/jpeg',
         },
       },
-    }),
-  } as any)),
-  RichText: vi.fn().mockImplementation((text) => ({
-    text,
-    facets: [],
-    detectFacets: vi.fn().mockResolvedValue(undefined),
-  })),
-}));
+    });
+  });
+   
+  const RichText = vi.fn(function (this: any, opts: any) {
+    this.text = opts?.text ?? opts;
+    this.facets = [];
+    this.detectFacets = vi.fn().mockResolvedValue(undefined);
+  });
+  return { BskyAgent, RichText };
+});
 
 // Mock global fetch
-global.fetch = vi.fn();
+vi.stubGlobal('fetch', vi.fn());
 
 // Mock console methods
 const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -242,11 +245,11 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce(mockImgResponse as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        uploadBlob: vi.fn().mockRejectedValue(new Error('Upload failed')),
-        post: vi.fn().mockResolvedValue({ uri: 'at://123' }),
-      } as any));
+      vi.mocked(BskyAgent).mockImplementationOnce(function (this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.uploadBlob = vi.fn().mockRejectedValue(new Error('Upload failed'));
+        this.post = vi.fn().mockResolvedValue({ uri: 'at://123' });
+      } as any);
 
       await dispatchBluesky(payload, fullConfig);
 
@@ -274,12 +277,12 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        post: vi.fn()
+      vi.mocked(BskyAgent).mockImplementationOnce(function(this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.post = vi.fn()
           .mockRejectedValueOnce(new Error('UpstreamTimeout'))
-          .mockResolvedValueOnce({ uri: 'at://123' }),
-      } as any));
+          .mockResolvedValueOnce({ uri: 'at://123' });
+      } as any);
 
       await dispatchBluesky(payload, fullConfig);
 
@@ -292,10 +295,10 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        post: vi.fn().mockRejectedValue(new Error('Other error')),
-      } as any));
+      vi.mocked(BskyAgent).mockImplementationOnce(function(this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.post = vi.fn().mockRejectedValue(new Error('Other error'));
+      } as any);
 
       await expect(dispatchBluesky(payload, fullConfig)).rejects.toThrow('Bluesky:');
     });
@@ -304,10 +307,10 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        post: vi.fn().mockRejectedValue(new Error('UpstreamTimeout')),
-      } as any));
+      vi.mocked(BskyAgent).mockImplementationOnce(function(this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.post = vi.fn().mockRejectedValue(new Error('UpstreamTimeout'));
+      } as any);
 
       await expect(dispatchBluesky(payload, fullConfig)).rejects.toThrow('Bluesky:');
     });
@@ -316,12 +319,12 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        post: vi.fn()
+      vi.mocked(BskyAgent).mockImplementationOnce(function(this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.post = vi.fn()
           .mockRejectedValueOnce(new Error('UpstreamTimeout'))
-          .mockResolvedValueOnce({ uri: 'at://123' }),
-      } as any));
+          .mockResolvedValueOnce({ uri: 'at://123' });
+      } as any);
 
       const startTime = Date.now();
       await dispatchBluesky(payload, fullConfig);
@@ -334,10 +337,10 @@ describe('Bluesky Social Integration', () => {
       vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
 
       const { BskyAgent } = await import('@atproto/api');
-      vi.mocked(BskyAgent).mockImplementationOnce(() => ({
-        login: vi.fn().mockResolvedValue(undefined),
-        post: vi.fn().mockRejectedValue(new Error('Syndication failed')),
-      } as any));
+      vi.mocked(BskyAgent).mockImplementationOnce(function(this: any) {
+        this.login = vi.fn().mockResolvedValue(undefined);
+        this.post = vi.fn().mockRejectedValue(new Error('Syndication failed'));
+      } as any);
 
       await expect(dispatchBluesky(payload, fullConfig)).rejects.toThrow();
       expect(consoleErrorSpy).toHaveBeenCalledWith(

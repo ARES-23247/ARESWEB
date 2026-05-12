@@ -3,8 +3,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PromptModal from "./PromptModal";
 
 describe("PromptModal Component", () => {
-  let mockSubmit: ReturnType<typeof vi.fn>;
-  let mockCancel: ReturnType<typeof vi.fn>;
+  let mockSubmit: ReturnType<typeof vi.fn<(value: string) => void>>;
+  let mockCancel: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     mockSubmit = vi.fn();

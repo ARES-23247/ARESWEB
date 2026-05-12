@@ -3,8 +3,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ConfirmModal from "./ConfirmModal";
 
 describe("ConfirmModal Component", () => {
-  let mockConfirm: ReturnType<typeof vi.fn>;
-  let mockCancel: ReturnType<typeof vi.fn>;
+  let mockConfirm: ReturnType<typeof vi.fn<() => void>>;
+  let mockCancel: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     mockConfirm = vi.fn();

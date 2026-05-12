@@ -31,9 +31,9 @@ Object.defineProperty(window, "sessionStorage", {
 
 describe("useSimulationChat hook", () => {
   let mockFetch: ReturnType<typeof vi.fn>;
-  let mockCompileCode: ReturnType<typeof vi.fn>;
-  let mockSetFiles: ReturnType<typeof vi.fn>;
-  let mockSetPendingAiChanges: ReturnType<typeof vi.fn>;
+  let mockCompileCode: ReturnType<typeof vi.fn<(files: Record<string, string>) => Promise<string | null>>>;
+  let mockSetFiles: ReturnType<typeof vi.fn<(files: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void>>;
+  let mockSetPendingAiChanges: ReturnType<typeof vi.fn<(changes: Record<string, string> | null) => void>>;
 
   const defaultOptions = {
     simId: null,
@@ -51,9 +51,9 @@ describe("useSimulationChat hook", () => {
     vi.clearAllMocks();
     mockSessionStorage.clear();
 
-    // Mock fetch
+    // Mock fetch — vi.stubGlobal handles vitest v4 stricter Mock types
     mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    vi.stubGlobal('fetch', mockFetch);
 
     mockCompileCode = vi.fn().mockResolvedValue("compiled-code");
     mockSetFiles = vi.fn();
