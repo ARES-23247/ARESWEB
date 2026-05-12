@@ -273,7 +273,7 @@ describe("useMedia", () => {
         expect(result.current.isDeleting).toBe(false);
       });
 
-      expect(toast.error).toHaveBeenCalledWith(expect.any(String));
+      expect(toast.error).toHaveBeenCalledWith(expect.any(String), expect.anything());
     });
   });
 
@@ -433,7 +433,7 @@ describe("useMedia", () => {
         await result.current.uploadAssets(files);
       });
 
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("test2.png"));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("test2.png"), expect.anything());
       expect(toast.success).toHaveBeenCalledWith("Uploaded 1 asset");
     });
 
@@ -464,7 +464,7 @@ describe("useMedia", () => {
         await result.current.uploadAssets([file]);
       });
 
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("test.png"));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("test.png"), expect.anything());
     });
   });
 
@@ -525,7 +525,7 @@ describe("useMedia", () => {
         expect(result.current.isMoving).toBe(false);
       });
 
-      expect(toast.error).toHaveBeenCalledWith(expect.any(String));
+      expect(toast.error).toHaveBeenCalledWith(expect.any(String), expect.anything());
     });
   });
 
@@ -622,7 +622,7 @@ describe("useMedia", () => {
         }
       });
 
-      expect(toast.error).toHaveBeenCalledWith(expect.any(String));
+      expect(toast.error).toHaveBeenCalledWith(expect.any(String), expect.anything());
     });
   });
 

@@ -74,12 +74,12 @@ export function toastApiError(err: unknown, title: string = "Operation failed") 
   let diagnostic = "";
 
   if (err instanceof ApiError) {
-    message = err.message;
+    message = title !== "Operation failed" ? `${title}: ${err.message}` : err.message;
     diagnostic = err.code || `HTTP_${err.status}`;
   } else if (err instanceof Error) {
-    message = err.message;
+    message = title !== "Operation failed" ? `${title}: ${err.message}` : err.message;
   } else if (typeof err === "string") {
-    message = err;
+    message = title !== "Operation failed" ? `${title}: ${err}` : err;
   }
 
   toast.error(message, {
