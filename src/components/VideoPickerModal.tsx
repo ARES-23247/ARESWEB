@@ -57,6 +57,17 @@ export default function VideoPickerModal({
   // Find the video to edit
   const videoToEdit = videos.find((v) => v.id === editVideoId);
 
+  function resetForm() {
+    setNewTitle("");
+    setNewDescription("");
+    setVideoUrl("");
+    setPlatform("youtube");
+    setParsedVideoId("");
+    setThumbnailKey(null);
+    setThumbnailUrl(null);
+    setUrlError("");
+  }
+
   // Pre-fill form when editing
   if (editVideoId !== prevEditVideoId || videoToEdit?.id !== prevVideoToEditId) {
     setPrevEditVideoId(editVideoId);
@@ -130,17 +141,6 @@ export default function VideoPickerModal({
       toast.error(error.message || "Failed to update video");
     }
   });
-
-  const resetForm = () => {
-    setNewTitle("");
-    setNewDescription("");
-    setVideoUrl("");
-    setPlatform("youtube");
-    setParsedVideoId("");
-    setThumbnailKey(null);
-    setThumbnailUrl(null);
-    setUrlError("");
-  };
 
   const handleCreate = async () => {
     let finalVideoId = parsedVideoId;

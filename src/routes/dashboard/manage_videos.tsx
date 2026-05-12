@@ -14,6 +14,7 @@ export const Route = createFileRoute('/dashboard/manage_videos')({
 function RouteComponent() {
   const modal = useModal()
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [editVideoId, setEditVideoId] = useState<string | undefined>(undefined)
   const { data: videosResponse, isLoading } = useGetVideos()
   const deleteMutation = useDeleteVideo({
     onSuccess: () => {
@@ -150,7 +151,10 @@ function RouteComponent() {
                   </a>
                   <div className="flex items-center gap-2 ml-auto">
                     <button
-                      onClick={() => {/* TODO: Edit functionality */}}
+                      onClick={() => {
+                        setEditVideoId(video.id)
+                        setIsPickerOpen(true)
+                      }}
                       className="p-2 text-white/60 hover:text-ares-red transition-colors"
                       title="Edit video"
                     >
@@ -173,11 +177,15 @@ function RouteComponent() {
 
       <VideoPickerModal
         isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
+        onClose={() => {
+          setIsPickerOpen(false)
+          setEditVideoId(undefined)
+        }}
         onSelect={() => {
           setIsPickerOpen(false)
-          // Refetch is handled by the query client
+          setEditVideoId(undefined)
         }}
+        editVideoId={editVideoId}
       />
     </div>
   )

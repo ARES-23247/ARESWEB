@@ -13,6 +13,7 @@ export const Route = createFileRoute('/dashboard/manage_galleries')({
 function RouteComponent() {
   const modal = useModal()
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [editGalleryId, setEditGalleryId] = useState<string | undefined>(undefined)
   const { data: galleriesResponse, isLoading } = useGetGalleries()
   const deleteMutation = useDeleteGallery({
     onSuccess: () => {
@@ -97,7 +98,10 @@ function RouteComponent() {
                   </Link>
                   <div className="flex items-center gap-2 ml-auto">
                     <button
-                      onClick={() => {/* TODO: Edit functionality */}}
+                      onClick={() => {
+                        setEditGalleryId(gallery.id)
+                        setIsPickerOpen(true)
+                      }}
                       className="p-2 text-white/60 hover:text-ares-gold transition-colors"
                       title="Edit gallery"
                     >
@@ -120,11 +124,15 @@ function RouteComponent() {
 
       <GalleryPickerModal
         isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
+        onClose={() => {
+          setIsPickerOpen(false)
+          setEditGalleryId(undefined)
+        }}
         onSelect={() => {
           setIsPickerOpen(false)
-          // Refetch is handled by the query client
+          setEditGalleryId(undefined)
         }}
+        editGalleryId={editGalleryId}
       />
     </div>
   )

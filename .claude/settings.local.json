@@ -38,7 +38,8 @@
       "Read(//c/Users/david/AppData/Local/Temp/claude/c--Users/david-dev-robotics-ftc-ARESWEB/b9937c6f-1565-4e4c-bd48-09a0c53da987/tasks/**)",
       "mcp__zread__search_doc",
       "Bash(curl -s \"https://github.com/advisories/GHSA-rmmr-r34h-pfm5\")",
-      "mcp__web-search-prime__web_search_prime"
+      "mcp__web-search-prime__web_search_prime",
+      "Bash(npx vitest *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
