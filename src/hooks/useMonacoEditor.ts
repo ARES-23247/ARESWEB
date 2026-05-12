@@ -60,7 +60,7 @@ export function useMonacoEditor() {
         export function useRef<T>(initialValue: T): { current: T };
         export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
         export function useMemo<T>(factory: () => T, deps: unknown[]): T;
-        export function Suspense(props: { children: any; fallback: any }): any;
+        export function Suspense(props: { children: React.ReactNode; fallback: React.ReactNode }): React.ReactNode;
         export function lazy<T>(factory: () => Promise<{ default: T }>): T;
       }
       declare namespace React {
@@ -69,7 +69,7 @@ export function useMonacoEditor() {
         export function useRef<T>(initialValue: T): { current: T };
         export function useCallback<T extends (...args: unknown[]) => unknown>(callback: T, deps: unknown[]): T;
         export function useMemo<T>(factory: () => T, deps: unknown[]): T;
-        export function Suspense(props: { children: any; fallback: any }): any;
+        export function Suspense(props: { children: React.ReactNode; fallback: React.ReactNode }): React.ReactNode;
         export function lazy<T>(factory: () => Promise<{ default: T }>): T;
       }`;
       

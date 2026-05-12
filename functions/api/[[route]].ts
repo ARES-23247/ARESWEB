@@ -271,14 +271,16 @@ const routes = new OpenAPIHono<AppEnv>()
   .route("/", group4)
   .openapi(searchRoute, async (c) => {
     const { q } = c.req.valid("query");
-    const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim();
-    if (!qClean || qClean.length > 100) return c.json({ results: [] }, 200);
-    const ftsQ = qClean.replace(/\*/g, '') + '*';
+    // SEC-F01: D1 FTS5 MATCH cannot use parameterized bindings (SQLite limitation).
+    // Mitigation: strip ALL non-alphanumeric/space chars, truncate to 100 chars,
+    // escape any remaining single quotes, and append wildcard for prefix matching.
+    const qClean = q.replace(/[^a-zA-Z0-9\s]/g, "").trim().substring(0, 100);
+    if (!qClean) return c.json({ results: [] }, 200);
+    const ftsQ = qClean.replace(/'/g, "''") + '*';
     const db = c.get("db");
-    // FTS MATCH requires literal string, not parameter binding
-    const postsQuery = `SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
-    const eventsQuery = `SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
-    const docsQuery = `SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH '${ftsQ.replace(/'/g, "''")}' ORDER BY rank LIMIT 5`;
+    const postsQuery = `SELECT 'blog' as type, f.slug as id, highlight(posts_fts, 1, '<b>', '</b>') as title, snippet(posts_fts, 4, '...', '...', '...', 15) as snippet FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH '${ftsQ}' ORDER BY rank LIMIT 5`;
+    const eventsQuery = `SELECT 'event' as type, f.id, highlight(events_fts, 1, '<b>', '</b>') as title, snippet(events_fts, 2, '...', '...', '...', 15) as snippet FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH '${ftsQ}' ORDER BY rank LIMIT 5`;
+    const docsQuery = `SELECT 'doc' as type, f.slug as id, highlight(docs_fts, 1, '<b>', '</b>') as title, snippet(docs_fts, 4, '...', '...', '...', 15) as snippet FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH '${ftsQ}' ORDER BY rank LIMIT 5`;
     const [postsReq, eventsReq, docsReq] = await Promise.all([
       db.all(postsQuery).then(r => (r || []) as FTSResult[]),
       db.all(eventsQuery).then(r => (r || []) as FTSResult[]),
@@ -327,16 +329,10 @@ const routes = new OpenAPIHono<AppEnv>()
 
 apiRouter.route("/", routes);
 
-// ── Health / Environment Info ────────────
+// ── Health Check ────────────
 apiRouter.get("/health", (c) => {
-  const hostname = new URL(c.req.url).hostname;
-  // Detect preview deployments by hostname
-  const detectedEnv = c.env?.ENVIRONMENT || (hostname.endsWith(".pages.dev") && !hostname.startsWith("aresweb.")) ? "preview" : "production";
-  return c.json({
-    environment: detectedEnv,
-    hostname,
-    status: "ok"
-  }, 200);
+  // FUN-F01: Do not expose environment type or hostname to prevent info disclosure
+  return c.json({ status: "ok" }, 200);
 });
 
 app.onError(async (err, c) => {

@@ -77,10 +77,8 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const objects = await c.env.ARES_STORAGE.list();
 
   const media = objects.objects
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .filter((obj: any) => publicKeys.has(obj.key))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((obj: any) => {
+    .filter((obj) => publicKeys.has(obj.key))
+    .map((obj) => {
       const tagInfo = tags.find(t => t.key === obj.key);
       return {
         key: obj.key,
@@ -92,8 +90,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
         tags: tagInfo?.tags ?? null,
       };
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
+    .sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
   return c.json({ media }, 200);
 })
