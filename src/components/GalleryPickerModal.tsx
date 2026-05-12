@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { X, Images, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetGalleries } from "../api";
-import { useMutation } from "@tanstack/react-query";
+import { useGetGalleries, useUpdateGallery } from "../api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
+import { toast } from "sonner";
 
 interface Gallery {
   id: string;
@@ -20,23 +21,49 @@ export default function GalleryPickerModal({
   isOpen,
   onClose,
   onSelect,
+  editGalleryId,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (galleryId: string, title: string) => void;
+  editGalleryId?: string;
 }) {
-
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const [prevEditGalleryId, setPrevEditGalleryId] = useState<string | undefined>(undefined);
+  const [prevGalleryToEditId, setPrevGalleryToEditId] = useState<string | undefined>(undefined);
+
   const { data: galleriesResponse, isLoading, refetch } = useGetGalleries({
     enabled: isOpen,
   });
 
   const galleries = (galleriesResponse as unknown as { galleries: Gallery[] })?.galleries ?? [];
+
+  // Find the gallery to edit
+  const galleryToEdit = galleries.find((g) => g.id === editGalleryId);
+
+  // Pre-fill form when editing
+  if (editGalleryId !== prevEditGalleryId || galleryToEdit?.id !== prevGalleryToEditId) {
+    setPrevEditGalleryId(editGalleryId);
+    setPrevGalleryToEditId(galleryToEdit?.id);
+    if (editGalleryId && galleryToEdit) {
+      setIsCreating(true);
+      setNewTitle(galleryToEdit.title);
+      setNewDescription(galleryToEdit.description || "");
+      setHeroImageFile(null);
+    } else if (!editGalleryId) {
+      // Reset form when switching to create mode
+      setIsCreating(false);
+      setNewTitle("");
+      setNewDescription("");
+      setHeroImageFile(null);
+    }
+  }
 
   const createMutation = useMutation({
     mutationFn: async (payload: {
@@ -59,7 +86,24 @@ export default function GalleryPickerModal({
       setNewDescription("");
       setHeroImageFile(null);
       onSelect(data.gallery.id, data.gallery.title);
+      toast.success("Gallery created successfully");
     },
+  });
+
+  const updateMutation = useUpdateGallery({
+    onSuccess: () => {
+      refetch();
+      setIsCreating(false);
+      setNewTitle("");
+      setNewDescription("");
+      setHeroImageFile(null);
+      queryClient.invalidateQueries({ queryKey: ["galleries"] });
+      toast.success("Gallery updated successfully");
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update gallery");
+    }
   });
 
   const handleCreate = async () => {
@@ -81,15 +125,32 @@ export default function GalleryPickerModal({
       setIsUploading(false);
     }
 
-    createMutation.mutate({
+    const payload = {
       title: newTitle.trim(),
       description: newDescription.trim() || undefined,
       heroImageKey,
-    });
+    };
+
+    if (editGalleryId) {
+      updateMutation.mutate({ id: editGalleryId, ...payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Reset form when closing
+      setIsCreating(false);
+      setNewTitle("");
+      setNewDescription("");
+      setHeroImageFile(null);
+      onClose();
+    }
   };
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-asset-picker data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
@@ -104,10 +165,14 @@ export default function GalleryPickerModal({
               </div>
               <div>
                 <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">
-                  {isCreating ? "Create Gallery" : "Select Gallery"}
+                  {isCreating ? (editGalleryId ? "Edit Gallery" : "Create Gallery") : "Select Gallery"}
                 </Dialog.Title>
                 <Dialog.Description className="text-xs text-white/60 font-mono m-0">
-                  {isCreating ? "Add a new photo gallery" : "Choose a gallery to embed"}
+                  {isCreating
+                    ? editGalleryId
+                      ? "Update gallery details"
+                      : "Add a new photo gallery"
+                    : "Choose a gallery to embed"}
                 </Dialog.Description>
               </div>
             </div>
@@ -190,10 +255,16 @@ export default function GalleryPickerModal({
                 </div>
                 <button
                   onClick={handleCreate}
-                  disabled={!newTitle.trim() || createMutation.isPending || isUploading}
+                  disabled={!newTitle.trim() || createMutation.isPending || updateMutation.isPending || isUploading}
                   className="w-full px-6 py-3 bg-ares-gold hover:bg-ares-gold/80 text-black font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {(createMutation.isPending || isUploading) ? "Creating..." : "Create Gallery"}
+                  {(createMutation.isPending || updateMutation.isPending || isUploading)
+                    ? editGalleryId
+                      ? "Updating..."
+                      : "Creating..."
+                    : editGalleryId
+                      ? "Update Gallery"
+                      : "Create Gallery"}
                 </button>
               </div>
             ) : isLoading ? (

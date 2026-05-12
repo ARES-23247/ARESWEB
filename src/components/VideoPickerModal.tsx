@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { X, Play, Plus, ImagePlus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetVideos, useParseVideoUrlMutation } from "../api";
-import { useMutation } from "@tanstack/react-query";
+import { useGetVideos, useParseVideoUrlMutation, useUpdateVideo } from "../api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrapResponse } from "../api/honoClient";
 import AssetPickerModal from "./AssetPickerModal";
 import { toast } from "sonner";
@@ -24,11 +24,14 @@ export default function VideoPickerModal({
   isOpen,
   onClose,
   onSelect,
+  editVideoId,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (videoId: string, title: string) => void;
+  editVideoId?: string;
 }) {
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -40,6 +43,9 @@ export default function VideoPickerModal({
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [urlError, setUrlError] = useState("");
 
+  const [prevEditVideoId, setPrevEditVideoId] = useState<string | undefined>(undefined);
+  const [prevVideoToEditId, setPrevVideoToEditId] = useState<string | undefined>(undefined);
+
   const { data: videosResponse, isLoading, refetch } = useGetVideos({
     enabled: isOpen,
   });
@@ -47,6 +53,30 @@ export default function VideoPickerModal({
   const parseUrlMutation = useParseVideoUrlMutation();
 
   const videos = (videosResponse as unknown as { videos: Video[] })?.videos ?? [];
+
+  // Find the video to edit
+  const videoToEdit = videos.find((v) => v.id === editVideoId);
+
+  // Pre-fill form when editing
+  if (editVideoId !== prevEditVideoId || videoToEdit?.id !== prevVideoToEditId) {
+    setPrevEditVideoId(editVideoId);
+    setPrevVideoToEditId(videoToEdit?.id);
+    if (editVideoId && videoToEdit) {
+      setIsCreating(true);
+      setNewTitle(videoToEdit.title);
+      setNewDescription(videoToEdit.description || "");
+      setPlatform(videoToEdit.platform);
+      setParsedVideoId(videoToEdit.videoId);
+      setThumbnailKey(videoToEdit.thumbnailKey);
+      setThumbnailUrl(videoToEdit.thumbnailUrl);
+      setVideoUrl("");
+      setUrlError("");
+    } else if (!editVideoId) {
+      // Reset form when switching to create mode
+      resetForm();
+      setIsCreating(false);
+    }
+  }
 
   const handleParseUrl = async () => {
     if (!videoUrl.trim()) {
@@ -87,6 +117,20 @@ export default function VideoPickerModal({
     }
   });
 
+  const updateMutation = useUpdateVideo({
+    onSuccess: () => {
+      refetch();
+      setIsCreating(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      toast.success("Video updated successfully");
+      onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update video");
+    }
+  });
+
   const resetForm = () => {
     setNewTitle("");
     setNewDescription("");
@@ -122,13 +166,19 @@ export default function VideoPickerModal({
 
     if (!newTitle.trim() || !finalVideoId.trim()) return;
 
-    createMutation.mutate({
+    const payload = {
       title: newTitle.trim(),
       description: newDescription.trim() || undefined,
       platform: finalPlatform,
       videoId: finalVideoId,
       thumbnailKey: thumbnailKey || undefined,
-    });
+    };
+
+    if (editVideoId) {
+      updateMutation.mutate({ id: editVideoId, ...payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const getPlatformIcon = (p: "youtube" | "vimeo" | "other") => {
@@ -153,8 +203,17 @@ export default function VideoPickerModal({
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Reset form when closing
+      setIsCreating(false);
+      resetForm();
+      onClose();
+    }
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
@@ -169,10 +228,14 @@ export default function VideoPickerModal({
               </div>
               <div>
                 <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">
-                  {isCreating ? "Add Video" : "Select Video"}
+                  {isCreating ? (editVideoId ? "Edit Video" : "Add Video") : "Select Video"}
                 </Dialog.Title>
                 <Dialog.Description className="text-xs text-white/60 font-mono m-0">
-                  {isCreating ? "Link a video from YouTube, Vimeo, or other platform" : "Choose a video to embed"}
+                  {isCreating
+                    ? editVideoId
+                      ? "Update video details"
+                      : "Link a video from YouTube, Vimeo, or other platform"
+                    : "Choose a video to embed"}
                 </Dialog.Description>
               </div>
             </div>
@@ -297,10 +360,16 @@ export default function VideoPickerModal({
                 </div>
                 <button
                   onClick={handleCreate}
-                  disabled={!newTitle.trim() || (!parsedVideoId && !videoUrl.trim()) || createMutation.isPending || parseUrlMutation.isPending}
+                  disabled={!newTitle.trim() || (!parsedVideoId && !videoUrl.trim()) || createMutation.isPending || updateMutation.isPending || parseUrlMutation.isPending}
                   className="px-6 py-3 bg-ares-red hover:bg-ares-red/90 text-black font-black ares-cut-sm uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full mt-4"
                 >
-                  {createMutation.isPending ? "Adding Video..." : "Add Video"}
+                  {(createMutation.isPending || updateMutation.isPending)
+                    ? editVideoId
+                      ? "Updating Video..."
+                      : "Adding Video..."
+                    : editVideoId
+                      ? "Update Video"
+                      : "Add Video"}
                 </button>
               </div>
             ) : isLoading ? (
