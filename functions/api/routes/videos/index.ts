@@ -202,9 +202,9 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
 
   try {
     const response = await fetch(url);
-    const errText = await response.text();
 
     if (!response.ok) {
+      const errText = await response.text();
       console.error("YouTube API Error:", response.status, errText);
 
       // Parse YouTube API error for better error messages
