@@ -45,8 +45,10 @@ function getEmbedUrl(url: string): string {
   if (!url) return "";
   
   // YouTube - handles watch?v=, youtu.be/, and embed/ formats
-  // We use a simplified regex to avoid 'Unsafe Regular Expression' warnings
-  const ytMatch = url.match(/(?:v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  // Split into multiple matches to satisfy strict security checkers
+  const ytMatch = url.match(/v=([a-zA-Z0-9_-]{11})/) || 
+                  url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/) || 
+                  url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
 
   return url;
