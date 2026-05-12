@@ -9,7 +9,7 @@ import { analyzeScoutingRoute } from "../../../../shared/routes/scouting";
 
 
 const SYSTEM_PROMPTS: Record<string, string> = {
-  team_analysis: `You are an expert FTC (FIRST Tech Challenge) scouting analyst for Team ARES 23247. Analyze the provided team data thoroughly. Structure your response with clear markdown headings:
+    team_analysis: `You are an expert FTC (FIRST Tech Challenge) scouting analyst for Team ARES 23247. Analyze the provided team data thoroughly. Structure your response with clear markdown headings:
 
 ## Team Overview
 Brief summary of team identity and history.
@@ -28,7 +28,7 @@ Highlight the most important numbers — OPR, win rate, scoring averages, consis
 
 Be data-driven. Reference specific numbers from the provided context. Keep analysis concise but insightful.`,
 
-  match_prediction: `You are an expert FTC match analyst for Team ARES 23247. Given alliance matchup data, predict the outcome. Structure your response:
+    match_prediction: `You are an expert FTC match analyst for Team ARES 23247. Given alliance matchup data, predict the outcome. Structure your response:
 
 ## Prediction
 Winner prediction with confidence percentage (e.g., "Red Alliance — 72% confidence").
@@ -44,7 +44,7 @@ Tactical recommendations for ARES 23247 if they are in this match.
 
 Use concrete numbers from the provided data. Be honest about uncertainty.`,
 
-  event_overview: `You are an expert FTC event analyst for Team ARES 23247. Provide a comprehensive event overview. Structure your response:
+    event_overview: `You are an expert FTC event analyst for Team ARES 23247. Provide a comprehensive event overview. Structure your response:
 
 ## Event Summary
 High-level overview of the event — team count, competitiveness, notable teams.
@@ -67,57 +67,55 @@ Be specific and use the data provided. Reference team numbers and stats.`,
 const analyzeRouter = new OpenAPIHono<AppEnv>();
 
 analyzeRouter.openapi(analyzeScoutingRoute, async (c) => {
-  const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
+    const { mode, teamNumber, eventKey, seasonKey, context } = c.req.valid("json");
 
-  if (!SYSTEM_PROMPTS[mode]) {
-    throw new ApiError(`Invalid analysis mode: ${mode}.`, 400);
-  }
+    if (!SYSTEM_PROMPTS[mode]) {
+        throw new ApiError(`Invalid analysis mode: ${mode}.`, 400);
+    }
 
-  const zaiKey = c.env.Z_AI_API_KEY;
-  if (!zaiKey) {
-    throw new ApiError("Z.ai API key not configured", 500);
-  }
+    const zaiKey = c.env.Z_AI_API_KEY;
+    if (!zaiKey) {
+        throw new ApiError("Z.ai API key not configured", 500);
+    }
 
-  const systemPrompt = SYSTEM_PROMPTS[mode];
-  const userContent = `Season: ${seasonKey}\n${teamNumber ? `Team: ${teamNumber}\n` : ""}Data:\n${JSON.stringify(context, null, 2)}`;
+    const systemPrompt = SYSTEM_PROMPTS[mode];
+    const userContent = `Season: ${seasonKey}\n${teamNumber ? `Team: ${teamNumber}\n` : ""}Data:\n${JSON.stringify(context, null, 2)}`;
 
     const zaiRes = await fetch("https://api.z.ai/api/coding/paas/v4/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${zaiKey}`,
-      },
-      body: JSON.stringify({
-        model: "GLM-5.1",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        max_tokens: 4096,
-      }),
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${zaiKey}`,
+        },
+        body: JSON.stringify({
+            model: "GLM-5.1",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userContent },
+            ],
+            max_tokens: 4096,
+        }),
     });
 
     if (!zaiRes.ok) {
-      const errText = await zaiRes.text();
-      console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
-      throw new ApiError(`AI analysis failed (${zaiRes.status})`, 502);
+        const errText = await zaiRes.text();
+        console.error(`[Scouting Analyze] Z.ai error ${zaiRes.status}:`, errText);
+        throw new ApiError(`AI analysis failed (${zaiRes.status})`, 502);
     }
 
     const data = (await zaiRes.json()) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?: { total_tokens?: number } };
     if (data.error) {
-      throw new ApiError(data.error.message || "AI returned an error", 502);
+        throw new ApiError(data.error.message || "AI returned an error", 502);
     }
 
     const markdown = data.choices?.[0]?.message?.content || "";
     const tokensUsed = data.usage?.total_tokens;
 
     // Save to database
-    try {
-      const db = getDb(c);
-      const user = c.get("sessionUser");
-      const id = crypto.randomUUID();
-      
-      await db.insert(schema.scoutingAnalyses).values({
+    const db = getDb(c);
+    const user = c.get("sessionUser");
+    const id = crypto.randomUUID();
+    await db.insert(schema.scoutingAnalyses).values({
         id,
         mode,
         teamNumber: teamNumber || null,
@@ -127,15 +125,12 @@ analyzeRouter.openapi(analyzeScoutingRoute, async (c) => {
         model: "GLM-5.1",
         tokensUsed: tokensUsed || 0,
         createdBy: user?.id || "system"
-      }).run();
-    } catch (dbErr) {
-      console.error("[Scouting Analyze] Failed to persist analysis:", dbErr);
-    }
+    }).run();
 
     return c.json({
-      markdown,
-      model: "GLM-5.1",
-      tokensUsed,
+        markdown,
+        model: "GLM-5.1",
+        tokensUsed,
     }, 200);
 });
 

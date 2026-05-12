@@ -13,7 +13,7 @@ import {
 import { AppEnv, ensureAdmin, getDb, audit } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { findOneById } from "../../../../src/db/query-helpers";
+import { findOneById, insertAndFetch, updateAndFetch } from "../../../../src/db/query-helpers";
 
 export const galleriesRouter = new OpenAPIHono<AppEnv>();
 
@@ -103,22 +103,16 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const body = c.req.valid("json");
   const db = getDb(c);
 
-  const id = `gal_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
-
-  const newGallery = {
-    id,
+  const gallery = await insertAndFetch(db, schema.galleries, {
     title: body.title,
     description: body.description ?? null,
     googlePhotosUrl: body.googlePhotosUrl ?? null,
     heroImageKey: body.heroImageKey ?? null,
-  };
+  }, "gal_");
 
-  await db.insert(schema.galleries).values(newGallery).execute();
-  audit(c, "gallery_create", "gallery", id, `Created gallery: ${body.title}`);
+  audit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);
 
-  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-
-  return c.json({ gallery: serializeGallery(result[0]) }, 200);
+  return c.json({ gallery: serializeGallery(gallery) }, 200);
 })
 
 // PUT /galleries/admin/:id - Update a gallery (admin only)
@@ -126,8 +120,6 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = getDb(c);
-
-  const existing = await findOneById(db, schema.galleries, id, "Gallery not found");
 
   const updates: Record<string, unknown> = {
     ...(body.title !== undefined && { title: body.title }),
@@ -137,12 +129,11 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
     updatedAt: new Date().toISOString(),
   };
 
-  await db.update(schema.galleries).set(updates).where(eq(schema.galleries.id, id)).execute();
-  audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || existing.title}`);
+  const gallery = await updateAndFetch(db, schema.galleries, id, updates);
 
-  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+  audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
 
-  return c.json({ gallery: serializeGallery(result[0]) }, 200);
+  return c.json({ gallery: serializeGallery(gallery) }, 200);
 })
 
 // DELETE /galleries/admin/:id - Delete a gallery (admin only)

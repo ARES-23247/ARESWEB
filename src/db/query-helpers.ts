@@ -9,6 +9,79 @@ import { ApiError } from "../../functions/api/middleware/errorHandler";
  */
 
 /**
+ * Generate a unique ID with an optional prefix.
+ * Handles environments where crypto.randomUUID might not be available.
+ *
+ * @param prefix - Optional prefix for the ID (e.g., "vid_", "gal_")
+ * @returns A unique ID string
+ *
+ * @example
+ * const id = generateId("vid_"); // "vid_123e4567-e89b..."
+ */
+export function generateId(prefix = ""): string {
+  const uuid = typeof crypto?.randomUUID === "function"
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return `${prefix}${uuid}`;
+}
+
+/**
+ * Insert a record and return it by re-fetching.
+ * D1 doesn't support .returning(), so we manually fetch after insert.
+ *
+ * @param db - Drizzle database instance
+ * @param table - Drizzle table to insert into
+ * @param data - Data to insert (id will be generated if not provided)
+ * @param idPrefix - Optional prefix for auto-generated ID
+ * @returns The inserted record
+ *
+ * @example
+ * const gallery = await insertAndFetch(db, schema.galleries, { title: "Test" }, "gal_");
+ */
+export async function insertAndFetch<T extends { id: string }>(
+  db: DrizzleDB,
+  table: any,
+  data: any,
+  idPrefix = ""
+): Promise<T> {
+  const id = data.id || generateId(idPrefix);
+
+  await db
+    .insert(table)
+    .values({ ...data, id })
+    .run();
+
+  return findOneById(db, table, id) as Promise<T>;
+}
+
+/**
+ * Update a record and return it by re-fetching.
+ *
+ * @param db - Drizzle database instance
+ * @param table - Drizzle table to update
+ * @param id - ID of the record to update
+ * @param data - Partial data to update
+ * @returns The updated record
+ *
+ * @example
+ * const gallery = await updateAndFetch(db, schema.galleries, id, { title: "New Title" });
+ */
+export async function updateAndFetch<T extends { id: string }>(
+  db: DrizzleDB,
+  table: any,
+  id: string,
+  data: any
+): Promise<T> {
+  await db
+    .update(table)
+    .set(data)
+    .where(eq(table.id, id))
+    .run();
+
+  return findOneById(db, table, id) as Promise<T>;
+}
+
+/**
  * Find a single record by ID or throw a 404 ApiError.
  * Standardizes the common pattern of querying and checking for empty results.
  *
