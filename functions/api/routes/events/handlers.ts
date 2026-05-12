@@ -104,7 +104,7 @@ const sanitizeFtsQuery = (query: string): string => {
 
 // Explicit type for event save/update body — matches the eventSchema from shared/schemas/eventSchema.ts
 // Defined explicitly to avoid TypeScript inference issues with the dynamic extendSchema builder pattern
-interface EventSaveBody {
+export interface EventSaveBody {
     id?: string;
     title: string;
     category?: string;

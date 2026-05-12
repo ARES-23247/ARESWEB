@@ -216,16 +216,14 @@ export const judgesRouter = _judgesRouter
         ]);
 
         const payload: JudgePortfolioSuccess = {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          portfolioDocs: portfolioDocs.map((d: any) => ({
+          portfolioDocs: portfolioDocs.map((d: Record<string, unknown>) => ({
             slug: String(d.slug),
             title: String(d.title),
             category: String(d.category),
             description: d.description ? String(d.description) : "",
             content: sanitizeJudgeContent(d.content),
           })),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          outreach: outreach.map((o: any) => ({
+          outreach: outreach.map((o: Record<string, unknown>) => ({
             id: Number(o.id),
             title: String(o.title),
             date: String(o.date),
@@ -235,8 +233,7 @@ export const judgesRouter = _judgesRouter
             reachCount: Number(o.reachCount),
             description: sanitizeJudgeContent(o.description || ""),
           })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          awards: awards.map((a: any) => ({
+          awards: awards.map((a: Record<string, unknown>) => ({
             id: String(a.id),
             title: String(a.title),
             date: String(a.date),
@@ -246,7 +243,7 @@ export const judgesRouter = _judgesRouter
             year: Number(a.date)
           })),
           sponsors: sponsors.map((s: SponsorResult) => ({ ...s, id: s.id || "", tier: s.tier as string }))
-        } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        };
 
         portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 

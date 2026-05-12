@@ -139,8 +139,8 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
         throw new ApiError("Too many requests", 429, "RATE_LIMIT_EXCEEDED");
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-    const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
+    // Cloudflare Cache API is not in standard types natively without casting
+    const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
     const url = new URL(c.req.url);
     url.search = "";
     const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -182,14 +182,21 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
             tags: metaMap.get(obj.key)?.tags || ""
         }));
 
-    const response = c.json({ media }, 200);
-    response.headers.set("Cache-Control", "public, max-age=300");
-    response.headers.set("Vary", "Accept");
+    const responseData = { media };
     if (cache && c.executionCtx) {
-        c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
+        c.executionCtx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(responseData), { 
+            headers: { 
+                "Content-Type": "application/json", 
+                "Cache-Control": "public, max-age=300", 
+                "Vary": "Accept" 
+            } 
+        })));
     }
 
-    return response;
+    return c.json(responseData, 200, {
+        "Cache-Control": "public, max-age=300",
+        "Vary": "Accept"
+    });
 }
 )
 
@@ -264,8 +271,7 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
 
         if (c.env.ARES_STORAGE) {
             if (isLarge) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await c.env.ARES_STORAGE.put(key, file.stream() as any, { httpMetadata: { contentType: file.type } });
+                await c.env.ARES_STORAGE.put(key, file.stream() as unknown as import("@cloudflare/workers-types").ReadableStream, { httpMetadata: { contentType: file.type } });
             } else {
                 await c.env.ARES_STORAGE.put(key, buffer!, { httpMetadata: { contentType: file.type } });
             }
@@ -301,8 +307,7 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
             c.executionCtx.waitUntil(logAuditAction(c, "media_upload", "media", key, `Uploaded to ${finalFolder}`));
 
             if (typeof caches !== 'undefined') {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-                c.executionCtx.waitUntil((caches as any).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
+                c.executionCtx.waitUntil((caches as unknown as { default: Cache }).default.delete(new Request(new URL("/api/media", c.req.url).href, { method: "GET" })));
             }
         }
 
@@ -387,8 +392,8 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     if (!publicFolders.includes(folder)) {
         await requireAuth(c);
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cloudflare Cache API is not in standard types
-    const cache = typeof caches !== 'undefined' ? (caches as any).default : null;
+    // Cloudflare Cache API is not in standard types
+    const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
     const url = new URL(c.req.url);
     url.search = "";
     const cacheKey = new Request(url.toString(), { method: "GET" });
@@ -400,13 +405,11 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     const object = await c.env.ARES_STORAGE.get(key);
     if (!object || !object.body) return c.text("Not Found", 404);
     const headers = new Headers();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    object.writeHttpMetadata(headers as any);
+    object.writeHttpMetadata(headers as unknown as import("@cloudflare/workers-types").Headers);
     headers.set("etag", object.httpEtag);
     if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
     else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = new Response(object.body as any, { headers });
+    const response = new Response(object.body as unknown as BodyInit, { headers });
     if (cache && publicFolders.includes(folder) && c.executionCtx) {
         c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
     }

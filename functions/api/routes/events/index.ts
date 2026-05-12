@@ -98,7 +98,7 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(submitSignupRoute, async (c) => {
-  const result = await eventHandlers.submitSignup({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c);
+  const result = await eventHandlers.submitSignup({ params: c.req.valid("param"), body: c.req.valid("json") as { bringing?: string; notes?: string; prepHours?: number }, query: {} }, c);
   return handlerResponse(result);
 })
 
@@ -108,7 +108,7 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(updateMyAttendanceRoute, async (c) => {
-  const result = await eventHandlers.updateMyAttendance({ params: c.req.valid("param"), body: c.req.valid("json"), query: {} }, c);
+  const result = await eventHandlers.updateMyAttendance({ params: c.req.valid("param"), body: c.req.valid("json") as { attended: boolean }, query: {} }, c);
   return handlerResponse(result);
 })
 
@@ -124,14 +124,12 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(saveEventRoute, async (c) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await eventHandlers.saveEvent({ body: c.req.valid("json") as any, query: {}, params: {} }, c);
+  const result = await eventHandlers.saveEvent({ body: c.req.valid("json") as unknown as import("./handlers").EventSaveBody, query: {}, params: {} }, c);
   return handlerResponse(result);
 })
 
 .openapi(updateEventRoute, async (c) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await eventHandlers.updateEvent({ params: c.req.valid("param"), body: c.req.valid("json") as any, query: {} }, c);
+  const result = await eventHandlers.updateEvent({ params: c.req.valid("param"), body: c.req.valid("json") as Partial<import("./handlers").EventSaveBody>, query: {} }, c);
   return handlerResponse(result);
 })
 
@@ -176,8 +174,7 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 .openapi(updateUserAttendanceRoute, async (c) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await eventHandlers.updateUserAttendance({ params: c.req.valid("param"), body: c.req.valid("json") as any, query: {} }, c);
+  const result = await eventHandlers.updateUserAttendance({ params: c.req.valid("param"), body: c.req.valid("json") as { attended: boolean }, query: {} }, c);
   return handlerResponse(result);
 })
 

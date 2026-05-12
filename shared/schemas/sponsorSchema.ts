@@ -12,4 +12,4 @@ export const sponsorSchema = extendSchema(insertSponsorSchema)
   .omitField("createdAt")
   .build();
 
-export type SponsorPayload = z.input<typeof sponsorSchema>;
+export type SponsorPayload = z.infer<typeof sponsorSchema>;

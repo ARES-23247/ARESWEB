@@ -312,12 +312,21 @@ export const simulationsRouter = _simulationsRouter
         const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
         if (!res.ok) throw new ApiError("Gist not found", 404);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const gist = await res.json() as any;
+        interface GitHubGist {
+            description?: string | null;
+            owner?: { login: string };
+            public?: boolean;
+            created_at?: string;
+            updated_at?: string;
+            files?: Record<string, { content?: string }>;
+        }
+
+        const gist = await res.json() as GitHubGist;
         const gistFiles: Record<string, string> = {};
-        for (const [filename, fileObj] of Object.entries(gist.files)) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            gistFiles[filename] = (fileObj as any).content || "";
+        if (gist.files) {
+            for (const [filename, fileObj] of Object.entries(gist.files)) {
+                gistFiles[filename] = fileObj.content || "";
+            }
         }
 
         return c.json({

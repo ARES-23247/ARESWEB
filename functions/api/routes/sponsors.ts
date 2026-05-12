@@ -128,23 +128,29 @@ export const sponsorsRouter = _sponsorsRouter
       }
     )
     .openapi(saveSponsorRoute, async (c) => {
-        // Request boundary: Zod validated body for flexible schema updates
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const body = c.req.valid("json") as any;
+        // Request boundary: Explicit type cast to avoid complex Zod inference falling back to {}
+        const body = c.req.valid("json") as unknown as {
+          id?: string;
+          name: string;
+          tier: string;
+          logoUrl?: string | null;
+          websiteUrl?: string | null;
+          isActive?: boolean | number;
+        };
         const db = getDb(c);
-        const id = body.id || crypto.randomUUID();
+        const id = (body.id as string | undefined) || crypto.randomUUID();
 
         if (body.id) {
           await db
             .update(schema.sponsors)
             .set({
-              name: body.name,
-              tier: body.tier,
-              logoUrl: body.logoUrl ?? null,
-              websiteUrl: body.websiteUrl ?? null,
+              name: body.name as string,
+              tier: body.tier as string,
+              logoUrl: (body.logoUrl as string | null | undefined) ?? null,
+              websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
               isActive: body.isActive ? 1 : 0,
             })
-            .where(eq(schema.sponsors.id, body.id))
+            .where(eq(schema.sponsors.id, body.id as string))
             .run();
           c.executionCtx.waitUntil(logAuditAction(c, "update_sponsor", "sponsors", id));
         } else {
@@ -152,15 +158,15 @@ export const sponsorsRouter = _sponsorsRouter
             .insert(schema.sponsors)
             .values({
               id,
-              name: body.name,
-              tier: body.tier,
-              logoUrl: body.logoUrl ?? null,
-              websiteUrl: body.websiteUrl ?? null,
+              name: body.name as string,
+              tier: body.tier as string,
+              logoUrl: (body.logoUrl as string | null | undefined) ?? null,
+              websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
               isActive: body.isActive ? 1 : 0,
             })
             .run();
           c.executionCtx.waitUntil(
-            logAuditAction(c, "create_sponsor", "sponsors", id, `Created sponsor ${body.name}`)
+            logAuditAction(c, "create_sponsor", "sponsors", id, `Created sponsor ${body.name as string}`)
           );
         }
 

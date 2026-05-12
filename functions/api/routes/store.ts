@@ -45,8 +45,7 @@ _storeRouter.post("/webhook", async (c) => {
                     status: "paid",
                     stripeSessionId: session.id,
                     customerEmail: session.customer_details?.email,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    shippingName: (session as any).shipping_details?.name,
+                    shippingName: (session as Stripe.Checkout.Session & { shipping_details?: { name?: string | null } }).shipping_details?.name,
                     updatedAt: new Date().toISOString()
                 })
                 .where(eq(schema.orders.id, metadata.orderId))
@@ -84,12 +83,10 @@ export const storeRouter = _storeRouter
         const stripe = new Stripe(stripeKey);
 
         // Fetch products to verify price
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const productIds = items.map((i: any) => i.productId);
+        const productIds = items.map((i: { productId: string; quantity: number }) => i.productId);
         const dbProducts = await db.select().from(schema.products).where(inArray(schema.products.id, productIds)).all();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const lineItems = items.map((item: any) => {
+        const lineItems = items.map((item: { productId: string; quantity: number }) => {
             const product = dbProducts.find(p => p.id === item.productId);
             if (!product) throw new ApiError(`Product not found: ${item.productId}`, 404);
             return {
@@ -97,15 +94,13 @@ export const storeRouter = _storeRouter
                     currency: "usd",
                     product_data: {
                         name: product.name,
-                        description: product.description,
+                        description: product.description || undefined,
                         images: product.imageUrl ? [product.imageUrl] : [],
                     },
                     unit_amount: product.priceCents,
                 },
                 quantity: item.quantity,
-                // Type boundary: Stripe API line item structure
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any;
+            };
         });
 
         const orderId = crypto.randomUUID();

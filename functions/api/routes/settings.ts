@@ -193,8 +193,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
             return {
                 tableName,
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                data: ((data as any[]) || []).map((r: any) => {
+                data: (data as Record<string, unknown>[] || []).map((r) => {
                     return { ...r, name: r.name ? String(r.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
                 }),
             };
