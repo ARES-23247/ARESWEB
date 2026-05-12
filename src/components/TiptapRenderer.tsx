@@ -202,7 +202,7 @@ const renderVideoEmbed = (node: ASTNode) => {
 
 // Gallery Embed Renderer Component
 function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?: string }) {
-  const { data: galleryResponse, isLoading } = useGetGallery(galleryId);
+  const { data: galleryResponse, isLoading, isError } = useGetGallery(galleryId);
   const gallery = (galleryResponse as unknown as { gallery: { id: string; title: string; thumbnail?: string } | null } | null)?.gallery ?? null;
 
   if (isLoading) {
@@ -216,14 +216,9 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
     );
   }
 
-  if (!gallery) {
-    return (
-      <div className="my-8 ares-cut-sm border border-ares-red/30 bg-ares-red/10 p-6 text-center">
-        <Images className="w-12 h-12 text-ares-red mx-auto mb-2" />
-        <div className="text-ares-red font-bold">Gallery not found</div>
-        <div className="text-ares-red/60 text-sm mt-1">Gallery ID: {galleryId}</div>
-      </div>
-    );
+  if (isError || !gallery) {
+    // Silent fail - don't crash the entire blog post
+    return null;
   }
 
   return (

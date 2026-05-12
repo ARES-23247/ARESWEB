@@ -23,6 +23,8 @@ export function getValidatedEnv(runtimeEnv: Record<string, unknown>) {
       CRON_SECRET: z.string().optional(),
       SENTRY_DSN: z.string().optional(),
       YOUTUBE_API_KEY: z.string().optional(),
+      YOUTUBE_CLIENT_ID: z.string().optional(),
+      YOUTUBE_CLIENT_SECRET: z.string().optional(),
     },
     clientPrefix: "PUBLIC_",
     client: {},

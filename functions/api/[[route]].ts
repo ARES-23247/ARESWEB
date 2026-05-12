@@ -49,6 +49,7 @@ import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
 import galleriesRouter from "./routes/galleries/index";
 import videosRouter from "./routes/videos/index";
+import youtubeRouter from "./routes/youtube/index";
 import { aiToolsRouter } from "./routes/ai-tools/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 
@@ -228,7 +229,8 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/logistics", logisticsRouter)
   .route("/users", usersRouter)
   .route("/galleries", galleriesRouter)
-  .route("/videos", videosRouter);
+  .route("/videos", videosRouter)
+  .route("/youtube", youtubeRouter);
 
 export const group3 = new OpenAPIHono<AppEnv>()
   .route("/badges", badgesRouter)
