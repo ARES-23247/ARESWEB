@@ -1,9 +1,7 @@
 import { X, TerminalSquare, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useForm } from "@tanstack/react-form";
 import React from "react";
 import registry from "../sims/simRegistry.json";
-import { AresField } from "./ui/forms/AresField";
 
 export default function SimPickerModal({
   isOpen,
@@ -14,17 +12,7 @@ export default function SimPickerModal({
   onClose: () => void;
   onSelect: (simId: string) => void;
 }) {
-  const form = useForm({
-    defaultValues: {
-      searchQuery: "",
-    },
-  });
-
   const [searchQuery, setSearchQuery] = React.useState("");
-
-  const updateSearchQuery = (value: string) => {
-    setSearchQuery(value);
-  };
 
   const sims = registry.simulators.filter(sim =>
     sim.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,18 +52,14 @@ export default function SimPickerModal({
           <div className="px-6 py-4 bg-white/5 border-b border-white/10 flex items-center gap-3 shadow-inner">
              <Search size={18} className="text-white/60" aria-hidden="true" />
              <label htmlFor="simSearch" className="sr-only">Search active simulators</label>
-             <form.Field name="searchQuery">
-               {(field) => (
-                 <AresField
-                   field={field}
-                   label=""
-                   type="text"
-                   placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
-                   className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
-                   onChange={(value) => updateSearchQuery(value as string)}
-                 />
-               )}
-             </form.Field>
+             <input
+               id="simSearch"
+               type="text"
+               placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
+               className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+             />
           </div>
 
           {/* Content */}
