@@ -32,8 +32,9 @@ aiRouter.use("/copilot", ensureAuth);
 aiRouter.use("/sim-playground", ensureAuth);
 aiRouter.use("/editor-chat", ensureAuth);
 aiRouter.use("/suggest", ensureAuth);
-aiRouter.use("/reindex", ensureAdmin);
-aiRouter.use("/reindex-external", ensureAdmin);
+aiRouter.use("/admin/reindex", ensureAdmin);
+aiRouter.use("/admin/reindex-external", ensureAdmin);
+aiRouter.use("/admin/external-sources", ensureAdmin);
 aiRouter.use("/chat-session/:id", ensureAuth);
 
 // W3A-SEC-04: Apply rate limiting to AI endpoints to prevent abuse
@@ -898,7 +899,7 @@ aiRouter.openapi(reindexExternalRoute, async (c) => {
 });
 
 // ──── Knowledge Sources Management ────────────────────────────────────────
-aiRouter.get("/external-sources", ensureAdmin, async (c) => {
+aiRouter.get("/admin/external-sources", ensureAdmin, async (c) => {
     const db = getDb(c);
     const sources = await db.select().from(schema.externalKnowledgeSources);
     return c.json(sources);
@@ -921,7 +922,7 @@ aiRouter.post("/admin/external-sources", ensureAdmin, async (c) => {
     return c.json({ id, success: true, message: "External source added" });
 });
 
-aiRouter.delete("/external-sources/:id", ensureAdmin, async (c) => {
+aiRouter.delete("/admin/external-sources/:id", ensureAdmin, async (c) => {
     const id = c.req.param("id");
     const db = getDb(c);
 

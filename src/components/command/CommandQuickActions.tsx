@@ -10,7 +10,7 @@ export default function CommandQuickActions() {
   const handleReindex = async (force = false) => {
     setIsReindexing(true);
     try {
-      const url = force ? "/api/ai/reindex?force=true" : "/api/ai/reindex";
+      const url = force ? "/api/ai/admin/reindex?force=true" : "/api/ai/admin/reindex";
       const res = await fetch(url, { method: "POST" });
       const data = await res.json() as { success?: boolean; indexed?: number; mode?: string; errors?: string[]; error?: string };
       if (res.ok && data.success) {

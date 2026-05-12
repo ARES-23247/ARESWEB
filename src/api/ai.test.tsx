@@ -257,7 +257,7 @@ describe("AI API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockSources);
-      expect(global.fetch).toHaveBeenCalledWith("/api/ai/external-sources");
+      expect(global.fetch).toHaveBeenCalledWith("/api/ai/admin/external-sources");
     });
 
     it("should handle fetch errors", async () => {
@@ -296,7 +296,7 @@ describe("AI API", () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
-      expect(global.fetch).toHaveBeenCalledWith("/api/ai/external-sources", {
+      expect(global.fetch).toHaveBeenCalledWith("/api/ai/admin/external-sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "github", url: "https://github.com/new/repo", branch: "main" }),
@@ -335,7 +335,7 @@ describe("AI API", () => {
       result.current.mutate("source-123");
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(global.fetch).toHaveBeenCalledWith("/api/ai/external-sources/source-123", {
+      expect(global.fetch).toHaveBeenCalledWith("/api/ai/admin/external-sources/source-123", {
         method: "DELETE",
       });
     });
@@ -366,7 +366,7 @@ describe("AI API", () => {
       const response = await aiApi.reindexExternalRequest();
 
       expect(response).toEqual(mockResponse);
-      expect(global.fetch).toHaveBeenCalledWith("/api/ai/reindex-external", {
+      expect(global.fetch).toHaveBeenCalledWith("/api/ai/admin/reindex-external", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceId: undefined }),
@@ -383,7 +383,7 @@ describe("AI API", () => {
       const response = await aiApi.reindexExternalRequest("source-123");
 
       expect(response).toEqual(mockResponse);
-      expect(global.fetch).toHaveBeenCalledWith("/api/ai/reindex-external", {
+      expect(global.fetch).toHaveBeenCalledWith("/api/ai/admin/reindex-external", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceId: "source-123" }),

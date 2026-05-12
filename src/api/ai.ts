@@ -137,7 +137,7 @@ export function useAISuggest(
 // ============================================
 
 /**
- * GET /api/ai/external-sources - List external knowledge sources
+ * GET /api/ai/admin/external-sources - List external knowledge sources
  */
 export function useGetExternalSources(
   options?: Omit<UseQueryOptions<AIExternalSource[]>, "queryKey" | "queryFn">
@@ -145,7 +145,7 @@ export function useGetExternalSources(
   return useQuery<AIExternalSource[]>({
     queryKey: ["ai", "external-sources"],
     queryFn: async () => {
-      const response = await fetch("/api/ai/external-sources");
+      const response = await fetch("/api/ai/admin/external-sources");
       if (!response.ok) {
         throw new Error("Failed to fetch external sources");
       }
@@ -156,7 +156,7 @@ export function useGetExternalSources(
 }
 
 /**
- * POST /api/ai/external-sources - Add external knowledge source
+ * POST /api/ai/admin/external-sources - Add external knowledge source
  */
 export function useAddExternalSource(
   options?: Omit<UseMutationOptions<{ id: string; success: boolean }, Error, { type: string; url: string; branch?: string }>, "mutationFn">
@@ -164,7 +164,7 @@ export function useAddExternalSource(
   const queryClient = useQueryClient();
   return useMutation<{ id: string; success: boolean }, Error, { type: string; url: string; branch?: string }>({
     mutationFn: async (data) => {
-      const response = await fetch("/api/ai/external-sources", {
+      const response = await fetch("/api/ai/admin/external-sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -185,7 +185,7 @@ export function useAddExternalSource(
 }
 
 /**
- * DELETE /api/ai/external-sources/:id - Delete external knowledge source
+ * DELETE /api/ai/admin/external-sources/:id - Delete external knowledge source
  */
 export function useDeleteExternalSource(
   options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
@@ -193,7 +193,7 @@ export function useDeleteExternalSource(
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean }, Error, string>({
     mutationFn: async (id) => {
-      const response = await fetch(`/api/ai/external-sources/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/ai/admin/external-sources/${id}`, { method: "DELETE" });
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || "Failed to delete external source");
@@ -209,10 +209,10 @@ export function useDeleteExternalSource(
 }
 
 /**
- * POST /api/ai/reindex-external - Reindex external knowledge sources
+ * POST /api/ai/admin/reindex-external - Reindex external knowledge sources
  */
 export async function reindexExternalRequest(sourceId?: string): Promise<ReindexExternalResponse> {
-  const response = await fetch("/api/ai/reindex-external", {
+  const response = await fetch("/api/ai/admin/reindex-external", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sourceId })
