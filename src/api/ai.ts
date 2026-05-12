@@ -47,10 +47,9 @@ export interface AIExternalSourcesResponse {
 }
 
 export interface ReindexExternalResponse {
-  success?: boolean;
-  indexed?: number;
-  errors?: string[];
-  error?: string;
+  indexed: number;
+  skipped: number;
+  errors: string[];
 }
 
 export interface AISuggestResponse {

@@ -44,17 +44,14 @@ export default function ExternalSourcesManager() {
     for (const src of sources) {
       try {
         const data = await reindexExternalRequest(src.id);
-        if (data.success) {
-          if (data.indexed) totalIndexed += data.indexed;
-          if (data.errors && data.errors.length > 0) {
-            allErrors.push(...data.errors);
-          }
-        } else {
-          allErrors.push(`Sync failed for ${src.url}: ${data.error || "Unknown error"}`);
+        // reindexExternalRequest throws on non-200, so reaching here means success
+        totalIndexed += data.indexed;
+        if (data.errors && data.errors.length > 0) {
+          allErrors.push(...data.errors.map(e => `${src.url}: ${e}`));
         }
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);
-        allErrors.push(`${src.url}: ${err}`);
+        allErrors.push(`Sync failed for ${src.url}: ${err}`);
       }
     }
 

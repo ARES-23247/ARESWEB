@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as honoClient from "./honoClient";
@@ -357,7 +357,7 @@ describe("AI API", () => {
 
   describe("reindexExternalRequest", () => {
     it("should reindex all sources successfully", async () => {
-      const mockResponse = { success: true, indexed: 10, errors: [] };
+      const mockResponse = { indexed: 10, skipped: 0, errors: [] };
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
@@ -374,7 +374,7 @@ describe("AI API", () => {
     });
 
     it("should reindex specific source successfully", async () => {
-      const mockResponse = { success: true, indexed: 1, errors: [] };
+      const mockResponse = { indexed: 1, skipped: 0, errors: [] };
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
@@ -400,7 +400,7 @@ describe("AI API", () => {
     });
 
     it("should handle partial success with errors", async () => {
-      const mockResponse = { success: true, indexed: 8, errors: ["Failed to index source-5"] };
+      const mockResponse = { indexed: 8, skipped: 0, errors: ["Failed to index source-5"] };
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
