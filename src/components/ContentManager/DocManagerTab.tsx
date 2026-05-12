@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Download, ChevronUp, ChevronDown, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../../api/honoClient";
 import { DocItem, ViewType, contentFilter } from "./shared";
 import RevisionManager from "../RevisionManager";
 import {
@@ -46,8 +47,8 @@ export default function DocManagerTab({
       setConfirmId(null);
       toast.success("Doc soft-deleted");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Delete failed");
+    onError: (err) => {
+      toastApiError(err, "Delete failed");
     }
   });
 
@@ -55,8 +56,8 @@ export default function DocManagerTab({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Sort failed");
+    onError: (err) => {
+      toastApiError(err, "Sort failed");
     }
   });
 
@@ -65,7 +66,8 @@ export default function DocManagerTab({
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc approved");
-    }
+    },
+    onError: (err) => toastApiError(err, "Approval failed")
   });
 
   const localRejectMutation = useRejectDoc({
@@ -73,7 +75,8 @@ export default function DocManagerTab({
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc rejected");
-    }
+    },
+    onError: (err) => toastApiError(err, "Rejection failed")
   });
 
   const localRestoreMutation = useUndeleteDoc({
@@ -81,7 +84,8 @@ export default function DocManagerTab({
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc restored");
-    }
+    },
+    onError: (err) => toastApiError(err, "Restore failed")
   });
 
   const localPurgeMutation = usePurgeDoc({
@@ -89,7 +93,8 @@ export default function DocManagerTab({
       queryClient.invalidateQueries({ queryKey: ["admin-docs"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "action-items"] });
       toast.success("Doc purged");
-    }
+    },
+    onError: (err) => toastApiError(err, "Purge failed")
   });
 
   const exportSingleDocMutation = useExportSingleDoc();
@@ -104,8 +109,8 @@ export default function DocManagerTab({
       a.download = `${slug}.json`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Failed to export document.");
+    } catch (err) {
+      toastApiError(err, "Failed to export document");
     }
   };
 
@@ -121,8 +126,8 @@ export default function DocManagerTab({
       a.download = `aresweb-docs-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Failed to export all documents.");
+    } catch (err) {
+      toastApiError(err, "Failed to export all documents");
     }
   };
 

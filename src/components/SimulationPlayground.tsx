@@ -13,6 +13,7 @@ import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
+import { toastApiError } from "../api/honoClient";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
@@ -200,8 +201,7 @@ export default function SimulationPlayground() {
       toast.success("Code formatted");
     } catch (e) {
       logger.error("Failed to format code:", e);
-      const { toast } = await import("sonner");
-      toast.error("Format failed");
+      toastApiError(e, "Format failed");
     }
   }, [files, activeFile]);
 
@@ -274,14 +274,16 @@ export default function SimulationPlayground() {
         const { toast } = await import("sonner");
         toast.success("Saved simulation!");
       } else {
-        const errData = await res.json().catch(() => ({})) as { error?: string };
-        const { toast } = await import("sonner");
-        toast.error(`Save failed: ${errData.error || res.statusText}`);
+        const errData = await res.json().catch(() => ({})) as { error?: string, message?: string, code?: string };
+        toastApiError({ 
+          message: errData.message || errData.error || res.statusText, 
+          status: res.status,
+          code: errData.code 
+        }, "Save failed");
       }
     } catch (e) {
       logger.error("[SimPlayground] Save failed:", e);
-      const { toast } = await import("sonner");
-      toast.error("Network error while saving simulation");
+      toastApiError(e, "Network error while saving simulation");
     } finally {
       setIsSaving(false);
     }

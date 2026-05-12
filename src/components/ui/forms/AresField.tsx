@@ -50,7 +50,7 @@ export function AresField({ field, label, type = "text", placeholder, required, 
       )}
       {field.state.meta.errors && field.state.meta.errors.length > 0 && (
         <div className="mt-2 text-xs font-medium text-ares-red">
-          {field.state.meta.errors.join(", ")}
+          {field.state.meta.errors.map(err => typeof err === 'object' ? (err as { message?: string }).message || String(err) : String(err)).join(", ")}
         </div>
       )}
     </div>

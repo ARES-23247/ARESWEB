@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { AresField } from "./ui/forms/AresField";
+import { toastApiError } from "../api/honoClient";
 
 // Schema for validation
 const numericFieldSchema = z.union([z.string(), z.number()]).refine(val => val === "" || Number(val) >= 0, "Must be a positive number");
@@ -101,7 +102,7 @@ export default function OutreachTracker() {
           setEditingId(null);
           form.reset();
         },
-        onError: () => toast.error("Failed to save impact record.")
+        onError: (err) => toastApiError(err, "Failed to save impact record")
       });
     }
   });
@@ -136,7 +137,7 @@ export default function OutreachTracker() {
     if(confirm("Purge this impact record?")) {
       deleteMutation.mutate(id, {
         onSuccess: () => toast.success("Impact record purged."),
-        onError: () => toast.error("Failed to delete impact record.")
+        onError: (err) => toastApiError(err, "Failed to delete impact record")
       });
     }
   };

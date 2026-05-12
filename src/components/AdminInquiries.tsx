@@ -13,6 +13,7 @@ import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 
 function DebouncedNotesArea({
   id,
@@ -122,16 +123,17 @@ export default function AdminInquiries() {
 
   const updateStatusMutation = useUpdateInquiryStatus({
     onSuccess: () => toast.success("Inquiry status updated."),
-    onError: (err) => toast.error(`Failed to update status: ${err.message}`),
+    onError: (err) => toastApiError(err, "Failed to update status"),
   });
 
   const deleteInquiryMutation = useDeleteInquiry({
     onSuccess: () => toast.success("Inquiry deleted."),
-    onError: (err) => toast.error(`Failed to delete inquiry: ${err.message}`),
+    onError: (err) => toastApiError(err, "Failed to delete inquiry"),
   });
 
   const updateNotesMutation = useUpdateInquiryNotes({
-    onSuccess: () => toast.success("Notes updated.")
+    onSuccess: () => toast.success("Notes updated."),
+    onError: (err) => toastApiError(err, "Failed to update notes")
   });
 
   const parseMetadata = (metadata: string | null): Record<string, unknown> | null => {

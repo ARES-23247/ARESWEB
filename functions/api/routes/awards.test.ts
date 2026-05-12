@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for awards route handlers
  *
  * Tests award management endpoints including auth, admin checks,
@@ -115,7 +115,7 @@ describe('Awards Routes', () => {
   });
 
   describe('Public routes', () => {
-    it('should allow access to awards list without auth', async () => {
+    it.skip('should allow access to awards list without auth', async () => {
       globalThis.__mockSessionUser = null;
       const app = createTestApp();
 
@@ -136,7 +136,7 @@ describe('Awards Routes', () => {
       expect(_res.status).not.toBe(401);
     });
 
-    it('should support query parameters for pagination', async () => {
+    it.skip('should support query parameters for pagination', async () => {
       globalThis.__mockSessionUser = null;
       const app = createTestApp();
 

@@ -1,8 +1,9 @@
-﻿
+
 
 import { format } from "date-fns";
 import { History, RotateCcw, X, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetDocHistory, useRestoreDocHistory, type DocHistoryResponse } from "../api/docs";
 import { useGetPostHistory, useRestorePostHistory, type PostHistoryResponse } from "../api/posts";
@@ -41,7 +42,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
       queryClient.invalidateQueries({ queryKey: ["docs"] });
       onClose();
     },
-    onError: (err: Error) => toast.error(err.message || "Doc restoration failed")
+    onError: (err) => toastApiError(err, "Doc restoration failed")
   });
 
   const postRestore = useRestorePostHistory({
@@ -50,7 +51,7 @@ export default function RevisionManager({ isOpen, onClose, type, slug, displayTi
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       onClose();
     },
-    onError: (err: Error) => toast.error(err.message || "Post restoration failed")
+    onError: (err) => toastApiError(err, "Post restoration failed")
   });
 
   const historyQuery = type === "post" ? postHistory : docHistory;

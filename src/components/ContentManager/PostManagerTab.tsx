@@ -3,6 +3,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Radio, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../../api/honoClient";
 import { PostItem, ViewType, contentFilter } from "./shared";
 import RevisionManager from "../RevisionManager";
 import {
@@ -44,33 +45,37 @@ export default function PostManagerTab({
       setConfirmId(null);
       toast.success("Post deleted");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Delete failed");
+    onError: (err) => {
+      toastApiError(err, "Delete failed");
     }
   });
 
   const localApproveMutation = useApprovePost({
     onSuccess: () => {
       toast.success("Post approved");
-    }
+    },
+    onError: (err) => toastApiError(err, "Approval failed")
   });
 
   const localRejectMutation = useRejectPost({
     onSuccess: () => {
       toast.success("Post rejected");
-    }
+    },
+    onError: (err) => toastApiError(err, "Rejection failed")
   });
 
   const localRestoreMutation = useUndeletePost({
     onSuccess: () => {
       toast.success("Post restored");
-    }
+    },
+    onError: (err) => toastApiError(err, "Restore failed")
   });
 
   const localPurgeMutation = usePurgePost({
     onSuccess: () => {
       toast.success("Post purged");
-    }
+    },
+    onError: (err) => toastApiError(err, "Purge failed")
   });
 
   const filtered = posts.filter(contentFilter(view));

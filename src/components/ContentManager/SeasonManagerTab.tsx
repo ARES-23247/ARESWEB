@@ -3,6 +3,7 @@ import { History } from "lucide-react";
 import { ViewType } from "./shared";
 import { useGetAdminSeasons, useDeleteSeason, useUndeleteSeason, usePurgeSeason } from "../../api/seasons";
 import { toast } from "sonner";
+import { toastApiError } from "../../api/honoClient";
 import GenericManagerList from "./GenericManagerList";
 
 interface SeasonItem {
@@ -35,20 +36,23 @@ export default function SeasonManagerTab({
     onSuccess: () => {
       setConfirmId(null);
       toast.success("Season deleted");
-    }
+    },
+    onError: (err) => toastApiError(err, "Delete failed")
   });
 
   const restoreMutation = useUndeleteSeason({
     onSuccess: () => {
       toast.success("Season restored");
-    }
+    },
+    onError: (err) => toastApiError(err, "Restore failed")
   });
 
   const purgeMutation = usePurgeSeason({
     onSuccess: () => {
       setConfirmId(null);
       toast.success("Season purged");
-    }
+    },
+    onError: (err) => toastApiError(err, "Purge failed")
   });
 
   const filtered: SeasonItem[] = seasons.filter((s: SeasonItem) => {

@@ -1,8 +1,8 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import type { AppType } from "../../functions/api/[[route]]";
-import type { UseMutationOptions } from "@tanstack/react-query";
-import type { QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 /**
  * Custom fetch that handles:
@@ -63,6 +63,29 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/**
+ * Standardized toast helper for API errors.
+ * Automatically extracts status codes and diagnostic codes for display.
+ */
+export function toastApiError(err: unknown, title: string = "Operation failed") {
+  let message = title;
+  let diagnostic = "";
+
+  if (err instanceof ApiError) {
+    message = err.message;
+    diagnostic = err.code || `HTTP_${err.status}`;
+  } else if (err instanceof Error) {
+    message = err.message;
+  } else if (typeof err === "string") {
+    message = err;
+  }
+
+  toast.error(message, {
+    description: diagnostic ? `Diagnostic Code: ${diagnostic}` : undefined,
+    duration: 5000,
+  });
 }
 
 /**

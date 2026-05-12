@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeVideos, useGetYoutubeResumableUrlMutation, useUpdateYoutubeVideoMutation } from '../../api/youtube';
 import { Upload, Video, AlertCircle, Settings, X, Pencil, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastApiError } from '../../api/honoClient';
 // import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from 'date-fns';
@@ -52,7 +53,7 @@ function YoutubeDashboard() {
             if (authUrl?.url) {
               window.location.href = authUrl.url;
             } else {
-              toast.error("Authorization URL not available. Please check YouTube API configuration.");
+              toastApiError("Authorization URL not available. Please check YouTube API configuration.");
             }
           }}
           disabled={isUrlLoading}
@@ -118,7 +119,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
   const handleUpload = async () => {
     if (!file) return;
     if (!title.trim()) {
-      toast.error('Title is required');
+      toastApiError('Title is required');
       return;
     }
 
@@ -153,12 +154,25 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+            let detail = xhr.statusText;
+            try {
+              const res = JSON.parse(xhr.responseText);
+              if (res.error?.message) detail = res.error.message;
+            } catch {
+              // Not JSON, use responseText as is or statusText
+              if (xhr.responseText) detail = xhr.responseText.substring(0, 100);
+            }
+            reject(new Error(`Google API Error ${xhr.status}: ${detail}`));
           }
         };
 
         xhr.onerror = () => {
-          reject(new Error('Network error during upload'));
+          // Status 0 usually means CORS block, CSP violation, or Ad-blocker
+          if (xhr.status === 0) {
+            reject(new Error('Connection blocked by browser. This is often caused by an ad-blocker or a strict privacy setting (ERR_BLOCKED_BY_CLIENT).'));
+          } else {
+            reject(new Error(`Network error during upload (Status: ${xhr.status})`));
+          }
         };
 
         xhr.send(file);
@@ -175,8 +189,18 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
       
     } catch (err: unknown) {
       console.error(err);
-      setUploadError((err as Error).message || 'Upload failed');
-      toast.error('Failed to upload video');
+      let message = 'Upload failed';
+      let diagnostic = '';
+
+      if (err instanceof ApiError) {
+        message = err.message;
+        diagnostic = `API_${err.code}`;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setUploadError(diagnostic ? `${diagnostic}: ${message}` : message);
+      toastApiError(err, 'Failed to upload video');
     } finally {
       setIsUploading(false);
     }
@@ -258,9 +282,12 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         </div>
 
         {uploadError && (
-          <div className="p-3 bg-ares-red/10 border border-ares-red/30 flex items-start gap-2 text-sm text-ares-red">
+          <div className="p-3 bg-ares-red/10 border border-ares-red/30 flex items-start gap-2 text-xs text-ares-red">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
-            <p className="break-words break-all">{uploadError}</p>
+            <div className="flex flex-col gap-1">
+              <p className="font-bold uppercase tracking-tighter">Upload Failure</p>
+              <p className="font-mono leading-relaxed opacity-90 break-words">{uploadError}</p>
+            </div>
           </div>
         )}
       </div>
@@ -392,7 +419,7 @@ function EditVideoModal({ video, onClose, canSetPublic }: { video: { id: string;
       toast.success('Metadata updated successfully');
       onClose();
     } catch (err: unknown) {
-      toast.error('Failed to update metadata', { description: (err as Error).message });
+      toastApiError(err, 'Failed to update metadata');
     }
   };
 

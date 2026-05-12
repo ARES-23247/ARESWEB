@@ -6,6 +6,7 @@ import { useAwardPoints } from "../api/points";
 import { useGetUsers, usePatchUser, useDeleteUser, type UserRole, type UserMemberType } from "../api/users";
 import { useAuditMissingUsers, useInviteUsers } from "../api/zulip";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { useQueryState } from "nuqs";
 import {
   useReactTable,
@@ -75,8 +76,8 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast.success("User updated");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Update failed");
+    onError: (err) => {
+      toastApiError(err, "Update failed");
     }
   });
 
@@ -84,8 +85,8 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast.success("User removed successfully");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to remove user");
+    onError: (err) => {
+      toastApiError(err, "Failed to remove user");
     }
   });
 
@@ -114,7 +115,7 @@ export default function AdminUsers() {
     e.preventDefault();
     if (!pointsUserId || !pointsDelta || !pointsReason) return;
     const delta = parseInt(pointsDelta, 10);
-    if (isNaN(delta)) return toast.error("Invalid points amount");
+    if (isNaN(delta)) return toastApiError("Invalid points amount");
     pointsMutation.mutate({
       userId: pointsUserId,
       pointsDelta: delta,
@@ -141,8 +142,8 @@ export default function AdminUsers() {
       setAuditResult(data?.data?.missingEmails || []);
       setShowZulipAudit(true);
     },
-    onError: (err: Error) => {
-      toast.error(`Audit failed: ${err.message}`);
+    onError: (err) => {
+      toastApiError(err, "Audit failed");
     }
   });
 
@@ -152,8 +153,8 @@ export default function AdminUsers() {
       setShowZulipAudit(false);
       setAuditResult(null);
     },
-    onError: (err: Error) => {
-      toast.error(`Invite failed: ${err.message}`, { duration: 10000 });
+    onError: (err) => {
+      toastApiError(err, "Invite failed");
     }
   });
 

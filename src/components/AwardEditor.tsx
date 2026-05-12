@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
@@ -48,7 +49,7 @@ export default function AwardEditor() {
           form.reset();
         },
         onError: (err) => {
-          toast.error(`Failed to save award: ${err.message}`);
+          toastApiError(err, "Failed to save award");
         }
       });
     }
@@ -231,7 +232,7 @@ export default function AwardEditor() {
                 if(confirm("Purge this achievement from history?")) {
                   deleteMutation.mutate(award.id, {
                     onSuccess: () => toast.success("Award deleted"),
-                    onError: (err) => toast.error(`Delete failed: ${err.message}`)
+                    onError: (err) => toastApiError(err, "Delete failed")
                   }); 
                 }
               }}

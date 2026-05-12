@@ -5,6 +5,7 @@ import { useGetGalleries, useDeleteGallery } from '../../api'
 import { Pencil, Trash2, Images, Plus } from 'lucide-react'
 import { useModal } from '../../contexts/ModalContext'
 import GalleryPickerModal from '../../components/GalleryPickerModal'
+import { toastApiError } from '../../api/honoClient'
 
 export const Route = createFileRoute('/dashboard/manage_galleries')({
   component: RouteComponent,
@@ -19,8 +20,8 @@ function RouteComponent() {
     onSuccess: () => {
       toast.success("Gallery deleted successfully")
     },
-    onError: () => {
-      toast.error("Failed to delete gallery")
+    onError: (err) => {
+      toastApiError(err, "Failed to delete gallery")
     }
   })
 

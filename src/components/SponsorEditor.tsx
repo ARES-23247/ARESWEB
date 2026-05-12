@@ -7,6 +7,7 @@ import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package, UploadCloud, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 
@@ -70,11 +71,11 @@ export default function SponsorEditor() {
         
         toast.success("Partner synchronization successful.");
       } else {
-        toast.error("Sync failed");
+        toastApiError("Sync failed");
       }
     },
-    onError: (err: Error) => {
-      toast.error(`[Failure Exposure] Sponsor sync failed: \n${err.message}`);
+    onError: (err) => {
+      toastApiError(err, "Sponsor sync failed");
     }
   });
 
@@ -83,8 +84,8 @@ export default function SponsorEditor() {
       toast.success("Partner removed.");
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
     },
-    onError: (err: Error) => {
-      toast.error(`Delete failed: ${err.message}`);
+    onError: (err) => {
+      toastApiError(err, "Delete failed");
     }
   });
 
@@ -110,10 +111,10 @@ export default function SponsorEditor() {
         form.setFieldValue("logoUrl", data.url || "");
         toast.success("Logo uploaded securely.");
       } else {
-        toast.error(data.error || "Upload failed");
+        toastApiError(data.error || "Upload failed");
       }
-    } catch (_err) {
-      toast.error("Failed to upload logo.");
+    } catch (err) {
+      toastApiError(err, "Failed to upload logo");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

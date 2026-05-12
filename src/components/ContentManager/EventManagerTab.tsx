@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Radio, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../../api/honoClient";
 import { EventItem, ViewType } from "./shared";
 import {
   useGetAdminEvents,
@@ -81,8 +82,8 @@ export default function EventManagerTab({
       setConfirmId(null);
       toast.success("Event deleted");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Delete failed");
+    onError: (err) => {
+      toastApiError(err, "Delete failed");
     }
   });
 
@@ -94,8 +95,8 @@ export default function EventManagerTab({
         toast.error("Sync failed");
       }
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Sync failed");
+    onError: (err) => {
+      toastApiError(err, "Sync failed");
     }
   });
 
@@ -114,33 +115,37 @@ export default function EventManagerTab({
         toast.error("Repair failed");
       }
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Repair failed");
+    onError: (err) => {
+      toastApiError(err, "Repair failed");
     }
   });
 
   const localApproveMutation = useApproveEvent({
     onSuccess: () => {
       toast.success("Event approved");
-    }
+    },
+    onError: (err) => toastApiError(err, "Approval failed")
   });
 
   const localRejectMutation = useRejectEvent({
     onSuccess: () => {
       toast.success("Event rejected");
-    }
+    },
+    onError: (err) => toastApiError(err, "Rejection failed")
   });
 
   const localRestoreMutation = useUndeleteEvent({
     onSuccess: () => {
       toast.success("Event restored");
-    }
+    },
+    onError: (err) => toastApiError(err, "Restore failed")
   });
 
   const localPurgeMutation = usePurgeEvent({
     onSuccess: () => {
       toast.success("Event purged");
-    }
+    },
+    onError: (err) => toastApiError(err, "Purge failed")
   });
 
   const lifecycleFiltered = allEvents.filter(e => {

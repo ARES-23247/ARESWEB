@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { compressImage } from "../utils/imageProcessor";
 import { useGetAdminMedia, useUploadMedia, useMoveMedia, UploadFormData, type Asset, type MediaResponse } from "../api/media";
 
@@ -28,8 +29,8 @@ export function useMedia() {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       toast.success("Asset deleted");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Delete failed");
+    onError: (err) => {
+      toastApiError(err, "Delete failed");
     }
   });
 
@@ -37,8 +38,8 @@ export function useMedia() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Upload failed");
+    onError: (err) => {
+      toastApiError(err, "Upload failed");
     }
   });
 
@@ -58,9 +59,8 @@ export function useMedia() {
         await uploadMutation.mutateAsync(new UploadFormData(formData));
         successCount++;
       } catch (err) {
-        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
         console.error(`[useMedia] Exception uploading "${file.name}":`, err);
-        toast.error(`"${file.name}" failed: ${msg}`);
+        toastApiError(err, `"${file.name}" failed`);
       }
     }
     if (successCount > 0) toast.success(`Uploaded ${successCount} asset${successCount > 1 ? "s" : ""}`);
@@ -81,8 +81,8 @@ export function useMedia() {
       setSyndicateCaption("");
       toast.success("Syndicated!");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Syndication failed");
+    onError: (err) => {
+      toastApiError(err, "Syndication failed");
     }
   });
 
@@ -91,8 +91,8 @@ export function useMedia() {
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       toast.success("Asset moved");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Move failed");
+    onError: (err) => {
+      toastApiError(err, "Move failed");
     }
   });
 
