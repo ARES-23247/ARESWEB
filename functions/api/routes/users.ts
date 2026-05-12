@@ -227,13 +227,7 @@ export const usersRouter = _usersRouter
 
         // Get user
         const userResult = await db
-          .select({
-            id: schema.user.id,
-            name: schema.user.name,
-            email: schema.user.email,
-            image: schema.user.image,
-            role: schema.user.role,
-          })
+          .select()
           .from(schema.user)
           .where(eq(schema.user.id, id))
           .limit(1);
@@ -243,39 +237,7 @@ export const usersRouter = _usersRouter
 
         // Get profile
         const profileResult = await db
-          .select({
-            userId: schema.userProfiles.userId,
-            nickname: schema.userProfiles.nickname,
-            firstName: schema.userProfiles.firstName,
-            lastName: schema.userProfiles.lastName,
-            bio: schema.userProfiles.bio,
-            pronouns: schema.userProfiles.pronouns,
-            subteams: schema.userProfiles.subteams,
-            memberType: schema.userProfiles.memberType,
-            gradeYear: schema.userProfiles.gradeYear,
-            favoriteFood: schema.userProfiles.favoriteFood,
-            dietaryRestrictions: schema.userProfiles.dietaryRestrictions,
-            favoriteFirstThing: schema.userProfiles.favoriteFirstThing,
-            funFact: schema.userProfiles.funFact,
-            showEmail: schema.userProfiles.showEmail,
-            contactEmail: schema.userProfiles.contactEmail,
-            showPhone: schema.userProfiles.showPhone,
-            phone: schema.userProfiles.phone,
-            showOnAbout: schema.userProfiles.showOnAbout,
-            favoriteRobotMechanism: schema.userProfiles.favoriteRobotMechanism,
-            preMatchSuperstition: schema.userProfiles.preMatchSuperstition,
-            leadershipRole: schema.userProfiles.leadershipRole,
-            rookieYear: schema.userProfiles.rookieYear,
-            colleges: schema.userProfiles.colleges,
-            employers: schema.userProfiles.employers,
-            tshirtSize: schema.userProfiles.tshirtSize,
-            emergencyContactName: schema.userProfiles.emergencyContactName,
-            emergencyContactPhone: schema.userProfiles.emergencyContactPhone,
-            parentsName: schema.userProfiles.parentsName,
-            parentsEmail: schema.userProfiles.parentsEmail,
-            studentsName: schema.userProfiles.studentsName,
-            studentsEmail: schema.userProfiles.studentsEmail,
-          })
+          .select()
           .from(schema.userProfiles)
           .where(eq(schema.userProfiles.userId, id))
           .limit(1);
