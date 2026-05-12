@@ -12,6 +12,7 @@ import type { D1Database, R2Bucket, VectorizeIndex, Ai } from "@cloudflare/worke
 export type Bindings = {
   DB: D1Database;
   ENVIRONMENT?: string;
+  CI?: string;
   ARES_STORAGE: R2Bucket;
   AI: Ai;
   VECTORIZE_DB?: VectorizeIndex;
