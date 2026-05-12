@@ -4,6 +4,7 @@ import * as schema from "../../../src/db/schema";
 import { AppEnv, getDb } from "../middleware";
 import { siteConfig } from "../../utils/site.config";
 import { getSitemapRoute } from "../../../shared/routes/sitemap";
+import { list, notDeleted } from "../../../src/db/query-helpers";
 
 const _sitemapRouter = new OpenAPIHono<AppEnv>();
 
@@ -24,28 +25,21 @@ export const sitemapRouter = _sitemapRouter
         
         // Fetch published docs, posts, and events
         const [docs, posts, events] = await Promise.all([
-          db.select({ slug: schema.docs.slug })
-            .from(schema.docs)
-            .where(
-              and(
-                eq(schema.docs.isDeleted, 0),
-                eq(schema.docs.status, "published")
-              )
-            )
-            .all(),
-          db.select({ slug: schema.posts.slug })
-            .from(schema.posts)
-            .where(
-              and(
-                eq(schema.posts.isDeleted, 0),
-                eq(schema.posts.status, "published")
-              )
-            )
-            .all(),
-          db.select({ id: schema.events.id })
-            .from(schema.events)
-            .where(eq(schema.events.isDeleted, 0))
-            .all()
+          list(db, schema.docs, {
+            select: { slug: schema.docs.slug },
+            where: and(notDeleted(schema.docs), eq(schema.docs.status, "published")),
+            useAll: true
+          }),
+          list(db, schema.posts, {
+            select: { slug: schema.posts.slug },
+            where: and(notDeleted(schema.posts), eq(schema.posts.status, "published")),
+            useAll: true
+          }),
+          list(db, schema.events, {
+            select: { id: schema.events.id },
+            where: notDeleted(schema.events),
+            useAll: true
+          })
         ]);
 
         const staticRoutes = [

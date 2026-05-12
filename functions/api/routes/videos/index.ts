@@ -11,7 +11,7 @@ import {
     syncYoutubeVideosRoute,
     type videoSchema,
 } from "@shared/routes/videos";
-import { AppEnv, ensureAdmin, getDb, audit } from "../../middleware";
+import { AppEnv, ensureAdmin, getDb, audit, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { findOneById, insertAndFetch, updateAndFetch } from "../../../../src/db/query-helpers";
@@ -95,7 +95,7 @@ const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
     .openapi(getVideoRoute, async (c) => {
         const { id } = c.req.valid("param");
         const db = getDb(c);
-        const video = await findOneById(db, schema.videos, id, "Video not found");
+        const video = await findOneById<typeof schema.videos.$inferSelect>(db, schema.videos, id, "Video not found");
 
         return c.json({ video: serializeVideo(video) }, 200);
     })
@@ -115,7 +115,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
     const body = c.req.valid("json");
     const db = getDb(c);
 
-    const video = await insertAndFetch(db, schema.videos, {
+    const video = await insertAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, {
         title: body.title,
         description: body.description ?? null,
         platform: body.platform,
@@ -143,7 +143,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
             updatedAt: new Date().toISOString(),
         };
 
-        const video = await updateAndFetch(db, schema.videos, id, updates);
+        const video = await updateAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, id, updates);
 
         audit(c, "video_update", "video", id, `Updated video: ${body.title || video.title}`);
 

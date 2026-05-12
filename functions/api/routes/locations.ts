@@ -65,7 +65,7 @@ export const locationsRouter = _locationsRouter
             useAll: true
         });
 
-        const locations = results.map((r) => ({
+        const locations = results.map((r: any) => ({
           ...r,
           id: r.id || undefined,
           isDeleted: Number(r.isDeleted || 0)

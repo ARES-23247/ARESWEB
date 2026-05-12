@@ -4,6 +4,7 @@ import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
+import { list, notDeleted } from "../../../../src/db/query-helpers";
 
 
 
@@ -28,12 +29,11 @@ interface OutreachLog {
 
 export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> = async (c) => {
   const db = getDb(c);
-  // Drizzle natively maps snake_case SQL columns to the camelCase properties defined in schema.ts
-  const results = await db.select()
-    .from(schema.outreachLogs)
-    .where(eq(schema.outreachLogs.isDeleted, 0))
-    .orderBy(desc(schema.outreachLogs.date))
-    .all();
+  const results = await list(db, schema.outreachLogs, {
+    where: notDeleted(schema.outreachLogs),
+    orderBy: desc(schema.outreachLogs.date),
+    useAll: true
+  });
 
   const existingEventIds = results
     .filter(r => r.eventId !== null)
@@ -66,12 +66,11 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
 
 export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute, AppEnv> = async (c) => {
   const db = getDb(c);
-  // Drizzle natively maps snake_case SQL columns to the camelCase properties defined in schema.ts
-  const results = await db.select()
-    .from(schema.outreachLogs)
-    .where(eq(schema.outreachLogs.isDeleted, 0))
-    .orderBy(desc(schema.outreachLogs.date))
-    .all();
+  const results = await list(db, schema.outreachLogs, {
+    where: notDeleted(schema.outreachLogs),
+    orderBy: desc(schema.outreachLogs.date),
+    useAll: true
+  });
 
   const existingEventIds = results
     .filter(r => r.eventId !== null)

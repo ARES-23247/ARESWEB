@@ -3,6 +3,7 @@ import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb } from "../middleware";
+import { list, notDeleted } from "../../../src/db/query-helpers";
 
 import {
   judgeLoginRoute,
@@ -176,43 +177,50 @@ export const judgesRouter = _judgesRouter
         }
 
         const [portfolioDocs, outreach, awards, sponsors] = await Promise.all([
-          db.select({
-            slug: schema.docs.slug,
-            title: schema.docs.title,
-            category: schema.docs.category,
-            description: schema.docs.description,
-            content: schema.docs.content,
-          }).from(schema.docs)
-            .where(
-              and(
-                eq(schema.docs.isDeleted, 0),
-                eq(schema.docs.status, "published"),
-                or(eq(schema.docs.isPortfolio, 1), eq(schema.docs.isExecutiveSummary, 1))
-              )
-            )
-            .orderBy(desc(schema.docs.isExecutiveSummary), schema.docs.category, schema.docs.sortOrder),
-          db.select({
-            id: schema.outreachLogs.id,
-            title: schema.outreachLogs.title,
-            date: schema.outreachLogs.date,
-            location: schema.outreachLogs.location,
-            studentsCount: schema.outreachLogs.studentsCount,
-            hoursLogged: schema.outreachLogs.hours,
-            reachCount: schema.outreachLogs.peopleReached,
-            description: schema.outreachLogs.impactSummary,
-          }).from(schema.outreachLogs)
-            .where(eq(schema.outreachLogs.isDeleted, 0))
-            .orderBy(desc(schema.outreachLogs.date)),
-          db.select({
-            id: schema.awards.id,
-            title: schema.awards.title,
-            date: schema.awards.date,
-            eventName: schema.awards.eventName,
-            imageUrl: schema.awards.iconType,
-            description: schema.awards.description,
-          }).from(schema.awards)
-            .where(eq(schema.awards.isDeleted, 0))
-            .orderBy(desc(schema.awards.date)),
+          list(db, schema.docs, {
+            select: {
+              slug: schema.docs.slug,
+              title: schema.docs.title,
+              category: schema.docs.category,
+              description: schema.docs.description,
+              content: schema.docs.content,
+            },
+            where: and(
+              notDeleted(schema.docs),
+              eq(schema.docs.status, "published"),
+              or(eq(schema.docs.isPortfolio, 1), eq(schema.docs.isExecutiveSummary, 1))
+            ),
+            orderBy: [desc(schema.docs.isExecutiveSummary), schema.docs.category, schema.docs.sortOrder],
+            useAll: true
+          }),
+          list(db, schema.outreachLogs, {
+            select: {
+              id: schema.outreachLogs.id,
+              title: schema.outreachLogs.title,
+              date: schema.outreachLogs.date,
+              location: schema.outreachLogs.location,
+              studentsCount: schema.outreachLogs.studentsCount,
+              hoursLogged: schema.outreachLogs.hours,
+              reachCount: schema.outreachLogs.peopleReached,
+              description: schema.outreachLogs.impactSummary,
+            },
+            where: notDeleted(schema.outreachLogs),
+            orderBy: desc(schema.outreachLogs.date),
+            useAll: true
+          }),
+          list(db, schema.awards, {
+            select: {
+              id: schema.awards.id,
+              title: schema.awards.title,
+              date: schema.awards.date,
+              eventName: schema.awards.eventName,
+              imageUrl: schema.awards.iconType,
+              description: schema.awards.description,
+            },
+            where: notDeleted(schema.awards),
+            orderBy: desc(schema.awards.date),
+            useAll: true
+          }),
           db.select({
             id: schema.sponsors.id,
             name: schema.sponsors.name,
@@ -221,6 +229,7 @@ export const judgesRouter = _judgesRouter
             websiteUrl: schema.sponsors.websiteUrl,
           }).from(schema.sponsors)
             .where(eq(schema.sponsors.isActive, 1))
+            .all()
         ]);
 
         const payload: JudgePortfolioSuccess = {

@@ -46,7 +46,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
 .openapi(getGalleryRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
-  const gallery = await findOneById(db, schema.galleries, id, "Gallery not found");
+  const gallery = await findOneById<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, "Gallery not found");
 
   return c.json({ gallery: serializeGallery(gallery) }, 200);
 })
@@ -103,7 +103,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const body = c.req.valid("json");
   const db = getDb(c);
 
-  const gallery = await insertAndFetch(db, schema.galleries, {
+  const gallery = await insertAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, {
     title: body.title,
     description: body.description ?? null,
     googlePhotosUrl: body.googlePhotosUrl ?? null,
@@ -129,7 +129,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
     updatedAt: new Date().toISOString(),
   };
 
-  const gallery = await updateAndFetch(db, schema.galleries, id, updates);
+  const gallery = await updateAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, updates);
 
   audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
 

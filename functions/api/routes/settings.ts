@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { eq, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { notDeleted } from "../../../src/db/query-helpers";
 
 import {
     AppEnv,
@@ -93,9 +94,9 @@ export const settingsRouter = _settingsRouter
     .openapi(getStatsRoute, async (c) => {
         const db = getDb(c);
         const [posts, events, docs, inquiries, users] = await Promise.all([
-            db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(eq(schema.posts.isDeleted, 0)).get(),
-            db.select({ count: count(schema.events.id) }).from(schema.events).where(eq(schema.events.isDeleted, 0)).get(),
-            db.select({ count: count(schema.docs.slug) }).from(schema.docs).where(eq(schema.docs.isDeleted, 0)).get(),
+            db.select({ count: count(schema.posts.slug) }).from(schema.posts).where(notDeleted(schema.posts)).get(),
+            db.select({ count: count(schema.events.id) }).from(schema.events).where(notDeleted(schema.events)).get(),
+            db.select({ count: count(schema.docs.slug) }).from(schema.docs).where(notDeleted(schema.docs)).get(),
             db.select({ count: count(schema.inquiries.id) }).from(schema.inquiries).where(eq(schema.inquiries.status, "pending")).get(),
             db.select({ count: count(schema.user.id) }).from(schema.user).get(),
         ]);
