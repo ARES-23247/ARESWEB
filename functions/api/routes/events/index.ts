@@ -66,7 +66,6 @@ eventsRouter.use("/:id/signups", ensureAuth);
  * converted to Hono's c.json() type.
  */
 function handlerResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result: { status: number; body: unknown }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {

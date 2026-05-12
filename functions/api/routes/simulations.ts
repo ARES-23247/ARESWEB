@@ -69,7 +69,6 @@ async function canModifySimulation(
     if (sessionUser.role === "admin") return true;
 
     try {
-        const db = c.db;
         const ghConfig = getGitHubConfig(c);
         const pat = await getGitHubPat(c);
         if (!pat) return false;
@@ -143,7 +142,6 @@ export const simulationsRouter = _simulationsRouter
 
         const filePath = `src/sims/${simId}/index.tsx`;
 
-        const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
         const pat = await getGitHubPat(c);
         const headers: Record<string, string> = {
@@ -182,7 +180,6 @@ export const simulationsRouter = _simulationsRouter
         const { name, files } = c.req.valid("json");
         if (Object.keys(files).length === 0) throw new ApiError("No files provided", 400);
 
-        const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
         const pat = await getGitHubPat(c);
 
@@ -233,7 +230,6 @@ export const simulationsRouter = _simulationsRouter
         const simIdStr = id.replace("github:", "");
         const filename = `${simIdStr}.tsx`;
 
-        const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
         const pat = await getGitHubPat(c);
 
@@ -272,7 +268,6 @@ export const simulationsRouter = _simulationsRouter
     })
     .openapi(createGistRoute, async (c) => {
         const { name, files } = c.req.valid("json");
-        const db = getDb(c);
         const pat = await getGitHubPat(c);
 
         if (!pat) throw new ApiError("GitHub PAT not configured", 500);
@@ -306,7 +301,6 @@ export const simulationsRouter = _simulationsRouter
     })
     .openapi(getGistRoute, async (c) => {
         const { id } = c.req.valid("param");
-        const db = getDb(c);
         const pat = await getGitHubPat(c);
 
         const headers: Record<string, string> = {
