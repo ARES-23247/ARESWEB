@@ -204,12 +204,24 @@ adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
     const response = await fetch(url);
     if (!response.ok) {
       const errText = await response.text();
-      console.error("YouTube API Error:", errText);
-      throw new ApiError("Failed to fetch from YouTube API", 500, "INTERNAL_ERROR");
+      console.error("YouTube API Error:", response.status, errText);
+      try {
+        const errJson = JSON.parse(errText);
+        throw new ApiError(`YouTube API Error: ${errJson.error?.message || response.statusText}`, 500, "YOUTUBE_API_ERROR");
+      } catch {
+        throw new ApiError(`Failed to fetch from YouTube API: ${response.status}`, 500, "YOUTUBE_API_ERROR");
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
+
+    // Check for YouTube API errors in response
+    if (data.error) {
+      console.error("YouTube API Error in response:", data.error);
+      throw new ApiError(`YouTube API Error: ${data.error.message || data.error.code}`, 500, "YOUTUBE_API_ERROR");
+    }
+
     const items = data.items || [];
 
     // Fetch existing video IDs to prevent duplicates
@@ -220,16 +232,15 @@ adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
 
     for (const item of items) {
       const snippet = item.snippet;
-      const videoId = snippet.resourceId.videoId;
+      const videoId = snippet.resourceId?.videoId;
+
+      if (!videoId) {
+        console.warn("Skipping item without videoId:", item);
+        continue;
+      }
 
       if (!existingIds.has(videoId)) {
         const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
-
-
-        // Note: For thumbnailKey, we usually store an R2 key.
-        // For YouTube sync, we might just store the external URL or leave it null,
-        // as the UI can fallback to the YouTube thumbnail using the videoId.
-        // The schema allows nullish thumbnailKey.
 
         newVideosToInsert.push({
           id,
@@ -255,11 +266,11 @@ adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
       }
     }
 
-    return c.json({ success: true, added: addedCount }, 200);
+    return c.json({ success: true, added: addedCount, total: items.length }, 200);
   } catch (error) {
     console.error("Error syncing YouTube videos:", error);
     if (error instanceof ApiError) throw error;
-    throw new ApiError("An error occurred during YouTube sync", 500, "INTERNAL_ERROR");
+    throw new ApiError(`An error occurred during YouTube sync: ${error instanceof Error ? error.message : String(error)}`, 500, "INTERNAL_ERROR");
   }
 });
 

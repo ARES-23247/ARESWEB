@@ -29,7 +29,7 @@ export type VideoInput = z.infer<typeof videoInputSchema>;
 export type VideoPlatform = z.infer<typeof videoPlatformSchema>;
 
 export const parseVideoUrlSchema = z.object({
-  url: z.string().url().openapi({ example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }),
+  url: z.string().min(1, "URL is required").openapi({ example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }),
 });
 
 export const parseVideoUrlResponseSchema = z.object({
@@ -232,6 +232,7 @@ export const syncYoutubeVideosRoute = createRoute({
           schema: z.object({
             success: z.boolean(),
             added: z.coerce.number(),
+            total: z.coerce.number().optional(),
           }),
         },
       },
