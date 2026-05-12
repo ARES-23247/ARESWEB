@@ -33,8 +33,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
-  const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
-  const [errorMsg, setErrorMsg] = useState("");
+  const { uploadFile, isUploading: isUploadingCover, errorMsg: uploadError, setErrorMsg: setUploadError } = useImageUpload();
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -294,7 +293,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
               />
 
               <EditorFooter
-                errorMsg={errorMsg || ""}
+                errorMsg={uploadError || ""}
                 isPending={saveMutation.isPending}
                 isEditing={!!editSlug}
                 onDelete={handleDelete}
