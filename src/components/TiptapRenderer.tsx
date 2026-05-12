@@ -46,7 +46,7 @@ function validateUrl(url: string, type: 'image' | 'video'): string {
   if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) return url;
 
   const allowedDomains = [
-    "aresnetwork.dev", "youtube.com", "youtu.be", "googleusercontent.com",
+    "aresnetwork.dev", "aresfirst.org", "youtube.com", "youtu.be", "googleusercontent.com",
     "cloudflare-ipfs.com", "raw.githubusercontent.com"
   ];
 
@@ -57,7 +57,7 @@ function validateUrl(url: string, type: 'image' | 'video'): string {
   } catch {
     return "";
   }
-  
+
   console.warn(`Blocked ${type} URL for security: ${url}`);
   return "";
 }
