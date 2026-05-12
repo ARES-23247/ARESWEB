@@ -2,10 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useGetVideos, useDeleteVideo, useSyncYoutubeVideosMutation } from '../../api'
-import { Pencil, Trash2, Play, Plus, ExternalLink, RefreshCw } from 'lucide-react'
+import { Pencil, Trash2, Play, Plus, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useModal } from '../../contexts/ModalContext'
 import VideoPickerModal from '../../components/VideoPickerModal'
+import { ApiError } from '../../api/honoClient'
 
 export const Route = createFileRoute('/dashboard/manage_videos')({
   component: RouteComponent,
@@ -38,8 +39,38 @@ function RouteComponent() {
       }
       queryClient.invalidateQueries({ queryKey: ["videos"] })
     } catch (error) {
-      toast.error("Failed to sync videos from YouTube.")
-      console.error(error)
+      // Extract detailed error message from ApiError
+      let errorMessage = "Failed to sync videos from YouTube."
+      let errorDescription: string | undefined
+
+      if (error instanceof ApiError) {
+        errorMessage = error.message
+        // Add helpful context based on error code
+        switch (error.code) {
+          case "YOUTUBE_QUOTA_EXCEEDED":
+            errorDescription = "The daily YouTube API limit has been reached."
+            break
+          case "YOUTUBE_API_KEY_MISSING":
+          case "YOUTUBE_API_KEY_INVALID":
+            errorDescription = "Check the YouTube API key configuration."
+            break
+          case "YOUTUBE_ACCESS_FORBIDDEN":
+          case "YOUTUBE_ACCESS_DENIED":
+            errorDescription = "The API key may not have access to this playlist."
+            break
+          case "YOUTUBE_PLAYLIST_NOT_FOUND":
+          case "YOUTUBE_NOT_FOUND":
+            errorDescription = "The playlist may have been moved or deleted."
+            break
+        }
+      }
+
+      // Display error with optional description
+      toast.error(errorMessage, {
+        description: errorDescription,
+        icon: <AlertCircle className="text-ares-red" />
+      })
+      console.error("YouTube sync error:", error)
     }
   }
 

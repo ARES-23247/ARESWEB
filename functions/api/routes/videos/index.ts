@@ -191,7 +191,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   const apiKey = c.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
-    throw new ApiError("YouTube API Key not configured", 500, "INTERNAL_ERROR");
+    throw new ApiError("YouTube API Key not configured. Please add YOUTUBE_API_KEY to your environment variables.", 500, "YOUTUBE_API_KEY_MISSING");
   }
 
   // ARESFTC Uploads playlist ID (replace UC with UU in the channel ID)
@@ -202,24 +202,94 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
 
   try {
     const response = await fetch(url);
+    const errText = await response.text();
+
     if (!response.ok) {
-      const errText = await response.text();
       console.error("YouTube API Error:", response.status, errText);
+
+      // Parse YouTube API error for better error messages
+      let ytError: { error?: { errors?: Array<{ reason?: string; message?: string }>; message?: string; code?: number } } | undefined;
       try {
-        const errJson = JSON.parse(errText);
-        throw new ApiError(`YouTube API Error: ${errJson.error?.message || response.statusText}`, 500, "YOUTUBE_API_ERROR");
+        ytError = JSON.parse(errText);
       } catch {
-        throw new ApiError(`Failed to fetch from YouTube API: ${response.status}`, 500, "YOUTUBE_API_ERROR");
+        // Failed to parse error JSON, fall back to status text
+      }
+
+      const ytReason = ytError?.error?.errors?.[0]?.reason;
+      const ytMessage = ytError?.error?.message;
+
+      // Map common YouTube API errors to user-friendly messages
+      switch (ytReason) {
+        case "quotaExceeded":
+        case "dailyLimitExceeded":
+          throw new ApiError(
+            "YouTube API quota exceeded. The daily limit has been reached. Try again tomorrow or contact an admin to increase the quota.",
+            429,
+            "YOUTUBE_QUOTA_EXCEEDED",
+            { reason: ytReason, originalMessage: ytMessage }
+          );
+        case "keyInvalid":
+          throw new ApiError(
+            "YouTube API key is invalid. Please check the YOUTUBE_API_KEY environment variable.",
+            500,
+            "YOUTUBE_API_KEY_INVALID",
+            { reason: ytReason, originalMessage: ytMessage }
+          );
+        case "forbidden":
+          throw new ApiError(
+            "Access to the YouTube playlist is forbidden. The API key may not have access to this resource.",
+            403,
+            "YOUTUBE_ACCESS_FORBIDDEN",
+            { reason: ytReason, originalMessage: ytMessage }
+          );
+        case "playlistNotFound":
+          throw new ApiError(
+            "YouTube playlist not found. The playlist ID may be incorrect or the playlist may have been deleted.",
+            404,
+            "YOUTUBE_PLAYLIST_NOT_FOUND",
+            { reason: ytReason, originalMessage: ytMessage }
+          );
+        default:
+          if (response.status === 403) {
+            throw new ApiError(
+              `YouTube API access denied: ${ytMessage || response.statusText}`,
+              403,
+              "YOUTUBE_ACCESS_DENIED",
+              { reason: ytReason, originalMessage: ytMessage }
+            );
+          }
+          if (response.status === 404) {
+            throw new ApiError(
+              `YouTube resource not found: ${ytMessage || response.statusText}`,
+              404,
+              "YOUTUBE_NOT_FOUND",
+              { reason: ytReason, originalMessage: ytMessage }
+            );
+          }
+          throw new ApiError(
+            `YouTube API error (${response.status}): ${ytMessage || response.statusText}`,
+            response.status,
+            "YOUTUBE_API_ERROR",
+            { reason: ytReason, originalMessage: ytMessage, status: response.status }
+          );
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
 
-    // Check for YouTube API errors in response
+    // Check for YouTube API errors in response body
     if (data.error) {
       console.error("YouTube API Error in response:", data.error);
-      throw new ApiError(`YouTube API Error: ${data.error.message || data.error.code}`, 500, "YOUTUBE_API_ERROR");
+      const ytReason = data.error.errors?.[0]?.reason;
+      const ytMessage = data.error.message;
+
+      throw new ApiError(
+        `YouTube API error: ${ytMessage || data.error.code}`,
+        500,
+        "YOUTUBE_API_ERROR",
+        { reason: ytReason, details: data.error }
+      );
     }
 
     const items = data.items || [];
@@ -270,7 +340,11 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   } catch (error) {
     console.error("Error syncing YouTube videos:", error);
     if (error instanceof ApiError) throw error;
-    throw new ApiError(`An error occurred during YouTube sync: ${error instanceof Error ? error.message : String(error)}`, 500, "INTERNAL_ERROR");
+    throw new ApiError(
+      `An unexpected error occurred during YouTube sync: ${error instanceof Error ? error.message : String(error)}`,
+      500,
+      "YOUTUBE_SYNC_ERROR"
+    );
   }
 });
 
