@@ -249,6 +249,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
                     );
             }
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any = await response.json();
         if (data.error) {
             console.error("YouTube API Error in response:", data.error);
