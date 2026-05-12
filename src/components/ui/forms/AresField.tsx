@@ -8,10 +8,11 @@ interface AresFieldProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  step?: string;
   onChange?: (value: unknown) => void;
 }
 
-export function AresField({ field, label, type = "text", placeholder, required, className, onChange }: AresFieldProps) {
+export function AresField({ field, label, type = "text", placeholder, required, className, step, onChange }: AresFieldProps) {
   const handleChange = (value: unknown) => {
     field.handleChange(value);
     onChange?.(value);
@@ -39,6 +40,7 @@ export function AresField({ field, label, type = "text", placeholder, required, 
           id={field.name}
           name={field.name}
           type={type}
+          step={step}
           value={field.state.value as string | number | readonly string[] | undefined}
           onBlur={field.handleBlur}
           onChange={(e) => handleChange(e.target.value)}

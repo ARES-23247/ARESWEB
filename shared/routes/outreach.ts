@@ -29,7 +29,7 @@ export const saveOutreachSchema = z.object({
   title: z.string().min(1),
   date: z.string().min(1),
   location: z.string().nullable().optional(),
-  hours: z.number().int().min(0).optional(),
+  hours: z.number().min(0).optional(),
   peopleReached: z.number().int().min(0).optional(),
   studentsCount: z.number().int().min(0).max(1000).optional(),
   impactSummary: z.string().nullable().optional(),

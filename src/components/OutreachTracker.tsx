@@ -234,6 +234,7 @@ export default function OutreachTracker() {
                   <AresField
                     field={field}
                     type="number"
+                    step="1"
                     label="Reach Count (Estimated)"
                   />
                 )}
@@ -249,6 +250,7 @@ export default function OutreachTracker() {
                   <AresField
                     field={field}
                     type="number"
+                    step="0.5"
                     label="Hours Logged"
                   />
                 )}
@@ -264,6 +266,7 @@ export default function OutreachTracker() {
                   <AresField
                     field={field}
                     type="number"
+                    step="1"
                     label="Students Participating"
                   />
                 )}
@@ -274,6 +277,7 @@ export default function OutreachTracker() {
                   <AresField
                     field={field}
                     type="number"
+                    step="1"
                     label="Mentors Participating"
                   />
                 )}
@@ -284,6 +288,7 @@ export default function OutreachTracker() {
                   <AresField
                     field={field}
                     type="number"
+                    step="0.5"
                     label="Mentor Hours"
                   />
                 )}

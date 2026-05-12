@@ -391,7 +391,7 @@ export const outreachLogs = sqliteTable("outreach_logs", {
 	title: text().notNull(),
 	date: text().notNull(),
 	location: text(),
-	hours: integer(),
+	hours: real(),
 	peopleReached: integer("people_reached"),
 	studentsCount: integer("students_count").default(0),
 	impactSummary: text("impact_summary"),
@@ -403,7 +403,7 @@ export const outreachLogs = sqliteTable("outreach_logs", {
 	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
 	eventId: text("event_id"),
 	mentorCount: integer("mentor_count").default(0),
-	mentorHours: integer("mentor_hours").default(0),
+	mentorHours: real("mentor_hours").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
