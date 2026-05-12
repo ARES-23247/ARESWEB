@@ -4,7 +4,7 @@ import { ChevronDown, Eye, Images, Link as LinkIcon } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
 import ErrorBoundary from "./ErrorBoundary";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
-import { useGetGallery } from "../api";
+import { useGetGallery, useGetVideo } from "../api";
 import { Link } from "@tanstack/react-router";
 
 /* ---------- Lazy Loaded Simulators & Tools ---------- */
@@ -246,18 +246,70 @@ const renderYoutube = (node: ASTNode) => {
   );
 };
 
-const renderVideoEmbed = (node: ASTNode) => {
-  const videoId = node.attrs?.videoId as string;
-  const platform = node.attrs?.platform as string || 'youtube';
-  const title = node.attrs?.title as string || 'Video';
+/**
+ * Detects whether a videoId looks like an actual platform video ID (e.g. YouTube 11-char ID)
+ * vs an internal ARESWEB media library ID (vid_*, UUID format).
+ */
+function looksLikeInternalId(id: string): boolean {
+  if (!id) return false;
+  // Internal IDs start with "vid_" or match UUID v4 pattern
+  if (id.startsWith('vid_')) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return true;
+  return false;
+}
 
-  if (!videoId) return null;
+function VideoEmbedIframe({ src, title }: { src: string; title: string }) {
+  return (
+    <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
+      <iframe
+        title={title}
+        src={src}
+        className="w-full h-full"
+        allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      />
+    </div>
+  );
+}
+
+function VideoEmbedRenderer({ videoId: rawVideoId, platform: rawPlatform, title, mediaId }: {
+  videoId: string; platform: string; title: string; mediaId?: string;
+}) {
+  // Determine which ID to use for API lookup — prefer mediaId, fall back to videoId if it looks internal
+  const lookupId = mediaId || (looksLikeInternalId(rawVideoId) ? rawVideoId : null);
+  const needsLookup = looksLikeInternalId(rawVideoId) && !!lookupId;
+
+  const { data: videoResponse, isLoading } = useGetVideo(lookupId || '', {
+    staleTime: Infinity,
+    retry: 1,
+  }) as { data: { video: { videoId: string; platform: string; title: string } } | undefined; isLoading: boolean };
+
+  // Resolve the actual platform video ID
+  const resolvedVideoId = needsLookup
+    ? videoResponse?.video?.videoId ?? null
+    : rawVideoId;
+  const resolvedPlatform = needsLookup
+    ? (videoResponse?.video?.platform ?? rawPlatform)
+    : rawPlatform;
+
+  if (needsLookup && isLoading) {
+    return (
+      <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-white/10 border-t-ares-red rounded-full animate-spin" />
+          <span className="text-white/40 text-sm font-mono">Loading video...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!resolvedVideoId) return null;
 
   // Generate embed URL based on platform
-  let embedSrc = platform === 'youtube'
-    ? `https://www.youtube.com/embed/${videoId}`
-    : platform === 'vimeo'
-    ? `https://player.vimeo.com/video/${videoId}`
+  let embedSrc = resolvedPlatform === 'youtube'
+    ? `https://www.youtube.com/embed/${resolvedVideoId}`
+    : resolvedPlatform === 'vimeo'
+    ? `https://player.vimeo.com/video/${resolvedVideoId}`
     : '';
 
   if (!embedSrc) return null;
@@ -266,18 +318,8 @@ const renderVideoEmbed = (node: ASTNode) => {
   const validatedSrc = validateUrl(embedSrc, 'video');
   if (!validatedSrc) return null;
 
-  return (
-    <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
-      <iframe
-        title={title}
-        src={validatedSrc}
-        className="w-full h-full"
-        allowFullScreen
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      />
-    </div>
-  );
-};
+  return <VideoEmbedIframe src={validatedSrc} title={title} />;
+}
 
 // Gallery Embed Renderer Component
 function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?: string }) {
@@ -415,7 +457,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "tableHeader": return <th className="bg-obsidian border border-white/10 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
     case "tableCell": return <td className="border border-white/5 p-3 text-marble align-top">{children}</td>;
     case "youtube": return renderYoutube(node);
-    case "videoEmbed": return renderVideoEmbed(node);
+    case "videoEmbed": return <VideoEmbedRenderer videoId={node.attrs?.videoId as string} platform={node.attrs?.platform as string || 'youtube'} title={node.attrs?.title as string || 'Video'} mediaId={node.attrs?.mediaId as string} />;
     case "galleryEmbed": return renderGalleryEmbed(node);
     case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-white/80">{children}</ul>;
     case "taskItem": return renderTaskItem(node, children);
