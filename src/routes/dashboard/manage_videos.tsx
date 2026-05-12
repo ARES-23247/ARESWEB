@@ -154,7 +154,9 @@ function RouteComponent() {
               className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
             >
               {video.thumbnailUrl ? (
-                <img src={video.thumbnailUrl} alt={video.title} className="w-full h-40 object-cover" />
+                <div className="w-full h-40 bg-black/20 flex items-center justify-center">
+                  <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
+                </div>
               ) : (
                 <div className="w-full h-40 bg-ares-red/10 flex items-center justify-center">
                   <span className={`text-4xl ${getPlatformColor(video.platform)}`}>{getPlatformIcon(video.platform)}</span>
@@ -218,9 +220,10 @@ function RouteComponent() {
           setIsPickerOpen(false)
           setEditVideoId(undefined)
         }}
-        onSelect={() => {
+        onVideoSelected={(_videoId, _title, _platform, _id) => {
           setIsPickerOpen(false)
           setEditVideoId(undefined)
+          queryClient.invalidateQueries({ queryKey: ["videos"] })
         }}
         editVideoId={editVideoId}
       />

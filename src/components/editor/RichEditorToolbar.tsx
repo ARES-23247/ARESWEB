@@ -470,10 +470,10 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       <VideoPickerModal
         isOpen={isVideoPickerOpen}
         onClose={() => setIsVideoPickerOpen(false)}
-        onSelect={(actualVideoId, title, platform, mediaId) => {
+        onVideoSelected={(videoId, title, platform, mediaId) => {
           editor.chain().focus().insertContent({
             type: 'videoEmbed',
-            attrs: { videoId: actualVideoId, title, platform, mediaId }
+            attrs: { videoId, title, platform, mediaId }
           }).run();
           setIsVideoPickerOpen(false);
         }}

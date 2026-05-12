@@ -1,4 +1,4 @@
-import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
+import { eq, desc, inArray, and, sql, gt, lt } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
 
@@ -405,7 +405,7 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
         .from(schema.inquiries)
         .where(and(
             inArray(schema.inquiries.status, ['resolved', 'rejected']),
-            lt(schema.inquiries.createdAt, cutoffDate)
+            sql`${schema.inquiries.createdAt} < ${cutoffDate}`
         ))
         .limit(QUERY_LIMITS.MAX_PAGE);
 

@@ -41,24 +41,70 @@ export interface ASTNode {
   attrs?: Record<string, string | number | boolean>;
 }
 
+function getEmbedUrl(url: string): string {
+  if (!url) return "";
+  
+  // YouTube
+  const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+
+  // Vimeo
+  const vimeoMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+
+  return url;
+}
+
 function validateUrl(url: string, type: 'image' | 'video'): string {
   if (!url) return "";
+  
+  // Clean URL - remove any stray spaces
+  url = url.trim();
+
+  // Allow all relative paths
   if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) return url;
 
-  const allowedDomains = [
-    "aresnetwork.dev", "aresfirst.org", "youtube.com", "youtu.be", "googleusercontent.com",
-    "cloudflare-ipfs.com", "raw.githubusercontent.com"
-  ];
+  // Allow blob and data URLs (often used in editor or for small assets)
+  if (url.startsWith('blob:') || url.startsWith('data:')) return url;
 
   try {
     const parsed = new URL(url);
-    const domain = parsed.hostname.split('.').slice(-2).join('.');
-    if (allowedDomains.includes(domain)) return url;
+    
+    // Always allow HTTPS for images/videos. 
+    // The public/_headers CSP is the authoritative source for domain filtering.
+    // TiptapRenderer should not be second-guessing the browser's CSP if it's HTTPS.
+    if (parsed.protocol === 'https:') return url;
+
+    // Always allow current origin
+    if (typeof window !== 'undefined' && parsed.origin === window.location.origin) return url;
+
+    // Fallback domain whitelist for non-HTTPS or specific legacy cases
+    const allowedDomains = [
+      "aresnetwork.dev", "aresfirst.org", "youtube.com", "youtu.be", "googleusercontent.com",
+      "cloudflare-ipfs.com", "raw.githubusercontent.com", "pages.dev", "google.com", "gstatic.com",
+      "vimeo.com"
+    ];
+
+    const hostname = parsed.hostname.toLowerCase();
+    const isAllowed = allowedDomains.some(domain => 
+      hostname === domain || hostname.endsWith('.' + domain)
+    );
+
+    if (isAllowed) return url;
   } catch {
-    return "";
+    // If it's not a valid absolute URL but starts with alphanumeric, it might be a relative path that was missed
+    if (/^[a-zA-Z0-9]/.test(url)) return '/' + url;
   }
 
-  console.warn(`Blocked ${type} URL for security: ${url}`);
+  // If we get here, it might be an invalid or blocked URL
+  if (url.includes('://')) {
+    console.warn(`Blocked ${type} URL for security (only HTTPS or same-origin allowed): ${url}`);
+    return "";
+  }
+  
+  // Final fallback: assume it's a path if it contains a slash but no protocol
+  if (url.includes('/')) return url.startsWith('/') ? url : '/' + url;
+
   return "";
 }
 
@@ -119,8 +165,14 @@ const renderHeading = (node: ASTNode, children: ReactNode) => {
 };
 
 const renderImage = (node: ASTNode) => {
-  const srcStr = validateUrl((node.src || node.attrs?.src || "") as string, 'image');
-  const altStr = (node.alt || node.attrs?.alt || "") as string;
+  let rawSrc = (node.attrs?.src || node.src || "") as string;
+  
+  // Ensure leading slash for API routes if missing
+  if (rawSrc.startsWith('api/')) rawSrc = '/' + rawSrc;
+  
+  const srcStr = validateUrl(rawSrc, 'image');
+  const altStr = (node.attrs?.alt || node.alt || "") as string;
+  const titleStr = (node.attrs?.title || "") as string;
   const width = node.attrs?.width;
   const height = node.attrs?.height;
   
@@ -134,8 +186,15 @@ const renderImage = (node: ASTNode) => {
   };
 
   return (
-    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40 flex flex-col items-center justify-center" style={style}>
-      <img src={srcStr} alt={altStr} className="max-w-full max-h-full object-contain" />
+    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40 flex flex-col items-center justify-center mx-auto" style={{ ...style, maxWidth: '100%' }}>
+      <img 
+        src={srcStr} 
+        alt={altStr} 
+        title={titleStr}
+        className="block w-full h-full max-h-[70vh] object-contain" 
+        loading="lazy"
+        decoding="async"
+      />
       {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
     </figure>
   );
@@ -166,7 +225,8 @@ const renderYoutube = (node: ASTNode) => {
   const videoId = node.attrs?.videoId as string;
   const srcAttr = node.attrs?.src as string;
   
-  const src = srcAttr || (videoId ? `https://www.youtube.com/embed/${videoId}` : null);
+  let src = srcAttr || (videoId ? `https://www.youtube.com/embed/${videoId}` : null);
+  if (src) src = getEmbedUrl(src);
   
   if (!src) return null;
 
@@ -191,13 +251,14 @@ const renderVideoEmbed = (node: ASTNode) => {
   if (!videoId) return null;
 
   // Generate embed URL based on platform
-  const embedSrc = platform === 'youtube'
+  let embedSrc = platform === 'youtube'
     ? `https://www.youtube.com/embed/${videoId}`
     : platform === 'vimeo'
     ? `https://player.vimeo.com/video/${videoId}`
     : '';
 
   if (!embedSrc) return null;
+  embedSrc = getEmbedUrl(embedSrc);
 
   return (
     <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">

@@ -6,16 +6,17 @@ import { toast } from 'sonner';
 // import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from 'date-fns';
+import { ApiError } from '../../api/honoClient';
 
 export const Route = createFileRoute('/dashboard/youtube')({
   component: YoutubeDashboard,
 });
 
 function YoutubeDashboard() {
-  const { data: authStatus, isLoading: isAuthLoading } = useGetYoutubeAuthStatus();
-  const { data: authUrl } = useGetYoutubeAuthUrl();
+  const { data: authStatus, isLoading: isStatusLoading } = useGetYoutubeAuthStatus();
+  const { data: authUrl, isLoading: isUrlLoading, error: authError } = useGetYoutubeAuthUrl();
 
-  if (isAuthLoading) {
+  if (isStatusLoading) {
     return (
       <div className="flex-1 w-full flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
@@ -33,13 +34,37 @@ function YoutubeDashboard() {
         <p className="text-marble/80 max-w-md mb-8">
           To upload videos directly to YouTube from ARESWEB and bypass Cloudflare limits, you must authorize the dashboard with the team&apos;s YouTube account.
         </p>
-        <a
-          href={authUrl?.url || "#"}
-          className="px-6 py-3 bg-ares-red text-white font-bold uppercase tracking-widest ares-cut hover:bg-ares-bronze transition-colors flex items-center gap-2"
+        
+        {authError ? (
+          <div className="mb-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded flex items-start gap-3 text-left max-w-md">
+            <AlertCircle className="text-ares-red shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-ares-red font-bold text-sm">Authorization Error</p>
+              <p className="text-marble/70 text-xs mt-1">
+                {authError instanceof ApiError ? authError.message : (authError instanceof Error ? authError.message : "Failed to fetch authorization URL. Check if YouTube API keys are configured.")}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        <button
+          onClick={() => {
+            if (authUrl?.url) {
+              window.location.href = authUrl.url;
+            } else {
+              toast.error("Authorization URL not available. Please check YouTube API configuration.");
+            }
+          }}
+          disabled={isUrlLoading}
+          className={`px-6 py-3 bg-ares-red text-white font-bold uppercase tracking-widest ares-cut hover:bg-ares-bronze transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          <Settings size={18} />
-          Authorize via Google
-        </a>
+          {isUrlLoading ? (
+            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+          ) : (
+            <Settings size={18} />
+          )}
+          {isUrlLoading ? "Loading..." : "Authorize via Google"}
+        </button>
       </div>
     );
   }

@@ -23,12 +23,12 @@ interface Video {
 export default function VideoPickerModal({
   isOpen,
   onClose,
-  onSelect,
+  onVideoSelected,
   editVideoId,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (actualVideoId: string, title: string, platform: string, mediaId: string) => void;
+  onVideoSelected: (actualVideoId: string, title: string, platform: string, mediaId: string) => void;
   editVideoId?: string;
 }) {
   const queryClient = useQueryClient();
@@ -120,7 +120,7 @@ export default function VideoPickerModal({
       refetch();
       setIsCreating(false);
       resetForm();
-      onSelect(data.video.videoId, data.video.title, data.video.platform, data.video.id);
+      onVideoSelected(data.video.videoId, data.video.title, data.video.platform, data.video.id);
       toast.success("Video added successfully");
     },
     onError: (error) => {
@@ -393,7 +393,7 @@ export default function VideoPickerModal({
                 {videos.map((video) => (
                   <button
                     key={video.id}
-                    onClick={() => onSelect(video.videoId, video.title, video.platform, video.id)}
+                    onClick={() => onVideoSelected(video.videoId, video.title, video.platform, video.id)}
                     className="relative bg-black/50 border border-white/10 ares-cut-sm overflow-hidden group cursor-pointer hover:border-ares-red/50 transition-colors text-left"
                   >
                     <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/60 transition-opacity">
