@@ -1,4 +1,4 @@
-import { eq, desc, inArray, and, sql, gt, lt } from "drizzle-orm";
+import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
 
