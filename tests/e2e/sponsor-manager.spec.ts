@@ -201,8 +201,8 @@ test.describe('Sponsor Manager', () => {
     // Click "Add Partner" button to expand creation form
     await page.getByRole('button', { name: /Add Partner/i }).click();
 
-    // Verify the logo input field is visible
-    await expect(page.getByLabel(/Logo/i)).toBeVisible();
+    // Verify the logo input field is visible (the visible text input, not the hidden file input)
+    await expect(page.getByPlaceholder(/https:\/\/\.\.\. or upload/i)).toBeVisible();
   });
 
   test('SPONSORS-08: Sponsor form can be cancelled', async ({ page }) => {
