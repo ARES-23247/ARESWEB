@@ -101,11 +101,14 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const db = getDb(c);
 
   try {
+    const now = new Date().toISOString();
     const gallery = await insertAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, {
       title: body.title,
       description: body.description ?? null,
       googlePhotosUrl: body.googlePhotosUrl ?? null,
       heroImageKey: body.heroImageKey ?? null,
+      createdAt: now,
+      updatedAt: now,
     }, "gal_");
 
     audit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);

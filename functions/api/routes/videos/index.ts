@@ -108,12 +108,15 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   const db = getDb(c);
 
   try {
+    const now = new Date().toISOString();
     const video = await insertAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, {
       title: body.title,
       description: body.description ?? null,
       platform: body.platform,
       videoId: body.videoId,
       thumbnailKey: body.thumbnailKey ?? null,
+      createdAt: now,
+      updatedAt: now,
     }, "vid_");
 
     audit(c, "video_create", "video", video.id, `Created video: ${body.title}`);
