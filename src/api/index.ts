@@ -88,6 +88,9 @@ export * from "./galleries";
 // Videos
 export * from "./videos";
 
+// YouTube
+export * from "./youtube";
+
 // Re-export utilities and legacy client for backward compatibility
 export { uploadFile, fetchBlob, fetchJson } from "../utils/apiClient";
 

@@ -44,6 +44,7 @@ import { Route as GalleriesIdRouteImport } from './routes/galleries/$id'
 import { Route as EventsIdRouteImport } from './routes/events/$id'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DevelopersApiRouteImport } from './routes/developers/api'
+import { Route as DashboardYoutubeRouteImport } from './routes/dashboard/youtube'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as DashboardStore_ordersRouteImport } from './routes/dashboard/store_orders'
 import { Route as DashboardSponsorsRouteImport } from './routes/dashboard/sponsors'
@@ -263,6 +264,11 @@ const DevelopersApiRoute = DevelopersApiRouteImport.update({
   id: '/developers/api',
   path: '/developers/api',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardYoutubeRoute = DashboardYoutubeRouteImport.update({
+  id: '/youtube',
+  path: '/youtube',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardUsersRoute = DashboardUsersRouteImport.update({
   id: '/users',
@@ -537,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
   '/dashboard/users': typeof DashboardUsersRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
@@ -617,6 +624,7 @@ export interface FileRoutesByTo {
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
   '/dashboard/users': typeof DashboardUsersRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
@@ -699,6 +707,7 @@ export interface FileRoutesById {
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
   '/dashboard/users': typeof DashboardUsersRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/events/$id': typeof EventsIdRoute
@@ -782,6 +791,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
     | '/dashboard/users'
+    | '/dashboard/youtube'
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
@@ -862,6 +872,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
     | '/dashboard/users'
+    | '/dashboard/youtube'
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
@@ -943,6 +954,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
     | '/dashboard/users'
+    | '/dashboard/youtube'
     | '/developers/api'
     | '/docs/$slug'
     | '/events/$id'
@@ -1261,6 +1273,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/developers/api'
       preLoaderRoute: typeof DevelopersApiRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/youtube': {
+      id: '/dashboard/youtube'
+      path: '/youtube'
+      fullPath: '/dashboard/youtube'
+      preLoaderRoute: typeof DashboardYoutubeRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/users': {
       id: '/dashboard/users'
@@ -1618,6 +1637,7 @@ interface DashboardRouteChildren {
   DashboardSponsorsRoute: typeof DashboardSponsorsRoute
   DashboardStore_ordersRoute: typeof DashboardStore_ordersRoute
   DashboardUsersRoute: typeof DashboardUsersRoute
+  DashboardYoutubeRoute: typeof DashboardYoutubeRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardBlogEditSlugRoute: typeof DashboardBlogEditSlugRoute
   DashboardDocsEditSlugRoute: typeof DashboardDocsEditSlugRoute
@@ -1662,6 +1682,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSponsorsRoute: DashboardSponsorsRoute,
   DashboardStore_ordersRoute: DashboardStore_ordersRoute,
   DashboardUsersRoute: DashboardUsersRoute,
+  DashboardYoutubeRoute: DashboardYoutubeRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardBlogEditSlugRoute: DashboardBlogEditSlugRoute,
   DashboardDocsEditSlugRoute: DashboardDocsEditSlugRoute,

@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Env } from "../../shared/hono";
-import { requireAuth } from "../../middleware/security";
+import type { Bindings as Env } from "../../middleware/utils";
+import { ensureAdmin } from "../../middleware";
 import {
   getAuthUrlRoute,
   youtubeCallbackRoute,
@@ -8,16 +8,16 @@ import {
   updateYoutubeVideoRoute,
   listYoutubeVideosRoute,
   checkAuthStatusRoute,
-} from "../../../shared/routes/youtube";
-import { getDb } from "../../../src/db";
-import { settings } from "../../../src/db/schema";
+} from "../../../../../shared/routes/youtube";
+import { getDb } from "../../middleware";
+import { settings } from "../../../../src/db/schema";
 import { eq } from "drizzle-orm";
-import { ApiError } from "../../utils/errors";
-import { logAuditAction } from "../../utils/audit";
+import { ApiError } from "../../middleware/errorHandler";
+import { logAuditAction } from "../../middleware";
 
-const adminApp = new OpenAPIHono<{ Bindings: Env }>();
+const adminApp = new OpenAPIHono<AppEnv>();
 
-adminApp.use("*", requireAuth(["admin"]));
+adminApp.use("*", ensureAdmin);
 
 // Utility to fetch Google Access Token using the Refresh Token
 async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Promise<string> {
@@ -26,7 +26,7 @@ async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Pro
     .from(settings)
     .where(eq(settings.key, "youtube_refresh_token"))
     .execute()
-    .then((res) => res[0]);
+    .then((res: Array<{ key: string; value: string | null; updatedAt: string | null }>) => res[0]);
 
   if (!tokenSetting || !tokenSetting.value) {
     throw new ApiError("YouTube is not connected.", 400, "YOUTUBE_NOT_CONNECTED");
@@ -40,8 +40,8 @@ async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Pro
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      client_id: env.YOUTUBE_CLIENT_ID,
-      client_secret: env.YOUTUBE_CLIENT_SECRET,
+      client_id: env.YOUTUBE_CLIENT_ID || "",
+      client_secret: env.YOUTUBE_CLIENT_SECRET || "",
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }).toString(),
@@ -58,7 +58,7 @@ async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Pro
   return data.access_token;
 }
 
-adminApp
+const routes = adminApp
   .openapi(checkAuthStatusRoute, async (c) => {
     const db = getDb(c);
     const tokenSetting = await db
@@ -66,7 +66,7 @@ adminApp
       .from(settings)
       .where(eq(settings.key, "youtube_refresh_token"))
       .execute()
-      .then((res) => res[0]);
+      .then((res: Array<{ key: string; value: string | null; updatedAt: string | null }>) => res[0]);
 
     return c.json({ isAuthenticated: !!tokenSetting?.value }, 200);
   })
@@ -220,8 +220,9 @@ adminApp
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
-    
+
     // We need to fetch the status (privacyStatus) for these videos since search doesn't return it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const videoIds = (data.items || []).map((item: any) => item.id.videoId).join(",");
     
     let videos = [];
@@ -311,5 +312,5 @@ adminApp
     return c.json({ success: true }, 200);
   });
 
-export const youtubeRouter = adminApp;
+export const youtubeRouter = routes;
 export default youtubeRouter;
