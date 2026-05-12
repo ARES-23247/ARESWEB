@@ -127,7 +127,7 @@ export function useDeleteSponsor(
         await queryClient.cancelQueries({ queryKey: ["admin_sponsors"] });
 
         // Snapshot the previous value
-        const previous = queryClient.getQueryData(["admin_sponsors"]);
+        const previous = queryClient.getQueryData(["admin_sponsors"]) as SponsorsResponse | undefined;
 
         // Optimistically update to the new value
         queryClient.setQueryData(["admin_sponsors"], (old: any) => ({
@@ -137,10 +137,10 @@ export function useDeleteSponsor(
 
         return { previous };
       },
-      onError: (err, id, context) => {
+      onError: (qc, err, id, context) => {
         // Rollback on failure
         if (context?.previous) {
-          queryClient.setQueryData(["admin_sponsors"], context.previous);
+          qc.setQueryData(["admin_sponsors"], context.previous);
         }
       },
       onSettled: (qc) => {

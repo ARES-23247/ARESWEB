@@ -101,16 +101,16 @@ export function useDeleteLocation(
     ...withMutationCallbacks(queryClient, options, {
       onMutate: async (id) => {
         await queryClient.cancelQueries({ queryKey: ["admin_locations"] });
-        const previous = queryClient.getQueryData(["admin_locations"]);
+        const previous = queryClient.getQueryData(["admin_locations"]) as LocationsResponse | undefined;
         queryClient.setQueryData(["admin_locations"], (old: any) => ({
           ...old,
           locations: old?.locations?.filter((l: any) => l.id !== id)
         }));
         return { previous };
       },
-      onError: (err, id, context) => {
+      onError: (qc, err, id, context) => {
         if (context?.previous) {
-          queryClient.setQueryData(["admin_locations"], context.previous);
+          qc.setQueryData(["admin_locations"], context.previous);
         }
       },
       onSettled: (qc) => {

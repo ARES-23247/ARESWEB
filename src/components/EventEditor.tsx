@@ -648,7 +648,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 <SocialSyndicationGrid
                   availableSocials={availableSocials}
                   socials={socials as Record<string, boolean>}
-                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as never, val)}
+                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
                   isEdit={!!editId}
                 />
               )}

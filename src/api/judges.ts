@@ -146,10 +146,10 @@ export function useCreateJudgeCode(
  * DELETE /api/judges/admin/codes/:id - Delete judge access code
  */
 export function useDeleteJudgeCode(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string, { previous: ListJudgeCodesResponse | undefined }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  return useMutation<{ success: boolean }, Error, string, { previous: ListJudgeCodesResponse | undefined }>({
     mutationFn: async (id) => {
       const response = await client.judges.admin.codes[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
@@ -158,22 +158,22 @@ export function useDeleteJudgeCode(
       onMutate: async (id) => {
         // Cancel outgoing refetches
         await queryClient.cancelQueries({ queryKey: ["judge_codes"] });
-        
+
         // Snapshot the previous value
-        const previous = queryClient.getQueryData(["judge_codes"]);
-        
+        const previous = queryClient.getQueryData(["judge_codes"]) as ListJudgeCodesResponse | undefined;
+
         // Optimistically update to the new value
         queryClient.setQueryData(["judge_codes"], (old: any) => ({
           ...old,
           codes: old?.codes?.filter((c: any) => c.id !== id)
         }));
-        
+
         return { previous };
       },
-      onError: (err, id, context) => {
+      onError: (qc, err, id, context) => {
         // Rollback on failure
         if (context?.previous) {
-          queryClient.setQueryData(["judge_codes"], context.previous);
+          qc.setQueryData(["judge_codes"], context.previous);
         }
       },
       onSettled: (qc) => {

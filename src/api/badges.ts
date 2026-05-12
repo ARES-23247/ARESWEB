@@ -141,10 +141,10 @@ export function useRevokeBadge(
  * DELETE /api/badges/admin/:id - Delete a badge definition
  */
 export function useDeleteBadge(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string, { previous: BadgesResponse | undefined }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  return useMutation<{ success: boolean }, Error, string, { previous: BadgesResponse | undefined }>({
     mutationFn: async (id) => {
       const response = await client.badges.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
@@ -153,22 +153,22 @@ export function useDeleteBadge(
       onMutate: async (id) => {
         // Cancel outgoing refetches
         await queryClient.cancelQueries({ queryKey: ["badges"] });
-        
+
         // Snapshot the previous value
-        const previous = queryClient.getQueryData(["badges"]);
-        
+        const previous = queryClient.getQueryData(["badges"]) as BadgesResponse | undefined;
+
         // Optimistically update to the new value
         queryClient.setQueryData(["badges"], (old: any) => ({
           ...old,
           badges: old?.badges?.filter((b: any) => b.id !== id)
         }));
-        
+
         return { previous };
       },
-      onError: (err, id, context) => {
+      onError: (qc, err, id, context) => {
         // Rollback on failure
         if (context?.previous) {
-          queryClient.setQueryData(["badges"], context.previous);
+          qc.setQueryData(["badges"], context.previous);
         }
       },
       onSettled: (qc) => {

@@ -3,7 +3,7 @@ import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, Me
 import ProfileEditor from "./ProfileEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAwardPoints } from "../api/points";
-import { useGetUsers, usePatchUser, useDeleteUser, type UserRole, type UserMemberType } from "../api/users";
+import { useGetUsers, usePatchUser, useDeleteUser, type UserRole, type UserMemberType, type User } from "../api/users";
 import { useAuditMissingUsers, useInviteUsers } from "../api/zulip";
 import { toast } from "sonner";
 import { toastApiError } from "../api/honoClient";
@@ -21,17 +21,6 @@ import {
 // Use the exact enum values from the backend
 const ROLES: readonly UserRole[] = ["unverified", "user", "author", "admin"] as const;
 const MEMBER_TYPES: readonly UserMemberType[] = ["student", "mentor", "coach", "parent", "alumnus", "alumni", "sponsor", "other"] as const;
-
-type User = {
-  id: string;
-  name: string | null;
-  image?: string | null;
-  role: string;
-  createdAt: number;
-  nickname?: string | null;
-  memberType?: string | null;
-  email?: string | null;
-};
 
 export default function AdminUsers() {
   const [editUserId, setEditUserId] = useState<string | null>(null);
@@ -216,7 +205,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("createdAt", {
       header: "Joined",
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as number).toLocaleDateString() : "—"}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : "—"}</span>,
     }),
     columnHelper.display({
       id: "actions",

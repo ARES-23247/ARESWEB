@@ -25,6 +25,7 @@ import ZulipThread from "./ZulipThread";
 import { useGetAdminPost, useDeletePost, useUpdatePost, useSavePost } from "../api";
 import { useModal } from "../contexts/ModalContext";
 import { type SavePostResponse, type UpdatePostResponse } from "../api/posts";
+import { toastApiError } from "../api/honoClient";
 function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       form.setFieldValue("seasonId", post.seasonId ? Number(post.seasonId) : undefined);
       form.setFieldValue("thumbnail", post.thumbnail || DEFAULT_coverImage);
       form.setFieldValue("ast", post.ast ? JSON.parse(post.ast) : {});
-      form.setFieldValue("socials" as any, postRes.socials || {});
+      form.setFieldValue("socials" as any, (postRes as any).socials || {});
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;

@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useRepushPost } from "../api/posts";
 import { useRepushEvent } from "../api/events";
 import { useAdminSettings } from "../hooks/useAdminSettings";
+import { toastApiError } from "../api/honoClient";
 
 interface BroadcastModalProps {
   isOpen: boolean;
