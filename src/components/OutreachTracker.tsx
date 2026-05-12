@@ -87,9 +87,11 @@ export default function OutreachTracker() {
         mentoredTeamNumber: value.mentoredTeamNumber === "" ? null : value.mentoredTeamNumber,
       };
 
-      // Only include id if it exists (editing existing record)
+      // Properly handle id: must be string for updates, undefined (not null) for new records
       if (value.id) {
-        submitData.id = value.id;
+        submitData.id = String(value.id);
+      } else {
+        delete submitData.id;
       }
 
       saveMutation.mutate(submitData, {
