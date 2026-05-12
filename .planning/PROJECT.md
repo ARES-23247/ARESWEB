@@ -59,23 +59,13 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 ### Active
 - **Milestone 7.3 (Full ESLint Sanitization)** — Resolving 364 pre-existing ESLint problems (errors and warnings) to achieve a zero-problem build state.
 
-## Current Milestone: v7.3 Full Codebase ESLint Sanitization
+### Current Milestone: v8.0 End-to-End Hono RPC Type Safety (Active)
+**Goal:** Eliminate the `any` type on the Hono RPC client and achieve full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
 
-**Status**: Planning phases 64-68. TSC at 0 errors, ESLint at 364 problems.
-
-**Quality Metrics**:
-- ESLint: 364 problems (282 errors, 82 warnings)
-- Unit Tests: 834+ passing
-- Playwright E2E: 55/55 passing
-- Pa11y Accessibility: 16/16 URLs passing
-- TypeScript: 0 errors (TSC)
-
-**Goal**: Complete the migration of ARESWEB backend persistence from Kysely to Drizzle ORM to achieve full type safety and architectural stability.
-
-**Target features**:
-- Drizzle Core Migration (Batches 2 and 3)
-- Type Safety & Testing
-- Traceability and Verification
+### Recently Shipped
+- **v7.3 Full Codebase ESLint Sanitization** (May 2026): Accepted frontend suppressions, addressed backend unused code.
+- **v7.2 TypeScript Safety & ESLint Compliance** (May 2026): Achieved complete strict TypeScript type safety across the entire codebase.
+- **v7.1 Drizzle ORM Migration** (May 2026): Converted all remaining raw D1 queries to Drizzle ORM and Zod schemas.
 
 ## Current State
 

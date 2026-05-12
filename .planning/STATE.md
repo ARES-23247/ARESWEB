@@ -25,16 +25,15 @@ progress:
 
 ## Current Position
 
-Phase 74: SimRegistry Form Migration
+Phase 66: Frontend Sanitization
 ---------------------------------------
-**Status**: `Complete`
+**Status**: `Active`
 **Branch**: `master`
 **Active Blockers**: None.
 
 **Recent Activity**:
-- Automatically transitioned from Phase 73 via `/gsd-next`
-- Created 74-CONTEXT.md and migrated `SimPickerModal.tsx` to use `AresField`
-- Milestone v8.0 is now complete.
+- Automatically transitioned from Phase 74 via `/gsd-next`
+- Resuming v7.3 milestone to tackle frontend ESLint errors
 
 ## Project Reference
 
