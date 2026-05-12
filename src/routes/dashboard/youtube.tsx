@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeVideos, useGetYoutubeResumableUrlMutation, useUpdateYoutubeVideoMutation } from '../../api/youtube';
 import { Upload, Video, AlertCircle, Settings, X, Pencil, Play } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from 'date-fns';
 
@@ -31,7 +31,7 @@ function YoutubeDashboard() {
         </div>
         <h2 className="text-2xl font-black text-white mb-2">Connect YouTube Channel</h2>
         <p className="text-marble/80 max-w-md mb-8">
-          To upload videos directly to YouTube from ARESWEB and bypass Cloudflare limits, you must authorize the dashboard with the team's YouTube account.
+          To upload videos directly to YouTube from ARESWEB and bypass Cloudflare limits, you must authorize the dashboard with the team&apos;s YouTube account.
         </p>
         <a
           href={authUrl?.url || "#"}
@@ -144,9 +144,9 @@ function YouTubeUploader() {
       setPrivacyStatus('unlisted');
       if (fileInputRef.current) fileInputRef.current.value = '';
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setUploadError(err.message || 'Upload failed');
+      setUploadError((err as Error).message || 'Upload failed');
       toast.error('Failed to upload video');
     } finally {
       setIsUploading(false);
@@ -159,10 +159,10 @@ function YouTubeUploader() {
       
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto px-1 pb-1">
         <div>
-          <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Video File</label>
-          <div 
+          <span className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Video File</span>
+          <label
+            htmlFor="youtube-file-input"
             className="border-2 border-dashed border-white/20 p-4 flex flex-col items-center justify-center bg-black/30 hover:bg-black/50 transition-colors cursor-pointer text-center"
-            onClick={() => fileInputRef.current?.click()}
           >
             {file ? (
               <div className="flex flex-col items-center gap-2">
@@ -177,20 +177,22 @@ function YouTubeUploader() {
                 <span className="text-xs text-white/40">Any size (bypasses Cloudflare limits)</span>
               </div>
             )}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="video/*" 
+            <input
+              id="youtube-file-input"
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="video/*"
               onChange={handleFileChange}
               disabled={isUploading}
             />
-          </div>
+          </label>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Title *</label>
+          <label htmlFor="youtube-title" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Title *</label>
           <input
+            id="youtube-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -200,8 +202,9 @@ function YouTubeUploader() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Description</label>
+          <label htmlFor="youtube-description" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Description</label>
           <textarea
+            id="youtube-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={isUploading}
@@ -211,10 +214,11 @@ function YouTubeUploader() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Privacy Status</label>
+          <label htmlFor="youtube-privacy" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Privacy Status</label>
           <select
+            id="youtube-privacy"
             value={privacyStatus}
-            onChange={(e) => setPrivacyStatus(e.target.value as any)}
+            onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
             disabled={isUploading}
             className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
           >
@@ -355,8 +359,8 @@ function EditVideoModal({ video, onClose }: { video: { id: string; title: string
       });
       toast.success('Metadata updated successfully');
       onClose();
-    } catch (err: any) {
-      toast.error('Failed to update metadata', { description: err.message });
+    } catch (err: unknown) {
+      toast.error('Failed to update metadata', { description: (err as Error).message });
     }
   };
 
@@ -378,8 +382,9 @@ function EditVideoModal({ video, onClose }: { video: { id: string; title: string
 
           <div className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Title</label>
+              <label htmlFor="edit-title" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Title</label>
               <input
+                id="edit-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -388,8 +393,9 @@ function EditVideoModal({ video, onClose }: { video: { id: string; title: string
             </div>
             
             <div>
-              <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Description</label>
+              <label htmlFor="edit-description" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Description</label>
               <textarea
+                id="edit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
@@ -398,10 +404,11 @@ function EditVideoModal({ video, onClose }: { video: { id: string; title: string
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Privacy Status</label>
+              <label htmlFor="edit-privacy" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Privacy Status</label>
               <select
+                id="edit-privacy"
                 value={privacyStatus}
-                onChange={(e) => setPrivacyStatus(e.target.value as any)}
+                onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
                 className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
               >
                 <option value="public">Public</option>

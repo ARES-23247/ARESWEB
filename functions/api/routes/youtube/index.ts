@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Bindings as Env } from "../../middleware/utils";
+import type { Bindings as Env, AppEnv } from "../../middleware/utils";
 import { ensureAdmin } from "../../middleware";
 import {
   getAuthUrlRoute,
@@ -8,9 +8,9 @@ import {
   updateYoutubeVideoRoute,
   listYoutubeVideosRoute,
   checkAuthStatusRoute,
-} from "../../../../../shared/routes/youtube";
+} from "../../../../shared/routes/youtube";
 import { getDb } from "../../middleware";
-import { settings } from "../../../../src/db/schema";
+import { settings } from "../../../../../src/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiError } from "../../middleware/errorHandler";
 import { logAuditAction } from "../../middleware";
@@ -111,8 +111,8 @@ const routes = adminApp
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: env.YOUTUBE_CLIENT_ID,
-        client_secret: env.YOUTUBE_CLIENT_SECRET,
+        client_id: env.YOUTUBE_CLIENT_ID || "",
+        client_secret: env.YOUTUBE_CLIENT_SECRET || "",
         code,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
