@@ -8,6 +8,7 @@ import { ResendCard } from "./integrations/ResendCard";
 import { useGetSettings, useUpdateSettings } from "../api/settings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
+import { toastApiError } from "../api/honoClient";
 
 type SettingsData = Record<string, string>;
 
@@ -40,6 +41,9 @@ export default function IntegrationsManager() {
       queryClient.invalidateQueries({ queryKey: ["public-settings"] });
       setSuccessMsg("Integrations synchronized securely.");
       setTimeout(() => setSuccessMsg(""), 3000);
+    },
+    onError: (err: unknown) => {
+      toastApiError(err, "Sync Failed");
     }
   });
 

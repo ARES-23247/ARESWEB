@@ -104,35 +104,45 @@ const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
 // Admin routes - mounted at /admin
 // POST / - Create a video
 const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
-    const body = c.req.valid("json");
-    const db = getDb(c);
+  const body = c.req.valid("json");
+  const db = getDb(c);
 
+  try {
     const video = await insertAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, {
-        title: body.title,
-        description: body.description ?? null,
-        platform: body.platform,
-        videoId: body.videoId,
-        thumbnailKey: body.thumbnailKey ?? null,
+      title: body.title,
+      description: body.description ?? null,
+      platform: body.platform,
+      videoId: body.videoId,
+      thumbnailKey: body.thumbnailKey ?? null,
     }, "vid_");
 
     audit(c, "video_create", "video", video.id, `Created video: ${body.title}`);
 
     return c.json({ video: serializeVideo(video) }, 200);
+  } catch (error: any) {
+    console.error("Failed to create video:", error);
+    throw new ApiError(
+      `Failed to create video: ${error.message || "Unknown database error"}`,
+      500,
+      "VIDEO_CREATE_FAILED"
+    );
+  }
 })
 
     // PATCH /:id - Update a video
     .openapi(updateVideoRoute, async (c) => {
-        const { id } = c.req.valid("param");
-        const body = c.req.valid("json");
-        const db = getDb(c);
+      const { id } = c.req.valid("param");
+      const body = c.req.valid("json");
+      const db = getDb(c);
 
+      try {
         const updates: Record<string, unknown> = {
-            ...(body.title !== undefined && { title: body.title }),
-            ...(body.description !== undefined && { description: body.description ?? null }),
-            ...(body.platform !== undefined && { platform: body.platform }),
-            ...(body.videoId !== undefined && { videoId: body.videoId }),
-            ...(body.thumbnailKey !== undefined && { thumbnailKey: body.thumbnailKey ?? null }),
-            updatedAt: new Date().toISOString(),
+          ...(body.title !== undefined && { title: body.title }),
+          ...(body.description !== undefined && { description: body.description ?? null }),
+          ...(body.platform !== undefined && { platform: body.platform }),
+          ...(body.videoId !== undefined && { videoId: body.videoId }),
+          ...(body.thumbnailKey !== undefined && { thumbnailKey: body.thumbnailKey ?? null }),
+          updatedAt: new Date().toISOString(),
         };
 
         const video = await updateAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, id, updates);
@@ -140,19 +150,36 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         audit(c, "video_update", "video", id, `Updated video: ${body.title || video.title}`);
 
         return c.json({ video: serializeVideo(video) }, 200);
+      } catch (error: any) {
+        console.error("Failed to update video:", error);
+        throw new ApiError(
+          `Failed to update video: ${error.message || "Unknown database error"}`,
+          500,
+          "VIDEO_UPDATE_FAILED"
+        );
+      }
     })
 
     // DELETE /:id - Delete a video
     .openapi(deleteVideoRoute, async (c) => {
-        const { id } = c.req.valid("param");
-        const db = getDb(c);
+      const { id } = c.req.valid("param");
+      const db = getDb(c);
 
+      try {
         const existing = await findOneById<typeof schema.videos.$inferSelect>(db, schema.videos, id, "Video not found");
 
         await db.delete(schema.videos).where(eq(schema.videos.id, id)).execute();
         audit(c, "video_delete", "video", id, `Deleted video: ${existing.title}`);
 
         return c.json({ success: true }, 200);
+      } catch (error: any) {
+        console.error("Failed to delete video:", error);
+        throw new ApiError(
+          `Failed to delete video: ${error.message || "Unknown database error"}`,
+          500,
+          "VIDEO_DELETE_FAILED"
+        );
+      }
     })
 
     // POST /sync - Sync videos from YouTube

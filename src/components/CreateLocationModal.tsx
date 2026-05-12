@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSaveLocation, type Location } from "../api";
@@ -66,8 +67,9 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
         setErrorMsg("Failed to save venue");
       }
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Network error.");
+    onError: (err: unknown) => {
+      setErrorMsg("Network error.");
+      toastApiError(err, "Venue Sync Failed");
     }
   });
 

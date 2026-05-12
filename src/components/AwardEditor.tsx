@@ -23,6 +23,63 @@ interface Award {
   seasonId?: number | null;
 }
 
+interface AwardCardProps {
+  award: Award;
+}
+
+function AwardCard({ award }: AwardCardProps) {
+  const deleteMutation = useDeleteAward();
+
+  return (
+    <div className="bg-black/40 border border-white/5 ares-cut p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
+      
+      {award.imageUrl ? (
+        <div className="w-full md:w-32 h-32 bg-white/5 ares-cut overflow-hidden flex-shrink-0 border border-white/10">
+          <img src={award.imageUrl} alt={award.title} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="w-full md:w-32 h-32 bg-white/5 ares-cut flex items-center justify-center flex-shrink-0 border border-white/10">
+          <Trophy size={48} className="text-ares-gold/20" />
+        </div>
+      )}
+
+      <div className="flex-1">
+        <div className="flex items-center gap-3 text-ares-gold text-xs font-black uppercase tracking-widest mb-2">
+           <span className="flex items-center gap-1"><Calendar size={12} /> {award.year}</span>
+           <span className="flex items-center gap-1">&middot; <Star size={12} className="fill-ares-gold" /> Achievement</span>
+        </div>
+        <h4 className="text-2xl font-black text-white mb-2 tracking-tighter">{award.title}</h4>
+        <div className="flex items-center gap-2 text-ares-gray text-xs font-bold mb-4">
+           <MapPin size={10} /> {award.eventName}
+        </div>
+        <p className="text-ares-gray text-sm line-clamp-3 leading-relaxed">{award.description}</p>
+      </div>
+
+      <button
+        title="Delete Award"
+        aria-label="Delete Award"
+        disabled={deleteMutation.isPending}
+        onClick={() => { 
+          if(confirm("Purge this achievement from history?")) {
+            deleteMutation.mutate(award.id, {
+              onSuccess: () => toast.success("Award deleted")
+            }); 
+          }
+        }}
+        className={`absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut ${deleteMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'}`}
+      >
+        {deleteMutation.isPending ? (
+          <span className="w-4 h-4 border-2 border-ares-red border-t-transparent rounded-full animate-spin block" />
+        ) : (
+          <Trash2 size={18} />
+        )}
+      </button>
+    </div>
+  );
+}
+
 export default function AwardEditor() {
   // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const [isAdding, setIsAdding] = useState(false);
@@ -48,7 +105,7 @@ export default function AwardEditor() {
           setIsAdding(false);
           form.reset();
         },
-        onError: (err) => {
+        onError: (err: unknown) => {
           toastApiError(err, "Failed to save award");
         }
       });
@@ -61,7 +118,6 @@ export default function AwardEditor() {
   
   const awards = (awardsRes?.awards || []) as Award[];
   const saveMutation = useSaveAward();
-  const deleteMutation = useDeleteAward();
 
   // Submission integrated into form definition
 
@@ -199,48 +255,7 @@ export default function AwardEditor() {
         {isLoading ? (
           <DashboardLoadingGrid count={2} heightClass="h-48" gridClass="grid-cols-1 lg:grid-cols-2" />
         ) : awards.map((award) => (
-          <div key={award.id} className="bg-black/40 border border-white/5 ares-cut p-8 group hover:border-ares-gold/30 transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
-            {/* Background Glow */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
-            
-            {award.imageUrl ? (
-              <div className="w-full md:w-32 h-32 bg-white/5 ares-cut overflow-hidden flex-shrink-0 border border-white/10">
-                <img src={award.imageUrl} alt={award.title} className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className="w-full md:w-32 h-32 bg-white/5 ares-cut flex items-center justify-center flex-shrink-0 border border-white/10">
-                <Trophy size={48} className="text-ares-gold/20" />
-              </div>
-            )}
-
-            <div className="flex-1">
-              <div className="flex items-center gap-3 text-ares-gold text-xs font-black uppercase tracking-widest mb-2">
-                 <span className="flex items-center gap-1"><Calendar size={12} /> {award.year}</span>
-                 <span className="flex items-center gap-1">&middot; <Star size={12} className="fill-ares-gold" /> Blue Banner</span>
-              </div>
-              <h4 className="text-2xl font-black text-white mb-2 tracking-tighter">{award.title}</h4>
-              <div className="flex items-center gap-2 text-ares-gray text-xs font-bold mb-4">
-                 <MapPin size={10} /> {award.eventName}
-              </div>
-              <p className="text-ares-gray text-sm line-clamp-3 leading-relaxed">{award.description}</p>
-            </div>
-
-            <button
-              title="Delete Award"
-              aria-label="Delete Award"
-              onClick={() => { 
-                if(confirm("Purge this achievement from history?")) {
-                  deleteMutation.mutate(award.id, {
-                    onSuccess: () => toast.success("Award deleted"),
-                    onError: (err) => toastApiError(err, "Delete failed")
-                  }); 
-                }
-              }}
-              className="absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
+          <AwardCard key={award.id} award={award} />
         ))}
         {awards.length === 0 && !isLoading && !isAdding && (
           <DashboardEmptyState

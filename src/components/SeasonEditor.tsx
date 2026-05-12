@@ -11,6 +11,7 @@ import CoverAssetPicker from "./editor/CoverAssetPicker";
 import EditorFooter from "./editor/EditorFooter";
 
 import { useGetAdminSeasonDetail, useSaveSeason } from "../api";
+import { toastApiError } from "../api/honoClient";
 
 export default function SeasonEditor() {
   const { editId } = useParams({ strict: false }) as Record<string, string>;
@@ -43,8 +44,7 @@ export default function SeasonEditor() {
       await Promise.resolve();
       if (!active) return;
       if (detailData?.season) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const s = detailData.season as any;
+        const s = detailData.season;
         setStartYear(s.startYear);
         setChallengeName(s.challengeName);
         setRobotName(s.robotName || "");
@@ -86,8 +86,8 @@ export default function SeasonEditor() {
         setErrorMsg("Save failed");
       }
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Failed to save season.");
+    onError: (err: unknown) => {
+      toastApiError(err, "Failed to save season");
     },
     onSettled: () => setIsPending(false)
   });

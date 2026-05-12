@@ -103,16 +103,24 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const body = c.req.valid("json");
   const db = getDb(c);
 
-  const gallery = await insertAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, {
-    title: body.title,
-    description: body.description ?? null,
-    googlePhotosUrl: body.googlePhotosUrl ?? null,
-    heroImageKey: body.heroImageKey ?? null,
-  }, "gal_");
+  try {
+    const gallery = await insertAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, {
+      title: body.title,
+      description: body.description ?? null,
+      googlePhotosUrl: body.googlePhotosUrl ?? null,
+      heroImageKey: body.heroImageKey ?? null,
+    }, "gal_");
 
-  audit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);
-
-  return c.json({ gallery: serializeGallery(gallery) }, 200);
+    audit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);
+    return c.json({ gallery: serializeGallery(gallery) }, 200);
+  } catch (error: any) {
+    console.error("[Galleries] Create failed:", error);
+    throw new ApiError(
+      `Failed to create gallery: ${error.message || "Unknown database error"}`,
+      500,
+      "GALLERY_CREATE_FAILED"
+    );
+  }
 })
 
 // PUT /galleries/admin/:id - Update a gallery (admin only)
@@ -121,19 +129,27 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const body = c.req.valid("json");
   const db = getDb(c);
 
-  const updates: Record<string, unknown> = {
-    ...(body.title !== undefined && { title: body.title }),
-    ...(body.description !== undefined && { description: body.description ?? null }),
-    ...(body.googlePhotosUrl !== undefined && { googlePhotosUrl: body.googlePhotosUrl ?? null }),
-    ...(body.heroImageKey !== undefined && { heroImageKey: body.heroImageKey ?? null }),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const updates: Record<string, unknown> = {
+      ...(body.title !== undefined && { title: body.title }),
+      ...(body.description !== undefined && { description: body.description ?? null }),
+      ...(body.googlePhotosUrl !== undefined && { googlePhotosUrl: body.googlePhotosUrl ?? null }),
+      ...(body.heroImageKey !== undefined && { heroImageKey: body.heroImageKey ?? null }),
+      updatedAt: new Date().toISOString(),
+    };
 
-  const gallery = await updateAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, updates);
+    const gallery = await updateAndFetch<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, updates);
 
-  audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
-
-  return c.json({ gallery: serializeGallery(gallery) }, 200);
+    audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
+    return c.json({ gallery: serializeGallery(gallery) }, 200);
+  } catch (error: any) {
+    console.error("[Galleries] Update failed:", error);
+    throw new ApiError(
+      `Failed to update gallery: ${error.message || "Unknown database error"}`,
+      500,
+      "GALLERY_UPDATE_FAILED"
+    );
+  }
 })
 
 // DELETE /galleries/admin/:id - Delete a gallery (admin only)
@@ -141,12 +157,22 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
-  const existing = await findOneById<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, "Gallery not found");
+  try {
+    const existing = await findOneById<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, "Gallery not found");
 
-  await db.delete(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-  audit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing.title}`);
+    await db.delete(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+    audit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing.title}`);
 
-  return c.json({ success: true }, 200);
+    return c.json({ success: true }, 200);
+  } catch (error: any) {
+    console.error("[Galleries] Delete failed:", error);
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(
+      `Failed to delete gallery: ${error.message || "Unknown database error"}`,
+      500,
+      "GALLERY_DELETE_FAILED"
+    );
+  }
 });
 
 export default finalGalleriesRouter;

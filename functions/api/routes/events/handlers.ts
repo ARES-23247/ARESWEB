@@ -334,13 +334,14 @@ export const eventHandlers = {
         const { body } = input;
         const db = getDb(c);
 
-        if (body.id) {
-            const idStr = String(body.id);
-            const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, idStr)).get();
-            if (existing) {
-                return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
+        try {
+            if (body.id) {
+                const idStr = String(body.id);
+                const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, idStr)).get();
+                if (existing) {
+                    return eventHandlers.updateEvent({ params: { id: body.id }, body, query: {} }, c);
+                }
             }
-        }
 
         const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, socials, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes, rrule } = body;
 
@@ -472,6 +473,15 @@ export const eventHandlers = {
         triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
         invalidateEventsCache(c);
         return { status: 200 as const, body: { success: true, id: genId } };
+        } catch (error: any) {
+            console.error("Failed to save event:", error);
+            if (error instanceof ApiError) throw error;
+            throw new ApiError(
+                `Failed to save event: ${error.message || "Unknown database error"}`,
+                500,
+                "EVENT_SAVE_FAILED"
+            );
+        }
     },
 
     updateEvent: async (input: HandlerInput<Partial<EventSaveBody>>, c: AresContext): Promise<ApiResponse<typeof updateEventRoute>> => {
@@ -480,25 +490,26 @@ export const eventHandlers = {
         const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
         const db = getDb(c);
 
-        if (!dateStart) throw new ApiError("dateStart is required", 400);
+        try {
+            if (!dateStart) throw new ApiError("dateStart is required", 400);
 
-        const cat = category || 'internal';
-        const user = await getSessionUser(c);
-        const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
+            const cat = category || 'internal';
+            const user = await getSessionUser(c);
+            const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
-        if (user?.role !== "admin") {
-            const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
-            await db.insert(schema.events)
-                .values({
-                    id: revId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
-                    location: location || "", description: description || "", coverImage: coverImage || "",
-                    tbaEventKey: tbaEventKey || null, status: 'pending',
-                    isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
-                    revisionOf: id, publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
-                })
-                .run();
-            return { status: 200 as const, body: { success: true, id: revId } };
-        }
+            if (user?.role !== "admin") {
+                const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
+                await db.insert(schema.events)
+                    .values({
+                        id: revId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
+                        location: location || "", description: description || "", coverImage: coverImage || "",
+                        tbaEventKey: tbaEventKey || null, status: 'pending',
+                        isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
+                        revisionOf: id, publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
+                    })
+                    .run();
+                return { status: 200 as const, body: { success: true, id: revId } };
+            }
 
         const existing = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
         if (!existing) throw new ApiError("Event not found", 404);
@@ -553,43 +564,63 @@ export const eventHandlers = {
         triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
         invalidateEventsCache(c);
         return { status: 200 as const, body: { success: true, id } };
+        } catch (error: any) {
+            console.error("Failed to update event:", error);
+            if (error instanceof ApiError) throw error;
+            throw new ApiError(
+                `Failed to update event: ${error.message || "Unknown database error"}`,
+                500,
+                "EVENT_UPDATE_FAILED"
+            );
+        }
     },
 
     deleteEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof deleteEventRoute>> => {
         const { params } = input;
         const { id } = params;
         const db = getDb(c);
-        const existing = await db.select({
-            gcalEventId: schema.events.gcalEventId,
-            category: schema.events.category
-        }).from(schema.events).where(eq(schema.events.id, id)).get();
 
-        if (!existing) throw new ApiError("Event not found", 404);
+        try {
+            const existing = await db.select({
+                gcalEventId: schema.events.gcalEventId,
+                category: schema.events.category
+            }).from(schema.events).where(eq(schema.events.id, id)).get();
 
-        await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
+            if (!existing) throw new ApiError("Event not found", 404);
 
-        c.executionCtx.waitUntil((async () => {
-            if (existing.gcalEventId) {
-                const socialConfig = await getSocialConfig(c);
-                const cat = existing.category || "internal";
-                const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
-                const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+            await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
 
-                if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
-                    try {
-                        await deleteEventFromGcal(existing.gcalEventId, {
-                            email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
-                            privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
-                            calendarId: calId
-                        });
-                    } catch { /* ignore GCal failure */ }
+            c.executionCtx.waitUntil((async () => {
+                if (existing.gcalEventId) {
+                    const socialConfig = await getSocialConfig(c);
+                    const cat = existing.category || "internal";
+                    const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
+                    const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+
+                    if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+                        try {
+                            await deleteEventFromGcal(existing.gcalEventId, {
+                                email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
+                                privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
+                                calendarId: calId
+                            });
+                        } catch { /* ignore GCal failure */ }
+                    }
                 }
-            }
-        })());
+            })());
 
-        triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
-        invalidateEventsCache(c);
-        return { status: 200 as const, body: { success: true } };
+            triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
+            invalidateEventsCache(c);
+            return { status: 200 as const, body: { success: true } };
+        } catch (error: any) {
+            console.error("Failed to delete event:", error);
+            if (error instanceof ApiError) throw error;
+            throw new ApiError(
+                `Failed to delete event: ${error.message || "Unknown database error"}`,
+                500,
+                "EVENT_DELETE_FAILED"
+            );
+        }
     },
 
     approveEvent: async (input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof approveEventRoute>> => {

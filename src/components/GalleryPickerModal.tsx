@@ -5,6 +5,8 @@ import { useGetGalleries, useUpdateGallery, useCreateGallery } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
+
 
 interface Gallery {
   id: string;
@@ -76,7 +78,7 @@ export default function GalleryPickerModal({
       toast.success("Gallery created successfully");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create gallery");
+      toastApiError(error, "Failed to create gallery");
     }
   });
 
@@ -92,7 +94,7 @@ export default function GalleryPickerModal({
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update gallery");
+      toastApiError(error, "Failed to update gallery");
     }
   });
 

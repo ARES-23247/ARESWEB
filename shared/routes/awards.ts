@@ -80,7 +80,7 @@ export const saveAwardRoute = createRoute({
 
 export const deleteAwardRoute = createRoute({
   method: "delete",
-  path: "/admin/{id}",
+  path: "/admin/:id",
   request: {
     params: z.object({ id: z.string() }),
   },

@@ -2,7 +2,7 @@ import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb } from "../middleware";
+import { AppEnv, ensureAdmin, verifyTurnstile, logAuditAction, checkPersistentRateLimit, getDb, ApiError } from "../middleware";
 import { list, notDeleted } from "../../../src/db/query-helpers";
 
 import {
@@ -240,7 +240,7 @@ export const judgesRouter = _judgesRouter
             eventName: a.eventName ? String(a.eventName) : "",
             imageUrl: a.imageUrl ? String(a.imageUrl) : "",
             description: sanitizeJudgeContent(a.description || ""),
-            year: Number(a.date)
+            year: a.date ? new Date(a.date).getFullYear() : new Date().getFullYear()
           })),
           sponsors: sponsors.map((s: SponsorResult) => ({ ...s, id: s.id || "", tier: s.tier as string }))
         };
@@ -276,14 +276,18 @@ export const judgesRouter = _judgesRouter
         const code = (crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')).slice(0, 12).toUpperCase();
         const id = crypto.randomUUID();
 
-        await db.insert(schema.judgeAccessCodes)
-          .values({
-            id,
-            code,
-            label: label || "Judges",
-            expiresAt: expiresAt || null
-          })
-          .run();
+        try {
+          await db.insert(schema.judgeAccessCodes)
+            .values({
+              id,
+              code,
+              label: label || "Judges",
+              expiresAt: expiresAt || null
+            })
+            .run();
+        } catch (err) {
+          throw new ApiError("Failed to generate access code.", 500, "JUDGE_CODE_CREATE_FAILED");
+        }
 
         // WR-08: Invalidate cache when content changes
         portfolioCacheVersion++;
@@ -295,7 +299,11 @@ export const judgesRouter = _judgesRouter
     .openapi(deleteJudgeCodeRoute, async (c) => {
       const db = getDb(c);
         const { id } = c.req.valid("param");
-        await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
+        try {
+          await db.delete(schema.judgeAccessCodes).where(eq(schema.judgeAccessCodes.id, id)).run();
+        } catch (err) {
+          throw new ApiError("Failed to revoke access code.", 500, "JUDGE_CODE_DELETE_FAILED");
+        }
 
         // WR-08: Invalidate cache when content changes
         portfolioCacheVersion++;

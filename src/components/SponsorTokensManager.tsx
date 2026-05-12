@@ -5,6 +5,7 @@ import { useGetAdminSponsors, useGetAdminTokens, useGenerateSponsorToken } from 
 import { useQueryClient } from "@tanstack/react-query";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 
 export default function SponsorTokensManager() {
   const queryClient = useQueryClient();
@@ -14,8 +15,7 @@ export default function SponsorTokensManager() {
   const sponsors = sponsorsRes?.sponsors || [];
 
   const { data: tokensRes, isLoading: loadingTokens, isError: isTokensError } = useGetAdminTokens();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tokens = (tokensRes?.tokens || []) as any[];
+  const tokens = tokensRes?.tokens || [];
 
   const generateMutation = useGenerateSponsorToken({
     onSuccess: (res) => {
@@ -24,11 +24,11 @@ export default function SponsorTokensManager() {
         setSelectedSponsor("");
         toast.success("Magic link generated");
       } else {
-        toast.error("Generation failed");
+        toastApiError(new Error("Generation failed"));
       }
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Generation failed");
+    onError: (err) => {
+      toastApiError(err, "Token Generation Failed");
     }
   });
 
@@ -71,7 +71,7 @@ export default function SponsorTokensManager() {
             title="Select a sponsor to generate a magic link for"
           >
             <option value="" disabled>Select a Sponsor</option>
-            {sponsors.map((s: { id: string; name: string }) => (
+            {sponsors.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
@@ -102,7 +102,7 @@ export default function SponsorTokensManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {tokens.map((t: { token: string; sponsorName: string; createdAt: string }) => {
+              {tokens.map((t) => {
                 const url = `${window.location.origin}/sponsors/roi/${t.token}`;
                 return (
                   <tr key={t.token} className="hover:bg-white/[0.02]">
@@ -118,7 +118,7 @@ export default function SponsorTokensManager() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-white/60">
-                      {new Date(t.createdAt).toLocaleDateString()}
+                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "N/A"}
                     </td>
                   </tr>
                 );

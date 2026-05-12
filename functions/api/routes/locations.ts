@@ -10,7 +10,7 @@ import {
   saveLocationRoute,
   deleteLocationRoute
 } from "../../../shared/routes/locations";
-import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, getDb, ApiError } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { list, notDeleted } from "../../../src/db/query-helpers";
 
@@ -102,24 +102,29 @@ export const locationsRouter = _locationsRouter
         const db = getDb(c);
         const id = validatedData.id || crypto.randomUUID();
 
-        await db.insert(schema.locations)
-          .values({
-            id,
-            name: validatedData.name,
-            address: validatedData.address,
-            mapsUrl: validatedData.mapsUrl || null,
-            isDeleted: validatedData.isDeleted || 0,
-          })
-          .onConflictDoUpdate({
-            target: schema.locations.id,
-            set: {
+        try {
+          await db.insert(schema.locations)
+            .values({
+              id,
               name: validatedData.name,
               address: validatedData.address,
               mapsUrl: validatedData.mapsUrl || null,
               isDeleted: validatedData.isDeleted || 0,
-            }
-          })
-          .run();
+            })
+            .onConflictDoUpdate({
+              target: schema.locations.id,
+              set: {
+                name: validatedData.name,
+                address: validatedData.address,
+                mapsUrl: validatedData.mapsUrl || null,
+                isDeleted: validatedData.isDeleted || 0,
+              }
+            })
+            .run();
+        } catch (err) {
+          console.error("FAILED_LOCATION_SAVE:", err);
+          throw new ApiError("LOCATION_SAVE_FAILED", "Could not synchronize venue record with the database.", 500);
+        }
 
         c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
         return c.json({ success: true, id } satisfies SaveLocationSuccess, 200);
@@ -127,9 +132,14 @@ export const locationsRouter = _locationsRouter
     .openapi(deleteLocationRoute, async (c) => {
         const { id } = c.req.valid("param");
         const db = getDb(c);
-        await db.delete(schema.locations)
-          .where(eq(schema.locations.id, id))
-          .run();
+        try {
+          await db.delete(schema.locations)
+            .where(eq(schema.locations.id, id))
+            .run();
+        } catch (err) {
+          console.error("FAILED_LOCATION_DELETE:", err);
+          throw new ApiError("LOCATION_DELETE_FAILED", "Failed to permanently remove venue from registry.", 500);
+        }
         c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location permanently deleted"));
         return c.json({ success: true } satisfies DeleteLocationSuccess, 200);
     });

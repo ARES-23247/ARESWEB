@@ -70,15 +70,14 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    savePipeline.mutate(result.data as any, {
+    savePipeline.mutate(result.data, {
       onSuccess: () => {
         toast.success("Sponsorship updated.");
         setIsAdding(false);
         pipelineForm.reset();
       },
-      onError: (err: Error) => {
-        toast.error(`Failed to save lead: ${err.message || "Unknown error"}`);
+      onError: (err: unknown) => {
+        toastApiError(err, "Failed to save lead");
       }
     });
   };
@@ -90,15 +89,14 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    saveTransaction.mutate(result.data as any, {
+    saveTransaction.mutate(result.data, {
       onSuccess: () => {
         toast.success("Transaction recorded.");
         setIsAdding(false);
         transactionForm.reset();
       },
-      onError: (err: Error) => {
-        toast.error(`Failed to save transaction: ${err.message || "Unknown error"}`);
+      onError: (err: unknown) => {
+        toastApiError(err, "Failed to save transaction");
       }
     });
   };
@@ -106,14 +104,14 @@ export default function FinanceManager() {
   const handleDeleteTransaction = (id: string) => {
     deleteTransaction.mutate(id, {
       onSuccess: () => toast.success("Transaction deleted."),
-      onError: (err: Error) => toast.error(`Failed to delete: ${err.message}`)
+      onError: (err: unknown) => toastApiError(err, "Failed to delete transaction")
     });
   };
 
   const handleDeletePipeline = (id: string) => {
     deletePipeline.mutate(id, {
       onSuccess: () => toast.success("Pipeline item deleted."),
-      onError: (err: Error) => toast.error(`Failed to delete: ${err.message}`)
+      onError: (err: unknown) => toastApiError(err, "Failed to delete lead")
     });
   };
 
@@ -308,12 +306,10 @@ export default function FinanceManager() {
                     />
                   )}
                 </transactionForm.Field>
-
                 <transactionForm.Field
                   name="amount"
                   validators={{
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onChange: z.coerce.number().min(0.01, "Amount must be positive") as any
+                    onChange: z.coerce.number().min(0.01, "Amount must be positive")
                   }}
                 >
                   {(field) => (
@@ -353,8 +349,7 @@ export default function FinanceManager() {
                 <transactionForm.Field
                   name="description"
                   validators={{
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onChange: z.string().nullable().optional() as any
+                    onChange: z.string().nullable().optional()
                   }}
                 >
                   {(field) => (
@@ -380,8 +375,7 @@ export default function FinanceManager() {
       {activeTab === 'pipeline' ? (
         <>
           <GenericKanbanBoard<PipelineItem>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            items={filteredPipeline as any[] as PipelineItem[]}
+            items={filteredPipeline}
             columns={PIPELINE_COLUMNS}
             columnConfig={pipelineConfig}
             getId={(item) => String(item.id)}

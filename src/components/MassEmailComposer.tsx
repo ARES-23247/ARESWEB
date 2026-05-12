@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, Users, Send, AlertTriangle } from "lucide-react";
 import { useGetMassEmailStats, useSendMassEmail } from "../api";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
@@ -26,8 +27,8 @@ export default function MassEmailComposer() {
         toast.error(`Email send failed: ${errorMsg}`);
       }
     },
-    onError: (err: Error) => {
-      toast.error(`Email send failed: ${err.message}`);
+    onError: (err: unknown) => {
+      toastApiError(err, "Email Blast Failed");
     }
   });
 

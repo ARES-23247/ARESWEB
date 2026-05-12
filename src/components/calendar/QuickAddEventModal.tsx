@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useGetLocations } from "../../api/locations";
 import { useSaveEvent } from "../../api/events";
+import { toastApiError } from "../../api/honoClient";
 import { useRichEditor } from "../editor/useRichEditor";
 import { EditorContent, type Editor } from "@tiptap/react";
 
@@ -99,6 +100,7 @@ export function QuickAddEventModal({
           meetingNotes: undefined,
         });
       } catch (err) {
+        toastApiError(err, "Failed to create event");
         setError(err instanceof Error ? err.message : "Failed to create event");
         setIsSubmitting(false);
       }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FolderOpen, AlertCircle, Code, Zap, Check, Copy, Plus, Folder, RefreshCw, Play, X, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { SIM_METADATA, SIM_COMPONENTS } from "./generated/sim-registry";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Suspense } from "react";
@@ -28,10 +29,10 @@ export default function SimManager() {
       if (data.success) {
         toast.success("Registry regenerated! Refresh to see changes.");
       } else {
-        toast.error(`Failed: ${data.error || data.message || "Unknown error"}`);
+        toastApiError({ message: data.error || data.message || "Unknown error" }, "Registry Sync Failed");
       }
-    } catch {
-      toast.error("Failed to regenerate registry");
+    } catch (err) {
+      toastApiError(err, "Registry Sync Failed");
     } finally {
       setIsGenerating(false);
     }

@@ -37,7 +37,7 @@ export default function BadgeManager() {
       setNewBadgeName("");
       setNewBadgeDesc("");
     },
-    onError: () => toast.error("Failed to create badge.")
+    onError: (err: unknown) => toastApiError(err, "Failed to create badge.")
   });
 
   const awardBadgeMutation = useGrantBadge({
@@ -46,8 +46,8 @@ export default function BadgeManager() {
       setSelectedUser("");
       setSelectedBadge("");
     },
-    onError: (err: Error) => {
-      toast.error(`Error awarding badge: ${err.message}`);
+    onError: (err: unknown) => {
+      toastApiError(err, "Error awarding badge");
     }
   });
 
@@ -56,8 +56,8 @@ export default function BadgeManager() {
       toast.success("Badge definition deleted.");
       setConfirmId(null);
     },
-    onError: (err: Error) => {
-      toast.error(`Error deleting badge: ${err.message}`);
+    onError: (err: unknown) => {
+      toastApiError(err, "Error deleting badge");
     }
   });
 

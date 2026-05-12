@@ -42,9 +42,10 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
       setStatus("success");
       setTimeout(onClose, 2000);
     },
-    onError: (err: Error) => {
+    onError: (err: unknown) => {
       setStatus("error");
-      setErrorMsg(err.message || "Broadcast failed");
+      setErrorMsg("Broadcast failed");
+      toastApiError(err, "Broadcast Failed");
     }
   });
 
@@ -53,9 +54,10 @@ export default function BroadcastModal({ isOpen, onClose, type, id, title }: Bro
       setStatus("success");
       setTimeout(onClose, 2000);
     },
-    onError: (err: Error) => {
+    onError: (err: unknown) => {
       setStatus("error");
-      setErrorMsg(err.message || "Broadcast failed");
+      setErrorMsg("Broadcast failed");
+      toastApiError(err, "Broadcast Failed");
     }
   });
 

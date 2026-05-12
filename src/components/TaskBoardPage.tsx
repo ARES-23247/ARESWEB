@@ -10,6 +10,7 @@ import { useSession } from "../utils/auth-client";
 import { useStore } from "@tanstack/react-store";
 import { kanbanStore, kanbanActions } from "../store/kanbanStore";
 import { useTaskBoardStore } from "../store/taskBoardStore";
+import { toastApiError } from "../api/honoClient";
 
 export interface TaskNode extends TaskItem {
   subRows?: TaskNode[];
@@ -175,7 +176,10 @@ export default function TaskBoardPage() {
         }
         setCreating(false);
       },
-      onError: () => setCreating(false)
+      onError: (err) => {
+        setCreating(false);
+        toastApiError(err);
+      }
     });
   };
 
@@ -186,13 +190,15 @@ export default function TaskBoardPage() {
     }
 
     updateMutation.mutate({ id, updates: apiUpdates as import("../api").UpdateTaskRequest }, {
-      onSuccess: () => broadcastTaskUpdate()
+      onSuccess: () => broadcastTaskUpdate(),
+      onError: (err) => toastApiError(err)
     });
   };
 
   const handleDeleteTask = async (id: string) => {
     deleteMutation.mutate(id, {
-      onSuccess: () => broadcastTaskUpdate()
+      onSuccess: () => broadcastTaskUpdate(),
+      onError: (err) => toastApiError(err)
     });
   };
 
@@ -201,7 +207,8 @@ export default function TaskBoardPage() {
       socket.send(JSON.stringify({ type: "task_reordered", items }));
     }
     reorderMutation.mutate({ items }, {
-      onSuccess: () => broadcastTaskUpdate()
+      onSuccess: () => broadcastTaskUpdate(),
+      onError: (err) => toastApiError(err)
     });
   };
 

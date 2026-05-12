@@ -77,8 +77,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       form.setFieldValue("seasonId", post.seasonId ? Number(post.seasonId) : undefined);
       form.setFieldValue("thumbnail", post.thumbnail || DEFAULT_coverImage);
       form.setFieldValue("ast", post.ast ? JSON.parse(post.ast) : {});
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      form.setFieldValue("socials" as any, (postRes as any).socials || {});
+      form.setFieldValue("socials" as any, postRes.socials || {});
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
@@ -117,8 +116,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       navigate({ to: "/dashboard" });
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Publication failed");
+    onError: (err: unknown) => {
+      toastApiError(err, "Publication failed");
     }
   });
 
@@ -134,8 +133,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
       navigate({ to: `/blog/${data.slug || editSlug}` });
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Update failed");
+    onError: (err: unknown) => {
+      toastApiError(err, "Update failed");
     }
   });
 
@@ -145,8 +144,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
       navigate({ to: "/dashboard/manage_blog" });
     },
-    onError: () => {
-      setErrorMsg("Failed to delete the post. Please try again.");
+    onError: (err: unknown) => {
+      toastApiError(err, "Failed to delete the post");
     }
   });
 
@@ -268,12 +267,10 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 </div>
                 <div className="flex-1 md:max-w-xs">
                   <form.Field
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    name={"seasonId" as any}
+                    name="seasonId"
                   >
                     {(field) => (
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      <SeasonPicker value={(field.state.value as any) || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
+                      <SeasonPicker value={(field.state.value as number | string) || ""} onChange={(val) => field.handleChange(val ? Number(val) : undefined)} />
                     )}
                   </form.Field>
                 </div>
@@ -311,8 +308,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                 extraControls={
                   <SocialSyndicationGrid
                     availableSocials={availableSocials}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    socials={socialsValue as any}
+                    socials={socialsValue as Record<string, boolean>}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
                     isEdit={!!editSlug}

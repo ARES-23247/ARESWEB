@@ -141,30 +141,40 @@ export const sponsorsRouter = _sponsorsRouter
         const id = (body.id as string | undefined) || crypto.randomUUID();
 
         if (body.id) {
-          await db
-            .update(schema.sponsors)
-            .set({
-              name: body.name as string,
-              tier: body.tier as string,
-              logoUrl: (body.logoUrl as string | null | undefined) ?? null,
-              websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
-              isActive: body.isActive ? 1 : 0,
-            })
-            .where(eq(schema.sponsors.id, body.id as string))
-            .run();
+          try {
+            await db
+              .update(schema.sponsors)
+              .set({
+                name: body.name as string,
+                tier: body.tier as string,
+                logoUrl: (body.logoUrl as string | null | undefined) ?? null,
+                websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
+                isActive: body.isActive ? 1 : 0,
+              })
+              .where(eq(schema.sponsors.id, body.id as string))
+              .run();
+          } catch (err) {
+            console.error("FAILED_SPONSOR_UPDATE:", err);
+            throw new ApiError("SPONSOR_UPDATE_FAILED", "Failed to synchronize sponsor record.", 500);
+          }
           c.executionCtx.waitUntil(logAuditAction(c, "update_sponsor", "sponsors", id));
         } else {
-          await db
-            .insert(schema.sponsors)
-            .values({
-              id,
-              name: body.name as string,
-              tier: body.tier as string,
-              logoUrl: (body.logoUrl as string | null | undefined) ?? null,
-              websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
-              isActive: body.isActive ? 1 : 0,
-            })
-            .run();
+          try {
+            await db
+              .insert(schema.sponsors)
+              .values({
+                id,
+                name: body.name as string,
+                tier: body.tier as string,
+                logoUrl: (body.logoUrl as string | null | undefined) ?? null,
+                websiteUrl: (body.websiteUrl as string | null | undefined) ?? null,
+                isActive: body.isActive ? 1 : 0,
+              })
+              .run();
+          } catch (err) {
+            console.error("FAILED_SPONSOR_CREATE:", err);
+            throw new ApiError("SPONSOR_CREATE_FAILED", "Failed to register new sponsor.", 500);
+          }
           c.executionCtx.waitUntil(
             logAuditAction(c, "create_sponsor", "sponsors", id, `Created sponsor ${body.name as string}`)
           );
@@ -177,7 +187,12 @@ export const sponsorsRouter = _sponsorsRouter
         const params = c.req.valid("param");
         const db = getDb(c);
 
-        await db.delete(schema.sponsors).where(eq(schema.sponsors.id, params.id)).run();
+        try {
+          await db.delete(schema.sponsors).where(eq(schema.sponsors.id, params.id)).run();
+        } catch (err) {
+          console.error("FAILED_SPONSOR_DELETE:", err);
+          throw new ApiError("SPONSOR_DELETE_FAILED", "Failed to permanently remove sponsor.", 500);
+        }
         c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", params.id));
 
         return c.json({ success: true }, 200);

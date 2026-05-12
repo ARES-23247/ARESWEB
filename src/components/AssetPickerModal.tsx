@@ -11,6 +11,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useGetAdminMedia, useGetGalleries } from "../api";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 
 export type R2Asset = {
   key: string;
@@ -62,7 +63,7 @@ export default function AssetPickerModal({
       toast.success("Asset uploaded successfully");
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload asset");
+      toastApiError(err, "Asset Upload Failed");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

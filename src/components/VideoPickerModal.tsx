@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrapResponse } from "../api/honoClient";
 import AssetPickerModal from "./AssetPickerModal";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
+
 
 interface Video {
   id: string;
@@ -124,7 +126,7 @@ export default function VideoPickerModal({
       toast.success("Video added successfully");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create video");
+      toastApiError(error, "Failed to create video");
     }
   });
 
@@ -138,7 +140,7 @@ export default function VideoPickerModal({
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update video");
+      toastApiError(error, "Failed to update video");
     }
   });
 

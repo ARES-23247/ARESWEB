@@ -16,6 +16,7 @@ import {
 import { type Task as TaskItem } from "../../api";
 import { KANBAN_SUBTEAMS } from "../command/ProjectBoardKanban";
 import ZulipThread from "../ZulipThread";
+import { toastApiError } from "../../api/honoClient";
 
 import { CollaborativeEditorRoom, useCollaborativeEditor } from "../editor/CollaborativeEditorRoom";
 import { useRichEditor } from "../editor/useRichEditor";
@@ -128,7 +129,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [subteam, setSubteam] = useState(task.subteam || "");
-  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a: { id: string }) => a.id) || []);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a) => a.id) || []);
   const [dueDate, setDueDate] = useState(task.dueDate || "");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -143,6 +144,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "subtasks", task.id] });
     },
+    onError: (err: unknown) => toastApiError(err)
   });
 
   const { data: usersData } = useGetUsers({ limit: 100 });
@@ -153,17 +155,17 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
 
   // Checklists
   const [newChecklist, setNewChecklist] = useState("");
-  const createChecklistMutation = useCreateTaskChecklist();
-  const updateChecklistMutation = useUpdateTaskChecklist();
-  const deleteChecklistMutation = useDeleteTaskChecklist();
+  const createChecklistMutation = useCreateTaskChecklist({ onError: (err: unknown) => toastApiError(err) });
+  const updateChecklistMutation = useUpdateTaskChecklist({ onError: (err: unknown) => toastApiError(err) });
+  const deleteChecklistMutation = useDeleteTaskChecklist({ onError: (err: unknown) => toastApiError(err) });
 
   // Attachments
   const [newAttachmentUrl, setNewAttachmentUrl] = useState("");
-  const createAttachmentMutation = useCreateTaskAttachment();
-  const deleteAttachmentMutation = useDeleteTaskAttachment();
+  const createAttachmentMutation = useCreateTaskAttachment({ onError: (err: unknown) => toastApiError(err) });
+  const deleteAttachmentMutation = useDeleteTaskAttachment({ onError: (err: unknown) => toastApiError(err) });
 
   // Labels
-  const setLabelsMutation = useSetTaskLabels();
+  const setLabelsMutation = useSetTaskLabels({ onError: (err: unknown) => toastApiError(err) });
   const [labelIds, setLabelIds] = useState<string[]>(task.labels?.map(l => l.id) || []);
   const [showLabelDropdown, setShowLabelDropdown] = useState(false);
   const labelDropdownRef = useRef<HTMLDivElement>(null);
@@ -207,7 +209,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
       if (subteam !== (task.subteam || "")) updates.subteam = subteam || null;
       if (dueDate !== (task.dueDate || "")) updates.dueDate = dueDate || undefined;
       
-      const currentIds = task.assignees?.map((a: { id: string }) => a.id) || [];
+      const currentIds = task.assignees?.map((a) => a.id) || [];
       const hasAssigneeChange = assigneeIds.length !== currentIds.length || 
         !assigneeIds.every(id => currentIds.includes(id));
       
@@ -244,7 +246,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   };
 
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== "done";
-  const currentAssignees = teamMembers.filter((m: { id: string }) => assigneeIds.includes(m.id));
+  const currentAssignees = teamMembers.filter((m) => assigneeIds.includes(m.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -627,7 +629,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                 </label>
                 
                 <div className="flex flex-wrap gap-1.5 p-2 bg-ares-gray-dark/50 border border-white/10 ares-cut-sm min-h-[42px] content-start">
-                  {currentAssignees.map((m: { id: string; nickname?: string | null; name?: string | null }) => (
+                  {currentAssignees.map((m) => (
                     <span key={m.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan text-[10px] font-black ares-cut-sm uppercase tracking-wider">
                       {m.nickname || m.name}
                       <button onClick={() => toggleAssignee(m.id)} className="hover:text-white transition-colors" title="Remove Assignee">
@@ -652,7 +654,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute z-[60] left-0 right-0 mt-1 bg-obsidian border border-white/10 ares-cut-sm shadow-2xl max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10"
                     >
-                      {teamMembers.map((m: { id: string; nickname?: string | null; name?: string | null }) => (
+                      {teamMembers.map((m) => (
                         <button
                           key={m.id}
                           onClick={() => toggleAssignee(m.id)}

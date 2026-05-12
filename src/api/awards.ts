@@ -79,11 +79,36 @@ export function useDeleteAward(
       const response = await client.awards.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (qc) => {
-        qc.invalidateQueries({ queryKey: ["awards"] });
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["awards"] });
+
+      // Snapshot the previous value
+      const previousAwards = queryClient.getQueryData<{ awards: Award[] }>(["awards"]);
+
+      // Optimistically update to the new value
+      if (previousAwards) {
+        queryClient.setQueryData(["awards"], {
+          ...previousAwards,
+          awards: previousAwards.awards.filter((a) => String(a.id) !== String(id)),
+        });
       }
-    })
+
+      // Return a context object with the snapshotted value
+      return { previousAwards };
+    },
+    onError: (err, id, context: any) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousAwards) {
+        queryClient.setQueryData(["awards"], context.previousAwards);
+      }
+      toastApiError(err, "Delete failed");
+    },
+    onSettled: () => {
+      // Always refetch after error or success to keep server and client in sync
+      queryClient.invalidateQueries({ queryKey: ["awards"] });
+    },
+    ...options
   });
 }
 

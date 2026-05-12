@@ -62,12 +62,10 @@ export default function AdminUsers() {
         setAllUsers(prev => {
           const newIds = new Set(users.map(u => u.id));
           const filtered = prev.filter(u => !newIds.has(u.id));
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return [...filtered, ...users] as any;
+          return [...filtered, ...users];
         });
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setAllUsers(users as any);
+        setAllUsers(users);
       }
     }
   }, [users, cursor]);
@@ -76,7 +74,7 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast.success("User updated");
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Update failed");
     }
   });
@@ -85,7 +83,7 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast.success("User removed successfully");
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Failed to remove user");
     }
   });
@@ -142,7 +140,7 @@ export default function AdminUsers() {
       setAuditResult(data?.data?.missingEmails || []);
       setShowZulipAudit(true);
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Audit failed");
     }
   });
@@ -153,7 +151,7 @@ export default function AdminUsers() {
       setShowZulipAudit(false);
       setAuditResult(null);
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Invite failed");
     }
   });
@@ -218,8 +216,7 @@ export default function AdminUsers() {
     }),
     columnHelper.accessor("createdAt", {
       header: "Joined",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as any).toLocaleDateString() : "—"}</span>,
+      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as number).toLocaleDateString() : "—"}</span>,
     }),
     columnHelper.display({
       id: "actions",

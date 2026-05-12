@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Globe, Play, Database,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Zap, Globe, Play, Database,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";
@@ -293,6 +293,7 @@ export default function DashboardSidebar({
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="db_studio" icon={Database} label="Database Studio" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="users" icon={Users} label="User Roles & Sync" currentPath={location.pathname} />}
+                {isAdmin && <NavButton tab="judge_codes" icon={ShieldCheck} label="Judge Access" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="impact_roster" icon={Trophy} label="Impact & Roster" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="badges" icon={Award} label="Badges & Awards" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="integrations" icon={Settings} label="System Integrations" currentPath={location.pathname} />}

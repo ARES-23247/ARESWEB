@@ -253,7 +253,7 @@ describe('Awards Routes', () => {
         DEV_BYPASS: 'false',
       });
 
-      const req = new Request('http://localhost/api/awards/admin/123/delete', {
+      const req = new Request('http://localhost/api/awards/admin/123', {
         method: 'DELETE',
       });
 
@@ -271,7 +271,7 @@ describe('Awards Routes', () => {
         DEV_BYPASS: 'false',
       });
 
-      const req = new Request('http://localhost/api/awards/admin/123/delete', {
+      const req = new Request('http://localhost/api/awards/admin/123', {
         method: 'DELETE',
       });
 
@@ -293,15 +293,13 @@ describe('Awards Routes', () => {
         DEV_BYPASS: 'false',
       });
 
-      const req = new Request('http://localhost/api/awards/admin/123/delete', {
+      const req = new Request('http://localhost/api/awards/admin/123', {
         method: 'DELETE',
       });
 
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      // Should not be 401 or 403 - the request should proceed to the handler
-      expect(_res.status).not.toBe(401);
-      expect(_res.status).not.toBe(403);
+      expect(_res.status).toBe(200);
     });
   });
 

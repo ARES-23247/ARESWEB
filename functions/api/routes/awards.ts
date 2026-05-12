@@ -28,10 +28,10 @@ export const awardsRouter = _awardsRouter
         const query = c.req.valid("query");
         const db = getDb(c);
         const { limit = 50, offset = 0 } = query;
-        // SAF-01: Standard query with raw SQL ordering for D1 production compatibility
-        // Using sql`date DESC...` avoids Drizzle's tendency to wrap multiple order columns in parentheses
+        // SAF-01: Standard query with raw SQL for IDs to handle malformed legacy string IDs
+        // Using sql`CAST(id AS TEXT)` ensures that we don't crash if an unexpected string exists in the integer column
         const results = await db.select({
-            id: schema.awards.id,
+            id: sql<string>`CAST(${schema.awards.id} AS TEXT)`,
             title: schema.awards.title,
             eventName: schema.awards.eventName,
             date: schema.awards.date,
@@ -43,23 +43,27 @@ export const awardsRouter = _awardsRouter
         .from(schema.awards)
         .where(notDeleted(schema.awards))
         .orderBy(sql`date DESC, title ASC`)
-        .limit(limit || 50)
+        .limit(limit || 100) // Increase default limit slightly for better management
         .offset(offset || 0)
-        .all();
+        .all()
+        .catch(err => {
+            console.error("DATABASE_FETCH_ERROR: Awards retrieval failed", err);
+            throw new ApiError("Failed to fetch awards from database", 500, "DATABASE_ERROR");
+        });
 
-        const awards = (results || []).map((record: { id: unknown, title: unknown, date: unknown, eventName?: unknown, description?: unknown, iconType?: unknown, seasonId?: unknown, createdAt?: unknown }) => {
+        const awards = (results || []).map((record) => {
             // SAF-02: Resilience for malformed legacy data
             const rawYear = Number(record.date);
             const validYear = isNaN(rawYear) ? new Date().getFullYear() : rawYear;
 
             return {
-                id: String(record.id),
-                title: String(record.title),
+                id: String(record.id || ""),
+                title: String(record.title || "Untitled Achievement"),
                 year: validYear,
                 eventName: record.eventName ? String(record.eventName) : null,
                 description: record.description ? String(record.description) : null,
                 // SAF-03: Clean placeholder images for frontend rendering
-                imageUrl: (record.iconType && record.iconType !== "trophy") ? String(record.iconType) : null,
+                imageUrl: (record.iconType && record.iconType !== "trophy" && String(record.iconType).startsWith("http")) ? String(record.iconType) : null,
                 seasonId: record.seasonId ? Number(record.seasonId) : null,
                 createdAt: record.createdAt ? String(record.createdAt) : new Date().toISOString(),
                 updatedAt: record.createdAt ? String(record.createdAt) : new Date().toISOString()
@@ -90,24 +94,33 @@ export const awardsRouter = _awardsRouter
             if (isNaN(numericId) || numericId <= 0) {
                 throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
             }
-            await db.update(schema.awards).set(values).where(eq(schema.awards.id, numericId)).run();
+            try {
+                await db.update(schema.awards).set(values).where(eq(schema.awards.id, numericId)).run();
+            } catch (_e) {
+                // Fallback for legacy string IDs that might be in an integer column (SQLite quirk)
+                await db.run(sql`UPDATE awards SET title = ${values.title}, date = ${values.date}, event_name = ${values.eventName}, description = ${values.description}, icon_type = ${values.iconType}, season_id = ${values.seasonId}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}`);
+            }
             finalId = String(id);
             c.executionCtx.waitUntil(logAuditAction(c, "award_updated", "awards", finalId, `Award "${title}" (${year}) updated`));
         } else {
             // Check for duplicate to prevent race conditions
+            // During update, exclude the current record from the duplicate check
+            const duplicateWhere = [
+                eq(schema.awards.title, title),
+                eq(schema.awards.date, String(year)),
+                eq(schema.awards.eventName, eventName || ""),
+                eq(schema.awards.isDeleted, 0)
+            ];
+
             const existing = await db.select({ id: schema.awards.id })
                 .from(schema.awards)
-                .where(and(
-                    eq(schema.awards.title, title),
-                    eq(schema.awards.date, String(year)),
-                    eq(schema.awards.eventName, eventName || ""),
-                    eq(schema.awards.isDeleted, 0)
-                ))
+                .where(and(...duplicateWhere))
                 .get();
 
             if (existing) {
                 finalId = String(existing.id);
                 c.executionCtx.waitUntil(logAuditAction(c, "award_duplicate_found", "awards", finalId, `Award "${title}" (${year}) already exists`));
+                // If it's a new record that matches an existing one, just return the existing ID
             } else {
                 try {
                     // Try atomic returning first

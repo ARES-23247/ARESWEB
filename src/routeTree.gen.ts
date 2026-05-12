@@ -66,6 +66,7 @@ import { Route as DashboardManage_blogRouteImport } from './routes/dashboard/man
 import { Route as DashboardLogisticsRouteImport } from './routes/dashboard/logistics'
 import { Route as DashboardLocationsRouteImport } from './routes/dashboard/locations'
 import { Route as DashboardLegacyRouteImport } from './routes/dashboard/legacy'
+import { Route as DashboardJudge_codesRouteImport } from './routes/dashboard/judge_codes'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardInquiriesRouteImport } from './routes/dashboard/inquiries'
 import { Route as DashboardImpact_rosterRouteImport } from './routes/dashboard/impact_roster'
@@ -376,6 +377,11 @@ const DashboardLegacyRoute = DashboardLegacyRouteImport.update({
   path: '/legacy',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardJudge_codesRoute = DashboardJudge_codesRouteImport.update({
+  id: '/judge_codes',
+  path: '/judge_codes',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -522,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/judge_codes': typeof DashboardJudge_codesRoute
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
@@ -603,6 +610,7 @@ export interface FileRoutesByTo {
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/judge_codes': typeof DashboardJudge_codesRoute
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
@@ -686,6 +694,7 @@ export interface FileRoutesById {
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/judge_codes': typeof DashboardJudge_codesRoute
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
@@ -770,6 +779,7 @@ export interface FileRouteTypes {
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
+    | '/dashboard/judge_codes'
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
@@ -851,6 +861,7 @@ export interface FileRouteTypes {
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
+    | '/dashboard/judge_codes'
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
@@ -933,6 +944,7 @@ export interface FileRouteTypes {
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
+    | '/dashboard/judge_codes'
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
@@ -1428,6 +1440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLegacyRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/judge_codes': {
+      id: '/dashboard/judge_codes'
+      path: '/judge_codes'
+      fullPath: '/dashboard/judge_codes'
+      preLoaderRoute: typeof DashboardJudge_codesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/integrations': {
       id: '/dashboard/integrations'
       path: '/integrations'
@@ -1616,6 +1635,7 @@ interface DashboardRouteChildren {
   DashboardImpact_rosterRoute: typeof DashboardImpact_rosterRoute
   DashboardInquiriesRoute: typeof DashboardInquiriesRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
+  DashboardJudge_codesRoute: typeof DashboardJudge_codesRoute
   DashboardLegacyRoute: typeof DashboardLegacyRoute
   DashboardLocationsRoute: typeof DashboardLocationsRoute
   DashboardLogisticsRoute: typeof DashboardLogisticsRoute
@@ -1661,6 +1681,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardImpact_rosterRoute: DashboardImpact_rosterRoute,
   DashboardInquiriesRoute: DashboardInquiriesRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
+  DashboardJudge_codesRoute: DashboardJudge_codesRoute,
   DashboardLegacyRoute: DashboardLegacyRoute,
   DashboardLocationsRoute: DashboardLocationsRoute,
   DashboardLogisticsRoute: DashboardLogisticsRoute,

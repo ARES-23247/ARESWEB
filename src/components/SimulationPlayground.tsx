@@ -315,8 +315,7 @@ export default function SimulationPlayground() {
       }
     } catch (e) {
       logger.error("[SimPlayground] Gist Share failed:", e);
-      const { toast } = await import("sonner");
-      toast.error("Failed to generate shareable link");
+      toastApiError(e, "Gist Generation Failed");
     } finally {
       _setIsSharingGist(false);
     }

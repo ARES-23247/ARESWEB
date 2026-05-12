@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
+import { toastApiError } from "../api/honoClient";
 import { docSchema } from "@shared/schemas/docSchema";
 
 import { useGetAdminDocDetail, useSaveDoc, useDeleteDoc } from "../api";
@@ -131,8 +132,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
         setErrorMsg("Failed to publish");
       }
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Network error");
+    onError: (err: unknown) => {
+      toastApiError(err, "Document Save Failed");
     }
   });
 
@@ -140,8 +141,8 @@ function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
     onSuccess: () => {
       navigate({ to: "/dashboard/manage_docs" });
     },
-    onError: () => {
-      setErrorMsg("Failed to delete the document.");
+    onError: (err: unknown) => {
+      toastApiError(err, "Document Deletion Failed");
     }
   });
 

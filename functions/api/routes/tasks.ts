@@ -166,7 +166,12 @@ export const tasksRouter = _tasksRouter
             taskData.assignedTo = body.assignedTo;
         }
 
-        await db.insert(schema.tasks).values(taskData as typeof schema.tasks.$inferInsert).run();
+        try {
+          await db.insert(schema.tasks).values(taskData as typeof schema.tasks.$inferInsert).run();
+        } catch (err) {
+          console.error("FAILED_TASK_CREATE:", err);
+          throw new ApiError("TASK_CREATE_FAILED", "Failed to commit task to database.", 500);
+        }
 
         if (body.assignees && body.assignees.length > 0) {
             const assignments = body.assignees.map((userId: string) => ({
@@ -287,10 +292,15 @@ export const tasksRouter = _tasksRouter
         if (body.estimatedMinutes !== undefined) updates.estimatedMinutes = body.estimatedMinutes;
         if (body.coverImage !== undefined) updates.coverImage = body.coverImage;
 
-        await db.update(schema.tasks)
-            .set(updates)
-            .where(eq(schema.tasks.id, params.id))
-            .run();
+        try {
+          await db.update(schema.tasks)
+              .set(updates)
+              .where(eq(schema.tasks.id, params.id))
+              .run();
+        } catch (err) {
+          console.error("FAILED_TASK_UPDATE:", err);
+          throw new ApiError("TASK_UPDATE_FAILED", "Failed to synchronize task updates.", 500);
+        }
 
         // Only admins, mentors/coaches, and the task creator can change assignments
         if (body.assignees !== undefined) {
@@ -370,9 +380,14 @@ export const tasksRouter = _tasksRouter
             throw new ApiError("You are not authorized to delete this task", 403);
         }
 
-        await db.delete(schema.tasks)
-            .where(eq(schema.tasks.id, params.id))
-            .run();
+        try {
+          await db.delete(schema.tasks)
+              .where(eq(schema.tasks.id, params.id))
+              .run();
+        } catch (err) {
+          console.error("FAILED_TASK_DELETE:", err);
+          throw new ApiError("TASK_DELETE_FAILED", "Failed to permanently remove task.", 500);
+        }
 
         await db.insert(schema.auditLog).values({
             id: crypto.randomUUID(),

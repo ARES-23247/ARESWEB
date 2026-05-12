@@ -9,6 +9,7 @@ import { ContactForm } from "./profile/ContactForm";
 import { LogisticsForm } from "./profile/LogisticsForm";
 import { SecuritySettings } from "./profile/SecuritySettings";
 import { ProfileData } from "./profile/types";
+import { toastApiError } from "../api/honoClient";
 import { useGetMe, useUpdateMe, useGetUserProfile, useUpdateUserProfile, type ProfileMe } from "../api";
 
 const DEFAULT_PROFILE: ProfileData = {
@@ -109,9 +110,9 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 			queryClient.invalidateQueries({ queryKey: ["profile"] });
 			queryClient.invalidateQueries({ queryKey: ["admin_users"] });
 		},
-		onError: (err: Error) => {
-			setMessage({ type: "error", text: err.message || "Failed to save profile." });
+		onError: (err: unknown) => {
 			isSavingRef.current = false;
+			toastApiError(err, "Profile update failed");
 		}
 	});
 
@@ -122,9 +123,9 @@ export default function ProfileEditor({ adminEditUserId }: { adminEditUserId?: s
 			queryClient.invalidateQueries({ queryKey: ["profile"] });
 			queryClient.invalidateQueries({ queryKey: ["admin_users"] });
 		},
-		onError: (err: Error) => {
-			setMessage({ type: "error", text: err.message || "Failed to save profile." });
+		onError: (err: unknown) => {
 			isSavingRef.current = false;
+			toastApiError(err, "Profile update failed");
 		}
 	});
 

@@ -74,7 +74,7 @@ export default function SponsorEditor() {
         toastApiError("Sync failed");
       }
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Sponsor sync failed");
     }
   });
@@ -84,7 +84,7 @@ export default function SponsorEditor() {
       toast.success("Partner removed.");
       queryClient.invalidateQueries({ queryKey: ["admin_sponsors"] });
     },
-    onError: (err) => {
+    onError: (err: unknown) => {
       toastApiError(err, "Delete failed");
     }
   });
@@ -113,7 +113,7 @@ export default function SponsorEditor() {
       } else {
         toastApiError(data.error || "Upload failed");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       toastApiError(err, "Failed to upload logo");
     } finally {
       setIsUploading(false);
@@ -197,8 +197,7 @@ export default function SponsorEditor() {
               <form.Field
                 name="name"
                 validators={{
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onChange: (sponsorSchema as any).shape.name,
+                  onChange: sponsorSchema.shape.name,
                 }}
               >
                 {(field) => (
@@ -226,8 +225,7 @@ export default function SponsorEditor() {
                   <form.Field
                     name="logoUrl"
                     validators={{
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      onChange: (sponsorSchema as any).shape.logoUrl,
+                      onChange: sponsorSchema.shape.logoUrl,
                     }}
                   >
                     {(field) => (
@@ -263,8 +261,7 @@ export default function SponsorEditor() {
               <form.Field
                 name="websiteUrl"
                 validators={{
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onChange: (sponsorSchema as any).shape.websiteUrl,
+                  onChange: sponsorSchema.shape.websiteUrl,
                 }}
               >
                 {(field) => (

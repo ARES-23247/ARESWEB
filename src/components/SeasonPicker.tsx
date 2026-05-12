@@ -1,4 +1,4 @@
-import { useGetSeasons } from "../api/seasons";
+import { useGetSeasons, type Season } from "../api/seasons";
 
 interface SeasonPickerProps {
   value?: string | number;
@@ -9,8 +9,7 @@ interface SeasonPickerProps {
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
   const { data: rawSeasons } = useGetSeasons();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const seasons = (rawSeasons?.seasons && Array.isArray(rawSeasons.seasons) ? rawSeasons.seasons : []) as any[];
+  const seasons = (rawSeasons?.seasons && Array.isArray(rawSeasons.seasons) ? rawSeasons.seasons : []) as Season[];
 
   return (
     <div className="w-full">

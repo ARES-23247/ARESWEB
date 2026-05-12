@@ -18,6 +18,7 @@ import { DEFAULT_coverImage } from "../utils/constants";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useGetAdminEventDetail, useSaveEvent, useUpdateEvent, useDeleteEvent, type Event } from "../api";
+import { toastApiError } from "../api/honoClient";
 
 import { type Location } from "../api/locations";
 
@@ -223,8 +224,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         setErrorMsg("Event save failed.");
       }
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Network error.");
+    onError: (err: unknown) => {
+      setErrorMsg((err as Error).message || "Network error.");
+      toastApiError(err, "Communication Fault");
     }
   });
 
@@ -238,8 +240,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
         setErrorMsg((data.error as string) || "Event update failed.");
       }
     },
-    onError: (err: Error) => {
-      setErrorMsg(err.message || "Network error.");
+    onError: (err: unknown) => {
+      setErrorMsg((err as Error).message || "Network error.");
+      toastApiError(err, "Communication Fault");
     }
   });
 
@@ -247,8 +250,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     onSuccess: () => {
       navigate({ to: "/dashboard/manage_event" });
     },
-    onError: () => {
+    onError: (err: unknown) => {
       setErrorMsg("Failed to delete the event.");
+      toastApiError(err, "Deletion Fault");
     }
   });
 
@@ -264,11 +268,9 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
     const finalDescription = editor ? JSON.stringify(editor.getJSON()) : formValue.description;
     const payload = { ...formValue, description: finalDescription, meetingNotes: "", isDraft, updateMode, rrule: finalRrule };
     if (editId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateMutation.mutate({ id: editId, body: payload as any });
+      updateMutation.mutate({ id: editId, body: payload });
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      saveMutation.mutate(payload as any);
+      saveMutation.mutate(payload);
     }
   };
 
@@ -302,7 +304,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
       setUploadError("");
       const { url } = await uploadFile(file);
       form.setFieldValue("coverImage", url);
-    } catch(err) {
+    } catch(err: unknown) {
       setErrorMsg(String(err));
     }
   };
@@ -365,10 +367,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   placeholder="State Championship"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as any}</p>
-                  </>
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{String(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -471,10 +470,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                   className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/60 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all shadow-inner [&::-webkit-calendar-picker-indicator]:invert"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <p className="text-[10px] font-black uppercase text-ares-red mt-1">{field.state.meta.errors[0] as any}</p>
-                  </>
+                  <p className="text-[10px] font-black uppercase text-ares-red mt-1">{String(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -652,8 +648,7 @@ function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: st
                 <SocialSyndicationGrid
                   availableSocials={availableSocials}
                   socials={socials as Record<string, boolean>}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as any, val)}
+                  onChange={(platform, val) => form.setFieldValue(`socials.${platform}` as never, val)}
                   isEdit={!!editId}
                 />
               )}

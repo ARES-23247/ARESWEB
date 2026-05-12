@@ -1,11 +1,5 @@
-/**
- * Judges API - Login, Portfolio Access
- *
- * Types imported from backend route definitions in @shared/routes/judges.ts
- */
-
-import { useQuery, useMutation, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
-import { client, unwrapResponse } from "./honoClient";
+import { useQuery, useMutation, type UseQueryOptions, type UseMutationOptions, useQueryClient } from "@tanstack/react-query";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 
 export interface JudgeLoginResponse {
   success: boolean;
@@ -57,6 +51,17 @@ export interface JudgePortfolioResponse {
   sponsors: SponsorItem[];
 }
 
+export interface JudgeCode {
+  id: string;
+  code: string;
+  label: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+export interface ListJudgeCodesResponse {
+  codes: JudgeCode[];
+}
 
 /**
  * POST /api/judges/login - Verify judge access code
@@ -94,6 +99,66 @@ export function useGetJudgePortfolio(
     },
     enabled: !!code,
     ...options,
+  });
+}
+
+// ============================================
+// Admin Judges
+// ============================================
+
+/**
+ * GET /api/judges/admin/codes - List all judge access codes
+ */
+export function useGetJudgeCodes(
+  options?: Omit<UseQueryOptions<ListJudgeCodesResponse>, "queryKey" | "queryFn">
+) {
+  return useQuery<ListJudgeCodesResponse>({
+    queryKey: ["judge_codes"],
+    queryFn: async () => {
+      const response = await client.judges.admin.codes.$get();
+      return unwrapResponse<ListJudgeCodesResponse>(response);
+    },
+    ...options,
+  });
+}
+
+/**
+ * POST /api/judges/admin/codes - Create judge access code
+ */
+export function useCreateJudgeCode(
+  options?: Omit<UseMutationOptions<{ success: boolean; code: string; id: string }, Error, { label?: string; expiresAt?: string }>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean; code: string; id: string }, Error, { label?: string; expiresAt?: string }>({
+    mutationFn: async (data) => {
+      const response = await client.judges.admin.codes.$post({ json: data });
+      return unwrapResponse<{ success: boolean; code: string; id: string }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["judge_codes"] });
+      }
+    })
+  });
+}
+
+/**
+ * DELETE /api/judges/admin/codes/:id - Delete judge access code
+ */
+export function useDeleteJudgeCode(
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
+) {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean }, Error, string>({
+    mutationFn: async (id) => {
+      const response = await client.judges.admin.codes[":id"].$delete({ param: { id } });
+      return unwrapResponse<{ success: boolean }>(response);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (qc) => {
+        qc.invalidateQueries({ queryKey: ["judge_codes"] });
+      }
+    })
   });
 }
 
