@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Images, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useGetGalleries, useUpdateGallery, useCreateGallery } from "../api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
 
