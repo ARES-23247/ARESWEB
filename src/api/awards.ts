@@ -97,10 +97,11 @@ export function useDeleteAward(
       // Return a context object with the snapshotted value
       return { previousAwards };
     },
-    onError: (err, id, context: { previousAwards?: { awards: Award[] } } | undefined) => {
+    onError: (err, id, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousAwards) {
-        queryClient.setQueryData(["awards"], context.previousAwards);
+      const ctx = context as { previousAwards?: { awards: Award[] } } | undefined;
+      if (ctx?.previousAwards) {
+        queryClient.setQueryData(["awards"], ctx.previousAwards);
       }
       toastApiError(err, "Delete failed");
     },
