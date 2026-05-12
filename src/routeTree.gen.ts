@@ -57,7 +57,6 @@ import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile
 import { Route as DashboardPerformanceRouteImport } from './routes/dashboard/performance'
 import { Route as DashboardOutreachRouteImport } from './routes/dashboard/outreach'
 import { Route as DashboardMass_emailRouteImport } from './routes/dashboard/mass_email'
-import { Route as DashboardManage_videosRouteImport } from './routes/dashboard/manage_videos'
 import { Route as DashboardManage_seasonsRouteImport } from './routes/dashboard/manage_seasons'
 import { Route as DashboardManage_galleriesRouteImport } from './routes/dashboard/manage_galleries'
 import { Route as DashboardManage_eventRouteImport } from './routes/dashboard/manage_event'
@@ -331,11 +330,6 @@ const DashboardMass_emailRoute = DashboardMass_emailRouteImport.update({
   path: '/mass_email',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardManage_videosRoute = DashboardManage_videosRouteImport.update({
-  id: '/manage_videos',
-  path: '/manage_videos',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardManage_seasonsRoute = DashboardManage_seasonsRouteImport.update({
   id: '/manage_seasons',
   path: '/manage_seasons',
@@ -537,7 +531,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
   '/dashboard/manage_galleries': typeof DashboardManage_galleriesRouteWithChildren
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
-  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -619,7 +612,6 @@ export interface FileRoutesByTo {
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
   '/dashboard/manage_galleries': typeof DashboardManage_galleriesRouteWithChildren
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
-  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -703,7 +695,6 @@ export interface FileRoutesById {
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
   '/dashboard/manage_galleries': typeof DashboardManage_galleriesRouteWithChildren
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
-  '/dashboard/manage_videos': typeof DashboardManage_videosRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/performance': typeof DashboardPerformanceRoute
@@ -788,7 +779,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_event'
     | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
-    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -870,7 +860,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_event'
     | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
-    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -953,7 +942,6 @@ export interface FileRouteTypes {
     | '/dashboard/manage_event'
     | '/dashboard/manage_galleries'
     | '/dashboard/manage_seasons'
-    | '/dashboard/manage_videos'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
     | '/dashboard/performance'
@@ -1377,13 +1365,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMass_emailRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/manage_videos': {
-      id: '/dashboard/manage_videos'
-      path: '/manage_videos'
-      fullPath: '/dashboard/manage_videos'
-      preLoaderRoute: typeof DashboardManage_videosRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/manage_seasons': {
       id: '/dashboard/manage_seasons'
       path: '/manage_seasons'
@@ -1644,7 +1625,6 @@ interface DashboardRouteChildren {
   DashboardManage_eventRoute: typeof DashboardManage_eventRoute
   DashboardManage_galleriesRoute: typeof DashboardManage_galleriesRouteWithChildren
   DashboardManage_seasonsRoute: typeof DashboardManage_seasonsRoute
-  DashboardManage_videosRoute: typeof DashboardManage_videosRoute
   DashboardMass_emailRoute: typeof DashboardMass_emailRoute
   DashboardOutreachRoute: typeof DashboardOutreachRoute
   DashboardPerformanceRoute: typeof DashboardPerformanceRoute
@@ -1690,7 +1670,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardManage_eventRoute: DashboardManage_eventRoute,
   DashboardManage_galleriesRoute: DashboardManage_galleriesRouteWithChildren,
   DashboardManage_seasonsRoute: DashboardManage_seasonsRoute,
-  DashboardManage_videosRoute: DashboardManage_videosRoute,
   DashboardMass_emailRoute: DashboardMass_emailRoute,
   DashboardOutreachRoute: DashboardOutreachRoute,
   DashboardPerformanceRoute: DashboardPerformanceRoute,

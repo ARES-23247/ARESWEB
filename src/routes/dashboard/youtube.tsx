@@ -1,95 +1,254 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useRef } from 'react';
-import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeVideos, useGetYoutubeResumableUrlMutation, useUpdateYoutubeVideoMutation } from '../../api/youtube';
-import { Upload, Video, AlertCircle, Settings, X, Pencil, Play } from 'lucide-react';
+import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeResumableUrlMutation } from '../../api/youtube';
+import { useGetVideos, useDeleteVideo, useSyncYoutubeVideosMutation } from '../../api';
+import { Upload, Video, AlertCircle, Settings, X, Pencil, Play, Plus, ExternalLink, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { toastApiError } from '../../api/honoClient';
-// import { motion, AnimatePresence } from 'framer-motion';
-import * as Dialog from "@radix-ui/react-dialog";
-import { formatDistanceToNow } from 'date-fns';
-import { ApiError } from '../../api/honoClient';
+import { toastApiError, ApiError } from '../../api/honoClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { useModal } from '../../contexts/ModalContext';
+import VideoPickerModal from '../../components/VideoPickerModal';
 
 export const Route = createFileRoute('/dashboard/youtube')({
-  component: YoutubeDashboard,
+  component: VideoHub,
 });
 
-function YoutubeDashboard() {
+function VideoHub() {
+  const modal = useModal();
+  const queryClient = useQueryClient();
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [editVideoId, setEditVideoId] = useState<string | undefined>(undefined);
+
   const { data: authStatus, isLoading: isStatusLoading } = useGetYoutubeAuthStatus();
-  const { data: authUrl, isLoading: isUrlLoading, error: authError } = useGetYoutubeAuthUrl();
+  const { data: videosResponse, isLoading: isVideosLoading } = useGetVideos();
 
-  if (isStatusLoading) {
-    return (
-      <div className="flex-1 w-full flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const deleteMutation = useDeleteVideo({
+    onSuccess: () => toast.success("Video deleted successfully"),
+    onError: (err) => toastApiError(err, "Failed to delete video"),
+  });
 
-  if (!authStatus?.isAuthenticated) {
-    return (
-      <div className="flex-1 w-full flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 bg-ares-red/20 rounded-full flex items-center justify-center mb-6">
-          <Video className="text-ares-red" size={32} />
-        </div>
-        <h2 className="text-2xl font-black text-white mb-2">Connect YouTube Channel</h2>
-        <p className="text-marble/80 max-w-md mb-8">
-          To upload videos directly to YouTube from ARESWEB and bypass Cloudflare limits, you must authorize the dashboard with the team&apos;s YouTube account.
-        </p>
-        
-        {authError ? (
-          <div className="mb-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded flex items-start gap-3 text-left max-w-md">
-            <AlertCircle className="text-ares-red shrink-0 mt-0.5" size={18} />
-            <div>
-              <p className="text-ares-red font-bold text-sm">Authorization Error</p>
-              <p className="text-marble/70 text-xs mt-1">
-                {authError instanceof ApiError ? authError.message : (authError instanceof Error ? authError.message : "Failed to fetch authorization URL. Check if YouTube API keys are configured.")}
-              </p>
-            </div>
-          </div>
-        ) : null}
+  const syncYoutubeMutation = useSyncYoutubeVideosMutation();
 
-        <button
-          onClick={() => {
-            if (authUrl?.url) {
-              window.location.href = authUrl.url;
-            } else {
-              toastApiError("Authorization URL not available. Please check YouTube API configuration.");
-            }
-          }}
-          disabled={isUrlLoading}
-          className={`px-6 py-3 bg-ares-red text-white font-bold uppercase tracking-widest ares-cut hover:bg-ares-bronze transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          {isUrlLoading ? (
-            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-          ) : (
-            <Settings size={18} />
-          )}
-          {isUrlLoading ? "Loading..." : "Authorize via Google"}
-        </button>
-      </div>
-    );
-  }
+  const handleSyncYoutube = async () => {
+    try {
+      const result = await syncYoutubeMutation.mutateAsync();
+      if (result.added > 0) {
+        toast.success(`Synced ${result.added} new videos from YouTube!`);
+      } else {
+        toast.info("No new videos found on YouTube.");
+      }
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+    } catch (error) {
+      toastApiError(error, "Failed to sync videos from YouTube.");
+    }
+  };
+
+  const videos = (videosResponse as unknown as { videos: Array<{ id: string; title: string; description: string | null; platform: string; videoId: string; thumbnailUrl: string | null; embedUrl: string }> })?.videos ?? [];
+
+  const handleDelete = async (id: string, title: string) => {
+    const confirmed = await modal.confirm({
+      title: "Delete Video",
+      description: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    deleteMutation.mutate(id);
+  };
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-0">
+      {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tighter">YouTube Dashboard</h2>
-          <p className="text-marble/60 text-sm mt-1">Upload and manage direct-to-YouTube videos.</p>
+          <h2 className="text-2xl font-bold text-white tracking-tighter">Video Hub</h2>
+          <p className="text-marble/60 text-sm mt-1">Upload, sync, and manage all team videos in one place.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSyncYoutube}
+            disabled={syncYoutubeMutation.isPending}
+            className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan font-black uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 border border-ares-cyan/30 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+          >
+            <RefreshCw size={14} className={syncYoutubeMutation.isPending ? "animate-spin" : ""} />
+            {syncYoutubeMutation.isPending ? "Syncing..." : "Sync YouTube"}
+          </button>
+          <button
+            onClick={() => setIsPickerOpen(true)}
+            className="px-4 py-2 bg-ares-red hover:bg-ares-red/80 text-white font-black uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 text-xs"
+          >
+            <Plus size={14} />
+            Add Video
+          </button>
         </div>
       </div>
 
+      {/* Main Layout: Uploader (left) + Video Library (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+        {/* Left Panel: YouTube Direct Upload */}
         <div className="lg:col-span-1">
-          <YouTubeUploader memberType={authStatus?.memberType} />
+          {isStatusLoading ? (
+            <div className="bg-obsidian border border-white/10 ares-cut-sm p-5 h-full flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin" />
+            </div>
+          ) : !authStatus?.isAuthenticated ? (
+            <YouTubeConnectPanel />
+          ) : (
+            <YouTubeUploader memberType={authStatus.memberType} />
+          )}
         </div>
+
+        {/* Right Panel: Video Library */}
         <div className="lg:col-span-2 overflow-y-auto pr-2 pb-6">
-          <YouTubeVideoList memberType={authStatus?.memberType} />
+          {isVideosLoading ? (
+            <div className="w-full h-64 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin" />
+            </div>
+          ) : videos.length === 0 ? (
+            <div className="w-full h-64 flex flex-col items-center justify-center text-white/20 gap-4 border border-white/10 ares-cut-sm">
+              <Play size={48} className="opacity-50" />
+              <p className="font-mono text-sm">No videos yet.</p>
+              <button
+                onClick={() => setIsPickerOpen(true)}
+                className="px-4 py-2 bg-ares-red/20 hover:bg-ares-red/30 text-ares-danger-soft ares-cut-sm text-sm font-bold transition-all border border-ares-red/30"
+              >
+                Add your first video
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {videos.map((video) => (
+                <div
+                  key={video.id}
+                  className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
+                >
+                  {video.thumbnailUrl ? (
+                    <div className="w-full h-40 bg-black/20 flex items-center justify-center">
+                      <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 bg-ares-red/10 flex items-center justify-center">
+                      <span className={`text-4xl ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>▶</span>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] uppercase font-bold tracking-wider ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>
+                        {video.platform}
+                      </span>
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-1">{video.title}</h3>
+                    {video.description && (
+                      <p className="text-white/60 text-sm mb-3 line-clamp-2">{video.description}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <a
+                        href={
+                          video.platform === 'youtube'
+                            ? `https://www.youtube.com/watch?v=${video.videoId}`
+                            : video.embedUrl.startsWith('http') ? video.embedUrl : `https://${video.embedUrl}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-ares-cyan hover:text-white transition-colors flex items-center gap-1"
+                      >
+                        <ExternalLink size={12} />
+                        Watch video
+                      </a>
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          onClick={() => {
+                            setEditVideoId(video.id);
+                            setIsPickerOpen(true);
+                          }}
+                          className="p-2 text-white/60 hover:text-ares-red transition-colors"
+                          title="Edit video"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(video.id, video.title)}
+                          className="p-2 text-white/60 hover:text-ares-red transition-colors"
+                          title="Delete video"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      <VideoPickerModal
+        isOpen={isPickerOpen}
+        onClose={() => {
+          setIsPickerOpen(false);
+          setEditVideoId(undefined);
+        }}
+        onVideoSelected={(_videoId, _title, _platform, _id) => {
+          setIsPickerOpen(false);
+          setEditVideoId(undefined);
+          queryClient.invalidateQueries({ queryKey: ["videos"] });
+        }}
+        editVideoId={editVideoId}
+      />
     </div>
   );
 }
+
+// ─── YouTube Connect Panel ─────────────────────────────────────────────────────
+
+function YouTubeConnectPanel() {
+  const { data: authUrl, isLoading: isUrlLoading, error: authError } = useGetYoutubeAuthUrl();
+
+  return (
+    <div className="bg-obsidian border border-white/10 ares-cut-sm p-5 h-full flex flex-col items-center justify-center text-center gap-4">
+      <div className="w-14 h-14 bg-ares-red/20 rounded-full flex items-center justify-center">
+        <Video className="text-ares-red" size={24} />
+      </div>
+      <div>
+        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-1">Connect YouTube</h3>
+        <p className="text-marble/60 text-xs max-w-[240px]">
+          Authorize the dashboard with your YouTube account to upload videos directly.
+        </p>
+      </div>
+
+      {authError ? (
+        <div className="p-3 bg-ares-red/10 border border-ares-red/30 flex items-start gap-2 text-left w-full">
+          <AlertCircle className="text-ares-red shrink-0 mt-0.5" size={14} />
+          <p className="text-ares-red text-xs">
+            {authError instanceof ApiError ? authError.message : (authError instanceof Error ? authError.message : "Failed to fetch authorization URL.")}
+          </p>
+        </div>
+      ) : null}
+
+      <button
+        onClick={() => {
+          if (authUrl?.url) {
+            window.location.href = authUrl.url;
+          } else {
+            toastApiError("Authorization URL not available.");
+          }
+        }}
+        disabled={isUrlLoading}
+        className="px-5 py-2.5 bg-ares-red text-white font-bold uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+      >
+        {isUrlLoading ? (
+          <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        ) : (
+          <Settings size={14} />
+        )}
+        {isUrlLoading ? "Loading..." : "Authorize via Google"}
+      </button>
+    </div>
+  );
+}
+
+// ─── YouTube Direct Uploader ───────────────────────────────────────────────────
 
 function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "coach" }) {
   const [file, setFile] = useState<File | null>(null);
@@ -98,7 +257,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('private');
 
   const canSetPublic = memberType === "coach" || memberType === "mentor";
-  
+
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -110,7 +269,6 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
       if (!title) {
-        // Strip extension for default title
         setTitle(e.target.files[0].name.replace(/\.[^/.]+$/, ""));
       }
     }
@@ -128,7 +286,6 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
     setUploadError('');
 
     try {
-      // 1. Get the resumable upload URL from our backend
       const { uploadUrl } = await resumableMutation.mutateAsync({
         title: title.trim(),
         description: description.trim(),
@@ -137,16 +294,12 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         mimeType: file.type || 'application/octet-stream',
       });
 
-      // 2. Perform the direct upload via fetch
-      // Note: We use fetch here instead of XHR to see if it bypasses the browser block.
-      // Standard fetch doesn't support upload progress easily, so we'll have to rely on the promise resolution.
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': file.type || 'application/octet-stream',
         },
         body: file,
-        // We omit credentials because the resumable URL itself is the token/session identifier
         credentials: 'omit',
         mode: 'cors',
       });
@@ -164,14 +317,13 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
       }
 
       toast.success('Video uploaded successfully!');
-      
-      // Reset form
+
       setFile(null);
       setTitle('');
       setDescription('');
       setPrivacyStatus('private');
       if (fileInputRef.current) fileInputRef.current.value = '';
-      
+
     } catch (err: unknown) {
       console.error(err);
       let message = 'Upload failed';
@@ -194,7 +346,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
   return (
     <div className="bg-obsidian border border-white/10 ares-cut-sm p-5 h-full flex flex-col">
       <h3 className="text-ares-red font-black uppercase tracking-widest text-sm mb-4">Direct Upload</h3>
-      
+
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto px-1 pb-1">
         <div>
           <span className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Video File</span>
@@ -285,7 +437,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
               <span>{progress}%</span>
             </div>
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-ares-cyan transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
@@ -302,183 +454,5 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         )}
       </div>
     </div>
-  );
-}
-
-function YouTubeVideoList({ memberType }: { memberType?: "student" | "mentor" | "coach" }) {
-  const { data: response, isLoading } = useGetYoutubeVideos();
-  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
-
-  const canSetPublic = memberType === "coach" || memberType === "mentor";
-
-  if (isLoading) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  const videos = response?.videos || [];
-
-  if (videos.length === 0) {
-    return (
-      <div className="w-full h-64 flex flex-col items-center justify-center text-white/20 gap-4 border border-white/10 ares-cut-sm">
-        <Video size={48} className="opacity-50" />
-        <p className="font-mono text-sm">No videos found on the channel.</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {videos.map((video) => (
-          <div key={video.id} className="bg-obsidian border border-white/10 ares-cut-sm flex flex-col group hover:border-ares-red/30 transition-colors">
-            <div className="relative pt-[56.25%] bg-black w-full overflow-hidden">
-              {video.thumbnailUrl ? (
-                <img src={video.thumbnailUrl} alt={video.title} className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Play className="text-white/20" size={32} />
-                </div>
-              )}
-              <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/80 backdrop-blur-sm text-[10px] font-black uppercase tracking-widest text-white ares-cut-sm">
-                {video.privacyStatus}
-              </div>
-            </div>
-            
-            <div className="p-4 flex-1 flex flex-col min-h-0">
-              <h4 className="text-white font-bold text-sm line-clamp-2 mb-1" title={video.title}>{video.title}</h4>
-              <p className="text-xs text-marble/50 mb-3">{formatDistanceToNow(new Date(video.publishedAt), { addSuffix: true })}</p>
-              
-              <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
-                <a 
-                  href={`https://youtube.com/watch?v=${video.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-ares-cyan hover:text-white flex items-center gap-1 font-bold uppercase tracking-wider"
-                >
-                  <Play size={12} /> Watch
-                </a>
-                
-                <button
-                  onClick={() => setEditingVideoId(video.id)}
-                  className="p-1.5 text-white/50 hover:text-ares-red hover:bg-ares-red/10 transition-colors ares-cut-sm"
-                  title="Edit metadata"
-                >
-                  <Pencil size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {editingVideoId && (
-        <EditVideoModal
-          video={videos.find(v => v.id === editingVideoId)!}
-          onClose={() => setEditingVideoId(null)}
-          canSetPublic={canSetPublic}
-        />
-      )}
-    </>
-  );
-}
-
-function EditVideoModal({ video, onClose, canSetPublic }: { video: { id: string; title: string; description?: string; privacyStatus: "public" | "unlisted" | "private" }, onClose: () => void, canSetPublic: boolean }) {
-  const [title, setTitle] = useState(video.title);
-  const [description, setDescription] = useState(video.description || '');
-  const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">(video.privacyStatus);
-  
-  const updateMutation = useUpdateYoutubeVideoMutation();
-
-  const handleSave = async () => {
-    try {
-      await updateMutation.mutateAsync({
-        id: video.id,
-        title: title.trim() || undefined,
-        description: description.trim() || undefined,
-        privacyStatus
-      });
-      toast.success('Metadata updated successfully');
-      onClose();
-    } catch (err: unknown) {
-      toastApiError(err, 'Failed to update metadata');
-    }
-  };
-
-  return (
-    <Dialog.Root open={true} onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]" />
-        <Dialog.Content className="fixed left-[50%] top-[50%] z-[9998] translate-x-[-50%] translate-y-[-50%] bg-obsidian border border-white/10 shadow-2xl ares-cut-lg w-[calc(100%-2rem)] max-w-md flex flex-col focus:outline-none">
-          <div className="flex items-center justify-between p-5 border-b border-white/10 bg-black/40">
-            <Dialog.Title className="text-lg font-black text-white tracking-widest uppercase m-0">
-              Edit YouTube Video
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-white rounded-full transition-colors">
-                <X size={16} />
-              </button>
-            </Dialog.Close>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div>
-              <label htmlFor="edit-title" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Title</label>
-              <input
-                id="edit-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="edit-description" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Description</label>
-              <textarea
-                id="edit-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={5}
-                className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm resize-none"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="edit-privacy" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">Privacy Status</label>
-              <select
-                id="edit-privacy"
-                value={privacyStatus}
-                onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
-                className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
-              >
-                {canSetPublic && <option value="public">Public</option>}
-                <option value="unlisted">Unlisted (Hidden)</option>
-                <option value="private">Private</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="p-5 border-t border-white/10 flex items-center justify-end gap-3 bg-black/20">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={updateMutation.isPending}
-              className="px-6 py-2 bg-ares-red hover:bg-ares-red/90 text-white font-black uppercase tracking-widest ares-cut-sm transition-colors disabled:opacity-50"
-            >
-              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }

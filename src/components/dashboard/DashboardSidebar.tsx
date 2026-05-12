@@ -262,8 +262,7 @@ export default function DashboardSidebar({
                 <div className="h-px bg-white/5 my-3 mx-4" />
                 <NavButton tab="assets" icon={Image} label="Media Gallery" currentPath={location.pathname} />
                 <NavButton tab="manage_galleries" icon={Image} label="Photo Galleries" sub={true} currentPath={location.pathname} />
-                <NavButton tab="manage_videos" icon={Play} label="Video Library" sub={true} currentPath={location.pathname} />
-                <NavButton tab="youtube" icon={Play} label="YouTube Uploads" sub={true} currentPath={location.pathname} />
+                <NavButton tab="youtube" icon={Play} label="Video Hub" sub={true} currentPath={location.pathname} />
                 <NavButton tab="legacy" icon={Trophy} label="Trophy Case Archive" currentPath={location.pathname} />
               </div>
             </div>

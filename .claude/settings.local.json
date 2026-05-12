@@ -46,7 +46,11 @@
       "Bash(awk '/\\\\.ts$/{file=$0} /error.*any/ && file !~ /test\\\\.ts$/ && file !~ /auth\\\\.test\\\\.ts$/ && file !~ /errorHandler\\\\.ts$/ && file !~ /events\\\\/index\\\\.ts$/{print file \":\" $0}')",
       "Bash(set NODE_OPTIONS=--max-old-space-size=8192)",
       "Bash(npx drizzle-kit *)",
-      "Bash(export NODE_OPTIONS=\"--max-old-space-size=8192\")"
+      "Bash(export NODE_OPTIONS=\"--max-old-space-size=8192\")",
+      "Bash(curl -s -w \"\\\\nHTTP Status: %{http_code}\\\\n\" \"https://aresfirst.org/api/analytics/performance/summary\")",
+      "Bash(curl -s \"https://aresfirst.org/api/analytics/performance/summary\")",
+      "Bash(curl -s -X POST https://aresfirst.org/api/galleries/admin -H 'Content-Type: application/json' -d '{\"title\":\"Test Gallery\",\"description\":\"\",\"googlePhotosUrl\":\"\",\"heroImageKey\":\"\"}' -w '\\\\nHTTP Status: %{http_code}\\\\n')",
+      "Bash(curl -s \"https://aresfirst.org/api/galleries\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
