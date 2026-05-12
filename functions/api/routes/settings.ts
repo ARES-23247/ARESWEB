@@ -1,5 +1,5 @@
 import { ApiError } from "../middleware/errorHandler";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { eq, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -141,10 +141,9 @@ const SCHEMA_MAP: Record<string, unknown> = {
 };
 
 // WR-16: Add rate limiting to backup endpoint to prevent DoS
+settingsRouter.use("/admin/backup", rateLimitMiddleware(5, 300));
+
 export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async (c) => {
-    const rl = rateLimitMiddleware(5, 300);
-    const res = await rl(c as any, async () => { });
-    if (res instanceof Response) return res as any;
     const db = getDb(c);
     const SAFE_TABLES = [
         "posts", "events", "docs", "docs_history", "docs_feedback",
@@ -184,6 +183,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
                 }
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             query = db.select(selectObj as any).from(tableSchema as never);
         } else {
             query = db.select().from(tableSchema as never);
@@ -193,6 +193,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
             return {
                 tableName,
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data: ((data as any[]) || []).map((r: any) => {
                     return { ...r, name: r.name ? String(r.name).substring(0, 1) + "***" : "***", email: "***@***.***" };
                 }),

@@ -97,6 +97,13 @@ type DocSearchCacheEntry = {
 const docSearchCache = new Map<string, DocSearchCacheEntry>();
 
 function setCache(key: string, value: DocSearchCacheEntry) {
+    // EFF-F03: Probabilistic TTL sweep (~5% of writes) to evict stale entries
+    if (Math.random() < 0.05) {
+        const now = Date.now();
+        for (const [k, v] of docSearchCache) {
+            if (v.expiresAt <= now) docSearchCache.delete(k);
+        }
+    }
     if (docSearchCache.size >= MAX_CACHE_SIZE) {
         const firstKey = docSearchCache.keys().next().value;
         if (firstKey !== undefined) docSearchCache.delete(firstKey);
@@ -565,7 +572,7 @@ export const docsRouter = _docsRouter
         }
 
         if (user?.role !== "admin" && existing) {
-            const revSlug = `${slug}-rev-${Math.random().toString(36).substring(2, 6)}`;
+            const revSlug = `${slug}-rev-${crypto.randomUUID().substring(0, 8)}`;
             await db.insert(schema.docs)
                 .values({
                     slug: revSlug,

@@ -221,8 +221,9 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
     if (c.env.DEV_BYPASS === "true" || c.env.DEV_BYPASS === "1") {
       return await next();
     }
-    // Bypass rate limiting for E2E test endpoint
-    if (c.req.path === "/api/auth/test-login" || c.req.header("x-test-bypass-auth") === "true") {
+    // Bypass rate limiting for E2E test endpoint (ONLY in test environments)
+    const isTestEnv = c.env.ENVIRONMENT === "test" || c.env.CI === "true";
+    if (isTestEnv && (c.req.path === "/api/auth/test-login" || c.req.header("x-test-bypass-auth") === "true")) {
       return await next();
     }
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
@@ -268,8 +269,9 @@ export const originIntegrityMiddleware = () => {
       return await next();
     }
 
-    // 2.5. Skip for test-login endpoint (E2E testing)
-    if (c.req.path === "/api/auth/test-login" || c.req.header("x-test-bypass-auth") === "true") {
+    // 2.5. Skip for test-login endpoint (ONLY in test environments)
+    const isTestEnvOrigin = c.env.ENVIRONMENT === "test" || c.env.CI === "true";
+    if (isTestEnvOrigin && (c.req.path === "/api/auth/test-login" || c.req.header("x-test-bypass-auth") === "true")) {
       return await next();
     }
 

@@ -27,6 +27,21 @@ function getGitHubConfig(c: { env: AppEnv["Bindings"] }) {
     return { owner, repo, branch, apiBase: `https://api.github.com/repos/${owner}/${repo}` };
 }
 
+/** Fetch GitHub PAT from DB settings with env fallback (shared helper) */
+async function getGitHubPat(c: { env: AppEnv["Bindings"] }): Promise<string | undefined> {
+    try {
+        const db = getDb(c as Parameters<typeof getDb>[0]);
+        const rows = await db
+            .select({ key: schema.settings.key, value: schema.settings.value })
+            .from(schema.settings)
+            .all();
+        const patSetting = rows.find((s: SettingsRow) => s.key === "GITHUB_PAT");
+        return patSetting?.value || c.env.GITHUB_PAT;
+    } catch {
+        return c.env.GITHUB_PAT;
+    }
+}
+
 // SECURITY: Enforce limits to prevent DoS via large payloads
 const _MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2MB total
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
@@ -56,10 +71,7 @@ async function canModifySimulation(
     try {
         const db = c.db;
         const ghConfig = getGitHubConfig(c);
-        const config = await db.select().from(schema.settings).all();
-
-        const patSetting = config.find((s) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
         if (!pat) return false;
 
         const headers: Record<string, string> = {
@@ -91,16 +103,7 @@ async function canModifySimulation(
 export const simulationsRouter = _simulationsRouter
     .openapi(listSimulationsRoute, async (c) => {
         const ghConfig = getGitHubConfig(c);
-        let pat = c.env.GITHUB_PAT;
-
-        try {
-            const db = getDb(c);
-            const config = await db.select().from(schema.settings).all();
-            const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-            if (patSetting?.value) pat = patSetting.value;
-        } catch (e) {
-            console.warn("[Simulations] DB Settings fetch failed:", e);
-        }
+        const pat = await getGitHubPat(c);
 
         const headers: Record<string, string> = {
             "User-Agent": "ARES-Cloudflare-Worker",
@@ -142,9 +145,7 @@ export const simulationsRouter = _simulationsRouter
 
         const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
-        const config = await db.select().from(schema.settings).all();
-        const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
         const headers: Record<string, string> = {
             "User-Agent": "ARES-Cloudflare-Worker",
             "Accept": "application/vnd.github.v3.raw"
@@ -183,9 +184,7 @@ export const simulationsRouter = _simulationsRouter
 
         const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
-        const config = await db.select().from(schema.settings).all();
-        const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
 
         if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
@@ -236,9 +235,7 @@ export const simulationsRouter = _simulationsRouter
 
         const db = getDb(c);
         const ghConfig = getGitHubConfig(c);
-        const config = await db.select().from(schema.settings).all();
-        const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
 
         if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
@@ -276,9 +273,7 @@ export const simulationsRouter = _simulationsRouter
     .openapi(createGistRoute, async (c) => {
         const { name, files } = c.req.valid("json");
         const db = getDb(c);
-        const config = await db.select().from(schema.settings).all();
-        const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
 
         if (!pat) throw new ApiError("GitHub PAT not configured", 500);
 
@@ -312,9 +307,7 @@ export const simulationsRouter = _simulationsRouter
     .openapi(getGistRoute, async (c) => {
         const { id } = c.req.valid("param");
         const db = getDb(c);
-        const config = await db.select().from(schema.settings).all();
-        const patSetting = config.find((s: SettingsRow) => s.key === "GITHUB_PAT");
-        const pat = patSetting?.value || c.env.GITHUB_PAT;
+        const pat = await getGitHubPat(c);
 
         const headers: Record<string, string> = {
             "User-Agent": "ARES-Cloudflare-Worker",

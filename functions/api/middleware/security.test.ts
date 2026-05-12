@@ -499,6 +499,50 @@ describe('security middleware', () => {
 
       expect(next).toHaveBeenCalled();
     });
+
+    // TST-F02: Verify x-test-bypass-auth header is rejected in production
+    it('does NOT bypass origin integrity when x-test-bypass-auth is set in production', async () => {
+      mockContext.env.ENVIRONMENT = 'production';
+      mockContext.env.DEV_BYPASS = 'false';
+      (mockContext.req as unknown as { header: unknown }).header = vi.fn((name: string) => {
+        const headers: Record<string, string> = {
+          'x-test-bypass-auth': 'true',
+          'user-agent': 'attacker-bot',
+        };
+        return headers[name.toLowerCase()] || null;
+      });
+
+      const middleware = originIntegrityMiddleware();
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      // Should NOT have called next — the header alone must not bypass in production
+      expect(mockContext.json).toHaveBeenCalledWith(
+        { error: 'Security check failed: Origin integrity required.' },
+        403
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('allows x-test-bypass-auth header in test environment', async () => {
+      mockContext.env.ENVIRONMENT = 'test';
+      mockContext.env.DEV_BYPASS = 'false';
+      (mockContext.req as unknown as { header: unknown }).header = vi.fn((name: string) => {
+        const headers: Record<string, string> = {
+          'x-test-bypass-auth': 'true',
+          'user-agent': 'test-runner',
+        };
+        return headers[name.toLowerCase()] || null;
+      });
+
+      const middleware = originIntegrityMiddleware();
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      expect(next).toHaveBeenCalled();
+    });
   });
 
   describe('turnstileMiddleware', () => {

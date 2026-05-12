@@ -60,11 +60,17 @@ eventsRouter.use("/:id/signups", ensureAuth);
  * The handlers return { status, body } from ApiResponse<T>, which needs to be
  * converted to Hono's Response type.
  */
+/**
+ * Helper to properly type handler responses.
+ * The handlers return { status, body } from ApiResponse<T>, which needs to be
+ * converted to Hono's c.json() type.
+ */
 function handlerResponse(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  result: any
+  result: { status: number; body: unknown }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
+  // REF-F01: Use proper Response constructor with explicit Content-Type
   return new Response(JSON.stringify(result.body), {
     status: result.status,
     headers: { "Content-Type": "application/json" },
@@ -177,14 +183,14 @@ export const finalEventsRouter = eventsRouter.openapi(getEventsRoute, async (c) 
 })
 
 // ─── Event Version History ──────────────────────────────────────────────
-// NOTE: Event history feature not yet implemented - requires migration
+// TODO(FUN-F01): Implement event history feature — requires events_history table migration
 .openapi(getEventHistoryRoute, async (c) => {
-    // Return empty history for now
+    // Return empty history until events_history migration is complete
     return c.json({ history: [] }, 200);
   })
 
 .openapi(restoreEventHistoryRoute, async (_c) => {
-    throw new ApiError("Event history feature not yet implemented", 501);
+    throw new ApiError("Event history restore not yet implemented — pending events_history migration", 501);
   });
 
 export default finalEventsRouter;

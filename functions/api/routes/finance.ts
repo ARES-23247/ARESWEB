@@ -147,20 +147,19 @@ export const financeRouter = _financeRouter
         }
 
         if (body.status === "secured" && currentStatus !== "secured") {
-            let existingTxQuery = db
-                .select({ id: schema.financeTransactions.id })
-                .from(schema.financeTransactions)
-                .where(and(
-                    eq(schema.financeTransactions.description, `Sponsorship from ${body.companyName}`),
-                    eq(schema.financeTransactions.amount, body.estimatedValue ?? 0)
-                ))
-                .$dynamic();
-
+            const txConditions = [
+                eq(schema.financeTransactions.description, `Sponsorship from ${body.companyName}`),
+                eq(schema.financeTransactions.amount, body.estimatedValue ?? 0),
+            ];
             if (body.seasonId) {
-                existingTxQuery = existingTxQuery.where(eq(schema.financeTransactions.seasonId, Number(body.seasonId)));
+                txConditions.push(eq(schema.financeTransactions.seasonId, Number(body.seasonId)));
             }
 
-            const existingTx = await existingTxQuery.get();
+            const existingTx = await db
+                .select({ id: schema.financeTransactions.id })
+                .from(schema.financeTransactions)
+                .where(and(...txConditions))
+                .get();
 
             if (!existingTx) {
                 await db

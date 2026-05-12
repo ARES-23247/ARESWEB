@@ -20,6 +20,20 @@ import { list, notDeleted } from "../../../src/db/query-helpers";
 
 const _seasonsRouter = new OpenAPIHono<AppEnv>();
 
+/** Shared formatter: normalize Drizzle row to match Zod season schema */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatSeason(r: any) {
+  return {
+    ...r,
+    startYear: Number(r.startYear),
+    endYear: Number(r.endYear ?? Number(r.startYear) + 1),
+    isDeleted: Number(r.isDeleted ?? 0),
+    status: r.status as string | null | undefined,
+    createdAt: r.createdAt as string,
+    updatedAt: r.updatedAt as string,
+  };
+}
+
 // Apply edge caching to public GET routes (non-admin, non-signups)
 _seasonsRouter.use("*", async (c, next) => {
   const path = c.req.path;
@@ -44,16 +58,9 @@ export const seasonsRouter = _seasonsRouter
         useAll: true
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const seasons = results.map((r: any) => ({
-        ...r,
-        startYear: Number(r.startYear),
-        endYear: Number(r.endYear ?? Number(r.startYear) + 1),
-        isDeleted: Number(r.isDeleted ?? 0),
-        status: r.status as string | null | undefined,
-        createdAt: r.createdAt as string,
-        updatedAt: r.updatedAt as string,
-      }));
+
+      const seasons = results.map(formatSeason);
+
 
       // Response boundary: Drizzle return type diverges from Zod schema
       return typedJson(c, { seasons }, 200);
@@ -65,16 +72,9 @@ export const seasonsRouter = _seasonsRouter
         useAll: true
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const seasons = results.map((r: any) => ({
-        ...r,
-        startYear: Number(r.startYear),
-        endYear: Number(r.endYear ?? Number(r.startYear) + 1),
-        isDeleted: Number(r.isDeleted ?? 0),
-        status: r.status as string | null | undefined,
-        createdAt: r.createdAt as string,
-        updatedAt: r.updatedAt as string,
-      }));
+
+      const seasons = results.map(formatSeason);
+
 
       // Response boundary: Drizzle return type diverges from Zod schema
       return typedJson(c, { seasons }, 200);
@@ -94,15 +94,7 @@ export const seasonsRouter = _seasonsRouter
         throw new ApiError("Season", 404, "NOT_FOUND");
       }
 
-      const season = {
-        ...row,
-        startYear: Number(row.startYear),
-        endYear: Number(row.endYear ?? Number(row.startYear) + 1),
-        isDeleted: Number(row.isDeleted ?? 0),
-        status: row.status as string | null | undefined,
-        createdAt: row.createdAt as string,
-        updatedAt: row.updatedAt as string,
-      };
+      const season = formatSeason(row);
 
       // Response boundary: Drizzle return type diverges from Zod schema
       return typedJson(c, { season }, 200);
@@ -200,15 +192,7 @@ export const seasonsRouter = _seasonsRouter
         throw new ApiError("Season", 404, "NOT_FOUND");
       }
 
-      const season = {
-        ...seasonRow,
-        startYear: Number(seasonRow.startYear),
-        endYear: Number(seasonRow.endYear ?? Number(seasonRow.startYear) + 1),
-        isDeleted: Number(seasonRow.isDeleted ?? 0),
-        status: seasonRow.status as string | null | undefined,
-        createdAt: seasonRow.createdAt as string,
-        updatedAt: seasonRow.updatedAt as string,
-      };
+      const season = formatSeason(seasonRow);
 
       // Response boundary: Drizzle return type diverges from Zod schema
       return typedJson(c, { season, awards, events, posts, outreach }, 200);

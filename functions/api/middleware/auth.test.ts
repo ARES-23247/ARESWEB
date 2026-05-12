@@ -161,8 +161,7 @@ describe('authMiddleware', () => {
       mockContext.env.ENVIRONMENT = 'development';
       mockContext.env.DEV_BYPASS = 'true';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockContext.set).toHaveBeenCalledWith('sessionUser', expect.objectContaining({
@@ -181,7 +180,7 @@ describe('authMiddleware', () => {
       } as unknown as ReturnType<typeof getAuth>);
  
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -195,7 +194,7 @@ describe('authMiddleware', () => {
  
       } as unknown as ReturnType<typeof getAuth>);
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -226,7 +225,7 @@ describe('authMiddleware', () => {
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockContext.set).toHaveBeenCalledWith('sessionUser', expect.objectContaining({
@@ -259,7 +258,7 @@ describe('authMiddleware', () => {
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockContext.set).toHaveBeenCalledWith('sessionUser', expect.objectContaining({
@@ -277,7 +276,7 @@ describe('authMiddleware', () => {
       mockContext.env.ENVIRONMENT = 'development';
       mockContext.env.DEV_BYPASS = 'true';
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockContext.set).toHaveBeenCalledWith('sessionUser', expect.objectContaining({
@@ -297,7 +296,7 @@ describe('authMiddleware', () => {
         },
       } as unknown as ReturnType<typeof getAuth>);
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -328,7 +327,7 @@ describe('authMiddleware', () => {
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockContext.set).toHaveBeenCalledWith('sessionUser', expect.objectContaining({
@@ -366,7 +365,7 @@ describe('authMiddleware', () => {
       // Non-super-admin route
       Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/posts' });
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).toHaveBeenCalled();
     });
@@ -403,7 +402,7 @@ describe('authMiddleware', () => {
       // Super-admin route
       Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/users' });
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
       
@@ -438,7 +437,7 @@ describe('authMiddleware', () => {
       const executeSpy = vi.fn().mockResolvedValue(undefined);
       (mockDb.insert as unknown as { values: () => { execute: () => Promise<unknown> } }).values = vi.fn(() => ({ execute: executeSpy }));
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
       
@@ -473,7 +472,7 @@ describe('authMiddleware', () => {
       // Non-super-admin route
       Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/posts' });
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).toHaveBeenCalled();
     });
@@ -510,7 +509,7 @@ describe('authMiddleware', () => {
       // Super-admin route
       Object.defineProperty(mockContext.req, 'url', { value: 'http://localhost:8788/api/admin/roles' });
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
       
@@ -542,7 +541,7 @@ describe('authMiddleware', () => {
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       expect(mockNext).toHaveBeenCalled();
       const sessionUser = (mockContext.set as unknown as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -579,7 +578,7 @@ describe('authMiddleware', () => {
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
       (mockDb.insert as unknown as { values: () => { execute: () => Promise<unknown> } }).values = vi.fn(() => ({ execute: executeSpy }));
 
-      try { await ensureAdmin(mockContext, mockNext); } catch (e: any) { expect(e.status).toBeGreaterThanOrEqual(401); }
+      try { await ensureAdmin(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBeGreaterThanOrEqual(401); }
 
       // Small delay for async operations
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -798,7 +797,7 @@ describe('authMiddleware', () => {
       // Even if we try to spoof the header
       mockContext.req.raw.headers.set('cf-access-authenticated-user-email', 'attacker@evil.com');
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
  
 
       // Should still return 401 because Lucia auth didn't validate
@@ -817,7 +816,7 @@ describe('authMiddleware', () => {
       } as unknown as ReturnType<typeof getAuth>);
  
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -833,7 +832,7 @@ describe('authMiddleware', () => {
         },
       } as unknown as ReturnType<typeof getAuth>);
 
-      try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
+      try { await ensureAuth(mockContext, mockNext); } catch (e) { expect((e as { status?: number }).status).toBe(401); }
 
       expect(mockNext).not.toHaveBeenCalled();
     });

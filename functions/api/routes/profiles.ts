@@ -218,9 +218,7 @@ export const profilesRouter = _profilesRouter
         throw new ApiError(`Invalid profile data: ${validationResult.error.message}`, 400);
       }
 
-      console.log("[Profile:UpdateMe] Saving profile for user:", user.id, "data keys:", Object.keys(validationResult.data));
       await upsertProfile(c, user.id, validationResult.data);
-      console.log("[Profile:UpdateMe] Profile saved successfully for user:", user.id);
       return c.json({ success: true }, 200);
     })
     .openapi(updateAvatarRoute, async (c) => {
@@ -389,6 +387,23 @@ export const profilesRouter = _profilesRouter
       const colleges = safeJSONParse(profileRow.colleges);
       const employers = safeJSONParse(profileRow.employers);
 
+      // PII-F01: Decrypt contact fields before public display
+      const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const safeDecryptPublic = async (val: string | null): Promise<string | null> => {
+        if (!val || !val.includes(":")) return val || null;
+        try {
+          return await decrypt(val, secret);
+        } catch {
+          return null; // Silently hide failed decryption from public
+        }
+      };
+
+      // Only decrypt if we will actually expose these values
+      const showEmailFlag = (memberType === "mentor" || memberType === "coach") && Number(profileRow.showEmail || 0) === 1;
+      const showPhoneFlag = (memberType === "mentor" || memberType === "coach") && Number(profileRow.showPhone || 0) === 1;
+      const decryptedEmail = showEmailFlag ? await safeDecryptPublic(profileRow.contactEmail) : null;
+      const decryptedPhone = showPhoneFlag ? await safeDecryptPublic(profileRow.phone) : null;
+
       // Build public-safe response using the same sanitization logic
       const publicProfile: z.infer<typeof rosterMemberSchema> = {
         userId: profileRow.userId,
@@ -411,13 +426,9 @@ export const profilesRouter = _profilesRouter
         rookieYear: profileRow.rookieYear ? String(profileRow.rookieYear) : undefined,
         favoriteFood: undefined,
         gradeYear: profileRow.gradeYear || undefined,
-        // Mentors/coaches: show email/phone ONLY if they opted in
-        email: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showEmail || 0) === 1
-          ? (profileRow.contactEmail || undefined)
-          : undefined,
-        phone: (memberType === "mentor" || memberType === "coach") && Number(profileRow.showPhone || 0) === 1
-          ? (profileRow.phone || undefined)
-          : undefined,
+        // Mentors/coaches: show decrypted email/phone ONLY if they opted in
+        email: decryptedEmail || undefined,
+        phone: decryptedPhone || undefined,
         showEmail: Number(profileRow.showEmail || 0) === 1,
         showPhone: Number(profileRow.showPhone || 0) === 1,
         contactEmail: undefined,
