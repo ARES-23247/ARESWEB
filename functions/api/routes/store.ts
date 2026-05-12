@@ -45,7 +45,7 @@ _storeRouter.post("/webhook", async (c) => {
                     status: "paid",
                     stripeSessionId: session.id,
                     customerEmail: session.customer_details?.email,
-                    shippingName: (session as Stripe.Checkout.Session & { shipping_details?: { name?: string | null } }).shipping_details?.name,
+                    shippingName: (session as unknown as { shipping_details?: { name?: string | null } }).shipping_details?.name,
                     updatedAt: new Date().toISOString()
                 })
                 .where(eq(schema.orders.id, metadata.orderId))
