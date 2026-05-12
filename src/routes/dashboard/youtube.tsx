@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeResumableUrlMutation } from '../../api/youtube';
-import { useGetVideos, useDeleteVideo, useSyncYoutubeVideosMutation } from '../../api';
-import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink, Trash2, RefreshCw } from 'lucide-react';
+import { useGetVideos, useSyncYoutubeVideosMutation } from '../../api';
+import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink, RefreshCw, Filter, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { toastApiError, ApiError } from '../../api/honoClient';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,10 +22,8 @@ function VideoHub() {
   const { data: authStatus, isLoading: isStatusLoading } = useGetYoutubeAuthStatus();
   const { data: videosResponse, isLoading: isVideosLoading } = useGetVideos();
 
-  const deleteMutation = useDeleteVideo({
-    onSuccess: () => toast.success("Video deleted successfully"),
-    onError: (err) => toastApiError(err, "Failed to delete video"),
-  });
+  const [typeFilter, setTypeFilter] = useState<"all" | "video" | "short">("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const syncYoutubeMutation = useSyncYoutubeVideosMutation();
 
@@ -43,18 +41,23 @@ function VideoHub() {
     }
   };
 
-  const videos = (videosResponse as unknown as { videos: Array<{ id: string; title: string; description: string | null; platform: string; videoId: string; thumbnailUrl: string | null; embedUrl: string }> })?.videos ?? [];
+  const videos = (videosResponse as unknown as { videos: Array<{ id: string; title: string; description: string | null; platform: string; videoId: string; thumbnailUrl: string | null; embedUrl: string; type: string; createdAt: string }> })?.videos ?? [];
 
-  const handleDelete = async (id: string, title: string) => {
-    const confirmed = await modal.confirm({
-      title: "Delete Video",
-      description: `Are you sure you want to delete "${title}"? This action cannot be undone.`,
-      confirmText: "Delete",
-      destructive: true,
+  const filteredAndSortedVideos = useMemo(() => {
+    let result = [...videos];
+
+    if (typeFilter !== "all") {
+      result = result.filter(v => v.type === typeFilter);
+    }
+
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
-    if (!confirmed) return;
-    deleteMutation.mutate(id);
-  };
+
+    return result;
+  }, [videos, typeFilter, sortOrder]);
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-0">
@@ -116,68 +119,105 @@ function VideoHub() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {videos.map((video) => (
-                <div
-                  key={video.id}
-                  className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
-                >
-                  {video.thumbnailUrl ? (
-                    <div className="w-full h-40 bg-black/20 flex items-center justify-center">
-                      <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
-                    </div>
-                  ) : (
-                    <div className="w-full h-40 bg-ares-red/10 flex items-center justify-center">
-                      <span className={`text-4xl ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>▶</span>
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] uppercase font-bold tracking-wider ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>
-                        {video.platform}
-                      </span>
-                    </div>
-                    <h3 className="text-white font-bold text-lg mb-1">{video.title}</h3>
-                    {video.description && (
-                      <p className="text-white/60 text-sm mb-3 line-clamp-2">{video.description}</p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <a
-                        href={
-                          video.platform === 'youtube'
-                            ? `https://www.youtube.com/watch?v=${video.videoId}`
-                            : video.embedUrl.startsWith('http') ? video.embedUrl : `https://${video.embedUrl}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-ares-cyan hover:text-white transition-colors flex items-center gap-1"
-                      >
-                        <ExternalLink size={12} />
-                        Watch video
-                      </a>
-                      <div className="flex items-center gap-2 ml-auto">
-                        <button
-                          onClick={() => {
-                            setEditVideoId(video.id);
-                            setIsPickerOpen(true);
-                          }}
-                          className="p-2 text-white/60 hover:text-ares-red transition-colors"
-                          title="Edit video"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(video.id, video.title)}
-                          className="p-2 text-white/60 hover:text-ares-red transition-colors"
-                          title="Delete video"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
+            <div className="flex flex-col gap-4">
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-obsidian border border-white/10 ares-cut-sm p-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Filter size={16} className="text-white/40" />
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value as any)}
+                      className="bg-black border border-white/10 text-white text-xs px-2 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none"
+                    >
+                      <option value="all">All Media</option>
+                      <option value="video">Videos</option>
+                      <option value="short">Shorts</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown size={16} className="text-white/40" />
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as any)}
+                      className="bg-black border border-white/10 text-white text-xs px-2 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                    </select>
                   </div>
                 </div>
-              ))}
+                <div className="text-xs text-marble/60 font-mono">
+                  {filteredAndSortedVideos.length} Result{filteredAndSortedVideos.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+
+              {filteredAndSortedVideos.length === 0 ? (
+                <div className="w-full h-40 flex flex-col items-center justify-center text-white/20 gap-2 border border-white/10 ares-cut-sm">
+                  <Video size={32} className="opacity-50" />
+                  <p className="font-mono text-sm">No matches found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredAndSortedVideos.map((video) => (
+                    <div
+                      key={video.id}
+                      className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
+                    >
+                      {video.thumbnailUrl ? (
+                        <div className="w-full h-40 bg-black/20 flex items-center justify-center">
+                          <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-40 bg-ares-red/10 flex items-center justify-center">
+                          <span className={`text-4xl ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>▶</span>
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] uppercase font-bold tracking-wider ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>
+                            {video.platform}
+                          </span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-ares-cyan/80 bg-ares-cyan/10 px-1.5 py-0.5 rounded-sm">
+                            {video.type}
+                          </span>
+                        </div>
+                        <h3 className="text-white font-bold text-lg mb-1">{video.title}</h3>
+                        {video.description && (
+                          <p className="text-white/60 text-sm mb-3 line-clamp-2">{video.description}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/10">
+                          <a
+                            href={
+                              video.platform === 'youtube'
+                                ? `https://www.youtube.com/watch?v=${video.videoId}`
+                                : video.embedUrl.startsWith('http') ? video.embedUrl : `https://${video.embedUrl}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-ares-cyan hover:text-white transition-colors flex items-center gap-1"
+                          >
+                            <ExternalLink size={12} />
+                            Watch video
+                          </a>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <button
+                              onClick={() => {
+                                setEditVideoId(video.id);
+                                setIsPickerOpen(true);
+                              }}
+                              className="p-2 text-white/60 hover:text-ares-red transition-colors"
+                              title="Edit video"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -255,6 +295,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('private');
+  const [mediaType, setMediaType] = useState<"video" | "short">("video");
 
   const canSetPublic = memberType === "coach" || memberType === "mentor";
 
@@ -285,10 +326,15 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
     setProgress(0);
     setUploadError('');
 
+    let finalDescription = description.trim();
+    if (mediaType === "short" && !finalDescription.toLowerCase().includes("#shorts")) {
+      finalDescription = finalDescription ? `${finalDescription}\n\n#Shorts` : "#Shorts";
+    }
+
     try {
       const { uploadUrl } = await resumableMutation.mutateAsync({
         title: title.trim(),
-        description: description.trim(),
+        description: finalDescription,
         privacyStatus,
         fileSize: file.size,
         mimeType: file.type || 'application/octet-stream',
@@ -322,6 +368,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
       setTitle('');
       setDescription('');
       setPrivacyStatus('private');
+      setMediaType("video");
       if (fileInputRef.current) fileInputRef.current.value = '';
 
     } catch (err: unknown) {
@@ -403,19 +450,34 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
           />
         </div>
 
-        <div>
-          <label htmlFor="youtube-privacy" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Privacy Status</label>
-          <select
-            id="youtube-privacy"
-            value={privacyStatus}
-            onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
-            disabled={isUploading}
-            className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
-          >
-            {canSetPublic && <option value="public">Public</option>}
-            <option value="unlisted">Unlisted (Hidden)</option>
-            <option value="private">Private</option>
-          </select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="youtube-media-type" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Type</label>
+            <select
+              id="youtube-media-type"
+              value={mediaType}
+              onChange={(e) => setMediaType(e.target.value as "video" | "short")}
+              disabled={isUploading}
+              className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
+            >
+              <option value="video">Standard Video</option>
+              <option value="short">YouTube Short</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="youtube-privacy" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">Privacy Status</label>
+            <select
+              id="youtube-privacy"
+              value={privacyStatus}
+              onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
+              disabled={isUploading}
+              className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
+            >
+              {canSetPublic && <option value="public">Public</option>}
+              <option value="unlisted">Unlisted (Hidden)</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
         </div>
 
         {uploadError && (

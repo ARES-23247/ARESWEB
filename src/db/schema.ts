@@ -825,11 +825,13 @@ export const videos = sqliteTable("videos", {
 	platform: text().notNull(),
 	videoId: text("video_id").notNull(),
 	thumbnailKey: text("thumbnail_key"),
+	type: text().default("video"),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
 	index("idx_videos_created").on(table.createdAt),
 	index("idx_videos_platform").on(table.platform),
+	index("idx_videos_type").on(table.type),
 ]);
 

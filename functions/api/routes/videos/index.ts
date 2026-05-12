@@ -68,6 +68,7 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
         thumbnailKey: v.thumbnailKey ?? null,
         thumbnailUrl: v.thumbnailKey ? `/api/media/${v.thumbnailKey}` : null,
         embedUrl,
+        type: (v.type as "video" | "short") ?? "video",
         createdAt: v.createdAt ?? new Date().toISOString(),
         updatedAt: v.updatedAt ?? new Date().toISOString(),
     };
@@ -115,6 +116,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
       platform: body.platform,
       videoId: body.videoId,
       thumbnailKey: body.thumbnailKey ?? null,
+      type: body.type ?? "video",
       createdAt: now,
       updatedAt: now,
     }, "vid_");
@@ -145,6 +147,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
           ...(body.platform !== undefined && { platform: body.platform }),
           ...(body.videoId !== undefined && { videoId: body.videoId }),
           ...(body.thumbnailKey !== undefined && { thumbnailKey: body.thumbnailKey ?? null }),
+          ...(body.type !== undefined && { type: body.type }),
           updatedAt: new Date().toISOString(),
         };
 
@@ -194,112 +197,70 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
             throw new ApiError("YouTube API Key not configured. Please add YOUTUBE_API_KEY to your environment variables.", 500, "YOUTUBE_API_KEY_MISSING");
         }
 
-        // ARESFTC Uploads playlist ID (replace UC with UU in the channel ID)
         const playlistId = "UUre4FN7UThyVd-biFk0n-Ig";
-        const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}`;
-
         let addedCount = 0;
+        let deletedCount = 0;
+        
+        const allItems: any[] = [];
+        let nextPageToken: string | undefined = undefined;
 
-        const response = await fetch(url);
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("YouTube API Error:", response.status, errText);
+        try {
+            do {
+                const pageTokenParam = nextPageToken ? `&pageToken=${nextPageToken}` : '';
+                const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}${pageTokenParam}`;
+                const response = await fetch(url);
 
-            let ytError: { error?: { errors?: Array<{ reason?: string; message?: string }>; message?: string; code?: number } } | undefined;
-            try {
-                ytError = JSON.parse(errText);
-            } catch {
-                // fall back
-            }
+                if (!response.ok) {
+                    const errText = await response.text();
+                    console.error("YouTube API Error:", response.status, errText);
+                    
+                    let ytError: { error?: { errors?: Array<{ reason?: string; message?: string }>; message?: string; code?: number } } | undefined;
+                    try { ytError = JSON.parse(errText); } catch { /* ignore */ }
 
-            const ytReason = ytError?.error?.errors?.[0]?.reason;
-            const ytMessage = ytError?.error?.message;
+                    const ytReason = ytError?.error?.errors?.[0]?.reason;
+                    const ytMessage = ytError?.error?.message;
 
-            // Map common YouTube API errors to user-friendly messages
-            switch (ytReason) {
-                case "quotaExceeded":
-                case "dailyLimitExceeded":
-                    throw new ApiError(
-                        "YouTube API quota exceeded. The daily limit has been reached. Try again tomorrow or contact an admin to increase the quota.",
-                        429,
-                        "YOUTUBE_QUOTA_EXCEEDED",
-                        { reason: ytReason, originalMessage: ytMessage }
-                    );
-                case "keyInvalid":
-                    throw new ApiError(
-                        "YouTube API key is invalid. Please check the YOUTUBE_API_KEY environment variable.",
-                        500,
-                        "YOUTUBE_API_KEY_INVALID",
-                        { reason: ytReason, originalMessage: ytMessage }
-                    );
-                case "forbidden":
-                    throw new ApiError(
-                        "Access to the YouTube playlist is forbidden. The API key may not have access to this resource.",
-                        403,
-                        "YOUTUBE_ACCESS_FORBIDDEN",
-                        { reason: ytReason, originalMessage: ytMessage }
-                    );
-                case "playlistNotFound":
-                    throw new ApiError(
-                        "YouTube playlist not found. The playlist ID may be incorrect or the playlist may have been deleted.",
-                        404,
-                        "YOUTUBE_PLAYLIST_NOT_FOUND",
-                        { reason: ytReason, originalMessage: ytMessage }
-                    );
-                default:
-                    if (response.status === 403) {
-                        throw new ApiError(
-                            `YouTube API access denied: ${ytMessage || response.statusText}`,
-                            403,
-                            "YOUTUBE_ACCESS_DENIED",
-                            { reason: ytReason, originalMessage: ytMessage }
-                        );
+                    // Re-throw with our ApiError mappings
+                    if (ytReason === "quotaExceeded" || ytReason === "dailyLimitExceeded") {
+                        throw new ApiError("YouTube API quota exceeded.", 429, "YOUTUBE_QUOTA_EXCEEDED", { reason: ytReason });
+                    } else if (response.status === 403) {
+                        throw new ApiError("YouTube API access denied.", 403, "YOUTUBE_ACCESS_DENIED", { reason: ytReason });
                     }
-                    if (response.status === 404) {
-                        throw new ApiError(
-                            `YouTube resource not found: ${ytMessage || response.statusText}`,
-                            404,
-                            "YOUTUBE_NOT_FOUND",
-                            { reason: ytReason, originalMessage: ytMessage }
-                        );
-                    }
-                    throw new ApiError(
-                        `YouTube API error (${response.status}): ${ytMessage || response.statusText}`,
-                        response.status,
-                        "YOUTUBE_API_ERROR",
-                        { reason: ytReason, originalMessage: ytMessage, status: response.status }
-                    );
-            }
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data: any = await response.json();
-        if (data.error) {
-            console.error("YouTube API Error in response:", data.error);
-            const ytReason = data.error.errors?.[0]?.reason;
-            const ytMessage = data.error.message;
+                    throw new ApiError(`YouTube API error: ${ytMessage || response.statusText}`, response.status, "YOUTUBE_API_ERROR");
+                }
 
-            throw new ApiError(
-                `YouTube API error: ${ytMessage || data.error.code}`,
-                500,
-                "YOUTUBE_API_ERROR",
-                { reason: ytReason, details: data.error }
-            );
+                const data: any = await response.json();
+                if (data.items) {
+                    allItems.push(...data.items);
+                }
+                nextPageToken = data.nextPageToken;
+
+            } while (nextPageToken);
+        } catch (error) {
+            if (error instanceof ApiError) throw error;
+            throw new ApiError("Failed to communicate with YouTube API", 500, "YOUTUBE_API_FAILED", { error: String(error) });
         }
-        const items = data.items || [];
-        const existingVideos = await db.select({ videoId: schema.videos.videoId }).from(schema.videos).where(eq(schema.videos.platform, "youtube")).execute();
+
+        const existingVideos = await db.select({ videoId: schema.videos.videoId, id: schema.videos.id }).from(schema.videos).where(eq(schema.videos.platform, "youtube")).execute();
         const existingIds = new Set(existingVideos.map(v => v.videoId));
+        
+        // Track the video IDs we found on YouTube
+        const fetchedVideoIds = new Set<string>();
         const newVideosToInsert = [];
-        for (const item of items) {
+
+        for (const item of allItems) {
             const snippet = item.snippet;
             const videoId = snippet.resourceId?.videoId;
 
-            if (!videoId) {
-                console.warn("Skipping item without videoId:", item);
-                continue;
-            }
+            if (!videoId) continue;
+            fetchedVideoIds.add(videoId);
 
             if (!existingIds.has(videoId)) {
                 const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
+                
+                const titleStr = (snippet.title || "").toLowerCase();
+                const descStr = (snippet.description || "").toLowerCase();
+                const isShort = titleStr.includes("#shorts") || descStr.includes("#shorts");
 
                 newVideosToInsert.push({
                     id,
@@ -308,6 +269,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
                     platform: "youtube" as const,
                     videoId: videoId,
                     thumbnailKey: null,
+                    type: isShort ? "short" : "video",
                     createdAt: snippet.publishedAt,
                     updatedAt: new Date().toISOString()
                 });
@@ -315,15 +277,28 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
                 existingIds.add(videoId);
             }
         }
+
         if (newVideosToInsert.length > 0) {
             await db.insert(schema.videos).values(newVideosToInsert).execute();
             addedCount = newVideosToInsert.length;
-
-            if (c.executionCtx) {
-                c.executionCtx.waitUntil(logAuditAction(c, "youtube_sync", "video", null, `Synced ${addedCount} new videos from YouTube`));
-            }
         }
-        return c.json({ success: true, added: addedCount, total: items.length }, 200);
+
+        // Delete videos that are no longer in the playlist
+        const videosToDelete = existingVideos.filter(v => !fetchedVideoIds.has(v.videoId));
+        if (videosToDelete.length > 0) {
+            const idsToDelete = videosToDelete.map(v => v.id);
+            // Drizzle 'inArray' works, but we can do a loop or bulk delete. Let's do a bulk delete if inArray is imported, or loop since it's safer.
+            for (const vid of videosToDelete) {
+                await db.delete(schema.videos).where(eq(schema.videos.id, vid.id)).execute();
+            }
+            deletedCount = videosToDelete.length;
+        }
+
+        if (c.executionCtx && (addedCount > 0 || deletedCount > 0)) {
+            c.executionCtx.waitUntil(logAuditAction(c, "youtube_sync", "video", null, `Synced YouTube: added ${addedCount}, deleted ${deletedCount} videos`));
+        }
+
+        return c.json({ success: true, added: addedCount, deleted: deletedCount, total: allItems.length }, 200);
     });
 
 // Mount admin router at /admin

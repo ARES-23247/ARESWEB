@@ -4,12 +4,15 @@ import { standardErrors } from "./common";
 
 export const videoPlatformSchema = z.enum(["youtube", "other"]);
 
+export const videoTypeSchema = z.enum(["video", "short"]);
+
 export const videoInputSchema = z.object({
   title: z.string().min(1, "Title is required").openapi({ example: "2025 Match Highlights" }),
   description: z.string().nullish().openapi({ example: "Highlights from our match at the qualifier." }),
   platform: videoPlatformSchema.default("youtube").openapi({ example: "youtube" }),
   videoId: z.string().min(1, "Video ID is required").openapi({ example: "dQw4w9WgXcQ" }),
   thumbnailKey: z.string().nullish().openapi({ example: "videos/match-thumb.jpg" }),
+  type: videoTypeSchema.default("video").openapi({ example: "video" }),
 });
 
 export const videoSchema = z.object({
@@ -21,6 +24,7 @@ export const videoSchema = z.object({
   thumbnailKey: z.string().nullish().openapi({ example: "videos/match-thumb.jpg" }),
   thumbnailUrl: z.string().nullish().openapi({ example: "/api/media/videos/match-thumb.jpg" }),
   embedUrl: z.string().openapi({ example: "https://www.youtube.com/embed/dQw4w9WgXcQ" }),
+  type: videoTypeSchema.openapi({ example: "video" }),
   createdAt: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
   updatedAt: z.string().openapi({ example: "2025-01-15T10:00:00Z" }),
 });

@@ -889,9 +889,11 @@ CREATE TABLE IF NOT EXISTS videos (
     platform TEXT NOT NULL,
     video_id TEXT NOT NULL,
     thumbnail_key TEXT,
+    type TEXT DEFAULT 'video',
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_videos_platform ON videos(platform);
+CREATE INDEX IF NOT EXISTS idx_videos_type ON videos(type);
 

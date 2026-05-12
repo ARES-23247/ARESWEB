@@ -52,7 +52,13 @@
       "Bash(curl -s -X POST https://aresfirst.org/api/galleries/admin -H 'Content-Type: application/json' -d '{\"title\":\"Test Gallery\",\"description\":\"\",\"googlePhotosUrl\":\"\",\"heroImageKey\":\"\"}' -w '\\\\nHTTP Status: %{http_code}\\\\n')",
       "Bash(curl -s \"https://aresfirst.org/api/galleries\")",
       "Bash(curl -s \"https://aresfirst.org/dashboard/manage_galleries\")",
-      "Bash(npx tsr *)"
+      "Bash(npx tsr *)",
+      "Skill(gsd-discuss-phase)",
+      "Skill(gsd-discuss-phase:*)",
+      "Skill(gsd-phase)",
+      "Skill(gsd-phase:*)",
+      "Skill(gsd-new-milestone)",
+      "Skill(gsd-new-milestone:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

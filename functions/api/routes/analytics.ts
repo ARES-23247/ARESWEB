@@ -3,7 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import {
   trackPageViewRoute,
@@ -60,16 +60,6 @@ interface UserActivityRow {
 interface LatencyRow {
   date: string;
   avgLatency: number;
-}
-
-interface RosterMemberRow {
-  userId: string;
-  nickname: string | null;
-  memberType: string | null;
-  avatar: string | null;
-  attendedEvents: number;
-  manualPrepHours: number;
-  eventVolunteerHours: number;
 }
 
 interface LeaderboardRow {
@@ -299,32 +289,40 @@ export const analyticsRouter = _analyticsRouter
       getRosterStatsRoute,
       async (c) => {
         const db = getDb(c);
-        const results = await db.all(sql<RosterMemberRow>`
-      SELECT
-        u.user_id as userId,
-        u.nickname,
-        u.memberType,
-        auth_user.image as avatar,
-        sum(case when s.attended = 1 then 1 else 0 end) as attendedEvents,
-        coalesce(sum(case when s.attended = 1 then s.prep_hours else 0 end), 0) as manualPrepHours,
-        coalesce(sum(case when s.attended = 1 and e.isVolunteer = 1 then (strftime('%s', e.dateEnd) - strftime('%s', e.dateStart)) / 3600.0 else 0 end), 0) as eventVolunteerHours
-      FROM user_profiles u
-      INNER JOIN user auth_user ON auth_user.id = u.user_id
-      LEFT JOIN event_signups s ON u.user_id = s.user_id
-      LEFT JOIN events e ON s.event_id = e.id AND e.status = 'published' AND e.isDeleted = 0
-      GROUP BY u.user_id, u.nickname, u.memberType, auth_user.image
-      ORDER BY u.nickname ASC
-    `);
 
-        const rows = (results || []) as RosterMemberRow[];
-        const roster = rows.map((r) => ({
+        const attendedEventsCount = sql<number>`sum(case when ${schema.eventSignups.attended} = 1 then 1 else 0 end)`;
+        const manualPrepHoursSum = sql<number>`coalesce(sum(case when ${schema.eventSignups.attended} = 1 then ${schema.eventSignups.prepHours} else 0 end), 0)`;
+        const volunteerHoursCalc = sql<number>`coalesce(sum(case when ${schema.eventSignups.attended} = 1 and ${schema.events.isVolunteer} = 1 then (strftime('%s', ${schema.events.dateEnd}) - strftime('%s', ${schema.events.dateStart})) / 3600.0 else 0 end), 0)`;
+
+        const results = await db
+          .select({
+            userId: schema.userProfiles.userId,
+            nickname: schema.userProfiles.nickname,
+            memberType: schema.userProfiles.memberType,
+            avatar: schema.user.image,
+            attendedEvents: attendedEventsCount,
+            manualPrepHours: manualPrepHoursSum,
+            eventVolunteerHours: volunteerHoursCalc,
+          })
+          .from(schema.userProfiles)
+          .innerJoin(schema.user, eq(schema.user.id, schema.userProfiles.userId))
+          .leftJoin(schema.eventSignups, eq(schema.userProfiles.userId, schema.eventSignups.userId))
+          .leftJoin(schema.events, and(
+            eq(schema.eventSignups.eventId, schema.events.id),
+            eq(schema.events.status, 'published'),
+            eq(schema.events.isDeleted, 0)
+          ))
+          .groupBy(schema.userProfiles.userId, schema.userProfiles.nickname, schema.userProfiles.memberType, schema.user.image)
+          .orderBy(schema.userProfiles.nickname);
+
+        const roster = results.map((r) => ({
           userId: String(r.userId),
           nickname: r.nickname || null,
           memberType: r.memberType || null,
-          attendedEvents: Number(r.attendedEvents || 0),
-          manualPrepHours: Number(r.manualPrepHours || 0),
-          eventVolunteerHours: Number(r.eventVolunteerHours || 0),
-          avatar: r.avatar ? String(r.avatar) : null
+          attendedEvents: Number(r.attendedEvents ?? 0),
+          manualPrepHours: Number(r.manualPrepHours ?? 0),
+          eventVolunteerHours: Number(r.eventVolunteerHours ?? 0),
+          avatar: r.avatar || null
         }));
 
         return c.json({ roster }, 200);
