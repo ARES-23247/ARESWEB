@@ -57,15 +57,16 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.9 (Type Safety Debt Elimination)** — Achieved 100% compile-time type safety by creating `typedHandler` wrappers, unifying frontend API types, and eliminating all `as any` and `eslint-disable` bypasses.
 
 ### Active
-- **Milestone 7.3 (Full ESLint Sanitization)** — Resolving 364 pre-existing ESLint problems (errors and warnings) to achieve a zero-problem build state.
-
-### Current Milestone: v8.0 End-to-End Hono RPC Type Safety (Active)
-**Goal:** Eliminate the `any` type on the Hono RPC client and achieve full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
+- **Milestone v8.1 (Google Workspace Integrations)** — Integrate Google Drive API for browsing documents and importing images to R2.
 
 ### Recently Shipped
+- **v8.0 End-to-End Hono RPC Type Safety** (May 2026): Achieved full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
 - **v7.3 Full Codebase ESLint Sanitization** (May 2026): Accepted frontend suppressions, addressed backend unused code.
 - **v7.2 TypeScript Safety & ESLint Compliance** (May 2026): Achieved complete strict TypeScript type safety across the entire codebase.
 - **v7.1 Drizzle ORM Migration** (May 2026): Converted all remaining raw D1 queries to Drizzle ORM and Zod schemas.
+
+### Current Milestone: v8.1 Google Workspace Integrations (Active)
+**Goal:** Integrate Google Drive API to browse Google Workspace documents and import images to R2 storage.
 
 ## Current State
 
