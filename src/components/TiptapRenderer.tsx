@@ -124,8 +124,8 @@ const renderImage = (node: ASTNode) => {
   if (!srcStr) return null;
   return (
     <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40">
-      <div className="relative w-full aspect-video">
-        <img src={srcStr} alt={altStr} className="w-full h-full object-cover" />
+      <div className="relative w-full">
+        <img src={srcStr} alt={altStr} className="w-full h-auto object-contain" />
       </div>
       {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
     </figure>
@@ -154,11 +154,19 @@ const renderInteractiveComponent = (node: ASTNode) => {
 };
 
 const renderYoutube = (node: ASTNode) => {
-  const src = validateUrl(node.attrs?.src as string, 'video');
-  if (!src) return null;
+  const videoId = node.attrs?.videoId as string;
+  if (!videoId) return null;
+
+  const src = `https://www.youtube.com/embed/${videoId}`;
   return (
     <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
-      <iframe title="YouTube Video Component" src={src} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      <iframe
+        title="YouTube Video Component"
+        src={src}
+        className="w-full h-full"
+        allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      />
     </div>
   );
 };
