@@ -155,6 +155,7 @@ export const checkAuthStatusRoute = createRoute({
         "application/json": {
           schema: z.object({
             isAuthenticated: z.boolean(),
+            memberType: z.enum(["student", "mentor", "coach"]).optional(),
           }),
         },
       },

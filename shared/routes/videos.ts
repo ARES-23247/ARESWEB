@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRoute } from "@hono/zod-openapi";
 import { standardErrors } from "./common";
 
-export const videoPlatformSchema = z.enum(["youtube", "vimeo", "other"]);
+export const videoPlatformSchema = z.enum(["youtube", "other"]);
 
 export const videoInputSchema = z.object({
   title: z.string().min(1, "Title is required").openapi({ example: "2025 Match Highlights" }),

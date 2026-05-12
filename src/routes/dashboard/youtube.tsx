@@ -94,7 +94,7 @@ function YouTubeUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('unlisted');
+  const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('private');
   
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -168,7 +168,7 @@ function YouTubeUploader() {
       setFile(null);
       setTitle('');
       setDescription('');
-      setPrivacyStatus('unlisted');
+      setPrivacyStatus('private');
       if (fileInputRef.current) fileInputRef.current.value = '';
       
     } catch (err: unknown) {

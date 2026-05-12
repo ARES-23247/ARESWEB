@@ -11,7 +11,7 @@ import { videoSchema, parseVideoUrlResponseSchema } from "@shared/routes/videos"
 
 // Infer TypeScript types from Zod schemas
 export type Video = z.infer<typeof videoSchema>;
-export type VideoPlatform = "youtube" | "vimeo" | "other";
+export type VideoPlatform = "youtube" | "other";
 
 export type CreateVideoPayload = {
   title: string;

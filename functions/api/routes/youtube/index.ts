@@ -58,6 +58,13 @@ async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Pro
   return data.access_token;
 }
 
+// Check if user is allowed to set videos to public (coaches and mentors only)
+function canSetPublicPrivacy(c: Context<AppEnv>): boolean {
+  const user = c.get("sessionUser");
+  const memberType = user?.memberType;
+  return memberType === "coach" || memberType === "mentor";
+}
+
 const routes = adminApp
   .openapi(checkAuthStatusRoute, async (c) => {
     const db = getDb(c);
@@ -68,7 +75,8 @@ const routes = adminApp
       .execute()
       .then((res: Array<{ key: string; value: string | null; updatedAt: string | null }>) => res[0]);
 
-    return c.json({ isAuthenticated: !!tokenSetting?.value }, 200);
+    const user = c.get("sessionUser");
+    return c.json({ isAuthenticated: !!tokenSetting?.value, memberType: user?.memberType }, 200);
   })
   .openapi(getAuthUrlRoute, async (c) => {
     const env = c.env;
@@ -162,6 +170,11 @@ const routes = adminApp
     const body = c.req.valid("json");
     const db = getDb(c);
     const env = c.env;
+
+    // Privacy validation: only coaches and mentors can set videos to public
+    if (body.privacyStatus === "public" && !canSetPublicPrivacy(c)) {
+      throw new ApiError("Only coaches and mentors can set videos to public.", 403, "FORBIDDEN_PUBLIC_PRIVACY");
+    }
 
     const accessToken = await getGoogleAccessToken(env, db);
 

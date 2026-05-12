@@ -26,7 +26,7 @@ _adminRouter.use("*", ensureAdmin);
  * Parse a video URL to extract platform and video ID
  * Supports YouTube, Vimeo, and generic URLs
  */
-function parseVideoUrl(url: string): { platform: "youtube" | "vimeo" | "other"; videoId: string; embedUrl: string } {
+function parseVideoUrl(url: string): { platform: "youtube" | "other"; videoId: string; embedUrl: string } {
     const trimmedUrl = url.trim();
 
     // YouTube: youtube.com/watch?v=ID or youtu.be/ID
@@ -47,12 +47,6 @@ function parseVideoUrl(url: string): { platform: "youtube" | "vimeo" | "other"; 
         return { platform: "youtube", videoId: ytEmbedMatch[1], embedUrl: `https://www.youtube.com/embed/${ytEmbedMatch[1]}` };
     }
 
-    // Vimeo: vimeo.com/ID or player.vimeo.com/video/ID
-    const vimeoMatch = trimmedUrl.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
-    if (vimeoMatch) {
-        return { platform: "vimeo", videoId: vimeoMatch[1], embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}` };
-    }
-
     // Unknown platform - return URL as-is
     return { platform: "other", videoId: trimmedUrl, embedUrl: trimmedUrl };
 }
@@ -61,8 +55,6 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
     let embedUrl = v.videoId;
     if (v.platform === "youtube") {
         embedUrl = `https://www.youtube.com/embed/${v.videoId}`;
-    } else if (v.platform === "vimeo") {
-        embedUrl = `https://player.vimeo.com/video/${v.videoId}`;
     } else if (!embedUrl.startsWith("http")) {
         embedUrl = `https://${embedUrl}`;
     }
@@ -71,7 +63,7 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
         id: v.id,
         title: v.title,
         description: v.description ?? null,
-        platform: v.platform as "youtube" | "vimeo" | "other",
+        platform: v.platform as "youtube" | "other",
         videoId: v.videoId,
         thumbnailKey: v.thumbnailKey ?? null,
         thumbnailUrl: v.thumbnailKey ? `/api/media/${v.thumbnailKey}` : null,
