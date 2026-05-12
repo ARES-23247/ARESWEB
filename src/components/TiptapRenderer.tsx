@@ -1,9 +1,11 @@
 import { ReactNode, lazy, Suspense, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Eye } from "lucide-react";
+import { ChevronDown, Eye, Images, Link as LinkIcon } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
 import ErrorBoundary from "./ErrorBoundary";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
+import { useGetGallery } from "../api";
+import { Link } from "@tanstack/react-router";
 
 /* ---------- Lazy Loaded Simulators & Tools ---------- */
 const CodePlayground = lazy(() => import('./docs/CodePlayground').catch(() => ({ default: () => <div className="text-ares-danger">Failed to load CodePlayground</div> })));
@@ -190,6 +192,74 @@ const renderVideoEmbed = (node: ASTNode) => {
   );
 };
 
+// Gallery Embed Renderer Component
+function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?: string }) {
+  const { data: galleryResponse, isLoading } = useGetGallery(galleryId);
+  const gallery = (galleryResponse as unknown as { gallery: { id: string; title: string; thumbnail?: string } | null } | null)?.gallery ?? null;
+
+  if (isLoading) {
+    return (
+      <div className="my-8 ares-cut-sm border border-white/10 bg-black/40 p-8 text-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <Images className="w-12 h-12 text-ares-gold/60" />
+          <div className="text-white/60">Loading gallery...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!gallery) {
+    return (
+      <div className="my-8 ares-cut-sm border border-ares-red/30 bg-ares-red/10 p-6 text-center">
+        <Images className="w-12 h-12 text-ares-red mx-auto mb-2" />
+        <div className="text-ares-red font-bold">Gallery not found</div>
+        <div className="text-ares-red/60 text-sm mt-1">Gallery ID: {galleryId}</div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to="/galleries/$id"
+      params={{ id: galleryId }}
+      className="block my-8 group"
+    >
+      <div className="ares-cut-sm border border-ares-gold/30 hover:border-ares-gold overflow-hidden glass-card transition-all duration-300">
+        <div className="relative aspect-video overflow-hidden">
+          <img
+            src={gallery.thumbnail || "/api/media/1776551060548-favicon.webp"}
+            alt={gallery.title || title || "Gallery"}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="flex items-center gap-2 text-ares-gold mb-2">
+              <Images size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">Photo Gallery</span>
+            </div>
+            <h3 className="text-white font-bold text-lg">{gallery.title || title || "Gallery"}</h3>
+          </div>
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-ares-gold text-black px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2">
+              <LinkIcon size={14} />
+              View Gallery
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+const renderGalleryEmbed = (node: ASTNode) => {
+  const galleryId = node.attrs?.galleryId as string;
+  const title = node.attrs?.title as string;
+
+  if (!galleryId) return null;
+
+  return <GalleryEmbedRenderer galleryId={galleryId} title={title} />;
+};
+
 const renderTaskItem = (node: ASTNode, children: ReactNode) => (
   <li className="flex items-start gap-3">
     <div className="mt-1 flex-shrink-0">
@@ -263,6 +333,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "tableCell": return <td className="border border-white/5 p-3 text-marble align-top">{children}</td>;
     case "youtube": return renderYoutube(node);
     case "videoEmbed": return renderVideoEmbed(node);
+    case "galleryEmbed": return renderGalleryEmbed(node);
     case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-white/80">{children}</ul>;
     case "taskItem": return renderTaskItem(node, children);
     case "codeBlock": return <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language={node.attrs?.language as string} /></div>;
