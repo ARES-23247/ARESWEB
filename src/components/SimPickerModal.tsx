@@ -1,7 +1,8 @@
-import { useState } from "react";
 import { X, TerminalSquare, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useForm } from "@tanstack/react-form";
 import registry from "../sims/simRegistry.json";
+import { AresField } from "./ui/forms/AresField";
 
 export default function SimPickerModal({
   isOpen,
@@ -12,7 +13,13 @@ export default function SimPickerModal({
   onClose: () => void;
   onSelect: (simId: string) => void;
 }) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const form = useForm({
+    defaultValues: {
+      searchQuery: "",
+    },
+  });
+
+  const searchQuery = form.useStore((state) => state.values.searchQuery);
 
   const sims = registry.simulators.filter(sim => 
     sim.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -52,14 +59,17 @@ export default function SimPickerModal({
           <div className="px-6 py-4 bg-white/5 border-b border-white/10 flex items-center gap-3 shadow-inner">
              <Search size={18} className="text-white/60" aria-hidden="true" />
              <label htmlFor="simSearch" className="sr-only">Search active simulators</label>
-             <input
-               id="simSearch"
-               type="text"
-               placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
-               value={searchQuery}
-               onChange={e => setSearchQuery(e.target.value)}
-               className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
-             />
+             <form.Field name="searchQuery">
+               {(field) => (
+                 <AresField
+                   field={field}
+                   label=""
+                   type="text"
+                   placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
+                   className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
+                 />
+               )}
+             </form.Field>
           </div>
 
           {/* Content */}

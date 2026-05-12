@@ -122,15 +122,24 @@ Plans:
 - [x] 01-PLAN.md (Infrastructure setup for `AresField` and `AresSelect`)
 - [x] 02-PLAN.md (Refactoring `QuickAddEventModal`)
 
-### Phase 73: Dashboard Boilerplate Cleanup
+### Phase 73: Dashboard Boilerplate Cleanup ✅
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** [Completed] Standardize all dashboard forms to use TanStack useForm, AresField, and AresSelect.
 **Depends on:** Phase 72
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 73 to break down)
+- [x] Refactor all dashboard inputs to standard components
+
+### Phase 74: SimRegistry Form Migration ✅
+
+**Goal:** [Completed] Migrate SimRegistry inputs to the standard form infrastructure.
+**Depends on:** Phase 73
+**Plans:** 1/1 plans complete (executed inline)
+
+Plans:
+- [x] Migrate `SimPickerModal.tsx` search input to `AresField` and `@tanstack/react-form`
+- [x] Refactor `AresField` to support styling overrides
 
 ---
 
