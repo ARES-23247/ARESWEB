@@ -10,12 +10,15 @@ export default function CommandQuickActions() {
   const handleReindex = async (force = false) => {
     setIsReindexing(true);
     try {
-      const url = force ? "/api/ai/admin/reindex?force=true" : "/api/ai/admin/reindex";
-      const res = await fetch(url, { method: "POST" });
-      const data = await res.json() as { success?: boolean; indexed?: number; mode?: string; errors?: string[]; error?: string };
-      if (res.ok && data.success) {
-        const mode = data.mode === "full" ? "Full" : "Incremental";
-        toast.success(`${mode} index complete: ${data.indexed} documents updated.`);
+      const res = await fetch("/api/ai/admin/reindex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
+      const data = await res.json() as { indexed?: number; skipped?: number; errors?: string[]; error?: string };
+      if (res.ok) {
+        const mode = force ? "Full" : "Incremental";
+        toast.success(`${mode} index complete: ${data.indexed ?? 0} documents updated.`);
         if (data.errors && data.errors.length > 0) {
           toast.warning(`${data.errors.length} indexing warnings — check console.`);
           console.warn("[Reindex Warnings]", data.errors);
