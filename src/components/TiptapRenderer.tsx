@@ -161,6 +161,35 @@ const renderYoutube = (node: ASTNode) => {
   );
 };
 
+const renderVideoEmbed = (node: ASTNode) => {
+  const videoId = node.attrs?.videoId as string;
+  const platform = node.attrs?.platform as string || 'youtube';
+  const title = node.attrs?.title as string || 'Video';
+
+  if (!videoId) return null;
+
+  // Generate embed URL based on platform
+  const embedSrc = platform === 'youtube'
+    ? `https://www.youtube.com/embed/${videoId}`
+    : platform === 'vimeo'
+    ? `https://player.vimeo.com/video/${videoId}`
+    : '';
+
+  if (!embedSrc) return null;
+
+  return (
+    <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
+      <iframe
+        title={title}
+        src={embedSrc}
+        className="w-full h-full"
+        allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      />
+    </div>
+  );
+};
+
 const renderTaskItem = (node: ASTNode, children: ReactNode) => (
   <li className="flex items-start gap-3">
     <div className="mt-1 flex-shrink-0">
@@ -233,6 +262,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "tableHeader": return <th className="bg-obsidian border border-white/10 p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm">{children}</th>;
     case "tableCell": return <td className="border border-white/5 p-3 text-marble align-top">{children}</td>;
     case "youtube": return renderYoutube(node);
+    case "videoEmbed": return renderVideoEmbed(node);
     case "taskList": return <ul className="list-none pl-0 space-y-2 my-4 text-white/80">{children}</ul>;
     case "taskItem": return renderTaskItem(node, children);
     case "codeBlock": return <div className="my-4"><CodeBlock value={node.content?.[0]?.text || ""} language={node.attrs?.language as string} /></div>;
