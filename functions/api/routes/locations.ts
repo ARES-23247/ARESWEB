@@ -10,9 +10,8 @@ import {
   saveLocationRoute,
   deleteLocationRoute
 } from "../../../shared/routes/locations";
-import { AppEnv, ensureAdmin, logAuditAction } from "../middleware";
+import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
-import { findMany, upsertOne, deleteOneAndReturn, logAudit } from "../utils/drizzle-helpers";
 
 
 
@@ -51,10 +50,18 @@ _locationsRouter.use("/admin/*", ensureAdmin);
 
 export const locationsRouter = _locationsRouter
     .openapi(listLocationsRoute, async (c) => {
-        const results = await findMany(c, schema.locations, {
-          where: or(eq(schema.locations.isDeleted, 0), isNull(schema.locations.isDeleted)),
-          orderBy: asc(schema.locations.name),
-        });
+        const db = getDb(c);
+        const results = await db.select({
+            id: schema.locations.id,
+            name: schema.locations.name,
+            address: schema.locations.address,
+            mapsUrl: schema.locations.mapsUrl,
+            isDeleted: schema.locations.isDeleted
+          })
+          .from(schema.locations)
+          .where(or(eq(schema.locations.isDeleted, 0), isNull(schema.locations.isDeleted)))
+          .orderBy(asc(schema.locations.name))
+          .all();
 
         const locations = results.map((r) => ({
           ...r,
@@ -65,9 +72,17 @@ export const locationsRouter = _locationsRouter
         return c.json({ locations: locations as LocationInput[] } satisfies ListLocationsSuccess, 200);
     })
     .openapi(adminListLocationsRoute, async (c) => {
-        const results = await findMany(c, schema.locations, {
-          orderBy: asc(schema.locations.name),
-        });
+        const db = getDb(c);
+        const results = await db.select({
+            id: schema.locations.id,
+            name: schema.locations.name,
+            address: schema.locations.address,
+            mapsUrl: schema.locations.mapsUrl,
+            isDeleted: schema.locations.isDeleted
+          })
+          .from(schema.locations)
+          .orderBy(asc(schema.locations.name))
+          .all();
 
         const locations = results.map((r) => ({
           ...r,
@@ -79,23 +94,38 @@ export const locationsRouter = _locationsRouter
     })
     .openapi(saveLocationRoute, async (c) => {
         const validatedData = c.req.valid("json");
+        const db = getDb(c);
         const id = validatedData.id || crypto.randomUUID();
 
-        await upsertOne(c, schema.locations, {
-          id,
-          name: validatedData.name,
-          address: validatedData.address,
-          mapsUrl: validatedData.mapsUrl || null,
-          isDeleted: validatedData.isDeleted || 0,
-        });
+        await db.insert(schema.locations)
+          .values({
+            id,
+            name: validatedData.name,
+            address: validatedData.address,
+            mapsUrl: validatedData.mapsUrl || null,
+            isDeleted: validatedData.isDeleted || 0,
+          })
+          .onConflictDoUpdate({
+            target: schema.locations.id,
+            set: {
+              name: validatedData.name,
+              address: validatedData.address,
+              mapsUrl: validatedData.mapsUrl || null,
+              isDeleted: validatedData.isDeleted || 0,
+            }
+          })
+          .run();
 
-        logAudit(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`);
+        c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
         return c.json({ success: true, id } satisfies SaveLocationSuccess, 200);
     })
     .openapi(deleteLocationRoute, async (c) => {
         const { id } = c.req.valid("param");
-        await deleteOneAndReturn(c, schema.locations, id);
-        logAudit(c, "delete_location", "locations", id, "Location permanently deleted");
+        const db = getDb(c);
+        await db.delete(schema.locations)
+          .where(eq(schema.locations.id, id))
+          .run();
+        c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location permanently deleted"));
         return c.json({ success: true } satisfies DeleteLocationSuccess, 200);
     });
 export default locationsRouter;

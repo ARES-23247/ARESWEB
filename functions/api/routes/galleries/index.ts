@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { ApiError } from "../../middleware/errorHandler";
 import {
   listGalleriesRoute,
   getGalleryRoute,
@@ -9,10 +10,9 @@ import {
   getGalleryMediaRoute,
   type gallerySchema,
 } from "@shared/routes/galleries";
-import { AppEnv, ensureAdmin } from "../../middleware";
+import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
-import { findOne, findMany, insertOne, updateOne, deleteOneAndReturn, logAudit } from "../../utils/drizzle-helpers";
 
 export const galleriesRouter = new OpenAPIHono<AppEnv>();
 
@@ -33,41 +33,59 @@ const serializeGallery = (g: typeof schema.galleries.$inferSelect): z.infer<type
 
 // GET /galleries - List all galleries (public)
 export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, async (c) => {
-  const galleries = await findMany(c, schema.galleries, {
-    orderBy: schema.galleries.createdAt,
-  });
+  const db = getDb(c);
+  const results = await db.select().from(schema.galleries).orderBy(schema.galleries.createdAt).execute();
 
-  return c.json({ galleries: galleries.map(serializeGallery) }, 200);
+  const galleries = results.map(serializeGallery);
+
+  return c.json({ galleries }, 200);
 })
 
 // GET /galleries/:id - Get a single gallery (public)
 .openapi(getGalleryRoute, async (c) => {
   const { id } = c.req.valid("param");
-  const gallery = await findOne(c, schema.galleries, id);
+  const db = getDb(c);
 
-  return c.json({ gallery: serializeGallery(gallery) }, 200);
+  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+
+  if (result.length === 0) {
+    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
+  }
+
+  return c.json({ gallery: serializeGallery(result[0]) }, 200);
 })
 
 // GET /galleries/:id/media - Get all media for a specific gallery
 .openapi(getGalleryMediaRoute, async (c) => {
   const { id } = c.req.valid("param");
+  const db = getDb(c);
 
-  // Verify gallery exists
-  await findOne(c, schema.galleries, id);
+  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+  if (existing.length === 0) {
+    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
+  }
 
   // Get all media tags for this gallery ID
-  const tags = await findMany(c, schema.mediaTags, {
-    where: eq(schema.mediaTags.folder, id),
-  });
+  const tags = await db
+    .select({
+      key: schema.mediaTags.key,
+      folder: schema.mediaTags.folder,
+      tags: schema.mediaTags.tags
+    })
+    .from(schema.mediaTags)
+    .where(eq(schema.mediaTags.folder, id))
+    .execute();
 
-  const publicKeys = new Set(tags.map((t) => t.key));
+  const publicKeys = new Set(tags.map(t => t.key));
 
   const objects = await c.env.ARES_STORAGE.list();
 
   const media = objects.objects
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((obj: any) => publicKeys.has(obj.key))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((obj: any) => {
-      const tagInfo = tags.find((t) => t.key === obj.key);
+      const tagInfo = tags.find(t => t.key === obj.key);
       return {
         key: obj.key,
         size: obj.size,
@@ -78,6 +96,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
         tags: tagInfo?.tags ?? null,
       };
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .sort((a: any, b: any) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
   return c.json({ media }, 200);
@@ -86,23 +105,40 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
 // POST /galleries/admin - Create a gallery (admin only)
 .openapi(createGalleryRoute, async (c) => {
   const body = c.req.valid("json");
+  const db = getDb(c);
 
-  const gallery = await insertOne(c, schema.galleries, {
+  const id = `gal_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
+
+  const newGallery = {
+    id,
     title: body.title,
     description: body.description ?? null,
     googlePhotosUrl: body.googlePhotosUrl ?? null,
     heroImageKey: body.heroImageKey ?? null,
-  }, { idPrefix: "gal_" });
+  };
 
-  logAudit(c, "gallery_create", "gallery", gallery.id, `Created gallery: ${body.title}`);
+  await db.insert(schema.galleries).values(newGallery).execute();
 
-  return c.json({ gallery: serializeGallery(gallery) }, 200);
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(logAuditAction(c, "gallery_create", "gallery", id, `Created gallery: ${body.title}`));
+  }
+
+  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+
+  return c.json({ gallery: serializeGallery(result[0]) }, 200);
 })
 
 // PUT /galleries/admin/:id - Update a gallery (admin only)
 .openapi(updateGalleryRoute, async (c) => {
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
+  const db = getDb(c);
+
+  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+
+  if (existing.length === 0) {
+    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
+  }
 
   const updates: Record<string, unknown> = {
     ...(body.title !== undefined && { title: body.title }),
@@ -112,20 +148,33 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
     updatedAt: new Date().toISOString(),
   };
 
-  const gallery = await updateOne(c, schema.galleries, id, updates);
+  await db.update(schema.galleries).set(updates).where(eq(schema.galleries.id, id)).execute();
 
-  logAudit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || gallery.title}`);
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(logAuditAction(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || existing[0].title}`));
+  }
 
-  return c.json({ gallery: serializeGallery(gallery) }, 200);
+  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+
+  return c.json({ gallery: serializeGallery(result[0]) }, 200);
 })
 
 // DELETE /galleries/admin/:id - Delete a gallery (admin only)
 .openapi(deleteGalleryRoute, async (c) => {
   const { id } = c.req.valid("param");
+  const db = getDb(c);
 
-  const gallery = await deleteOneAndReturn(c, schema.galleries, id);
+  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
 
-  logAudit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${gallery.title}`);
+  if (existing.length === 0) {
+    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
+  }
+
+  await db.delete(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(logAuditAction(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing[0].title}`));
+  }
 
   return c.json({ success: true }, 200);
 });
