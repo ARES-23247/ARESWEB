@@ -251,7 +251,7 @@ export const judgesRouter = _judgesRouter
             reachCount: Number(o.reachCount),
             description: sanitizeJudgeContent(o.description || ""),
           })),
-          awards: awards.map((a) => ({
+          awards: awards.map((a: any) => ({
             id: a.id,
             title: a.title,
             date: a.date,

@@ -65,7 +65,7 @@ export const seasonsRouter = _seasonsRouter
         useAll: true
       });
 
-      const seasons = results.map((r) => ({
+      const seasons = results.map((r: any) => ({
         ...r,
         startYear: Number(r.startYear),
         endYear: Number(r.endYear ?? Number(r.startYear) + 1),

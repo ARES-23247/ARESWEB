@@ -155,7 +155,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         const { id } = c.req.valid("param");
         const db = getDb(c);
 
-        const existing = await findOneById(db, schema.videos, id, "Video not found");
+        const existing = await findOneById<typeof schema.videos.$inferSelect>(db, schema.videos, id, "Video not found");
 
         await db.delete(schema.videos).where(eq(schema.videos.id, id)).execute();
         audit(c, "video_delete", "video", id, `Deleted video: ${existing.title}`);

@@ -1,6 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { DrizzleDB } from "../../middleware";
+import { list, notDeleted } from "../../../../src/db/query-helpers";
 
 export const SNIPPET_LENGTH = 200;
 
@@ -38,22 +39,22 @@ interface VolunteerEvent {
 
 export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: string[]): Promise<VolunteerEvent[]> {
   try {
-    const results = await db.select({
-      id: schema.events.id,
-      title: schema.events.title,
-      date: schema.events.dateStart,
-      location: schema.events.location,
-      seasonId: schema.events.seasonId,
-    }).from(schema.events)
-      .where(
-        and(
-          eq(schema.events.isVolunteer, 1),
-          eq(schema.events.isDeleted, 0),
-          eq(schema.events.status, "published")
-        )
-      )
-      .orderBy(desc(schema.events.dateStart))
-      .all();
+    const results = await list(db, schema.events, {
+      select: {
+        id: schema.events.id,
+        title: schema.events.title,
+        date: schema.events.dateStart,
+        location: schema.events.location,
+        seasonId: schema.events.seasonId,
+      },
+      where: and(
+        eq(schema.events.isVolunteer, 1),
+        notDeleted(schema.events),
+        eq(schema.events.status, "published")
+      ),
+      orderBy: desc(schema.events.dateStart),
+      useAll: true
+    });
       
     const filteredResults = results.filter((r: VolunteerEventDbResult) => !existingEventIds.includes(String(r.id)));
 

@@ -34,7 +34,7 @@ vi.mock('../middleware/auth', async () => {
       requireAuth: vi.fn(async (c: import('hono').Context) => {
                     const user = c.get('sessionUser') || globalThis.__mockSessionUser || null;
                     if (!user) {
-                      const { ApiError } = await vi.importActual('../middleware/errorHandler');
+                      const { ApiError } = (await vi.importActual('../middleware/errorHandler')) as any;
                       throw new ApiError("Unauthorized: Please log in.", 401);
                     }
                     return user;

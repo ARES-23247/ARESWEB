@@ -164,7 +164,7 @@ export const tasksRouter = _tasksRouter
     .openapi(createTaskRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
 
@@ -264,7 +264,7 @@ export const tasksRouter = _tasksRouter
     .openapi(reorderTasksRoute, async (c) => {
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         // Batch update sort orders
         await Promise.all(body.items.map((o: { id: string; sortOrder: number }) =>
             db.update(schema.tasks)
@@ -282,7 +282,7 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         const existing = await db.select({
             id: schema.tasks.id,
             title: schema.tasks.title,
@@ -402,7 +402,7 @@ export const tasksRouter = _tasksRouter
     .openapi(deleteTaskRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         const existing = await db.select({ createdBy: schema.tasks.createdBy })
             .from(schema.tasks)
             .where(eq(schema.tasks.id, params.id))
@@ -442,7 +442,7 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         let title = body.url;
         let type = "link";
 
@@ -495,7 +495,7 @@ export const tasksRouter = _tasksRouter
     .openapi(deleteTaskAttachmentRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         await db.delete(schema.taskAttachments).where(and(eq(schema.taskAttachments.id, params.attachmentId), eq(schema.taskAttachments.taskId, params.id))).run();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return c.json({ success: true } as any, 200);
@@ -504,7 +504,7 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         const id = crypto.randomUUID();
         await db.insert(schema.taskChecklists).values({
             id,
@@ -521,7 +521,7 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         type ChecklistUpdates = {
             isCompleted?: number;
             content?: string;
@@ -556,7 +556,7 @@ export const tasksRouter = _tasksRouter
     .openapi(deleteTaskChecklistRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         await db.delete(schema.taskChecklists).where(and(eq(schema.taskChecklists.id, params.checklistId), eq(schema.taskChecklists.taskId, params.id))).run();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return c.json({ success: true } as any, 200);
@@ -565,7 +565,7 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        await requireAuth(c);
+        const user = await requireAuth(c);
         await db.delete(schema.taskLabels).where(eq(schema.taskLabels.taskId, params.id)).run();
 
         if (body.labelIds.length > 0) {

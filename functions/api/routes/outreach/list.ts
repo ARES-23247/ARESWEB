@@ -36,11 +36,11 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
   });
 
   const existingEventIds = results
-    .filter(r => r.eventId !== null)
-    .map(r => String(r.eventId));
+    .filter((r: any) => r.eventId !== null)
+    .map((r: any) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
-  const logs = results.map((r): OutreachLog => ({
+  const logs = results.map((r: any): OutreachLog => ({
     id: r.id,
     title: r.title,
     date: r.date,
@@ -73,11 +73,11 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
   });
 
   const existingEventIds = results
-    .filter(r => r.eventId !== null)
-    .map(r => String(r.eventId));
+    .filter((r: any) => r.eventId !== null)
+    .map((r: any) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
-  const logs = results.map((r): OutreachLog => ({
+  const logs = results.map((r: any): OutreachLog => ({
     id: r.id,
     title: r.title,
     date: r.date,

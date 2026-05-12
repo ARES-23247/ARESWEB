@@ -1,5 +1,6 @@
 import { ApiError } from "../middleware/errorHandler";
 /* User management route handlers */
+import { z } from "zod";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
