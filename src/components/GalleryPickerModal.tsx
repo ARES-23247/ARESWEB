@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Images, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetGalleries, useUpdateGallery } from "../api";
+import { useGetGalleries, useUpdateGallery, useCreateGallery } from "../api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
@@ -65,20 +65,7 @@ export default function GalleryPickerModal({
     }
   }
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      title: string;
-      description?: string;
-      heroImageKey?: string;
-    }) => {
-      const res = await fetch("/api/galleries/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to create gallery");
-      return res.json() as Promise<{ gallery: Gallery }>;
-    },
+  const createMutation = useCreateGallery({
     onSuccess: (data) => {
       refetch();
       setIsCreating(false);
@@ -88,6 +75,9 @@ export default function GalleryPickerModal({
       onSelect(data.gallery.id, data.gallery.title);
       toast.success("Gallery created successfully");
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create gallery");
+    }
   });
 
   const updateMutation = useUpdateGallery({
