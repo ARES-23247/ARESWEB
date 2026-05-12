@@ -122,7 +122,7 @@ export const notificationsRouter = _notificationsRouter
         });
 
         return c.json({
-            inquiries: pendingInquiries.map(i => ({
+            inquiries: pendingInquiries.map((i: any) => ({
                 id: i.id,
                 type: i.type,
                 name: i.name,
@@ -130,19 +130,19 @@ export const notificationsRouter = _notificationsRouter
                 status: i.status || 'pending',
                 createdAt: i.createdAt || new Date().toISOString(),
             })),
-            posts: pendingPosts.map(p => ({
+            posts: pendingPosts.map((p: any) => ({
                 id: p.slug,
                 title: p.title,
                 authorName: p.author || 'Unknown',
                 createdAt: p.updatedAt || new Date().toISOString(),
             })),
-            events: pendingEvents.map(e => ({
+            events: pendingEvents.map((e: any) => ({
                 id: e.id,
                 title: e.title,
                 dateStart: e.dateStart,
                 createdAt: e.updatedAt || new Date().toISOString(),
             })),
-            docs: pendingDocs.map(d => ({
+            docs: pendingDocs.map((d: any) => ({
                 slug: d.slug,
                 title: d.title,
                 category: d.category,

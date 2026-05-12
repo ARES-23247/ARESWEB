@@ -56,9 +56,9 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
       useAll: true
     });
       
-    const filteredResults = results.filter((r: VolunteerEventDbResult) => !existingEventIds.includes(String(r.id)));
+    const filteredResults = results.filter((r: any) => !existingEventIds.includes(String(r.id)));
 
-    return filteredResults.map((r: VolunteerEventDbResult): VolunteerEvent => ({
+    return filteredResults.map((r: any): VolunteerEvent => ({
       id: r.id,
       title: r.title,
       date: r.date,

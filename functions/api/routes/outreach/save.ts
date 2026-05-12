@@ -3,7 +3,6 @@ import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { logAuditAction, getDb, type AppEnv, requireAuth } from "../../middleware";
 import type { saveOutreachRoute } from "../../../../shared/routes/outreach";
-import { ApiError } from "../../middleware/errorHandler";
 
 export const handleSaveOutreach: RouteHandler<typeof saveOutreachRoute, AppEnv> = async (c) => {
     const body = c.req.valid("json");

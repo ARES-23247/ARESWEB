@@ -233,7 +233,7 @@ export const judgesRouter = _judgesRouter
         ]);
 
         const payload: JudgePortfolioSuccess = {
-          portfolioDocs: portfolioDocs.map((d: PortfolioDocResult) => ({
+          portfolioDocs: portfolioDocs.map((d: any): PortfolioDocResult => ({
             slug: d.slug,
             title: d.title,
             category: d.category,
@@ -241,7 +241,7 @@ export const judgesRouter = _judgesRouter
             content: sanitizeJudgeContent(d.content),
             isExecutiveSummary: d.category === "Executive Summary" ? 1 : undefined,
           })),
-          outreach: outreach.map((o: OutreachResult) => ({
+          outreach: outreach.map((o: any): OutreachResult => ({
             id: o.id,
             title: o.title,
             date: o.date,

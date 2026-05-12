@@ -3,7 +3,6 @@ import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { logAuditAction, getDb, type AppEnv, requireAuth } from "../../middleware";
 import type { deleteOutreachRoute } from "../../../../shared/routes/outreach";
-import { ApiError } from "../../middleware/errorHandler";
 
 export const handleDeleteOutreach: RouteHandler<typeof deleteOutreachRoute, AppEnv> = async (c) => {
     const { id } = c.req.valid("param");

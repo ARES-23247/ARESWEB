@@ -8,7 +8,7 @@ import {
     deleteMediaRoute,
     syndicateMediaRoute
 } from "../../../../shared/routes/media";
-import { AppEnv, ensureAdmin, getSessionUser, checkPersistentRateLimit, logAuditAction, getDb, getDbSettings } from "../../middleware";
+import { AppEnv, ensureAdmin, checkPersistentRateLimit, logAuditAction, getDb, getDbSettings } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 

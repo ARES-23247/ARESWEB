@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";

@@ -61,8 +61,8 @@ eventsRouter.use("/:id/signups", ensureAuth);
  * The handlers return { status, body } from ApiResponse<T>, which needs to be
  * converted to Hono's Response type.
  */
-function handlerResponse<T>(
-  result: { status: number; body: T }
+function handlerResponse(
+  result: any
 ): Response {
   return new Response(JSON.stringify(result.body), {
     status: result.status,

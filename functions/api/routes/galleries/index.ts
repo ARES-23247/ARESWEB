@@ -141,7 +141,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
-  const existing = await findOneById(db, schema.galleries, id, "Gallery not found");
+  const existing = await findOneById<typeof schema.galleries.$inferSelect>(db, schema.galleries, id, "Gallery not found");
 
   await db.delete(schema.galleries).where(eq(schema.galleries.id, id)).execute();
   audit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing.title}`);
