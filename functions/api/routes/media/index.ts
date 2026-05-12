@@ -387,9 +387,16 @@ export const finalMediaRouter = mediaRouter.openapi(getMediaRoute, async (c) => 
 // GET /media/:key - Serve raw object from R2 (This is NOT an OpenAPI route because it returns binary/raw data)
 mediaRouter.get("/:key{.+$}", async (c) => {
     const key = c.req.param("key");
-    const folder = key.includes("/") ? key.split("/")[0] : "Uncategorized";
-    const publicFolders = ["Gallery", "Library"];
-    if (!publicFolders.includes(folder)) {
+    const keyLower = key.toLowerCase();
+    const isPublicFolder = 
+        keyLower.startsWith("gallery/") || 
+        keyLower.startsWith("library/") || 
+        keyLower.startsWith("events/") || 
+        keyLower.startsWith("posts/") || 
+        keyLower.startsWith("seasons/") || 
+        !key.includes("/");
+    
+    if (!isPublicFolder) {
         await requireAuth(c);
     }
     // Cloudflare Cache API is not in standard types
@@ -399,7 +406,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     const cacheKey = new Request(url.toString(), { method: "GET" });
     if (cache) {
         const cached = await cache.match(cacheKey);
-        if (cached && publicFolders.includes(folder)) return cached;
+        if (cached && isPublicFolder) return cached;
     }
     if (!c.env.ARES_STORAGE) return c.text("R2 Not Bound", 404);
     const object = await c.env.ARES_STORAGE.get(key);
@@ -407,10 +414,10 @@ mediaRouter.get("/:key{.+$}", async (c) => {
     const headers = new Headers();
     object.writeHttpMetadata(headers as unknown as import("@cloudflare/workers-types").Headers);
     headers.set("etag", object.httpEtag);
-    if (publicFolders.includes(folder)) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
+    if (isPublicFolder) headers.set("Cache-Control", "public, max-age=2592000, stale-while-revalidate=86400");
     else headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
     const response = new Response(object.body as unknown as BodyInit, { headers });
-    if (cache && publicFolders.includes(folder) && c.executionCtx) {
+    if (cache && isPublicFolder && c.executionCtx) {
         c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
     }
     return response;

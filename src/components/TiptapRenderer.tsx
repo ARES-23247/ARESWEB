@@ -391,6 +391,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "orderedList": return <ul className="list-decimal list-inside space-y-1 mb-4 text-white/70 ml-2">{children}</ul>;
     case "listItem": return <li className="leading-relaxed">{children}</li>;
     case "image": return renderImage(node);
+    case "imageResize": return renderImage(node);
     case "interactiveComponent": return renderInteractiveComponent(node);
     case "blockquote": return <blockquote className="border-l-4 border-ares-red/60 bg-ares-red/5 px-4 py-3 my-4 text-white italic font-bold">{children}</blockquote>;
     case "table": return (

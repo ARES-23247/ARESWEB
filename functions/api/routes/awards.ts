@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, desc, asc, and } from "drizzle-orm";
+import { eq, desc, asc, and, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
@@ -48,13 +48,18 @@ export const awardsRouter = _awardsRouter
 
         const awards = results.map((record: unknown) => {
             const a = record as Record<string, unknown>;
+            // SAF-01: Resilience for malformed legacy data
+            const rawYear = Number(a.date);
+            const validYear = isNaN(rawYear) ? new Date().getFullYear() : rawYear;
+
             return {
                 id: String(a.id),
                 title: String(a.title),
-                year: Number(a.date),
+                year: validYear,
                 eventName: a.eventName ? String(a.eventName) : null,
                 description: a.description ? String(a.description) : null,
-                imageUrl: a.iconType ? String(a.iconType) : "trophy",
+                // SAF-02: Clean placeholder images for frontend rendering
+                imageUrl: (a.iconType && a.iconType !== "trophy") ? String(a.iconType) : null,
                 seasonId: a.seasonId ? Number(a.seasonId) : null,
                 createdAt: a.createdAt ? String(a.createdAt) : new Date().toISOString(),
                 updatedAt: a.createdAt ? String(a.createdAt) : new Date().toISOString()
@@ -118,11 +123,17 @@ export const awardsRouter = _awardsRouter
     .openapi(deleteAwardRoute, async (c) => {
         const params = c.req.valid("param");
         const db = getDb(c);
+        
+        // SAF-03: Relax ID validation to allow deletion of malformed records
+        // If it's numeric, use eq(numeric), otherwise try to match as string if the DB allows it
         const numericId = Number(params.id);
-        if (isNaN(numericId) || numericId <= 0) {
-            throw new ApiError("Invalid award ID", 400, "BAD_REQUEST");
+        if (!isNaN(numericId) && numericId > 0) {
+            await db.update(schema.awards).set({ isDeleted: 1 }).where(eq(schema.awards.id, numericId)).run();
+        } else {
+            // Fallback for weird IDs that might have been injected
+            // Use raw SQL to attempt a best-effort delete by ID
+            await db.run(sql`UPDATE awards SET is_deleted = 1 WHERE id = ${params.id}`);
         }
-        await db.update(schema.awards).set({ isDeleted: 1 }).where(eq(schema.awards.id, numericId)).run();
         c.executionCtx.waitUntil(logAuditAction(c, "award_deleted", "awards", params.id, "Award soft-deleted"));
         return c.json({ success: true }, 200);
     });

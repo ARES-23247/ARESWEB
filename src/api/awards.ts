@@ -22,7 +22,7 @@ export interface AwardPayload {
   year: number;
   eventName?: string | null;
   description?: string | null;
-  image_url?: string | null;
+  imageUrl?: string | null;
   seasonId?: number | null;
 }
 

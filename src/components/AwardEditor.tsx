@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
@@ -42,8 +43,12 @@ export default function AwardEditor() {
       };
       saveMutation.mutate(payload, {
         onSuccess: () => {
+          toast.success("Award saved successfully");
           setIsAdding(false);
           form.reset();
+        },
+        onError: (err) => {
+          toast.error(`Failed to save award: ${err.message}`);
         }
       });
     }
@@ -222,7 +227,14 @@ export default function AwardEditor() {
             <button
               title="Delete Award"
               aria-label="Delete Award"
-              onClick={() => { if(confirm("Purge this achievement from history?")) deleteMutation.mutate(award.id); }}
+              onClick={() => { 
+                if(confirm("Purge this achievement from history?")) {
+                  deleteMutation.mutate(award.id, {
+                    onSuccess: () => toast.success("Award deleted"),
+                    onError: (err) => toast.error(`Delete failed: ${err.message}`)
+                  }); 
+                }
+              }}
               className="absolute top-4 right-4 p-3 text-ares-gray hover:text-ares-red transition-colors bg-white/5 ares-cut opacity-0 group-hover:opacity-100"
             >
               <Trash2 size={18} />
