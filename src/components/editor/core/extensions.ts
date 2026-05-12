@@ -1,5 +1,5 @@
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
+import ImageResize from "tiptap-extension-resize-image";
 import { Youtube } from '@tiptap/extension-youtube';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
@@ -53,7 +53,7 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
   Subscript,
   Superscript,
   CharacterCount,
-  Image.configure({ inline: false, HTMLAttributes: { class: 'ares-cut-sm border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
+  ImageResize.configure({ inline: false, HTMLAttributes: { class: 'ares-cut-sm border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
   Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video ares-cut-sm shadow-lg my-6 glass-card' } }),
   Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-ares-gray-dark ares-cut-sm hidden-border-corners shadow-lg table-auto my-6' } }),
   TableRow.configure({ HTMLAttributes: { class: 'border-b border-ares-gray-dark hover:bg-obsidian/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),

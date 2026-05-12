@@ -686,19 +686,16 @@ export const transactionHelpers = {
 	 */
 	createEventSignup: async (
 		db: DrizzleDB,
-		signupData: typeof schema.eventSignups.$inferInsert,
+		signupData: Omit<typeof schema.eventSignups.$inferInsert, "id" | "createdAt">,
 	) => {
-		await db
-			.insert(schema.eventSignups)
-			.values(signupData)
-			.onConflictDoUpdate({
-				target: [schema.eventSignups.eventId, schema.eventSignups.userId],
-				set: {
-					bringing: signupData.bringing,
-					notes: signupData.notes,
-					prepHours: signupData.prepHours,
-				},
-			});
+		await db.run(sql`
+			INSERT INTO event_signups (event_id, user_id, bringing, notes, prep_hours, attended, created_at)
+			VALUES (${signupData.eventId}, ${signupData.userId}, ${signupData.bringing || ""}, ${signupData.notes || ""}, ${signupData.prepHours || 0}, 0, CURRENT_TIMESTAMP)
+			ON CONFLICT (event_id, user_id) DO UPDATE SET
+				bringing = excluded.bringing,
+				notes = excluded.notes,
+				prep_hours = excluded.prep_hours
+		`);
 
 		return { success: true };
 	},

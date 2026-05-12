@@ -121,12 +121,21 @@ const renderHeading = (node: ASTNode, children: ReactNode) => {
 const renderImage = (node: ASTNode) => {
   const srcStr = validateUrl((node.src || node.attrs?.src || "") as string, 'image');
   const altStr = (node.alt || node.attrs?.alt || "") as string;
+  const width = node.attrs?.width;
+  const height = node.attrs?.height;
+  
   if (!srcStr) return null;
+
+  const style: React.CSSProperties = {
+    width: width && typeof width !== 'boolean' ? (typeof width === 'number' ? `${width}px` : width) : 'auto',
+    height: height && typeof height !== 'boolean' ? (typeof height === 'number' ? `${height}px` : height) : 'auto',
+    maxWidth: '100%',
+    margin: '0 auto'
+  };
+
   return (
-    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40">
-      <div className="relative w-full">
-        <img src={srcStr} alt={altStr} className="w-full h-auto object-contain" />
-      </div>
+    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40 flex flex-col items-center justify-center" style={style}>
+      <img src={srcStr} alt={altStr} className="max-w-full max-h-full object-contain" />
       {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
     </figure>
   );
@@ -155,9 +164,12 @@ const renderInteractiveComponent = (node: ASTNode) => {
 
 const renderYoutube = (node: ASTNode) => {
   const videoId = node.attrs?.videoId as string;
-  if (!videoId) return null;
+  const srcAttr = node.attrs?.src as string;
+  
+  const src = srcAttr || (videoId ? `https://www.youtube.com/embed/${videoId}` : null);
+  
+  if (!src) return null;
 
-  const src = `https://www.youtube.com/embed/${videoId}`;
   return (
     <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
       <iframe

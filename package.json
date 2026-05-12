@@ -162,6 +162,7 @@
     "tippy.js": "^6.3.7",
     "tiptap-extension-global-drag-handle": "^0.1.18",
     "tiptap-extension-mermaid": "^0.0.0",
+    "tiptap-extension-resize-image": "^1.4.0",
     "uuid": "^14.0.0",
     "vaul": "^1.1.2",
     "web-vitals": "^5.2.0",
