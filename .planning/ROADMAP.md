@@ -1,126 +1,155 @@
-## v7.2 TypeScript Safety & ESLint Compliance ✅ SHIPPED
+# ARESWEB Roadmap
 
-**Shipped**: 2026-05-08
-
-**Goal**: Achieve complete TypeScript type safety and ESLint compliance across the entire codebase.
-
-- [x] **Phase 58: Foundation** — Test utilities & error handling (typedHandler, error-handling skill, dbMock)
-- [x] **Phase 59: Route Handler Type Safety — Batch 1** — Core handlers (TSC 241 → 170)
-- [x] **Phase 60: Route Handler Type Safety — Batch 2** — Expansion handlers (TSC 170 → 26)
-- [x] **Phase 61: Test Type Safety** — Unit tests (all test files typed)
-- [x] **Phase 62: Final TypeScript Cleanup** — Frontend & edge cases (TSC 26 → 0)
-- [x] **Phase 63: ESLint Compliance** — Zero errors, zero warnings
-
-### Metrics Achieved
-
-- TypeScript: 0 errors (down from 241)
-- ESLint: 0 errors, 0 warnings
-- Unit Tests: 834+ passing
-- E2E Tests: 55/55 passing
-- Pa11y: 16/16 URLs passing
+**Current Milestone:** v8.1 Google Workspace Integrations
+**Last Updated:** 2026-05-12
 
 ---
 
-<details><summary><b>v7.3 Full Codebase ESLint Sanitization ✅ SHIPPED</b> (See <a href="milestones/v7.3-ROADMAP.md">Archive</a>)</summary></details>
+## Phases
 
-
-## v8.0 End-to-End Hono RPC Type Safety 📋 PLANNED
-
-**Goal**: Eliminate the `any` type on the Hono RPC client and achieve full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
-
-**Depends on**: v7.3 ESLint Sanitization
-
-- [x] **Phase 69: Restructure `[[route]].ts`** — Chain all `.route()` calls for type propagation (completed 2026-05-11)
-- [ ] **Phase 70: Handler Return Type Alignment** — Remove `as any` casts from all `c.json()` returns (~30 route files)
-- [ ] **Phase 71: Client Type Safety** — Remove `: any` from `honoClient.ts`, verify inference
-- [ ] **Phase 72: Performance Validation** — Measure TS compiler impact, split AppType if needed
-
-See [v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md) for full analysis and rationale.
+- [ ] **Phase 73: Service Account Authentication** - OAuth tokens for Google Photos and Drive APIs
+- [ ] **Phase 74: Google Drive Document Browser** - Browse and open Google Workspace documents
+- [ ] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos
+- [ ] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage
+- [ ] **Phase 77: File Manager** - Upload and manage PDFs/docs with blog editor integration
 
 ---
 
-## Maintenance Mode
+## Phase Details
 
-**Current Status**: Paused for v7.3 sanitization.
+### Phase 73: Service Account Authentication
 
-**Quality Gates**: TSC passing; ESLint pending cleanup.
+**Goal**: Service account authenticates with Google Photos and Drive APIs with automatic token refresh
 
-**Next**: Resuming maintenance after ESLint sanitization.
+**Depends on**: Nothing
 
----
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
 
-## Archived Milestones (Planned But Not Executed)
+**Success Criteria** (what must be TRUE):
+1. Service account can authenticate with Google Photos Library API and Drive API
+2. Access tokens refresh automatically before expiration
+3. D1 stores OAuth tokens and cached media metadata
+4. Token refresh failures trigger alerts and retry logic
 
-The following milestones were planned and had phase directories created, but were not executed before the team pivoted to TypeScript safety work:
-
-- **v7.0 — Performance Optimization** (planned 2026-05-07, not executed)
-  - Phase directories exist but work was not completed
-  - Goal: 60-70% bundle size reduction, 90+ Lighthouse score
-
-These milestones are documented in `.planning/milestones/v7.0-*` files for reference.
+**Plans**: TBD
 
 ---
 
-## Completed Technical Debt Cleanup (2026-05-08)
+### Phase 74: Google Drive Document Browser
 
-**Hono/Zod/Drizzle Migration Completion** — See `.planning/todos/completed/2026-05-08-hono-zod-drizzle-cleanup.md`
+**Goal**: Users can browse, search, and open Google Workspace documents from Drive
 
-- Migrated remaining legacy Cloudflare Pages Functions to Hono
-- Added missing OpenAPI schemas for AI admin routes
-- Converted all remaining raw D1 queries to Drizzle ORM
-- Replaced manual type assertions with proper Zod validation
-- Updated frontend components to use new API paths
+**Depends on**: Phase 73
 
-This work completes the v7.1 Drizzle ORM migration goals that were previously marked as "not executed".
+**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06
 
-### Phase 68: Kanban Feature Parity with Google Integrations ✅
-**Goal:** [Completed] Synchronized Kanban checklist features with Google Calendar/Docs integration.
-**Plans:** 3/3 plans complete
+**Success Criteria** (what must be TRUE):
+1. User can browse configured Google Drive folders
+2. User can search and filter files by name
+3. User can view file metadata (name, type, modified date, owner)
+4. User can open Google Docs/Sheets/Slides/Drawings in new tab for editing
+5. UI displays Google Workspace documents with appropriate icons
+6. System excludes non-Google Workspace files from document browser
 
-### Phase 69: Rapid fixes to Profiles, Simulation Playground, and Zulip integration ✅
-**Goal:** [Completed] Resolved critical UI collapses and API mismatches.
-**Plans:** 1/1 plans complete
+**Plans**: TBD
 
-### Phase 70: Restore End-to-End Type Safety ✅
-**Goal:** [Completed] Standardized all 30+ backend routers to use `.openapi()` chaining for type propagation.
-**Plans:** 1/1 plans complete (executed inline)
-
-### Phase 71: API Route Hardening ✅
-**Goal:** [Completed] Remove `any` from `honoClient.ts` and ensure full end-to-end type inference.
-**Depends on:** Phase 70
-**Plans:** 1/1 plans complete (executed inline)
-
-### Phase 72: Component State and Forms ✅
-
-**Goal:** [Completed] Standardize form management using `@tanstack/react-form` and `@tanstack/zod-form-adapter`.
-**Requirements**: 72-CONTEXT.md
-**Depends on:** Phase 71
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 01-PLAN.md (Infrastructure setup for `AresField` and `AresSelect`)
-- [x] 02-PLAN.md (Refactoring `QuickAddEventModal`)
-
-### Phase 73: Dashboard Boilerplate Cleanup ✅
-
-**Goal:** [Completed] Standardize all dashboard forms to use TanStack useForm, AresField, and AresSelect.
-**Depends on:** Phase 72
-**Plans:** 1/1 plans complete
-
-Plans:
-- [x] Refactor all dashboard inputs to standard components
-
-### Phase 74: SimRegistry Form Migration ✅
-
-**Goal:** [Completed] Migrate SimRegistry inputs to the standard form infrastructure.
-**Depends on:** Phase 73
-**Plans:** 1/1 plans complete (executed inline)
-
-Plans:
-- [x] Migrate `SimPickerModal.tsx` search input to `AresField` and `@tanstack/react-form`
-- [x] Refactor `AresField` to support styling overrides
+**UI hint**: yes
 
 ---
 
-## Backlog
+### Phase 75: Google Photos Browser
 
+**Goal**: Users can browse Google Photos albums and filter photos by media type
+
+**Depends on**: Phase 73
+
+**Requirements**: PHOTO-01, PHOTO-02, PHOTO-03, PHOTO-04, PHOTO-05
+
+**Success Criteria** (what must be TRUE):
+1. User can browse Google Photos media items
+2. User can filter by media type (photo only, no videos)
+3. User can view photo thumbnails and metadata
+4. System handles Photos API pagination (media items list)
+5. UI displays albums for organized browsing
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+---
+
+### Phase 76: Image Import Pipeline
+
+**Goal**: Users can select and import photos from Google Photos to R2 storage
+
+**Depends on**: Phase 75
+
+**Requirements**: IMG-01, IMG-02, IMG-03, IMG-04, IMG-05, IMG-06, IMG-07
+
+**Success Criteria** (what must be TRUE):
+1. System lists photos from Google Photos (not Drive images)
+2. User can select multiple photos for import
+3. System downloads selected photos from Google Photos API
+4. System validates images (magic bytes, size limits, format check)
+5. System uploads valid images to R2 with proper metadata
+6. System logs import audit trail (who, what, when)
+7. Import errors display clear messages and retry options
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+---
+
+### Phase 77: File Manager
+
+**Goal**: Users can upload and manage PDFs/docs with blog editor integration
+
+**Depends on**: Phase 74
+
+**Requirements**: FILES-01, FILES-02, FILES-03, FILES-04, FILES-05, FILES-06, FILES-07, FILES-08
+
+**Success Criteria** (what must be TRUE):
+1. User can manually upload files (PDF, docs, etc.) through dashboard
+2. User can import files from Google Drive folders
+3. System validates file types (PDF, DOCX, etc.) and size limits
+4. System uploads files to R2 with metadata
+5. Blog editor can select and link to uploaded files
+6. System generates public download URLs for files
+7. User can view, search, and delete uploaded files
+8. System tracks file usage (which posts use which files)
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+---
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 73. Service Account Authentication | 0/4 | Not started | - |
+| 74. Google Drive Document Browser | 0/6 | Not started | - |
+| 75. Google Photos Browser | 0/5 | Not started | - |
+| 76. Image Import Pipeline | 0/7 | Not started | - |
+| 77. File Manager | 0/8 | Not started | - |
+
+---
+
+## Milestone v8.1 Summary
+
+**Goal**: Integrate Google Drive API for browsing documents and importing images to R2
+
+**Total Requirements**: 30
+- Authentication: 4 requirements
+- Document Browsing: 6 requirements
+- Photo Browser: 5 requirements
+- Image Import: 7 requirements
+- File Manager: 8 requirements
+
+**Coverage**: 30/30 requirements mapped ✓
+
+---
+
+*Roadmap created: 2026-05-12*
