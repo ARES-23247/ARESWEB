@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { createElement, useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -26,8 +26,7 @@ function BadgeItem({ badge: b }: BadgeItemProps) {
   return (
     <div className={`bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4 transition-all ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
       <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.colorTheme.replace("text-", "")}`}>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {iconRef({ size: 24 } as any)}
+        {createElement(iconRef as React.ElementType, { size: 24 })}
       </div>
       <div className="flex-1">
         <h4 className="text-white font-bold">{b.name}</h4>

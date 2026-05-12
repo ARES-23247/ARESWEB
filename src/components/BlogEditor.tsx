@@ -33,8 +33,8 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
   
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
-  const { uploadFile, isUploading: isUploadingCover } = useImageUpload();
-
+  const { uploadFile, isUploading: isUploadingCover, setErrorMsg: setUploadError } = useImageUpload();
+  const [errorMsg, setErrorMsg] = useState("");
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -78,7 +78,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
       form.setFieldValue("seasonId", post.seasonId ? Number(post.seasonId) : undefined);
       form.setFieldValue("thumbnail", post.thumbnail || DEFAULT_coverImage);
       form.setFieldValue("ast", post.ast ? JSON.parse(post.ast) : {});
-      form.setFieldValue("socials", (postRes as Record<string, unknown>).socials as Record<string, boolean> || {});
+      form.setFieldValue("socials", ((postRes as Record<string, unknown>).socials || {}) as { discord: boolean; bluesky: boolean; slack: boolean; teams: boolean; gchat: boolean; facebook: boolean; twitter: boolean; instagram: boolean; });
       if (editor && post.ast) {
         // In collaborative mode, avoid overwriting active live edits with the static DB snapshot.
         const shouldSetContent = !ydoc || ydoc.getXmlFragment("default").length === 0;
