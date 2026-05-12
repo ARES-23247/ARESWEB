@@ -17,6 +17,8 @@ ARESWEB uses Node/npm scripts for compiling, linting, and deploying via Cloudfla
 | `npm run lint` | Runs ESLint and TypeScript checks across `src/` and `functions/` |
 | `npx tsc --noEmit` | Runs the TypeScript compiler in type-check-only mode (mandatory CI gate) |
 | `npm run build` | Compiles the React SPA via Vite and prepares the Cloudflare worker (`functions/api/`) |
+| `npm run db:generate` | Generates a new migration SQL file from `src/db/schema.ts` |
+| `npm run db:push` | Applies pending migrations to the local D1 database |
 | `npm run test:e2e` | Runs Playwright E2E smoke tests including Axe-core accessibility scans |
 
 ### CI Pipeline

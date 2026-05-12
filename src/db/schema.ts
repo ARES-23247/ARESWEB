@@ -332,6 +332,7 @@ export const sponsorMetrics = sqliteTable("sponsor_metrics", {
 },
 (table) => [
 	index("idx_sponsor_metrics_sponsor").on(table.sponsorId),
+	uniqueIndex("unique_sponsor_month").on(table.sponsorId, table.yearMonth),
 ]);
 
 export const sponsorTokens = sqliteTable("sponsor_tokens", {

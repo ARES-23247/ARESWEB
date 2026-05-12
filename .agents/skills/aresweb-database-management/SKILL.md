@@ -7,30 +7,21 @@ description: Enforces ARESWEB Cloudflare D1 database management standards includ
 
 ## 1. Schema Authority
 
-### Single Source of Truth
-The file `schema.sql` at the project root is the **authoritative, complete** database schema. It can provision a fully functional D1 database from scratch with a single command:
+### 🎯 Primary Source of Truth: Drizzle ORM
+The authoritative definition of the database schema resides in **`src/db/schema.ts`**. This TypeScript file defines the structure, relationships, and types for the entire D1 database. All schema changes MUST originate here.
 
-```bash
-npx wrangler d1 execute ares-db --file=schema.sql --remote
-```
+### Secondary Reference: `schema.sql`
+The `schema.sql` file at the project root serves as a point-in-time reference for provisioning a database from scratch using raw SQL. While useful for rapid provisioning, it is **downstream** of the Drizzle schema.
 
 ### Migration Strategy
-Historical migrations (001–049) have been consolidated into `schema.sql` and archived to `migrations/_archive/`. All future schema changes use numbered migration files starting at `050`:
+All schema changes must be applied via Drizzle migrations:
+1. **Edit** `src/db/schema.ts`
+2. **Generate** migration: `npm run db:generate`
+3. **Apply** locally: `npm run db:push`
+4. **Apply** remotely: `npx wrangler d1 execute ares-db --file=drizzle/xxxx_name.sql --remote`
+5. **Sync** `schema.sql`: Update the reference SQL file with the new structure.
 
-```
-schema.sql                    ← Always reflects the COMPLETE current schema
-migrations/
-  README.md                   ← Strategy documentation
-  050_next_change.sql         ← Next post-launch migration
-  _archive/                   ← Historical reference only, never re-run
-```
-
-### The Dual-Update Rule
-**Every schema change MUST update TWO files:**
-1. A new numbered migration file in `migrations/` (for applying to the live DB)
-2. The `schema.sql` file (to keep it as the authoritative reference)
-
-Failure to update both creates schema drift — the exact problem this consolidation solved.
+Failure to follow this chain breaks the type safety of the entire application.
 
 ---
 
@@ -141,55 +132,36 @@ CREATE INDEX IF NOT EXISTS idx_events_status ON events(status, is_deleted);
 
 ### 🎯 Golden Rule: Drizzle is the Single Source of Truth
 
-**ALL database schema changes MUST start in `drizzle/schema.ts`.** This file:
-1. Defines all tables with TypeScript types
-2. Auto-generates Zod validation schemas (`shared/db/schema-zod.ts`)
-3. Auto-generates OpenAPI response schemas (used in `shared/routes/*.ts`)
+**ALL database schema changes MUST start in `src/db/schema.ts`.** This file:
+1. Defines all tables with TypeScript types.
+2. Drives the dynamic Zod bridge in `shared/db/schema-zod.ts`.
+3. Ensures OpenAPI response schemas remain synchronized.
 
-### The Drizzle-First Change Process
-
-When you need to modify the database schema, follow this order:
-
-```bash
-# 1. EDIT drizzle/schema.ts — Add/modify table definition
-# 2. Generate migration SQL from Drizzle schema
-npm run db:generate
-# → Creates drizzle/0001_XXX.sql migration file
-
-# 3. Apply migration to local D1 (test!)
-npm run db:push
-# OR: npx wrangler d1 execute ares-db --file=drizzle/0001_XXX.sql --local
-
-# 4. Test your changes locally
-npm run dev
-
-# 5. Apply to production
-npx wrangler d1 execute ares-db --file=drizzle/0001_XXX.sql --remote
-
-# 6. Update schema.sql (authoritative reference)
-#    Copy the DDL from the migration into schema.sql
-```
-
-### Auto-Generated Schema Chain
+### The Auto-Generated Schema Chain
 
 ```
-drizzle/schema.ts (YOU EDIT HERE)
+src/db/schema.ts (YOU EDIT HERE)
          ↓
-    drizzle-kit generate
+    [TypeScript Inference]
          ↓
 ┌─────────────────────────────────────────────────────────┐
-│  shared/db/schema-zod.ts (AUTO-GENERATED)               │
-│  - insertXSchema  (for POST/PUT validation)            │
-│  - selectXSchema  (for GET responses)                  │
+│  shared/db/schema-zod.ts (THE BRIDGE)                   │
+│  - uses createInsertSchema / createSelectSchema        │
+│  - automatically picks up column changes                │
+│  - Manual update required ONLY for new tables           │
 └─────────────────────────────────────────────────────────┘
          ↓
 ┌─────────────────────────────────────────────────────────┐
-│  shared/routes/*.ts (YOU USE THESE)                     │
+│  shared/routes/*.ts (OPENAPI CONTRACTS)                 │
 │  - Import selectXSchema from @shared/db/schema-zod      │
-│  - Use createResponseSchema() / toCamelCaseResponse()   │
-│  - Drizzle fields auto-propagate to OpenAPI docs        │
+│  - Drizzle fields auto-propagate to API documentation   │
 └─────────────────────────────────────────────────────────┘
 ```
+
+### 🚫 DEPRECATED: `kysely-codegen`
+The legacy workflow using `scripts/generate-types.js` and `shared/schemas/database.ts` is **DEPRECATED**. Do not use these files or run the `db:generate-types` script. Type safety is now handled entirely through Drizzle and Zod.
+
+---
 
 ### Example: Adding a New Column
 
@@ -263,22 +235,8 @@ await db.run(sql<{ slug: string; title: string }>`
 
 ## 6. Deployment Procedures
 
-idx_{table}_{column}     — Single column
-idx_{table}_{col1}_{col2} — Composite (if clarity needed)
-```
-
-### Current Production Indexes
-Refer to the `schema.sql` file for the complete list. Key indexes include:
-- `idx_user_email` — Auth lookups
-- `idx_posts_status`, `idx_events_status` — Public content filtering
-- `idx_posts_date`, `idx_events_date` — Timeline ordering
-- `idx_signups_event`, `idx_signups_user` — Event participation
-- `idx_notifications_user_id` — Per-user notification queries
-- `idx_comments_target` — Comment threading
-
----
-
-## 5. Deployment Procedures
+### Database Name
+The production D1 database is named **`ares-db`**.
 
 ### Database Name
 The production D1 database is named **`ares-db`** (NOT `aresweb-db`):

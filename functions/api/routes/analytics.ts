@@ -158,11 +158,21 @@ export const analyticsRouter = _analyticsRouter
 
         const yearMonth = new Date().toISOString().slice(0, 7);
 
-        await db.all(sql`
-      INSERT INTO sponsor_metrics (id, sponsor_id, year_month, clicks, impressions)
-      VALUES (${crypto.randomUUID()}, ${sponsorId}, ${yearMonth}, 1, 0)
-      ON CONFLICT(sponsor_id, year_month) DO UPDATE SET clicks = sponsor_metrics.clicks + 1
-    `);
+        await db.insert(schema.sponsorMetrics)
+          .values({
+            id: crypto.randomUUID(),
+            sponsorId,
+            yearMonth,
+            clicks: 1,
+            impressions: 0,
+          })
+          .onConflictDoUpdate({
+            target: [schema.sponsorMetrics.sponsorId, schema.sponsorMetrics.yearMonth],
+            set: {
+              clicks: sql`${schema.sponsorMetrics.clicks} + 1`,
+            },
+          })
+          .run();
 
         return c.json({ success: true }, 200);
       }

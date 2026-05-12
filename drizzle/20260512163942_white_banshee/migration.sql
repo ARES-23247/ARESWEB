@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `unique_sponsor_month` ON `sponsor_metrics` (`sponsor_id`,`year_month`);

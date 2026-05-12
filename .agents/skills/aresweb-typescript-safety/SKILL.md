@@ -154,7 +154,7 @@ console.log(route.method);  // "post"
 
 ### 3.0 ALWAYS Use Auto-Generated Drizzle Schemas
 
-**GOLDEN RULE:** ALL Zod schemas for database entities MUST derive from `shared/db/schema-zod.ts` (auto-generated from `drizzle/schema.ts`). NEVER hand-write duplicate schemas.
+**GOLDEN RULE:** ALL Zod schemas for database entities MUST derive from `shared/db/schema-zod.ts` (the bridge to `src/db/schema.ts`). NEVER hand-write duplicate schemas.
 
 ```typescript
 // ✅ CORRECT: Import auto-generated schema from Drizzle
@@ -188,17 +188,17 @@ export const postResponseSchema = z.object({
 
 **The Auto-Generation Chain:**
 ```
-drizzle/schema.ts (YOU EDIT)
-  → drizzle-kit generate
-  → shared/db/schema-zod.ts (AUTO-GENERATED: insertXSchema, selectXSchema)
+src/db/schema.ts (YOU EDIT)
+  → npm run db:generate (Migrations)
+  → shared/db/schema-zod.ts (TypeScript Inference Bridge)
   → shared/routes/*.ts (IMPORT & USE)
 ```
 
 **When adding a database column:**
-1. Edit `drizzle/schema.ts` — add the column
+1. Edit `src/db/schema.ts` — add the column
 2. Run `npm run db:generate`
 3. Run `npm run db:push` (apply to local DB)
-4. The route schemas automatically include the new field!
+4. The route schemas automatically include the new field via the Zod bridge!
 
 ### 3.1 Infer Types from Zod Schemas
 

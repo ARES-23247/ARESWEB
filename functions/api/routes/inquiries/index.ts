@@ -399,15 +399,19 @@ async function processInquiryInBackground(
 export async function purgeOldInquiries(db: DrizzleDB, days: number) {
     if (days <= 0) return { deleted: 0 };
 
-    const res = await db.run(sql`
-    DELETE FROM inquiries
-    WHERE id IN (
-      SELECT id FROM inquiries
-      WHERE status IN ('resolved', 'rejected')
-      AND createdAt < datetime('now', '-' || ${days} || ' days')
-      LIMIT ${QUERY_LIMITS.MAX_PAGE}
-    )
-  `);
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+    const subquery = db.select({ id: schema.inquiries.id })
+        .from(schema.inquiries)
+        .where(and(
+            inArray(schema.inquiries.status, ['resolved', 'rejected']),
+            lt(schema.inquiries.createdAt, cutoffDate)
+        ))
+        .limit(QUERY_LIMITS.MAX_PAGE);
+
+    const res = await db.delete(schema.inquiries)
+        .where(inArray(schema.inquiries.id, subquery))
+        .run();
 
     return { deleted: res.meta?.changes ?? 0 };
 }
