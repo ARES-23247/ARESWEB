@@ -16,6 +16,7 @@ import {
   purgeSeasonRoute,
 } from "../../../shared/routes/seasons";
 import { edgeCacheMiddleware } from "../middleware/cache";
+import { list, notDeleted } from "../../../src/db/query-helpers";
 
 const _seasonsRouter = new OpenAPIHono<AppEnv>();
 
@@ -34,17 +35,14 @@ _seasonsRouter.use("/admin/*", ensureAdmin);
 export const seasonsRouter = _seasonsRouter
     .openapi(listSeasonsRoute, async (c) => {
       const db = getDb(c);
-      const results = await db
-        .select()
-        .from(schema.seasons)
-        .where(
-          and(
-            eq(schema.seasons.isDeleted, 0),
-            eq(schema.seasons.status, "published")
-          )
-        )
-        .orderBy(desc(schema.seasons.startYear))
-        .all();
+      const results = await list(db, schema.seasons, {
+        where: and(
+          notDeleted(schema.seasons),
+          eq(schema.seasons.status, "published")
+        ),
+        orderBy: desc(schema.seasons.startYear),
+        useAll: true
+      });
 
       const seasons = results.map((r) => ({
         ...r,
@@ -62,11 +60,10 @@ export const seasonsRouter = _seasonsRouter
     })
     .openapi(adminListSeasonsRoute, async (c) => {
       const db = getDb(c);
-      const results = await db
-        .select()
-        .from(schema.seasons)
-        .orderBy(desc(schema.seasons.startYear))
-        .all();
+      const results = await list(db, schema.seasons, {
+        orderBy: desc(schema.seasons.startYear),
+        useAll: true
+      });
 
       const seasons = results.map((r) => ({
         ...r,
@@ -126,25 +123,23 @@ export const seasonsRouter = _seasonsRouter
           .from(schema.seasons)
           .where(eq(schema.seasons.startYear, yearNum))
           .get(),
-        db
-          .select({
+        list(db, schema.awards, {
+          select: {
             id: schema.awards.id,
             title: schema.awards.title,
             eventName: schema.awards.eventName,
             date: schema.awards.date,
             seasonId: schema.awards.seasonId,
             isDeleted: schema.awards.isDeleted
-          })
-          .from(schema.awards)
-          .where(
-            and(
-              eq(schema.awards.seasonId, yearNum),
-              eq(schema.awards.isDeleted, 0)
-            )
-          )
-          .all(),
-        db
-          .select({
+          },
+          where: and(
+            eq(schema.awards.seasonId, yearNum),
+            notDeleted(schema.awards)
+          ),
+          useAll: true
+        }),
+        list(db, schema.events, {
+          select: {
             id: schema.events.id,
             title: schema.events.title,
             category: schema.events.category,
@@ -155,18 +150,16 @@ export const seasonsRouter = _seasonsRouter
             status: schema.events.status,
             isDeleted: schema.events.isDeleted,
             seasonId: schema.events.seasonId,
-          })
-          .from(schema.events)
-          .where(
-            and(
-              eq(schema.events.seasonId, yearNum),
-              eq(schema.events.isDeleted, 0),
-              eq(schema.events.status, "published")
-            )
-          )
-          .all(),
-        db
-          .select({
+          },
+          where: and(
+            eq(schema.events.seasonId, yearNum),
+            notDeleted(schema.events),
+            eq(schema.events.status, "published")
+          ),
+          useAll: true
+        }),
+        list(db, schema.posts, {
+          select: {
             slug: schema.posts.slug,
             title: schema.posts.title,
             snippet: schema.posts.snippet,
@@ -175,18 +168,16 @@ export const seasonsRouter = _seasonsRouter
             isDeleted: schema.posts.isDeleted,
             seasonId: schema.posts.seasonId,
             date: schema.posts.date,
-          })
-          .from(schema.posts)
-          .where(
-            and(
-              eq(schema.posts.seasonId, yearNum),
-              eq(schema.posts.isDeleted, 0),
-              eq(schema.posts.status, "published")
-            )
-          )
-          .all(),
-        db
-          .select({
+          },
+          where: and(
+            eq(schema.posts.seasonId, yearNum),
+            notDeleted(schema.posts),
+            eq(schema.posts.status, "published")
+          ),
+          useAll: true
+        }),
+        list(db, schema.outreachLogs, {
+          select: {
             id: schema.outreachLogs.id,
             title: schema.outreachLogs.title,
             date: schema.outreachLogs.date,
@@ -197,15 +188,13 @@ export const seasonsRouter = _seasonsRouter
             impactSummary: schema.outreachLogs.impactSummary,
             seasonId: schema.outreachLogs.seasonId,
             isDeleted: schema.outreachLogs.isDeleted,
-          })
-          .from(schema.outreachLogs)
-          .where(
-            and(
-              eq(schema.outreachLogs.seasonId, yearNum),
-              eq(schema.outreachLogs.isDeleted, 0)
-            )
-          )
-          .all(),
+          },
+          where: and(
+            eq(schema.outreachLogs.seasonId, yearNum),
+            notDeleted(schema.outreachLogs)
+          ),
+          useAll: true
+        }),
       ]);
 
       if (!seasonRow) {

@@ -70,8 +70,8 @@ function getStatusCode(error: unknown): number {
  * Extract error code from various error types
  */
 function getErrorCode(error: unknown): string | undefined {
-  if (error instanceof ApiError) {
-    return error.code;
+  if (error instanceof ApiError || (error && typeof error === "object" && (error as any).name === "ApiError")) {
+    return (error as ApiError).code;
   }
   if (error instanceof ZodError) {
     return ErrorCode.VALIDATION_ERROR;
@@ -83,8 +83,8 @@ function getErrorCode(error: unknown): string | undefined {
  * Extract details from various error types
  */
 function getErrorDetails(error: unknown): unknown {
-  if (error instanceof ApiError) {
-    return error.details;
+  if (error instanceof ApiError || (error && typeof error === "object" && (error as any).name === "ApiError")) {
+    return (error as ApiError).details;
   }
   if (error instanceof ZodError) {
     const details: Record<string, string> = {};
@@ -132,6 +132,9 @@ export async function errorHandlerMiddleware(c: Context<AppEnv>, next: Next) {
       getErrorCode(error),
       getErrorDetails(error)
     );
+    if (status >= 500) {
+      console.error("Unhandled API Error returning 500:", error);
+    }
 
     return c.json(response, status);
   }

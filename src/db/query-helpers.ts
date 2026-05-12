@@ -21,37 +21,53 @@ export function notDeleted(table: { isDeleted: any }) {
 
 /**
  * List records with optional filtering, ordering, and pagination.
- * Combines select/from/where/orderBy/limit into one call.
+ * Combines select/from/where/orderBy/limit/offset into one call.
  *
  * @param db - Drizzle database instance
  * @param table - Drizzle table to query
- * @param options - Optional where, orderBy, limit, offset
+ * @param options - Optional select columns, where, orderBy, limit, offset, useAll
  * @returns Array of records
  *
  * @example
+ * // Single orderBy, execute()
  * const videos = await list(db, schema.videos, {
  *   where: eq(schema.videos.platform, "youtube"),
  *   orderBy: desc(schema.videos.createdAt),
  *   limit: 10
+ * });
+ *
+ * @example
+ * // Compound orderBy, use .all()
+ * const awards = await list(db, schema.awards, {
+ *   select: { id: schema.awards.id, title: schema.awards.title },
+ *   where: notDeleted(schema.awards),
+ *   orderBy: [desc(schema.awards.date), asc(schema.awards.title)],
+ *   limit: 50,
+ *   useAll: true
  * });
  */
 export async function list<T>(
   db: DrizzleDB,
   table: any,
   options?: {
+    select?: Record<string, any>,
     where?: any,
-    orderBy?: any,
+    orderBy?: any | any[],
     limit?: number,
-    offset?: number
+    offset?: number,
+    useAll?: boolean
   }
 ): Promise<T[]> {
-  let query = db.select().from(table);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = options?.select
+    ? db.select(options.select).from(table)
+    : db.select().from(table);
 
   if (options?.where) {
     query = query.where(options.where);
   }
   if (options?.orderBy) {
-    query = query.orderBy(options.orderBy);
+    query = query.orderBy(Array.isArray(options.orderBy) ? [...options.orderBy] : options.orderBy);
   }
   if (options?.limit !== undefined) {
     query = query.limit(options.limit);
@@ -60,7 +76,7 @@ export async function list<T>(
     query = query.offset(options.offset);
   }
 
-  return query.execute() as Promise<T[]>;
+  return (options?.useAll ? query.all() : query.execute()) as Promise<T[]>;
 }
 
 /**

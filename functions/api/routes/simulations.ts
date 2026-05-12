@@ -1,4 +1,4 @@
-import { ApiError, requireAuth } from "../middleware/errorHandler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth, ensureAdmin, getDb, DrizzleDB, logAuditAction } from "../middleware";
@@ -14,6 +14,7 @@ import {
     generateSimRegistryRoute,
     listSimFoldersRoute
 } from "../../../shared/routes/simulations";
+import { requireAuth } from "../middleware/auth";
 
 /** Row shape returned by settings table queries */
 interface SettingsRow { key: string | null; value: string }

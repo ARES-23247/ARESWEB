@@ -12,6 +12,7 @@ import { createMockDb, createTestEnv, mockSingleResult, createTestDbMiddleware }
 import { AppEnv } from '../middleware';
 import { globalErrorHandler } from '../middleware/errorHandler';
 import type { SessionUser } from '../middleware/utils';
+import * as authUtils from '../middleware/auth';
 
 // Create a mock execution context for tests
 const mockExecutionContext = {

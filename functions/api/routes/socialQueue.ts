@@ -1,4 +1,4 @@
-import { ApiError, requireAuth } from "../middleware/errorHandler";
+import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -16,6 +16,7 @@ import {
 } from "../../../shared/routes/socialQueue";
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
+import { requireAuth } from "../middleware/auth";
 
 const _socialQueueRouter = new OpenAPIHono<AppEnv>();
 

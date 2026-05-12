@@ -4,7 +4,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { ApiError, requireAuth } from "../middleware/errorHandler";
+import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { eq, asc, desc, and, inArray, sql, aliasedTable } from "drizzle-orm";
@@ -27,6 +27,7 @@ import {
 import { sendZulipMessage } from "../../utils/zulipSync";
 import { siteConfig } from "../../utils/site.config";
 import { safeWaitUntil } from "../utils/safeWaitUntil";
+import { requireAuth } from "../middleware/auth";
 
 const _tasksRouter = new OpenAPIHono<AppEnv>();
 

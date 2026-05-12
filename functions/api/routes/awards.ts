@@ -6,6 +6,7 @@ import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
 import { getAwardsRoute, saveAwardRoute, deleteAwardRoute } from "../../../shared/routes/awards";
 import { ApiError } from "../middleware/errorHandler";
+import { list, notDeleted } from "../../../src/db/query-helpers";
 
 const _awardsRouter = new OpenAPIHono<AppEnv>();
 
@@ -27,22 +28,23 @@ export const awardsRouter = _awardsRouter
         const query = c.req.valid("query");
         const db = getDb(c);
         const { limit = 50, offset = 0 } = query;
-        const results = await db.select({
-            id: schema.awards.id,
-            title: schema.awards.title,
-            date: schema.awards.date,
-            eventName: schema.awards.eventName,
-            description: schema.awards.description,
-            iconType: schema.awards.iconType,
-            seasonId: schema.awards.seasonId,
-            createdAt: schema.awards.createdAt
-        })
-            .from(schema.awards)
-            .where(eq(schema.awards.isDeleted, 0))
-            .orderBy(desc(schema.awards.date), asc(schema.awards.title))
-            .limit(limit || 50)
-            .offset(offset || 0)
-            .all();
+        const results = await list(db, schema.awards, {
+            select: {
+                id: schema.awards.id,
+                title: schema.awards.title,
+                date: schema.awards.date,
+                eventName: schema.awards.eventName,
+                description: schema.awards.description,
+                iconType: schema.awards.iconType,
+                seasonId: schema.awards.seasonId,
+                createdAt: schema.awards.createdAt
+            },
+            where: notDeleted(schema.awards),
+            orderBy: [desc(schema.awards.date), asc(schema.awards.title)],
+            limit: limit || 50,
+            offset: offset || 0,
+            useAll: true
+        });
 
         const awards = results.map((a) => ({
             id: String(a.id),
@@ -96,7 +98,7 @@ export const awardsRouter = _awardsRouter
                 eq(schema.awards.title, title),
                 eq(schema.awards.date, String(year)),
                 eq(schema.awards.eventName, eventName || ""),
-                eq(schema.awards.isDeleted, 0)
+                notDeleted(schema.awards)
             ))
             .get();
 

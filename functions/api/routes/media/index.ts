@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { ApiError, requireAuth } from "../../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import {
     getMediaRoute,
     getAdminMediaRoute,
@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
 import type { R2Bucket, R2Object, R2ListOptions } from "@cloudflare/workers-types";
+import { requireAuth } from "../../middleware/auth";
 
 export const mediaRouter = new OpenAPIHono<AppEnv>();
 

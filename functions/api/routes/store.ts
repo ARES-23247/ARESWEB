@@ -1,4 +1,4 @@
-import { ApiError, requireAuth } from "../middleware/errorHandler";
+import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, inArray } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -11,6 +11,7 @@ import {
     updateOrderStatusRoute,
 } from "../../../shared/routes/store";
 import { getDb, AppEnv, getSessionUser } from "../middleware";
+import { requireAuth } from "../middleware/auth";
 
 const _storeRouter = new OpenAPIHono<AppEnv>();
 

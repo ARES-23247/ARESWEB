@@ -14,6 +14,7 @@ declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
 }
 import { AppEnv, SessionUser } from '../middleware';
+import * as authUtils from '../middleware/auth';
 // Import commentsRouter
 import commentsRouter from './comments';
 

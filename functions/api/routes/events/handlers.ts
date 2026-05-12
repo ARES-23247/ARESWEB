@@ -1,4 +1,4 @@
-import { ApiError, requireAuth } from "../../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import { getSocialConfig, getSessionUser, getDbSettings, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal, type ARES_Event } from "../../../utils/gcalSync";
@@ -41,6 +41,7 @@ import {
     restoreEventHistoryRoute
 } from "../../../../shared/routes/events";
 import { z } from "zod";
+import { requireAuth } from "../../middleware/auth";
 
 type FormattedEvent = z.infer<typeof eventResponseSchema>;
 

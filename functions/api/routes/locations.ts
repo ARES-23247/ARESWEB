@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { eq, asc, or, isNull } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { z } from "zod";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../../../shared/routes/locations";
 import { AppEnv, ensureAdmin, logAuditAction, getDb } from "../middleware";
 import { edgeCacheMiddleware } from "../middleware/cache";
+import { list, notDeleted } from "../../../src/db/query-helpers";
 
 
 
@@ -51,17 +52,18 @@ _locationsRouter.use("/admin/*", ensureAdmin);
 export const locationsRouter = _locationsRouter
     .openapi(listLocationsRoute, async (c) => {
         const db = getDb(c);
-        const results = await db.select({
-            id: schema.locations.id,
-            name: schema.locations.name,
-            address: schema.locations.address,
-            mapsUrl: schema.locations.mapsUrl,
-            isDeleted: schema.locations.isDeleted
-          })
-          .from(schema.locations)
-          .where(or(eq(schema.locations.isDeleted, 0), isNull(schema.locations.isDeleted)))
-          .orderBy(asc(schema.locations.name))
-          .all();
+        const results = await list(db, schema.locations, {
+            select: {
+                id: schema.locations.id,
+                name: schema.locations.name,
+                address: schema.locations.address,
+                mapsUrl: schema.locations.mapsUrl,
+                isDeleted: schema.locations.isDeleted
+            },
+            where: notDeleted(schema.locations),
+            orderBy: asc(schema.locations.name),
+            useAll: true
+        });
 
         const locations = results.map((r) => ({
           ...r,
@@ -73,16 +75,17 @@ export const locationsRouter = _locationsRouter
     })
     .openapi(adminListLocationsRoute, async (c) => {
         const db = getDb(c);
-        const results = await db.select({
-            id: schema.locations.id,
-            name: schema.locations.name,
-            address: schema.locations.address,
-            mapsUrl: schema.locations.mapsUrl,
-            isDeleted: schema.locations.isDeleted
-          })
-          .from(schema.locations)
-          .orderBy(asc(schema.locations.name))
-          .all();
+        const results = await list(db, schema.locations, {
+            select: {
+                id: schema.locations.id,
+                name: schema.locations.name,
+                address: schema.locations.address,
+                mapsUrl: schema.locations.mapsUrl,
+                isDeleted: schema.locations.isDeleted
+            },
+            orderBy: asc(schema.locations.name),
+            useAll: true
+        });
 
         const locations = results.map((r) => ({
           ...r,
