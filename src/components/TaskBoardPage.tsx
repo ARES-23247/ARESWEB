@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { Layout } from "lucide-react";
 import ProjectBoardKanban from "./command/ProjectBoardKanban";
 import { TaskTableView } from "./kanban/TaskTableView";
@@ -10,6 +9,7 @@ import usePartySocket from "partysocket/react";
 import { useSession } from "../utils/auth-client";
 import { useStore } from "@tanstack/react-store";
 import { kanbanStore, kanbanActions } from "../store/kanbanStore";
+import { useTaskBoardStore } from "../store/taskBoardStore";
 
 export interface TaskNode extends TaskItem {
   subRows?: TaskNode[];
@@ -17,9 +17,18 @@ export interface TaskNode extends TaskItem {
 
 export default function TaskBoardPage() {
   const queryClient = useQueryClient();
-  const [isCreating, setIsCreating] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+
+  // Zustand store for all board state
+  const {
+    viewMode,
+    isFullscreen,
+    isCreating,
+    subteamFilter,
+    setViewMode,
+    setFullscreen,
+    setCreating,
+    setSubteamFilter,
+  } = useTaskBoardStore();
 
   // -- Queries --------------------------------------------------------
   const { data: tasksData, isLoading: isTasksLoading } = useGetTasks(undefined, {
@@ -33,7 +42,7 @@ export default function TaskBoardPage() {
   const buildTaskTree = (flatTasks: TaskItem[]): TaskNode[] => {
     const taskMap = new Map<string, TaskNode>();
     flatTasks.forEach(t => taskMap.set(t.id, { ...t, subRows: [] }));
-    
+
     const rootTasks: TaskNode[] = [];
     flatTasks.forEach(t => {
       const node = taskMap.get(t.id)!;
@@ -43,7 +52,7 @@ export default function TaskBoardPage() {
         rootTasks.push(node);
       }
     });
-    
+
     return rootTasks;
   };
 
@@ -58,9 +67,8 @@ export default function TaskBoardPage() {
 
   // -- Handlers -------------------------------------------------------
   const subteams = KANBAN_SUBTEAMS;
-  const [subteamFilter, setSubteamFilter] = useState<string | null>(null);
 
-  const filteredTasks = subteamFilter 
+  const filteredTasks = subteamFilter
     ? rootTasks.filter((t) => t.subteam?.toLowerCase() === subteamFilter.toLowerCase())
     : rootTasks;
 
@@ -69,60 +77,55 @@ export default function TaskBoardPage() {
   const activeUsers = useStore(kanbanStore, (s) => s.activeUsers);
   const lastCursorSend = React.useRef(0);
   const boardRef = React.useRef<HTMLDivElement>(null);
-  
+
   const host = (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__)
     ? "dummy-host-for-playwright"
     : (import.meta.env.VITE_PARTYKIT_HOST || "");
   const socket = usePartySocket({
-    host: host || "dummy", // fallback so it doesn't crash if env missing
+    host: host || "dummy",
     room: "kanban-global",
     party: "kanban",
     onOpen(e) {
       if (!session?.user) return;
       const target = e.target as WebSocket;
       if (!target) return;
-      
-      // Broadcast our presence when we join
-      target.send(JSON.stringify({ 
-        type: "presence", 
-        userId: session.user.id, 
-        name: session.user.name || "ARES Member", 
-        image: session.user.image 
+
+      target.send(JSON.stringify({
+        type: "presence",
+        userId: session.user.id,
+        name: session.user.name || "ARES Member",
+        image: session.user.image
       }));
     },
     onMessage(e) {
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === "task_updated") {
-          // Someone else changed a task, silently refetch our query!
           queryClient.invalidateQueries({ queryKey: ["tasks", "list"] });
         } else if (msg.type === "presence") {
-          // Track active users
-          kanbanActions.updateUser(msg.userId, { 
-            name: msg.name, 
-            image: msg.image 
+          kanbanActions.updateUser(msg.userId, {
+            name: msg.name,
+            image: msg.image
           });
-          // Ping back so they know we are here too
           if (session?.user && msg.userId !== session.user.id) {
-             socket.send(JSON.stringify({ 
-               type: "presence_ack", 
-               userId: session.user.id, 
-               name: session.user.name || "ARES Member", 
-               image: session.user.image 
-             }));
+             socket.send(JSON.stringify({
+              type: "presence_ack",
+              userId: session.user.id,
+              name: session.user.name || "ARES Member",
+              image: session.user.image
+            }));
           }
         } else if (msg.type === "presence_ack") {
-          kanbanActions.updateUser(msg.userId, { 
-            name: msg.name, 
-            image: msg.image 
+          kanbanActions.updateUser(msg.userId, {
+            name: msg.name,
+            image: msg.image
           });
         } else if (msg.type === "cursor") {
-          kanbanActions.updateUser(msg.userId, { 
-            x: msg.x, 
-            y: msg.y 
+          kanbanActions.updateUser(msg.userId, {
+            x: msg.x,
+            y: msg.y
           });
         } else if (msg.type === "task_reordered") {
-          // Optimistic sync for dragging
           queryClient.setQueryData(queryKey, (old: { tasks?: TaskItem[] } | undefined) => {
             if (!old?.tasks) return old;
             const newTasks = old.tasks.map((task: TaskItem) => {
@@ -141,7 +144,7 @@ export default function TaskBoardPage() {
     }
   });
 
-  // Cleanup stale presence (users who left without saying goodbye)
+  // Cleanup stale presence
   React.useEffect(() => {
     const interval = setInterval(() => {
       kanbanActions.clearStaleUsers(60000);
@@ -156,9 +159,9 @@ export default function TaskBoardPage() {
   };
 
   const handleCreateTaskWithSubteam = async (title: string) => {
-    setIsCreating(true);
-    createMutation.mutate({ 
-      title, 
+    setCreating(true);
+    createMutation.mutate({
+      title,
       subteam: subteamFilter || null
     }, {
       onSuccess: (res) => {
@@ -170,14 +173,13 @@ export default function TaskBoardPage() {
           queryClient.invalidateQueries({ queryKey: ["tasks"] });
           broadcastTaskUpdate();
         }
-        setIsCreating(false);
+        setCreating(false);
       },
-      onError: () => setIsCreating(false)
+      onError: () => setCreating(false)
     });
   };
 
   const handleUpdateTask = async (id: string, updates: import("../api").UpdateTaskRequest | Record<string, unknown>) => {
-    // Structural mapping for assignees - API expects string[] of IDs
     const apiUpdates: Record<string, unknown> = { ...updates };
     if (updates.assignees && Array.isArray(updates.assignees)) {
       apiUpdates.assignees = updates.assignees.map((a: unknown) => typeof a === 'string' ? a : (a as {id: string}).id);
@@ -213,7 +215,7 @@ export default function TaskBoardPage() {
     const rect = boardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    
+
     const now = Date.now();
     if (now - lastCursorSend.current > 50) {
       socket.send(JSON.stringify({ type: "cursor", userId: session.user.id, x, y }));
@@ -222,7 +224,7 @@ export default function TaskBoardPage() {
   };
 
   const boardContent = (
-    <div 
+    <div
       ref={boardRef}
       onPointerMove={handlePointerMove}
       className={isFullscreen ? "fixed inset-0 z-50 bg-obsidian overflow-hidden flex flex-col" : "relative space-y-6 flex flex-col"}
@@ -232,14 +234,14 @@ export default function TaskBoardPage() {
         {activeUserList.map(user => {
           if (user.x === undefined || user.y === undefined) return null;
           if (!session?.user || user.userId === session.user.id) return null;
-          
+
           let hash = 0;
           for (let i = 0; i < user.userId.length; i++) hash = user.userId.charCodeAt(i) + ((hash << 5) - hash);
           const color = userColors[Math.abs(hash) % userColors.length];
-          
+
           return (
-            <div 
-              key={user.userId} 
+            <div
+              key={user.userId}
               className="absolute pointer-events-none transition-all duration-75 ease-linear flex flex-col items-start"
               style={{ left: `${user.x * 100}%`, top: `${user.y * 100}%` }}
             >
@@ -268,7 +270,7 @@ export default function TaskBoardPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          
+
           {/* Real-time Presence Avatars */}
           {host && (
             <div className="flex items-center">
@@ -309,7 +311,7 @@ export default function TaskBoardPage() {
             </button>
           </div>
           <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
+            onClick={() => setFullscreen(!isFullscreen)}
             className="px-4 py-2 bg-ares-gray-dark/50 hover:bg-white/10 text-white font-bold text-sm ares-cut-sm border border-white/10 transition-colors"
           >
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
@@ -367,7 +369,7 @@ export default function TaskBoardPage() {
   );
 
   // Bypass Liveblocks realtime connections during E2E testing
-  const isE2E = typeof window !== "undefined" && "__PLAYWRIGHT_TEST__" in window;
+  const isE2E = typeof window !== 'undefined' && "__PLAYWRIGHT_TEST__" in window;
   if (isE2E) {
     return boardContent;
   }

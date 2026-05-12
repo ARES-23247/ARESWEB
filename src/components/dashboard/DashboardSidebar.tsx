@@ -9,7 +9,8 @@ import { signOut, useSession } from "../../utils/auth-client";
 import { DashboardSession, DashboardPermissions } from "../../hooks/useDashboardSession";
 import { lazy } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUIStore } from "../../store/uiStore";
+
+import { useSidebarStore } from "../../store/sidebarStore";
 
 const AvatarEditor = lazy(() => import("../AvatarEditor"));
 
@@ -54,8 +55,11 @@ const NavButton = ({
   }
 
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Link to={`/dashboard/${tab}` as any} className={sharedClass}>
+    <Link
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      to={tab === "" ? "/dashboard" as any : `/dashboard/${tab}` as any}
+      className={sharedClass}
+    >
       <div className="flex items-center gap-3 truncate">
         {Icon && <Icon size={18} className={isActive ? "text-white" : hasPending ? "text-ares-danger" : "text-marble/50"} />}
         <span className="truncate">{label}</span>
@@ -92,12 +96,13 @@ export default function DashboardSidebar({
   };
 }) {
   const location = useLocation();
-  const { isSidebarOpen, setSidebarOpen } = useUIStore();
-  const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
+  const { dashboardOpen, toggleDashboard } = useSidebarStore();
   const queryClient = useQueryClient();
 
   // Use the auth session hook for refetching
   const { refetch } = useSession();
+
+  const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
 
   const handleAvatarSave = () => {
     // Refetch session data to update the avatar image without page reload
@@ -130,7 +135,7 @@ export default function DashboardSidebar({
           </h1>
         </div>
         <button
-          onClick={() => setSidebarOpen(true)}
+          onClick={toggleDashboard}
           className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-marble transition-colors"
           aria-label="Open sidebar"
         >
@@ -139,25 +144,25 @@ export default function DashboardSidebar({
       </div>
 
       {/* Overlay for mobile sidebar */}
-      {isSidebarOpen && (
+      {dashboardOpen && (
         <div
           role="presentation"
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          onClick={() => setSidebarOpen(false)}
+          onClick={toggleDashboard}
         />
       )}
 
       {/* Sidebar Navigation */}
       <aside
         className={`fixed md:relative top-0 md:top-auto left-0 z-40 md:z-auto w-72 h-screen md:h-auto md:min-h-0 bg-obsidian border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          dashboardOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Profile Header */}
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
             <span className="text-xs font-black text-marble/60 uppercase tracking-widest">Navigation Menu</span>
-            <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
+            <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={toggleDashboard} aria-label="Close sidebar">
               <X size={16} />
             </button>
           </div>

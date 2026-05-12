@@ -5,7 +5,10 @@ import { X, MapPin, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSaveLocation } from "../api";
+import { useSaveLocation, type Location } from "../api";
+
+// Type for creating a new location (id is omitted)
+type CreateLocationInput = Omit<Location, 'id'>;
 
 
 interface CreateLocationModalProps {
@@ -32,8 +35,14 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
     },
     onSubmit: async ({ value }) => {
       setErrorMsg("");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      saveMutation.mutate({ ...value, id: undefined } as any);
+      // Create a Location object without id for new locations
+      const locationData: CreateLocationInput = {
+        name: value.name,
+        address: value.address,
+        mapsUrl: value.mapsUrl || null,
+        isDeleted: 0
+      };
+      saveMutation.mutate(locationData as Location); // API accepts Location with optional id
     }
   });
 
@@ -44,8 +53,7 @@ export function CreateLocationModal({ isOpen, onClose, onSuccess }: CreateLocati
   }, [form]);
 
   const saveMutation = useSaveLocation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       if (res.success) {
         toast.success("Venue record synchronized.");
 

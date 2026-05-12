@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
-import { DashboardInput, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
+import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Globe, ShieldCheck, Award, Zap, Gem, CheckCircle2, XCircle, Edit2, Package, UploadCloud, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,8 +12,9 @@ import confetti from "canvas-confetti";
 
 import { useModal } from "../contexts/ModalContext";
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { sponsorSchema } from "@shared/schemas/sponsorSchema";
+import { AresField } from "./ui/forms/AresField";
+import { AresSelect } from "./ui/forms/AresSelect";
 
 import { useGetAdminSponsors, useSaveSponsor, useDeleteSponsor, type Sponsor } from "../api";
 
@@ -35,8 +36,6 @@ export default function SponsorEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm({
-    // @ts-expect-error - Type definitions are outdated
-    validatorAdapter: zodValidator(),
     defaultValues: {
       name: "",
       tier: "Gold" as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind",
@@ -202,36 +201,21 @@ export default function SponsorEditor() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="sponsor-name"
+                  <AresField
+                    field={field}
                     label="Partner Name"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="e.g. Google DeepMind"
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>
 
               <form.Field name="tier">
                 {(field) => (
-                  <div className="space-y-1">
-                    <label htmlFor="sponsor-tier" className="text-xs font-bold uppercase tracking-widest text-marble/60">Tier</label>
-                    <select
-                      id="sponsor-tier"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value as "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind")}
-                      className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red outline-none transition-colors"
-                    >
-                      {TIERS.map(t => <option key={t.name} value={t.name} className="bg-obsidian">{t.name}</option>)}
-                    </select>
-                    {field.state.meta.errors?.[0] && <p className="text-[10px] font-black uppercase tracking-tighter text-ares-red">{field.state.meta.errors[0] as string}</p>}
-                  </div>
+                  <AresSelect
+                    field={field}
+                    label="Tier"
+                    options={TIERS.map(t => ({ value: t.name, label: t.name }))}
+                  />
                 )}
               </form.Field>
 
@@ -246,18 +230,13 @@ export default function SponsorEditor() {
                     }}
                   >
                     {(field) => (
-                      <DashboardInput
-                        id="sponsor-logo"
-                        label=""
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        error={field.state.meta.errors?.[0] as string | undefined}
-                        placeholder="https://... or upload"
-                        focusColor="ares-red"
-                        className="flex-1"
-                      />
+                      <div className="flex-1">
+                        <AresField
+                          field={field}
+                          label=""
+                          placeholder="https://... or upload"
+                        />
+                      </div>
                     )}
                   </form.Field>
                   <input 
@@ -286,16 +265,10 @@ export default function SponsorEditor() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="sponsor-link"
+                  <AresField
+                    field={field}
                     label="Website URL"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="https://..."
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>

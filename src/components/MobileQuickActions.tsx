@@ -1,10 +1,10 @@
 import { Drawer } from "vaul";
 import { Link } from "@tanstack/react-router";
 import { User, Target, BookOpen, MessageSquare, Terminal, Settings, LayoutDashboard } from "lucide-react";
-import { useUIStore } from "../store/uiStore";
+import { useSidebarStore } from "../store/sidebarStore";
 
 export default function MobileQuickActions() {
-  const { isSidebarOpen, setSidebarOpen } = useUIStore();
+  const { dashboardOpen, setDashboardOpen } = useSidebarStore();
 
   const links = [
     { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
@@ -17,7 +17,7 @@ export default function MobileQuickActions() {
   ];
 
   return (
-    <Drawer.Root open={isSidebarOpen} onOpenChange={setSidebarOpen}>
+    <Drawer.Root open={dashboardOpen} onOpenChange={setDashboardOpen}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm" />
         <Drawer.Content className="bg-obsidian flex flex-col h-[60vh] mt-24 fixed bottom-0 left-0 right-0 z-[101] border-t border-white/10 outline-none ring-1 ring-white/5">
@@ -33,7 +33,7 @@ export default function MobileQuickActions() {
                   <Link
                     key={link.href}
                     to={link.href}
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => setDashboardOpen(false)}
                     className="flex flex-col items-center justify-center p-6 bg-white/5 border border-white/5 ares-cut-lg hover:bg-ares-red/10 hover:border-ares-red/20 transition-all group"
                   >
                     <div className="text-marble/60 group-hover:text-ares-red mb-3 transition-colors">

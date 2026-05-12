@@ -3,7 +3,7 @@ import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, Me
 import ProfileEditor from "./ProfileEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAwardPoints } from "../api/points";
-import { useGetUsers, usePatchUser, useDeleteUser } from "../api/users";
+import { useGetUsers, usePatchUser, useDeleteUser, type UserRole, type UserMemberType } from "../api/users";
 import { useAuditMissingUsers, useInviteUsers } from "../api/zulip";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
@@ -17,12 +17,9 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-// Union types for role and memberType to provide type safety
-type UserRole = "unverified" | "user" | "author" | "admin";
-type MemberType = "student" | "alumni" | "parent" | "coach" | "mentor" | "sponsor";
-
+// Use the exact enum values from the backend
 const ROLES: readonly UserRole[] = ["unverified", "user", "author", "admin"] as const;
-const memberTypeS: readonly MemberType[] = ["student", "alumni", "parent", "coach", "mentor", "sponsor"] as const;
+const MEMBER_TYPES: readonly UserMemberType[] = ["student", "mentor", "coach", "parent", "alumnus", "alumni", "sponsor", "other"] as const;
 
 type User = {
   id: string;
@@ -94,14 +91,13 @@ export default function AdminUsers() {
 
   const changeRole = useCallback((userId: string, newRole: string) => {
     // Validate that newRole is a valid UserRole before mutation
-    const validRole = ROLES.includes(newRole as UserRole) ? (newRole as UserRole) : "unverified";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    patchMutation.mutate({ id: userId, role: validRole as any });
+    const validRole: UserRole = ROLES.includes(newRole as UserRole) ? (newRole as UserRole) : "unverified";
+    patchMutation.mutate({ id: userId, role: validRole });
   }, [patchMutation]);
 
   const changeMemberType = useCallback((userId: string, newType: string) => {
-    // Validate that newType is a valid MemberType before mutation
-    const validType = memberTypeS.includes(newType as MemberType) ? (newType as MemberType) : "student";
+    // Validate that newType is a valid UserMemberType before mutation
+    const validType: UserMemberType = MEMBER_TYPES.includes(newType as UserMemberType) ? (newType as UserMemberType) : "student";
     patchMutation.mutate({ id: userId, memberType: validType });
   }, [patchMutation]);
 
@@ -119,8 +115,7 @@ export default function AdminUsers() {
     if (!pointsUserId || !pointsDelta || !pointsReason) return;
     const delta = parseInt(pointsDelta, 10);
     if (isNaN(delta)) return toast.error("Invalid points amount");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (pointsMutation.mutate as any)({
+    pointsMutation.mutate({
       userId: pointsUserId,
       pointsDelta: delta,
       reason: pointsReason
@@ -210,11 +205,11 @@ export default function AdminUsers() {
             title="Change member type"
             className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
               info.getValue() === "alumni" ? "border-ares-gold/50 text-ares-gold" :
-              ["parent", "coach", "mentor", "sponsor"].includes(info.getValue() || "") ? "border-ares-gold/30 text-ares-gold/70" :
+              ["alumnus", "parent", "coach", "mentor", "sponsor"].includes(info.getValue() || "") ? "border-ares-gold/30 text-ares-gold/70" :
               "border-white/20 text-white/60"
             }`}
           >
-            {memberTypeS.map(m => <option key={m} value={m}>{m}</option>)}
+            {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
         </div>

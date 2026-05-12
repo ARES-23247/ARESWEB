@@ -1,9 +1,10 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { siteConfig } from "../../site.config";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
 import { useGetPublicSettings } from "../../api/settings";
+import { useSidebarStore } from "../../store/sidebarStore";
 
 import { type DocRecord } from "../../hooks/useDocs";
 
@@ -17,61 +18,65 @@ interface DocsSidebarProps {
 }
 
 function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs" }: DocsSidebarProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
-  const [prevSlugs, setPrevSlugs] = useState(groupedDocs.map(([cat]) => cat).join(","));
-  const currSlugs = groupedDocs.map(([cat]) => cat).join(",");
-  if (currSlugs !== prevSlugs && groupedDocs.length > 0) {
-    setPrevSlugs(currSlugs);
-    setExpandedCats(new Set(groupedDocs.map(([cat]) => cat)));
+  const {
+    docsOpen,
+    docsExpandedCategories,
+    toggleDocs,
+    toggleDocsCategory,
+    setDocsExpandedCategories,
+  } = useSidebarStore();
+
+
+
+  // Auto-expand all categories on first load
+  const initializeCategories = useCallback(() => {
+    if (groupedDocs.length > 0 && docsExpandedCategories.size === 0) {
+      setDocsExpandedCategories(new Set(groupedDocs.map(([cat]) => cat)));
+    }
+  }, [groupedDocs, docsExpandedCategories.size, setDocsExpandedCategories]);
+
+  // Initialize categories if needed
+  if (groupedDocs.length > 0 && docsExpandedCategories.size === 0) {
+    initializeCategories();
+  }
+
+  // Auto-expand category containing current doc
+  if (currentSlug) {
+    const newCats = new Set(docsExpandedCategories);
+    let changed = false;
+    for (const [cat, docs] of groupedDocs) {
+      if (docs.some(d => d.slug === currentSlug) && !newCats.has(cat)) {
+        newCats.add(cat);
+        changed = true;
+      }
+    }
+    if (changed) setDocsExpandedCategories(newCats);
   }
 
   const { data: settingsRes } = useGetPublicSettings();
   const docsDriveUrl = settingsRes?.settings?.["COMMUNITY_DOCS_URL"] || null;
 
-  const [prevCurrentSlug, setPrevCurrentSlug] = useState(currentSlug);
-  if (currentSlug !== prevCurrentSlug) {
-    setPrevCurrentSlug(currentSlug);
-    setSidebarOpen(false);
-    if (currentSlug) {
-      const newCats = new Set(expandedCats);
-      let changed = false;
-      for (const [cat, docs] of groupedDocs) {
-        if (docs.some(d => d.slug === currentSlug) && !newCats.has(cat)) {
-          newCats.add(cat);
-          changed = true;
-        }
-      }
-      if (changed) setExpandedCats(newCats);
-    }
-  }
-
   const toggleCat = useCallback((cat: string) => {
-    setExpandedCats(prev => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
-  }, []);
+    toggleDocsCategory(cat);
+  }, [toggleDocsCategory]);
 
   return (
     <>
       <button
         className="fixed bottom-6 right-6 z-40 lg:hidden bg-ares-red text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg font-bold"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
+        onClick={toggleDocs}
         aria-label="Toggle sidebar"
       >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        {docsOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       <AnimatePresence>
-        {sidebarOpen && (
+        {docsOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
+            onClick={toggleDocs}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 lg:hidden"
           />
         )}
@@ -82,7 +87,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         bg-ares-gray-deep border-r border-white/8
         overflow-y-auto overscroll-contain
         transition-transform duration-300
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        ${docsOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         pt-24 pb-8 px-4
       `}>
         <div className="mb-6 px-2">
@@ -110,11 +115,11 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                 onClick={() => toggleCat(category)}
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold uppercase tracking-widest text-white hover:text-ares-gold transition-colors"
               >
-                {expandedCats.has(category) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {docsExpandedCategories.has(category) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 {category}
               </button>
               <AnimatePresence>
-                {expandedCats.has(category) && (
+                {docsExpandedCategories.has(category) && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -131,6 +136,12 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                             ? "bg-ares-red/15 text-ares-red font-bold border-l-2 border-ares-red"
                             : "text-white/60 hover:text-white hover:bg-white/5"
                         }`}
+                        onClick={() => {
+                          // Close sidebar on mobile after navigation
+                          if (window.innerWidth < 1024) {
+                            toggleDocs();
+                          }
+                        }}
                       >
                         {doc.title}
                       </Link>
@@ -170,4 +181,3 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
 }
 
 export default memo(DocsSidebar);
-

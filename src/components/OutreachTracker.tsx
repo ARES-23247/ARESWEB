@@ -3,13 +3,14 @@ import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
-import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
+import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { Plus, Trash2, MapPin, Users, Clock, Target, Calendar, CheckCircle, XCircle, Save, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
+import { AresField } from "./ui/forms/AresField";
 
 // Schema for validation
 const numericFieldSchema = z.union([z.string(), z.number()]).refine(val => val === "" || Number(val) >= 0, "Must be a positive number");
@@ -200,17 +201,10 @@ export default function OutreachTracker() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-title"
+                  <AresField
+                    field={field}
                     label="Event Title"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="e.g. Robot Demo at City Library"
-                    focusColor="ares-red"
-                    fullWidth
                   />
                 )}
               </form.Field>
@@ -222,16 +216,10 @@ export default function OutreachTracker() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-date"
+                  <AresField
+                    field={field}
                     type="date"
                     label="Date"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>
@@ -243,16 +231,10 @@ export default function OutreachTracker() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-reach"
+                  <AresField
+                    field={field}
                     type="number"
                     label="Reach Count (Estimated)"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>
@@ -264,17 +246,10 @@ export default function OutreachTracker() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-hours"
+                  <AresField
+                    field={field}
                     type="number"
-                    step="0.5"
                     label="Hours Logged"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>
@@ -286,66 +261,41 @@ export default function OutreachTracker() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-students"
+                  <AresField
+                    field={field}
                     type="number"
                     label="Students Participating"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-red"
                   />
                 )}
               </form.Field>
 
               <form.Field name="mentorCount">
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-mentors"
+                  <AresField
+                    field={field}
                     type="number"
                     label="Mentors Participating"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-bronze"
                   />
                 )}
               </form.Field>
 
               <form.Field name="mentorHours">
                 {(field) => (
-                  <DashboardInput
-                    id="outreach-mentor-hours"
+                  <AresField
+                    field={field}
                     type="number"
-                    step="0.5"
                     label="Mentor Hours"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-bronze"
                   />
                 )}
               </form.Field>
 
               <form.Field name="impactSummary">
                 {(field) => (
-                  <DashboardTextarea
-                    id="outreach-desc"
+                  <AresField
+                    field={field}
+                    type="textarea"
                     label="Description / Impact Summary"
-                    name={field.name}
-                    value={field.state.value || ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="Summarize the community impact..."
-                    focusColor="ares-red"
-                    fullWidth
                   />
                 )}
               </form.Field>
@@ -373,16 +323,10 @@ export default function OutreachTracker() {
                     {field.state.value && (
                       <form.Field name="mentoredTeamNumber">
                         {(teamField) => (
-                          <DashboardInput
-                            id="outreach-mentored-team"
+                          <AresField
+                            field={teamField}
                             label="Mentored Team #"
-                            name={teamField.name}
-                            value={teamField.state.value || ""}
-                            onBlur={teamField.handleBlur}
-                            onChange={(e) => teamField.handleChange(e.target.value)}
-                            error={teamField.state.meta.errors?.[0] as string | undefined}
                             placeholder="e.g. 23247"
-                            focusColor="ares-cyan"
                           />
                         )}
                       </form.Field>

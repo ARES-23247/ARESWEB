@@ -15,11 +15,11 @@ import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 
-export const videosRouter = new OpenAPIHono<AppEnv>();
+const baseRouter = new OpenAPIHono<AppEnv>();
 
 // Admin routes sub-router
-const adminRouter = new OpenAPIHono<AppEnv>();
-adminRouter.use("*", ensureAdmin);
+const _adminRouter = new OpenAPIHono<AppEnv>();
+_adminRouter.use("*", ensureAdmin);
 
 /**
  * Parse a video URL to extract platform and video ID
@@ -73,17 +73,17 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
 };
 
 // GET / - List all videos (public)
-videosRouter.openapi(listVideosRoute, async (c) => {
+const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
   const db = getDb(c);
   const results = await db.select().from(schema.videos).orderBy(schema.videos.createdAt).execute();
 
   const videos = results.map(serializeVideo);
 
   return c.json({ videos }, 200);
-});
+})
 
 // GET /:id - Get a single video (public)
-videosRouter.openapi(getVideoRoute, async (c) => {
+.openapi(getVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
@@ -94,10 +94,10 @@ videosRouter.openapi(getVideoRoute, async (c) => {
   }
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-});
+})
 
 // POST /parse-url - Parse a video URL (public, for editor convenience)
-videosRouter.openapi(parseVideoUrlRoute, async (c) => {
+.openapi(parseVideoUrlRoute, async (c) => {
   const { url } = c.req.valid("json");
 
   const parsed = parseVideoUrl(url);
@@ -107,7 +107,7 @@ videosRouter.openapi(parseVideoUrlRoute, async (c) => {
 
 // Admin routes - mounted at /admin
 // POST / - Create a video
-adminRouter.openapi(createVideoRoute, async (c) => {
+const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   const body = c.req.valid("json");
   const db = getDb(c);
 
@@ -131,10 +131,10 @@ adminRouter.openapi(createVideoRoute, async (c) => {
   const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-});
+})
 
 // PATCH /:id - Update a video
-adminRouter.openapi(updateVideoRoute, async (c) => {
+.openapi(updateVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = getDb(c);
@@ -163,10 +163,10 @@ adminRouter.openapi(updateVideoRoute, async (c) => {
   const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-});
+})
 
 // DELETE /:id - Delete a video
-adminRouter.openapi(deleteVideoRoute, async (c) => {
+.openapi(deleteVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
@@ -183,10 +183,10 @@ adminRouter.openapi(deleteVideoRoute, async (c) => {
   }
 
   return c.json({ success: true }, 200);
-});
+})
 
 // POST /sync - Sync videos from YouTube
-adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
+.openapi(syncYoutubeVideosRoute, async (c) => {
   const db = getDb(c);
   const apiKey = c.env.YOUTUBE_API_KEY;
 
@@ -275,6 +275,6 @@ adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
 });
 
 // Mount admin router at /admin
-videosRouter.route("/admin", adminRouter);
+export const videosRouter = appRoutes.route("/admin", adminApp);
 
 export default videosRouter;

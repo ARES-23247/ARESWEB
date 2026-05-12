@@ -2,12 +2,13 @@ import { useState } from "react";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
 import DashboardLoadingGrid from "./dashboard/DashboardLoadingGrid";
-import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
+import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { useGetAwards, useSaveAward, useDeleteAward } from "../api";
 import { Plus, Trash2, Trophy, Star, Calendar, MapPin, XCircle, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "@tanstack/react-form";
 import { awardFormSchema, type AwardFormPayload } from "@shared/routes/awards";
+import { AresField } from "./ui/forms/AresField";
 
 import SeasonPicker from "./SeasonPicker";
 interface Award {
@@ -110,17 +111,10 @@ export default function AwardEditor() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="award-title"
+                  <AresField
+                    field={field}
                     label="Award Title"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={field.state.meta.errors?.[0] as string | undefined}
                     placeholder="e.g. Excellence in Engineering"
-                    focusColor="ares-gold"
-                    fullWidth
                   />
                 )}
               </form.Field>
@@ -132,16 +126,10 @@ export default function AwardEditor() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="award-year"
+                  <AresField
+                    field={field}
                     type="number"
                     label="Year"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
-                    error={field.state.meta.errors?.[0] as string | undefined}
-                    focusColor="ares-gold"
                   />
                 )}
               </form.Field>
@@ -153,15 +141,10 @@ export default function AwardEditor() {
                 }}
               >
                 {(field) => (
-                  <DashboardInput
-                    id="award-eventName"
+                  <AresField
+                    field={field}
                     label="Event Name"
-                    name={field.name}
-                    value={field.state.value || ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="e.g. West Virginia State Championship"
-                    focusColor="ares-gold"
                   />
                 )}
               </form.Field>
@@ -177,32 +160,21 @@ export default function AwardEditor() {
 
               <form.Field name="imageUrl">
                 {(field) => (
-                  <DashboardInput
-                    id="award-imageUrl"
+                  <AresField
+                    field={field}
                     label="Image URL (Optional)"
-                    name={field.name}
-                    value={field.state.value || ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="https://..."
-                    focusColor="ares-gold"
-                    fullWidth
                   />
                 )}
               </form.Field>
 
               <form.Field name="description">
                 {(field) => (
-                  <DashboardTextarea
-                    id="award-desc"
+                  <AresField
+                    field={field}
+                    type="textarea"
                     label="Description"
-                    name={field.name}
-                    value={field.state.value || ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Tell the story of how we won..."
-                    focusColor="ares-gold"
-                    fullWidth
                   />
                 )}
               </form.Field>

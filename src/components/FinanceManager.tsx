@@ -3,7 +3,7 @@ import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardMetricsGrid from "./dashboard/DashboardMetricsGrid";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
-import { DashboardInput, DashboardTextarea, DashboardSubmitButton } from "./dashboard/DashboardFormInputs";
+import { DashboardSubmitButton } from "./ui/forms/DashboardSubmitButton";
 import { Plus, Trash2, DollarSign, PieChart, TrendingUp, TrendingDown, RefreshCw, Wallet, Building, Circle, UserPlus, Handshake, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
 import { GenericKanbanBoard, KanbanColumnConfig } from "./kanban/GenericKanbanBoard";
 import { SortablePipelineCard } from "./kanban/SortablePipelineCard";
@@ -13,6 +13,8 @@ import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { financeTransactionSchema, sponsorshipPipelineSchema, type SponsorshipPipelinePayload } from "@shared/schemas/financeSchema";
+import { AresField } from "./ui/forms/AresField";
+import { AresSelect } from "./ui/forms/AresSelect";
 import type { PipelineItem, TransactionItem } from "../types/finance";
 import { 
   useGetFinanceSummary, 
@@ -249,15 +251,9 @@ export default function FinanceManager() {
                   }}
                 >
                   {(field) => (
-                    <DashboardInput
-                      id="pipeline-company"
+                    <AresField
+                      field={field}
                       label="Company Name"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      error={field.state.meta.errors?.[0] as string}
-                      fullWidth
                     />
                   )}
                 </pipelineForm.Field>
@@ -269,35 +265,21 @@ export default function FinanceManager() {
                   }}
                 >
                   {(field) => (
-                    <DashboardInput
-                      id="pipeline-value"
+                    <AresField
+                      field={field}
                       label="Est. Value ($)"
                       type="number"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(Number(e.target.value))}
-                      error={field.state.meta.errors?.[0] as string}
                     />
                   )}
                 </pipelineForm.Field>
 
                 <pipelineForm.Field name="status">
                   {(field) => (
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="pipeline-status" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Initial Status</label>
-                      <select
-                        id="pipeline-status"
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onChange={(e) => field.handleChange(e.target.value as any)}
-                        className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none"
-                      >
-                        {PIPELINE_COLUMNS.map(c => <option key={c} value={c} className="bg-obsidian text-white">{pipelineConfig[c].label}</option>)}
-                      </select>
-                    </div>
+                    <AresSelect
+                      field={field}
+                      label="Initial Status"
+                      options={PIPELINE_COLUMNS.map(c => ({ value: c, label: pipelineConfig[c].label }))}
+                    />
                   )}
                 </pipelineForm.Field>
 
@@ -316,21 +298,14 @@ export default function FinanceManager() {
               >
                 <transactionForm.Field name="type">
                   {(field) => (
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="transaction-type" className="text-[10px] font-black uppercase tracking-widest text-marble/60 px-1">Type</label>
-                      <select
-                        id="transaction-type"
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onChange={(e) => field.handleChange(e.target.value as any)}
-                        className="bg-white/5 border border-white/10 ares-cut-sm p-3 text-sm text-white focus:border-ares-red outline-none"
-                      >
-                        <option value="expense" className="bg-obsidian text-white">Expense (-)</option>
-                        <option value="income" className="bg-obsidian text-white">Income (+)</option>
-                      </select>
-                    </div>
+                    <AresSelect
+                      field={field}
+                      label="Type"
+                      options={[
+                        { value: "expense", label: "Expense (-)" },
+                        { value: "income", label: "Income (+)" }
+                      ]}
+                    />
                   )}
                 </transactionForm.Field>
 
@@ -342,30 +317,20 @@ export default function FinanceManager() {
                   }}
                 >
                   {(field) => (
-                    <DashboardInput
-                      id="entry-amount"
+                    <AresField
+                      field={field}
                       type="number"
-                      step="0.01"
                       label="Amount ($)"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(Number(e.target.value))}
-                      error={field.state.meta.errors?.[0] as string}
-                      focusColor="ares-red"
                     />
                   )}
                 </transactionForm.Field>
 
                 <transactionForm.Field name="date">
                   {(field) => (
-                    <DashboardInput
-                      id="ledger-date"
-                      label="Date"
+                    <AresField
+                      field={field}
                       type="date"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      label="Date"
                     />
                   )}
                 </transactionForm.Field>
@@ -377,15 +342,10 @@ export default function FinanceManager() {
                   }}
                 >
                   {(field) => (
-                    <DashboardInput
-                      id="ledger-category"
+                    <AresField
+                      field={field}
                       label="Category"
                       placeholder="e.g. Parts, Travel, Reg"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      error={field.state.meta.errors?.[0] as string | undefined}
                     />
                   )}
                 </transactionForm.Field>
@@ -398,16 +358,11 @@ export default function FinanceManager() {
                   }}
                 >
                   {(field) => (
-                    <DashboardTextarea
-                      id="entry-desc"
+                    <AresField
+                      field={field}
+                      type="textarea"
                       label="Description / Purpose"
-                      value={field.state.value || ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => field.handleChange(e.target.value)}
-                      error={field.state.meta.errors?.[0] as string}
                       placeholder="Briefly describe the transaction..."
-                      focusColor="ares-red"
-                      fullWidth
                     />
                   )}
                 </transactionForm.Field>
