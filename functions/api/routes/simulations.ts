@@ -337,6 +337,7 @@ export const simulationsRouter = _simulationsRouter
             simulation: {
                 id: `gist:${id}`,
                 name: String(gist.description || "Gist Simulation"),
+                type: "gist",
                 description: null,
                 files: JSON.stringify(gistFiles),
                 authorId: String(gist.owner?.login || "anonymous"),
