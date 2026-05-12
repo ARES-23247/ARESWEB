@@ -218,19 +218,18 @@ export const judgesRouter = _judgesRouter
         const payload: JudgePortfolioSuccess = {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           portfolioDocs: portfolioDocs.map((d: any) => ({
-            slug: d.slug,
-            title: d.title,
-            category: d.category,
-            description: d.description || "",
+            slug: String(d.slug),
+            title: String(d.title),
+            category: String(d.category),
+            description: d.description ? String(d.description) : "",
             content: sanitizeJudgeContent(d.content),
-            isExecutiveSummary: d.category === "Executive Summary" ? 1 : undefined,
           })),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           outreach: outreach.map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            date: o.date,
-            location: o.location || "",
+            id: Number(o.id),
+            title: String(o.title),
+            date: String(o.date),
+            location: o.location ? String(o.location) : "",
             studentsCount: Number(o.studentsCount),
             hoursLogged: Number(o.hoursLogged),
             reachCount: Number(o.reachCount),
@@ -238,16 +237,16 @@ export const judgesRouter = _judgesRouter
           })),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
           awards: awards.map((a: any) => ({
-            id: a.id,
-            title: a.title,
-            date: a.date,
-            eventName: a.eventName,
-            imageUrl: a.imageUrl,
+            id: String(a.id),
+            title: String(a.title),
+            date: String(a.date),
+            eventName: a.eventName ? String(a.eventName) : "",
+            imageUrl: a.imageUrl ? String(a.imageUrl) : "",
             description: sanitizeJudgeContent(a.description || ""),
             year: Number(a.date)
           })),
           sponsors: sponsors.map((s: SponsorResult) => ({ ...s, id: s.id || "", tier: s.tier as string }))
-        };
+        } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
         portfolioCache.set(cacheKey, { data: payload, expiresAt: now + 300000, version: portfolioCacheVersion });
 

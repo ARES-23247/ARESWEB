@@ -179,7 +179,7 @@ describe('authMiddleware', () => {
           getSession: vi.fn().mockResolvedValue(null),
         },
       } as unknown as ReturnType<typeof getAuth>);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
 
@@ -192,7 +192,7 @@ describe('authMiddleware', () => {
         api: {
           getSession: vi.fn().mockResolvedValue({ user: null }),
         },
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
       } as unknown as ReturnType<typeof getAuth>);
 
       try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
@@ -222,7 +222,7 @@ describe('authMiddleware', () => {
           }),
         },
       } as unknown as ReturnType<typeof getAuth>);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
@@ -254,7 +254,7 @@ describe('authMiddleware', () => {
             user: mockUser,
           }),
         },
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
       } as unknown as ReturnType<typeof getAuth>);
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
@@ -271,7 +271,7 @@ describe('authMiddleware', () => {
     });
   });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
   describe('ensureAdmin', () => {
     it('allows access when dev bypass is enabled', async () => {
       mockContext.env.ENVIRONMENT = 'development';
@@ -290,7 +290,7 @@ describe('authMiddleware', () => {
 
     it('returns 401 when no session exists', async () => {
       const mockGetAuth = vi.mocked(getAuth);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
       mockGetAuth.mockReturnValue({
         api: {
           getSession: vi.fn().mockResolvedValue(null),
@@ -320,7 +320,7 @@ describe('authMiddleware', () => {
       mockGetAuth.mockReturnValue({
         api: {
           getSession: vi.fn().mockResolvedValue({
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
             user: mockUser,
           }),
         },
@@ -357,7 +357,7 @@ describe('authMiddleware', () => {
           getSession: vi.fn().mockResolvedValue({
             user: mockUser,
           }),
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
         },
       } as unknown as ReturnType<typeof getAuth>);
 
@@ -393,7 +393,7 @@ describe('authMiddleware', () => {
           }),
         },
       } as unknown as ReturnType<typeof getAuth>);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       (mockDb.get as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockProfile);
 
@@ -427,7 +427,7 @@ describe('authMiddleware', () => {
       mockGetAuth.mockReturnValue({
         api: {
           getSession: vi.fn().mockResolvedValue({
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
             user: mockUser,
           }),
         },
@@ -461,7 +461,7 @@ describe('authMiddleware', () => {
       const mockGetAuth = vi.mocked(getAuth);
       mockGetAuth.mockReturnValue({
         api: {
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
           getSession: vi.fn().mockResolvedValue({
             user: mockUser,
           }),
@@ -497,7 +497,7 @@ describe('authMiddleware', () => {
         api: {
           getSession: vi.fn().mockResolvedValue({
             user: mockUser,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
           }),
         },
       } as unknown as ReturnType<typeof getAuth>);
@@ -528,7 +528,7 @@ describe('authMiddleware', () => {
       const mockProfile = {
         nickname: 'Admin',
         memberType: 'mentor',
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
       };
 
       const mockGetAuth = vi.mocked(getAuth);
@@ -564,7 +564,7 @@ describe('authMiddleware', () => {
         nickname: 'User',
         memberType: 'student',
       };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       const mockGetAuth = vi.mocked(getAuth);
       mockGetAuth.mockReturnValue({
@@ -782,7 +782,7 @@ describe('authMiddleware', () => {
       expect(result?.role).toBe('unverified');
     });
   });
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
   describe('Header Security', () => {
     it('does NOT trust cf-access-authenticated-user-email from headers (ZERO TRUST)', async () => {
@@ -799,7 +799,7 @@ describe('authMiddleware', () => {
       mockContext.req.raw.headers.set('cf-access-authenticated-user-email', 'attacker@evil.com');
 
       try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       // Should still return 401 because Lucia auth didn't validate
       expect(mockNext).not.toHaveBeenCalled();
@@ -815,7 +815,7 @@ describe('authMiddleware', () => {
           getSession: vi.fn().mockResolvedValue(null),
         },
       } as unknown as ReturnType<typeof getAuth>);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 
       try { await ensureAuth(mockContext, mockNext); } catch (e: any) { expect(e.status).toBe(401); }
 

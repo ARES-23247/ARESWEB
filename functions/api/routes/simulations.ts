@@ -118,8 +118,9 @@ export const simulationsRouter = _simulationsRouter
         const githubSims = (registry.simulators || []).map((s: { id: string; name: string }) => ({
             id: `github:${s.id}`,
             name: s.name,
-            author_id: "ARES-23247",
-            is_public: 1,
+            description: null,
+            authorId: "ARES-23247",
+            isPublic: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             type: "github"
@@ -157,26 +158,22 @@ export const simulationsRouter = _simulationsRouter
             const code = await legacyRes.text();
             return c.json({
                 simulation: {
-                    id, name: simId, type: "github",
-                    files: { [`${simId}.tsx`]: code },
-                    author_id: "ARES-23247", is_public: 1,
+                    id, name: simId, type: "github", description: null,
+                    files: JSON.stringify({ [`${simId}.tsx`]: code }),
+                    authorId: "ARES-23247", isPublic: 1,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }
-                // Response boundary: Drizzle return type diverges from Zod schema
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }, 200);
         }
-        const code = await ghRes.text();return typedJson(c, {
+        const code = await ghRes.text();return c.json({
             simulation: {
-                id, name: simId, type: "github",
-                files: { "index.tsx": code },
-                author_id: "ARES-23247", is_public: 1,
+                id, name: simId, type: "github", description: null,
+                files: JSON.stringify({ "index.tsx": code }),
+                authorId: "ARES-23247", isPublic: 1,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             }
-            // Response boundary: Drizzle return type diverges from Zod schema
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }, 200);
     })
     .openapi(saveSimulationRoute, async (c) => {
@@ -340,15 +337,13 @@ export const simulationsRouter = _simulationsRouter
             simulation: {
                 id: `gist:${id}`,
                 name: String(gist.description || "Gist Simulation"),
-                type: "gist",
-                files: gistFiles,
-                author_id: String(gist.owner?.login || "anonymous"),
-                is_public: gist.public ? 1 : 0,
+                description: null,
+                files: JSON.stringify(gistFiles),
+                authorId: String(gist.owner?.login || "anonymous"),
+                isPublic: gist.public ? 1 : 0,
                 createdAt: String(gist.created_at),
                 updatedAt: String(gist.updated_at)
             }
-            // Response boundary: Drizzle return type diverges from Zod schema
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }, 200);
     })
     .openapi(generateSimRegistryRoute, async (c) => {

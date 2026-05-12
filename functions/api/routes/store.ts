@@ -10,7 +10,7 @@ import {
     getOrdersRoute,
     updateOrderStatusRoute,
 } from "../../../shared/routes/store";
-import { getDb, AppEnv, getSessionUser, typedJson } from "../middleware";
+import { getDb, AppEnv, typedJson } from "../middleware";
 import { requireAuth } from "../middleware/auth";
 
 const _storeRouter = new OpenAPIHono<AppEnv>();

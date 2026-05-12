@@ -8,7 +8,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import type { AppEnv, DrizzleDB } from '../api/middleware';
-import { errorHandlerMiddleware } from '../api/middleware/errorHandler';
+import { globalErrorHandler } from '../api/middleware/errorHandler';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../../src/db/schema';
 import { Next } from 'hono';
@@ -310,7 +310,7 @@ export function createMockContext(
  */
 export function createTestAppBase(mockDrizzleDb?: DrizzleDB, mockD1Db?: D1Database): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
-  app.use('*', errorHandlerMiddleware);
+  app.onError(globalErrorHandler);
   app.use('*', createTestDbMiddleware(mockDrizzleDb, mockD1Db));
   return app;
 }

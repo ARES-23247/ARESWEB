@@ -3,7 +3,7 @@ import { eq, desc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, getSessionUser, originIntegrityMiddleware, getDb, ensureAuth } from "../middleware";
+import { AppEnv, originIntegrityMiddleware, getDb, ensureAuth } from "../middleware";
 import {
     listSocialQueueRoute,
     calendarSocialQueueRoute,
@@ -16,7 +16,6 @@ import {
 } from "../../../shared/routes/socialQueue";
 import { nanoid } from "nanoid";
 import { dispatchQueuePost } from "../../utils/socialSync";
-import { requireAuth } from "../middleware/auth";
 
 const _socialQueueRouter = new OpenAPIHono<AppEnv>();
 

@@ -46,18 +46,20 @@ export const awardsRouter = _awardsRouter
             useAll: true
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const awards = results.map((a: any) => ({
-            id: String(a.id),
-            title: a.title,
-            year: Number(a.date),
-            eventName: a.eventName || null,
-            description: a.description || null,
-            imageUrl: a.iconType || "trophy",
-            seasonId: a.seasonId ? Number(a.seasonId) : null,
-            createdAt: a.createdAt || new Date().toISOString(),
-            updatedAt: a.createdAt || new Date().toISOString()
-        }));
+        const awards = results.map((record: unknown) => {
+            const a = record as Record<string, unknown>;
+            return {
+                id: String(a.id),
+                title: String(a.title),
+                year: Number(a.date),
+                eventName: a.eventName ? String(a.eventName) : null,
+                description: a.description ? String(a.description) : null,
+                imageUrl: a.iconType ? String(a.iconType) : "trophy",
+                seasonId: a.seasonId ? Number(a.seasonId) : null,
+                createdAt: a.createdAt ? String(a.createdAt) : new Date().toISOString(),
+                updatedAt: a.createdAt ? String(a.createdAt) : new Date().toISOString()
+            };
+        });
 
         return c.json({ awards }, 200);
     })
