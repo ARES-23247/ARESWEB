@@ -57,7 +57,15 @@ function parseVideoUrl(url: string): { platform: "youtube" | "vimeo" | "other"; 
 }
 
 const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof videoSchema> => {
-  const parsed = parseVideoUrl(v.videoId);
+  let embedUrl = v.videoId;
+  if (v.platform === "youtube") {
+    embedUrl = `https://www.youtube.com/embed/${v.videoId}`;
+  } else if (v.platform === "vimeo") {
+    embedUrl = `https://player.vimeo.com/video/${v.videoId}`;
+  } else if (!embedUrl.startsWith("http")) {
+    embedUrl = `https://${embedUrl}`;
+  }
+
   return {
     id: v.id,
     title: v.title,
@@ -66,7 +74,7 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
     videoId: v.videoId,
     thumbnailKey: v.thumbnailKey ?? null,
     thumbnailUrl: v.thumbnailKey ? `/api/media/${v.thumbnailKey}` : null,
-    embedUrl: parsed.embedUrl,
+    embedUrl,
     createdAt: v.createdAt ?? new Date().toISOString(),
     updatedAt: v.updatedAt ?? new Date().toISOString(),
   };

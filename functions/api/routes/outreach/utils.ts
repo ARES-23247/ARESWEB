@@ -1,4 +1,4 @@
-﻿import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { DrizzleDB } from "../../middleware";
 
@@ -19,19 +19,21 @@ interface VolunteerEventDbResult {
  * Mapped volunteer event for outreach display
  */
 interface VolunteerEvent {
-  id: string;
+  id: string | number;
   title: string;
   date: string;
   location: string | null;
-  students_count: number;
-  hours_logged: number;
-  reach_count: number;
-  description: string;
-  is_mentoring: boolean;
-  mentored_team_number: null;
+  studentsCount: number;
+  hours: number;
+  peopleReached: number;
+  impactSummary: string;
+  isMentoring: number;
+  mentoredTeamNumber: string | null;
   seasonId: number | null;
-  is_dynamic: boolean;
-  event_id: string;
+  isDynamic: boolean;
+  eventId: string;
+  mentorCount: number;
+  mentorHours: number;
 }
 
 export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: string[]): Promise<VolunteerEvent[]> {
@@ -56,19 +58,21 @@ export async function fetchVolunteerEvents(db: DrizzleDB, existingEventIds: stri
     const filteredResults = results.filter((r: VolunteerEventDbResult) => !existingEventIds.includes(String(r.id)));
 
     return filteredResults.map((r: VolunteerEventDbResult): VolunteerEvent => ({
-      id: String(r.id),
+      id: r.id,
       title: r.title,
       date: r.date,
       location: r.location || null,
-      students_count: 0,
-      hours_logged: 0,
-      reach_count: 0,
-      description: "Volunteer Event (Synced)",
-      is_mentoring: false,
-      mentored_team_number: null,
+      studentsCount: 0,
+      hours: 0,
+      peopleReached: 0,
+      impactSummary: "Volunteer Event (Synced)",
+      isMentoring: 0,
+      mentoredTeamNumber: null,
       seasonId: r.seasonId ? Number(r.seasonId) : null,
-      is_dynamic: true,
-      event_id: String(r.id)
+      isDynamic: true,
+      eventId: String(r.id),
+      mentorCount: 0,
+      mentorHours: 0
     }));
   } catch (_error: unknown) {
     return [];

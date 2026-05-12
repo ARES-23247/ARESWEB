@@ -12,12 +12,19 @@ import { openApiStandardErrors } from "./common";
  * Outreach log schema - derived from Drizzle select schema
  * Exported as `outreachSchema` for backward compatibility with consumers
  */
-export const outreachSchema = selectOutreachLogSchema;
+export const outreachSchema = selectOutreachLogSchema.extend({
+  id: z.union([z.number(), z.string()]),
+  isDynamic: z.boolean().optional(),
+});
 
 /**
- * Outreach log response schema - derived from Drizzle select schema
+ * Outreach log response schema - extends Drizzle schema to allow string IDs
+ * for dynamic volunteer events.
  */
-export const outreachResponseSchema = selectOutreachLogSchema;
+export const outreachResponseSchema = selectOutreachLogSchema.extend({
+  id: z.union([z.number(), z.string()]),
+  isDynamic: z.boolean().optional(),
+});
 
 /**
  * Save outreach request schema (create/update)

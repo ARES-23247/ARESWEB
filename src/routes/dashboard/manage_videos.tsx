@@ -172,7 +172,13 @@ function RouteComponent() {
                 )}
                 <div className="flex items-center justify-between">
                   <a
-                    href={video.embedUrl}
+                    href={
+                      video.platform === 'youtube' 
+                        ? `https://www.youtube.com/watch?v=${video.videoId}` 
+                        : video.platform === 'vimeo'
+                        ? `https://vimeo.com/${video.videoId}`
+                        : video.embedUrl.startsWith('http') ? video.embedUrl : `https://${video.embedUrl}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-ares-cyan hover:text-white transition-colors flex items-center gap-1"

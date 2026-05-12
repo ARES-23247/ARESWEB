@@ -1,45 +1,44 @@
-﻿import { eq, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { RouteHandler } from "@hono/zod-openapi";
 import { getDb, type AppEnv } from "../../middleware";
 import { SNIPPET_LENGTH, fetchVolunteerEvents } from "./utils";
 import type { listOutreachRoute, adminListOutreachRoute } from "../../../../shared/routes/outreach";
 
-// Database query result type - inferred from the Drizzle select query
 type OutreachQueryResult = {
   id: number;
   title: string;
   date: string;
   location: string | null;
-  hours_logged: number | null;
-  reach_count: number | null;
-  students_count: number | null;
-  description: string | null;
+  hours: number | null;
+  peopleReached: number | null;
+  studentsCount: number | null;
+  impactSummary: string | null;
   seasonId: number | null;
-  is_mentoring: number | boolean | null;
-  mentored_team_number: number | string | null;
-  event_id: string | null;
-  mentor_count: number | null;
-  mentor_hours: number | null;
+  isMentoring: number | null;
+  mentoredTeamNumber: string | null;
+  eventId: string | null;
+  mentorCount: number | null;
+  mentorHours: number | null;
 };
 
 // Combined log entry type (database + volunteer events)
 interface OutreachLog {
-  id: string;
+  id: string | number;
   title: string;
   date: string;
   location: string | null;
-  students_count: number;
-  hours_logged: number;
-  reach_count: number;
-  description: string | null;
-  is_mentoring: boolean;
-  mentored_team_number: number | null;
+  studentsCount: number;
+  hours: number;
+  peopleReached: number;
+  impactSummary: string | null;
+  isMentoring: number;
+  mentoredTeamNumber: string | null;
   seasonId: number | null;
-  is_dynamic: boolean;
-  event_id: string | null;
-  mentor_count: number;
-  mentor_hours: number;
+  isDynamic?: boolean;
+  eventId: string | null;
+  mentorCount: number;
+  mentorHours: number;
 }
 
 export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> = async (c) => {
@@ -49,47 +48,46 @@ export const handleListOutreach: RouteHandler<typeof listOutreachRoute, AppEnv> 
       title: schema.outreachLogs.title,
       date: schema.outreachLogs.date,
       location: schema.outreachLogs.location,
-      hours_logged: schema.outreachLogs.hours,
-      reach_count: schema.outreachLogs.peopleReached,
-      students_count: schema.outreachLogs.studentsCount,
-      description: schema.outreachLogs.impactSummary,
+      hours: schema.outreachLogs.hours,
+      peopleReached: schema.outreachLogs.peopleReached,
+      studentsCount: schema.outreachLogs.studentsCount,
+      impactSummary: schema.outreachLogs.impactSummary,
       seasonId: schema.outreachLogs.seasonId,
-      is_mentoring: schema.outreachLogs.isMentoring,
-      mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
-      event_id: schema.outreachLogs.eventId,
-      mentor_count: schema.outreachLogs.mentorCount,
-      mentor_hours: schema.outreachLogs.mentorHours,
+      isMentoring: schema.outreachLogs.isMentoring,
+      mentoredTeamNumber: schema.outreachLogs.mentoredTeamNumber,
+      eventId: schema.outreachLogs.eventId,
+      mentorCount: schema.outreachLogs.mentorCount,
+      mentorHours: schema.outreachLogs.mentorHours,
   }).from(schema.outreachLogs)
     .where(eq(schema.outreachLogs.isDeleted, 0))
     .orderBy(desc(schema.outreachLogs.date))
     .all();
 
   const existingEventIds = results
-    .filter((r: OutreachQueryResult) => r.event_id !== null)
-    .map((r: OutreachQueryResult) => String(r.event_id));
+    .filter((r: OutreachQueryResult) => r.eventId !== null)
+    .map((r: OutreachQueryResult) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
   const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
-    id: String(r.id),
+    id: r.id,
     title: r.title,
     date: r.date,
     location: r.location || null,
-    students_count: Number(r.students_count || 0),
-    hours_logged: Number(r.hours_logged || 0),
-    reach_count: Number(r.reach_count || 0),
-    description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
-    is_mentoring: !!r.is_mentoring,
-    mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
+    studentsCount: Number(r.studentsCount || 0),
+    hours: Number(r.hours || 0),
+    peopleReached: Number(r.peopleReached || 0),
+    impactSummary: r.impactSummary ? (r.impactSummary.length > SNIPPET_LENGTH ? r.impactSummary.substring(0, SNIPPET_LENGTH) + "..." : r.impactSummary) : null,
+    isMentoring: r.isMentoring || 0,
+    mentoredTeamNumber: r.mentoredTeamNumber || null,
     seasonId: r.seasonId ? Number(r.seasonId) : null,
-    is_dynamic: !!r.event_id,
-    event_id: r.event_id || null,
-    mentor_count: Number(r.mentor_count || 0),
-    mentor_hours: Number(r.mentor_hours || 0)
+    eventId: r.eventId || null,
+    mentorCount: Number(r.mentorCount || 0),
+    mentorHours: Number(r.mentorHours || 0)
   }));
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Response boundary: Drizzle return type diverges from Zod schema
+  // Response boundary: Drizzle return type matches Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
@@ -101,47 +99,46 @@ export const handleAdminListOutreach: RouteHandler<typeof adminListOutreachRoute
       title: schema.outreachLogs.title,
       date: schema.outreachLogs.date,
       location: schema.outreachLogs.location,
-      hours_logged: schema.outreachLogs.hours,
-      reach_count: schema.outreachLogs.peopleReached,
-      students_count: schema.outreachLogs.studentsCount,
-      description: schema.outreachLogs.impactSummary,
+      hours: schema.outreachLogs.hours,
+      peopleReached: schema.outreachLogs.peopleReached,
+      studentsCount: schema.outreachLogs.studentsCount,
+      impactSummary: schema.outreachLogs.impactSummary,
       seasonId: schema.outreachLogs.seasonId,
-      is_mentoring: schema.outreachLogs.isMentoring,
-      mentored_team_number: schema.outreachLogs.mentoredTeamNumber,
-      event_id: schema.outreachLogs.eventId,
-      mentor_count: schema.outreachLogs.mentorCount,
-      mentor_hours: schema.outreachLogs.mentorHours,
+      isMentoring: schema.outreachLogs.isMentoring,
+      mentoredTeamNumber: schema.outreachLogs.mentoredTeamNumber,
+      eventId: schema.outreachLogs.eventId,
+      mentorCount: schema.outreachLogs.mentorCount,
+      mentorHours: schema.outreachLogs.mentorHours,
   }).from(schema.outreachLogs)
     .where(eq(schema.outreachLogs.isDeleted, 0))
     .orderBy(desc(schema.outreachLogs.date))
     .all();
 
   const existingEventIds = results
-    .filter((r: OutreachQueryResult) => r.event_id !== null)
-    .map((r: OutreachQueryResult) => String(r.event_id));
+    .filter((r: OutreachQueryResult) => r.eventId !== null)
+    .map((r: OutreachQueryResult) => String(r.eventId));
   const volunteerEvents = await fetchVolunteerEvents(db, existingEventIds);
 
   const logs = results.map((r: OutreachQueryResult): OutreachLog => ({
-    id: String(r.id),
+    id: r.id,
     title: r.title,
     date: r.date,
     location: r.location || null,
-    students_count: Number(r.students_count || 0),
-    hours_logged: Number(r.hours_logged || 0),
-    reach_count: Number(r.reach_count || 0),
-    description: r.description ? (r.description.length > SNIPPET_LENGTH ? r.description.substring(0, SNIPPET_LENGTH) + "..." : r.description) : null,
-    is_mentoring: !!r.is_mentoring,
-    mentored_team_number: r.mentored_team_number ? Number(r.mentored_team_number) : null,
+    studentsCount: Number(r.studentsCount || 0),
+    hours: Number(r.hours || 0),
+    peopleReached: Number(r.peopleReached || 0),
+    impactSummary: r.impactSummary ? (r.impactSummary.length > SNIPPET_LENGTH ? r.impactSummary.substring(0, SNIPPET_LENGTH) + "..." : r.impactSummary) : null,
+    isMentoring: r.isMentoring || 0,
+    mentoredTeamNumber: r.mentoredTeamNumber || null,
     seasonId: r.seasonId ? Number(r.seasonId) : null,
-    is_dynamic: !!r.event_id,
-    event_id: r.event_id || null,
-    mentor_count: Number(r.mentor_count || 0),
-    mentor_hours: Number(r.mentor_hours || 0)
+    eventId: r.eventId || null,
+    mentorCount: Number(r.mentorCount || 0),
+    mentorHours: Number(r.mentorHours || 0)
   }));
 
   const combined = [...logs, ...volunteerEvents].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Response boundary: Drizzle return type diverges from Zod schema
+  // Response boundary: Drizzle return type matches Zod schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.json({ logs: combined } as any, 200);
 };
