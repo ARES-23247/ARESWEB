@@ -50,7 +50,9 @@
       "Bash(curl -s -w \"\\\\nHTTP Status: %{http_code}\\\\n\" \"https://aresfirst.org/api/analytics/performance/summary\")",
       "Bash(curl -s \"https://aresfirst.org/api/analytics/performance/summary\")",
       "Bash(curl -s -X POST https://aresfirst.org/api/galleries/admin -H 'Content-Type: application/json' -d '{\"title\":\"Test Gallery\",\"description\":\"\",\"googlePhotosUrl\":\"\",\"heroImageKey\":\"\"}' -w '\\\\nHTTP Status: %{http_code}\\\\n')",
-      "Bash(curl -s \"https://aresfirst.org/api/galleries\")"
+      "Bash(curl -s \"https://aresfirst.org/api/galleries\")",
+      "Bash(curl -s \"https://aresfirst.org/dashboard/manage_galleries\")",
+      "Bash(npx tsr *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

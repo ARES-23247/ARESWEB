@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState, useRef } from 'react';
 import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeResumableUrlMutation } from '../../api/youtube';
 import { useGetVideos, useDeleteVideo, useSyncYoutubeVideosMutation } from '../../api';
-import { Upload, Video, AlertCircle, Settings, X, Pencil, Play, Plus, ExternalLink, Trash2, RefreshCw } from 'lucide-react';
+import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { toastApiError, ApiError } from '../../api/honoClient';
 import { useQueryClient } from '@tanstack/react-query';
