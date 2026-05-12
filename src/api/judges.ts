@@ -155,7 +155,28 @@ export function useDeleteJudgeCode(
       return unwrapResponse<{ success: boolean }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (qc) => {
+      onMutate: async (id) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: ["judge_codes"] });
+        
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData(["judge_codes"]);
+        
+        // Optimistically update to the new value
+        queryClient.setQueryData(["judge_codes"], (old: any) => ({
+          ...old,
+          codes: old?.codes?.filter((c: any) => c.id !== id)
+        }));
+        
+        return { previous };
+      },
+      onError: (err, id, context) => {
+        // Rollback on failure
+        if (context?.previous) {
+          queryClient.setQueryData(["judge_codes"], context.previous);
+        }
+      },
+      onSettled: (qc) => {
         qc.invalidateQueries({ queryKey: ["judge_codes"] });
       }
     })

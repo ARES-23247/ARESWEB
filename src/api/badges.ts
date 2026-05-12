@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
 import { badgeSchema, userBadgeSchema } from "@shared/routes/badges";
 
 // Infer TypeScript types from Zod schemas
@@ -149,10 +149,32 @@ export function useDeleteBadge(
       const response = await client.badges.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
-    onSuccess: async (...args) => {
-      await queryClient.invalidateQueries({ queryKey: ["badges"] });
-      await options?.onSuccess?.(...args);
-    }
+    ...withMutationCallbacks(queryClient, options, {
+      onMutate: async (id) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: ["badges"] });
+        
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData(["badges"]);
+        
+        // Optimistically update to the new value
+        queryClient.setQueryData(["badges"], (old: any) => ({
+          ...old,
+          badges: old?.badges?.filter((b: any) => b.id !== id)
+        }));
+        
+        return { previous };
+      },
+      onError: (err, id, context) => {
+        // Rollback on failure
+        if (context?.previous) {
+          queryClient.setQueryData(["badges"], context.previous);
+        }
+      },
+      onSettled: (qc) => {
+        qc.invalidateQueries({ queryKey: ["badges"] });
+      }
+    })
   });
 }
 

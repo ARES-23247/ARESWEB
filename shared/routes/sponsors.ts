@@ -26,7 +26,10 @@ export const sponsorRoiMetricSchema = toCamelCaseResponse(selectSponsorMetricSch
 /**
  * Sponsor token schema - derived from Drizzle
  */
-export const sponsorTokenSchema = toCamelCaseResponse(selectSponsorTokenSchema);
+export const sponsorTokenSchema = toCamelCaseResponse(selectSponsorTokenSchema).extend({
+  sponsorName: z.string().optional(),
+  lastUsed: z.string().nullable().optional(),
+});
 
 // ============================================================================
 // ROUTES

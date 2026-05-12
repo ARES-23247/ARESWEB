@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { z } from "zod";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { Search, MapPin, Plus, Trash2, Edit3, CheckCircle, Navigation } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +8,83 @@ import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { locationSchema } from "@shared/routes/locations";
 import { useGetAdminLocations, useSaveLocation, useDeleteLocation, type Location } from "../api/locations";
+
+interface LocationRowProps {
+  location: Location;
+  onEdit: (l: Location) => void;
+}
+
+function LocationRow({ location: l, onEdit }: LocationRowProps) {
+  const saveMutation = useSaveLocation();
+  const deleteMutation = useDeleteLocation();
+
+  const isPending = saveMutation.isPending || deleteMutation.isPending;
+
+  return (
+    <div className={`p-4 border ares-cut-sm flex items-center justify-between transition-all ${l.isDeleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
+      <div className="flex-1">
+        <h4 className={`font-bold transition-all ${l.isDeleted ? 'text-ares-red/60 line-through' : 'text-white'}`}>{l.name}</h4>
+        <p className="text-sm text-marble/90 mt-1 flex items-center gap-2">
+          <MapPin size={14} /> {l.address}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {l.isDeleted ? (
+          <>
+            <button 
+              disabled={isPending}
+              onClick={() => saveMutation.mutate({ ...l, isDeleted: 0 } as Location, {
+                onSuccess: () => toast.success("Venue restored")
+              })} 
+              className="p-2 text-xs text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm font-bold min-w-[80px] flex justify-center"
+            >
+              {saveMutation.isPending ? <span className="w-3 h-3 border-2 border-ares-cyan border-t-transparent rounded-full animate-spin" /> : "RESTORE"}
+            </button>
+            <button 
+              disabled={isPending}
+              onClick={() => { 
+                if (l.id && confirm("Permanently delete this location? This cannot be undone.")) {
+                  deleteMutation.mutate(l.id, {
+                    onSuccess: () => toast.success("Venue permanently deleted")
+                  }); 
+                }
+              }} 
+              title="Permanently delete venue" 
+              className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"
+            >
+              {deleteMutation.isPending ? <span className="w-4 h-4 border-2 border-ares-red border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
+            </button>
+          </>
+        ) : (
+          <>
+            <button 
+              disabled={isPending}
+              onClick={() => onEdit(l)} 
+              title="Edit venue" 
+              className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"
+            >
+              <Edit3 size={16} />
+            </button>
+            <button 
+              disabled={isPending}
+              onClick={() => { 
+                if (l.id && confirm("Deactivate this location?")) {
+                  saveMutation.mutate({ ...l, isDeleted: 1 } as Location, {
+                    onSuccess: () => toast.success("Venue deactivated")
+                  }); 
+                }
+              }} 
+              title="Deactivate venue" 
+              className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"
+            >
+              {saveMutation.isPending ? <span className="w-4 h-4 border-2 border-ares-red border-t-transparent rounded-full animate-spin" /> : <Trash2 size={16} />}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function LocationsManager() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,15 +124,6 @@ export default function LocationsManager() {
     onError: (err: unknown) => {
       setErrorMsg("Network error.");
       toastApiError(err, "Venue Sync Failed");
-    }
-  });
-
-  const deleteMutation = useDeleteLocation({
-    onSuccess: () => {
-      toast.success("Venue permanently deleted.");
-    },
-    onError: (err: unknown) => {
-      toastApiError(err, "Deletion Failed");
     }
   });
 
@@ -141,27 +210,7 @@ export default function LocationsManager() {
             {isLoading ? <div className="text-center p-8 text-marble/50 animate-pulse">Loading venues...</div> : (
               <div className="flex flex-col gap-3">
                 {filtered.map((l: Location) => (
-                  <div key={l.id} className={`p-4 border ares-cut-sm flex items-center justify-between ${l.isDeleted ? 'border-ares-danger/20 bg-ares-danger/5 opacity-50' : 'border-white/10 bg-obsidian/50 hover:bg-white/5'}`}>
-                    <div>
-                      <h4 className={`font-bold ${l.isDeleted ? 'text-ares-red/60 line-through' : 'text-white'}`}>{l.name}</h4>
-                      <p className="text-sm text-marble/90 mt-1 flex items-center gap-2">
-                        <MapPin size={14} /> {l.address}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {l.isDeleted ? (
-                        <>
-                          <button onClick={() => saveMutation.mutate({ ...l, isDeleted: 0 } as Location)} className="p-2 text-xs text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm font-bold">RESTORE</button>
-                          <button onClick={() => { if (l.id && confirm("Permanently delete this location? This cannot be undone.")) deleteMutation.mutate(l.id); }} title="Permanently delete venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => handleEdit(l)} title="Edit venue" className="p-2 text-marble/90 hover:text-ares-cyan transition-colors bg-obsidian ares-cut-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => { if (l.id && confirm("Deactivate this location?")) saveMutation.mutate({ ...l, isDeleted: 1 } as Location); }} title="Deactivate venue" className="p-2 text-marble/90 hover:text-ares-red transition-colors bg-obsidian ares-cut-sm"><Trash2 size={16} /></button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <LocationRow key={l.id} location={l} onEdit={handleEdit} />
                 ))}
                 {filtered.length === 0 && <div className="text-center p-8 text-marble/50">No verified locations found.</div>}
               </div>
@@ -182,7 +231,7 @@ export default function LocationsManager() {
               <form.Field
                 name="name"
                 validators={{
-                  onChange: locationSchema.shape.name,
+                  onChange: z.string().min(1, "Alias is required"),
                 }}
               >
                 {(field) => (
@@ -205,7 +254,7 @@ export default function LocationsManager() {
               <form.Field
                 name="address"
                 validators={{
-                  onChange: locationSchema.shape.address,
+                  onChange: z.string().min(1, "Address is required"),
                 }}
               >
                 {(field) => (

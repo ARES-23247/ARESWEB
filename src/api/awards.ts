@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { client, unwrapResponse, withMutationCallbacks } from "./honoClient";
+import { client, unwrapResponse, withMutationCallbacks, toastApiError } from "./honoClient";
 import { awardSchema } from "@shared/routes/awards";
 
 // Infer TypeScript types from Zod schemas

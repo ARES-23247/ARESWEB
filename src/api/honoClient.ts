@@ -185,34 +185,49 @@ export function wrapOnSuccess<TData, TError, TVariables>(
  * });
  * ```
  */
-export function withMutationCallbacks<TData, TError, TVariables>(
+export function withMutationCallbacks<TData, TError, TVariables, TContext = unknown>(
   queryClient: QueryClient,
-  options: UseMutationOptions<TData, TError, TVariables> | undefined,
+  options: UseMutationOptions<TData, TError, TVariables, TContext> | undefined,
   callbacks: {
-    onSuccess?: (queryClient: QueryClient, data: TData, variables: TVariables) => void | Promise<void>;
-    onError?: (queryClient: QueryClient, error: TError, variables: TVariables) => void | Promise<void>;
+    onMutate?: (variables: TVariables) => TContext | Promise<TContext>;
+    onSuccess?: (queryClient: QueryClient, data: TData, variables: TVariables, context: TContext) => void | Promise<void>;
+    onError?: (queryClient: QueryClient, error: TError, variables: TVariables, context: TContext | undefined) => void | Promise<void>;
+    onSettled?: (queryClient: QueryClient, data: TData | undefined, error: TError | null, variables: TVariables, context: TContext | undefined) => void | Promise<void>;
   }
-): UseMutationOptions<TData, TError, TVariables> {
+): UseMutationOptions<TData, TError, TVariables, TContext> {
   return {
-    onSuccess: async (data, variables, context) => {
-      await callbacks.onSuccess?.(queryClient, data, variables);
-      // Call user's onSuccess with all arguments from TanStack Query
+    onMutate: async (variables) => {
+      // 1. Run internal onMutate
+      const internalContext = await callbacks.onMutate?.(variables);
+      
+      // 2. Run user's onMutate
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (options?.onSuccess as any)?.(
-        data as never,
-        variables as never,
-        context as never
-      );
+      const userContext = await (options?.onMutate as any)?.(variables);
+      
+      // 3. Merge contexts (user context takes precedence for the mutation return, 
+      // but we need both if they both return objects, or just return an object containing both)
+      // For TanStack Query, the return of onMutate is the context passed to other handlers.
+      return { 
+        ...((typeof internalContext === 'object' ? internalContext : {}) as any),
+        ...((typeof userContext === 'object' ? userContext : {}) as any),
+        _internal: internalContext,
+        _user: userContext
+      } as TContext;
+    },
+    onSuccess: async (data, variables, context) => {
+      await callbacks.onSuccess?.(queryClient, data, variables, context);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (options?.onSuccess as any)?.(data, variables, context);
     },
     onError: async (error, variables, context) => {
-      await callbacks.onError?.(queryClient, error, variables);
-      // Call user's onError with all arguments from TanStack Query
+      await callbacks.onError?.(queryClient, error, variables, context);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (options?.onError as any)?.(
-        error as never,
-        variables as never,
-        context as never
-      );
+      await (options?.onError as any)?.(error, variables, context);
+    },
+    onSettled: async (data, error, variables, context) => {
+      await callbacks.onSettled?.(queryClient, data, error, variables, context);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (options?.onSettled as any)?.(data, error, variables, context);
     },
   };
 }

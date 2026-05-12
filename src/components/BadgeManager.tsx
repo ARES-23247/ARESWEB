@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Award, Plus, UserPlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { getLucideIcon } from "../types/components";
 import { useGetBadges, useCreateBadge, useDeleteBadge, useGrantBadge, useGetUsersForBadges } from "../api/badges";
 import { ClickToDeleteButton } from "./ContentManager/shared";
@@ -11,6 +12,41 @@ import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 interface BadgeRecord { id: string; name: string; description?: string | null; icon: string; colorTheme: string; }
 interface UserRecord { id: string; name?: string | null; nickname?: string | null; email: string; }
+
+interface BadgeItemProps {
+  badge: BadgeRecord;
+}
+
+function BadgeItem({ badge: b }: BadgeItemProps) {
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const deleteBadgeMutation = useDeleteBadge();
+  const IconComp = getLucideIcon(b.icon);
+  const isPending = deleteBadgeMutation.isPending;
+
+  return (
+    <div className={`bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4 transition-all ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
+      <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.colorTheme.replace("text-", "")}`}>
+        <IconComp size={24} />
+      </div>
+      <div className="flex-1">
+        <h4 className="text-white font-bold">{b.name}</h4>
+        <p className="text-xs text-white/60 mt-0.5">{b.description || "No description provided."}</p>
+        <p className="text-xs text-white/20 font-mono mt-2">ID: {b.id}</p>
+      </div>
+      <div className="flex-shrink-0 self-start">
+        <ClickToDeleteButton 
+          id={`badge-def-${b.id}`}
+          onDelete={() => deleteBadgeMutation.mutate(b.id, {
+            onSuccess: () => toast.success("Badge definition deleted.")
+          })}
+          isDeleting={isPending}
+          confirmId={confirmId}
+          setConfirmId={setConfirmId}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function BadgeManager() {
   const _queryClient = useQueryClient();
@@ -23,7 +59,6 @@ export default function BadgeManager() {
 
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedBadge, setSelectedBadge] = useState<string>("");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const { data: badgesData, isLoading: badgesLoading, isError: isBadgesError } = useGetBadges();
 
@@ -48,16 +83,6 @@ export default function BadgeManager() {
     },
     onError: (err: unknown) => {
       toastApiError(err, "Error awarding badge");
-    }
-  });
-
-  const deleteBadgeMutation = useDeleteBadge({
-    onSuccess: () => {
-      toast.success("Badge definition deleted.");
-      setConfirmId(null);
-    },
-    onError: (err: unknown) => {
-      toastApiError(err, "Error deleting badge");
     }
   });
 
@@ -135,31 +160,9 @@ export default function BadgeManager() {
           ) : badges.length === 0 ? (
             <p className="text-white/60 text-sm">No badges defined yet.</p>
           ) : (
-
-            badges.map((b: BadgeRecord) => {
-              const IconComp = getLucideIcon(b.icon);
-              return (
-                <div key={b.id} className="bg-ares-gray-dark/50 border border-white/10 ares-cut-sm p-4 flex items-start gap-4">
-                  <div className={`p-3 ares-cut-sm bg-obsidian/50 flex-shrink-0 text-${b.colorTheme.replace("text-", "")}`}>
-                    <IconComp size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-bold">{b.name}</h4>
-                    <p className="text-xs text-white/60 mt-0.5">{b.description || "No description provided."}</p>
-                    <p className="text-xs text-white/20 font-mono mt-2">ID: {b.id}</p>
-                  </div>
-                  <div className="flex-shrink-0 self-start">
-                    <ClickToDeleteButton 
-                      id={`badge-def-${b.id}`}
-                      onDelete={() => deleteBadgeMutation.mutate(b.id)}
-                      isDeleting={deleteBadgeMutation.isPending && deleteBadgeMutation.variables === b.id}
-                      confirmId={confirmId}
-                      setConfirmId={setConfirmId}
-                    />
-                  </div>
-                </div>
-              );
-            })
+            badges.map((b: BadgeRecord) => (
+              <BadgeItem key={b.id} badge={b} />
+            ))
           )}
         </div>
       </div>

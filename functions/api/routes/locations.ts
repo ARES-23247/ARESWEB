@@ -123,7 +123,7 @@ export const locationsRouter = _locationsRouter
             .run();
         } catch (err) {
           console.error("FAILED_LOCATION_SAVE:", err);
-          throw new ApiError("LOCATION_SAVE_FAILED", "Could not synchronize venue record with the database.", 500);
+          throw new ApiError("Could not synchronize venue record with the database.", 500, "LOCATION_SAVE_FAILED");
         }
 
         c.executionCtx.waitUntil(logAuditAction(c, "SAVE_LOCATION", "locations", id, `Saved location: ${validatedData.name}`));
@@ -138,7 +138,7 @@ export const locationsRouter = _locationsRouter
             .run();
         } catch (err) {
           console.error("FAILED_LOCATION_DELETE:", err);
-          throw new ApiError("LOCATION_DELETE_FAILED", "Failed to permanently remove venue from registry.", 500);
+          throw new ApiError("Failed to permanently remove venue from registry.", 500, "LOCATION_DELETE_FAILED");
         }
         c.executionCtx.waitUntil(logAuditAction(c, "delete_location", "locations", id, "Location permanently deleted"));
         return c.json({ success: true } satisfies DeleteLocationSuccess, 200);

@@ -90,16 +90,30 @@ export function useSaveLocation(
  * DELETE /api/locations/admin/:id - Soft delete a location
  */
 export function useDeleteLocation(
-  options?: Omit<UseMutationOptions<SuccessResponse, Error, string>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string, { previous: LocationsResponse | undefined }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<SuccessResponse, Error, string>({
+  return useMutation<{ success: boolean }, Error, string, { previous: LocationsResponse | undefined }>({
     mutationFn: async (id) => {
       const response = await client.locations.admin[":id"].$delete({ param: { id } });
-      return unwrapResponse<SuccessResponse>(response);
+      return unwrapResponse<{ success: boolean }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (qc) => {
+      onMutate: async (id) => {
+        await queryClient.cancelQueries({ queryKey: ["admin_locations"] });
+        const previous = queryClient.getQueryData(["admin_locations"]);
+        queryClient.setQueryData(["admin_locations"], (old: any) => ({
+          ...old,
+          locations: old?.locations?.filter((l: any) => l.id !== id)
+        }));
+        return { previous };
+      },
+      onError: (err, id, context) => {
+        if (context?.previous) {
+          queryClient.setQueryData(["admin_locations"], context.previous);
+        }
+      },
+      onSettled: (qc) => {
         qc.invalidateQueries({ queryKey: ["locations"] });
         qc.invalidateQueries({ queryKey: ["admin_locations"] });
       }

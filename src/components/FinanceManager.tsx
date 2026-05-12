@@ -11,6 +11,7 @@ import SponsorshipEditModal from "./kanban/SponsorshipEditModal";
 import { motion, AnimatePresence } from "framer-motion";
 import SeasonPicker from "./SeasonPicker";
 import { toast } from "sonner";
+import { toastApiError } from "../api/honoClient";
 import { useForm } from "@tanstack/react-form";
 import { financeTransactionSchema, sponsorshipPipelineSchema, type SponsorshipPipelinePayload } from "@shared/schemas/financeSchema";
 import { AresField } from "./ui/forms/AresField";
@@ -70,7 +71,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    savePipeline.mutate(result.data, {
+    savePipeline.mutate(result.data as any, {
       onSuccess: () => {
         toast.success("Sponsorship updated.");
         setIsAdding(false);
@@ -89,7 +90,7 @@ export default function FinanceManager() {
       toast.error(`Validation error: ${firstError.message}`);
       return;
     }
-    saveTransaction.mutate(result.data, {
+    saveTransaction.mutate(result.data as any, {
       onSuccess: () => {
         toast.success("Transaction recorded.");
         setIsAdding(false);
@@ -245,7 +246,7 @@ export default function FinanceManager() {
                 <pipelineForm.Field
                   name="companyName"
                   validators={{
-                    onChange: sponsorshipPipelineSchema.shape.companyName,
+                    onChange: z.string().min(1, "Company name is required"),
                   }}
                 >
                   {(field) => (
@@ -259,7 +260,7 @@ export default function FinanceManager() {
                 <pipelineForm.Field
                   name="estimatedValue"
                   validators={{
-                    onChange: sponsorshipPipelineSchema.shape.estimatedValue,
+                    onChange: z.number().min(0, "Must be positive"),
                   }}
                 >
                   {(field) => (
@@ -309,7 +310,7 @@ export default function FinanceManager() {
                 <transactionForm.Field
                   name="amount"
                   validators={{
-                    onChange: z.coerce.number().min(0.01, "Amount must be positive")
+                    onChange: z.number().min(0.01, "Amount must be positive")
                   }}
                 >
                   {(field) => (
@@ -334,7 +335,7 @@ export default function FinanceManager() {
                 <transactionForm.Field
                   name="category"
                   validators={{
-                    onChange: financeTransactionSchema.shape.category,
+                    onChange: z.string().min(1, "Category is required"),
                   }}
                 >
                   {(field) => (
@@ -349,7 +350,7 @@ export default function FinanceManager() {
                 <transactionForm.Field
                   name="description"
                   validators={{
-                    onChange: z.string().nullable().optional()
+                    onChange: z.string()
                   }}
                 >
                   {(field) => (

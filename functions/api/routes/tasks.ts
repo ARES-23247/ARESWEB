@@ -170,7 +170,7 @@ export const tasksRouter = _tasksRouter
           await db.insert(schema.tasks).values(taskData as typeof schema.tasks.$inferInsert).run();
         } catch (err) {
           console.error("FAILED_TASK_CREATE:", err);
-          throw new ApiError("TASK_CREATE_FAILED", "Failed to commit task to database.", 500);
+          throw new ApiError("Failed to commit task to database.", 500, "TASK_CREATE_FAILED");
         }
 
         if (body.assignees && body.assignees.length > 0) {
@@ -299,7 +299,7 @@ export const tasksRouter = _tasksRouter
               .run();
         } catch (err) {
           console.error("FAILED_TASK_UPDATE:", err);
-          throw new ApiError("TASK_UPDATE_FAILED", "Failed to synchronize task updates.", 500);
+          throw new ApiError("Failed to synchronize task updates.", 500, "TASK_UPDATE_FAILED");
         }
 
         // Only admins, mentors/coaches, and the task creator can change assignments
@@ -386,7 +386,7 @@ export const tasksRouter = _tasksRouter
               .run();
         } catch (err) {
           console.error("FAILED_TASK_DELETE:", err);
-          throw new ApiError("TASK_DELETE_FAILED", "Failed to permanently remove task.", 500);
+          throw new ApiError("Failed to permanently remove task.", 500, "TASK_DELETE_FAILED");
         }
 
         await db.insert(schema.auditLog).values({

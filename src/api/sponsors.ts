@@ -113,16 +113,37 @@ export function useSaveSponsor(
  * DELETE /api/sponsors/admin/:id - Delete sponsor
  */
 export function useDeleteSponsor(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, string, { previous: SponsorsResponse | undefined }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, string>({
+  return useMutation<{ success: boolean }, Error, string, { previous: SponsorsResponse | undefined }>({
     mutationFn: async (id) => {
       const response = await client.sponsors.admin[":id"].$delete({ param: { id } });
       return unwrapResponse<{ success: boolean }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (qc) => {
+      onMutate: async (id) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: ["admin_sponsors"] });
+
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData(["admin_sponsors"]);
+
+        // Optimistically update to the new value
+        queryClient.setQueryData(["admin_sponsors"], (old: any) => ({
+          ...old,
+          sponsors: old?.sponsors?.filter((s: any) => s.id !== id)
+        }));
+
+        return { previous };
+      },
+      onError: (err, id, context) => {
+        // Rollback on failure
+        if (context?.previous) {
+          queryClient.setQueryData(["admin_sponsors"], context.previous);
+        }
+      },
+      onSettled: (qc) => {
         qc.invalidateQueries({ queryKey: ["sponsors"] });
         qc.invalidateQueries({ queryKey: ["admin_sponsors"] });
       }

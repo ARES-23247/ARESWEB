@@ -155,7 +155,7 @@ export const sponsorsRouter = _sponsorsRouter
               .run();
           } catch (err) {
             console.error("FAILED_SPONSOR_UPDATE:", err);
-            throw new ApiError("SPONSOR_UPDATE_FAILED", "Failed to synchronize sponsor record.", 500);
+            throw new ApiError("Failed to synchronize sponsor record.", 500, "SPONSOR_UPDATE_FAILED");
           }
           c.executionCtx.waitUntil(logAuditAction(c, "update_sponsor", "sponsors", id));
         } else {
@@ -173,7 +173,7 @@ export const sponsorsRouter = _sponsorsRouter
               .run();
           } catch (err) {
             console.error("FAILED_SPONSOR_CREATE:", err);
-            throw new ApiError("SPONSOR_CREATE_FAILED", "Failed to register new sponsor.", 500);
+            throw new ApiError("Failed to register new sponsor.", 500, "SPONSOR_CREATE_FAILED");
           }
           c.executionCtx.waitUntil(
             logAuditAction(c, "create_sponsor", "sponsors", id, `Created sponsor ${body.name as string}`)
@@ -191,7 +191,7 @@ export const sponsorsRouter = _sponsorsRouter
           await db.delete(schema.sponsors).where(eq(schema.sponsors.id, params.id)).run();
         } catch (err) {
           console.error("FAILED_SPONSOR_DELETE:", err);
-          throw new ApiError("SPONSOR_DELETE_FAILED", "Failed to permanently remove sponsor.", 500);
+          throw new ApiError("Failed to permanently remove sponsor.", 500, "SPONSOR_DELETE_FAILED");
         }
         c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", params.id));
 

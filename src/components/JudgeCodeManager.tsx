@@ -1,10 +1,81 @@
 
 import { useState } from "react";
 import { Plus, ShieldCheck, Trash2, RefreshCw, Calendar, Copy, ExternalLink } from "lucide-react";
-import { useGetJudgeCodes, useCreateJudgeCode, useDeleteJudgeCode } from "../api";
+import { useGetJudgeCodes, useCreateJudgeCode, useDeleteJudgeCode, type JudgeCode } from "../api";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import { toast } from "sonner";
 import { toastApiError } from "../api/honoClient";
+
+interface JudgeCodeRowProps {
+  code: JudgeCode;
+  onCopy: (text: string) => void;
+}
+
+function JudgeCodeRow({ code: c, onCopy }: JudgeCodeRowProps) {
+  const deleteMutation = useDeleteJudgeCode();
+  const isExpired = c.expiresAt && new Date(c.expiresAt) < new Date();
+  const isPending = deleteMutation.isPending;
+
+  return (
+    <tr className={`hover:bg-white/[0.02] transition-all ${isExpired ? "opacity-40" : ""} ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
+      <td className="px-6 py-4">
+        <p className="text-white font-bold">{c.label || "Untitled"}</p>
+        <p className="text-[10px] text-marble/40 font-mono uppercase tracking-tighter">Created {new Date(c.createdAt).toLocaleDateString()}</p>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <code className="bg-black/60 px-3 py-1.5 ares-cut-sm border border-white/10 text-ares-cyan font-black tracking-widest text-sm">
+            {c.code}
+          </code>
+          <button 
+            onClick={() => onCopy(c.code)}
+            className="p-1.5 text-marble/40 hover:text-white transition-colors"
+            title="Copy Code"
+          >
+            <Copy size={14} />
+          </button>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        {c.expiresAt ? (
+          <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpired ? "text-ares-red" : "text-marble/60"}`}>
+            <Calendar size={12} />
+            {new Date(c.expiresAt).toLocaleDateString()}
+          </div>
+        ) : (
+          <span className="text-[10px] font-black uppercase tracking-widest text-ares-cyan/40">Permanent Access</span>
+        )}
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <a 
+            href={`/judges?code=${c.code}`} 
+            target="_blank" 
+            rel="noreferrer"
+            className="p-2 bg-white/5 hover:bg-ares-cyan/20 text-marble/60 hover:text-ares-cyan ares-cut-sm border border-white/10 transition-all"
+            title="Test as Judge"
+          >
+            <ExternalLink size={14} />
+          </a>
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to revoke this access code?")) {
+                deleteMutation.mutate(c.id, {
+                  onSuccess: () => toast.success("Access code revoked")
+                });
+              }
+            }}
+            disabled={isPending}
+            className={`p-2 bg-white/5 hover:bg-ares-red/20 text-marble/60 hover:text-ares-red ares-cut-sm border border-white/10 transition-all ${isPending ? 'animate-pulse' : ''}`}
+            title="Revoke Access"
+          >
+            {isPending ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function JudgeCodeManager() {
   const [label, setLabel] = useState("");
@@ -18,15 +89,6 @@ export default function JudgeCodeManager() {
       setLabel("");
       setExpiresAt("");
       toast.success("Judge access code generated");
-    },
-    onError: (err: unknown) => {
-      toastApiError(err);
-    }
-  });
-
-  const deleteMutation = useDeleteJudgeCode({
-    onSuccess: () => {
-      toast.success("Access code revoked");
     },
     onError: (err: unknown) => {
       toastApiError(err);
@@ -122,66 +184,9 @@ export default function JudgeCodeManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {codes.map((c) => {
-                  const isExpired = c.expiresAt && new Date(c.expiresAt) < new Date();
-                  return (
-                    <tr key={c.id} className={`hover:bg-white/[0.02] ${isExpired ? "opacity-40" : ""}`}>
-                      <td className="px-6 py-4">
-                        <p className="text-white font-bold">{c.label || "Untitled"}</p>
-                        <p className="text-[10px] text-marble/40 font-mono">Created {new Date(c.createdAt).toLocaleDateString()}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <code className="bg-black/60 px-3 py-1.5 ares-cut-sm border border-white/10 text-ares-cyan font-black tracking-widest">
-                            {c.code}
-                          </code>
-                          <button 
-                            onClick={() => copyToClipboard(c.code)}
-                            className="p-1.5 text-marble/40 hover:text-white transition-colors"
-                            title="Copy Code"
-                          >
-                            <Copy size={14} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {c.expiresAt ? (
-                          <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpired ? "text-ares-red" : "text-marble/60"}`}>
-                            <Calendar size={12} />
-                            {new Date(c.expiresAt).toLocaleDateString()}
-                          </div>
-                        ) : (
-                          <span className="text-[10px] font-black uppercase tracking-widest text-ares-cyan/40">Permanent</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={`/judges?code=${c.code}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="p-2 bg-white/5 hover:bg-ares-cyan/20 text-marble/60 hover:text-ares-cyan ares-cut-sm border border-white/10 transition-all"
-                            title="Test as Judge"
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                          <button
-                            onClick={() => {
-                              if (confirm("Are you sure you want to revoke this access code?")) {
-                                deleteMutation.mutate(c.id);
-                              }
-                            }}
-                            disabled={deleteMutation.isPending}
-                            className="p-2 bg-white/5 hover:bg-ares-red/20 text-marble/60 hover:text-ares-red ares-cut-sm border border-white/10 transition-all disabled:opacity-50"
-                            title="Revoke Access"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {codes.map((c) => (
+                  <JudgeCodeRow key={c.id} code={c} onCopy={copyToClipboard} />
+                ))}
               </tbody>
             </table>
           </div>

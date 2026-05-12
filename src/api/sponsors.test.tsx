@@ -39,6 +39,7 @@ vi.mock("./honoClient", () => ({
     // Run internal callbacks first
     const originalOnSuccess = options?.onSuccess;
     const originalOnError = options?.onError;
+    const originalOnSettled = options?.onSettled;
     return {
       ...options,
       onSuccess: async (...args: unknown[]) => {
@@ -48,6 +49,10 @@ vi.mock("./honoClient", () => ({
       onError: async (...args: unknown[]) => {
         await callbacks.onError?.(queryClient, ...(args as [unknown, unknown]));
         await originalOnError?.(...args as [unknown, unknown, unknown]);
+      },
+      onSettled: async (...args: unknown[]) => {
+        await callbacks.onSettled?.(queryClient, ...(args as [unknown, unknown, unknown, unknown]));
+        await originalOnSettled?.(...args as [unknown, unknown, unknown, unknown]);
       },
     };
   }),
