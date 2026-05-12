@@ -19,6 +19,33 @@ import {
 } from "../../../shared/routes/users";
 import { queryHelpers } from "@/db/query-helpers";
 
+
+type UserResponse = z.infer<typeof userResponseSchema>;
+function formatUserResponse(u: any): UserResponse {
+  return {
+    id: String(u.id),
+    name: u.name || null,
+    email: u.email,
+    emailVerified: !!u.emailVerified,
+    image: u.image || null,
+    role: String(u.role || "user"),
+    createdAt:
+      u.createdAt instanceof Date
+        ? u.createdAt.getTime()
+        : typeof u.createdAt === "number"
+        ? u.createdAt
+        : new Date(u.createdAt as unknown as string).getTime() || 0,
+    updatedAt:
+      u.updatedAt instanceof Date
+        ? u.updatedAt.getTime()
+        : typeof u.updatedAt === "number"
+        ? u.updatedAt
+        : new Date(u.updatedAt as unknown as string).getTime() || 0,
+    nickname: u.nickname || null,
+    memberType: (u.memberType as UserResponse["memberType"]) || null,
+  };
+}
+
 const _usersRouter = new OpenAPIHono<AppEnv>();
 
 // CR-07 FIX: Apply authentication to all admin routes
@@ -73,10 +100,7 @@ export const usersRouter = _usersRouter
               ? usersData[usersData.length - 1].createdAt.getTime()
               : usersData[usersData.length - 1].createdAt)
             : null;
-
-        // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ users, nextCursor } as any, 200);
+        return c.json({ users, nextCursor }, 200);
     })
     .openapi(adminDetailRoute, async (c) => {
         const params = c.req.valid("param");
@@ -130,11 +154,7 @@ export const usersRouter = _usersRouter
               nickname: user.nickname || null,
               memberType: user.memberType as "student" | "parent" | "mentor" | "coach" | "sponsor" | "alumnus" | "alumni" | "other" | null,
             },
-          // Response boundary: Drizzle return type diverges from Zod schema
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-          200
-        );
+          }, 200);
     })
     .openapi(patchUserRoute, async (c) => {
         const params = c.req.valid("param");
@@ -206,19 +226,14 @@ export const usersRouter = _usersRouter
             `Updated user ${id}: role=${role}, type=${memberType}`
           )
         );
-
-        // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return c.json({ success: true }, 200);
     })
     .openapi(updateUserProfileRoute, async (c) => {
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const { id } = params;
         await upsertProfile(c, id, body);
-        // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return c.json({ success: true }, 200);
     })
     .openapi(adminGetProfileRoute, async (c) => {
         const params = c.req.valid("param");
@@ -312,11 +327,7 @@ export const usersRouter = _usersRouter
                 role: String(user.role || "user"),
               },
             } as Record<string, unknown>,
-          // Response boundary: Drizzle return type diverges from Zod schema
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-          200
-        );
+          }, 200);
     })
     .openapi(deleteUserRoute, async (c) => {
         const params = c.req.valid("param");
@@ -338,10 +349,7 @@ export const usersRouter = _usersRouter
         c.executionCtx.waitUntil(
           logAuditAction(c, "DELETE_USER", "user", id, `Deleted user ${id}`)
         );
-
-        // Response boundary: Drizzle return type diverges from Zod schema
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return c.json({ success: true } as any, 200);
+        return c.json({ success: true }, 200);
     });
 export default usersRouter;
 

@@ -1,11 +1,49 @@
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import * as schema from "./schema";
 import type { DrizzleDB } from "./types";
+import { ApiError } from "../../functions/api/middleware/errorHandler";
 
 /**
  * Query helpers for common multi-table fetches.
  * Note: Drizzle v2's relational query API has limited support, so we use manual joins.
  */
+
+/**
+ * Find a single record by ID or throw a 404 ApiError.
+ * Standardizes the common pattern of querying and checking for empty results.
+ *
+ * @param db - Drizzle database instance
+ * @param table - Drizzle table to query
+ * @param id - ID to search for
+ * @param notFoundMessage - Custom 404 message (defaults to "Resource not found")
+ * @returns The found record
+ * @throws ApiError with 404 status if not found
+ *
+ * @example
+ * const video = await findOneById(db, schema.videos, id, "Video not found");
+ */
+export async function findOneById<T extends { id: string }>(
+  db: DrizzleDB,
+  table: any,
+  id: string,
+  notFoundMessage?: string
+): Promise<T> {
+  const result = await db
+    .select()
+    .from(table)
+    .where(eq(table.id, id))
+    .execute();
+
+  if (result.length === 0) {
+    throw new ApiError(
+      notFoundMessage || "Resource not found",
+      404,
+      "NOT_FOUND"
+    );
+  }
+
+  return result[0] as T;
+}
 
 export const queryHelpers = {
 	/**

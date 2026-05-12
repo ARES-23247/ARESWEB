@@ -202,7 +202,7 @@ export async function logAuditAction(
     const actor = sessionUser?.email || "unknown";
 
     const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `log-${Date.now()}`;
-    
+
     await db.insert(schema.auditLog)
       .values({
         id,
@@ -214,6 +214,25 @@ export async function logAuditAction(
       });
   } catch (err) {
     console.error("[AuditLog] Failed to record action:", action, err);
+  }
+}
+
+/**
+ * Convenience wrapper for audit logging in route handlers.
+ * Handles the executionCtx/waitUntil pattern automatically.
+ *
+ * @example
+ * audit(c, "video_create", "video", id, "Created video: My Title");
+ */
+export function audit(
+  c: Context<AppEnv>,
+  action: string,
+  resourceType: string,
+  resourceId: string | null,
+  details?: string
+): void {
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(logAuditAction(c, action, resourceType, resourceId, details));
   }
 }
 

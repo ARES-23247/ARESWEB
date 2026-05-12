@@ -10,9 +10,10 @@ import {
   getGalleryMediaRoute,
   type gallerySchema,
 } from "@shared/routes/galleries";
-import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
+import { AppEnv, ensureAdmin, getDb, audit } from "../../middleware";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
+import { findOneById } from "../../../../src/db/query-helpers";
 
 export const galleriesRouter = new OpenAPIHono<AppEnv>();
 
@@ -45,14 +46,9 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
 .openapi(getGalleryRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
+  const gallery = await findOneById(db, schema.galleries, id, "Gallery not found");
 
-  const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-
-  if (result.length === 0) {
-    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
-  }
-
-  return c.json({ gallery: serializeGallery(result[0]) }, 200);
+  return c.json({ gallery: serializeGallery(gallery) }, 200);
 })
 
 // GET /galleries/:id/media - Get all media for a specific gallery
@@ -118,10 +114,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   };
 
   await db.insert(schema.galleries).values(newGallery).execute();
-
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "gallery_create", "gallery", id, `Created gallery: ${body.title}`));
-  }
+  audit(c, "gallery_create", "gallery", id, `Created gallery: ${body.title}`);
 
   const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
 
@@ -134,11 +127,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const body = c.req.valid("json");
   const db = getDb(c);
 
-  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-
-  if (existing.length === 0) {
-    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
-  }
+  const existing = await findOneById(db, schema.galleries, id, "Gallery not found");
 
   const updates: Record<string, unknown> = {
     ...(body.title !== undefined && { title: body.title }),
@@ -149,10 +138,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   };
 
   await db.update(schema.galleries).set(updates).where(eq(schema.galleries.id, id)).execute();
-
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || existing[0].title}`));
-  }
+  audit(c, "gallery_update", "gallery", id, `Updated gallery: ${body.title || existing.title}`);
 
   const result = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
 
@@ -164,17 +150,10 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
-  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-
-  if (existing.length === 0) {
-    throw new ApiError("Gallery not found", 404, "NOT_FOUND");
-  }
+  const existing = await findOneById(db, schema.galleries, id, "Gallery not found");
 
   await db.delete(schema.galleries).where(eq(schema.galleries.id, id)).execute();
-
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(logAuditAction(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing[0].title}`));
-  }
+  audit(c, "gallery_delete", "gallery", id, `Deleted gallery: ${existing.title}`);
 
   return c.json({ success: true }, 200);
 });
