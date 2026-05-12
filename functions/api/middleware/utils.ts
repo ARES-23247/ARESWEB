@@ -120,7 +120,7 @@ export interface SessionUser {
   github_login?: string | null;
   image: string | undefined | null;
   role: string | "admin" | "author" | "unverified";
-  memberType: string;
+  memberType: "student" | "mentor" | "coach" | string;
 }
 
 export type SocialConfig = {

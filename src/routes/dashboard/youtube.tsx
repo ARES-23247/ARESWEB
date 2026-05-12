@@ -80,21 +80,23 @@ function YoutubeDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         <div className="lg:col-span-1">
-          <YouTubeUploader />
+          <YouTubeUploader memberType={authStatus?.memberType} />
         </div>
         <div className="lg:col-span-2 overflow-y-auto pr-2 pb-6">
-          <YouTubeVideoList />
+          <YouTubeVideoList memberType={authStatus?.memberType} />
         </div>
       </div>
     </div>
   );
 }
 
-function YouTubeUploader() {
+function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "coach" }) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('private');
+
+  const canSetPublic = memberType === "coach" || memberType === "mentor";
   
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -249,7 +251,7 @@ function YouTubeUploader() {
             disabled={isUploading}
             className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
           >
-            <option value="public">Public</option>
+            {canSetPublic && <option value="public">Public</option>}
             <option value="unlisted">Unlisted (Hidden)</option>
             <option value="private">Private</option>
           </select>
@@ -291,9 +293,11 @@ function YouTubeUploader() {
   );
 }
 
-function YouTubeVideoList() {
+function YouTubeVideoList({ memberType }: { memberType?: "student" | "mentor" | "coach" }) {
   const { data: response, isLoading } = useGetYoutubeVideos();
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+
+  const canSetPublic = memberType === "coach" || memberType === "mentor";
 
   if (isLoading) {
     return (
@@ -360,16 +364,17 @@ function YouTubeVideoList() {
       </div>
 
       {editingVideoId && (
-        <EditVideoModal 
-          video={videos.find(v => v.id === editingVideoId)!} 
-          onClose={() => setEditingVideoId(null)} 
+        <EditVideoModal
+          video={videos.find(v => v.id === editingVideoId)!}
+          onClose={() => setEditingVideoId(null)}
+          canSetPublic={canSetPublic}
         />
       )}
     </>
   );
 }
 
-function EditVideoModal({ video, onClose }: { video: { id: string; title: string; description?: string; privacyStatus: "public" | "unlisted" | "private" }, onClose: () => void }) {
+function EditVideoModal({ video, onClose, canSetPublic }: { video: { id: string; title: string; description?: string; privacyStatus: "public" | "unlisted" | "private" }, onClose: () => void, canSetPublic: boolean }) {
   const [title, setTitle] = useState(video.title);
   const [description, setDescription] = useState(video.description || '');
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">(video.privacyStatus);
@@ -438,7 +443,7 @@ function EditVideoModal({ video, onClose }: { video: { id: string; title: string
                 onChange={(e) => setPrivacyStatus(e.target.value as "public" | "unlisted" | "private")}
                 className="w-full bg-black border border-white/10 px-3 py-2 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all text-sm appearance-none"
               >
-                <option value="public">Public</option>
+                {canSetPublic && <option value="public">Public</option>}
                 <option value="unlisted">Unlisted (Hidden)</option>
                 <option value="private">Private</option>
               </select>

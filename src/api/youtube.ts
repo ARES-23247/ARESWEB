@@ -6,7 +6,7 @@ export function useGetYoutubeAuthStatus() {
     queryKey: ["youtube", "authStatus"],
     queryFn: async () => {
       const res = await client.youtube.status.$get();
-      return unwrapResponse<{ isAuthenticated: boolean }>(res);
+      return unwrapResponse<{ isAuthenticated: boolean; memberType?: "student" | "mentor" | "coach" }>(res);
     },
   });
 }

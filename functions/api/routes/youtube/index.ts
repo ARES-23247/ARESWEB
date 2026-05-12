@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Context } from "hono";
 import type { Bindings as Env, AppEnv } from "../../middleware/utils";
 import { ensureAdmin } from "../../middleware";
 import {
@@ -76,7 +77,7 @@ const routes = adminApp
       .then((res: Array<{ key: string; value: string | null; updatedAt: string | null }>) => res[0]);
 
     const user = c.get("sessionUser");
-    return c.json({ isAuthenticated: !!tokenSetting?.value, memberType: user?.memberType }, 200);
+    return c.json({ isAuthenticated: !!tokenSetting?.value, memberType: user?.memberType as "student" | "mentor" | "coach" | undefined }, 200);
   })
   .openapi(getAuthUrlRoute, async (c) => {
     const env = c.env;
@@ -268,6 +269,11 @@ const routes = adminApp
     const body = c.req.valid("json");
     const db = getDb(c);
     const env = c.env;
+
+    // Privacy validation: only coaches and mentors can set videos to public
+    if (body.privacyStatus === "public" && !canSetPublicPrivacy(c)) {
+      throw new ApiError("Only coaches and mentors can set videos to public.", 403, "FORBIDDEN_PUBLIC_PRIVACY");
+    }
 
     const accessToken = await getGoogleAccessToken(env, db);
 
