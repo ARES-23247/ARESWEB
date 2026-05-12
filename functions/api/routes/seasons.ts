@@ -35,22 +35,7 @@ export const seasonsRouter = _seasonsRouter
     .openapi(listSeasonsRoute, async (c) => {
       const db = getDb(c);
       const results = await db
-        .select({
-          startYear: schema.seasons.startYear,
-          endYear: schema.seasons.endYear,
-          challengeName: schema.seasons.challengeName,
-          robotName: schema.seasons.robotName,
-          robotImage: schema.seasons.robotImage,
-          robotDescription: schema.seasons.robotDescription,
-          robotCadUrl: schema.seasons.robotCadUrl,
-          summary: schema.seasons.summary,
-          albumUrl: schema.seasons.albumUrl,
-          albumCover: schema.seasons.albumCover,
-          status: schema.seasons.status,
-          isDeleted: schema.seasons.isDeleted,
-          createdAt: schema.seasons.createdAt,
-          updatedAt: schema.seasons.updatedAt,
-        })
+        .select()
         .from(schema.seasons)
         .where(
           and(
@@ -78,22 +63,7 @@ export const seasonsRouter = _seasonsRouter
     .openapi(adminListSeasonsRoute, async (c) => {
       const db = getDb(c);
       const results = await db
-        .select({
-          startYear: schema.seasons.startYear,
-          endYear: schema.seasons.endYear,
-          challengeName: schema.seasons.challengeName,
-          robotName: schema.seasons.robotName,
-          robotImage: schema.seasons.robotImage,
-          robotDescription: schema.seasons.robotDescription,
-          robotCadUrl: schema.seasons.robotCadUrl,
-          summary: schema.seasons.summary,
-          albumUrl: schema.seasons.albumUrl,
-          albumCover: schema.seasons.albumCover,
-          status: schema.seasons.status,
-          isDeleted: schema.seasons.isDeleted,
-          createdAt: schema.seasons.createdAt,
-          updatedAt: schema.seasons.updatedAt,
-        })
+        .select()
         .from(schema.seasons)
         .orderBy(desc(schema.seasons.startYear))
         .all();
@@ -118,22 +88,7 @@ export const seasonsRouter = _seasonsRouter
       const db = getDb(c);
       const year = parseInt(id, 10);
       const row = await db
-        .select({
-          startYear: schema.seasons.startYear,
-          endYear: schema.seasons.endYear,
-          challengeName: schema.seasons.challengeName,
-          robotName: schema.seasons.robotName,
-          robotImage: schema.seasons.robotImage,
-          robotDescription: schema.seasons.robotDescription,
-          robotCadUrl: schema.seasons.robotCadUrl,
-          summary: schema.seasons.summary,
-          albumUrl: schema.seasons.albumUrl,
-          albumCover: schema.seasons.albumCover,
-          status: schema.seasons.status,
-          isDeleted: schema.seasons.isDeleted,
-          createdAt: schema.seasons.createdAt,
-          updatedAt: schema.seasons.updatedAt,
-        })
+        .select()
         .from(schema.seasons)
         .where(eq(schema.seasons.startYear, year))
         .get();
@@ -167,22 +122,7 @@ export const seasonsRouter = _seasonsRouter
 
       const [seasonRow, awards, events, posts, outreach] = await Promise.all([
         db
-          .select({
-            startYear: schema.seasons.startYear,
-            endYear: schema.seasons.endYear,
-            challengeName: schema.seasons.challengeName,
-            robotName: schema.seasons.robotName,
-            robotImage: schema.seasons.robotImage,
-            robotDescription: schema.seasons.robotDescription,
-            robotCadUrl: schema.seasons.robotCadUrl,
-            summary: schema.seasons.summary,
-            albumUrl: schema.seasons.albumUrl,
-            albumCover: schema.seasons.albumCover,
-            status: schema.seasons.status,
-            isDeleted: schema.seasons.isDeleted,
-            createdAt: schema.seasons.createdAt,
-            updatedAt: schema.seasons.updatedAt,
-          })
+          .select()
           .from(schema.seasons)
           .where(eq(schema.seasons.startYear, yearNum))
           .get(),

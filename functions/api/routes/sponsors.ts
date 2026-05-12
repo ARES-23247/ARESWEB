@@ -44,15 +44,7 @@ export const sponsorsRouter = _sponsorsRouter
     .openapi(getSponsorsRoute, async (c) => {
         const db = getDb(c);
         const results = await db
-          .select({
-            id: schema.sponsors.id,
-            name: schema.sponsors.name,
-            tier: schema.sponsors.tier,
-            logoUrl: schema.sponsors.logoUrl,
-            websiteUrl: schema.sponsors.websiteUrl,
-            isActive: schema.sponsors.isActive,
-            createdAt: schema.sponsors.createdAt,
-          })
+          .select()
           .from(schema.sponsors)
           .where(eq(schema.sponsors.isActive, 1))
           .orderBy(sql<number>`CASE tier WHEN 'Titanium' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 ELSE 4 END`)
@@ -88,15 +80,7 @@ export const sponsorsRouter = _sponsorsRouter
         const sponsorId = tokens[0].sponsorId;
 
         const sponsorRow = await db
-          .select({
-            id: schema.sponsors.id,
-            name: schema.sponsors.name,
-            tier: schema.sponsors.tier,
-            logoUrl: schema.sponsors.logoUrl,
-            websiteUrl: schema.sponsors.websiteUrl,
-            isActive: schema.sponsors.isActive,
-            createdAt: schema.sponsors.createdAt,
-          })
+          .select()
           .from(schema.sponsors)
           .where(eq(schema.sponsors.id, sponsorId))
           .get();
@@ -106,13 +90,7 @@ export const sponsorsRouter = _sponsorsRouter
         }
 
         const metricsRow = await db
-          .select({
-            id: schema.sponsorMetrics.id,
-            sponsorId: schema.sponsorMetrics.sponsorId,
-            clicks: schema.sponsorMetrics.clicks,
-            impressions: schema.sponsorMetrics.impressions,
-            yearMonth: schema.sponsorMetrics.yearMonth,
-          })
+          .select()
           .from(schema.sponsorMetrics)
           .where(eq(schema.sponsorMetrics.sponsorId, sponsorId))
           .orderBy(asc(schema.sponsorMetrics.createdAt))
@@ -143,15 +121,7 @@ export const sponsorsRouter = _sponsorsRouter
     )
     .openapi(adminListSponsorsRoute, async (c) => {
         const db = getDb(c);
-        const sponsors = await db.select({
-            id: schema.sponsors.id,
-            name: schema.sponsors.name,
-            tier: schema.sponsors.tier,
-            logoUrl: schema.sponsors.logoUrl,
-            websiteUrl: schema.sponsors.websiteUrl,
-            isActive: schema.sponsors.isActive,
-            createdAt: schema.sponsors.createdAt,
-          }).from(schema.sponsors).all();
+        const sponsors = await db.select().from(schema.sponsors).all();
 
         const mappedSponsors = sponsors.map((s) => ({
           id: s.id ?? "",

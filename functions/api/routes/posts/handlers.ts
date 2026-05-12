@@ -301,20 +301,7 @@ export const postHandlers = {
       let results;
       try {
         results = await db
-          .select({
-            slug: schema.posts.slug,
-            title: schema.posts.title,
-            date: schema.posts.date,
-            snippet: schema.posts.snippet,
-            thumbnail: schema.posts.thumbnail,
-            cf_email: schema.posts.cfEmail,
-            isDeleted: schema.posts.isDeleted,
-            status: schema.posts.status,
-            revision_of: schema.posts.revisionOf,
-            publishedAt: schema.posts.publishedAt,
-            seasonId: schema.posts.seasonId,
-            author: schema.posts.author,
-          })
+          .select()
           .from(schema.posts)
           .orderBy(desc(schema.posts.date))
           .limit(Number(limit) || 50)
@@ -354,7 +341,7 @@ export const postHandlers = {
           thumbnail: p.thumbnail,
           status: hasStatus && p.status ? (p.status as string) : null,
           author: p.author ?? null,
-          cfEmail: p.cf_email ?? null,
+          cfEmail: p.cfEmail ?? (p as any).cf_email ?? null,
           authorNickname: null,
           authorAvatar: null,
           publishedAt: hasPublishedAt ? (p.publishedAt as string | null | undefined) ?? null : null,
@@ -386,23 +373,7 @@ export const postHandlers = {
       const { slug } = params;
       const db = getDb(c);
       const row = await db
-        .select({
-          slug: schema.posts.slug,
-          title: schema.posts.title,
-          date: schema.posts.date,
-          snippet: schema.posts.snippet,
-          thumbnail: schema.posts.thumbnail,
-          ast: schema.posts.ast,
-          isDeleted: schema.posts.isDeleted,
-          status: schema.posts.status,
-          revision_of: schema.posts.revisionOf,
-          publishedAt: schema.posts.publishedAt,
-          seasonId: schema.posts.seasonId,
-          author: schema.posts.author,
-          cfEmail: schema.posts.cfEmail,
-          zulipStream: schema.posts.zulipStream,
-          zulipTopic: schema.posts.zulipTopic,
-        })
+        .select()
         .from(schema.posts)
         .where(eq(schema.posts.slug, slug))
         .limit(1)
