@@ -33,7 +33,7 @@ export function useGetYoutubeVideos() {
 
 export function useGetYoutubeResumableUrlMutation() {
   return useMutation({
-    mutationFn: async (payload: { title: string; description: string; privacyStatus: "public" | "unlisted" | "private" }) => {
+    mutationFn: async (payload: { title: string; description: string; privacyStatus: "public" | "unlisted" | "private", fileSize: number, mimeType: string }) => {
       const res = await client.youtube["resumable-url"].$post({ json: payload });
       return unwrapResponse<{ uploadUrl: string }>(res);
     },
@@ -44,7 +44,7 @@ export function useUpdateYoutubeVideoMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string; title?: string; description?: string; privacyStatus?: "public" | "unlisted" | "private" }) => {
-      const res = await client.youtube.videos[":id"].$put({
+      const res = await client.youtube[":id"].$put({
         param: { id },
         json: payload,
       });

@@ -104,7 +104,9 @@ function YouTubeUploader() {
       const { uploadUrl } = await resumableMutation.mutateAsync({
         title: title.trim(),
         description: description.trim(),
-        privacyStatus
+        privacyStatus,
+        fileSize: file.size,
+        mimeType: file.type || 'application/octet-stream',
       });
 
       // 2. Perform the direct upload via XMLHttpRequest for progress events

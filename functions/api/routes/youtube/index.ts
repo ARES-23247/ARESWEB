@@ -10,7 +10,7 @@ import {
   checkAuthStatusRoute,
 } from "../../../../shared/routes/youtube";
 import { getDb } from "../../middleware";
-import { settings } from "../../../../../src/db/schema";
+import { settings } from "../../../../src/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiError } from "../../middleware/errorHandler";
 import { logAuditAction } from "../../middleware";
