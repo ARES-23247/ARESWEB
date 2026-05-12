@@ -192,8 +192,8 @@ test.describe('Finance Manager Dashboard', () => {
     // Click Add Lead button - use role selector with exact text
     await page.getByRole('button', { name: 'Add Lead' }).click();
 
-    // Verify form container is visible
-    const formContainer = page.locator('.bg-obsidian.border');
+    // Verify form container is visible (use more specific selector to avoid strict mode violation)
+    const formContainer = page.locator('.bg-obsidian.border-ares-red\\/30');
     await expect(formContainer).toBeVisible();
 
     // Verify Company Name input is visible (using label text)
@@ -222,8 +222,8 @@ test.describe('Finance Manager Dashboard', () => {
     // Click Add Transaction button - use text-based selector
     await page.getByText('Add Transaction').click();
 
-    // Verify form container is visible
-    const formContainer = page.locator('.bg-obsidian.border');
+    // Verify form container is visible (use more specific selector to avoid strict mode violation)
+    const formContainer = page.locator('.bg-obsidian.border-ares-red\\/30');
     await expect(formContainer).toBeVisible();
 
     // Verify key form fields are visible

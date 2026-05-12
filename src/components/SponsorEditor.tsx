@@ -239,12 +239,14 @@ export default function SponsorEditor() {
                       </div>
                     )}
                   </form.Field>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleFileUpload} 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    aria-label="Logo"
+                    id="sponsor-logo"
                   />
                   <button
                     type="button"
