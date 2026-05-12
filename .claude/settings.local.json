@@ -40,7 +40,8 @@
       "Bash(curl -s \"https://github.com/advisories/GHSA-rmmr-r34h-pfm5\")",
       "mcp__web-search-prime__web_search_prime",
       "Bash(npx vitest *)",
-      "Bash(npx playwright *)"
+      "Bash(npx playwright *)",
+      "Bash(git revert *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

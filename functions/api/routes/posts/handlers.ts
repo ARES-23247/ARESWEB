@@ -316,7 +316,7 @@ export const postHandlers = {
             date: schema.posts.date,
             snippet: schema.posts.snippet,
             thumbnail: schema.posts.thumbnail,
-            cf_email: schema.posts.cfEmail,
+            cfEmail: schema.posts.cfEmail,
             isDeleted: schema.posts.isDeleted,
             author: schema.posts.author,
           })
@@ -341,7 +341,7 @@ export const postHandlers = {
           thumbnail: p.thumbnail,
           status: hasStatus && p.status ? (p.status as string) : null,
           author: p.author ?? null,
-          cfEmail: p.cfEmail ?? (p as any).cf_email ?? null,
+          cfEmail: p.cfEmail ?? null,
           authorNickname: null,
           authorAvatar: null,
           publishedAt: hasPublishedAt ? (p.publishedAt as string | null | undefined) ?? null : null,
