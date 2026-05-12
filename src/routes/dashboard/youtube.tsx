@@ -137,46 +137,31 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         mimeType: file.type || 'application/octet-stream',
       });
 
-      // 2. Perform the direct upload via XMLHttpRequest for progress events
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-        
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const percentage = Math.round((e.loaded * 100) / e.total);
-            setProgress(percentage);
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            let detail = xhr.statusText;
-            try {
-              const res = JSON.parse(xhr.responseText);
-              if (res.error?.message) detail = res.error.message;
-            } catch {
-              // Not JSON, use responseText as is or statusText
-              if (xhr.responseText) detail = xhr.responseText.substring(0, 100);
-            }
-            reject(new Error(`Google API Error ${xhr.status}: ${detail}`));
-          }
-        };
-
-        xhr.onerror = () => {
-          // Status 0 usually means CORS block, CSP violation, or Ad-blocker
-          if (xhr.status === 0) {
-            reject(new Error('Connection blocked by browser. This is often caused by an ad-blocker or a strict privacy setting (ERR_BLOCKED_BY_CLIENT).'));
-          } else {
-            reject(new Error(`Network error during upload (Status: ${xhr.status})`));
-          }
-        };
-
-        xhr.send(file);
+      // 2. Perform the direct upload via fetch
+      // Note: We use fetch here instead of XHR to see if it bypasses the browser block.
+      // Standard fetch doesn't support upload progress easily, so we'll have to rely on the promise resolution.
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
+        // We omit credentials because the resumable URL itself is the token/session identifier
+        credentials: 'omit',
+        mode: 'cors',
       });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        let detail = uploadResponse.statusText;
+        try {
+          const res = JSON.parse(errorText);
+          if (res.error?.message) detail = res.error.message;
+        } catch {
+          if (errorText) detail = errorText.substring(0, 100);
+        }
+        throw new Error(`Google API Error ${uploadResponse.status}: ${detail}`);
+      }
 
       toast.success('Video uploaded successfully!');
       

@@ -44,11 +44,11 @@ export interface ASTNode {
 function getEmbedUrl(url: string): string {
   if (!url) return "";
   
-  // YouTube - handles watch?v=, youtu.be/, and embed/ formats
-  // Split into multiple matches to satisfy strict security checkers
+  // YouTube - handles watch?v=, youtu.be/, embed/, and shorts/ formats
   const ytMatch = url.match(/v=([a-zA-Z0-9_-]{11})/) || 
                   url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/) || 
-                  url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+                  url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/) ||
+                  url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
 
   return url;
@@ -184,16 +184,20 @@ const renderImage = (node: ASTNode) => {
   };
 
   return (
-    <figure className="my-8 ares-cut-sm overflow-hidden glass-card border border-white/5 bg-black/40 flex flex-col items-center justify-center mx-auto" style={{ ...style, maxWidth: '100%' }}>
+    <figure className="my-10 flex flex-col items-center justify-center mx-auto" style={{ ...style, maxWidth: '100%' }}>
       <img 
         src={srcStr} 
         alt={altStr} 
         title={titleStr}
-        className="block w-full h-full max-h-[70vh] object-contain" 
+        className="block w-full h-auto max-h-[80vh] object-contain rounded shadow-2xl border border-white/10" 
         loading="lazy"
         decoding="async"
       />
-      {altStr && <figcaption className="text-center text-xs tracking-widest uppercase font-bold text-ares-gold/60 mt-2 p-2">{altStr}</figcaption>}
+      {altStr && (
+        <figcaption className="text-center text-[10px] tracking-[0.2em] uppercase font-bold text-ares-gold/40 mt-4 px-4 max-w-2xl">
+          {altStr}
+        </figcaption>
+      )}
     </figure>
   );
 };
@@ -226,13 +230,14 @@ const renderYoutube = (node: ASTNode) => {
   let src = srcAttr || (videoId ? `https://www.youtube.com/embed/${videoId}` : null);
   if (src) src = getEmbedUrl(src);
   
-  if (!src) return null;
+  const validatedSrc = src ? validateUrl(src, 'video') : "";
+  if (!validatedSrc) return null;
 
   return (
     <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
       <iframe
         title="YouTube Video Component"
-        src={src}
+        src={validatedSrc}
         className="w-full h-full"
         allowFullScreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -251,16 +256,21 @@ const renderVideoEmbed = (node: ASTNode) => {
   // Generate embed URL based on platform
   let embedSrc = platform === 'youtube'
     ? `https://www.youtube.com/embed/${videoId}`
+    : platform === 'vimeo'
+    ? `https://player.vimeo.com/video/${videoId}`
     : '';
 
   if (!embedSrc) return null;
   embedSrc = getEmbedUrl(embedSrc);
 
+  const validatedSrc = validateUrl(embedSrc, 'video');
+  if (!validatedSrc) return null;
+
   return (
     <div className="my-8 w-full aspect-video ares-cut-sm overflow-hidden glass-card shadow-lg flex items-center justify-center">
       <iframe
         title={title}
-        src={embedSrc}
+        src={validatedSrc}
         className="w-full h-full"
         allowFullScreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
