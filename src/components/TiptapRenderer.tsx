@@ -148,8 +148,8 @@ const renderInteractiveComponent = (node: ASTNode) => {
     return (
       <ErrorBoundary fallback={<div className="p-4 border border-white/10 bg-ares-danger/10 text-ares-danger rounded text-sm font-mono my-8">Component failed to load</div>}>
         <Suspense fallback={<div className="p-8 border border-white/10 bg-ares-gray-dark rounded animate-pulse text-center text-marble/60">Loading interactive tool...</div>}>
-          <div className="w-full aspect-video min-h-[500px] my-8 ares-cut-sm border border-white/10 overflow-hidden relative">
-            <Component className="w-full h-full" />
+          <div className="w-full my-8">
+            <Component />
           </div>
         </Suspense>
       </ErrorBoundary>
