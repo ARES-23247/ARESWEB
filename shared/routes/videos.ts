@@ -134,7 +134,7 @@ export const parseVideoUrlRoute = createRoute({
 // Admin Routes
 export const createVideoRoute = createRoute({
   method: "post",
-  path: "/admin",
+  path: "/",
   request: {
     body: {
       content: {
@@ -162,7 +162,7 @@ export const createVideoRoute = createRoute({
 
 export const updateVideoRoute = createRoute({
   method: "patch",
-  path: "/admin/{id}",
+  path: "/{id}",
   request: {
     params: z.object({
       id: z.string().openapi({ example: "abc123" }),
@@ -201,7 +201,7 @@ export const updateVideoRoute = createRoute({
 
 export const deleteVideoRoute = createRoute({
   method: "delete",
-  path: "/admin/{id}",
+  path: "/{id}",
   request: {
     params: z.object({
       id: z.string().openapi({ example: "abc123" }),
@@ -223,7 +223,7 @@ export const deleteVideoRoute = createRoute({
 
 export const syncYoutubeVideosRoute = createRoute({
   method: "post",
-  path: "/admin/sync",
+  path: "/sync",
   responses: {
     ...standardErrors,
     200: {

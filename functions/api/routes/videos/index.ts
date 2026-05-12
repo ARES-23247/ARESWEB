@@ -17,9 +17,9 @@ import * as schema from "../../../../src/db/schema";
 
 export const videosRouter = new OpenAPIHono<AppEnv>();
 
-// Protections
-videosRouter.use("/admin/*", ensureAdmin);
-videosRouter.use("/admin", ensureAdmin);
+// Admin routes sub-router
+const adminRouter = new OpenAPIHono<AppEnv>();
+adminRouter.use("*", ensureAdmin);
 
 /**
  * Parse a video URL to extract platform and video ID
@@ -72,18 +72,18 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
   };
 };
 
-// GET /videos - List all videos (public)
-export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c) => {
+// GET / - List all videos (public)
+videosRouter.openapi(listVideosRoute, async (c) => {
   const db = getDb(c);
   const results = await db.select().from(schema.videos).orderBy(schema.videos.createdAt).execute();
 
   const videos = results.map(serializeVideo);
 
   return c.json({ videos }, 200);
-})
+});
 
-// GET /videos/:id - Get a single video (public)
-.openapi(getVideoRoute, async (c) => {
+// GET /:id - Get a single video (public)
+videosRouter.openapi(getVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
@@ -94,19 +94,20 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   }
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-})
+});
 
-// POST /videos/parse-url - Parse a video URL (public, for editor convenience)
-.openapi(parseVideoUrlRoute, async (c) => {
+// POST /parse-url - Parse a video URL (public, for editor convenience)
+videosRouter.openapi(parseVideoUrlRoute, async (c) => {
   const { url } = c.req.valid("json");
 
   const parsed = parseVideoUrl(url);
 
   return c.json(parsed, 200);
-})
+});
 
-// POST /videos/admin - Create a video (admin only)
-.openapi(createVideoRoute, async (c) => {
+// Admin routes - mounted at /admin
+// POST / - Create a video
+adminRouter.openapi(createVideoRoute, async (c) => {
   const body = c.req.valid("json");
   const db = getDb(c);
 
@@ -130,10 +131,10 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-})
+});
 
-// PUT /videos/admin/:id - Update a video (admin only)
-.openapi(updateVideoRoute, async (c) => {
+// PATCH /:id - Update a video
+adminRouter.openapi(updateVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = getDb(c);
@@ -162,10 +163,10 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   const result = await db.select().from(schema.videos).where(eq(schema.videos.id, id)).execute();
 
   return c.json({ video: serializeVideo(result[0]) }, 200);
-})
+});
 
-// DELETE /videos/admin/:id - Delete a video (admin only)
-.openapi(deleteVideoRoute, async (c) => {
+// DELETE /:id - Delete a video
+adminRouter.openapi(deleteVideoRoute, async (c) => {
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
@@ -182,13 +183,13 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   }
 
   return c.json({ success: true }, 200);
-})
+});
 
-// POST /videos/admin/sync - Sync videos from YouTube
-.openapi(syncYoutubeVideosRoute, async (c) => {
+// POST /sync - Sync videos from YouTube
+adminRouter.openapi(syncYoutubeVideosRoute, async (c) => {
   const db = getDb(c);
   const apiKey = c.env.YOUTUBE_API_KEY;
-  
+
   if (!apiKey) {
     throw new ApiError("YouTube API Key not configured", 500, "INTERNAL_ERROR");
   }
@@ -223,10 +224,10 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
 
       if (!existingIds.has(videoId)) {
         const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
-        
 
-        // Note: For thumbnailKey, we usually store an R2 key. 
-        // For YouTube sync, we might just store the external URL or leave it null, 
+
+        // Note: For thumbnailKey, we usually store an R2 key.
+        // For YouTube sync, we might just store the external URL or leave it null,
         // as the UI can fallback to the YouTube thumbnail using the videoId.
         // The schema allows nullish thumbnailKey.
 
@@ -240,7 +241,7 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
           createdAt: snippet.publishedAt,
           updatedAt: new Date().toISOString()
         });
-        
+
         existingIds.add(videoId);
       }
     }
@@ -248,7 +249,7 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
     if (newVideosToInsert.length > 0) {
       await db.insert(schema.videos).values(newVideosToInsert).execute();
       addedCount = newVideosToInsert.length;
-      
+
       if (c.executionCtx) {
         c.executionCtx.waitUntil(logAuditAction(c, "youtube_sync", "video", null, `Synced ${addedCount} new videos from YouTube`));
       }
@@ -262,4 +263,7 @@ export const finalVideosRouter = videosRouter.openapi(listVideosRoute, async (c)
   }
 });
 
-export default finalVideosRouter;
+// Mount admin router at /admin
+videosRouter.route("/admin", adminRouter);
+
+export default videosRouter;

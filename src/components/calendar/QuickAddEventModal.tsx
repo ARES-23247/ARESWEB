@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useForm } from "@tanstack/react-form";
+import { eventSchema } from "../../../shared/schemas/eventSchema";
+import { AresField } from "../ui/forms/AresField";
+import { AresSelect } from "../ui/forms/AresSelect";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { X, Calendar, Plus } from "lucide-react";
@@ -63,10 +67,43 @@ export function QuickAddEventModal({
   onSuccess,
 }: QuickAddEventModalProps) {
   const previousDateRef = useRef<Date | null>(null);
-  const [formData, setFormData] = useState<FormData>(DEFAULT_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  const form = useForm({
+    defaultValues: DEFAULT_FORM_DATA,
+    validators: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onChange: eventSchema as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onSubmit: eventSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      setIsSubmitting(true);
+      try {
+        const locationValue = value.location === "CUSTOM" ? undefined : value.location;
+        const descJson = editor ? JSON.stringify(editor.getJSON()) : "";
+
+        await saveEvent.mutateAsync({
+          title: value.title,
+          dateStart: value.dateStart,
+          dateEnd: value.dateEnd || undefined,
+          location: locationValue || undefined,
+          category: value.category,
+          description: descJson,
+          isDraft: false,
+          isPotluck: false,
+          isVolunteer: false,
+          meetingNotes: undefined,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to create event");
+        setIsSubmitting(false);
+      }
+    },
+  });
 
   // Accessibility: Focus trap for keyboard navigation
   const { modalRef } = useFocusTrap({ isOpen, onClose });
@@ -77,7 +114,7 @@ export function QuickAddEventModal({
   const saveEvent = useSaveEvent({
     onSuccess: () => {
       toast.success("Event created successfully!");
-      setFormData(DEFAULT_FORM_DATA);
+      form.reset();
       if (editor) {
         editor.commands.setContent("");
       }
@@ -103,48 +140,20 @@ export function QuickAddEventModal({
       // Only update if the date has actually changed
       if (!previousDateRef.current || selectedDate.getTime() !== previousDateRef.current.getTime()) {
         const dateStr = format(selectedDate, "yyyy-MM-dd'T'HH:mm");
-        setFormData({
-          ...DEFAULT_FORM_DATA,
-          dateStart: dateStr,
-          dateEnd: format(new Date(selectedDate.getTime() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm"), // +1 hour
-        });
+        form.setFieldValue("dateStart", dateStr);
+        form.setFieldValue("dateEnd", format(new Date(selectedDate.getTime() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm")); // +1 hour
         previousDateRef.current = selectedDate;
       }
     } else if (!isOpen) {
       // Reset ref when modal closes
       previousDateRef.current = null;
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, selectedDate, form]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
-
-    try {
-      const locationValue = formData.location === "CUSTOM" ? undefined : formData.location;
-      const descJson = editor ? JSON.stringify(editor.getJSON()) : "";
-
-      await saveEvent.mutateAsync({
-        title: formData.title,
-        dateStart: formData.dateStart,
-        dateEnd: formData.dateEnd || undefined,
-        location: locationValue || undefined,
-        category: formData.category,
-        description: descJson,
-        isDraft: false,
-        isPotluck: false,
-        isVolunteer: false,
-        meetingNotes: undefined,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create event");
-      setIsSubmitting(false);
-    }
-  };
-
-  const updateField = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    e.stopPropagation();
+    form.handleSubmit();
   };
 
   return (
@@ -208,75 +217,39 @@ export function QuickAddEventModal({
                 {/* Left Column: Core Details */}
                 <div className="space-y-5">
                   {/* Title */}
-                  <div>
-                    <label htmlFor="quick-event-title-input" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                      Event Title <span className="text-ares-red">*</span>
-                    </label>
-                    <input
-                      id="quick-event-title-input"
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => updateField("title", e.target.value)}
-                      placeholder="e.g., Team Practice, Outreach Demo"
-                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all"
-                      required
-                    />
-                  </div>
+                  <form.Field name="title">
+                    {(field) => (
+                      <AresField field={field} label="Event Title" placeholder="e.g., Team Practice, Outreach Demo" required />
+                    )}
+                  </form.Field>
 
                   {/* Category */}
-                  <div>
-                    <label htmlFor="quick-event-category" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                      Category
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["internal", "outreach", "external"] as const).map((cat) => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => updateField("category", cat)}
-                          className={`px-3 py-2 text-xs font-bold uppercase tracking-wider ares-cut-sm transition-all ${
-                            formData.category === cat
-                              ? cat === "internal"
-                                ? "bg-ares-red text-white"
-                                : cat === "outreach"
-                                ? "bg-ares-gold text-black"
-                                : "bg-ares-cyan text-black"
-                              : "bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          {cat === "internal" ? "Practice" : cat === "outreach" ? "Outreach" : "Community"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <form.Field name="category">
+                    {(field) => (
+                      <AresSelect
+                        field={field}
+                        label="Category"
+                        options={[
+                          { value: "internal", label: "Practice" },
+                          { value: "outreach", label: "Outreach" },
+                          { value: "external", label: "Community" },
+                        ]}
+                      />
+                    )}
+                  </form.Field>
 
                   {/* Date/Time Row */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="quick-event-start" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                        Start <span className="text-ares-red">*</span>
-                      </label>
-                      <input
-                        id="quick-event-start"
-                        type="datetime-local"
-                        value={formData.dateStart}
-                        onChange={(e) => updateField("dateStart", e.target.value)}
-                        className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="quick-event-end" className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
-                        End
-                      </label>
-                      <input
-                        id="quick-event-end"
-                        type="datetime-local"
-                        value={formData.dateEnd}
-                        onChange={(e) => updateField("dateEnd", e.target.value)}
-                        className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                      />
-                    </div>
+                    <form.Field name="dateStart">
+                      {(field) => (
+                        <AresField field={field} label="Start" type="datetime-local" required />
+                      )}
+                    </form.Field>
+                    <form.Field name="dateEnd">
+                      {(field) => (
+                        <AresField field={field} label="End" type="datetime-local" />
+                      )}
+                    </form.Field>
                   </div>
 
                   {/* Location */}
@@ -286,13 +259,17 @@ export function QuickAddEventModal({
                       <span className="text-xs text-white/60 font-normal normal-case">Pick from registry</span>
                     </label>
                     <div className="relative group">
-                      <LocationCombobox
-                        id="quick-event-location"
-                        locations={locations}
-                        value={formData.location || ''}
-                        onChange={(val) => updateField("location", val)}
-                        onCustomClick={() => setIsLocationModalOpen(true)}
-                      />
+                      <form.Field name="location">
+                        {(field) => (
+                          <LocationCombobox
+                            id="quick-event-location"
+                            locations={locations}
+                            value={field.state.value}
+                            onChange={(val) => field.handleChange(val)}
+                            onCustomClick={() => setIsLocationModalOpen(true)}
+                          />
+                        )}
+                      </form.Field>
                     </div>
                   </div>
                 </div>
@@ -317,13 +294,13 @@ export function QuickAddEventModal({
                 isOpen={isLocationModalOpen}
                 onClose={() => {
                   setIsLocationModalOpen(false);
-                  if (formData.location === "CUSTOM") {
-                    updateField("location", "");
+                  if (form.getFieldValue("location") === "CUSTOM") {
+                    form.setFieldValue("location", "");
                   }
                 }}
                 onSuccess={(newName) => {
                   setIsLocationModalOpen(false);
-                  updateField("location", newName);
+                  form.setFieldValue("location", newName);
                 }}
               />
 
@@ -337,23 +314,27 @@ export function QuickAddEventModal({
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !formData.title.trim()}
-                  className="px-5 py-2.5 text-sm font-bold uppercase tracking-widest bg-ares-red text-white hover:bg-ares-red/80 transition-colors ares-cut-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={16} />
-                      Create Event
-                    </>
+                <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+                  {([canSubmit, isFormSubmitting]) => (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || isFormSubmitting || !canSubmit}
+                      className="px-5 py-2.5 text-sm font-bold uppercase tracking-widest bg-ares-red text-white hover:bg-ares-red/80 transition-colors ares-cut-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isSubmitting || isFormSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={16} />
+                          Create Event
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
+                </form.Subscribe>
               </div>
             </form>
           </motion.div>
