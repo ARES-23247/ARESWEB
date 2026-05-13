@@ -102,8 +102,8 @@ function TaskEditorInner({ initialContent, onDescriptionChange }: { initialConte
 export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTaskClick }: TaskDetailsModalProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
-  const [status, setStatus] = useState(task.status);
-  const [priority, setPriority] = useState(task.priority);
+  const [status, setStatus] = useState(task.status || "todo");
+  const [priority, setPriority] = useState(task.priority || "normal");
   const [subteam, setSubteam] = useState(task.subteam || "");
   const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a) => a.id) || []);
   const [dueDate, setDueDate] = useState(task.dueDate || "");

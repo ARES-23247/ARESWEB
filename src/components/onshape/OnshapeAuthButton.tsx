@@ -22,8 +22,8 @@ export function OnshapeAuthButton() {
 	useEffect(() => {
 		fetch("/api/onshape/auth/status")
 			.then((res) => res.json())
-			.then((data: OnshapeAuthStatus) => {
-				setStatus(data);
+			.then((data) => {
+				setStatus(data as OnshapeAuthStatus);
 				setLoading(false);
 			})
 			.catch(() => {

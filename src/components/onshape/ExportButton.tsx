@@ -97,7 +97,7 @@ export function ExportButton({
 				throw new Error(`Failed to initiate export: ${initResponse.status}`);
 			}
 
-			const { exportId } = await initResponse.json();
+			const { exportId } = (await initResponse.json()) as { exportId: string };
 
 			// Poll for completion
 			setStatus("polling");
@@ -113,7 +113,7 @@ export function ExportButton({
 						throw new Error(`Status check failed: ${statusResponse.status}`);
 					}
 
-					const data = await statusResponse.json();
+					const data = (await statusResponse.json()) as { status: string; failureReason?: string };
 
 					// Update progress (estimate based on typical times)
 					const estimatedProgress = Math.min((attempts / 30) * 100, 90);

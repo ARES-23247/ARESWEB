@@ -400,12 +400,15 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         throw new Error(`Google API Error ${uploadResponse.status}: ${detail}`);
       }
 
-      const uploadedVideo = await uploadResponse.json();
+      const uploadedVideo = (await uploadResponse.json()) as {
+        id: string;
+        snippet?: { thumbnails?: { high?: { url?: string } } };
+      };
       const videoId = uploadedVideo.id;
       const thumbnailKey = uploadedVideo.snippet?.thumbnails?.high?.url || null;
 
       try {
-        await client.api.videos.$post({
+        await client.videos.admin.$post({
           json: {
             title: title.trim(),
             description: finalDescription,

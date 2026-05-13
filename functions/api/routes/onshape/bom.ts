@@ -258,7 +258,7 @@ bomApp.openapi(bomHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
 		.select()
 		.from(onshapeBomHistory)
 		.where((columns) => {
-			// @ts-ignore - drizzle-orm typing issue
+			// @ts-expect-error - drizzle-orm dynamic where typing limitation
 			return columns.documentId === documentId;
 		})
 		.orderBy(onshapeBomHistory.syncedAt)
@@ -319,7 +319,7 @@ const bomAllHistoryRoute = createRoute({
  *
  * Retrieves all BOM sync history from D1.
  */
-bomApp.openapi(bomAllHistoryRoute, requireAuth(async (c, { userId }) => {
+bomApp.openapi(bomAllHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
 	const limit = parseInt(c.req.query("limit") || "100", 10);
 
 	const history = await c.env.DB

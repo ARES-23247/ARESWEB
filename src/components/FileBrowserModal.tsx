@@ -51,9 +51,7 @@ const FileIcon = ({ mimeType }: { mimeType: string }) => {
 export function FileBrowserModal({ isOpen, onClose, onSelect }: FileBrowserModalProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 
-	const { files, isLoading } = useFilesQuery({
-		enabled: isOpen,
-	});
+	const { files, isLoading } = useFilesQuery();
 
 	// Filter files by search query
 	const filteredFiles = files.filter((file) =>

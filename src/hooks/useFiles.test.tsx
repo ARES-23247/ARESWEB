@@ -11,7 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 describe("useFiles hooks", () => {
 	let queryClient: QueryClient;
-	let wrapper: ({ children }: { children: React.ReactNode }) => JSX.Element;
+	let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactElement;
 
 	beforeEach(() => {
 		queryClient = new QueryClient({
