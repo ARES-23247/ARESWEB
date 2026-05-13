@@ -10,7 +10,7 @@
 - [x] **Phase 73: Service Account Authentication** - OAuth tokens for Google Photos and Drive APIs ✅
 - [x] **Phase 74: Google Drive Document Browser** - Browse and open Google Workspace documents ✅
 - [ ] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos
-- [ ] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage
+- [x] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage ✅
 - [ ] **Phase 77: File Manager** - Upload and manage PDFs/docs with blog editor integration
 - [ ] **Phase 78: Onshape CAD Integration** - Browse CAD models, export STL/STEP files, and sync BOM data
 
