@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
+
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin } from "../../middleware";
 import {
@@ -60,7 +60,9 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json(data as any, 200);
   })
   .openapi(listMessagesRoute, async (c) => {
@@ -88,6 +90,7 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
 
     // Fetch snippets for each message (Gmail API doesn't return them in list)
@@ -105,6 +108,7 @@ const routes = adminApp
                   }
                 );
                 if (msgRes.ok) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const msgData = await msgRes.json() as any;
                   return {
                     id: msg.id,
@@ -129,6 +133,7 @@ const routes = adminApp
         messages,
         nextPageToken: data.nextPageToken,
         resultSizeEstimate: data.resultSizeEstimate,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       200
     );
@@ -155,7 +160,9 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json(data as any, 200);
   })
   .openapi(getThreadRoute, async (c) => {
@@ -180,7 +187,9 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json(data as any, 200);
   })
   .openapi(sendMessageRoute, async (c) => {
@@ -233,7 +242,9 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return c.json(data as any, 200);
   });
 

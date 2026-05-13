@@ -30,12 +30,11 @@ export function GmailCompose({
         const from = fromHeader?.value || "";
         const subj = subjectHeader?.value || "";
 
-        setTo(from);
-        setSubject(subj.startsWith("Re:") ? subj : `Re: ${subj}`);
-
-        // Quote original message
-        const originalBody = replyToMsg.snippet || "";
-        setBody(`\n\n--- Original Message ---\nFrom: ${from}\n${originalBody}`);
+        setTimeout(() => {
+          setTo(from);
+          setSubject(subj.startsWith("Re:") ? subj : `Re: ${subj}`);
+          setBody(`\n\n--- Original Message ---\nFrom: ${from}\n${originalBody}`);
+        }, 0);
       }
     }
   }, [replyToMessageId, messages]);
@@ -80,10 +79,11 @@ export function GmailCompose({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* To */}
           <div>
-            <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
+            <label htmlFor="to-input" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
               To
             </label>
             <input
+              id="to-input"
               type="email"
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -95,10 +95,11 @@ export function GmailCompose({
           {/* Subject */}
           {!replyToMessageId && (
             <div>
-              <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
+              <label htmlFor="subject-input" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
                 Subject
               </label>
               <input
+                id="subject-input"
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
@@ -110,10 +111,11 @@ export function GmailCompose({
 
           {/* Body */}
           <div className="flex-1">
-            <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
+            <label htmlFor="message-body" className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-1">
               Message
             </label>
             <textarea
+              id="message-body"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Write your message..."

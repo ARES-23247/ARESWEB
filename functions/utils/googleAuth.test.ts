@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { ApiError } from "../api/middleware/errorHandler";
 
 // Mock drizzle-orm eq function
 vi.mock("drizzle-orm", async (importOriginal) => {
@@ -13,10 +14,10 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 import { getUnifiedOAuthToken } from "./googleAuth";
 
 
-// Mock Env
+// Mock Env - using the correct env variable names
 const mockEnv = {
-  OAUTH_CLIENT_ID: "mock-client-id",
-  OAUTH_CLIENT_SECRET: "mock-client-secret",
+  YOUTUBE_CLIENT_ID: "mock-client-id",
+  YOUTUBE_CLIENT_SECRET: "mock-client-secret",
 };
 
 describe("googleAuth Utilities", () => {
@@ -122,7 +123,13 @@ describe("googleAuth Utilities", () => {
         [], // No refresh token
       ]);
 
-      await expect(getUnifiedOAuthToken(mockEnv as any, mockDb)).rejects.toThrow("System not authenticated with Google Services.");
+      await expect(getUnifiedOAuthToken(mockEnv as any, mockDb)).rejects.toThrow("Google Account is not connected.");
+    });
+
+    it("should throw ApiError if credentials are missing", async () => {
+      const emptyEnv = {};
+
+      await expect(getUnifiedOAuthToken(emptyEnv as any, mockDb)).rejects.toThrow(ApiError);
     });
   });
 });

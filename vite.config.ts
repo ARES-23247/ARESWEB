@@ -59,7 +59,8 @@ export default defineConfig({
     }
   },
   plugins: [
-    TanStackRouterVite(),
+    // TanStackRouterVite() breaks in test mode, conditionally disable
+    ...(process.env.VITEST ? [] : [TanStackRouterVite()]),
     spaFallbackPlugin(),
     react(),
     imagetools({

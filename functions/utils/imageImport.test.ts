@@ -219,6 +219,7 @@ describe("POST /import endpoint", () => {
     mockDb = {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
+          run: vi.fn().mockResolvedValue({ success: true }),
           onConflictDoUpdate: vi.fn().mockReturnValue({
             execute: vi.fn().mockResolvedValue({ success: true }),
           }),
