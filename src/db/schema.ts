@@ -883,3 +883,38 @@ export const importAuditLog = sqliteTable("import_audit_log", {
 	index("idx_import_audit_imported_at").on(table.importedAt),
 ]);
 
+// Uploaded files for document management (Phase 77)
+// Per FILES-04: Track uploaded documents with R2 storage keys
+export const uploadedFiles = sqliteTable("uploaded_files", {
+	id: text().primaryKey(),
+	r2Key: text("r2_key").notNull(),
+	filename: text().notNull(),
+	mimeType: text("mime_type").notNull(),
+	size: integer().notNull(),
+	title: text(),
+	description: text(),
+	uploadedBy: text("uploaded_by").notNull(),
+	uploadedAt: text("uploaded_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	source: text().default("manual"),
+},
+(table) => [
+	index("idx_uploaded_files_at").on(table.uploadedAt),
+	index("idx_uploaded_files_by").on(table.uploadedBy),
+	index("idx_uploaded_files_r2").on(table.r2Key),
+]);
+
+// File usage tracking for blog post references (Phase 77)
+// Per FILES-08/D-20: Track which posts use which files
+export const fileUsage = sqliteTable("file_usage", {
+	id: text().primaryKey(),
+	fileId: text("file_id").notNull().references(() => uploadedFiles.id, { onDelete: "cascade" }),
+	postId: text("post_id").notNull().references(() => posts.slug, { onDelete: "cascade" }),
+	postTitle: text("post_title").notNull(),
+	linkedAt: text("linked_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_file_usage_file").on(table.fileId),
+	index("idx_file_usage_post").on(table.postId),
+	index("idx_file_usage_linked").on(table.linkedAt),
+]);
+
