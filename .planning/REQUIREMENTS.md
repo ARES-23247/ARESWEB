@@ -25,11 +25,11 @@ Requirements for Google Photos and Google Drive API integration with service acc
 
 ### Photo Browser (PHOTO)
 
-- [ ] **PHOTO-01**: User can browse Google Photos media items
-- [ ] **PHOTO-02**: User can filter by media type (photo only, no videos)
-- [ ] **PHOTO-03**: User can view photo thumbnails and metadata
-- [ ] **PHOTO-04**: System handles Photos API pagination (media items list)
-- [ ] **PHOTO-05**: UI displays albums for organized browsing
+- [x] **PHOTO-01**: User can browse Google Photos media items
+- [x] **PHOTO-02**: User can filter by media type (photo only, no videos)
+- [x] **PHOTO-03**: User can view photo thumbnails and metadata
+- [x] **PHOTO-04**: System handles Photos API pagination (media items list)
+- [x] **PHOTO-05**: UI displays albums for organized browsing
 
 ### Album Structure (ALBUMS)
 
@@ -60,9 +60,9 @@ Requirements for Google Photos and Google Drive API integration with service acc
 
 ### Photo Upload (UPLOAD)
 
-- [ ] **UPLOAD-01**: User can upload photos through website to Google Photos
+- [x] **UPLOAD-01**: User can upload photos through website to Google Photos
 - [ ] **UPLOAD-02**: Upload requires write scope (`photoslibrary.edit` or `photoslibrary.appendonly`)
-- [ ] **UPLOAD-03**: Upload flow includes file selection, metadata entry (title, description), and album selection
+- [x] **UPLOAD-03**: Upload flow includes file selection, metadata entry (title, description), and album selection
 
 ## Out of Scope
 
@@ -88,14 +88,14 @@ Requirements for Google Photos and Google Drive API integration with service acc
 | DOCS-04 | Phase 74 | Pending |
 | DOCS-05 | Phase 74 | Pending |
 | DOCS-06 | Phase 74 | Pending |
-| PHOTO-01 | Phase 75 | Pending |
-| PHOTO-02 | Phase 75 | Pending |
-| PHOTO-03 | Phase 75 | Pending |
-| PHOTO-04 | Phase 75 | Pending |
-| PHOTO-05 | Phase 75 | Pending |
-| UPLOAD-01 | Phase 75 | Pending |
+| PHOTO-01 | Phase 75 | Complete |
+| PHOTO-02 | Phase 75 | Complete |
+| PHOTO-03 | Phase 75 | Complete |
+| PHOTO-04 | Phase 75 | Complete |
+| PHOTO-05 | Phase 75 | Complete |
+| UPLOAD-01 | Phase 75 | Complete |
 | UPLOAD-02 | Phase 73 | Pending |
-| UPLOAD-03 | Phase 75 | Pending |
+| UPLOAD-03 | Phase 75 | Complete |
 | ALBUMS-01 | Phase 76 | Pending |
 | ALBUMS-02 | Phase 76 | Pending |
 | ALBUMS-03 | Phase 76 | Pending |

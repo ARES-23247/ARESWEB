@@ -1,7 +1,7 @@
 # ARESWEB Roadmap
 
 **Current Milestone:** v8.1 Google Workspace Integrations
-**Last Updated:** 2026-05-12
+**Last Updated:** 2026-05-13
 
 ---
 
@@ -12,6 +12,7 @@
 - [ ] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos
 - [ ] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage
 - [ ] **Phase 77: File Manager** - Upload and manage PDFs/docs with blog editor integration
+- [ ] **Phase 78: Onshape CAD Integration** - Browse CAD models, export STL/STEP files, and sync BOM data
 
 ---
 
@@ -90,7 +91,16 @@
 6. User can upload photos through website to Google Photos
 7. Upload flow includes file selection, metadata entry (title, description), and album selection
 
-**Plans**: TBD
+**Plans**: 7 plans
+
+**Plan List**:
+- [ ] 75-01-PLAN.md — Create OpenAPI route contracts for Photos API endpoints
+- [ ] 75-02-PLAN.md — Implement GET /media endpoint with TDD
+- [ ] 75-03-PLAN.md — Implement GET /albums endpoint with TDD
+- [ ] 75-04-PLAN.md — Create frontend React Query hooks
+- [ ] 75-05-PLAN.md — Implement POST /upload endpoint with TDD
+- [ ] 75-06-PLAN.md — Create frontend upload mutation
+- [ ] 75-07-PLAN.md — Build dashboard UI with albums sidebar and photo grid
 
 **UI hint**: yes
 
@@ -146,15 +156,48 @@
 
 ---
 
+### Phase 78: Onshape CAD Integration
+
+**Goal**: Enable browsing Onshape CAD models, exporting STL/STEP files, and synchronizing Bill of Materials data
+
+**Depends on**: Phase 73 (OAuth token pattern reference)
+
+**Requirements**: ONSHAPE-01, ONSHAPE-02, ONSHAPE-03, ONSHAPE-04, ONSHAPE-05, ONSHAPE-06, ONSHAPE-07, ONSHAPE-08, ONSHAPE-09, ONSHAPE-10, ONSHAPE-11, ONSHAPE-12
+
+**Success Criteria** (what must be TRUE):
+1. User can authenticate with Onshape via OAuth2 flow
+2. User can browse their Onshape documents through the web portal
+3. Public CAD documents accessible to all visitors (no authentication)
+4. Private documents require user OAuth token to access
+5. User can export parts to STL format for 3D printing
+6. User can export assemblies to STEP format for manufacturing
+7. User can view Bill of Materials for assemblies
+8. BOM includes part names, quantities, and materials
+9. BOM sync history is tracked in database
+10. Zero Trust compliance: all API calls proxied through backend
+
+**Plans**: 4 plans
+
+**Plan List**:
+- [ ] 78-01-PLAN.md — OAuth2 authentication and D1 schema setup
+- [ ] 78-02-PLAN.md — Document browsing and display UI
+- [ ] 78-03-PLAN.md — STL/STEP export functionality
+- [ ] 78-04-PLAN.md — Bill of Materials synchronization
+
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
 | 74. Google Drive Document Browser | 4/4 | Complete ✅ | 2026-05-13 |
-| 75. Google Photos Browser | 0/7 | Not started | - |
+| 75. Google Photos Browser | 1/7 | In Progress|  |
 | 76. Image Import Pipeline | 0/10 | Not started | - |
 | 77. File Manager | 0/8 | Not started | - |
+| 78. Onshape CAD Integration | 0/4 | Not started | - |
 
 ---
 
@@ -174,7 +217,7 @@
 ---
 
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-13 (Phase 74 complete)*
+*Last updated: 2026-05-13 (Phase 75: Google Photos Browser plans created)*
 
 ---
 
