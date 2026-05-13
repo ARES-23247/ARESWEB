@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect, useMemo } from 'react';
 import { useGetDriveFiles } from '../../api/google-drive';
-import { Search, FileText, Spreadsheet, Presentation, PenTool, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, FileText, Table, Presentation, PenTool, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/dashboard/drive-docs')({
@@ -38,7 +38,7 @@ function DriveDocs() {
       case 'application/vnd.google-apps.document':
         return <FileText size={18} className="text-ares-cyan" />;
       case 'application/vnd.google-apps.spreadsheet':
-        return <Spreadsheet size={18} className="text-ares-gold" />;
+        return <Table size={18} className="text-ares-gold" />;
       case 'application/vnd.google-apps.presentation':
         return <Presentation size={18} className="text-orange-400" />;
       case 'application/vnd.google-apps.drawing':
