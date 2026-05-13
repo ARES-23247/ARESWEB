@@ -86,7 +86,7 @@ const routes = adminApp
     }
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
-    const scopes = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"].join(" ");
+    const scopes = ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube.upload"].join(" ");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authUrl.searchParams.append("client_id", env.YOUTUBE_CLIENT_ID);
@@ -245,7 +245,8 @@ const routes = adminApp
     }
 
     // Fetch the authenticated user's uploaded videos via their uploads playlist
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${uploadsPlaylistId}`, {
+    // We request 'status' directly here so we don't need a separate videos.list call
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,status&maxResults=50&playlistId=${uploadsPlaylistId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -260,32 +261,16 @@ const routes = adminApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
 
-    // We need to fetch the status (privacyStatus) for these videos
+    // Map directly from playlistItems since it contains all necessary info including privacyStatus
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const videoIds = (data.items || []).map((item: any) => item.snippet.resourceId.videoId).join(",");
-    
-    let videos = [];
-    if (videoIds) {
-      const statusRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,status&id=${videoIds}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      
-      if (statusRes.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const statusData: any = await statusRes.json();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        videos = (statusData.items || []).map((v: any) => ({
-          id: v.id,
-          title: v.snippet.title,
-          description: v.snippet.description,
-          thumbnailUrl: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url,
-          privacyStatus: v.status.privacyStatus,
-          publishedAt: v.snippet.publishedAt,
-        }));
-      }
-    }
+    const videos = (data.items || []).map((item: any) => ({
+      id: item.snippet.resourceId.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      thumbnailUrl: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+      privacyStatus: item.status?.privacyStatus || "public",
+      publishedAt: item.snippet.publishedAt,
+    }));
 
     return c.json({ videos }, 200);
   })
