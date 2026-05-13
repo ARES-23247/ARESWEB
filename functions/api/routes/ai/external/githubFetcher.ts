@@ -39,7 +39,8 @@ async function parseGitHubError(response: Response): Promise<string> {
     try {
         const errBody = await response.json() as GitHubErrorResponse;
         return errBody.message || response.statusText;
-    } catch {
+    } catch (e) {
+        console.error(`[GitHubFetcher] Failed to parse error response:`, e);
         return response.statusText || "Unknown error";
     }
 }
@@ -86,7 +87,8 @@ export async function fetchGithubRepoFiles(
     let refData: { object: { sha: string } };
     try {
         refData = await refRes.json() as { object: { sha: string } };
-    } catch {
+    } catch (e) {
+        console.error(`[GitHubFetcher] Failed to parse ref response for ${owner}/${repo}:`, e);
         return {
             files: [],
             commitSha: "",
@@ -112,7 +114,8 @@ export async function fetchGithubRepoFiles(
     let treeData: { tree: Array<{ type: string; path: string; sha: string }> };
     try {
         treeData = await treeRes.json() as { tree: Array<{ type: string; path: string; sha: string }> };
-    } catch {
+    } catch (e) {
+        console.error(`[GitHubFetcher] Failed to parse tree response for ${owner}/${repo}:`, e);
         return {
             files: [],
             commitSha,

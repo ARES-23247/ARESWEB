@@ -137,8 +137,8 @@ export const badgesRouter = _badgesRouter
                   `${icon} **${userName}** was just awarded the **${badge.name}** badge!`
                 );
               }
-            } catch {
-              /* ignore */
+            } catch (e) {
+              console.error("[Badges] Zulip notification failed:", e);
             }
           })()
         );

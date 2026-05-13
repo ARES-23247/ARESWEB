@@ -217,7 +217,7 @@ aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
                 return;
             }
 
-            console.log("[Copilot] Falling back to Workers AI (Llama 3.1)");
+            console.debug("[Copilot] Falling back to Workers AI (Llama 3.1)");
 
             const aiStream = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
                 messages: [
@@ -660,7 +660,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
         try {
             let lastZaiError = "";
             if (hasZai) {
-                console.log("[RAG] Using z.ai (GLM-5.1) — Z_AI_API_KEY present");
+                console.debug("[RAG] Using z.ai (GLM-5.1) — Z_AI_API_KEY present");
                 await stream.writeSSE({ data: JSON.stringify({ model: "GLM-5.1" }) });
                 for (let attempt = 0; attempt < 2; attempt++) {
                     try {
@@ -740,7 +740,7 @@ ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : 
                 return;
             }
 
-            console.log("[RAG] Falling back to Workers AI (Llama 3.1) — Z_AI_API_KEY:", hasZai ? "present but z.ai failed" : "NOT SET");
+            console.debug("[RAG] Falling back to Workers AI (Llama 3.1) — Z_AI_API_KEY:", hasZai ? "present but z.ai failed" : "NOT SET");
             await stream.writeSSE({ data: JSON.stringify({ model: "llama-3.1-8b" }) });
 
             const cleanMessages = (messages as ChatMessage[]).map((m: ChatMessage) => ({

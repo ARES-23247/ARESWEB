@@ -23,7 +23,7 @@ export function triggerBackgroundReindex(
       .then(({ indexSiteContent }) => indexSiteContent(db, ai, vectorize))
       .then((r: IndexResult) => {
         if (r.indexed > 0 || r.errors.length > 0) {
-          console.log(`[Auto-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
+          console.debug(`[Auto-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
         }
       })
       .catch((e: unknown) => {
@@ -50,7 +50,7 @@ export function triggerExternalReindex(
       .then(({ indexExternalResources }) => indexExternalResources(db, ai, vectorize, zaiApiKey, githubPat))
       .then((r: IndexResult) => {
         if (r.indexed > 0 || r.errors.length > 0) {
-          console.log(`[External-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
+          console.debug(`[External-Reindex] Indexed: ${r.indexed}, Errors: ${r.errors.length}`);
         }
       })
       .catch((e: unknown) => {

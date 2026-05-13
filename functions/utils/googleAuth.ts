@@ -88,11 +88,11 @@ export async function getOrRefreshToken(
 
         // Return cached token if not expiring within buffer
         if (expiresAt > now + EXPIRY_BUFFER_MS) {
-          console.log(`[googleAuth] Using cached ${type} token (expires at ${new Date(expiresAt).toISOString()})`);
+          console.debug(`[googleAuth] Using cached ${type} token (expires at ${new Date(expiresAt).toISOString()})`);
           return tokenEntry.value;
         }
 
-        console.log(`[googleAuth] Cached ${type} token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
+        console.debug(`[googleAuth] Cached ${type} token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
       }
     }
   }
@@ -148,7 +148,7 @@ export async function getOrRefreshToken(
         })
         .run();
 
-      console.log(`[googleAuth] Refreshed ${type} token (expires at ${expiresAt})`);
+      console.debug(`[googleAuth] Refreshed ${type} token (expires at ${expiresAt})`);
       return accessToken;
     } catch (error) {
       lastError = error as Error;
@@ -157,7 +157,7 @@ export async function getOrRefreshToken(
       // If not last attempt, wait with exponential backoff before retry
       if (attempt < MAX_RETRIES - 1) {
         const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-        console.log(`[googleAuth] Retrying in ${delayMs}ms...`);
+        console.debug(`[googleAuth] Retrying in ${delayMs}ms...`);
         await sleep(delayMs);
       }
     }

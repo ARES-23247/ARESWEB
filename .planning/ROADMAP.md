@@ -106,32 +106,32 @@
 
 ---
 
-### Phase 76: Image Import Pipeline
+### Phase 76: Image Import Pipeline ✅
 
 **Goal**: Users can select and import photos from Google Photos to R2 storage with album structure preservation
 
-**Depends on**: Phase 75
+**Depends on**: Phase 75 ✅
 
 **Requirements**: IMG-01, IMG-02, IMG-03, IMG-04, IMG-05, IMG-06, IMG-07, ALBUMS-01, ALBUMS-02, ALBUMS-03
 
 **Success Criteria** (what must be TRUE):
-1. System lists photos from Google Photos (not Drive images)
-2. User can select multiple photos for import
-3. System downloads selected photos from Google Photos API
-4. System validates images (magic bytes, size limits, format check)
-5. System uploads valid images to R2 with proper metadata
-6. System logs import audit trail (who, what, when)
-7. Import errors display clear messages and retry options
-8. System fetches Google Photos albums structure
-9. System mirrors albums as R2 folders (e.g., `photos/{albumName}/{filename}`)
-10. System stores album metadata in D1 for lookup
+1. ✅ System lists photos from Google Photos (not Drive images) - Phase 75
+2. ✅ User can select multiple photos for import - 76-03
+3. ✅ System downloads selected photos from Google Photos API - 76-02
+4. ✅ System validates images (magic bytes, size limits, format check) - 76-02
+5. ✅ System uploads valid images to R2 with proper metadata - 76-02
+6. ✅ System logs import audit trail (who, what, when) - 76-02
+7. ✅ Import errors display clear messages and retry options - 76-04
+8. ✅ System fetches Google Photos albums structure - Phase 75
+9. ✅ System mirrors albums as R2 folders (e.g., `photos/{albumName}/{filename}`) - 76-02
+10. ✅ System stores album metadata in D1 for lookup - 76-01/76-02
 
-**Plans**: 4 plans
+**Plans**: 4 plans (4 complete)
 
 **Plan List**:
-- [ ] 76-01-PLAN.md — Define database schema and API contracts
-- [ ] 76-02-PLAN.md — Implement import pipeline with TDD
-- [ ] 76-03-PLAN.md — Build photo selection UI
+- [x] 76-01-PLAN.md — Define database schema and API contracts ✅
+- [x] 76-02-PLAN.md — Implement import pipeline with TDD ✅
+- [x] 76-03-PLAN.md — Build photo selection UI ✅
 - [ ] 76-04-PLAN.md — Connect import mutation with error handling
 
 **UI hint**: yes

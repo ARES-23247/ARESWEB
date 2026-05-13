@@ -37,7 +37,8 @@ async function getGitHubPat(c: { env: AppEnv["Bindings"] }): Promise<string | un
             .all();
         const patSetting = rows.find((s: SettingsRow) => s.key === "GITHUB_PAT");
         return patSetting?.value || c.env.GITHUB_PAT;
-    } catch {
+    } catch (e) {
+        console.error("[Simulations] Failed to fetch GitHub PAT from DB:", e);
         return c.env.GITHUB_PAT;
     }
 }

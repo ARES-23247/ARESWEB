@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDashboardSession } from '../../hooks/useDashboardSession'
 import { Database } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
 export const Route = createFileRoute('/dashboard/db_studio')({
   component: DbStudio,
@@ -8,7 +9,52 @@ export const Route = createFileRoute('/dashboard/db_studio')({
 
 function DbStudio() {
   const { permissions } = useDashboardSession()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
   
+  useEffect(() => {
+    const iframe = iframeRef.current
+    const overlay = overlayRef.current
+    if (!iframe || !overlay) return
+
+    const hideOverlay = () => {
+      overlay.style.display = 'none'
+    }
+
+    const showOverlay = () => {
+      overlay.style.display = 'flex'
+    }
+
+    iframe.onload = () => {
+      try {
+        const iframeDoc = iframe.contentWindow?.document
+        if (iframeDoc && iframeDoc.body) {
+          hideOverlay()
+        }
+      } catch {
+        // Cross-origin error means Studio is running
+        hideOverlay()
+      }
+    }
+
+    iframe.onerror = () => {
+      showOverlay()
+    }
+
+    // Check if already loaded
+    const timer = setTimeout(() => {
+      try {
+        if (iframe.contentWindow?.document?.body) {
+          hideOverlay()
+        }
+      } catch {
+        // Can't access cross-origin, but likely running
+      }
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   if (!permissions.isAdmin) {
     return (
       <div className="flex-1 w-full flex items-center justify-center">
@@ -43,11 +89,12 @@ function DbStudio() {
       
       <div className="flex-1 min-h-0 relative">
         <iframe
+          ref={iframeRef}
           src="http://localhost:4983"
           className="w-full h-full border-0"
           title="Drizzle Studio"
         />
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-obsidian/80 z-10" id="studio-overlay">
+        <div ref={overlayRef} className="absolute inset-0 pointer-events-none flex items-center justify-center bg-obsidian/80 z-10" id="studio-overlay">
           <div className="text-center max-w-md p-6 border border-white/10 ares-cut-sm bg-obsidian">
             <Database size={48} className="mx-auto text-ares-gold/50 mb-4 animate-pulse" />
             <h3 className="text-lg font-bold text-white mb-2">Drizzle Studio Not Running</h3>
@@ -63,36 +110,6 @@ function DbStudio() {
             </p>
           </div>
         </div>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            const iframe = document.querySelector('iframe');
-            const overlay = document.getElementById('studio-overlay');
-            iframe.onload = function() {
-              try {
-                const iframeDoc = iframe.contentWindow?.document;
-                if (iframeDoc && iframeDoc.body) {
-                  overlay.style.display = 'none';
-                }
-              } catch (e) {
-                // Cross-origin error - Studio is running
-                overlay.style.display = 'none';
-              }
-            };
-            iframe.onerror = function() {
-              overlay.style.display = 'flex';
-            };
-            // Check if already loaded
-            setTimeout(() => {
-              try {
-                if (iframe.contentWindow?.document?.body) {
-                  overlay.style.display = 'none';
-                }
-              } catch (e) {
-                // Can't access, but likely running
-              }
-            }, 1000);
-          `
-        }} />
       </div>
     </div>
   )

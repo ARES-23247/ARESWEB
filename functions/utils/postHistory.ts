@@ -1,4 +1,4 @@
-﻿import { Context } from "hono";
+import { Context } from "hono";
 import { AppEnv, SessionUser, getSocialConfig } from "../api/middleware";
 import { emitNotification } from "./notifications";
 import { dispatchSocials } from "./socialSync";
@@ -132,8 +132,8 @@ export async function pruneHistory(c: Context<AppEnv>, slug: string, limit = 10)
           .run();
       }
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error("[PostHistory] Prune failed for slug:", slug, e);
   }
 }
 
@@ -303,7 +303,7 @@ export async function approvePost(c: Context<AppEnv>, slug: string) {
         `ðŸš€ **New Blog Post Published:** [${row.title}](${baseUrl}/blog/${slug})\n\n${row.snippet?.substring(0, 300) || ""}`
       ).catch((err: unknown) => console.error("[Approve] Zulip thread creation failed:", err))
     );
-  }).catch(() => {});
+  }).catch((e: unknown) => console.error("[Approve] Zulip module import failed:", e));
 
   // Notify original author
   if (row.cfEmail) {

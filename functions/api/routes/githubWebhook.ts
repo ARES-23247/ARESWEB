@@ -126,7 +126,8 @@ async function verifyGitHubSignature(
 
         // Return false for format errors even if dummy verify passed
         return result && hasPrefix && sigBytes.length > 0;
-    } catch {
+    } catch (e) {
+        console.error("[GitHubWebhook] Signature verification failed:", e);
         return false;
     }
 }

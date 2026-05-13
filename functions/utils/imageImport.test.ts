@@ -47,7 +47,9 @@ describe("imageImport utilities", () => {
       const { validateImageMagicBytes } = await import("./imageImport");
       const invalidBuffer = new Uint8Array([0x00, 0x00, 0x00, 0x00]).buffer;
       const result = validateImageMagicBytes(invalidBuffer, 50 * 1024 * 1024);
-      expect(result).toEqual({ valid: false, format: "unknown" });
+      expect(result.valid).toBe(false);
+      expect(result.format).toBe("unknown");
+      expect(result.error).toBeDefined();
     });
 
     it("Test 5: rejects files larger than 50MB (configurable via env var)", async () => {
@@ -235,7 +237,7 @@ describe("POST /import endpoint", () => {
     };
 
     // Import router after mocks
-    const { photosRouter } = await import("./index");
+    const { photosRouter } = await import("../api/routes/google-photos/index");
     const { Hono } = await import("hono");
 
     app = new Hono();
@@ -340,7 +342,7 @@ describe("POST /import endpoint", () => {
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
       } as Response);
 
-      const response = await app.request("/api/google-photos/import", {
+      const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaItemIds: ["photo123"] }),
@@ -371,7 +373,7 @@ describe("POST /import endpoint", () => {
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
       } as Response);
 
-      const response = await app.request("/api/google-photos/import", {
+      const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaItemIds: ["photo123"] }),
@@ -454,7 +456,7 @@ describe("POST /import endpoint", () => {
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
       } as Response);
 
-      const response = await app.request("/api/google-photos/import", {
+      const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaItemIds: ["photo123"], albumId: "album123" }),
@@ -490,7 +492,7 @@ describe("POST /import endpoint", () => {
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
       } as Response);
 
-      const response = await app.request("/api/google-photos/import", {
+      const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaItemIds: ["photo123"] }),

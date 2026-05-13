@@ -55,7 +55,7 @@ function PhotosDashboard() {
     });
   };
 
-  const handleSelectAll = (selected: boolean) => {
+  const _handleSelectAll = (selected: boolean) => {
     if (selected) {
       setSelectedIds(new Set(mediaItems.map((item) => item.id)));
     } else {

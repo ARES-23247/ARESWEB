@@ -75,7 +75,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
 
   // Reset circuit breaker if window has passed
   if (circuitBreakerOpenUntil > 0 && circuitBreakerOpenUntil <= now) {
-    console.log("[RateLimit] Circuit breaker reset, attempting recovery");
+    console.debug("[RateLimit] Circuit breaker reset, attempting recovery");
     circuitBreakerOpenUntil = 0;
     rateLimitFailureCount = 0;
   }
@@ -131,7 +131,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     rateLimitFailureCount = 0;
 
     // Log rate limit checks for debugging
-    console.log(`[RateLimit] ${path || "unknown"} IP=${ip} count=${count}/${limit} allowed=${allowed} expires_at=${expires} now=${now}`);
+    console.debug(`[RateLimit] ${path || "unknown"} IP=${ip} count=${count}/${limit} allowed=${allowed} expires_at=${expires} now=${now}`);
 
     return allowed;
   } catch (err) {
@@ -305,7 +305,8 @@ export const originIntegrityMiddleware = () => {
           domain.endsWith(".aresfirst.org") ||
           domain.endsWith(".pages.dev")
         );
-      } catch {
+      } catch (e) {
+        console.error("[Security] Origin URL parse failed:", e);
         return false;
       }
     };

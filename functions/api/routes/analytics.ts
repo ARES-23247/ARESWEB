@@ -161,7 +161,6 @@ export const analyticsRouter = _analyticsRouter
       getPlatformAnalyticsRoute,
       async (c) => {
         const db = getDb(c);
-        console.log("[Analytics] Fetching platform analytics...");
         const [
           totalViewsData,
           uniqueVisitorsData,
@@ -218,8 +217,9 @@ export const analyticsRouter = _analyticsRouter
         ORDER BY date ASC
       `);
           latencyData = (res || []) as LatencyRow[];
-        } catch {
+        } catch (e) {
           // Table doesn't exist or other error - use defaults
+          console.error("[Analytics] usage_metrics query failed (table may need migration):", e);
           apiCount = { total: 0 };
           latencyData = [];
         }

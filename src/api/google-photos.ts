@@ -331,7 +331,7 @@ export function useImportPhotos(
       return unwrapResponse<ImportPhotosResponse>(res);
     },
     ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (queryClient, data) => {
+      onSuccess: (queryClient, _data) => {
         // Invalidate media items query to refresh list per IMG-06
         queryClient.invalidateQueries({
           queryKey: mediaItemsQueryKey,

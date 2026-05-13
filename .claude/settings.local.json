@@ -66,7 +66,20 @@
       "Bash(npx gsd-sdk *)",
       "Bash(git restore *)",
       "Read(//c/Users/david/.claude/get-shit-done/workflows/**)",
-      "Read(//c/Users/david/.claude/get-shit-done/skills/aresweb-typescript-safety/**)"
+      "Read(//c/Users/david/.claude/get-shit-done/skills/aresweb-typescript-safety/**)",
+      "Bash(npx --yes gsd-sdk query frontmatter.validate \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-01-PLAN.md\" --schema plan)",
+      "Bash(npx --yes gsd-sdk query frontmatter.validate \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-02-PLAN.md\" --schema plan)",
+      "Bash(npx --yes gsd-sdk query frontmatter.validate \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-03-PLAN.md\" --schema plan)",
+      "Bash(npx --yes gsd-sdk query frontmatter.validate \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-04-PLAN.md\" --schema plan)",
+      "Bash(npx --yes gsd-sdk query verify.plan-structure \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-01-PLAN.md\")",
+      "Bash(npx --yes gsd-sdk query verify.plan-structure \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-02-PLAN.md\")",
+      "Bash(npx --yes gsd-sdk query verify.plan-structure \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-03-PLAN.md\")",
+      "Bash(npx --yes gsd-sdk query verify.plan-structure \"C:/Users/david/dev/robotics/ftc/ARESWEB/.planning/phases/76-image-import-pipeline/76-04-PLAN.md\")",
+      "Bash(node node_modules/.sdk/gsd-sdk query init.execute-phase \"76-image-import-pipeline\")",
+      "Bash(node node_modules/gsd-sdk/cli/query.js init.execute-phase \"76-image-import-pipeline\")",
+      "Bash(node node_modules/.sdk/gsd-sdk query state.load)",
+      "Bash(node node_modules/gsd-sdk/cli/query.js state.load)",
+      "Bash(node node_modules/.sdk/gsd-sdk query state.advance-plan)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

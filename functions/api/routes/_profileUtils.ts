@@ -55,7 +55,8 @@ export async function upsertProfile(
         try {
           JSON.parse(existingVal);
           return existingVal;
-        } catch {
+        } catch (e) {
+          console.debug(`[Profile] Invalid JSON in existing ${key}:`, e);
           return defaultValue;
         }
       }
