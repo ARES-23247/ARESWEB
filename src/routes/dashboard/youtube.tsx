@@ -6,7 +6,6 @@ import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink,
 import { toast } from 'sonner';
 import { toastApiError, ApiError } from '../../api/honoClient';
 import { useQueryClient } from '@tanstack/react-query';
-import { useModal } from '../../contexts/ModalContext';
 import VideoPickerModal from '../../components/VideoPickerModal';
 
 export const Route = createFileRoute('/dashboard/youtube')({
@@ -14,7 +13,6 @@ export const Route = createFileRoute('/dashboard/youtube')({
 });
 
 function VideoHub() {
-  const modal = useModal();
   const queryClient = useQueryClient();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [editVideoId, setEditVideoId] = useState<string | undefined>(undefined);
@@ -41,7 +39,9 @@ function VideoHub() {
     }
   };
 
-  const videos = (videosResponse as unknown as { videos: Array<{ id: string; title: string; description: string | null; platform: string; videoId: string; thumbnailUrl: string | null; embedUrl: string; type: string; createdAt: string }> })?.videos ?? [];
+  const videos = useMemo(() => {
+    return (videosResponse as unknown as { videos: Array<{ id: string; title: string; description: string | null; platform: string; videoId: string; thumbnailUrl: string | null; embedUrl: string; type: string; createdAt: string }> })?.videos ?? [];
+  }, [videosResponse]);
 
   const filteredAndSortedVideos = useMemo(() => {
     let result = [...videos];
@@ -127,7 +127,7 @@ function VideoHub() {
                     <Filter size={16} className="text-white/40" />
                     <select
                       value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value as any)}
+                      onChange={(e) => setTypeFilter(e.target.value as "all" | "video" | "short")}
                       className="bg-black border border-white/10 text-white text-xs px-2 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none"
                     >
                       <option value="all">All Media</option>
@@ -139,7 +139,7 @@ function VideoHub() {
                     <ArrowUpDown size={16} className="text-white/40" />
                     <select
                       value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value as any)}
+                      onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
                       className="bg-black border border-white/10 text-white text-xs px-2 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none"
                     >
                       <option value="newest">Newest First</option>

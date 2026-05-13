@@ -1,556 +1,681 @@
-# Architecture Patterns: Shared Type System
+# Architecture Patterns: Google Drive API Integration
 
-**Domain:** TypeScript Type Safety for Hono/Kysely/Cloudflare Workers
-**Researched:** 2026-05-05
+**Domain:** Google Drive API integration for ARESWEB dashboard
+**Researched:** 2026-05-12
 **Overall confidence:** HIGH
 
 ## Executive Summary
 
-The ARESWEB codebase suffers from 983 `@typescript-eslint/no-explicit-any` violations, with approximately 60% attributable to missing shared types. The current architecture has:
+Google Drive API integration into ARESWEB follows existing service account authentication patterns established by Google Calendar integration. The architecture requires:
 
-1. **HonoEnv** type defined in `functions/api/middleware/utils.ts` but duplicated/extended elsewhere
-2. **No D1Row<T> generic** for D1 table row types
-3. **Local type proliferation** across 30+ route handlers using inline `any` casts
-4. **Inconsistent handler patterns** between ts-rest contracts and implementation
-
-This research proposes a centralized shared type architecture that eliminates duplication while avoiding circular dependencies.
-
-## Key Findings
-
-### Current Type Duplication
-
-| Location | Duplicated Types | Impact |
-|----------|-----------------|--------|
-| Route handlers | Handler params, response bodies, query types | ~400 violations |
-| Kysely queries | Table row selections, join results | ~200 violations |
-| ts-rest contracts | Schema inference gaps | ~150 violations |
-| Middleware | Context extensions, env bindings | ~100 violations |
-| Test files | Mock data, test fixtures | ~100 violations |
-
-### Existing Type Infrastructure (HIGH confidence)
-
-The codebase already has foundational type infrastructure:
-
-1. **`shared/schemas/database.ts`** - Auto-generated Kysely `DB` interface with all table types
-2. **`functions/api/middleware/utils.ts`** - `AppEnv`, `Bindings`, `Variables`, `SessionUser`
-3. **`shared/schemas/contracts/*.ts`** - 30+ ts-rest contracts with Zod schemas
-4. **`shared/schemas/commonSchemas.ts`** - Reusable validation schema builders
-
-The problem is these are not leveraged consistently across route handlers.
-
-### Anti-Pattern: Handler Type Duplication
-
-Current pattern in `functions/api/routes/events/handlers.ts`:
-
-```typescript
-export const eventHandlers: any = {
-  getEvents: async (input: any, c: any) => {  // ❌ No types
-    const { query } = input;  // ❌ Destructured from any
-    const db = c.get("db") as Kysely<DB>;  // ❌ Repeated cast
-    // ...
-  }
-}
-```
+1. **New API router** (`functions/api/routes/drive/index.ts`) following OpenAPI/Hono patterns
+2. **D1 schema extension** for Drive file metadata caching (optional but recommended)
+3. **Service account JWT authentication** reusing `gcalSync.ts` utilities
+4. **R2 storage pipeline** for imported images using existing media infrastructure
+5. **Dashboard UI components** for file browser and import functionality
 
 ## Recommended Architecture
 
-### Directory Structure
-
 ```
-shared/types/
-├── index.ts                    # Public API barrel export
-├── api/
-│   ├── handlers.ts             # Handler input/output types
-│   ├── context.ts              # Hono context extensions (re-exports AppEnv)
-│   ├── cloudflare.ts           # Cloudflare Workers bindings (re-exports from utils)
-│   └── responses.ts            # Standard API response shapes
-├── database/
-│   ├── tables.ts               # D1 table row types (re-exports from database.ts)
-│   ├── queries.ts              # Common Kysely query result types
-│   └── transforms.ts           # Type transformers (Generated<> unwrapping)
-├── contracts/
-│   └── inferred.ts             # Zod-to-TypeScript inference helpers
-└── utility/
-    ├── pagination.ts           # Pagination types
-    └── filters.ts              # Common filter types
+┌─────────────────────────────────────────────────────────────────┐
+│                        Dashboard UI                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ File Browser │  │ File Preview │  │ Import to R2 Button  │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ ts-rest client
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Hono API Routes (drive/)                     │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐   │
+│  │GET /status  │  │GET /files    │  │POST /import-to-r2   │   │
+│  └─────────────┘  └──────────────┘  └─────────────────────┘   │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+         ┌────────────────────┴────────────────────┐
+         │                                         │
+         ▼                                         ▼
+┌──────────────────────┐              ┌─────────────────────────┐
+│  Google Drive API    │              │   R2 Storage            │
+│  (Service Account)   │              │   (ARES_STORAGE)        │
+└──────────────────────┘              └─────────────────────────┘
 ```
 
-### 1. HonoEnv Binding Type
+### Component Boundaries
 
-**Location:** `functions/api/middleware/utils.ts` (EXISTING - enhance, not move)
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| **driveRouter** (new) | All Drive API endpoints, JWT auth, file listing | Google Drive API, D1 (cache), R2 |
+| **gcalSync.ts** (existing) | JWT signing for service account OAuth | Google OAuth token endpoint |
+| **D1 drive_files_cache table** (new) | Cache Drive file metadata, reduce API calls | driveRouter |
+| **Media Router** (existing) | Handle R2 uploads, validation, optimization | R2 bucket |
+| **Dashboard UI** (new) | File browser, selection, import interface | driveRouter via ts-rest |
 
-The `AppEnv` type already exists and is correctly positioned. DO NOT move it to `shared/` to avoid circular dependencies with Cloudflare Workers types.
+### Data Flow
 
-**Enhancement:** Add stricter typing for middleware:
+**Authentication Flow (Service Account JWT):**
+```
+1. Cloudflare Worker starts request
+2. Retrieve GCAL_SERVICE_ACCOUNT_EMAIL and GCAL_PRIVATE_KEY from env
+3. Call getGcalAccessToken() from gcalSync.ts
+4. JWT signed with RS256, sent to oauth2.googleapis.com/token
+5. Receive access_token (valid 1 hour)
+6. Use access_token in Authorization: Bearer header for Drive API calls
+```
+
+**File Listing Flow:**
+```
+1. UI calls GET /api/drive/files?q=mimeType contains 'image/'
+2. driveRouter checks D1 cache for recent listings (optional)
+3. If cache miss or expired, call Drive API v3 /files endpoint
+4. Filter by mime types (image/jpeg, image/png, etc.) and folders
+5. Return paginated results with nextPageToken support
+6. Store in D1 cache with TTL (5 minutes)
+```
+
+**Image Import Pipeline:**
+```
+1. User selects file in Drive browser
+2. UI calls POST /api/drive/import-to-r2 with { fileId, fileName }
+3. driveRouter fetches file metadata from Drive API
+4. driveRouter downloads file content using ?alt=media
+5. Validate image magic bytes (reusing media validation)
+6. Upload to R2 bucket using existing media infrastructure
+7. Return R2 key to UI for immediate use
+8. Log audit action
+```
+
+## OAuth 2.0 Integration with Existing Patterns
+
+### YouTube Pattern (User Credentials) - NOT USED
+
+The YouTube integration uses **user OAuth 2.0** with refresh tokens:
+- User clicks "Connect YouTube"
+- Redirected to Google OAuth consent screen
+- Authorization code exchanged for access_token + refresh_token
+- Refresh token stored in `settings` table (`youtube_refresh_token`)
+- Access token refreshed on-demand using refresh token
+
+**Why NOT this pattern for Drive:**
+- Requires user to manually authorize
+- Tied to individual user's Google account
+- Refresh tokens can be revoked
+- More complex UI flow (need disconnect/reconnect)
+
+### Google Calendar Pattern (Service Account) - REUSE THIS
+
+The Google Calendar integration uses **service account JWT authentication**:
+- Service account created in Google Cloud Console
+- Private key stored as environment variable (`GCAL_PRIVATE_KEY`)
+- No user interaction required
+- Domain-wide delegation enables access to organization Drive
+- JWT minted on-demand using RS256 signing
+- Access token valid for 1 hour
+
+**Why this pattern for Drive:**
+- ✅ Already implemented in `gcalSync.ts` (reuse code)
+- ✅ No user authorization UI needed
+- ✅ Works across entire organization (Google Workspace domain)
+- ✅ More reliable for background operations
+- ✅ Aligns with existing Calendar integration
+
+### Implementation: Reuse `gcalSync.ts`
+
+The existing `getGcalAccessToken()` function works for both Calendar and Drive:
 
 ```typescript
-// functions/api/middleware/utils.ts
-
-import type { Context, Next } from "hono";
-import type { Kysely } from "kysely";
-import type { DB } from "../../../shared/schemas/database";
-import type { D1Database, R2Bucket, VectorizeIndex, KVNamespace } from "@cloudflare/workers-types";
-
-// ── Cloudflare Bindings ──────────────────────────────────────────────
-export type Bindings = {
-  DB: D1Database;
-  ENVIRONMENT?: "development" | "production" | "test";
-  ARES_STORAGE: R2Bucket;
-  AI: { run: (model: string, input: unknown) => Promise<unknown> };
-  VECTORIZE_DB?: VectorizeIndex;
-  Z_AI_API_KEY?: string;
-  // ... existing bindings
-};
-
-export type Variables = {
-  sessionUser: SessionUser;
-  socialConfig?: SocialConfig;
-  db: Kysely<DB>;
-  env: Bindings;
-  requestId?: string;
-};
-
-export type AppEnv = {
-  Bindings: Bindings;
-  Variables: Variables;
-};
-
-// ── Export for shared/types/api/context.ts ────────────────────────
-// Re-export here so shared/types can reference without circular deps
-export type { AppEnv, Bindings, Variables };
+// Existing function in functions/utils/gcalSync.ts
+export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
+  const alg = "RS256";
+  const formattedKey = config.privateKey.replace(/\\n/g, "\n");
+  const pk = await importPKCS8(formattedKey, alg);
+  const jwt = await new SignJWT({ 
+    scope: "https://www.googleapis.com/auth/drive.readonly"  // CHANGE SCOPE
+  })
+    .setProtectedHeader({ alg, typ: "JWT" })
+    .setIssuer(config.email)
+    .setAudience("https://oauth2.googleapis.com/token")
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(pk);
+  
+  const res = await fetch("https://oauth2.googleapis.com/token", { ... });
+  // ... returns access_token
+}
 ```
 
-**Rationale (HIGH confidence):**
-- Keep Cloudflare-specific types at edge functions boundary
-- Shared types import from here, not the other way around
-- Matches Cloudflare Workers compilation model
+**Required scope changes:**
+- Calendar: `https://www.googleapis.com/auth/calendar`
+- Drive (read-only): `https://www.googleapis.com/auth/drive.readonly`
+- Drive (full access): `https://www.googleapis.com/auth/drive`
 
-### 2. D1Row<T> Generic
+**Recommendation:** Start with `drive.readonly` scope, upgrade to full `drive` only if write operations needed.
 
-**Location:** `shared/types/database/tables.ts`
+## API Route Structure
 
-Create a type helper that unwraps Kysely's `Generated<>` wrapper and provides consistent nullability:
+### New File: `functions/api/routes/drive/index.ts`
 
 ```typescript
-// shared/types/database/tables.ts
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { ensureAdmin } from "../../middleware";
+import { AppEnv, getDb } from "../../middleware";
+import { getGcalAccessToken } from "../../../utils/gcalSync";
+import { eq } from "drizzle-orm";
+import { driveFilesCache } from "../../../src/db/schema"; // New table
+import { ApiError } from "../../middleware/errorHandler";
+import { logAuditAction } from "../../middleware";
 
-import type { DB, Generated } from "../../schemas/database";
-import type { Selectable } from "kysely";
+const driveApp = new OpenAPIHono<AppEnv>();
+driveApp.use("*", ensureAdmin);
 
-/**
- * D1Row<T> - Unwrap Kysely's Generated<> wrapper for table rows.
- *
- * Use this when you need the "true" database row type without
- * the Generated<T | null> wrapper that Kysely adds for auto-increment
- * and timestamp columns.
- *
- * @example
- *   type EventRow = D1Row<DB, "events">;
- *   const row: EventRow = await db.selectFrom("events").where("id", "=", id).executeTakeFirst();
- *
- * @template TTable - Table name from DB interface
- */
-export type D1Row<TTable extends keyof DB> = Selectable<DB[TTable]>;
+// GET /api/drive/status - Check service account config
+driveApp.openapi(checkDriveStatusRoute, async (c) => {
+  const env = c.env;
+  const hasEmail = !!env.GCAL_SERVICE_ACCOUNT_EMAIL;
+  const hasKey = !!env.GCAL_PRIVATE_KEY;
+  return c.json({ 
+    configured: hasEmail && hasKey,
+    serviceAccountEmail: env.GCAL_SERVICE_ACCOUNT_EMAIL || null
+  });
+});
 
-/**
- * D1Insert<T> - Row type for insert operations (optional Generated fields).
- *
- * Use this when constructing values for .insert() or .values().
- * Auto-increment IDs and timestamps can be omitted.
- */
-export type D1Insert<TTable extends keyof DB> = DB[TTable];
+// GET /api/drive/files - List files with filters
+driveApp.openapi(listDriveFilesRoute, async (c) => {
+  const { q, pageToken, pageSize, folderId } = c.req.valid("query");
+  const db = getDb(c);
+  const env = c.env;
 
-/**
- * D1Update<T> - Row type for update operations (partial).
- */
-export type D1Update<TTable extends keyof DB> = Partial<Selectable<DB[TTable]>>;
+  // Check cache first
+  const cacheKey = `drive_files_${q || 'all'}_${folderId || 'root'}`;
+  const cached = await db.select()
+    .from(driveFilesCache)
+    .where(eq(driveFilesCache.key, cacheKey))
+    .execute();
+  
+  if (cached.length > 0 && new Date(cached[0].updatedAt).getTime() > Date.now() - 300000) {
+    return c.json(JSON.parse(cached[0].value));
+  }
 
-/**
- * Pre-configured row types for commonly accessed tables.
- * Add more as needed during refactoring.
- */
-export type EventRow = D1Row<DB, "events">;
-export type PostRow = D1Row<DB, "posts">;
-export type TaskRow = D1Row<DB, "tasks">;
-export type CommentRow = D1Row<DB, "comments">;
-export type SponsorRow = D1Row<DB, "sponsors">;
-export type DocRow = D1Row<DB, "docs">;
-export type UserRow = D1Row<DB, "user">;
-export type UserProfileRow = D1Row<DB, "user_profiles">;
-export type FinanceTransactionRow = D1Row<DB, "finance_transactions">;
-export type OutreachLogRow = D1Row<DB, "outreach_logs">;
-export type InquiryRow = D1Row<DB, "inquiries">;
-export type NotificationRow = D1Row<DB, "notifications">;
-export type LocationRow = D1Row<DB, "locations">;
-export type AwardRow = D1Row<DB, "awards">;
-export type SeasonRow = D1Row<DB, "seasons">;
+  // Get access token
+  const accessToken = await getGcalAccessToken({
+    email: env.GCAL_SERVICE_ACCOUNT_EMAIL,
+    privateKey: env.GCAL_PRIVATE_KEY,
+    calendarId: "primary" // Not used for Drive
+  });
 
-/**
- * Join result types for common queries.
- * Add more as discovered during refactoring.
- */
-export type EventWithLocation = EventRow & {
-  location_address?: string | null;
-};
+  // Build query
+  const searchParams = new URLSearchParams({
+    corpora: "drive",
+    includeItemsFromAllDrives: "true",
+    supportsAllDrives: "true",
+    pageSize: pageSize || "50",
+    fields: "nextPageToken,files(id,name,mimeType,webContentLink,thumbnailLink,iconLink,parents,modifiedTime,size)",
+    q: q || ""
+  });
+  
+  if (pageToken) searchParams.append("pageToken", pageToken);
+  if (folderId) searchParams.append("driveId", folderId);
 
-export type PostWithAuthor = PostRow & {
-  author_name?: string | null;
-  author_avatar?: string | null;
-};
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?${searchParams}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
 
-export type CommentWithUser = CommentRow & {
-  nickname: string | null;
-  avatar: string | null;
-};
+  if (!response.ok) {
+    throw new ApiError("Failed to list Drive files", 502, "DRIVE_API_ERROR");
+  }
+
+  const data = await response.json();
+
+  // Cache result
+  await db.insert(driveFilesCache)
+    .values({ key: cacheKey, value: JSON.stringify(data), updatedAt: new Date().toISOString() })
+    .onConflictDoUpdate({
+      target: driveFilesCache.key,
+      set: { value: JSON.stringify(data), updatedAt: new Date().toISOString() }
+    })
+    .execute();
+
+  return c.json(data);
+});
+
+// POST /api/drive/import-to-r2 - Import selected file to R2
+driveApp.openapi(importToR2Route, async (c) => {
+  const { fileId, fileName, mimeType } = c.req.valid("json");
+  const db = getDb(c);
+  const env = c.env;
+
+  const accessToken = await getGcalAccessToken({
+    email: env.GCAL_SERVICE_ACCOUNT_EMAIL,
+    privateKey: env.GCAL_PRIVATE_KEY,
+    calendarId: "primary"
+  });
+
+  // Download from Drive
+  const downloadResponse = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!downloadResponse.ok) {
+    throw new ApiError("Failed to download file from Drive", 502, "DRIVE_DOWNLOAD_ERROR");
+  }
+
+  const fileBuffer = await downloadResponse.arrayBuffer();
+
+  // Validate image (reusing media validation logic)
+  // ... validation code ...
+
+  // Upload to R2
+  const r2Key = `drive-imports/${Date.now()}-${fileName}`;
+  await env.ARES_STORAGE.put(r2Key, fileBuffer, {
+    httpMetadata: { contentType: mimeType }
+  });
+
+  // Log audit
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(
+      logAuditAction(c, "drive_import", "drive_file", fileId, `Imported ${fileName} from Drive to R2`)
+    );
+  }
+
+  return c.json({ r2Key, fileName, mimeType });
+});
+
+export const driveRouter = driveApp;
 ```
 
-### 3. Handler Input/Output Types
-
-**Location:** `shared/types/api/handlers.ts`
-
-Extract common handler patterns to eliminate the most frequent `any` usages:
+### Register Router in `functions/api/[[route]].ts`
 
 ```typescript
-// shared/types/api/handlers.ts
+import { driveRouter } from "./routes/drive/index";
 
-import type { Context } from "hono";
-import type { AppEnv } from "../../middleware/utils";
-
-/**
- * Standard ts-rest handler input shape.
- * Matches ts-rest-hono's handler signature.
- */
-export interface HandlerInput {
-  params?: Record<string, string>;
-  query?: Record<string, string | string[] | undefined>;
-  body?: unknown;
-}
-
-/**
- * Standard error response shape.
- */
-export interface ErrorResponse {
-  error: string;
-  details?: unknown;
-}
-
-/**
- * Paginated response wrapper.
- */
-export interface PaginatedResponse<T> {
-  items: T[];
-  total?: number;
-  limit: number;
-  offset: number;
-  cursor?: string | null;
-}
-
-/**
- * Standard success response wrapper.
- */
-export interface SuccessResponse<T = unknown> {
-  success: true;
-  data?: T;
-}
-
-/**
- * Typed handler function signature.
- *
- * @example
- *   const handler: Handler<{ status: 200 }> = async (input, c) => {
- *     return { status: 200 as const, body: { result: "ok" } };
- *   };
- */
-export type Handler<TResponses extends Record<number, unknown>> = (
-  input: HandlerInput,
-  c: Context<AppEnv>
-) => Promise<{ status: number; body: TResponses[keyof TResponses] }>;
-
-/**
- * Infer handler types from ts-rest contract.
- * Use this when contract schemas are well-defined.
- */
-export type InferContractHandlers<TContract> = TContract extends {
-  [key: string]: { body?: { zod: unknown }; responses: Record<number, { zod: unknown }> };
-}
-  ? {
-      [K in keyof TContract]: Handler<TContract[K]["responses"]>;
-    }
-  : never;
+// In the main app setup:
+app.route("/api/drive", driveRouter);
 ```
 
-### 4. Import/Export Organization
+## D1 Schema Extensions
 
-**Critical Rule (prevents circular dependencies):**
+### New Table: `drive_files_cache`
 
-```
-functions/api/middleware/utils.ts
-    └── exports: AppEnv, Bindings, Variables (Cloudflare types)
-             ↓
-shared/types/api/context.ts
-    └── re-exports: AppEnv from middleware/utils (extends for shared use)
-             ↓
-shared/types/index.ts
-    └── barrel exports: all shared types
-             ↓
-functions/api/routes/*.ts
-    └── imports: shared/types (never imports middleware directly)
+```sql
+-- In src/db/schema.ts
+export const driveFilesCache = sqliteTable("drive_files_cache", {
+  key: text().primaryKey(),
+  value: text().notNull(),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+  index("idx_drive_cache_updated").on(table.updatedAt),
+]);
 ```
 
-**Implementation:**
+**Purpose:** Cache Drive API responses to reduce quota usage and improve latency.
+
+**TTL Strategy:**
+- File listings: 5 minutes
+- Individual file metadata: 10 minutes
+- Cleanup: Cron job to delete entries older than 1 hour
+
+**Alternative:** Use Cloudflare KV instead of D1 for caching (better TTL support, but adds dependency).
+
+## Image Import Pipeline: Drive → Worker → R2
+
+### Step 1: Download from Drive API
 
 ```typescript
-// shared/types/api/context.ts
-
-/**
- * Re-export Hono context types from middleware.
- *
- * This file exists to provide a clean import path for shared types
- * while avoiding circular dependencies with Cloudflare Workers.
- *
- * Route handlers should import from here:
- *   import type { AppEnv, HonoContext } from "@/types/api/context";
- */
-
-export type { AppEnv, Bindings, Variables } from "../../../../functions/api/middleware/utils";
-
-/**
- * Type alias for Hono context with our environment.
- * Use this in handler signatures for consistency.
- */
-export type HonoContext = import("hono").Context<AppEnv>;
+const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+const response = await fetch(downloadUrl, {
+  headers: { Authorization: `Bearer ${accessToken}` }
+});
+const buffer = await response.arrayBuffer();
 ```
 
-### 5. Naming Conventions
+### Step 2: Validate Image (Reuse Media Logic)
 
-| Category | Pattern | Example |
-|----------|---------|---------|
-| Table rows | `*Row` | `EventRow`, `PostRow`, `TaskRow` |
-| Insert types | `*Insert` | `EventInsert`, `PostInsert` |
-| Update types | `*Update` | `EventUpdate`, `PostUpdate` |
-| Join results | `*With*` | `EventWithLocation`, `PostWithAuthor` |
-| Handler inputs | `*HandlerInput` | `TaskHandlerInput`, `EventHandlerInput` |
-| API responses | `*Response` | `TaskListResponse`, `EventDetailResponse` |
-| Query results | `*Result` | `CommentListResult`, `SponsorListResult` |
+```typescript
+// Reuse functions from functions/api/routes/media/index.ts
+import { isValidImage, normalizeFileNameExtension } from "../../routes/media";
 
-**Generated types from contracts:**
-- Infer from Zod: `z.infer<typeof postSchema>` → `PostPayload`
-- Use suffix `Payload` for request bodies
-- Use suffix `Response` for response shapes
+if (!isValidImage(buffer)) {
+  throw new ApiError("Invalid image file", 400, "INVALID_IMAGE");
+}
 
-### 6. Migration Strategy
+const normalizedName = normalizeFileNameExtension(fileName, mimeType);
+```
 
-**Phase 1: Foundation (addresses ~30% of violations)**
-1. Create `shared/types/` directory structure
-2. Add `D1Row<T>` generic and pre-configured row types
-3. Add `shared/types/api/context.ts` re-exporting `AppEnv`
-4. Update `shared/types/index.ts` barrel export
+### Step 3: Upload to R2
 
-**Phase 2: Route Handlers (addresses ~40% of violations)**
-1. Update high-impact files first (by violation count):
-   - `events/handlers.ts` (77 violations)
-   - `docs.ts` (51 violations)
-   - `comments.ts` (33 violations)
-   - `sponsors.ts` (31 violations)
-2. Replace handler signatures with typed imports
+```typescript
+const r2Key = `drive-imports/${Date.now()}-${normalizedName}`;
+await env.ARES_STORAGE.put(r2Key, buffer, {
+  httpMetadata: { contentType: mimeType },
+  customMetadata: {
+    source: "google-drive",
+    originalFileId: fileId,
+    importedAt: new Date().toISOString()
+  }
+});
+```
 
-**Phase 3: Test Files (addresses ~20% of violations)**
-1. Create `shared/types/testing.ts` for test helpers
-2. Add factory types for mock data
-3. Replace `as unknown as T` patterns with proper types
+### Step 4: Return to UI
 
-**Phase 4: Utility Functions (addresses ~10% of violations)**
-1. Type Kysely query results with `D1Row<T>`
-2. Add join result types for common patterns
-3. Type middleware context extensions
+```typescript
+return c.json({
+  r2Key,
+  url: `/api/media/${r2Key}`,
+  fileName: normalizedName,
+  mimeType,
+  size: buffer.byteLength
+});
+```
+
+## Integration with Existing Dashboard UI
+
+### New React Components
+
+**1. DriveBrowser.tsx** - File explorer interface
+```typescript
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  webContentLink?: string;
+  thumbnailLink?: string;
+  modifiedTime: string;
+  size?: number;
+}
+
+export function DriveBrowser() {
+  const [files, setFiles] = useState<DriveFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
+
+  // useQuery to fetch files from /api/drive/files
+  // Display grid/list view with thumbnails
+  // Filter controls (images only, folders, date range)
+  // Pagination with nextPageToken
+}
+```
+
+**2. DriveImportButton.tsx** - Import action handler
+```typescript
+export function DriveImportButton({ file, onImportSuccess }) {
+  const importMutation = useDriveImportMutation();
+
+  const handleImport = () => {
+    importMutation.mutate(
+      { fileId: file.id, fileName: file.name, mimeType: file.mimeType },
+      {
+        onSuccess: (data) => {
+          onImportSuccess(data.r2Key);
+        }
+      }
+    );
+  };
+
+  return <button onClick={handleImport}>Import to R2</button>;
+}
+```
+
+### UI Route: `/dashboard/drive`
+
+Add to existing dashboard routing structure:
+```typescript
+// In src/pages/dashboard/
+export default function DrivePage() {
+  return (
+    <DashboardLayout>
+      <DriveBrowser />
+    </DashboardLayout>
+  );
+}
+```
 
 ## Patterns to Follow
 
-### Pattern 1: Typed Route Handler
-
+### Pattern 1: Service Account JWT Authentication
+**What:** Mint signed JWTs and exchange for OAuth access tokens
+**When:** Calling Google APIs from server-side code
+**Example:**
 ```typescript
-// functions/api/routes/events/index.ts
+// From functions/utils/gcalSync.ts
+const accessToken = await getGcalAccessToken({
+  email: env.GCAL_SERVICE_ACCOUNT_EMAIL,
+  privateKey: env.GCAL_PRIVATE_KEY,
+  calendarId: "primary" // Not used for Drive
+});
 
-import type { HonoContext } from "@/types/api/context";
-import type { EventRow } from "@/types/database/tables";
-import type { Handler, HandlerInput } from "@/types/api/handlers";
-
-const getEventHandler: Handler<{
-  200: { event: EventRow };
-  404: { error: string };
-}> = async (input: HandlerInput, c: HonoContext) => {
-  const { params } = input;
-  const db = c.get("db"); // No cast needed!
-
-  const event = await db
-    .selectFrom("events")
-    .where("id", "=", params.id)
-    .executeTakeFirst();
-
-  if (!event) {
-    return { status: 404, body: { error: "Event not found" } };
-  }
-
-  return { status: 200, body: { event } };
-};
+const response = await fetch("https://www.googleapis.com/drive/v3/files", {
+  headers: { Authorization: `Bearer ${accessToken}` }
+});
 ```
 
-### Pattern 2: Kysely Query with Join
-
+### Pattern 2: OpenAPI/Hono Route Definitions
+**What:** Define routes with Zod schemas for type safety
+**When:** All API route definitions
+**Example:**
 ```typescript
-import type { CommentWithUser } from "@/types/database/tables";
-
-const comments = await db
-  .selectFrom("comments as c")
-  .innerJoin("user_profiles as p", "c.user_id", "p.user_id")
-  .select([
-    "c.id",
-    "c.user_id",
-    "c.content",
-    "c.created_at",
-    "p.nickname",
-    "p.avatar"
-  ])
-  .where("c.target_id", "=", targetId)
-  .execute();
-
-// comments is inferred as CommentWithUser[]
-// No "as any" needed!
-```
-
-### Pattern 3: ts-rest Contract Inference
-
-```typescript
-// shared/schemas/contracts/taskContract.ts
-
-import { initContract } from "@ts-rest/core";
+import { createRoute } from "@hono/zod-openapi";
 import { z } from "zod";
 
-const c = initContract();
-
-export const taskSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  // ... other fields
-});
-
-export type Task = z.infer<typeof taskSchema>;
-
-export const taskContract = c.router({
-  list: {
-    method: "GET",
-    path: "/",
-    responses: {
-      200: z.object({ tasks: z.array(taskSchema) }),
-    },
+export const listDriveFilesRoute = createRoute({
+  method: "get",
+  path: "/files",
+  request: {
+    query: z.object({
+      q: z.string().optional(),
+      pageToken: z.string().optional(),
+      pageSize: z.string().optional()
+    })
   },
+  responses: {
+    200: {
+      content: { "application/json": { schema: driveFilesResponseSchema } },
+      description: "List of Drive files"
+    },
+    ...standardErrors
+  },
+  tags: ["drive", "admin"]
 });
+```
 
-// In handler:
-import type { Task } from "@/types/contracts/inferred";
+### Pattern 3: Audit Logging
+**What:** Log all admin actions for accountability
+**When:** Modifying data or external systems
+**Example:**
+```typescript
+if (c.executionCtx) {
+  c.executionCtx.waitUntil(
+    logAuditAction(c, "drive_import", "drive_file", fileId, `Imported ${fileName}`)
+  );
+}
+```
 
-const tasks: Task[] = await db.selectFrom("tasks").execute();
+### Pattern 4: Error Handling with ApiError
+**What:** Consistent error response format
+**When:** API failures or validation errors
+**Example:**
+```typescript
+if (!response.ok) {
+  throw new ApiError(
+    "Failed to download from Drive", 
+    502, 
+    "DRIVE_DOWNLOAD_ERROR"
+  );
+}
 ```
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Re-casting Kysely Results
+### Anti-Pattern 1: Using User OAuth for Drive
+**What:** Implementing user authorization flow like YouTube
+**Why bad:** 
+- Unnecessary when service account works
+- Requires user to manually authorize
+- Tied to individual user's account (revocation risk)
+- More complex UI flow
 
-```typescript
-// ❌ BAD
-const events = await db.selectFrom("events").selectAll().execute() as any[];
+**Instead:** Use service account JWT authentication (same as Google Calendar)
 
-// ✅ GOOD
-import type { EventRow } from "@/types/database/tables";
-const events: EventRow[] = await db.selectFrom("events").selectAll().execute();
-```
+### Anti-Pattern 2: Not Caching Drive API Responses
+**What:** Calling Drive API for every file listing request
+**Why bad:**
+- Google Drive API has quota limits (100 queries/100 seconds/user)
+- Slower response times
+- Unnecessary API costs
 
-### Anti-Pattern 2: Handler `any` Parameters
+**Instead:** Cache responses in D1 or KV with 5-minute TTL
 
-```typescript
-// ❌ BAD
-const handler = async (input: any, c: any) => {
-  const db = c.get("db") as Kysely<DB>;
-  const { id } = input.params as { id: string };
-};
+### Anti-Pattern 3: Storing Large Files in Memory
+**What:** Loading entire file into Worker memory before uploading
+**Why bad:**
+- Cloudflare Workers have 128MB memory limit
+- Large files (>50MB) will cause OOM errors
+- Wasteful for small files too
 
-// ✅ GOOD
-import type { HonoContext, HandlerInput } from "@/types/api/context";
+**Instead:** Stream directly from Drive API to R2 (if possible) or process in chunks
 
-const handler = async (input: HandlerInput, c: HonoContext) => {
-  const db = c.get("db");
-  const { id } = input.params;
-};
-```
+### Anti-Pattern 4: Using thumbnailLink Directly in UI
+**What:** Displaying Google's thumbnailLink in <img> tags
+**Why bad:**
+- Links expire after hours
+- Not intended for production use
+- Will result in broken images
 
-### Anti-Pattern 3: Circular Type Imports
-
-```typescript
-// ❌ BAD - Don't import from functions/ in shared/
-// shared/types/api/cloudflare.ts
-import type { AppEnv } from "../../../../functions/api/middleware/utils";
-
-// ✅ GOOD - Re-export at boundary
-// shared/types/api/context.ts
-export type { AppEnv } from "../../../../functions/api/middleware/utils";
-```
+**Instead:** Import to R2 and serve from there, or use webContentLink with proper caching
 
 ## Scalability Considerations
 
-| Concern | Current State | With Shared Types |
-|---------|---------------|-------------------|
-| Type checking | ~1000 `any` violations | Near 0 violations |
-| IDE autocomplete | Limited (any) | Full autocomplete |
-| Refactoring safety | Low (runtime errors) | High (compile-time errors) |
-| Onboarding time | High (implicit types) | Low (explicit types) |
-| Compilation time | Fast (no shared types) | Minimal impact (<5%) |
+| Concern | At 100 users | At 10K users | At 1M users |
+|---------|--------------|--------------|-------------|
+| API Quota | Fine (100 req/100s) | Need caching | Implement KV + rate limiting |
+| Memory | 128MB limit sufficient | Still OK | Stream large files |
+| D1 Cache | Fast enough | Consider KV | Use KV for cache |
+| R2 Storage | Negligible cost | Monitor usage | Set lifecycle policies |
+
+**Recommendations:**
+- **Caching:** Start with D1, migrate to KV if cache hit rate < 80%
+- **Rate Limiting:** Use existing `checkPersistentRateLimit` middleware
+- **File Size:** Limit imports to 50MB (Workers memory limit)
+- **Pagination:** Always use Drive API pagination (pageSize max 100)
+
+## Environment Variables
+
+### Required
+
+```bash
+# Existing (reused from Google Calendar)
+GCAL_SERVICE_ACCOUNT_EMAIL=ares-web@ares-23247.iam.gserviceaccount.com
+GCAL_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# Existing R2 binding
+ARES_STORAGE=(R2 bucket binding in wrangler.toml)
+```
+
+### Optional (for caching)
+
+```bash
+# D1 binding (already exists)
+DB=(D1 database binding in wrangler.toml)
+
+# KV for cache (optional, better performance)
+# wrangler kv:namespace create DRIVE_CACHE
+DRIVE_CACHE=(KV namespace binding)
+```
+
+## Build Order & Dependencies
+
+### Phase 1: Core Infrastructure (Dependencies First)
+1. **Extend D1 Schema** - Add `drive_files_cache` table
+2. **Create `shared/routes/drive.ts`** - Define OpenAPI contracts and Zod schemas
+3. **Implement `driveRouter`** - Basic route skeleton with auth middleware
+
+### Phase 2: Authentication & API Integration
+4. **Extend `getGcalAccessToken()`** - Add Drive scope support (or create generic version)
+5. **Implement GET /api/drive/status** - Verify service account config
+6. **Implement GET /api/drive/files** - File listing with caching
+
+### Phase 3: Import Pipeline
+7. **Implement POST /api/drive/import-to-r2** - Download + upload flow
+8. **Add image validation** - Reuse media validation logic
+9. **Add audit logging** - Track all imports
+
+### Phase 4: Dashboard UI
+10. **Create DriveBrowser component** - File explorer UI
+11. **Create DriveImportButton component** - Import action handler
+12. **Add /dashboard/drive route** - Integrate into dashboard
+
+### Phase 5: Testing & Polish
+13. **Write unit tests** - Test handlers, caching, validation
+14. **Write E2E tests** - Test full import flow
+15. **Performance optimization** - Add streaming, optimize cache TTL
+
+## Key Dependencies
+
+### Existing Code to Reuse
+- `functions/utils/gcalSync.ts` - JWT authentication ⭐ **CRITICAL DEPENDENCY**
+- `functions/api/routes/media/index.ts` - Image validation, R2 upload patterns
+- `functions/api/middleware/auth.ts` - `ensureAdmin` middleware
+- `shared/routes/common.ts` - Standard error schemas
+- `src/db/schema.ts` - D1 table definitions
+
+### New Code to Create
+- `functions/api/routes/drive/index.ts` - Main Drive router
+- `shared/routes/drive.ts` - OpenAPI contracts
+- `src/db/schema.ts` (extension) - Add `driveFilesCache` table
+- Dashboard UI components (TypeScript React)
+
+## Migration Path from Existing Infrastructure
+
+### No Breaking Changes
+- All new code (new router, new routes)
+- Reuses existing auth middleware
+- Reuses existing D1 database (new table only)
+- Reuses existing R2 bucket (new prefix only)
+
+### Configuration Changes
+- **Service Account:** Ensure domain-wide delegation enabled for Drive API
+- **Environment:** Verify `GCAL_SERVICE_ACCOUNT_EMAIL` and `GCAL_PRIVATE_KEY` set
+- **Wrangler:** No changes needed (reuses existing bindings)
+
+## Security Considerations
+
+### Zero Trust Compliance
+- **Authentication:** Uses existing `ensureAdmin` middleware (CF Access JWT validation)
+- **Authorization:** Only admins can access Drive integration
+- **Audit:** All imports logged to audit_log table
+
+### Data Protection
+- **Service Account Key:** Stored as Workers secret (encrypted at rest)
+- **File Access:** Service account only has access to configured Google Workspace domain
+- **R2 Storage:** Inherits existing R2 security (private bucket, signed URLs)
+- **Cache:** No sensitive data in cache (file IDs and metadata only)
+
+### Rate Limiting
+- Use existing `checkPersistentRateLimit` middleware
+- Suggested limits:
+  - File listing: 30 requests/minute per IP
+  - File imports: 10 requests/minute per user
 
 ## Sources
 
-| Source | Confidence | Notes |
-|--------|------------|-------|
-| `shared/schemas/database.ts` | HIGH | Auto-generated Kysely types (ground truth) |
-| `functions/api/middleware/utils.ts` | HIGH | Existing AppEnv definition (production-tested) |
-| `shared/schemas/contracts/` | HIGH | ts-rest contracts (define API boundary) |
-| `functions/api/routes/*.ts` | HIGH | Handler patterns observed directly |
-| Kysely documentation | HIGH | `Selectable<>`, `Insertable<>` type helpers |
-| ts-rest documentation | HIGH | Contract inference patterns |
-| Cloudflare Workers types | HIGH | `@cloudflare/workers-types` package |
+### Official Documentation
+- [Google Drive API v3 - Files: list](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list) - **HIGH confidence** (official docs)
+- [Google Drive API v3 - Files Resource](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) - **HIGH confidence** (official docs)
+- [Using OAuth 2.0 for Server to Server Applications](https://developers.google.com/identity/protocols/oauth2/service-account) - **HIGH confidence** (official docs)
+- [Download and export files | Google Drive](https://developers.google.com/workspace/drive/api/guides/manage-downloads) - **HIGH confidence** (official docs)
 
-## Confidence Assessment
+### Implementation Guides
+- [How to Authenticate Google APIs on Cloudflare Workers in 2025](https://medium.com/@tamnvhustcc/how-to-authenticate-google-apis-on-cloudflare-workers-in-2025-a-complete-guide-with-custom-jwt-80614398425a) - **HIGH confidence** (verified, recent 2025-05-04)
+- [Google Drive Index with Cloudflare Workers](https://github.com/iariaw/Google-Drive-index) - **MEDIUM confidence** (community implementation)
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Directory structure | HIGH | Based on observed codebase patterns |
-| D1Row<T> generic | HIGH | Kysely `Selectable<>` is documented pattern |
-| HonoEnv placement | HIGH | Must stay at functions boundary to avoid cycles |
-| Import organization | HIGH | Arrow dependency graph prevents circular imports |
-| Naming conventions | MEDIUM | Recommendations based on consistency; can adjust |
-| Migration phases | MEDIUM | ~60% impact is estimate; actual may vary |
+### ARESWEB Existing Code
+- `functions/utils/gcalSync.ts` - **HIGH confidence** (internal code)
+- `functions/api/routes/youtube/index.ts` - **HIGH confidence** (internal code)
+- `functions/api/routes/media/index.ts` - **HIGH confidence** (internal code)
+- `src/db/schema.ts` - **HIGH confidence** (internal code)
 
-## Gaps to Address
-
-1. **Test file patterns** - Need dedicated research on test-specific type needs
-2. **Worker vs Edge types** - May need separate types for Cron Workers vs main router
-3. **PartyKit types** - Document history uses separate D1 binding (PK_DB)
-4. **Vectorize types** - AI search results need typed response shapes
-
-## Roadmap Implications
-
-Based on research, suggested phase structure:
-
-1. **Phase 1: Type Foundation** - Create shared/types structure, add D1Row<T> and AppEnv re-exports
-2. **Phase 2: High-Impact Handlers** - Fix events/handlers.ts (77), docs.ts (51), comments.ts (33), sponsors.ts (31)
-3. **Phase 3: Contract Inference** - Leverage Zod schemas to eliminate contract-implementation gaps
-4. **Phase 4: Test Types** - Create testing-specific type utilities
-5. **Phase 5: Remaining Routes** - Systematic migration of remaining route handlers
-
-**Phase ordering rationale:**
-- Foundation first prevents rework
-- High-impact files provide immediate validation (~60% of violations)
-- Contract inference locks in type safety at API boundary
-- Tests last to avoid blocking main code migration
-
-**Research flags for phases:**
-- Phase 2: Each handler file may have unique patterns; create file-specific types as needed
-- Phase 4: Test mocking patterns vary (vitest vs Playwright); may need separate type utilities
+### Community Resources
+- [Stack Overflow: Drive API mimeType filtering](https://stackoverflow.com/questions/62069155/how-to-filter-google-drive-api-v3-mimetype) - **MEDIUM confidence** (community knowledge)
+- [Cloudflare Workers R2 documentation](https://developers.cloudflare.com/r2/) - **HIGH confidence** (official docs)

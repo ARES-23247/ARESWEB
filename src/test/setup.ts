@@ -28,6 +28,7 @@ vi.mock("drizzle-orm", () => {
   const lt = (..._args: unknown[]) => ({});
   const lte = (..._args: unknown[]) => ({});
   const like = (..._args: unknown[]) => ({});
+  const count = (..._args: unknown[]) => ({});
   const sql_EMPTY_ARRAY: unknown[] = [];
 
   return {
@@ -47,6 +48,7 @@ vi.mock("drizzle-orm", () => {
     lt,
     lte,
     like,
+    count,
     getPlaceholder: () => ({}),
     param: () => ({}),
     sql_EMPTY_ARRAY,

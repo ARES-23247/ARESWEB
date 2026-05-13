@@ -3,7 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { AppEnv, ensureAuth, ensureAdmin, rateLimitMiddleware, turnstileMiddleware, getDbSettings, checkPersistentRateLimit, getDb } from "../middleware";
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import {
   trackPageViewRoute,
@@ -60,16 +60,6 @@ interface UserActivityRow {
 interface LatencyRow {
   date: string;
   avgLatency: number;
-}
-
-interface LeaderboardRow {
-  userId: string;
-  firstName: string;
-  lastName: string | null;
-  nickname: string | null;
-  memberType: string;
-  avatar: string | null;
-  badgeCount: number;
 }
 
 interface SearchResultRow {
@@ -332,26 +322,27 @@ export const analyticsRouter = _analyticsRouter
       getLeaderboardRoute,
       async (c) => {
         const db = getDb(c);
-        const results = await db.all(sql<LeaderboardRow>`
-      SELECT
-        u.id as userId,
-        u.name as firstName,
-        p.lastName,
-        p.nickname,
-        p.memberType,
-        u.image as avatar,
-        COUNT(ub.id) as badgeCount
-      FROM user as u
-      INNER JOIN user_profiles as p ON u.id = p.user_id
-      INNER JOIN user_badges as ub ON u.id = ub.user_id
-      WHERE p.showOnAbout = 1
-      GROUP BY u.id, u.name, p.lastName, p.nickname, p.memberType, u.image
-      ORDER BY badge_count DESC
-      LIMIT ${QUERY_LIMITS.AUDIT_LOG_LIMIT}
-    `);
 
-        const rows = (results || []) as LeaderboardRow[];
-        const leaderboard = rows.map((r) => {
+        const results = await db
+          .select({
+            userId: schema.user.id,
+            firstName: schema.user.name,
+            lastName: schema.userProfiles.lastName,
+            nickname: schema.userProfiles.nickname,
+            memberType: schema.userProfiles.memberType,
+            avatar: schema.user.image,
+            badgeCount: sql<number>`count(${schema.userBadges.id})`,
+          })
+          .from(schema.user)
+          .innerJoin(schema.userProfiles, eq(schema.user.id, schema.userProfiles.userId))
+          .innerJoin(schema.userBadges, eq(schema.user.id, schema.userBadges.userId))
+          .where(eq(schema.userProfiles.showOnAbout, 1))
+          .groupBy(schema.user.id, schema.user.name, schema.userProfiles.lastName, schema.userProfiles.nickname, schema.userProfiles.memberType, schema.user.image)
+          .orderBy(desc(sql<number>`count(${schema.userBadges.id})`))
+          .limit(QUERY_LIMITS.AUDIT_LOG_LIMIT)
+          .all();
+
+        const leaderboard = results.map((r) => {
           // CRITICAL-002 FIX: Redact all PII for students (COPPA compliance)
           const isMinor = r.memberType === "student";
           return {
@@ -361,7 +352,7 @@ export const analyticsRouter = _analyticsRouter
             nickname: r.nickname || null,
             memberType: String(r.memberType || "student"),
             badgeCount: Number(r.badgeCount),
-            avatar: r.avatar ? String(r.avatar) : null
+            avatar: r.avatar || null
           };
         });
 

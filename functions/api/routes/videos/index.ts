@@ -201,7 +201,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         let addedCount = 0;
         let deletedCount = 0;
         
-        const allItems: any[] = [];
+        const allItems: Record<string, unknown>[] = [];
         let nextPageToken: string | undefined = undefined;
 
         try {
@@ -229,7 +229,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
                     throw new ApiError(`YouTube API error: ${ytMessage || response.statusText}`, response.status, "YOUTUBE_API_ERROR");
                 }
 
-                const data: any = await response.json();
+                const data = await response.json() as { items?: Record<string, unknown>[]; nextPageToken?: string };
                 if (data.items) {
                     allItems.push(...data.items);
                 }
@@ -286,7 +286,6 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         // Delete videos that are no longer in the playlist
         const videosToDelete = existingVideos.filter(v => !fetchedVideoIds.has(v.videoId));
         if (videosToDelete.length > 0) {
-            const idsToDelete = videosToDelete.map(v => v.id);
             // Drizzle 'inArray' works, but we can do a loop or bulk delete. Let's do a bulk delete if inArray is imported, or loop since it's safer.
             for (const vid of videosToDelete) {
                 await db.delete(schema.videos).where(eq(schema.videos.id, vid.id)).execute();
