@@ -24,14 +24,26 @@ export interface ARES_Event {
 
 /**
  * Mint a short-lived OAuth2 Access Token using the Google Service Account JWK.
+ * Generates JWT with unified scopes for Calendar, Photos (read + write), and Drive APIs.
  */
 export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
   const alg = "RS256";
   // The private key from GCP usually has literal \n that we must preserve.
   const formattedKey = config.privateKey.replace(/\\n/g, "\n");
-  
+
+  // Unified scope string for Calendar, Photos, and Drive APIs per D-02
+  // - Calendar: Existing scope for calendar sync
+  // - Photos: readonly for browsing, appendonly for upload (per D-11)
+  // - Drive: readonly for document browsing
+  const unifiedScope = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/photoslibrary.readonly",
+    "https://www.googleapis.com/auth/photoslibrary.appendonly", // write scope for upload per D-11
+  ].join(" ");
+
   const pk = await importPKCS8(formattedKey, alg);
-  const jwt = await new SignJWT({ scope: "https://www.googleapis.com/auth/calendar" })
+  const jwt = await new SignJWT({ scope: unifiedScope })
     .setProtectedHeader({ alg, typ: "JWT" })
     .setIssuer(config.email)
     .setAudience("https://oauth2.googleapis.com/token")
