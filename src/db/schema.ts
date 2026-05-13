@@ -835,3 +835,51 @@ export const videos = sqliteTable("videos", {
 	index("idx_videos_type").on(table.type),
 ]);
 
+// Photo albums for Google Photos import (Phase 76)
+// Per D-15: Album metadata for R2 folder mapping
+export const photoAlbums = sqliteTable("photo_albums", {
+	id: text().primaryKey(),
+	googleAlbumId: text("google_album_id").notNull().unique(),
+	name: text().notNull(),
+	r2Folder: text("r2_folder").notNull(),
+	syncedAt: text("synced_at").notNull(),
+	mediaItemsCount: text("media_items_count"),
+},
+(table) => [
+	index("idx_photo_albums_google_id").on(table.googleAlbumId),
+]);
+
+// Imported photos from Google Photos to R2 (Phase 76)
+// Per D-14: Track successfully imported photos
+export const importedPhotos = sqliteTable("imported_photos", {
+	id: text().primaryKey(),
+	r2Key: text("r2_key").notNull(),
+	originalFilename: text("original_filename").notNull(),
+	googleMediaItemId: text("google_media_item_id").notNull().unique(),
+	albumId: text("album_id").references(() => photoAlbums.id),
+	importedBy: text("imported_by").notNull(),
+	importedAt: text("imported_at").notNull(),
+	mimeType: text().notNull(),
+	fileSize: text("file_size").notNull(),
+},
+(table) => [
+	index("idx_imported_photos_google_id").on(table.googleMediaItemId),
+	index("idx_imported_photos_album").on(table.albumId),
+]);
+
+// Import audit log for all photo import attempts (Phase 76)
+// Per D-16/D-17: Audit trail for import actions
+export const importAuditLog = sqliteTable("import_audit_log", {
+	id: text().primaryKey(),
+	mediaItemId: text("media_item_id").notNull(),
+	filename: text().notNull(),
+	status: text().notNull(),
+	error: text(),
+	r2Key: text("r2_key"),
+	importedBy: text("imported_by").notNull(),
+	importedAt: text("imported_at").notNull(),
+},
+(table) => [
+	index("idx_import_audit_imported_at").on(table.importedAt),
+]);
+

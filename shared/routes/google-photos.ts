@@ -164,6 +164,74 @@ export const uploadFailureSchema = z.object({
 });
 
 /**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GOOGLE PHOTOS IMPORT SCHEMAS (Phase 76)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Schemas for importing photos from Google Photos to R2 storage.
+ * Per D-22: Batch import with individual result tracking.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Import photos request body schema
+ * Per D-22: Accepts array of media item IDs and optional album ID
+ */
+export const importPhotosQuerySchema = z.object({
+  mediaItemIds: z.array(z.string()).min(1).openapi({
+    description: "Google Photos media item IDs to import",
+    example: ["AKcabcdefM123456789_-abcdef", "AKcdefghijN987654321_-ghijk"],
+  }),
+  albumId: z.string().optional().openapi({
+    description: "Google Photos album ID if importing from album context",
+    example: "AKcabcdefGhiJklmnoPqrsTuvWxYz",
+  }),
+});
+
+/**
+ * Import result schema for a single media item
+ * Per D-19: Returns success/failure status with optional R2 key or error
+ */
+export const importResultSchema = z.object({
+  mediaItemId: z.string().openapi({
+    description: "Google Photos media item ID",
+    example: "AKcabcdefM123456789_-abcdef",
+  }),
+  status: z.enum(["success", "failed"]).openapi({
+    description: "Import status for this media item",
+  }),
+  r2Key: z.string().optional().openapi({
+    description: "R2 storage key (present on success)",
+    example: "photos/albums/ftc-championship-2024/robot-match.jpg",
+  }),
+  error: z.string().optional().openapi({
+    description: "Error message (present on failure)",
+    example: "Invalid image format",
+  }),
+  filename: z.string().openapi({
+    description: "Original filename",
+    example: "robot-match.jpg",
+  }),
+});
+
+/**
+ * Import photos response schema
+ * Per D-23: Returns success/failure counts and per-item results
+ */
+export const importPhotosResponseSchema = z.object({
+  imported: z.number().openapi({
+    description: "Count of successfully imported photos",
+    example: 5,
+  }),
+  failed: z.number().openapi({
+    description: "Count of failed imports",
+    example: 1,
+  }),
+  results: z.array(importResultSchema).openapi({
+    description: "Per-item import results",
+  }),
+});
+
+/**
  * Response schema for photo upload
  * Per UPLOAD-01, UPLOAD-03: Returns success count and per-file failures
  */
@@ -256,6 +324,41 @@ export const uploadPhotosRoute = createRoute({
         },
       },
       description: "Upload completed with success count and per-file failures",
+    },
+  },
+  tags: ["google-photos", "admin"],
+});
+
+/**
+ * POST /import - Import photos from Google Photos to R2
+ * Imports selected Google Photos media items to R2 storage.
+ * Per D-22: Batch import with mediaItemIds array.
+ * Per D-19/D-23: Returns success/failure counts and per-item results.
+ * Per IMG-03: Downloads from Photos API baseUrl with =d suffix.
+ * Per IMG-04: Validates magic bytes for JPG, PNG, WEBP.
+ * Per IMG-06: Tracks imported photos and audit log in D1.
+ */
+export const importPhotosRoute = createRoute({
+  method: "post",
+  path: "/import",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: importPhotosQuerySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: importPhotosResponseSchema,
+        },
+      },
+      description: "Import completed with success/failure counts and per-item results",
     },
   },
   tags: ["google-photos", "admin"],
