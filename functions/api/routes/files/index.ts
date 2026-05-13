@@ -268,8 +268,8 @@ const app5 = app4.openapi(importFromDriveRoute, async (c) => {
 	const { fileId, fileName, mimeType } = c.req.valid("json");
 
 	// Get Drive access token
-	const { getDriveAccessToken } = await import("../../../utils/googleAuth");
-	const token = await getDriveAccessToken(db, c.env);
+	const { getUnifiedOAuthToken } = await import("../../../utils/googleAuth");
+	const token = await getUnifiedOAuthToken(c.env, db);
 
 	// Validate MIME type is allowed
 	const allowedTypes = [

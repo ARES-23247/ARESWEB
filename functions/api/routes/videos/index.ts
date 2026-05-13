@@ -18,7 +18,7 @@ import { findOneById, insertAndFetch, updateAndFetch } from "../../../../src/db/
 import { postHandlers } from "../posts/handlers";
 import { nanoid } from "nanoid";
 import { getSessionUser } from "../../middleware";
-import { getGoogleAccessToken } from "../youtube/index";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 
 const baseRouter = new OpenAPIHono<AppEnv>();
 
@@ -262,7 +262,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         
         let accessToken: string | undefined;
         try {
-            accessToken = await getGoogleAccessToken(c.env, db);
+            accessToken = await getUnifiedOAuthToken(c.env, db);
         } catch (_e) {
             // Not connected or failed to refresh, fallback to apiKey
         }

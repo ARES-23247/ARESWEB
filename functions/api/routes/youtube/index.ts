@@ -17,47 +17,15 @@ import { eq } from "drizzle-orm";
 import { ApiError } from "../../middleware/errorHandler";
 import { logAuditAction } from "../../middleware";
 
+import { getUnifiedOAuthToken } from "../../utils/googleAuth";
+
 const adminApp = new OpenAPIHono<AppEnv>();
 
 adminApp.use("*", ensureAdmin);
 
-// Utility to fetch Google Access Token using the Refresh Token
-export async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Promise<string> {
-  const tokenSetting = await db
-    .select()
-    .from(settings)
-    .where(eq(settings.key, "youtube_refresh_token"))
-    .execute()
-    .then((res: Array<{ key: string; value: string | null; updatedAt: string | null }>) => res[0]);
+// Re-export for anything that might still be importing it directly
+export const getGoogleAccessToken = getUnifiedOAuthToken;
 
-  if (!tokenSetting || !tokenSetting.value) {
-    throw new ApiError("YouTube is not connected.", 400, "YOUTUBE_NOT_CONNECTED");
-  }
-
-  const refreshToken = tokenSetting.value;
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: env.YOUTUBE_CLIENT_ID || "",
-      client_secret: env.YOUTUBE_CLIENT_SECRET || "",
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }).toString(),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Failed to get Google Access Token:", errorText);
-    throw new ApiError("Failed to refresh YouTube access token.", 500, "YOUTUBE_REFRESH_FAILED");
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = await response.json();
-  return data.access_token;
 }
 
 // Check if user is allowed to set videos to public (coaches and mentors only)
@@ -91,7 +59,10 @@ const routes = adminApp
       "https://www.googleapis.com/auth/youtube.readonly", 
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/photoslibrary.readonly",
-      "https://www.googleapis.com/auth/photoslibrary.appendonly"
+      "https://www.googleapis.com/auth/photoslibrary.appendonly",
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/drive.readonly"
     ].join(" ");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -142,6 +113,26 @@ const routes = adminApp
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tokenData: any = await tokenResponse.json();
+
+    if (tokenData.access_token) {
+      // Verify the authorized email matches the authorized team account
+      const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      
+      if (!userInfoRes.ok) {
+        console.error("Failed to fetch user info for OAuth verification", await userInfoRes.text());
+        return c.redirect(`${frontendUrl}/admin/media?error=user_verification_failed`);
+      }
+      
+      const userInfo = await userInfoRes.json() as { email?: string };
+      const authorizedEmail = env.AUTHORIZED_GOOGLE_ACCOUNT || "ares23247wv@gmail.com";
+      
+      if (userInfo.email !== authorizedEmail) {
+        console.warn(`Unauthorized Google Account connection attempt by ${userInfo.email}. Expected ${authorizedEmail}.`);
+        return c.redirect(`${frontendUrl}/admin/media?error=unauthorized_email`);
+      }
+    }
 
     if (tokenData.refresh_token) {
       const db = getDb(c);

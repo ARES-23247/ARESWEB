@@ -6,10 +6,8 @@ import { createMockDrizzleDb } from "../../test/test-env";
 
 // Mock googleAuth module BEFORE importing test-auth
 vi.mock("../../utils/googleAuth", () => ({
-  getDriveAccessToken: vi.fn(),
-  getPhotosAccessToken: vi.fn(),
+  getUnifiedOAuthToken: vi.fn(),
 }));
-
 // Mock middleware modules BEFORE importing test-auth
 vi.mock("../middleware/auth", async () => {
   const actual = await vi.importActual<typeof import("../middleware/auth")>("../middleware/auth");
@@ -29,14 +27,13 @@ vi.mock("../middleware", async () => {
 
 // Now import after mocks are set up
 import authTestRouter from "./test-auth";
-import { getDriveAccessToken, getPhotosAccessToken } from "../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../utils/googleAuth";
 import { getDb } from "../middleware";
 
 describe("test-auth Routes", () => {
   let app: Hono<AppEnv>;
   let mockDb: ReturnType<typeof createMockDrizzleDb>;
-  let mockDriveToken: string;
-  let mockPhotosToken: string;
+  let mockToken: string;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,11 +42,8 @@ describe("test-auth Routes", () => {
     mockDb = createMockDrizzleDb();
 
     // Setup token mocks
-    mockDriveToken = "mock-drive-token-" + Date.now();
-    mockPhotosToken = "mock-photos-token-" + Date.now();
-
-    vi.mocked(getDriveAccessToken).mockResolvedValue(mockDriveToken);
-    vi.mocked(getPhotosAccessToken).mockResolvedValue(mockPhotosToken);
+    mockToken = "mock-unified-token-" + Date.now();
+    vi.mocked(getUnifiedOAuthToken).mockResolvedValue(mockToken);
 
     vi.mocked(getDb).mockReturnValue(mockDb as any);
 
@@ -78,7 +72,7 @@ describe("test-auth Routes", () => {
       };
 
       expect(json.service).toBe("drive");
-      expect(json.accessToken).toBe(mockDriveToken);
+      expect(json.accessToken).toBe(mockToken);
       expect(typeof json.cached).toBe("boolean");
       expect(json.expiresAt).toBeDefined();
     });
@@ -112,7 +106,7 @@ describe("test-auth Routes", () => {
       };
 
       expect(json.service).toBe("photos");
-      expect(json.accessToken).toBe(mockPhotosToken);
+      expect(json.accessToken).toBe(mockToken);
       expect(typeof json.cached).toBe("boolean");
       expect(json.expiresAt).toBeDefined();
     });

@@ -1,11 +1,4 @@
-import { SignJWT, importPKCS8 } from "jose";
 import { parseAstToText } from "./content";
-
-export interface GCalConfig {
-  email: string;
-  privateKey: string;
-  calendarId: string;
-}
 
 export interface ARES_Event {
   id: string;
@@ -20,49 +13,6 @@ export interface ARES_Event {
   recurrenceRule?: string;
   parentGcalId?: string;
   originalStartTime?: string;
-}
-
-/**
- * Mint a short-lived OAuth2 Access Token using the Google Service Account JWK.
- * Generates JWT with unified scopes for Calendar, Photos (read + write), and Drive APIs.
- */
-export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
-  const alg = "RS256";
-  // The private key from GCP usually has literal \n that we must preserve.
-  const formattedKey = config.privateKey.replace(/\\n/g, "\n");
-
-  // Unified scope string for Calendar and Drive APIs per D-02
-  // - Calendar: Existing scope for calendar sync
-  // - Drive: readonly for document browsing
-  // NOTE: Google Photos Library API does NOT support Service Accounts, so it must not be included here.
-  const unifiedScope = [
-    "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/drive.readonly",
-  ].join(" ");
-
-  const pk = await importPKCS8(formattedKey, alg);
-  const jwt = await new SignJWT({ scope: unifiedScope })
-    .setProtectedHeader({ alg, typ: "JWT" })
-    .setIssuer(config.email)
-    .setAudience("https://oauth2.googleapis.com/token")
-    .setIssuedAt()
-    .setExpirationTime("1h")
-    .sign(pk);
-
-  const res = await fetch("https://oauth2.googleapis.com/token", { signal: AbortSignal.timeout(5000),
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-
-  const data = (await res.json()) as Record<string, unknown>;
-  if (!data.access_token) {
-    throw new Error("Failed to get Google Calendar access token: Invalid Service Account response");
-  }
-  return data.access_token as string;
 }
 
 /**
@@ -175,13 +125,12 @@ function prepareGcalPayload(event: ARES_Event) {
  * Push a new or updated event to Google Calendar (Outbound Sync)
  * Returns the gcal_event_id.
  */
-export async function pushEventToGcal(event: ARES_Event, config: GCalConfig): Promise<string | undefined> {
-  if (!config.email || !config.privateKey || !config.calendarId) return undefined;
+export async function pushEventToGcal(event: ARES_Event, calendarId: string, token: string): Promise<string | undefined> {
+  if (!calendarId || !token) return undefined;
   
-  const token = await getGcalAccessToken(config);
   const payload = prepareGcalPayload(event);
 
-  let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events`;
+  let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
   let method = "POST";
 
   if (event.gcalEventId) {
@@ -210,11 +159,10 @@ export async function pushEventToGcal(event: ARES_Event, config: GCalConfig): Pr
 /**
  * Delete an event from Google Calendar (Outbound Sync)
  */
-export async function deleteEventFromGcal(gcal_id: string, config: GCalConfig) {
-  if (!config.email || !config.privateKey || !config.calendarId || !gcal_id) return;
+export async function deleteEventFromGcal(gcal_id: string, calendarId: string, token: string) {
+  if (!calendarId || !token || !gcal_id) return;
 
-  const token = await getGcalAccessToken(config);
-  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events/${gcal_id}`;
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${gcal_id}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(5000),
     method: "DELETE",
@@ -260,8 +208,8 @@ function normalizeToLocalNaive(dt: string): string {
  * Pull events from Google Calendar (Inbound Sync)
  * Returns a list of standardized events to merge into D1.
  */
-export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event[]> {
-  const token = await getGcalAccessToken(config);
+export async function pullEventsFromGcal(calendarId: string, token: string): Promise<ARES_Event[]> {
+  if (!calendarId || !token) return [];
   
   // Fetch events starting from 2 years ago
   const timeMin = new Date();
@@ -292,7 +240,7 @@ export async function pullEventsFromGcal(config: GCalConfig): Promise<ARES_Event
     });
     if (pageToken) params.set("pageToken", pageToken);
 
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.calendarId)}/events?${params.toString()}`;
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`;
 
     const res = await fetch(url, {
       signal: AbortSignal.timeout(30000),

@@ -8,6 +8,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { getDbSettings, getDb } from "../../middleware";
 import { getSocialConfig } from "../../middleware";
 import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
@@ -26,8 +27,12 @@ export const syncHandlers = {
     syncEvents: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof syncEventsRoute>> => {
         const db = getDb(c);
         const dbSettings = await getDbSettings(c);
-        const gcalEmail = dbSettings["GCAL_SERVICE_ACCOUNT_EMAIL"];
-        const gcalKey = dbSettings["GCAL_PRIVATE_KEY"];
+        let oauthToken: string;
+        try {
+            oauthToken = await getUnifiedOAuthToken(c.env, db);
+        } catch (error) {
+            throw new ApiError("Google OAuth config missing or not connected", 500);
+        }
 
         const calendars = [
             { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
@@ -35,7 +40,7 @@ export const syncHandlers = {
             { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
         ].filter((cal) => !!cal.id);
 
-        if (!gcalEmail || !gcalKey || calendars.length === 0) {
+        if (calendars.length === 0) {
             throw new ApiError("GCal config missing", 500);
         }
 
@@ -44,7 +49,7 @@ export const syncHandlers = {
 
         for (const cal of calendars) {
             try {
-                const events = await pullEventsFromGcal({ email: gcalEmail as string, privateKey: gcalKey as string, calendarId: cal.id as string });
+                const events = await pullEventsFromGcal(cal.id as string, oauthToken);
 
                 const CHUNK_SIZE = 20;
                 for (let i = 0; i < events.length; i += CHUNK_SIZE) {
@@ -104,6 +109,13 @@ export const syncHandlers = {
         }
 
         const socialConfig = await getSocialConfig(c);
+        let oauthToken: string;
+        try {
+            oauthToken = await getUnifiedOAuthToken(c.env, db);
+        } catch (error) {
+            throw new ApiError("Google OAuth config missing or not connected", 500);
+        }
+        
         let pushed = 0;
         let failed = 0;
         const errors: string[] = [];
@@ -113,13 +125,14 @@ export const syncHandlers = {
             const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
             const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-            if (!socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL || !socialConfig.GCAL_PRIVATE_KEY || !calId) {
+            if (!calId) {
                 throw new ApiError("GCal config missing", 500);
             }
 
             const gcalId = await pushEventToGcal(
                 { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: undefined, meetingNotes: event.meetingNotes || undefined },
-                { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+                calId as string,
+                oauthToken
             );
             if (gcalId) {
                 await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();

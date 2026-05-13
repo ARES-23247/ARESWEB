@@ -3,7 +3,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
 import { getSessionUser } from "../../middleware/auth";
-import { getGoogleAccessToken } from "../youtube/index";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -73,7 +73,7 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   const env = c.env;
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getGoogleAccessToken(env, db);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Test Photos API with a minimal search request
   const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
@@ -124,7 +124,7 @@ const app2 = app1.openapi(mediaRoute, async (c) => {
   const { albumId, pageToken, pageSize = 25 } = c.req.valid("query");
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getGoogleAccessToken(env, db);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Build Photos API search request body
   const searchBody: Record<string, unknown> = { pageSize };
@@ -214,7 +214,7 @@ const app3 = app2.openapi(albumsRoute, async (c) => {
   const { pageToken, pageSize = 25 } = c.req.valid("query");
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getGoogleAccessToken(env, db);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Build search params for albums API
   const searchParams = new URLSearchParams({
@@ -335,7 +335,7 @@ app3.post("/upload", async (c) => {
   }
 
   // Get access token using lazy refresh pattern
-  const token = await getGoogleAccessToken(env, db);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Upload each file to Photos API uploads endpoint
   const uploadResults: Array<{
@@ -487,7 +487,7 @@ const app4 = app3.openapi(importPhotosRoute, async (c) => {
   const { mediaItemIds, albumId } = await c.req.json();
 
   // Get access token
-  const token = await getGoogleAccessToken(env, db);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Get user email for audit tracking
   const user = await getSessionUser(c);

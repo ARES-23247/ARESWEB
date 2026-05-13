@@ -2,7 +2,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../middleware";
 import { ensureAdmin, getDb } from "../middleware";
-import { getDriveAccessToken, getPhotosAccessToken } from "../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../utils/googleAuth";
 
 /**
  * Test authentication router for verifying Google service account tokens.
@@ -57,7 +57,7 @@ authTestApp.openapi(
     const db = getDb(c);
     const env = c.env;
 
-    const accessToken = await getDriveAccessToken(db, env);
+    const accessToken = await getUnifiedOAuthToken(db, env);
 
     // Calculate expiry time (tokens are valid for 1 hour from generation)
     const expiresAt = new Date(Date.now() + 3600000).toISOString();
@@ -112,7 +112,7 @@ authTestApp.openapi(
     const db = getDb(c);
     const env = c.env;
 
-    const accessToken = await getPhotosAccessToken(db, env);
+    const accessToken = await getUnifiedOAuthToken(db, env);
 
     // Calculate expiry time (tokens are valid for 1 hour from generation)
     const expiresAt = new Date(Date.now() + 3600000).toISOString();

@@ -1,32 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock jose library
-vi.mock("jose", () => {
-  class MockSignJWT {
-    private payload: Record<string, unknown> = {};
-    constructor(payload: Record<string, unknown>) {
-      this.payload = payload;
-    }
-    setProtectedHeader() { return this; }
-    setIssuer() { return this; }
-    setAudience() { return this; }
-    setIssuedAt() { return this; }
-    setExpirationTime() { return this; }
-    async sign() { return "mock-jwt-token"; }
-  }
-  return {
-    importPKCS8: vi.fn().mockResolvedValue("mock-pk"),
-    SignJWT: MockSignJWT,
-  };
-});
-
-// Mock gcalSync
-vi.mock("./gcalSync", () => ({
-  getGcalAccessToken: vi.fn(),
-  GCalConfig: {},
-}));
-
 // Mock drizzle-orm eq function
 vi.mock("drizzle-orm", async (importOriginal) => {
   const actual = await importOriginal<typeof import("drizzle-orm")>();
@@ -36,25 +10,23 @@ vi.mock("drizzle-orm", async (importOriginal) => {
   };
 });
 
-import { getDriveAccessToken, getPhotosAccessToken } from "./googleAuth";
-import { getGcalAccessToken } from "./gcalSync";
+import { getUnifiedOAuthToken } from "./googleAuth";
 import { settings } from "../../src/db/schema";
 
 // Mock Env
 const mockEnv = {
-  GCAL_SERVICE_ACCOUNT_EMAIL: "test@test.iam.gserviceaccount.com",
-  GCAL_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
+  OAUTH_CLIENT_ID: "mock-client-id",
+  OAUTH_CLIENT_SECRET: "mock-client-secret",
 };
 
 describe("googleAuth Utilities", () => {
-  let mockDb: ReturnType<typeof createMockDrizzleDb>;
+  let mockDb: any;
   let mockExecute: ReturnType<typeof vi.fn>;
   let mockRun: ReturnType<typeof vi.fn>;
   let mockValues: ReturnType<typeof vi.fn>;
   let executeCallCount: number;
   let executeResults: unknown[][];
 
-  // Helper to create a properly chained mock Drizzle DB
   function createMockDrizzleDb() {
     executeCallCount = 0;
     executeResults = [];
@@ -82,8 +54,7 @@ describe("googleAuth Utilities", () => {
       })),
     } as any;
 
-    // Helper to set execute results for sequential calls
-    (db as any).__setExecuteResults = (results: unknown[][]) => {
+    db.__setExecuteResults = (results: unknown[][]) => {
       executeResults = results;
       executeCallCount = 0;
     };
@@ -94,122 +65,64 @@ describe("googleAuth Utilities", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDrizzleDb();
+
+    // Mock fetch for Google OAuth token endpoint
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        access_token: "new-oauth-token",
+        expires_in: 3599,
+      }),
+    });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe("getDriveAccessToken", () => {
-    it("Test 1: should call getGcalAccessToken() when no cached token exists", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      getGcalAccessTokenMock.mockResolvedValueOnce("new-drive-token");
+  describe("getUnifiedOAuthToken", () => {
+    it("should return cached token if valid", async () => {
+      const futureExpiry = new Date(Date.now() + 3600000).toISOString();
 
-      // No cached token
-      (mockDb as any).__setExecuteResults([[]]);
-
-      await getDriveAccessToken(mockDb, mockEnv as any);
-
-      expect(getGcalAccessToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          email: mockEnv.GCAL_SERVICE_ACCOUNT_EMAIL,
-          privateKey: mockEnv.GCAL_PRIVATE_KEY,
-        })
-      );
-    });
-
-    it("Test 2: should return cached token if not within 5-minute expiry buffer", async () => {
-      const _getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-
-      const futureExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-
-      // First call returns token entry, second call returns expiry entry
-      (mockDb as any).__setExecuteResults([
-        [{ key: "drive_access_token", value: "cached-drive-token" }],
-        [{ key: "drive_token_expires_at", value: futureExpiry }],
+      mockDb.__setExecuteResults([
+        [{ key: "oauth_access_token", value: "cached-token" }],
+        [{ key: "oauth_token_expires_at", value: futureExpiry }],
       ]);
 
-      const token = await getDriveAccessToken(mockDb, mockEnv as any);
+      const token = await getUnifiedOAuthToken(mockEnv as any, mockDb);
 
-      expect(token).toBe("cached-drive-token");
-      expect(getGcalAccessToken).not.toHaveBeenCalled();
+      expect(token).toBe("cached-token");
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it("Test 3: should refresh token if expired or within 5-minute buffer", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      getGcalAccessTokenMock.mockResolvedValueOnce("refreshed-drive-token");
+    it("should refresh token if expired", async () => {
+      const pastExpiry = new Date(Date.now() - 10000).toISOString();
 
-      const pastExpiry = new Date(Date.now() - 10000).toISOString(); // Expired
-
-      // First call returns token entry, second returns expiry entry
-      (mockDb as any).__setExecuteResults([
-        [{ key: "drive_access_token", value: "expired-token" }],
-        [{ key: "drive_token_expires_at", value: pastExpiry }],
+      mockDb.__setExecuteResults([
+        [{ key: "oauth_access_token", value: "expired-token" }],
+        [{ key: "oauth_token_expires_at", value: pastExpiry }],
+        [{ key: "oauth_refresh_token", value: "refresh-token" }],
       ]);
 
-      const token = await getDriveAccessToken(mockDb, mockEnv as any);
+      const token = await getUnifiedOAuthToken(mockEnv as any, mockDb);
 
-      expect(token).toBe("refreshed-drive-token");
-      expect(getGcalAccessToken).toHaveBeenCalled();
-    });
-
-    it("Test 4: should store token in D1 settings with correct keys", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      getGcalAccessTokenMock.mockResolvedValueOnce("new-token");
-
-      // No cached token
-      (mockDb as any).__setExecuteResults([[]]);
-
-      await getDriveAccessToken(mockDb, mockEnv as any);
-
-      expect(mockDb.insert).toHaveBeenCalledWith(settings);
-      expect(mockValues).toHaveBeenCalledTimes(2); // Called for token and expiry
-      // First call should be for the token itself
-      expect(mockValues).toHaveBeenNthCalledWith(1,
-        expect.objectContaining({
-          key: "drive_access_token",
-          value: "new-token",
-        })
+      expect(token).toBe("new-oauth-token");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://oauth2.googleapis.com/token",
+        expect.any(Object)
       );
     });
 
-    it("Test 5: getPhotosAccessToken() follows same pattern with photos keys", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      getGcalAccessTokenMock.mockResolvedValueOnce("new-photos-token");
+    it("should throw error if refresh token is missing", async () => {
+      const pastExpiry = new Date(Date.now() - 10000).toISOString();
 
-      // No cached token
-      (mockDb as any).__setExecuteResults([[]]);
+      mockDb.__setExecuteResults([
+        [{ key: "oauth_access_token", value: "expired-token" }],
+        [{ key: "oauth_token_expires_at", value: pastExpiry }],
+        [], // No refresh token
+      ]);
 
-      const token = await getPhotosAccessToken(mockDb, mockEnv as any);
-
-      expect(token).toBe("new-photos-token");
-      // First call should be for the photos_access_token key
-      expect(mockValues).toHaveBeenNthCalledWith(1,
-        expect.objectContaining({
-          key: "photos_access_token",
-        })
-      );
-    });
-
-    it("Test 6: should handle retry logic with exponential backoff", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      // Fail twice, then succeed
-      getGcalAccessTokenMock
-        .mockRejectedValueOnce(new Error("Network error"))
-        .mockRejectedValueOnce(new Error("Network error"))
-        .mockResolvedValueOnce("retry-success-token");
-
-      // No cached token
-      (mockDb as any).__setExecuteResults([[]]);
-
-      const startTime = Date.now();
-      const token = await getDriveAccessToken(mockDb, mockEnv as any);
-      const elapsed = Date.now() - startTime;
-
-      expect(token).toBe("retry-success-token");
-      expect(getGcalAccessToken).toHaveBeenCalledTimes(3);
-      // Should have exponential backoff: ~100ms + ~200ms = ~300ms minimum
-      expect(elapsed).toBeGreaterThanOrEqual(280);
+      await expect(getUnifiedOAuthToken(mockEnv as any, mockDb)).rejects.toThrow("System not authenticated with Google Services.");
     });
   });
 });

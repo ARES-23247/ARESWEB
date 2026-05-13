@@ -2,7 +2,7 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
-import { getDriveAccessToken } from "../../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
 import { listDriveFilesRoute } from "../../../../shared/routes/google-drive";
@@ -49,7 +49,7 @@ const app1 = driveApp.openapi(healthRoute, async (c) => {
   const env = c.env;
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getDriveAccessToken(db, env);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Test Drive API with a minimal files list request
   const driveResponse = await fetch("https://www.googleapis.com/drive/v3/files?pageSize=1", {
@@ -96,7 +96,7 @@ const driveRouter = app1.openapi(listDriveFilesRoute, async (c) => {
   const query = c.req.valid("query");
 
   // Get access token using lazy refresh pattern
-  const token = await getDriveAccessToken(db, env);
+  const token = await getUnifiedOAuthToken(env, db);
 
   // Optional environment variable to scope search to a specific folder
   const folderId = (env as any).GOOGLE_DRIVE_FOLDER_ID;

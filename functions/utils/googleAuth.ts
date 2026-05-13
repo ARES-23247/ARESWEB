@@ -1,16 +1,7 @@
-import { getGcalAccessToken, type GCalConfig } from "./gcalSync";
 import type { DrizzleDB } from "../../src/db/types";
 import { settings } from "../../src/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiError } from "../api/middleware/errorHandler";
-
-/**
- * Token cache entry stored in D1 settings
- */
-interface _TokenCache {
-  accessToken: string;
-  expiresAt: string; // ISO timestamp
-}
 
 /**
  * Expiry buffer in milliseconds (5 minutes per D-05)
@@ -32,35 +23,33 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Get or refresh an OAuth token for the specified Google API
+ * Get a unified OAuth access token for all Google services (YouTube, Photos, Drive, Calendar)
  *
- * This function implements lazy refresh with D1 caching per D-03/D-04:
- * - Checks D1 settings for cached token
+ * Implements lazy refresh with D1 caching:
+ * - Checks D1 settings for cached access token
  * - Returns cached token if valid (not within 5-minute expiry buffer)
- * - Refreshes token if missing, expired, or expiring soon
+ * - Refreshes token if missing, expired, or expiring soon using the stored youtube_refresh_token
  * - Stores new token in D1 settings with upsert pattern
- * - Implements retry logic with exponential backoff (3 retries per D-07)
+ * - Implements retry logic with exponential backoff
  *
- * @param type - The API type ("drive" or "photos")
- * @param db - Drizzle database instance
  * @param env - Cloudflare environment bindings
+ * @param db - Drizzle database instance
  * @returns The access token string
- * @throws ApiError if token refresh fails after retries
+ * @throws ApiError if token refresh fails
  */
-export async function getOrRefreshToken(
-  type: "drive" | "photos",
-  db: DrizzleDB,
-  env: { GCAL_SERVICE_ACCOUNT_EMAIL?: string; GCAL_PRIVATE_KEY?: string }
+export async function getUnifiedOAuthToken(
+  env: { YOUTUBE_CLIENT_ID?: string; YOUTUBE_CLIENT_SECRET?: string },
+  db: DrizzleDB
 ): Promise<string> {
-  const tokenKey = `${type}_access_token`;
-  const expiryKey = `${type}_token_expires_at`;
+  const tokenKey = "oauth_access_token";
+  const expiryKey = "oauth_token_expires_at";
 
-  // Validate credentials before attempting token generation (CR-02)
-  if (!env.GCAL_SERVICE_ACCOUNT_EMAIL || !env.GCAL_PRIVATE_KEY) {
+  // Validate credentials
+  if (!env.YOUTUBE_CLIENT_ID || !env.YOUTUBE_CLIENT_SECRET) {
     throw new ApiError(
-      `Missing Google service account credentials. Cannot refresh ${type} token.`,
+      "Missing Google OAuth credentials. Cannot generate access token.",
       500,
-      "MISSING_CREDENTIALS"
+      "MISSING_OAUTH_CREDENTIALS"
     );
   }
 
@@ -88,33 +77,61 @@ export async function getOrRefreshToken(
 
         // Return cached token if not expiring within buffer
         if (expiresAt > now + EXPIRY_BUFFER_MS) {
-          console.debug(`[googleAuth] Using cached ${type} token (expires at ${new Date(expiresAt).toISOString()})`);
+          console.debug(`[googleAuth] Using cached unified OAuth token (expires at ${new Date(expiresAt).toISOString()})`);
           return tokenEntry.value;
         }
 
-        console.debug(`[googleAuth] Cached ${type} token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
+        console.debug(`[googleAuth] Cached unified OAuth token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
       }
     }
   }
 
-  // Step 3: Fetch new token with retry logic
+  // Step 3: Fetch refresh token from D1
+  const tokenSetting = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, "youtube_refresh_token"))
+    .execute()
+    .then((res) => res[0]);
+
+  if (!tokenSetting || !tokenSetting.value) {
+    throw new ApiError("Google Account is not connected.", 400, "GOOGLE_NOT_CONNECTED");
+  }
+
+  const refreshToken = tokenSetting.value;
+
+  // Step 4: Fetch new token with retry logic
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Build GCal config from environment
-      const config: GCalConfig = {
-        email: env.GCAL_SERVICE_ACCOUNT_EMAIL || "",
-        privateKey: env.GCAL_PRIVATE_KEY || "",
-        calendarId: "", // Not needed for token generation
-      };
+      const response = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: env.YOUTUBE_CLIENT_ID || "",
+          client_secret: env.YOUTUBE_CLIENT_SECRET || "",
+          refresh_token: refreshToken,
+          grant_type: "refresh_token",
+        }).toString(),
+      });
 
-      // Get new access token from Google
-      const accessToken = await getGcalAccessToken(config);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Google API returned ${response.status}: ${errorText}`);
+      }
 
-      // Calculate new expiry: 1 hour from now (Google's default)
-      const expiresAt = new Date(Date.now() + 3600000).toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await response.json();
+      const accessToken = data.access_token;
+      
+      // Calculate new expiry: Google returns expires_in (usually 3599 seconds)
+      // Default to 1 hour from now if not provided
+      const expiresInSec = data.expires_in || 3600;
+      const expiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
 
-      // Step 4: Store new token in D1 with upsert pattern
+      // Step 5: Store new token in D1 with upsert pattern
       await db
         .insert(settings)
         .values({
@@ -148,7 +165,7 @@ export async function getOrRefreshToken(
         })
         .run();
 
-      console.debug(`[googleAuth] Refreshed ${type} token (expires at ${expiresAt})`);
+      console.debug(`[googleAuth] Refreshed unified OAuth token (expires at ${expiresAt})`);
       return accessToken;
     } catch (error) {
       lastError = error as Error;
@@ -163,46 +180,10 @@ export async function getOrRefreshToken(
     }
   }
 
-  // All retries exhausted - throw error per D-08
+  // All retries exhausted
   throw new ApiError(
-    `Failed to refresh ${type} access token after ${MAX_RETRIES} attempts: ${lastError?.message || "Unknown error"}`,
+    `Failed to refresh unified access token after ${MAX_RETRIES} attempts: ${lastError?.message || "Unknown error"}`,
     503,
     "TOKEN_REFRESH_FAILED"
   );
-}
-
-/**
- * Get a valid access token for Google Drive API
- *
- * Uses lazy refresh pattern: checks D1 cache first, refreshes only if
- * token is missing or expiring within 5-minute buffer.
- *
- * @param db - Drizzle database instance
- * @param env - Cloudflare environment bindings
- * @returns The access token string
- * @throws ApiError if token refresh fails after retries
- */
-export async function getDriveAccessToken(
-  db: DrizzleDB,
-  env: { GCAL_SERVICE_ACCOUNT_EMAIL?: string; GCAL_PRIVATE_KEY?: string }
-): Promise<string> {
-  return getOrRefreshToken("drive", db, env);
-}
-
-/**
- * Get a valid access token for Google Photos Library API
- *
- * Uses lazy refresh pattern: checks D1 cache first, refreshes only if
- * token is missing or expiring within 5-minute buffer.
- *
- * @param db - Drizzle database instance
- * @param env - Cloudflare environment bindings
- * @returns The access token string
- * @throws ApiError if token refresh fails after retries
- */
-export async function getPhotosAccessToken(
-  db: DrizzleDB,
-  env: { GCAL_SERVICE_ACCOUNT_EMAIL?: string; GCAL_PRIVATE_KEY?: string }
-): Promise<string> {
-  return getOrRefreshToken("photos", db, env);
 }

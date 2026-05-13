@@ -17,7 +17,7 @@ import { describe, it, expect, vi } from "vitest";
 // Top-level mocks — Vitest hoists these before any module loading.
 // Paths are relative to THIS test file at functions/utils/imageImport.test.ts.
 vi.mock("../utils/googleAuth", () => ({
-  getPhotosAccessToken: vi.fn().mockResolvedValue("mock-token"),
+  getUnifiedOAuthToken: vi.fn().mockResolvedValue("mock-token"),
 }));
 
 vi.mock("../api/middleware/auth", async () => {
@@ -219,13 +219,21 @@ describe("POST /import endpoint", () => {
     mockDb = {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
-          run: vi.fn().mockResolvedValue({ success: true }),
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            execute: vi.fn().mockResolvedValue({ success: true }),
+          }),
+        }),
+      }),
+      delete: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          execute: vi.fn().mockResolvedValue({ success: true }),
         }),
       }),
       select: vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
             get: vi.fn().mockResolvedValue(null),
+            execute: vi.fn().mockResolvedValue([null]),
           }),
         }),
       }),

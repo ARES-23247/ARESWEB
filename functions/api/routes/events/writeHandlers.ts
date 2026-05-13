@@ -8,6 +8,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { getSocialConfig, getSessionUser, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { eq, and } from "drizzle-orm";
@@ -142,11 +143,13 @@ export const writeHandlers = {
         }
 
         c.executionCtx.waitUntil((async () => {
-            if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+            if (calId) {
                 try {
+                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
                     const gcalId = await pushEventToGcal(
                         { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: rrule || undefined },
-                        { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+                        calId as string,
+                        oauthToken
                     );
                     if (gcalId) {
                         await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
@@ -253,15 +256,17 @@ export const writeHandlers = {
                 const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
                 const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-                if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+                if (calId) {
                     try {
+                        const oauthToken = await getUnifiedOAuthToken(c.env, db);
                         const row = await db.select({
                             gcalEventId: schema.events.gcalEventId,
                         }).from(schema.events).where(eq(schema.events.id, id)).get();
 
                         const gcalId = await pushEventToGcal(
                             { id, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, gcalEventId: row?.gcalEventId || undefined, meetingNotes: meetingNotes || undefined },
-                            { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+                            calId as string,
+                            oauthToken
                         );
                         if (gcalId && gcalId !== row?.gcalEventId) {
                             await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, id)).run();
@@ -307,13 +312,10 @@ export const writeHandlers = {
                     const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
                     const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-                    if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+                    if (calId) {
                         try {
-                            await deleteEventFromGcal(existing.gcalEventId, {
-                                email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
-                                privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
-                                calendarId: calId
-                            });
+                            const oauthToken = await getUnifiedOAuthToken(c.env, db);
+                            await deleteEventFromGcal(existing.gcalEventId, calId as string, oauthToken);
                         } catch (err) {
                             console.error("[Events:Delete] GCal delete failed for event:", existing.gcalEventId, err);
                         }
@@ -363,11 +365,13 @@ export const writeHandlers = {
             const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
             const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-            if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+            if (calId) {
                 try {
+                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
                     const gcalId = await pushEventToGcal(
                         { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
-                        { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
+                        calId as string,
+                        oauthToken
                     );
                     if (gcalId && gcalId !== targetRow.gcalEventId) {
                         await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
@@ -411,11 +415,13 @@ export const writeHandlers = {
             const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof SocialConfig;
             const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-            if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+            if (calId) {
                 try {
+                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
                     const gcalId = await pushEventToGcal(
                         { id: targetRow.id as string, title: targetRow.title, dateStart: targetRow.dateStart, dateEnd: targetRow.dateEnd || undefined, location: targetRow.location || undefined, description: targetRow.description || undefined, coverImage: targetRow.coverImage || undefined, gcalEventId: targetRow.gcalEventId || undefined, meetingNotes: targetRow.meetingNotes || undefined },
-                        { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL, privateKey: socialConfig.GCAL_PRIVATE_KEY, calendarId: calId }
+                        calId as string,
+                        oauthToken
                     );
                     if (gcalId && gcalId !== targetRow.gcalEventId) {
                         await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, targetRow.id)).run();
@@ -442,13 +448,10 @@ export const writeHandlers = {
                 const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
                 const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-                if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+                if (calId) {
                     try {
-                        await deleteEventFromGcal(row.gcalEventId, {
-                            email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string,
-                            privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
-                            calendarId: calId
-                        });
+                        const oauthToken = await getUnifiedOAuthToken(c.env, db);
+                        await deleteEventFromGcal(row.gcalEventId, calId as string, oauthToken);
                     } catch (err) {
                         console.error("[Events:HardDelete] GCal delete failed for event:", row.gcalEventId, err);
                     }
@@ -493,11 +496,13 @@ export const writeHandlers = {
             const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
             const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
 
-            if (socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL && socialConfig.GCAL_PRIVATE_KEY && calId) {
+            if (calId) {
                 try {
+                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
                     const gcalId = await pushEventToGcal(
                         { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: event.gcalEventId || undefined, meetingNotes: event.meetingNotes || undefined },
-                        { email: socialConfig.GCAL_SERVICE_ACCOUNT_EMAIL as string, privateKey: socialConfig.GCAL_PRIVATE_KEY as string, calendarId: calId as string }
+                        calId as string,
+                        oauthToken
                     );
                     if (gcalId && gcalId !== event.gcalEventId) {
                         await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();

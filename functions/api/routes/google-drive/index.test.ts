@@ -6,7 +6,7 @@ import { createMockDrizzleDb, createTestEnv } from "../../../test/test-env";
 
 // Mock googleAuth module BEFORE importing google-drive
 vi.mock("../../../utils/googleAuth", () => ({
-  getDriveAccessToken: vi.fn(),
+  getUnifiedOAuthToken: vi.fn(),
 }));
 
 // Mock middleware modules BEFORE importing google-drive
@@ -32,7 +32,7 @@ vi.mock("../../middleware", async () => {
 
 // Now import after mocks are set up
 import { driveRouter } from "./index";
-import { getDriveAccessToken } from "../../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { getDb } from "../../middleware";
 
 describe("google-drive router", () => {
@@ -49,7 +49,7 @@ describe("google-drive router", () => {
 
     // Setup token mocks
     mockToken = "mock-drive-token-" + Date.now();
-    vi.mocked(getDriveAccessToken).mockResolvedValue(mockToken);
+    vi.mocked(getUnifiedOAuthToken).mockResolvedValue(mockToken);
     vi.mocked(getDb).mockReturnValue(mockDb as any);
 
     // Create test env
@@ -127,7 +127,7 @@ describe("google-drive router", () => {
 
     it("Test 4: Token refresh failures trigger retry logic (3 retries)", async () => {
       let attempts = 0;
-      vi.mocked(getDriveAccessToken).mockImplementation(() => {
+      vi.mocked(getUnifiedOAuthToken).mockImplementation(() => {
         attempts++;
         if (attempts <= 3) {
           return Promise.reject(new Error("Token refresh failed"));
@@ -154,7 +154,7 @@ describe("google-drive router", () => {
 
     it("Test 5: Exhausted retries throw ApiError with AUTH_FAILURE code", async () => {
       // Mock token refresh that always fails
-      vi.mocked(getDriveAccessToken).mockRejectedValue(
+      vi.mocked(getUnifiedOAuthToken).mockRejectedValue(
         new Error("Failed to refresh drive access token after 3 attempts: Authentication failed")
       );
 
@@ -316,7 +316,7 @@ describe("google-drive router", () => {
       expect(url).toContain("application%2Fvnd.google-apps.document");
     });
 
-    it("Test 11: uses getDriveAccessToken for authenticated API calls", async () => {
+    it("Test 11: uses getUnifiedOAuthToken for authenticated API calls", async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ files: [] }),
@@ -326,7 +326,7 @@ describe("google-drive router", () => {
         method: "GET",
       });
 
-      expect(getDriveAccessToken).toHaveBeenCalledWith(mockDb, expect.any(Object));
+      expect(getUnifiedOAuthToken).toHaveBeenCalledWith(expect.any(Object), mockDb);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({

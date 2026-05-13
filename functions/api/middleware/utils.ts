@@ -66,6 +66,7 @@ export type Bindings = {
   YOUTUBE_API_KEY?: string;
   YOUTUBE_CLIENT_ID?: string;
   YOUTUBE_CLIENT_SECRET?: string;
+  AUTHORIZED_GOOGLE_ACCOUNT?: string;
   // Onshape OAuth state storage (Phase 78)
   ONSHAPE_OAUTH_STATE: KVNamespace;
   ONSHAPE_CLIENT_ID?: string;
