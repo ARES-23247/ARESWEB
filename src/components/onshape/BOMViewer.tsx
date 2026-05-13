@@ -80,7 +80,7 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 		});
 
 		return parts;
-	}, [data?.parts, sortField, sortDirection]);
+	}, [data, sortField, sortDirection]);
 
 	// Handle sort
 	const handleSort = (field: SortField) => {
@@ -205,15 +205,8 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 							<th>
 								<button
 									onClick={() => handleSort("partName")}
-									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full"
-									aria-sort={
-										sortField === "partName"
-											? sortDirection === "asc"
-												? "ascending"
-												: "descending"
-											: "none"
-									}
-								>
+									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full hover:bg-white/10 transition-colors"
+									>
 									Part Name
 									{getSortIcon("partName")}
 								</button>
@@ -221,14 +214,7 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 							<th>
 								<button
 									onClick={() => handleSort("partNumber")}
-									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full"
-									aria-sort={
-										sortField === "partNumber"
-											? sortDirection === "asc"
-												? "ascending"
-												: "descending"
-											: "none"
-									}
+									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full hover:bg-white/10 transition-colors"
 								>
 									Part Number
 									{getSortIcon("partNumber")}
@@ -237,14 +223,7 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 							<th>
 								<button
 									onClick={() => handleSort("quantity")}
-									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full"
-									aria-sort={
-										sortField === "quantity"
-											? sortDirection === "asc"
-												? "ascending"
-												: "descending"
-											: "none"
-									}
+									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full hover:bg-white/10 transition-colors"
 								>
 									Quantity
 									{getSortIcon("quantity")}
@@ -253,14 +232,7 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 							<th>
 								<button
 									onClick={() => handleSort("material")}
-									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full"
-									aria-sort={
-										sortField === "material"
-											? sortDirection === "asc"
-												? "ascending"
-												: "descending"
-											: "none"
-									}
+									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full hover:bg-white/10 transition-colors"
 								>
 									Material
 									{getSortIcon("material")}
@@ -269,14 +241,7 @@ export function BOMViewer({ documentId, elementId, elementName }: BOMViewerProps
 							<th>
 								<button
 									onClick={() => handleSort("mass")}
-									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full"
-									aria-sort={
-										sortField === "mass"
-											? sortDirection === "asc"
-												? "ascending"
-												: "descending"
-											: "none"
-									}
+									className="flex items-center gap-2 px-4 py-3 font-bold uppercase tracking-wider text-left w-full hover:bg-white/10 transition-colors"
 								>
 									Mass (g)
 									{getSortIcon("mass")}

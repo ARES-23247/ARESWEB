@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
 import { ChevronDown, LogOut, ExternalLink } from "lucide-react";
 
 interface OnshapeAuthStatus {
@@ -90,6 +89,8 @@ export function OnshapeAuthButton() {
 					<div
 						className="fixed inset-0 z-10"
 						onClick={() => setShowDropdown(false)}
+						onKeyDown={(e) => e.key === "Escape" && setShowDropdown(false)}
+						role="presentation"
 					/>
 
 					{/* Dropdown */}

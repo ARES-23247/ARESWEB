@@ -48,6 +48,13 @@ export function ModelCard({ document, onClick, actions, elements }: ModelCardPro
 		}
 	};
 
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			handleCardClick();
+		}
+	};
+
 	const formatDate = (dateStr: string) => {
 		try {
 			return new Date(dateStr).toLocaleDateString();
@@ -61,13 +68,13 @@ export function ModelCard({ document, onClick, actions, elements }: ModelCardPro
 		(el) => el.type === "PartStudio" || el.type === "Assembly"
 	);
 
-	// Filter assemblies for BOM
-	const assemblies = elements?.filter((el) => el.type === "Assembly");
-
 	return (
 		<>
 			<div
 				onClick={handleCardClick}
+				onKeyDown={onClick ? handleKeyDown : undefined}
+				role={onClick ? "button" : undefined}
+				tabIndex={onClick ? 0 : undefined}
 				className={`
 					group bg-white border border-ares-bronze/20 rounded-lg overflow-hidden
 					hover:border-ares-bronze hover:shadow-xl transition-all duration-200
@@ -165,7 +172,6 @@ export function ModelCard({ document, onClick, actions, elements }: ModelCardPro
 											documentId={document.id}
 											documentName={document.name}
 											elements={exportableElements}
-											assemblies={assemblies || []}
 											onViewBOM={(element) => setBomElement(element)}
 										/>
 									)}
@@ -226,13 +232,11 @@ function ElementActionDropdown({
 	documentId,
 	documentName,
 	elements,
-	assemblies,
 	onViewBOM,
 }: {
 	documentId: string;
 	documentName: string;
 	elements: OnshapeElement[];
-	assemblies: OnshapeElement[];
 	onViewBOM: (element: OnshapeElement) => void;
 }) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -253,6 +257,8 @@ function ElementActionDropdown({
 			{isOpen && (
 				<div
 					onClick={(e) => e.stopPropagation()}
+					onKeyDown={(e) => e.stopPropagation()}
+					role="presentation"
 					className="absolute top-full right-0 mt-1 bg-white border border-ares-bronze/20 rounded-lg shadow-lg overflow-hidden z-10 min-w-[240px] max-h-[300px] overflow-y-auto"
 				>
 					{elements.map((element) => (

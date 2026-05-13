@@ -7,7 +7,7 @@
  * Per ARES brand: ares-gold for success, proper loading indicators
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Download, Loader2, CheckCircle, XCircle, ChevronDown } from "lucide-react";
 
 export interface ExportButtonProps {
@@ -34,11 +34,11 @@ export function ExportButton({
 	const [progress, setProgress] = useState(0);
 	const [isOpen, setIsOpen] = useState(false);
 
-	const resetStatus = useCallback(() => {
+	const resetStatus = () => {
 		setStatus("idle");
 		setErrorMessage("");
 		setProgress(0);
-	}, [];
+	};
 
 	// STL export (direct download)
 	const exportSTL = async () => {
@@ -248,6 +248,8 @@ export function ExportButton({
 			{isOpen && !isExporting && !isSuccess && (
 				<div
 					onClick={(e) => e.stopPropagation()}
+					onKeyDown={(e) => e.stopPropagation()}
+					role="presentation"
 					className="absolute top-full right-0 mt-2 bg-white border border-ares-bronze/20 rounded-lg shadow-lg overflow-hidden z-10 min-w-[180px]"
 				>
 					<button

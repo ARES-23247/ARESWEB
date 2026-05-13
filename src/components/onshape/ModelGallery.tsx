@@ -7,10 +7,10 @@
  * Per ARES brand: ares-gold accents, obsidian text
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Box, AlertCircle } from "lucide-react";
-import { ModelCard, type OnshapeDocument, type OnshapeElement } from "./ModelCard";
+import { ModelCard, type OnshapeDocument } from "./ModelCard";
 
 interface ModelGalleryProps {
 	mode: "public" | "user";
@@ -31,7 +31,7 @@ export function ModelGallery({ mode, searchQuery, onDocumentClick, showActions =
 
 	// Fetch documents based on mode
 	const { data, isLoading, error, refetch } = useQuery<DocumentsResponse>({
-		queryKey: ["onshape", "documents", mode, page],
+		queryKey: ["onshape", "documents", mode, page, pageSize],
 		queryFn: async () => {
 			const endpoint = mode === "public" ? "/api/onshape/documents/public" : "/api/onshape/documents";
 			const params = new URLSearchParams();

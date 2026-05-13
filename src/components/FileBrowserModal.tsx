@@ -21,12 +21,22 @@ interface FileBrowserModalProps {
 // File type icon component
 const FileIcon = ({ mimeType }: { mimeType: string }) => {
 	const iconName = getMimeTypeIcon(mimeType);
-	const IconComponent = {
+
+	type IconMap = {
+		FileText: typeof FileText;
+		Table: typeof Table;
+		Presentation: typeof Presentation;
+		File: typeof File;
+	};
+
+	const iconMap: IconMap = {
 		FileText,
 		Table,
 		Presentation,
 		File,
-	}[iconName as keyof typeof { FileText: typeof FileText; Table: typeof Table; Presentation: typeof Presentation; File: typeof File }];
+	};
+
+	const IconComponent = iconMap[iconName as keyof IconMap];
 
 	const iconColor = {
 		FileText: "text-ares-cyan",
