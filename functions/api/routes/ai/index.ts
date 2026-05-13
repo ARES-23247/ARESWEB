@@ -909,7 +909,14 @@ aiRouter.openapi(reindexExternalRoute, async (c) => {
 // ──── Knowledge Sources Management ────────────────────────────────────────
 aiRouter.get("/admin/external-sources", ensureAdmin, async (c) => {
     const db = getDb(c);
-    const sources = await db.select().from(schema.externalKnowledgeSources);
+    const sources = await db.select({
+        id: schema.externalKnowledgeSources.id,
+        type: schema.externalKnowledgeSources.type,
+        url: schema.externalKnowledgeSources.url,
+        branch: schema.externalKnowledgeSources.branch,
+        lastSyncedAt: schema.externalKnowledgeSources.lastSyncedAt,
+        createdAt: schema.externalKnowledgeSources.createdAt,
+    }).from(schema.externalKnowledgeSources);
     return c.json(sources);
 });
 

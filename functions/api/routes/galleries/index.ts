@@ -35,7 +35,15 @@ const serializeGallery = (g: typeof schema.galleries.$inferSelect): z.infer<type
 // GET /galleries - List all galleries (public)
 export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, async (c) => {
   const db = getDb(c);
-  const results = await db.select().from(schema.galleries).orderBy(schema.galleries.createdAt).execute();
+  const results = await db.select({
+    id: schema.galleries.id,
+    title: schema.galleries.title,
+    description: schema.galleries.description,
+    googlePhotosUrl: schema.galleries.googlePhotosUrl,
+    heroImageKey: schema.galleries.heroImageKey,
+    createdAt: schema.galleries.createdAt,
+    updatedAt: schema.galleries.updatedAt,
+  }).from(schema.galleries).orderBy(schema.galleries.createdAt).execute();
 
   const galleries = results.map(serializeGallery);
 
@@ -56,7 +64,7 @@ export const finalGalleriesRouter = galleriesRouter.openapi(listGalleriesRoute, 
   const { id } = c.req.valid("param");
   const db = getDb(c);
 
-  const existing = await db.select().from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
+  const existing = await db.select({ id: schema.galleries.id }).from(schema.galleries).where(eq(schema.galleries.id, id)).execute();
   if (existing.length === 0) {
     throw new ApiError("Gallery not found", 404, "NOT_FOUND");
   }

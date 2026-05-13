@@ -54,6 +54,7 @@ import { aiToolsRouter } from "./routes/ai-tools/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 import { driveRouter } from "./routes/google-drive";
 import { photosRouter } from "./routes/google-photos";
+import onshapeRouter from "./routes/onshape";
 
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
@@ -257,7 +258,8 @@ export const group4 = new OpenAPIHono<AppEnv>()
   .route("/webhooks/zulip", zulipWebhookRouter)
   .route("/communications", communicationsRouter)
   .route("/google-drive", driveRouter)
-  .route("/google-photos", photosRouter);
+  .route("/google-photos", photosRouter)
+  .route("/onshape", onshapeRouter);
 
 // ── Global Search ───
 // D1 FTS result shape from raw SQL queries
