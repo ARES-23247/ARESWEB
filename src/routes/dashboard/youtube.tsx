@@ -212,13 +212,24 @@ function VideoHub() {
                             Watch video
                           </a>
                           <div className="flex items-center gap-2 ml-auto">
+                            {video.platform === 'youtube' && (
+                              <a
+                                href={`https://studio.youtube.com/video/${video.videoId}/edit`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-white/60 hover:text-[#FF0000] transition-colors"
+                                title="Open in YouTube Studio"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                              </a>
+                            )}
                             <button
                               onClick={() => {
                                 setEditVideoId(video.id);
                                 setIsPickerOpen(true);
                               }}
                               className="p-2 text-white/60 hover:text-ares-red transition-colors"
-                              title="Edit video"
+                              title="Edit metadata in ARESWEB"
                             >
                               <Pencil size={16} />
                             </button>
