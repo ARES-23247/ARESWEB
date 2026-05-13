@@ -26,17 +26,17 @@ export const sitemapRouter = _sitemapRouter
         // Fetch published docs, posts, and events
         const [docs, posts, events] = await Promise.all([
           list(db, schema.docs, {
-            select: { slug: schema.docs.slug },
+            select: { slug: schema.docs.slug, updatedAt: schema.docs.updatedAt },
             where: and(notDeleted(schema.docs), eq(schema.docs.status, "published")),
             useAll: true
           }),
           list(db, schema.posts, {
-            select: { slug: schema.posts.slug },
+            select: { slug: schema.posts.slug, updatedAt: schema.posts.updatedAt },
             where: and(notDeleted(schema.posts), eq(schema.posts.status, "published")),
             useAll: true
           }),
           list(db, schema.events, {
-            select: { id: schema.events.id },
+            select: { id: schema.events.id, updatedAt: schema.events.updatedAt },
             where: notDeleted(schema.events),
             useAll: true
           })
@@ -70,19 +70,32 @@ export const sitemapRouter = _sitemapRouter
           xml += `  <url><loc>${baseUrl}${route}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
         }
 
+        // Helper to format lastmod reliably
+        const formatLastMod = (dateStr?: string | null) => {
+          if (!dateStr) return '';
+          try {
+            // Check if it's already an ISO string or a timestamp
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '';
+            return `<lastmod>${date.toISOString()}</lastmod>`;
+          } catch {
+            return '';
+          }
+        };
+
         // Docs
-        for (const doc of docs as { slug: string }[]) {
-          xml += `  <url><loc>${baseUrl}/docs/${doc.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+        for (const doc of docs as { slug: string; updatedAt: string | null }[]) {
+          xml += `  <url><loc>${baseUrl}/docs/${doc.slug}</loc>${formatLastMod(doc.updatedAt)}<changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
         }
 
         // Posts
-        for (const post of posts as { slug: string }[]) {
-          xml += `  <url><loc>${baseUrl}/blog/${post.slug}</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n`;
+        for (const post of posts as { slug: string; updatedAt: string | null }[]) {
+          xml += `  <url><loc>${baseUrl}/blog/${post.slug}</loc>${formatLastMod(post.updatedAt)}<changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
         }
 
         // Events
-        for (const event of events as { id: string }[]) {
-          xml += `  <url><loc>${baseUrl}/events/${event.id}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+        for (const event of events as { id: string; updatedAt: string | null }[]) {
+          xml += `  <url><loc>${baseUrl}/events/${event.id}</loc>${formatLastMod(event.updatedAt)}<changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
         }
 
         xml += `</urlset>`;
