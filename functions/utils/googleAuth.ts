@@ -2,6 +2,7 @@ import { getGcalAccessToken, type GCalConfig } from "./gcalSync";
 import type { DrizzleDB } from "../../src/db/types";
 import { settings } from "../../src/db/schema";
 import { eq } from "drizzle-orm";
+import { ApiError } from "../shared/errors/api";
 
 /**
  * Token cache entry stored in D1 settings
@@ -53,6 +54,15 @@ export async function getOrRefreshToken(
 ): Promise<string> {
   const tokenKey = `${type}_access_token`;
   const expiryKey = `${type}_token_expires_at`;
+
+  // Validate credentials before attempting token generation (CR-02)
+  if (!env.GCAL_SERVICE_ACCOUNT_EMAIL || !env.GCAL_PRIVATE_KEY) {
+    throw new ApiError(
+      `Missing Google service account credentials. Cannot refresh ${type} token.`,
+      500,
+      "MISSING_CREDENTIALS"
+    );
+  }
 
   // Step 1: Check D1 settings for cached token
   const cachedEntries = await db
@@ -154,8 +164,10 @@ export async function getOrRefreshToken(
   }
 
   // All retries exhausted - throw error per D-08
-  throw new Error(
-    `Failed to refresh ${type} access token after ${MAX_RETRIES} attempts: ${lastError?.message || "Unknown error"}`
+  throw new ApiError(
+    `Failed to refresh ${type} access token after ${MAX_RETRIES} attempts: ${lastError?.message || "Unknown error"}`,
+    503,
+    "TOKEN_REFRESH_FAILED"
   );
 }
 

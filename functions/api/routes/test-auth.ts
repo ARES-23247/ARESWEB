@@ -135,5 +135,5 @@ authTestApp.openapi(
  *   import { authTestRouter } from "./routes/test-auth";
  *   app.route("/api/test-auth", authTestRouter);
  */
-export const authTestRouter = authTestApp;
-export default authTestRouter;
+export { authTestApp as authTestRouter };
+export default authTestApp;
