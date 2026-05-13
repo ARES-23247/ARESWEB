@@ -195,14 +195,75 @@ photosApp.openapi(mediaRoute, async (c) => {
 });
 
 // Albums endpoint (Phase 75-03)
-// This route is established now to avoid breaking changes when albums are added later
+// Lists Google Photos albums with cover photos and item counts
 photosApp.openapi(albumsRoute, async (c) => {
-  // TODO: Implement Google Photos album listing in Phase 75-03
-  // This endpoint will:
-  // - Fetch albums from Google Photos Library API
-  // - Support pagination for large album collections
-  // - Return album metadata (id, title, mediaItemsCount, coverPhotoBaseUrl)
-  return c.json([], 200);
+  const db = getDb(c);
+  const env = c.env;
+
+  // Extract query parameters
+  const { pageToken, pageSize = 25 } = c.req.valid("query");
+
+  // Get access token using lazy refresh pattern (with retry logic per D-07)
+  const token = await getPhotosAccessToken(db, env);
+
+  // Build search params for albums API
+  const searchParams = new URLSearchParams({
+    pageSize: String(pageSize),
+  });
+  if (pageToken) {
+    searchParams.append("pageToken", pageToken);
+  }
+
+  // Call Photos API albums:list endpoint
+  const photosResponse = await fetch(
+    `https://photoslibrary.googleapis.com/v1/albums?${searchParams.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  // Handle authentication failures from Photos API
+  if (photosResponse.status === 401) {
+    throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
+  }
+
+  // Handle other API errors
+  if (!photosResponse.ok) {
+    const errorText = await photosResponse.text();
+    console.error("[google-photos] Albums API list failed:", errorText);
+    throw new ApiError(
+      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}`,
+      502,
+      "API_FAILURE"
+    );
+  }
+
+  const photosData = await photosResponse.json() as {
+    albums?: Array<{
+      id: string;
+      title: string;
+      mediaItemsCount?: string;
+      coverPhotoBaseUrl?: string;
+    }>;
+    nextPageToken?: string;
+  };
+
+  // Transform Photos API response to match listAlbumsResponseSchema
+  const albums = (photosData.albums ?? []).map((album) => ({
+    id: album.id,
+    title: album.title,
+    mediaItemsCount: album.mediaItemsCount,
+    coverPhotoBaseUrl: album.coverPhotoBaseUrl,
+  }));
+
+  // Return response with pagination token
+  return c.json({
+    albums,
+    nextPageToken: photosData.nextPageToken,
+  }, 200);
 });
 
 // Export the router for registration in the main app
