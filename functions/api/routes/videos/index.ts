@@ -80,7 +80,15 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
 // GET / - List all videos (public)
 const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
     const db = getDb(c);
-    const results = await db.select().from(schema.videos).orderBy(schema.videos.createdAt).execute();
+    const results = await db.select({
+        id: schema.videos.id,
+        youtubeId: schema.videos.youtubeId,
+        title: schema.videos.title,
+        thumbnailUrl: schema.videos.thumbnailUrl,
+        type: schema.videos.type,
+        createdAt: schema.videos.createdAt,
+        updatedAt: schema.videos.updatedAt,
+    }).from(schema.videos).orderBy(schema.videos.createdAt).execute();
 
     const videos = results.map(serializeVideo);
 

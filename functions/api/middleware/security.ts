@@ -108,7 +108,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
         lt(schema.rateLimits.expiresAt, now)
       ))
       .execute()
-      .catch(() => {}); // Ignore errors (record might not exist)
+      .catch((err) => console.debug("[RateLimit] Expired record cleanup failed:", err)); // Non-critical: record might not exist
 
     // Now insert or increment
     // If we just deleted an expired record, this will insert fresh

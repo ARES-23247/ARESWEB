@@ -150,7 +150,9 @@ async function pruneDocHistory(c: HonoContext, slug: string, limit = 10) {
                 ))
                 .run();
         }
-    } catch { /* ignore */ }
+    } catch (err) {
+        console.error("[Docs:PruneHistory] Failed to prune history for slug:", slug, err);
+    }
 }
 
 // GET /docs - List all public docs
@@ -522,13 +524,13 @@ export const docsRouter = _docsRouter
         const params = c.req.valid("param");
         const { slug } = params;
         const db = getDb(c);
-        const existing = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
+        const existing = await db.select({ slug: schema.docs.slug, title: schema.docs.title }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
         if (!existing) {
             throw new ApiError("Doc not found", 404);
         }
 
         await db.update(schema.docs).set({ isDeleted: 1 }).where(eq(schema.docs.slug, slug)).run();
-        c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, JSON.stringify(existing)));
+        c.executionCtx?.waitUntil?.(logAuditAction(c, "DELETE_DOC", "docs", slug, `Soft-deleted: ${existing.title ?? slug}`));
         triggerBackgroundReindex(c.executionCtx, db, c.env.AI, c.env.VECTORIZE_DB);
         return c.json({ success: true }, 200);
     })
@@ -857,7 +859,13 @@ export const docsRouter = _docsRouter
         const { slug } = params;
         const { reason } = body;
         const db = getDb(c);
-        const row = await db.select().from(schema.docs).where(eq(schema.docs.slug, slug)).get();
+        const row = await db.select({
+            slug: schema.docs.slug,
+            status: schema.docs.status,
+            revisionOf: schema.docs.revisionOf,
+            cfEmail: schema.docs.cfEmail,
+            title: schema.docs.title,
+        }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
         if (!row) {
             throw new ApiError("Doc not found", 404);
         }
@@ -908,7 +916,7 @@ export const docsRouter = _docsRouter
         }
         await db.delete(schema.docs).where(eq(schema.docs.slug, slug)).run();
         c.executionCtx?.waitUntil?.(db.delete(schema.docsHistory).where(eq(schema.docsHistory.slug, slug)).run());
-        c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, JSON.stringify(doc)));
+        c.executionCtx?.waitUntil?.(logAuditAction(c, "PURGE_DOC", "docs", slug, "Permanently purged"));
         return c.json({ success: true }, 200);
     })
     .openapi(docsRoutes.exportAllDocsRoute, async (c) => {

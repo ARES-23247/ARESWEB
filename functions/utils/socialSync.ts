@@ -143,7 +143,9 @@ export async function dispatchPhotoSocials(imageUrl: string, caption: string, co
   promises.push(wrapRetry(() => dispatchMetaPhoto(imageUrl, caption, config), 'MetaPhoto'));
 
   // 2. Twitter (X)
-  promises.push(wrapRetry(() => dispatchTwitterPhoto(imageUrl, caption, config), 'TwitterPhoto').catch(() => {}));
+  promises.push(wrapRetry(() => dispatchTwitterPhoto(imageUrl, caption, config), 'TwitterPhoto').catch((err) => {
+    console.error("[PhotoSocialSync:TwitterPhoto] All retries exhausted:", err);
+  }));
 
   // 3. Webhooks
   promises.push(wrapRetry(() => dispatchDiscordPhoto(imageUrl, caption, config), 'DiscordPhoto'));

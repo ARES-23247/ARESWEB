@@ -604,7 +604,9 @@ export const eventHandlers = {
                                 privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
                                 calendarId: calId
                             });
-                        } catch { /* ignore GCal failure */ }
+                        } catch (err) {
+                            console.error("[Events:Delete] GCal delete failed for event:", existing.gcalEventId, err);
+                        }
                     }
                 }
             })());
@@ -737,7 +739,9 @@ export const eventHandlers = {
                             privateKey: socialConfig.GCAL_PRIVATE_KEY as string,
                             calendarId: calId
                         });
-                    } catch { /* ignore GCal failure */ }
+                    } catch (err) {
+                        console.error("[Events:HardDelete] GCal delete failed for event:", row.gcalEventId, err);
+                    }
                 }
             }
         })());

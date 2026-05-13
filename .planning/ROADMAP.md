@@ -156,7 +156,14 @@
 7. User can view, search, and delete uploaded files
 8. System tracks file usage (which posts use which files)
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+**Plan List**:
+- [ ] 77-01-PLAN.md — Define database schema and API contracts
+- [ ] 77-02-PLAN.md — Implement file upload and management endpoints with TDD
+- [ ] 77-03-PLAN.md — Create frontend React Query hooks
+- [ ] 77-04-PLAN.md — Build dashboard file manager UI
+- [ ] 77-05-PLAN.md — Integrate file browser into blog editor
 
 **UI hint**: yes
 
@@ -201,8 +208,8 @@
 | 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
 | 74. Google Drive Document Browser | 4/4 | Complete ✅ | 2026-05-13 |
 | 75. Google Photos Browser | 1/7 | In Progress|  |
-| 76. Image Import Pipeline | 0/4 | Not started | - |
-| 77. File Manager | 0/8 | Not started | - |
+| 76. Image Import Pipeline | 3/4 | In Progress|  |
+| 77. File Manager | 0/5 | Not started | - |
 | 78. Onshape CAD Integration | 0/4 | Not started | - |
 
 ---
@@ -222,7 +229,7 @@
 
 ---
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-13 (Phase 76: Image Import Pipeline plans created)*
+*Last updated: 2026-05-13 (Phase 77: File Manager plans created)*
 
 ---
 

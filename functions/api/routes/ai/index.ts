@@ -322,7 +322,9 @@ Provide helpful, technical advice. Be concise.`;
                                     if (data.choices?.[0]?.delta?.content) {
                                         await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
                                     }
-                                } catch { /* ignore */ }
+                                } catch (err) {
+                                    console.debug("[AI:Stream] SSE chunk parse error:", err);
+                                }
                             }
                         }
                     }
@@ -359,7 +361,9 @@ Provide helpful, technical advice. Be concise.`;
                                 if (data.response) {
                                     await stream.writeSSE({ data: JSON.stringify({ chunk: data.response }) });
                                 }
-                            } catch { /* ignore */ }
+                            } catch (err) {
+                                console.debug("[AI:Stream] SSE chunk parse error:", err);
+                            }
                         }
                     }
                 }
@@ -429,7 +433,9 @@ Be technical, helpful, and follow FIRST Core Values.`;
                                     if (data.choices?.[0]?.delta?.content) {
                                         await stream.writeSSE({ data: JSON.stringify({ chunk: data.choices[0].delta.content }) });
                                     }
-                                } catch { /* ignore */ }
+                                } catch (err) {
+                                    console.debug("[AI:EditorStream] SSE chunk parse error:", err);
+                                }
                             }
                         }
                     }
@@ -466,7 +472,9 @@ Be technical, helpful, and follow FIRST Core Values.`;
                                 if (data.response) {
                                     await stream.writeSSE({ data: JSON.stringify({ chunk: data.response }) });
                                 }
-                            } catch { /* ignore */ }
+                            } catch (err) {
+                                console.debug("[AI:EditorStream] SSE chunk parse error:", err);
+                            }
                         }
                     }
                 }

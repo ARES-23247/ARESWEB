@@ -79,7 +79,11 @@
       "Bash(node node_modules/gsd-sdk/cli/query.js init.execute-phase \"76-image-import-pipeline\")",
       "Bash(node node_modules/.sdk/gsd-sdk query state.load)",
       "Bash(node node_modules/gsd-sdk/cli/query.js state.load)",
-      "Bash(node node_modules/.sdk/gsd-sdk query state.advance-plan)"
+      "Bash(node node_modules/.sdk/gsd-sdk query state.advance-plan)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs plan validate)",
+      "Bash(npx --yes gsd-sdk query frontmatter.validate __TRACKED_VAR__/.planning/phases/77-file-manager/77-01-PLAN.md --schema plan)",
+      "Bash(node -e \"const s = require\\('./src/db/schema.ts'\\); console.log\\('uploadedFiles:', typeof s.uploadedFiles\\); console.log\\('fileUsage:', typeof s.fileUsage\\);\")",
+      "Bash(node -e \"const s = require\\('./functions/utils/fileValidation.ts'\\); console.log\\('Exports:', Object.keys\\(s\\).join\\(', '\\)\\);\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
