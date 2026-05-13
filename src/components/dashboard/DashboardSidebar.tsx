@@ -1,7 +1,7 @@
 import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History,
+  PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History, FileText,
   User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database,
   type LucideIcon
 } from "lucide-react";
@@ -225,6 +225,7 @@ export default function DashboardSidebar({
               <h4 className="text-xs uppercase font-black tracking-widest text-ares-cyan mb-2 px-6">Team Workspace</h4>
               <div className="space-y-1 px-3">
                 <NavButton tab="tasks" icon={LayoutDashboard} label="Kanban Tasks" currentPath={location.pathname} />
+                <NavButton tab="drive-docs" icon={FileText} label="Google Drive Docs" currentPath={location.pathname} />
                 <NavButton tab="outreach" icon={Target} label="Outreach Tracker" currentPath={location.pathname} />
                 <NavButton tab="locations" icon={MapPin} label="Meeting Locations" currentPath={location.pathname} />
                 {canSeeSimulations && <NavButton tab="simulations" icon={Sparkles} label="Sim Playground" currentPath={location.pathname} />}
