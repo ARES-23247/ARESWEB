@@ -4,10 +4,19 @@ import { ensureAdmin, getDb } from "../../middleware";
 import { getPhotosAccessToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import {
   listMediaRoute,
   listAlbumsRoute,
+  importPhotosRoute,
 } from "../../../../shared/routes/google-photos";
+import * as schema from "../../../src/db/schema";
+import {
+  validateImageMagicBytes,
+  downloadPhoto,
+  uploadToR2,
+  sanitizeAlbumName,
+} from "../../../utils/imageImport";
 
 // Health check response schema
 const healthResponseSchema = z.object({
@@ -457,6 +466,256 @@ photosApp.post("/upload", async (c) => {
       uploadedCount: Math.max(0, uploadedCount),
       failures: failures.length > 0 ? failures : undefined,
     },
+    200
+  );
+});
+
+// Import endpoint (Phase 76-02)
+// Imports selected Google Photos media items to R2 storage
+// Per D-22: Accepts mediaItemIds array and optional albumId
+// Per IMG-03: Downloads from Photos API with =d suffix
+// Per IMG-04: Validates magic bytes before upload
+// Per IMG-06: Tracks imports in imported_photos and audit log
+// Per D-06: Sequential processing to avoid memory overflow
+photosApp.openapi(importPhotosRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+
+  // Parse request body
+  const { mediaItemIds, albumId } = await c.req.json();
+
+  // Get access token
+  const token = await getPhotosAccessToken(db, env);
+
+  // Get user email for audit tracking
+  const userEmail = c.get("userEmail") ?? "unknown";
+
+  // Fetch album details if albumId provided
+  let albumName: string | null = null;
+  let albumRecord: { id: string; googleAlbumId: string; name: string; r2Folder: string; syncedAt: string } | null = null;
+
+  if (albumId) {
+    // Fetch album details from Google Photos API
+    const albumResponse = await fetch(
+      `https://photoslibrary.googleapis.com/v1/albums/${albumId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (albumResponse.ok) {
+      const albumData = await albumResponse.json() as {
+        id: string;
+        title: string;
+        mediaItemsCount?: string;
+      };
+
+      albumName = albumData.title;
+      const sanitizedFolder = sanitizeAlbumName(albumName);
+      const now = new Date().toISOString();
+
+      // Check if album already exists in D1
+      const existingAlbum = await db
+        .select({
+          id: schema.photoAlbums.id,
+          googleAlbumId: schema.photoAlbums.googleAlbumId,
+          name: schema.photoAlbums.name,
+          r2Folder: schema.photoAlbums.r2Folder,
+        })
+        .from(schema.photoAlbums)
+        .where(eq(schema.photoAlbums.googleAlbumId, albumId))
+        .get();
+
+      if (existingAlbum) {
+        albumRecord = existingAlbum;
+      } else {
+        // Create new album record
+        const albumId_uuid = crypto.randomUUID();
+        await db
+          .insert(schema.photoAlbums)
+          .values({
+            id: albumId_uuid,
+            googleAlbumId: albumId,
+            name: albumName,
+            r2Folder: sanitizedFolder,
+            syncedAt: now,
+            mediaItemsCount: albumData.mediaItemsCount ?? null,
+          } as any)
+          .run();
+
+        albumRecord = {
+          id: albumId_uuid,
+          googleAlbumId: albumId,
+          name: albumName,
+          r2Folder: sanitizedFolder,
+          syncedAt: now,
+        };
+      }
+    }
+  }
+
+  // Results tracking
+  const results: Array<{
+    mediaItemId: string;
+    status: "success" | "failed";
+    r2Key?: string;
+    error?: string;
+    filename: string;
+  }> = [];
+
+  // Per D-06: Sequential processing to avoid memory overflow
+  for (const mediaItemId of mediaItemIds) {
+    try {
+      // Fetch media item details from Google Photos API
+      const mediaResponse = await fetch(
+        `https://photoslibrary.googleapis.com/v1/mediaItems/${mediaItemId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!mediaResponse.ok) {
+        results.push({
+          mediaItemId,
+          status: "failed",
+          filename: "unknown",
+          error: `Failed to fetch media item: ${mediaResponse.status}`,
+        });
+
+        // Log failure to audit log
+        await db
+          .insert(schema.importAuditLog)
+          .values({
+            id: crypto.randomUUID(),
+            mediaItemId,
+            filename: "unknown",
+            status: "failed",
+            error: `Failed to fetch media item: ${mediaResponse.status}`,
+            importedBy: userEmail,
+            importedAt: new Date().toISOString(),
+          } as any)
+          .run();
+
+        continue;
+      }
+
+      const mediaData = await mediaResponse.json() as {
+        id: string;
+        filename: string;
+        mimeType: string;
+        baseUrl: string;
+      };
+
+      const { filename, mimeType, baseUrl } = mediaData;
+
+      // Download photo from Google Photos (Per IMG-03: =d for full resolution)
+      const buffer = await downloadPhoto(baseUrl, token);
+
+      // Validate magic bytes (Per IMG-04)
+      const validation = validateImageMagicBytes(buffer);
+      if (!validation.valid) {
+        results.push({
+          mediaItemId,
+          status: "failed",
+          filename,
+          error: validation.error ?? "Invalid image format",
+        });
+
+        // Log failure to audit log
+        await db
+          .insert(schema.importAuditLog)
+          .values({
+            id: crypto.randomUUID(),
+            mediaItemId,
+            filename,
+            status: "failed",
+            error: validation.error ?? "Invalid image format",
+            importedBy: userEmail,
+            importedAt: new Date().toISOString(),
+          } as any)
+          .run();
+
+        continue;
+      }
+
+      // Upload to R2
+      const r2Key = await uploadToR2(buffer, filename, mimeType, albumName ?? null, env);
+
+      // Record in imported_photos table (Per IMG-06)
+      await db
+        .insert(schema.importedPhotos)
+        .values({
+          id: crypto.randomUUID(),
+          r2Key,
+          originalFilename: filename,
+          googleMediaItemId: mediaItemId,
+          albumId: albumRecord?.id ?? null,
+          importedBy: userEmail,
+          importedAt: new Date().toISOString(),
+          mimeType,
+          fileSize: String(buffer.byteLength),
+        } as any)
+        .run();
+
+      // Log success to audit log (Per D-16/D-17)
+      await db
+        .insert(schema.importAuditLog)
+        .values({
+          id: crypto.randomUUID(),
+          mediaItemId,
+          filename,
+          status: "success",
+          r2Key,
+          importedBy: userEmail,
+          importedAt: new Date().toISOString(),
+        } as any)
+        .run();
+
+      results.push({
+        mediaItemId,
+        status: "success",
+        filename,
+        r2Key,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      results.push({
+        mediaItemId,
+        status: "failed",
+        filename: "unknown",
+        error: errorMessage,
+      });
+
+      // Log failure to audit log
+      await db
+        .insert(schema.importAuditLog)
+        .values({
+          id: crypto.randomUUID(),
+          mediaItemId,
+          filename: "unknown",
+          status: "failed",
+          error: errorMessage,
+          importedBy: userEmail,
+          importedAt: new Date().toISOString(),
+        } as any)
+        .run();
+    }
+  }
+
+  // Calculate counts
+  const imported = results.filter((r) => r.status === "success").length;
+  const failed = results.filter((r) => r.status === "failed").length;
+
+  return c.json(
+    {
+      imported,
+      failed,
+      results,
+    } as any,
     200
   );
 });
