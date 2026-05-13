@@ -22,7 +22,7 @@ const adminApp = new OpenAPIHono<AppEnv>();
 adminApp.use("*", ensureAdmin);
 
 // Utility to fetch Google Access Token using the Refresh Token
-async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Promise<string> {
+export async function getGoogleAccessToken(env: Env, db: ReturnType<typeof getDb>): Promise<string> {
   const tokenSetting = await db
     .select()
     .from(settings)

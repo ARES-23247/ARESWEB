@@ -18,6 +18,7 @@ import { findOneById, insertAndFetch, updateAndFetch } from "../../../../src/db/
 import { postHandlers } from "../posts/handlers";
 import { nanoid } from "nanoid";
 import { getSessionUser } from "../../middleware";
+import { getGoogleAccessToken } from "../youtube/index";
 
 const baseRouter = new OpenAPIHono<AppEnv>();
 
@@ -258,10 +259,18 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
     // POST /sync - Sync videos from YouTube
     .openapi(syncYoutubeVideosRoute, async (c) => {
         const db = getDb(c);
+        
+        let accessToken: string | undefined;
+        try {
+            accessToken = await getGoogleAccessToken(c.env, db);
+        } catch (e) {
+            // Not connected or failed to refresh, fallback to apiKey
+        }
+
         const apiKey = c.env.YOUTUBE_API_KEY;
 
-        if (!apiKey) {
-            throw new ApiError("YouTube API Key not configured. Please add YOUTUBE_API_KEY to your environment variables.", 500, "YOUTUBE_API_KEY_MISSING");
+        if (!accessToken && !apiKey) {
+            throw new ApiError("YouTube is not connected and API Key is missing.", 500, "YOUTUBE_CONFIG_MISSING");
         }
 
         const playlistId = "UUre4FN7UThyVd-biFk0n-Ig";
@@ -284,8 +293,17 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         try {
             do {
                 const pageTokenParam = nextPageToken ? `&pageToken=${nextPageToken}` : '';
-                const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}${pageTokenParam}`;
-                const response = await fetch(url);
+                let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}`;
+                
+                const headers: Record<string, string> = {};
+                if (accessToken) {
+                    headers["Authorization"] = `Bearer ${accessToken}`;
+                    url += pageTokenParam;
+                } else {
+                    url += `&key=${apiKey}${pageTokenParam}`;
+                }
+
+                const response = await fetch(url, { headers });
 
                 if (!response.ok) {
                     const errText = await response.text();
