@@ -1,6 +1,21 @@
-import { useState } from "react";
-import { Youtube, Unplug, CheckCircle, XCircle } from "lucide-react";
+import { Unplug, CheckCircle, XCircle } from "lucide-react";
 import { useGetYoutubeAuthStatus, useDisconnectYoutubeMutation } from "../../api/youtube";
+
+const YoutubeIcon = ({ size = 24, className }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"
+      fill="currentColor"
+    />
+  </svg>
+);
 import { toastApiError } from "../../api/honoClient";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +46,7 @@ export function YoutubeCard() {
       
       <div className="flex items-start gap-4">
         <div className="p-3 bg-obsidian border border-ares-gray-dark/50 ares-cut-sm shadow-inner group-hover:bg-ares-gray-dark transition-colors shrink-0">
-          <Youtube size={24} className="text-[#FF0000] transition-colors" />
+          <YoutubeIcon size={24} className="text-[#FF0000] transition-colors" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">YouTube Integration</h3>
