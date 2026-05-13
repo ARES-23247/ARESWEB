@@ -201,14 +201,14 @@ export function ModelCard({ document, onClick, actions, elements }: ModelCardPro
 				<Dialog.Portal>
 					<Dialog.Overlay className="fixed inset-0 bg-obsidian/50 backdrop-blur-sm z-50" />
 					<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden z-50">
-						<Dialog.Header className="flex items-center justify-between p-6 border-b border-ares-bronze/20">
+						<div className="flex items-center justify-between p-6 border-b border-ares-bronze/20">
 							<Dialog.Title className="text-xl font-bold text-obsidian">
 								Bill of Materials: {bomElement?.name}
 							</Dialog.Title>
 							<Dialog.Close className="p-2 hover:bg-ares-bronze/10 rounded transition-colors">
 								<X className="h-5 w-5 text-marble/60" />
 							</Dialog.Close>
-						</Dialog.Header>
+						</div>
 						<div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
 							{bomElement && (
 								<BOMViewer

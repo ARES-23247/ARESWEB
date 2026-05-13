@@ -13,7 +13,6 @@ import { FileUploadZone } from "../../components/FileUploadZone";
 import { FileList } from "../../components/FileList";
 import type { UploadedFile } from "../../api/files";
 import { toast } from "sonner";
-import { DashboardLayout } from "../../components/DashboardLayout";
 
 export const Route = createFileRoute("/dashboard/files")({
 	component: FilesPage,
@@ -102,7 +101,6 @@ function FilesPage() {
 	};
 
 	return (
-		<DashboardLayout>
 			<div className="flex-1 w-full flex flex-col min-h-0">
 				{/* Header */}
 				<div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -202,6 +200,5 @@ function FilesPage() {
 					</div>
 				</div>
 			</div>
-		</DashboardLayout>
 	);
 }

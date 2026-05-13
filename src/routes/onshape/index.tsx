@@ -9,7 +9,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ModelGallery } from "../../components/onshape/ModelGallery";
 import { OnshapeAuthButton } from "../../components/onshape/OnshapeAuthButton";
-import { DashboardLayout } from "../../components/DashboardLayout";
 
 export const Route = createFileRoute("/onshape/")({
 	component: OnshapePage,
@@ -22,7 +21,6 @@ function OnshapePage() {
 	};
 
 	return (
-		<DashboardLayout>
 			<div className="flex-1 w-full flex flex-col min-h-0">
 				{/* Header */}
 				<header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -47,6 +45,5 @@ function OnshapePage() {
 					/>
 				</div>
 			</div>
-		</DashboardLayout>
 	);
 }

@@ -6,7 +6,7 @@ import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
 import AssetPickerModal from "./AssetPickerModal";
-import FileBrowserModal from "./FileBrowserModal";
+import { FileBrowserModal } from "./FileBrowserModal";
 import { DEFAULT_coverImage } from "../utils/constants";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";

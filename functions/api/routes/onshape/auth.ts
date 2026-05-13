@@ -37,7 +37,6 @@ const generateState = () => customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
  *   4. Redirect to Onshape authorization URL
  */
 authApp.get("/authorize", async (c) => {
-	const db = getDb(c);
 	const env = c.env;
 	const userId = c.get("cf-access-authenticated-user-email") as string | undefined;
 
@@ -182,7 +181,7 @@ authApp.get("/status", async (c) => {
 /**
  * Logout schema for validation
  */
-const logoutSchema = z.object({
+const _logoutSchema = z.object({
 	userId: z.string().email(),
 });
 

@@ -8,7 +8,7 @@
 
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
-import { ensureAdmin, getDb } from "../../middleware";
+import { getDb } from "../../middleware";
 import { z } from "zod";
 import {
 	getDocuments,
@@ -16,7 +16,6 @@ import {
 	getDocumentElements,
 	getDocumentThumbnailUrl,
 	type OnshapeDocument,
-	type OnshapeElement,
 } from "../../../utils/onshapeApi";
 import { ApiError } from "../../middleware/errorHandler";
 import { requireAuth } from "../../middleware/auth";

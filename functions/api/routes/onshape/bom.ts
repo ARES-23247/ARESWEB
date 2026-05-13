@@ -37,7 +37,7 @@ interface BOMPart {
 /**
  * BOM Response from Onshape API
  */
-interface BOMData {
+interface _BOMData {
 	parts: BOMPart[];
 	totalParts: number;
 	totalMass: number;
@@ -250,7 +250,7 @@ const bomHistoryRoute = createRoute({
  *
  * Retrieves BOM sync history from D1.
  */
-bomApp.openapi(bomHistoryRoute, requireAuth(async (c, { userId }) => {
+bomApp.openapi(bomHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
 	const { documentId } = c.req.param();
 	const limit = parseInt(c.req.query("limit") || "50", 10);
 

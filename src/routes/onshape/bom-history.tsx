@@ -8,7 +8,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, AlertCircle } from "lucide-react";
-import { DashboardLayout } from "../../components/DashboardLayout";
 
 export const Route = createFileRoute("/onshape/bom-history")({
 	component: BOMHistoryPage,
@@ -48,7 +47,6 @@ function BOMHistoryPage() {
 	};
 
 	return (
-		<DashboardLayout>
 			<div className="flex-1 w-full flex flex-col min-h-0">
 				{/* Header */}
 				<header className="mb-6">
@@ -148,6 +146,5 @@ function BOMHistoryPage() {
 					)}
 				</div>
 			</div>
-		</DashboardLayout>
 	);
 }
