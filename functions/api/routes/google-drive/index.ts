@@ -98,17 +98,10 @@ const driveRouter = app1.openapi(listDriveFilesRoute, async (c) => {
   // Get access token using lazy refresh pattern
   const token = await getDriveAccessToken(db, env);
 
-  // Check for required environment variable
+  // Optional environment variable to scope search to a specific folder
   const folderId = (env as any).GOOGLE_DRIVE_FOLDER_ID;
-  if (!folderId) {
-    throw new ApiError(
-      "GOOGLE_DRIVE_FOLDER_ID environment variable is not configured",
-      500,
-      "MISSING_CONFIG"
-    );
-  }
 
-  // Build Drive API query with folder, MIME type, and search filters
+  // Build Drive API query with MIME type and search filters
   // Per D-03: Only Google Workspace MIME types (document, spreadsheet, presentation, drawing)
   // Per D-04: Search filters by name using 'name contains'
   const googleWorkspaceMimeTypes = [
@@ -118,7 +111,12 @@ const driveRouter = app1.openapi(listDriveFilesRoute, async (c) => {
     "application/vnd.google-apps.drawing",
   ];
 
-  let driveQuery = `'${folderId}' in parents and trashed=false and mimeType in ('${googleWorkspaceMimeTypes.join("','")}')`;
+  let driveQuery = `trashed=false and mimeType in ('${googleWorkspaceMimeTypes.join("','")}')`;
+
+  // If a specific folder is configured, scope the search to that folder
+  if (folderId) {
+    driveQuery += ` and '${folderId}' in parents`;
+  }
 
   // Add name search filter if provided (per D-04)
   if (query.q) {
