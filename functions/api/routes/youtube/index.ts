@@ -55,13 +55,15 @@ const routes = adminApp
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
     const scopes = [
-      "https://www.googleapis.com/auth/youtube.readonly", 
+      "https://www.googleapis.com/auth/youtube.readonly",
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/photoslibrary.readonly",
       "https://www.googleapis.com/auth/photoslibrary.appendonly",
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/calendar.events",
-      "https://www.googleapis.com/auth/drive.readonly"
+      "https://www.googleapis.com/auth/drive.readonly",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.send"
     ].join(" ");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

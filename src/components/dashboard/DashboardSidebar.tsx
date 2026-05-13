@@ -2,7 +2,7 @@ import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History, FileText,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database, Inbox,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";
@@ -275,6 +275,7 @@ export default function DashboardSidebar({
               <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
+                {isAuthorized && <NavButton tab="gmail" icon={Inbox} label="Team Inbox" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="mass_email" icon={Mail} label="Mass Email Blast" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="social" icon={Share2} label="Social Media Manager" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="store_orders" icon={Package} label="Store Fulfillment" currentPath={location.pathname} />}

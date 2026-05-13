@@ -71,6 +71,7 @@ import { Route as DashboardJudge_codesRouteImport } from './routes/dashboard/jud
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardInquiriesRouteImport } from './routes/dashboard/inquiries'
 import { Route as DashboardImpact_rosterRouteImport } from './routes/dashboard/impact_roster'
+import { Route as DashboardGmailRouteImport } from './routes/dashboard/gmail'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
 import { Route as DashboardFilesRouteImport } from './routes/dashboard/files'
 import { Route as DashboardDriveDocsRouteImport } from './routes/dashboard/drive-docs'
@@ -405,6 +406,11 @@ const DashboardImpact_rosterRoute = DashboardImpact_rosterRouteImport.update({
   path: '/impact_roster',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardGmailRoute = DashboardGmailRouteImport.update({
+  id: '/gmail',
+  path: '/gmail',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardFinanceRoute = DashboardFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -545,6 +551,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
+  '/dashboard/gmail': typeof DashboardGmailRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -630,6 +637,7 @@ export interface FileRoutesByTo {
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
+  '/dashboard/gmail': typeof DashboardGmailRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -717,6 +725,7 @@ export interface FileRoutesById {
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
+  '/dashboard/gmail': typeof DashboardGmailRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -805,6 +814,7 @@ export interface FileRouteTypes {
     | '/dashboard/drive-docs'
     | '/dashboard/files'
     | '/dashboard/finance'
+    | '/dashboard/gmail'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
@@ -890,6 +900,7 @@ export interface FileRouteTypes {
     | '/dashboard/drive-docs'
     | '/dashboard/files'
     | '/dashboard/finance'
+    | '/dashboard/gmail'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
@@ -976,6 +987,7 @@ export interface FileRouteTypes {
     | '/dashboard/drive-docs'
     | '/dashboard/files'
     | '/dashboard/finance'
+    | '/dashboard/gmail'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
     | '/dashboard/integrations'
@@ -1513,6 +1525,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImpact_rosterRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/gmail': {
+      id: '/dashboard/gmail'
+      path: '/gmail'
+      fullPath: '/dashboard/gmail'
+      preLoaderRoute: typeof DashboardGmailRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/finance': {
       id: '/dashboard/finance'
       path: '/finance'
@@ -1693,6 +1712,7 @@ interface DashboardRouteChildren {
   DashboardDriveDocsRoute: typeof DashboardDriveDocsRoute
   DashboardFilesRoute: typeof DashboardFilesRoute
   DashboardFinanceRoute: typeof DashboardFinanceRoute
+  DashboardGmailRoute: typeof DashboardGmailRoute
   DashboardImpact_rosterRoute: typeof DashboardImpact_rosterRoute
   DashboardInquiriesRoute: typeof DashboardInquiriesRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
@@ -1740,6 +1760,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDriveDocsRoute: DashboardDriveDocsRoute,
   DashboardFilesRoute: DashboardFilesRoute,
   DashboardFinanceRoute: DashboardFinanceRoute,
+  DashboardGmailRoute: DashboardGmailRoute,
   DashboardImpact_rosterRoute: DashboardImpact_rosterRoute,
   DashboardInquiriesRoute: DashboardInquiriesRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
