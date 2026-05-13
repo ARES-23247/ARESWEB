@@ -51,7 +51,7 @@ export function YoutubeCard() {
         <div>
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">YouTube Integration</h3>
           <p className="text-ares-gray text-sm mt-1 leading-relaxed">
-            Manage the connection to your team's YouTube channel. Disconnecting will require a coach to re-authenticate via the Video Hub to restore upload and sync capabilities.
+            Manage the connection to your team&apos;s YouTube channel. Disconnecting will require a coach to re-authenticate via the Video Hub to restore upload and sync capabilities.
           </p>
         </div>
       </div>

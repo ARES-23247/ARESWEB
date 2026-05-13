@@ -263,7 +263,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         let accessToken: string | undefined;
         try {
             accessToken = await getGoogleAccessToken(c.env, db);
-        } catch (e) {
+        } catch (_e) {
             // Not connected or failed to refresh, fallback to apiKey
         }
 
