@@ -4,6 +4,11 @@ import { ensureAdmin, getDb } from "../../middleware";
 import { getPhotosAccessToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
+import {
+  listMediaRoute,
+  listAlbumsRoute,
+  photoMediaItemSchema,
+} from "../../../../shared/routes/google-photos";
 
 // Health check response schema
 const healthResponseSchema = z.object({
@@ -37,29 +42,12 @@ const healthRoute = createRoute({
   },
 });
 
-// Albums placeholder response schema (to be implemented in Phase 75)
-const albumsResponseSchema = z.object({
-  albums: z.array(z.any()).optional(),
-  message: z.string().optional(),
-});
+// Media route definition (implemented in Phase 75-02)
+// Media items route uses listMediaRoute from shared contracts
+const mediaRoute = listMediaRoute;
 
-// Albums route definition (placeholder for Phase 75)
-const albumsRoute = createRoute({
-  method: "get",
-  path: "/albums",
-  summary: "List Google Photos albums",
-  description: "PLACEHOLDER: This endpoint will be implemented in Phase 75 to browse Google Photos albums.",
-  responses: {
-    200: {
-      content: {
-        "application/json": {
-          schema: albumsResponseSchema,
-        },
-      },
-      description: "Albums list (placeholder)",
-    },
-  },
-});
+// Albums route definition (to be implemented in Phase 75-03)
+const albumsRoute = listAlbumsRoute;
 
 // Create the router
 const photosApp = new OpenAPIHono<AppEnv>();
@@ -116,10 +104,100 @@ photosApp.openapi(healthRoute, async (c) => {
   );
 });
 
-// Albums endpoint (placeholder for Phase 75)
+// Media items endpoint (Phase 75-02)
+// Lists Google Photos media items with server-side video filtering
+photosApp.openapi(mediaRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+
+  // Extract query parameters
+  const { albumId, pageToken, pageSize = 25 } = c.req.valid("query");
+
+  // Get access token using lazy refresh pattern (with retry logic per D-07)
+  const token = await getPhotosAccessToken(db, env);
+
+  // Build Photos API search request body
+  const searchBody: Record<string, unknown> = { pageSize };
+  if (albumId) {
+    searchBody.albumId = albumId;
+  }
+  if (pageToken) {
+    searchBody.pageToken = pageToken;
+  }
+
+  // Call Photos API mediaItems:search endpoint
+  const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(searchBody),
+  });
+
+  // Handle authentication failures from Photos API
+  if (photosResponse.status === 401) {
+    throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
+  }
+
+  // Handle other API errors
+  if (!photosResponse.ok) {
+    const errorText = await photosResponse.text();
+    console.error("[google-photos] Media API search failed:", errorText);
+    throw new ApiError(
+      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}`,
+      502,
+      "API_FAILURE"
+    );
+  }
+
+  const photosData = await photosResponse.json() as {
+    mediaItems?: Array<{
+      id: string;
+      filename: string;
+      mimeType: string;
+      baseUrl: string;
+      mediaMetadata?: {
+        width?: string;
+        height?: string;
+        creationTime?: string;
+      };
+      description?: string;
+    }>;
+    nextPageToken?: string;
+  };
+
+  // Filter server-side to exclude video MIME types per D-01/PHOTO-02
+  // Allowed MIME types: image/jpeg, image/png, image/webp, image/gif, image/heic
+  // Excluded MIME types: video/mp4, video/quicktime, video/x-msvideo, video/*
+  const allowedMimePrefixes = ["image/"];
+  const filteredMediaItems = (photosData.mediaItems ?? []).filter(
+    (item) => allowedMimePrefixes.some((prefix) => item.mimeType.startsWith(prefix))
+  );
+
+  // Transform each media item to match photoMediaItemSchema
+  const mediaItems = filteredMediaItems.map((item) => ({
+    id: item.id,
+    filename: item.filename,
+    mimeType: item.mimeType,
+    baseUrl: item.baseUrl,
+    width: item.mediaMetadata?.width,
+    height: item.mediaMetadata?.height,
+    creationTime: item.mediaMetadata?.creationTime,
+    description: item.description,
+  }));
+
+  // Return response with pagination token
+  return c.json({
+    mediaItems,
+    nextPageToken: photosData.nextPageToken,
+  }, 200);
+});
+
+// Albums endpoint (Phase 75-03)
 // This route is established now to avoid breaking changes when albums are added later
 photosApp.openapi(albumsRoute, async (c) => {
-  // TODO: Implement Google Photos album listing in Phase 75
+  // TODO: Implement Google Photos album listing in Phase 75-03
   // This endpoint will:
   // - Fetch albums from Google Photos Library API
   // - Support pagination for large album collections
