@@ -13,7 +13,7 @@ import {
 import { getDb } from "../../middleware";
 import { settings } from "../../../../src/db/schema";
 import { eq } from "drizzle-orm";
-import { getUnifiedOAuthToken } from "../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 
 const adminApp = new OpenAPIHono<AppEnv>();
 
