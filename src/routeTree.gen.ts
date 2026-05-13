@@ -28,6 +28,7 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideosIndexRouteImport } from './routes/videos/index'
 import { Route as SponsorsIndexRouteImport } from './routes/sponsors/index'
+import { Route as OnshapeIndexRouteImport } from './routes/onshape/index'
 import { Route as LocationsIndexRouteImport } from './routes/locations/index'
 import { Route as JudgesIndexRouteImport } from './routes/judges/index'
 import { Route as GalleriesIndexRouteImport } from './routes/galleries/index'
@@ -185,6 +186,11 @@ const VideosIndexRoute = VideosIndexRouteImport.update({
 const SponsorsIndexRoute = SponsorsIndexRouteImport.update({
   id: '/sponsors/',
   path: '/sponsors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnshapeIndexRoute = OnshapeIndexRouteImport.update({
+  id: '/onshape/',
+  path: '/onshape/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocationsIndexRoute = LocationsIndexRouteImport.update({
@@ -574,6 +580,7 @@ export interface FileRoutesByFullPath {
   '/galleries/': typeof GalleriesIndexRoute
   '/judges/': typeof JudgesIndexRoute
   '/locations/': typeof LocationsIndexRoute
+  '/onshape/': typeof OnshapeIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
   '/videos/': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
@@ -657,6 +664,7 @@ export interface FileRoutesByTo {
   '/galleries': typeof GalleriesIndexRoute
   '/judges': typeof JudgesIndexRoute
   '/locations': typeof LocationsIndexRoute
+  '/onshape': typeof OnshapeIndexRoute
   '/sponsors': typeof SponsorsIndexRoute
   '/videos': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
@@ -742,6 +750,7 @@ export interface FileRoutesById {
   '/galleries/': typeof GalleriesIndexRoute
   '/judges/': typeof JudgesIndexRoute
   '/locations/': typeof LocationsIndexRoute
+  '/onshape/': typeof OnshapeIndexRoute
   '/sponsors/': typeof SponsorsIndexRoute
   '/videos/': typeof VideosIndexRoute
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
@@ -828,6 +837,7 @@ export interface FileRouteTypes {
     | '/galleries/'
     | '/judges/'
     | '/locations/'
+    | '/onshape/'
     | '/sponsors/'
     | '/videos/'
     | '/dashboard/blog/$editSlug'
@@ -911,6 +921,7 @@ export interface FileRouteTypes {
     | '/galleries'
     | '/judges'
     | '/locations'
+    | '/onshape'
     | '/sponsors'
     | '/videos'
     | '/dashboard/blog/$editSlug'
@@ -995,6 +1006,7 @@ export interface FileRouteTypes {
     | '/galleries/'
     | '/judges/'
     | '/locations/'
+    | '/onshape/'
     | '/sponsors/'
     | '/videos/'
     | '/dashboard/blog/$editSlug'
@@ -1046,6 +1058,7 @@ export interface RootRouteChildren {
   GalleriesIndexRoute: typeof GalleriesIndexRoute
   JudgesIndexRoute: typeof JudgesIndexRoute
   LocationsIndexRoute: typeof LocationsIndexRoute
+  OnshapeIndexRoute: typeof OnshapeIndexRoute
   SponsorsIndexRoute: typeof SponsorsIndexRoute
   VideosIndexRoute: typeof VideosIndexRoute
   SponsorsRoiTokenIdRoute: typeof SponsorsRoiTokenIdRoute
@@ -1184,6 +1197,13 @@ declare module '@tanstack/react-router' {
       path: '/sponsors'
       fullPath: '/sponsors/'
       preLoaderRoute: typeof SponsorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onshape/': {
+      id: '/onshape/'
+      path: '/onshape'
+      fullPath: '/onshape/'
+      preLoaderRoute: typeof OnshapeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locations/': {
@@ -1777,6 +1797,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleriesIndexRoute: GalleriesIndexRoute,
   JudgesIndexRoute: JudgesIndexRoute,
   LocationsIndexRoute: LocationsIndexRoute,
+  OnshapeIndexRoute: OnshapeIndexRoute,
   SponsorsIndexRoute: SponsorsIndexRoute,
   VideosIndexRoute: VideosIndexRoute,
   SponsorsRoiTokenIdRoute: SponsorsRoiTokenIdRoute,
