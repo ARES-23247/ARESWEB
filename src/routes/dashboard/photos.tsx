@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, Image, RefreshCw } from "lucide-react";
 import { useGetMediaItems, useGetAlbums } from "@/api/google-photos";
+import { PhotoUploadModal } from "@/components/dashboard/PhotoUploadModal";
 
 export const Route = createFileRoute("/dashboard/photos")({
   component: PhotosDashboard,
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/dashboard/photos")({
 function PhotosDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Fetch media items and albums
   const {
@@ -63,6 +65,7 @@ function PhotosDashboard() {
               {/* Upload Button */}
               <button
                 type="button"
+                onClick={() => setIsUploadModalOpen(true)}
                 className="rounded-lg bg-ares-red px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-ares-red/90 focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 aria-label="Upload photos"
               >
@@ -212,6 +215,13 @@ function PhotosDashboard() {
           </section>
         </div>
       </main>
+
+      {/* Upload Modal */}
+      <PhotoUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        albums={albums.map((a) => ({ id: a.id, title: a.title }))}
+      />
     </div>
   );
 }
