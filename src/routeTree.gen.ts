@@ -70,6 +70,7 @@ import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/in
 import { Route as DashboardInquiriesRouteImport } from './routes/dashboard/inquiries'
 import { Route as DashboardImpact_rosterRouteImport } from './routes/dashboard/impact_roster'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
+import { Route as DashboardFilesRouteImport } from './routes/dashboard/files'
 import { Route as DashboardDriveDocsRouteImport } from './routes/dashboard/drive-docs'
 import { Route as DashboardDb_studioRouteImport } from './routes/dashboard/db_studio'
 import { Route as DashboardCommand_centerRouteImport } from './routes/dashboard/command_center'
@@ -397,6 +398,11 @@ const DashboardFinanceRoute = DashboardFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFilesRoute = DashboardFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardDriveDocsRoute = DashboardDriveDocsRouteImport.update({
   id: '/drive-docs',
   path: '/drive-docs',
@@ -525,6 +531,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
+  '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -607,6 +614,7 @@ export interface FileRoutesByTo {
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
+  '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -691,6 +699,7 @@ export interface FileRoutesById {
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
   '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
+  '/dashboard/files': typeof DashboardFilesRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -776,6 +785,7 @@ export interface FileRouteTypes {
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
     | '/dashboard/drive-docs'
+    | '/dashboard/files'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -858,6 +868,7 @@ export interface FileRouteTypes {
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
     | '/dashboard/drive-docs'
+    | '/dashboard/files'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -941,6 +952,7 @@ export interface FileRouteTypes {
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
     | '/dashboard/drive-docs'
+    | '/dashboard/files'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -1468,6 +1480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardFinanceRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/files': {
+      id: '/dashboard/files'
+      path: '/files'
+      fullPath: '/dashboard/files'
+      preLoaderRoute: typeof DashboardFilesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/drive-docs': {
       id: '/dashboard/drive-docs'
       path: '/drive-docs'
@@ -1632,6 +1651,7 @@ interface DashboardRouteChildren {
   DashboardCommand_centerRoute: typeof DashboardCommand_centerRoute
   DashboardDb_studioRoute: typeof DashboardDb_studioRoute
   DashboardDriveDocsRoute: typeof DashboardDriveDocsRoute
+  DashboardFilesRoute: typeof DashboardFilesRoute
   DashboardFinanceRoute: typeof DashboardFinanceRoute
   DashboardImpact_rosterRoute: typeof DashboardImpact_rosterRoute
   DashboardInquiriesRoute: typeof DashboardInquiriesRoute
@@ -1678,6 +1698,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCommand_centerRoute: DashboardCommand_centerRoute,
   DashboardDb_studioRoute: DashboardDb_studioRoute,
   DashboardDriveDocsRoute: DashboardDriveDocsRoute,
+  DashboardFilesRoute: DashboardFilesRoute,
   DashboardFinanceRoute: DashboardFinanceRoute,
   DashboardImpact_rosterRoute: DashboardImpact_rosterRoute,
   DashboardInquiriesRoute: DashboardInquiriesRoute,

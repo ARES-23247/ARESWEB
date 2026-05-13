@@ -189,29 +189,30 @@ describe("POST /import endpoint", () => {
   let mockDb: any;
   let mockEnv: any;
 
+  // Top-level mocks (vitest hoists them here anyway, but declaring at
+  // top level silences the deprecation warning and future-proofs for vitest v5)
+  vi.mock("../../../utils/googleAuth", () => ({
+    getPhotosAccessToken: vi.fn().mockResolvedValue("mock-token"),
+  }));
+
+  vi.mock("../../middleware/auth", async () => {
+    const actual = await vi.importActual<typeof import("../../middleware/auth.js")>("../../middleware/auth");
+    return {
+      ...actual,
+      ensureAdmin: vi.fn((c: any, next: any) => next()),
+    };
+  });
+
+  vi.mock("../../middleware", async () => {
+    const actual = await vi.importActual<typeof import("../../middleware.js")>("../../middleware");
+    return {
+      ...actual,
+      getDb: vi.fn((c: any) => c.get("db")),
+    };
+  });
+
   beforeEach(async () => {
     vi.clearAllMocks();
-
-    // Mock dependencies
-    vi.mock("../../../utils/googleAuth", () => ({
-      getPhotosAccessToken: vi.fn().mockResolvedValue("mock-token"),
-    }));
-
-    vi.mock("../../middleware/auth", async () => {
-      const actual = await vi.importActual<typeof import("../../middleware/auth.js")>("../../middleware/auth");
-      return {
-        ...actual,
-        ensureAdmin: vi.fn((c: any, next: any) => next()),
-      };
-    });
-
-    vi.mock("../../middleware", async () => {
-      const actual = await vi.importActual<typeof import("../../middleware.js")>("../../middleware");
-      return {
-        ...actual,
-        getDb: vi.fn((c: any) => c.get("db")),
-      };
-    });
 
     // Create mock DB
     mockDb = {

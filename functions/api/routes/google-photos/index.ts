@@ -11,7 +11,7 @@ import {
   listAlbumsRoute,
   importPhotosRoute,
 } from "../../../../shared/routes/google-photos";
-import * as schema from "../../../src/db/schema";
+import * as schema from "../../../../src/db/schema";
 import {
   validateImageMagicBytes,
   downloadPhoto,

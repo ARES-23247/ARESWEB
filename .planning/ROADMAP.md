@@ -9,7 +9,7 @@
 
 - [x] **Phase 73: Service Account Authentication** - OAuth tokens for Google Photos and Drive APIs ✅
 - [x] **Phase 74: Google Drive Document Browser** - Browse and open Google Workspace documents ✅
-- [ ] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos
+- [x] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos ✅
 - [x] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage ✅
 - [ ] **Phase 77: File Manager** - Upload and manage PDFs/docs with blog editor integration
 - [ ] **Phase 78: Onshape CAD Integration** - Browse CAD models, export STL/STEP files, and sync BOM data
@@ -91,13 +91,20 @@
 6. User can upload photos through website to Google Photos
 7. Upload flow includes file selection, metadata entry (title, description), and album selection
 
-**Plans**: 7 plans
+**Plans**: 7 plans (all complete ✅)
 
 **Plan List**:
-- [ ] 75-01-PLAN.md — Create OpenAPI route contracts for Photos API endpoints
-- [ ] 75-02-PLAN.md — Implement GET /media endpoint with TDD
-- [ ] 75-03-PLAN.md — Implement GET /albums endpoint with TDD
-- [ ] 75-04-PLAN.md — Create frontend React Query hooks
+- [x] 75-01-PLAN.md — Create OpenAPI route contracts for Photos API endpoints ✅
+- [x] 75-02-PLAN.md — Implement GET /media endpoint with TDD ✅
+- [x] 75-03-PLAN.md — Implement GET /albums endpoint with TDD ✅
+- [x] 75-04-PLAN.md — Create frontend React Query hooks ✅
+- [x] 75-05-PLAN.md — Implement POST /upload endpoint with TDD ✅
+- [x] 75-06-PLAN.md — Create frontend upload mutation ✅
+- [x] 75-07-PLAN.md — Build dashboard UI with albums sidebar and photo grid ✅
+
+**Completed:** 2026-05-13
+
+**UI hint**: yes ✅ ✅
 - [ ] 75-05-PLAN.md — Implement POST /upload endpoint with TDD
 - [ ] 75-06-PLAN.md — Create frontend upload mutation
 - [ ] 75-07-PLAN.md — Build dashboard UI with albums sidebar and photo grid
@@ -207,10 +214,10 @@
 |-------|----------------|--------|-----------|
 | 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
 | 74. Google Drive Document Browser | 4/4 | Complete ✅ | 2026-05-13 |
-| 75. Google Photos Browser | 1/7 | In Progress|  |
+| 75. Google Photos Browser | 7/7 | Complete ✅ | 2026-05-13 |
 | 76. Image Import Pipeline | 3/4 | In Progress|  |
 | 77. File Manager | 0/5 | Not started | - |
-| 78. Onshape CAD Integration | 0/4 | Not started | - |
+| 78. Onshape CAD Integration | 1/4 | In Progress|  |
 
 ---
 
@@ -229,7 +236,7 @@
 
 ---
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-13 (Phase 77: File Manager plans created)*
+*Last updated: 2026-05-13 (Phase 75: Google Photos Browser complete)*
 
 ---
 

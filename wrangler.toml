@@ -14,6 +14,21 @@ migrations_dir = "drizzle"
 binding = "ARES_STORAGE"
 bucket_name = "ares-media"
 
+# Onshape OAuth state storage (Phase 78)
+[[kv_namespaces]]
+binding = "ONSHAPE_OAUTH_STATE"
+id = "your-onshape-oauth-kv-id" # TODO: Create with `wrangler kv:namespace create "ONSHAPE_OAUTH_STATE"`
+preview_id = "your-preview-onshape-oauth-kv-id"
+
+# Onshape OAuth Environment Variables (Phase 78)
+# Required secrets (add via `wrangler secret put` or Cloudflare dashboard):
+#   ONSHAPE_CLIENT_ID - Onshape OAuth application client ID
+#   ONSHAPE_CLIENT_SECRET - Onshape OAuth application client secret
+# Optional vars (can be set in wrangler.toml or via secrets):
+#   ONSHAPE_REDIRECT_URI - OAuth callback URL (default: https://aresweb.pages.dev/api/onshape/callback)
+#   ONSHAPE_BASE_URL - Onshape API base URL (default: https://cad.onshape.com/api)
+#
+
 # PartyKit D1 binding for document snapshot persistence
 # Shares the main D1 database for document snapshots (WR-05)
 [[d1_databases]]
@@ -41,6 +56,12 @@ migrations_dir = "drizzle"
 [[env.preview.r2_buckets]]
 binding = "ARES_STORAGE"
 bucket_name = "ares-media"
+
+# Onshape OAuth state storage for preview environment
+[[env.preview.kv_namespaces]]
+binding = "ONSHAPE_OAUTH_STATE"
+id = "your-preview-onshape-oauth-kv-id"
+preview_id = "your-preview-onshape-oauth-kv-id"
 
 [env.preview.ai]
 binding = "AI"

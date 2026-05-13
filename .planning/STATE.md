@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v8.1
 milestone_name: Google Workspace Integrations
-status: In progress
-last_updated: "2026-05-13T11:25:00Z"
+status: Not started
+last_updated: "2026-05-13T11:58:57.610Z"
 last_activity: 2026-05-13 — Phase 76 complete
 progress:
   total_phases: 5
