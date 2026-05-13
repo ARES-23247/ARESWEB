@@ -31,15 +31,13 @@ export async function getGcalAccessToken(config: GCalConfig): Promise<string> {
   // The private key from GCP usually has literal \n that we must preserve.
   const formattedKey = config.privateKey.replace(/\\n/g, "\n");
 
-  // Unified scope string for Calendar, Photos, and Drive APIs per D-02
+  // Unified scope string for Calendar and Drive APIs per D-02
   // - Calendar: Existing scope for calendar sync
-  // - Photos: readonly for browsing, appendonly for upload (per D-11)
   // - Drive: readonly for document browsing
+  // NOTE: Google Photos Library API does NOT support Service Accounts, so it must not be included here.
   const unifiedScope = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/photoslibrary.readonly",
-    "https://www.googleapis.com/auth/photoslibrary.appendonly", // write scope for upload per D-11
   ].join(" ");
 
   const pk = await importPKCS8(formattedKey, alg);
