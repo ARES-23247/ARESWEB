@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail } from "lucide-react";
+import { RefreshCw, Shield, Trash2, ChevronDown, Edit3, X, Search, ChevronUp, MessageSquare, Zap, Users, Mail, Download } from "lucide-react";
 import ProfileEditor from "./ProfileEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAwardPoints } from "../api/points";
@@ -262,6 +262,34 @@ export default function AdminUsers() {
 
   const { rows } = table.getRowModel();
 
+  const exportToCSV = useCallback(() => {
+    if (!allUsers || allUsers.length === 0) return;
+    const headers = ["Name", "Email", "Role", "Member Type", "Joined"];
+    const csvRows = [headers.join(",")];
+    
+    allUsers.forEach(u => {
+      const row = [
+        `"${(u.nickname || u.name || "").replace(/"/g, '""')}"`,
+        `"${(u.email || "").replace(/"/g, '""')}"`,
+        `"${u.role || ""}"`,
+        `"${u.memberType || ""}"`,
+        `"${u.createdAt ? new Date(u.createdAt as string | number | Date).toLocaleDateString() : ""}"`
+      ];
+      csvRows.push(row.join(","));
+    });
+    
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `aresweb_users_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [allUsers]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-ares-red" size={32} /></div>;
   }
@@ -273,6 +301,14 @@ export default function AdminUsers() {
           <Shield size={20} className="text-ares-red" /> User Management
         </h2>
         <div className="flex items-center gap-4">
+           <button
+             onClick={exportToCSV}
+             className="flex items-center gap-2 bg-obsidian hover:bg-white/10 text-white font-bold py-2 px-4 ares-cut-sm transition-colors border border-white/10 text-sm"
+             title="Export users to CSV"
+           >
+             <Download size={16} />
+             <span className="hidden sm:inline">Export CSV</span>
+           </button>
            <button
              onClick={() => auditMutation.mutate()}
              disabled={auditMutation.isPending}
