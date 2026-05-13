@@ -290,7 +290,7 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
               {/* ===== Unified Rich Editor ===== */}
               <div className="flex items-center gap-2">
-                <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={titleValue as string} /></div>
+                <div className="flex-1"><RichEditorToolbar editor={editor} documentTitle={titleValue as string} onInsertFileLink={() => setIsFileBrowserOpen(true)} /></div>
               </div>
               <CopilotMenu editor={editor} />
 
@@ -302,6 +302,13 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
                   form.setFieldValue("thumbnail", url);
                   setIsCoverPickerOpen(false);
                 }}
+              />
+
+              {/* File Browser Modal */}
+              <FileBrowserModal
+                isOpen={isFileBrowserOpen}
+                onClose={() => setIsFileBrowserOpen(false)}
+                onSelect={handleFileSelect}
               />
 
               <EditorFooter
