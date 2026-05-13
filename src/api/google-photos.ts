@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { client, unwrapResponse } from "./honoClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { client, unwrapResponse, toastApiError, withMutationCallbacks } from "./honoClient";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -137,3 +137,113 @@ export function useGetAlbums(params?: GetAlbumsParams) {
  */
 export const mediaItemsQueryKey = ["google-photos", "media"];
 export const albumsQueryKey = ["google-photos", "albums"];
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GOOGLE PHOTOS UPLOAD MUTATION
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Mutation hook for uploading photos to Google Photos.
+ * Per D-14: On success, refresh media list to show new uploads.
+ * Per D-21: Display upload errors inline.
+ * Per D-22: Retry failed uploads with per-file error tracking.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Parameters for uploading photos
+ */
+export interface UploadPhotosParams {
+  /** Array of image files to upload (JPG, PNG, WEBP, GIF, HEIC per D-11) */
+  files: File[];
+  /** Optional title for all uploaded photos */
+  title?: string;
+  /** Optional description for all uploaded photos */
+  description?: string;
+  /** Optional album ID to assign photos to (per D-12) */
+  albumId?: string;
+}
+
+/**
+ * Response from uploadPhotos mutation
+ */
+export interface UploadPhotosResponse {
+  /** Number of photos successfully uploaded */
+  uploadedCount: number;
+  /** Upload failures per file (D-21/D-22) */
+  failures?: Array<{
+    filename: string;
+    error: string;
+  }>;
+}
+
+/**
+ * React Query mutation hook for uploading photos to Google Photos
+ *
+ * @param options - Optional mutation callbacks (onSuccess, onError, etc.)
+ * @returns Mutation object with mutate, mutateAsync, isLoading, error
+ *
+ * @example
+ * ```tsx
+ * const uploadMutation = useUploadPhotos({
+ *   onSuccess: (data) => {
+ *     toast.success(`Uploaded ${data.uploadedCount} photos`);
+ *   },
+ * });
+ *
+ * const handleUpload = (files: File[]) => {
+ *   uploadMutation.mutate({
+ *     files,
+ *     title: "Team Photos",
+ *     description: "From championship",
+ *   });
+ * };
+ * ```
+ */
+export function useUploadPhotos(
+  options?: import("@tanstack/react-query").UseMutationOptions<
+    UploadPhotosResponse,
+    unknown,
+    UploadPhotosParams
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: UploadPhotosParams) => {
+      // Create FormData from params
+      const formData = new FormData();
+      params.files.forEach((file) => {
+        formData.append("files", file);
+      });
+      if (params.title) {
+        formData.append("title", params.title);
+      }
+      if (params.description) {
+        formData.append("description", params.description);
+      }
+      if (params.albumId) {
+        formData.append("albumId", params.albumId);
+      }
+
+      // Call upload endpoint
+      const res = await client.googlePhotos.upload.$post({
+        // @ts-expect-error - FormData is not properly typed in Hono client
+        body: formData,
+      });
+
+      return unwrapResponse<UploadPhotosResponse>(res);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (queryClient, data, variables) => {
+        // Invalidate media items query to refresh list per D-14
+        queryClient.invalidateQueries({
+          queryKey: mediaItemsQueryKey,
+        });
+      },
+      onError: (queryClient, error, variables) => {
+        // Display toast error with diagnostic code per D-21
+        toastApiError(error, "Photo upload failed");
+      },
+    }),
+  });
+}
