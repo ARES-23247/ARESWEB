@@ -43,23 +43,23 @@ See: .planning/PROJECT.md
 
 **Goal:** Integrate Google Drive API to browse Google Workspace documents and import images to R2 storage.
 
-**Total Requirements:** 30
-- Authentication: 4 requirements
+**Total Requirements:** 36
+- Authentication: 5 requirements (includes write scope for upload)
 - Document Browsing: 6 requirements
-- Photo Browser: 5 requirements
-- Image Import: 7 requirements
+- Photo Browser: 7 requirements (includes upload features)
+- Image Import: 10 requirements (includes album structure preservation)
 - File Manager: 8 requirements
 
-**Coverage:** 30/30 requirements mapped ✓
+**Coverage:** 36/36 requirements mapped ✓
 
 ### Phase Structure
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 73 | Service Account Authentication | 4 | Not started |
+| 73 | Service Account Authentication | 5 | Not started |
 | 74 | Google Drive Document Browser | 6 | Not started |
-| 75 | Google Photos Browser | 5 | Not started |
-| 76 | Image Import Pipeline | 7 | Not started |
+| 75 | Google Photos Browser | 7 | Not started |
+| 76 | Image Import Pipeline | 10 | Not started |
 | 77 | File Manager | 8 | Not started |
 
 ### Key Decisions
@@ -70,6 +70,8 @@ See: .planning/PROJECT.md
 - Support browsing Google Drive folders and Google Photos albums
 - Import photos from Google Photos (not Drive) to R2
 - Support manual file upload and Google Drive import for PDFs/docs
+- Upload photos to Google Photos through the website (write scope required)
+- Preserve Google Photos album structure as R2 folders during import
 
 ### Technical Approach
 

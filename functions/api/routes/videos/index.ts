@@ -201,7 +201,17 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
         let addedCount = 0;
         let deletedCount = 0;
         
-        const allItems: Record<string, unknown>[] = [];
+        interface YouTubePlaylistItem {
+            snippet: {
+                title: string;
+                description: string;
+                publishedAt: string;
+                resourceId?: {
+                    videoId?: string;
+                };
+            };
+        }
+        const allItems: YouTubePlaylistItem[] = [];
         let nextPageToken: string | undefined = undefined;
 
         try {
@@ -229,7 +239,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
                     throw new ApiError(`YouTube API error: ${ytMessage || response.statusText}`, response.status, "YOUTUBE_API_ERROR");
                 }
 
-                const data = await response.json() as { items?: Record<string, unknown>[]; nextPageToken?: string };
+                const data = await response.json() as { items?: YouTubePlaylistItem[]; nextPageToken?: string };
                 if (data.items) {
                     allItems.push(...data.items);
                 }

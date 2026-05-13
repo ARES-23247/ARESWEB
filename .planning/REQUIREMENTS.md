@@ -31,6 +31,12 @@ Requirements for Google Photos and Google Drive API integration with service acc
 - [ ] **PHOTO-04**: System handles Photos API pagination (media items list)
 - [ ] **PHOTO-05**: UI displays albums for organized browsing
 
+### Album Structure (ALBUMS)
+
+- [ ] **ALBUMS-01**: System fetches Google Photos albums structure
+- [ ] **ALBUMS-02**: System mirrors albums as R2 folders (e.g., `photos/{albumName}/{filename}`)
+- [ ] **ALBUMS-03**: System stores album metadata in D1 for lookup
+
 ### Image Import (IMG)
 
 - [ ] **IMG-01**: System lists photos from Google Photos (not Drive images)
@@ -52,6 +58,12 @@ Requirements for Google Photos and Google Drive API integration with service acc
 - [ ] **FILES-07**: User can view, search, and delete uploaded files
 - [ ] **FILES-08**: System tracks file usage (which posts use which files)
 
+### Photo Upload (UPLOAD)
+
+- [ ] **UPLOAD-01**: User can upload photos through website to Google Photos
+- [ ] **UPLOAD-02**: Upload requires write scope (`photoslibrary.edit` or `photoslibrary.appendonly`)
+- [ ] **UPLOAD-03**: Upload flow includes file selection, metadata entry (title, description), and album selection
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -59,7 +71,7 @@ Requirements for Google Photos and Google Drive API integration with service acc
 | Video import | YouTube already handles video storage |
 | Google Docs editing in ARESWEB | Open in Google for editing maintains native experience |
 | Real-time sync | Manual import sufficient for team workflow |
-| Photo upload/deletion | Admin manages photos in Google Photos |
+| Photo deletion | Admin manages photos in Google Photos |
 | File editing | Files are downloaded and edited externally |
 
 ## Traceability
@@ -81,6 +93,12 @@ Requirements for Google Photos and Google Drive API integration with service acc
 | PHOTO-03 | Phase 75 | Pending |
 | PHOTO-04 | Phase 75 | Pending |
 | PHOTO-05 | Phase 75 | Pending |
+| UPLOAD-01 | Phase 75 | Pending |
+| UPLOAD-02 | Phase 73 | Pending |
+| UPLOAD-03 | Phase 75 | Pending |
+| ALBUMS-01 | Phase 76 | Pending |
+| ALBUMS-02 | Phase 76 | Pending |
+| ALBUMS-03 | Phase 76 | Pending |
 | IMG-01 | Phase 76 | Pending |
 | IMG-02 | Phase 76 | Pending |
 | IMG-03 | Phase 76 | Pending |
@@ -98,8 +116,8 @@ Requirements for Google Photos and Google Drive API integration with service acc
 | FILES-08 | Phase 77 | Pending |
 
 **Coverage:**
-- v8.1 requirements: 30 total
-- Mapped to phases: 30
+- v8.1 requirements: 36 total
+- Mapped to phases: 36
 - Unmapped: 0 ✓
 
 ---

@@ -23,13 +23,14 @@
 
 **Depends on**: Nothing
 
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, UPLOAD-02
 
 **Success Criteria** (what must be TRUE):
 1. Service account can authenticate with Google Photos Library API and Drive API
 2. Access tokens refresh automatically before expiration
 3. D1 stores OAuth tokens and cached media metadata
 4. Token refresh failures trigger alerts and retry logic
+5. Service account has write scope for Google Photos upload (`photoslibrary.edit` or `photoslibrary.appendonly`)
 
 **Plans**: TBD
 
@@ -59,11 +60,11 @@
 
 ### Phase 75: Google Photos Browser
 
-**Goal**: Users can browse Google Photos albums and filter photos by media type
+**Goal**: Users can browse Google Photos albums and filter photos by media type, with upload capability
 
 **Depends on**: Phase 73
 
-**Requirements**: PHOTO-01, PHOTO-02, PHOTO-03, PHOTO-04, PHOTO-05
+**Requirements**: PHOTO-01, PHOTO-02, PHOTO-03, PHOTO-04, PHOTO-05, UPLOAD-01, UPLOAD-03
 
 **Success Criteria** (what must be TRUE):
 1. User can browse Google Photos media items
@@ -71,6 +72,8 @@
 3. User can view photo thumbnails and metadata
 4. System handles Photos API pagination (media items list)
 5. UI displays albums for organized browsing
+6. User can upload photos through website to Google Photos
+7. Upload flow includes file selection, metadata entry (title, description), and album selection
 
 **Plans**: TBD
 
@@ -80,11 +83,11 @@
 
 ### Phase 76: Image Import Pipeline
 
-**Goal**: Users can select and import photos from Google Photos to R2 storage
+**Goal**: Users can select and import photos from Google Photos to R2 storage with album structure preservation
 
 **Depends on**: Phase 75
 
-**Requirements**: IMG-01, IMG-02, IMG-03, IMG-04, IMG-05, IMG-06, IMG-07
+**Requirements**: IMG-01, IMG-02, IMG-03, IMG-04, IMG-05, IMG-06, IMG-07, ALBUMS-01, ALBUMS-02, ALBUMS-03
 
 **Success Criteria** (what must be TRUE):
 1. System lists photos from Google Photos (not Drive images)
@@ -94,6 +97,9 @@
 5. System uploads valid images to R2 with proper metadata
 6. System logs import audit trail (who, what, when)
 7. Import errors display clear messages and retry options
+8. System fetches Google Photos albums structure
+9. System mirrors albums as R2 folders (e.g., `photos/{albumName}/{filename}`)
+10. System stores album metadata in D1 for lookup
 
 **Plans**: TBD
 
@@ -129,26 +135,26 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 73. Service Account Authentication | 0/4 | Not started | - |
+| 73. Service Account Authentication | 0/5 | Not started | - |
 | 74. Google Drive Document Browser | 0/6 | Not started | - |
-| 75. Google Photos Browser | 0/5 | Not started | - |
-| 76. Image Import Pipeline | 0/7 | Not started | - |
+| 75. Google Photos Browser | 0/7 | Not started | - |
+| 76. Image Import Pipeline | 0/10 | Not started | - |
 | 77. File Manager | 0/8 | Not started | - |
 
 ---
 
 ## Milestone v8.1 Summary
 
-**Goal**: Integrate Google Drive API for browsing documents and importing images to R2
+**Goal**: Integrate Google Drive API for browsing documents and importing images to R2, with Google Photos upload capability
 
-**Total Requirements**: 30
-- Authentication: 4 requirements
+**Total Requirements**: 36
+- Authentication: 5 requirements (includes UPLOAD-02 for write scope)
 - Document Browsing: 6 requirements
-- Photo Browser: 5 requirements
-- Image Import: 7 requirements
+- Photo Browser: 7 requirements (includes upload features)
+- Image Import: 10 requirements (includes album structure preservation)
 - File Manager: 8 requirements
 
-**Coverage**: 30/30 requirements mapped ✓
+**Coverage**: 36/36 requirements mapped ✓
 
 ---
 
