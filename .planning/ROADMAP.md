@@ -32,7 +32,12 @@
 4. Token refresh failures trigger alerts and retry logic
 5. Service account has write scope for Google Photos upload (`photoslibrary.edit` or `photoslibrary.appendonly`)
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+**Plan List**:
+- [ ] 73-01-PLAN.md — Extend JWT scope for Photos and Drive APIs
+- [ ] 73-02-PLAN.md — Create token management utilities with lazy refresh
+- [ ] 73-03-PLAN.md — Create Photos and Drive API routers with health checks
 
 ---
 
@@ -135,7 +140,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 73. Service Account Authentication | 0/5 | Not started | - |
+| 73. Service Account Authentication | 0/3 | Planning complete | - |
 | 74. Google Drive Document Browser | 0/6 | Not started | - |
 | 75. Google Photos Browser | 0/7 | Not started | - |
 | 76. Image Import Pipeline | 0/10 | Not started | - |
@@ -159,3 +164,4 @@
 ---
 
 *Roadmap created: 2026-05-12*
+*Last updated: 2026-05-12 (Phase 73 planning complete)*

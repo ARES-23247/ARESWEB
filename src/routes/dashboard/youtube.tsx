@@ -4,7 +4,7 @@ import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeResumableUr
 import { useGetVideos, useSyncYoutubeVideosMutation } from '../../api';
 import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink, RefreshCw, Filter, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { toastApiError, ApiError } from '../../api/honoClient';
+import { toastApiError, ApiError, client } from '../../api/honoClient';
 import { useQueryClient } from '@tanstack/react-query';
 import VideoPickerModal from '../../components/VideoPickerModal';
 
@@ -164,7 +164,18 @@ function VideoHub() {
                       key={video.id}
                       className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
                     >
-                      {video.thumbnailUrl ? (
+                      {video.platform === 'youtube' ? (
+                        <div className="w-full h-40 bg-black/20 relative">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${video.videoId}`}
+                            title={video.title}
+                            className="absolute inset-0 w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                          ></iframe>
+                        </div>
+                      ) : video.thumbnailUrl ? (
                         <div className="w-full h-40 bg-black/20 flex items-center justify-center">
                           <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
                         </div>
@@ -297,6 +308,9 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
   const [privacyStatus, setPrivacyStatus] = useState<"public" | "unlisted" | "private">('private');
   const [mediaType, setMediaType] = useState<"video" | "short">("video");
 
+  const [createBlogPost, setCreateBlogPost] = useState(false);
+  const [crossPostSocial, setCrossPostSocial] = useState(false);
+
   const canSetPublic = memberType === "coach" || memberType === "mentor";
 
   const [progress, setProgress] = useState(0);
@@ -308,10 +322,23 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
       if (!title) {
-        setTitle(e.target.files[0].name.replace(/\.[^/.]+$/, ""));
+        setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
       }
+
+      const videoElement = document.createElement('video');
+      videoElement.preload = 'metadata';
+      videoElement.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(videoElement.src);
+        if (videoElement.duration <= 60) {
+          setMediaType("short");
+        } else {
+          setMediaType("video");
+        }
+      };
+      videoElement.src = URL.createObjectURL(selectedFile);
     }
   };
 
@@ -362,6 +389,29 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         throw new Error(`Google API Error ${uploadResponse.status}: ${detail}`);
       }
 
+      const uploadedVideo = await uploadResponse.json();
+      const videoId = uploadedVideo.id;
+      const thumbnailKey = uploadedVideo.snippet?.thumbnails?.high?.url || null;
+
+      try {
+        await client.api.videos.$post({
+          json: {
+            title: title.trim(),
+            description: finalDescription,
+            platform: "youtube",
+            videoId,
+            thumbnailKey,
+            type: mediaType,
+            createBlogPost,
+            crossPostSocial
+          }
+        });
+      } catch (err) {
+        console.error("Failed to sync video to dashboard:", err);
+        // We don't fail the whole operation if the sync fails, but we might want to let the user know.
+        toastApiError(err, 'Video uploaded, but failed to sync to dashboard');
+      }
+
       toast.success('Video uploaded successfully!');
 
       setFile(null);
@@ -369,6 +419,8 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
       setDescription('');
       setPrivacyStatus('private');
       setMediaType("video");
+      setCreateBlogPost(false);
+      setCrossPostSocial(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
 
     } catch (err: unknown) {
@@ -379,6 +431,9 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
       if (err instanceof ApiError) {
         message = err.message;
         diagnostic = `API_${err.code}`;
+      } else if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        message = 'Network Error (Failed to fetch). This is commonly caused by an adblocker blocking the Google API, or a CORS misconfiguration. Please disable your adblocker and try again.';
+        diagnostic = 'NETWORK_FETCH_FAILED';
       } else if (err instanceof Error) {
         message = err.message;
       }
@@ -478,6 +533,50 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
               <option value="private">Private</option>
             </select>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 mt-2 border border-white/10 p-3 bg-black/20">
+          <span className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-1">Automation (Optional)</span>
+          
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="relative flex items-center justify-center mt-0.5">
+              <input
+                type="checkbox"
+                checked={createBlogPost}
+                onChange={(e) => setCreateBlogPost(e.target.checked)}
+                disabled={isUploading}
+                className="peer sr-only"
+              />
+              <div className="w-4 h-4 border border-white/20 bg-black peer-checked:bg-ares-red peer-checked:border-ares-red transition-colors"></div>
+              <svg className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" viewBox="0 0 14 14" fill="none">
+                <path d="M3 8L6 11L11 3.5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" stroke="currentColor"></path>
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white group-hover:text-ares-red transition-colors">Generate Blog Post</span>
+              <span className="text-xs text-marble/60">Automatically create and publish a blog post embedding this video.</span>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="relative flex items-center justify-center mt-0.5">
+              <input
+                type="checkbox"
+                checked={crossPostSocial}
+                onChange={(e) => setCrossPostSocial(e.target.checked)}
+                disabled={isUploading}
+                className="peer sr-only"
+              />
+              <div className="w-4 h-4 border border-white/20 bg-black peer-checked:bg-ares-red peer-checked:border-ares-red transition-colors"></div>
+              <svg className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" viewBox="0 0 14 14" fill="none">
+                <path d="M3 8L6 11L11 3.5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" stroke="currentColor"></path>
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white group-hover:text-ares-red transition-colors">Cross-Post to Social Media</span>
+              <span className="text-xs text-marble/60">Automatically queue a post to Bluesky and Facebook for this video.</span>
+            </div>
+          </label>
         </div>
 
         {uploadError && (

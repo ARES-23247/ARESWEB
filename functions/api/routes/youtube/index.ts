@@ -189,6 +189,8 @@ const routes = adminApp
       },
     };
 
+    const clientOrigin = c.req.header("origin") || new URL(c.req.url).origin;
+
     const response = await fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
       method: "POST",
       headers: {
@@ -196,6 +198,7 @@ const routes = adminApp
         "Content-Type": "application/json",
         "X-Upload-Content-Length": body.fileSize.toString(),
         "X-Upload-Content-Type": body.mimeType,
+        "Origin": clientOrigin,
       },
       body: JSON.stringify(metadata),
     });

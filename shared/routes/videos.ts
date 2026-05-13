@@ -13,6 +13,8 @@ export const videoInputSchema = z.object({
   videoId: z.string().min(1, "Video ID is required").openapi({ example: "dQw4w9WgXcQ" }),
   thumbnailKey: z.string().nullish().openapi({ example: "videos/match-thumb.jpg" }),
   type: videoTypeSchema.default("video").openapi({ example: "video" }),
+  createBlogPost: z.boolean().optional(),
+  crossPostSocial: z.boolean().optional(),
 });
 
 export const videoSchema = z.object({

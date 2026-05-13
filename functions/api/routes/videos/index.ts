@@ -15,6 +15,9 @@ import { AppEnv, ensureAdmin, getDb, audit, logAuditAction } from "../../middlew
 import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { findOneById, insertAndFetch, updateAndFetch } from "../../../../src/db/query-helpers";
+import { postHandlers } from "../posts/handlers";
+import { nanoid } from "nanoid";
+import { getSessionUser } from "../../middleware";
 
 const baseRouter = new OpenAPIHono<AppEnv>();
 
@@ -107,21 +110,75 @@ const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
 const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
   const body = c.req.valid("json");
   const db = getDb(c);
+  const user = await getSessionUser(c);
 
   try {
     const now = new Date().toISOString();
+    
+    // Auto-detect shorts if #shorts is in the title or description
+    let type = body.type ?? "video";
+    if (
+      (body.title && body.title.toLowerCase().includes("#shorts")) ||
+      (body.description && body.description.toLowerCase().includes("#shorts"))
+    ) {
+      type = "short";
+    }
+
     const video = await insertAndFetch<typeof schema.videos.$inferSelect>(db, schema.videos, {
       title: body.title,
       description: body.description ?? null,
       platform: body.platform,
       videoId: body.videoId,
       thumbnailKey: body.thumbnailKey ?? null,
-      type: body.type ?? "video",
+      type,
       createdAt: now,
       updatedAt: now,
     }, "vid_");
 
     audit(c, "video_create", "video", video.id, `Created video: ${body.title}`);
+
+    // Handle Syndication
+    if (body.createBlogPost) {
+      // Create blog post with embedded video
+      const ast = {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: body.description ? [{ type: "text", text: body.description }] : []
+          },
+          {
+            type: "youtube",
+            attrs: {
+              src: `https://www.youtube.com/watch?v=${video.videoId}`
+            }
+          }
+        ]
+      };
+
+      const postBody = {
+        title: video.title,
+        ast,
+        isDraft: false,
+        thumbnail: video.thumbnailKey ? `/api/media/${video.thumbnailKey}` : undefined,
+        socials: body.crossPostSocial ? undefined : { discord: false, instagram: false, bluesky: false, facebook: false }
+      };
+
+      await postHandlers.savePost({ query: {}, params: {}, body: postBody }, c);
+    } else if (body.crossPostSocial) {
+      // Create generic social queue entry if no blog post is being generated
+      await db.insert(schema.socialQueue).values({
+        id: nanoid(),
+        content: `${video.title}\n\nWatch our new video: https://youtu.be/${video.videoId}`,
+        platforms: JSON.stringify({ bluesky: true, facebook: true }),
+        status: "pending",
+        scheduledFor: now,
+        createdBy: user?.id || "system",
+        linkedType: "video",
+        linkedId: video.id,
+        createdAt: now,
+      }).execute();
+    }
 
     return c.json({ video: serializeVideo(video) }, 200);
   } catch (error) {

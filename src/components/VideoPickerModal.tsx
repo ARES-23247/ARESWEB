@@ -42,6 +42,7 @@ export default function VideoPickerModal({
   const [parsedVideoId, setParsedVideoId] = useState("");
   const [thumbnailKey, setThumbnailKey] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [newPrivacyStatus, setNewPrivacyStatus] = useState<"public" | "unlisted" | "private" | "">("");
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [urlError, setUrlError] = useState("");
 
@@ -67,6 +68,7 @@ export default function VideoPickerModal({
     setParsedVideoId("");
     setThumbnailKey(null);
     setThumbnailUrl(null);
+    setNewPrivacyStatus("");
     setUrlError("");
   }
 
@@ -178,6 +180,17 @@ export default function VideoPickerModal({
 
     if (editVideoId) {
       updateMutation.mutate({ id: editVideoId, ...payload });
+      
+      // If editing a YouTube video and a new privacy status was selected, update it on YouTube
+      if (finalPlatform === "youtube" && newPrivacyStatus) {
+        client.youtube[":id"].$put({
+          param: { id: finalVideoId },
+          json: { privacyStatus: newPrivacyStatus as "public" | "unlisted" | "private" }
+        }).catch(err => {
+          console.error("Failed to update YouTube privacy status:", err);
+          toastApiError(err, "Failed to update visibility on YouTube");
+        });
+      }
     } else {
       createMutation.mutate(payload);
     }
@@ -319,6 +332,25 @@ export default function VideoPickerModal({
                     className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all resize-none"
                   />
                 </div>
+                {editVideoId && platform === "youtube" && (
+                  <div>
+                    <label htmlFor="newPrivacyStatus" className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
+                      Update YouTube Visibility (Optional)
+                    </label>
+                    <select
+                      id="newPrivacyStatus"
+                      value={newPrivacyStatus}
+                      onChange={(e) => setNewPrivacyStatus(e.target.value as any)}
+                      className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all appearance-none text-sm"
+                    >
+                      <option value="">-- Keep Current Visibility --</option>
+                      <option value="public">Public</option>
+                      <option value="unlisted">Unlisted</option>
+                      <option value="private">Private</option>
+                    </select>
+                    <p className="text-[10px] text-white/40 mt-1">Updates the actual video visibility on YouTube. Leave blank to keep current.</p>
+                  </div>
+                )}
                 <div>
                   <div className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-2">
                     Custom Thumbnail
