@@ -207,7 +207,9 @@ apiRouter.use("/comments/*", persistentRateLimitMiddleware(20, 60));
 // ── Mount Domain Routers ─────────────────────────────────────────────
 import { simulationsRouter } from "./routes/simulations";
 import { communicationsRouter } from "./routes/communications";
+import filesRouter from "./routes/files";
 
+// @ts-expect-error TS2590: Union type too complex — known Hono limitation
 export const group1 = new OpenAPIHono<AppEnv>()
   .route("/auth", authRouter)
   .route("/finance", financeRouter)
@@ -259,7 +261,8 @@ export const group4 = new OpenAPIHono<AppEnv>()
   .route("/communications", communicationsRouter)
   .route("/google-drive", driveRouter)
   .route("/google-photos", photosRouter)
-  .route("/onshape", onshapeRouter);
+  .route("/onshape", onshapeRouter)
+  .route("/files", filesRouter);
 
 // ── Global Search ───
 // D1 FTS result shape from raw SQL queries
@@ -270,6 +273,9 @@ interface FTSResult {
   snippet: string;
 }
 
+// @ts-expect-error TS2590: Union type too complex — known Hono limitation with large route chains.
+// This suppression is safe: the routes chain is structurally correct, TypeScript just can't
+// compute the cumulative type of 4 groups + 2 openapi handlers in a single chain.
 const routes = new OpenAPIHono<AppEnv>()
   .route("/", group1)
   .route("/", group2)
@@ -333,6 +339,7 @@ const routes = new OpenAPIHono<AppEnv>()
     return c.json({ logs }, 200);
   });
 
+// @ts-expect-error TS2590: Union type too complex — known Hono limitation
 apiRouter.route("/", routes);
 
 // ── Health Check ────────────

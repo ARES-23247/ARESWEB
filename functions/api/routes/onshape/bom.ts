@@ -8,11 +8,12 @@
  */
 
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import type { AppEnv } from "../../../middleware/utils";
-import { requireAuth } from "../middleware/auth";
+import { getDb, type AppEnv } from "../../middleware/utils";
+import { requireAuth } from "../../middleware/auth";
 import { getOnshapeToken, getOnshapeConfig } from "../../../utils/onshapeAuth";
-import { onshapeBomHistory } from "../../../src/db/schema";
+import { onshapeBomHistory } from "../../../../src/db/schema";
 import { ApiError } from "../../middleware/errorHandler";
+import { eq } from "drizzle-orm";
 
 // Create the router
 const bomApp = new OpenAPIHono<AppEnv>();
@@ -127,10 +128,12 @@ const bomRoute = createRoute({
  *
  * Fetches BOM from Onshape and records sync history.
  */
-bomApp.openapi(bomRoute, requireAuth(async (c, { userId }) => {
-	const { documentId, elementId } = c.req.param();
-	const config = getOnshapeConfig(c.env);
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+const app1 = bomApp.openapi(bomRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { documentId, elementId } = c.req.valid("param");
+	const config = getOnshapeConfig(c.env as unknown as Record<string, string | undefined>);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 
 	// Onshape BOM endpoint
 	const url = `${config.baseUrl}/api/assemblies/d/${documentId}/e/${elementId}/bom`;
@@ -179,7 +182,7 @@ bomApp.openapi(bomRoute, requireAuth(async (c, { userId }) => {
 	if (c.executionCtx) {
 		c.executionCtx.waitUntil((async () => {
 			try {
-				await c.env.DB.insert(onshapeBomHistory).values({
+				await db.insert(onshapeBomHistory).values({
 					documentId,
 					elementId,
 					partCount: parts.length,
@@ -203,7 +206,7 @@ bomApp.openapi(bomRoute, requireAuth(async (c, { userId }) => {
 	};
 
 	return c.json(bomResponse);
-}));
+});
 
 // ============================================================================
 // BOM History Endpoint
@@ -250,17 +253,16 @@ const bomHistoryRoute = createRoute({
  *
  * Retrieves BOM sync history from D1.
  */
-bomApp.openapi(bomHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
-	const { documentId } = c.req.param();
+const app2 = app1.openapi(bomHistoryRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { documentId } = c.req.valid("param");
 	const limit = parseInt(c.req.query("limit") || "50", 10);
+	const db = getDb(c);
 
-	const history = await c.env.DB
+	const history = await db
 		.select()
 		.from(onshapeBomHistory)
-		.where((columns) => {
-			// @ts-expect-error - drizzle-orm dynamic where typing limitation
-			return columns.documentId === documentId;
-		})
+		.where(eq(onshapeBomHistory.documentId, documentId))
 		.orderBy(onshapeBomHistory.syncedAt)
 		.limit(limit)
 		.execute();
@@ -271,11 +273,11 @@ bomApp.openapi(bomHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
 		elementId: row.elementId,
 		partCount: row.partCount,
 		syncedBy: row.syncedBy,
-		syncedAt: row.syncedAt,
+		syncedAt: row.syncedAt || "",
 	}));
 
 	return c.json({ history: entries.reverse() }); // Most recent first
-}));
+});
 
 // ============================================================================
 // All BOM History Endpoint
@@ -319,10 +321,12 @@ const bomAllHistoryRoute = createRoute({
  *
  * Retrieves all BOM sync history from D1.
  */
-bomApp.openapi(bomAllHistoryRoute, requireAuth(async (c, { userId: _userId }) => {
+const app3 = app2.openapi(bomAllHistoryRoute, async (c) => {
+	await requireAuth(c);
 	const limit = parseInt(c.req.query("limit") || "100", 10);
+	const db = getDb(c);
 
-	const history = await c.env.DB
+	const history = await db
 		.select()
 		.from(onshapeBomHistory)
 		.orderBy(onshapeBomHistory.syncedAt)
@@ -335,11 +339,11 @@ bomApp.openapi(bomAllHistoryRoute, requireAuth(async (c, { userId: _userId }) =>
 		elementId: row.elementId,
 		partCount: row.partCount,
 		syncedBy: row.syncedBy,
-		syncedAt: row.syncedAt,
+		syncedAt: row.syncedAt || "",
 	}));
 
 	return c.json({ history: entries.reverse() }); // Most recent first
-}));
+});
 
 // ============================================================================
 // BOM CSV Export Endpoint
@@ -375,10 +379,12 @@ const bomExportRoute = createRoute({
  *
  * Exports BOM as CSV file.
  */
-bomApp.openapi(bomExportRoute, requireAuth(async (c, { userId }) => {
-	const { documentId, elementId } = c.req.param();
-	const config = getOnshapeConfig(c.env);
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+const app4 = app3.openapi(bomExportRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { documentId, elementId } = c.req.valid("param");
+	const config = getOnshapeConfig(c.env as unknown as Record<string, string | undefined>);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 
 	// Fetch BOM from Onshape
 	const url = `${config.baseUrl}/api/assemblies/d/${documentId}/e/${elementId}/bom`;
@@ -438,6 +444,6 @@ bomApp.openapi(bomExportRoute, requireAuth(async (c, { userId }) => {
 		"Content-Type": "text/csv",
 		"Content-Disposition": `attachment; filename="${filename}"`,
 	});
-}));
+});
 
-export default bomApp;
+export default app4;

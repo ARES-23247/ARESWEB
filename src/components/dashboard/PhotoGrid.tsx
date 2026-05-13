@@ -78,7 +78,7 @@ export function PhotoGrid({
             tabIndex={selectable ? 0 : undefined}
             aria-label={`${selectable ? "Select photo: " : ""}${item.filename}`}
             aria-selected={selectable ? isSelected : undefined}
-            onKeyDown={(e) => {
+            onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
               if (selectable && (e.key === "Enter" || e.key === " ")) {
                 e.preventDefault();
                 handlePhotoClick(item.id);

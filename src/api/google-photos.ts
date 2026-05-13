@@ -94,7 +94,7 @@ export function useGetMediaItems(params?: GetMediaItemsParams) {
   return useQuery({
     queryKey: ["google-photos", "media", params],
     queryFn: async () => {
-      const res = await client.googlePhotos.media.$get({
+      const res = await client["google-photos"].media.$get({
         query: params ?? {},
       });
       return unwrapResponse<GetMediaItemsResponse>(res);
@@ -118,7 +118,7 @@ export function useGetAlbums(params?: GetAlbumsParams) {
   return useQuery({
     queryKey: ["google-photos", "albums", params],
     queryFn: async () => {
-      const res = await client.googlePhotos.albums.$get({
+      const res = await client["google-photos"].albums.$get({
         query: params ?? {},
       });
       return unwrapResponse<GetAlbumsResponse>(res);
@@ -226,8 +226,9 @@ export function useUploadPhotos(
       }
 
       // Call upload endpoint
-      const res = await client.googlePhotos.upload.$post({
-        // @ts-expect-error - FormData is not properly typed in Hono client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- FormData typing requires dynamic access
+      const res = await (client["google-photos"] as any).upload.$post({
+        // FormData typing issue is fixed in recent Hono versions
         body: formData,
       });
 
@@ -321,7 +322,7 @@ export function useImportPhotos(
 
   return useMutation({
     mutationFn: async (params: ImportPhotosParams) => {
-      const res = await client.googlePhotos.import.$post({
+      const res = await client["google-photos"].import.$post({
         json: {
           mediaItemIds: params.mediaItemIds,
           albumId: params.albumId,

@@ -12,7 +12,7 @@ vi.mock("../../utils/googleAuth", () => ({
 
 // Mock middleware modules BEFORE importing test-auth
 vi.mock("../middleware/auth", async () => {
-  const actual = await vi.importActual<typeof import("../middleware/auth.js")>("../middleware/auth");
+  const actual = await vi.importActual<typeof import("../middleware/auth")>("../middleware/auth");
   return {
     ...actual,
     ensureAdmin: vi.fn((c: any, next: any) => next()),
@@ -20,7 +20,7 @@ vi.mock("../middleware/auth", async () => {
 });
 
 vi.mock("../middleware", async () => {
-  const actual = await vi.importActual<typeof import("../middleware.js")>("../middleware");
+  const actual = await vi.importActual<typeof import("../middleware")>("../middleware");
   return {
     ...actual,
     getDb: vi.fn((c: any) => c.get("db")),

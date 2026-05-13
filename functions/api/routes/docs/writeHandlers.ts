@@ -15,7 +15,7 @@ type Ctx = Context<AppEnv>;
 // ──── DELETE /docs/admin/:slug — Soft delete ────────────────────────────────
 
 export async function handleDeleteDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     const existing = await db.select({ slug: schema.docs.slug, title: schema.docs.title }).from(schema.docs).where(eq(schema.docs.slug, slug)).get();
@@ -32,7 +32,7 @@ export async function handleDeleteDoc(c: Ctx) {
 // ──── POST /docs/admin/save — Save/create doc ───────────────────────────────
 
 export async function handleSaveDoc(c: Ctx) {
-    const body = c.req.valid("json");
+    const body = await c.req.json();
     const db = getDb(c);
     const { slug, title, category, sortOrder, description, content, isPortfolio, isExecutiveSummary, isDraft, displayInAreslib, displayInMathCorner, displayInScienceCorner } = body;
     const user = await getSessionUser(c);
@@ -190,8 +190,8 @@ export async function handleSaveDoc(c: Ctx) {
 // ──── PATCH /docs/admin/:slug/sort — Update sort order ──────────────────────
 
 export async function handleUpdateSort(c: Ctx) {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
+    const params = c.req.param();
+    const body = await c.req.json();
     const { slug } = params;
     const { sortOrder } = body;
     const db = getDb(c);
@@ -202,11 +202,11 @@ export async function handleUpdateSort(c: Ctx) {
 // ──── POST /docs/admin/:slug/history/:id/restore — Restore history ──────────
 
 export async function handleRestoreHistory(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug, id } = params;
     const db = getDb(c);
     const row = await db.select().from(schema.docsHistory).where(
-        and(eq(schema.docsHistory.slug, slug), eq(schema.docsHistory.id, id))
+        and(eq(schema.docsHistory.slug, slug), eq(schema.docsHistory.id, Number(id)))
     ).get();
 
     if (!row) {
@@ -239,7 +239,7 @@ export async function handleRestoreHistory(c: Ctx) {
 // ──── PATCH /docs/admin/:slug/approve — Approve doc ─────────────────────────
 
 export async function handleApproveDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
 
@@ -312,8 +312,8 @@ export async function handleApproveDoc(c: Ctx) {
 // ──── PATCH /docs/admin/:slug/reject — Reject doc ───────────────────────────
 
 export async function handleRejectDoc(c: Ctx) {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
+    const params = c.req.param();
+    const body = await c.req.json();
     const { slug } = params;
     const { reason } = body;
     const db = getDb(c);
@@ -351,7 +351,7 @@ export async function handleRejectDoc(c: Ctx) {
 // ──── PATCH /docs/admin/:slug/undelete — Restore soft-deleted ───────────────
 
 export async function handleUndeleteDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     await db.update(schema.docs).set({ isDeleted: 0, status: "draft" }).where(eq(schema.docs.slug, slug)).run();
@@ -361,7 +361,7 @@ export async function handleUndeleteDoc(c: Ctx) {
 // ──── DELETE /docs/admin/:slug/purge — Hard delete ──────────────────────────
 
 export async function handlePurgeDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     const doc = await db.select({ content: schema.docs.content })

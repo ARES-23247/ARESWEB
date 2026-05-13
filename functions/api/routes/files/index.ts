@@ -21,7 +21,8 @@ import {
 	scanUsageRoute,
 } from "../../../../shared/routes/files";
 import { AppEnv, ensureAdmin, getDb, logAuditAction } from "../../middleware";
-import { eq, desc, count } from "drizzle-orm";
+import { getSessionUser } from "../../middleware/auth";
+import { and, eq, desc, count } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { randomUUID } from "crypto";
 import {
@@ -49,7 +50,7 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024;
  * POST /upload - Upload document file
  * Validates file type and size, uploads to R2, creates D1 record
  */
-filesRouter.openapi(uploadFileRoute, async (c) => {
+const app1 = filesRouter.openapi(uploadFileRoute, async (c) => {
 	const db = getDb(c);
 	const formData = await c.req.parseBody();
 	const file = formData["file"] as File | undefined;
@@ -88,7 +89,8 @@ filesRouter.openapi(uploadFileRoute, async (c) => {
 	}
 
 	// Get authenticated user email
-	const cfEmail = c.get("user")?.email || "unknown@example.com";
+	const user = await getSessionUser(c);
+	const cfEmail = user?.id || "unknown@example.com";
 
 	// Create D1 record
 	const fileId = randomUUID();
@@ -137,7 +139,7 @@ filesRouter.openapi(uploadFileRoute, async (c) => {
  * GET / - List uploaded files
  * Returns files with usage counts from file_usage table
  */
-filesRouter.openapi(listFilesRoute, async (c) => {
+const app2 = app1.openapi(listFilesRoute, async (c) => {
 	const db = getDb(c);
 	const query = c.req.valid("query");
 
@@ -161,18 +163,15 @@ filesRouter.openapi(listFilesRoute, async (c) => {
 		.groupBy(schema.uploadedFiles.id)
 		.orderBy(desc(schema.uploadedFiles.uploadedAt));
 
-	// Apply search filter if provided
-	const filteredQuery = query.search
-		? filesQuery.where((fields: any) =>
-				// Client-side filter for Phase 77 per D-18
-				true
-		  )
-		: filesQuery;
+	const rows = await filesQuery.execute();
 
-	const rows = await filteredQuery.execute();
+	// Client-side filter for Phase 77 per D-18
+	const filteredRows = query.search
+		? rows.filter((row: any) => row.filename?.toLowerCase().includes(query.search!.toLowerCase()))
+		: rows;
 
 	// Transform rows to response format
-	const files = rows.map((row: any) => ({
+	const files = filteredRows.map((row: any) => ({
 		...row,
 		downloadUrl: `/api/files/download/${row.id}`,
 	}));
@@ -191,7 +190,7 @@ filesRouter.openapi(listFilesRoute, async (c) => {
  * GET /download/:id - Download file
  * Requires authentication per D-24
  */
-filesRouter.openapi(downloadFileRoute, async (c) => {
+const app3 = app2.openapi(downloadFileRoute, async (c) => {
 	const db = getDb(c);
 	const { id } = c.req.valid("param");
 
@@ -229,7 +228,7 @@ filesRouter.openapi(downloadFileRoute, async (c) => {
  * DELETE /:id - Delete file
  * Deletes from R2 and D1
  */
-filesRouter.openapi(deleteFileRoute, async (c) => {
+const app4 = app3.openapi(deleteFileRoute, async (c) => {
 	const db = getDb(c);
 	const { id } = c.req.valid("param");
 
@@ -264,7 +263,7 @@ filesRouter.openapi(deleteFileRoute, async (c) => {
  * POST /import-from-drive - Import file from Google Drive
  * Downloads from Drive API, validates, uploads to R2
  */
-filesRouter.openapi(importFromDriveRoute, async (c) => {
+const app5 = app4.openapi(importFromDriveRoute, async (c) => {
 	const db = getDb(c);
 	const { fileId, fileName, mimeType } = c.req.valid("json");
 
@@ -329,7 +328,8 @@ filesRouter.openapi(importFromDriveRoute, async (c) => {
 	}
 
 	// Get authenticated user email
-	const cfEmail = c.get("user")?.email || "unknown@example.com";
+	const user = await getSessionUser(c);
+	const cfEmail = user?.id || "unknown@example.com";
 
 	// Create D1 record
 	const newFileId = randomUUID();
@@ -376,7 +376,7 @@ filesRouter.openapi(importFromDriveRoute, async (c) => {
  * POST /scan-usage - Scan blog posts for file references
  * Finds /api/files/download/{id} patterns in post content
  */
-filesRouter.openapi(scanUsageRoute, async (c) => {
+const app6 = app5.openapi(scanUsageRoute, async (c) => {
 	const db = getDb(c);
 
 	// Query all published posts
@@ -423,8 +423,7 @@ filesRouter.openapi(scanUsageRoute, async (c) => {
 		const existing = await db
 			.select()
 			.from(schema.fileUsage)
-			.where(eq(schema.fileUsage.fileId, record.fileId))
-			.where(eq(schema.fileUsage.postId, record.postId))
+			.where(and(eq(schema.fileUsage.fileId, record.fileId), eq(schema.fileUsage.postId, record.postId)))
 			.get();
 
 		if (!existing) {
@@ -445,4 +444,4 @@ filesRouter.openapi(scanUsageRoute, async (c) => {
 	return c.json({ scanned: posts.length, updated: updatedCount }, 200);
 });
 
-export default filesRouter;
+export default app6;

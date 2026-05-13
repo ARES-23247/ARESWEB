@@ -78,8 +78,8 @@ const listDocumentsRoute = createRoute({
 documentsApp.openapi(listDocumentsRoute, async (c) => {
 	const db = getDb(c);
 	const env = c.env;
-	const user = c.get("user");
-	const userId = user?.email || "unknown";
+	const user = c.get("sessionUser");
+	const userId = user?.id || "unknown";
 
 	if (!userId || userId === "unknown") {
 		throw new ApiError("Authentication required", 401, "AUTH_REQUIRED");
@@ -88,8 +88,7 @@ documentsApp.openapi(listDocumentsRoute, async (c) => {
 	const { search, limit = 20 } = c.req.valid("query");
 
 	try {
-		// Fetch user's documents from Onshape API
-		const userDocuments = await getDocuments(userId, db, env, search);
+		const userDocuments = await getDocuments(userId, db, env as unknown as Record<string, string | undefined>, search);
 
 		// Fetch public documents from cache
 		const publicDocs = await getPublicDocuments(db);
@@ -167,7 +166,7 @@ documentsApp.openapi(listPublicDocumentsRoute, async (c) => {
 		const documents = await getPublicDocuments(db);
 
 		return c.json({
-			documents: documents.slice(0, limit),
+			documents: documents.slice(0, limit).map(doc => ({ ...doc, isPublic: true as const })),
 		});
 	} catch (error) {
 		console.error("[onshape/documents/public] Failed to fetch public documents:", error);
@@ -227,18 +226,17 @@ const getDocumentRoute = createRoute({
 documentsApp.openapi(getDocumentRoute, async (c) => {
 	const db = getDb(c);
 	const env = c.env;
-	const user = c.get("user");
-	const userId = user?.email || "unknown";
+	const user = c.get("sessionUser");
+	const userId = user?.id || "unknown";
 
 	if (!userId || userId === "unknown") {
 		throw new ApiError("Authentication required", 401, "AUTH_REQUIRED");
 	}
 
-	const { documentId } = c.req.valid("params");
+	const { documentId } = c.req.valid("param");
 
 	try {
-		// Fetch document elements
-		const elements = await getDocumentElements(userId, db, env, documentId);
+		const elements = await getDocumentElements(userId, db, env as unknown as Record<string, string | undefined>, documentId);
 
 		// For now, return basic document info with elements
 		// In a full implementation, we'd fetch full document details from Onshape
@@ -302,17 +300,17 @@ const getDocumentElementsRoute = createRoute({
 documentsApp.openapi(getDocumentElementsRoute, async (c) => {
 	const db = getDb(c);
 	const env = c.env;
-	const user = c.get("user");
-	const userId = user?.email || "unknown";
+	const user = c.get("sessionUser");
+	const userId = user?.id || "unknown";
 
 	if (!userId || userId === "unknown") {
 		throw new ApiError("Authentication required", 401, "AUTH_REQUIRED");
 	}
 
-	const { documentId } = c.req.valid("params");
+	const { documentId } = c.req.valid("param");
 
 	try {
-		const elements = await getDocumentElements(userId, db, env, documentId);
+		const elements = await getDocumentElements(userId, db, env as unknown as Record<string, string | undefined>, documentId);
 
 		return c.json({ elements });
 	} catch (error) {

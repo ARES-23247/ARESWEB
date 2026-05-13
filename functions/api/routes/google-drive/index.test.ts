@@ -23,7 +23,7 @@ vi.mock("../../middleware/auth", async () => {
 });
 
 vi.mock("../../middleware", async () => {
-  const actual = await vi.importActual<typeof import("../../middleware.js")>("../../middleware");
+  const actual = await vi.importActual<typeof import("../../middleware")>("../../middleware");
   return {
     ...actual,
     getDb: vi.fn((c: any) => c.get("db")),
@@ -55,7 +55,7 @@ describe("google-drive router", () => {
     // Create test env
     testEnv = createTestEnv({
       GOOGLE_DRIVE_FOLDER_ID: "test-folder-123",
-    });
+    } as any);
 
     // Create test app with env
     app = new Hono<AppEnv>();
@@ -87,7 +87,7 @@ describe("google-drive router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toEqual({
         status: "ok",
         service: "google-drive",
@@ -222,7 +222,7 @@ describe("google-drive router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body.files).toBeDefined();
       expect(body.files.length).toBe(4);
       expect(body.files[0]).toMatchObject({

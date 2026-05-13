@@ -2,6 +2,7 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
+import { getSessionUser } from "../../middleware/auth";
 import { getPhotosAccessToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
@@ -67,7 +68,7 @@ photosApp.use("*", ensureAdmin);
 
 // Health check endpoint
 // Tests authentication by making a minimal API call to Google Photos
-photosApp.openapi(healthRoute, async (c) => {
+const app1 = photosApp.openapi(healthRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -115,7 +116,7 @@ photosApp.openapi(healthRoute, async (c) => {
 
 // Media items endpoint (Phase 75-02)
 // Lists Google Photos media items with server-side video filtering
-photosApp.openapi(mediaRoute, async (c) => {
+const app2 = app1.openapi(mediaRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -205,7 +206,7 @@ photosApp.openapi(mediaRoute, async (c) => {
 
 // Albums endpoint (Phase 75-03)
 // Lists Google Photos albums with cover photos and item counts
-photosApp.openapi(albumsRoute, async (c) => {
+const app3 = app2.openapi(albumsRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -277,7 +278,7 @@ photosApp.openapi(albumsRoute, async (c) => {
 
 // Upload endpoint (Phase 75-05)
 // Uploads photos to Google Photos using mediaItems:batchCreate endpoint
-photosApp.post("/upload", async (c) => {
+app3.post("/upload", async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -478,7 +479,7 @@ photosApp.post("/upload", async (c) => {
 // Per IMG-04: Validates magic bytes before upload
 // Per IMG-06: Tracks imports in imported_photos and audit log
 // Per D-06: Sequential processing to avoid memory overflow
-photosApp.openapi(importPhotosRoute, async (c) => {
+const app4 = app3.openapi(importPhotosRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -489,7 +490,8 @@ photosApp.openapi(importPhotosRoute, async (c) => {
   const token = await getPhotosAccessToken(db, env);
 
   // Get user email for audit tracking
-  const userEmail = c.get("userEmail") ?? "unknown";
+  const user = await getSessionUser(c);
+  const userEmail = user?.id ?? "unknown";
 
   // Fetch album details if albumId provided
   let albumName: string | null = null;
@@ -524,6 +526,7 @@ photosApp.openapi(importPhotosRoute, async (c) => {
           googleAlbumId: schema.photoAlbums.googleAlbumId,
           name: schema.photoAlbums.name,
           r2Folder: schema.photoAlbums.r2Folder,
+          syncedAt: schema.photoAlbums.syncedAt,
         })
         .from(schema.photoAlbums)
         .where(eq(schema.photoAlbums.googleAlbumId, albumId))
@@ -644,7 +647,7 @@ photosApp.openapi(importPhotosRoute, async (c) => {
       }
 
       // Upload to R2
-      const r2Key = await uploadToR2(buffer, filename, mimeType, albumName ?? null, env);
+      const r2Key = await uploadToR2(buffer, filename, mimeType, albumName ?? null, env as any);
 
       // Record in imported_photos table (Per IMG-06)
       await db
@@ -722,5 +725,5 @@ photosApp.openapi(importPhotosRoute, async (c) => {
 });
 
 // Export the router for registration in the main app
-export const photosRouter = photosApp;
+export const photosRouter = app4;
 export default photosRouter;

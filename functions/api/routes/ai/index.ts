@@ -914,7 +914,7 @@ aiRouter.get("/admin/external-sources", ensureAdmin, async (c) => {
         type: schema.externalKnowledgeSources.type,
         url: schema.externalKnowledgeSources.url,
         branch: schema.externalKnowledgeSources.branch,
-        lastSyncedAt: schema.externalKnowledgeSources.lastSyncedAt,
+        lastSyncedAt: schema.externalKnowledgeSources.lastIndexedAt,
         createdAt: schema.externalKnowledgeSources.createdAt,
     }).from(schema.externalKnowledgeSources);
     return c.json(sources);

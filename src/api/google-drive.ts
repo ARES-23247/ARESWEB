@@ -61,7 +61,7 @@ export function useGetDriveFiles(params?: ListDriveFilesParams) {
   return useQuery({
     queryKey: ["google-drive", "files", params],
     queryFn: async () => {
-      const res = await client.googleDrive.files.$get({
+      const res = await client["google-drive"].files.$get({
         query: params ?? {},
       });
       return unwrapResponse<ListDriveFilesResponse>(res);

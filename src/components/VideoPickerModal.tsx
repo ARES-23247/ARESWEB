@@ -186,7 +186,7 @@ export default function VideoPickerModal({
         client.youtube[":id"].$put({
           param: { id: finalVideoId },
           json: { privacyStatus: newPrivacyStatus as "public" | "unlisted" | "private" }
-        }).catch(err => {
+        }).catch((err: unknown) => {
           console.error("Failed to update YouTube privacy status:", err);
           toastApiError(err, "Failed to update visibility on YouTube");
         });

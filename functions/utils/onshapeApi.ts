@@ -220,7 +220,7 @@ export async function getDocuments(
 						description: doc.description,
 						thumbnailUrl: doc.thumbnailUrl || null,
 						ownerName: doc.owner,
-						isPublic: false, // Default to private, user can mark as public
+						isPublic: 0, // Default to private, user can mark as public
 						lastSyncedAt: new Date().toISOString(),
 					} as any)
 					.run();
@@ -248,7 +248,7 @@ export async function getPublicDocuments(
 	const documents = await db
 		.select()
 		.from(onshapeDocuments)
-		.where(eq(onshapeDocuments.isPublic, true))
+		.where(eq(onshapeDocuments.isPublic, 1))
 		.orderBy(onshapeDocuments.lastSyncedAt)
 		.limit(100)
 		.execute();

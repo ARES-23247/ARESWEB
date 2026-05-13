@@ -57,7 +57,7 @@ export function useGetFiles(
 	options?: Omit<UseQueryOptions<FilesResponse>, "queryKey" | "queryFn">
 ) {
 	return useQuery<FilesResponse>({
-		queryKey: ["files", params.search],
+		queryKey: ["files", params],
 		queryFn: async () => {
 			const response = await client.files.$get({
 				query: params,

@@ -6,7 +6,7 @@ import * as schema from "../../../src/db/schema";
 import type { DrizzleDB } from "../../../src/db/types";
 import { safeJSONParse } from "../../utils/json";
 import { inArray } from "drizzle-orm";
-import type { D1Database, R2Bucket, VectorizeIndex, Ai, KvNamespace } from "@cloudflare/workers-types";
+import type { D1Database, R2Bucket, VectorizeIndex, Ai, KVNamespace } from "@cloudflare/workers-types";
 
 // ── Cloudflare Bindings ──────────────────────────────────────────────
 export type Bindings = {
@@ -67,13 +67,13 @@ export type Bindings = {
   YOUTUBE_CLIENT_ID?: string;
   YOUTUBE_CLIENT_SECRET?: string;
   // Onshape OAuth state storage (Phase 78)
-  ONSHAPE_OAUTH_STATE: KvNamespace;
+  ONSHAPE_OAUTH_STATE: KVNamespace;
   ONSHAPE_CLIENT_ID?: string;
   ONSHAPE_CLIENT_SECRET?: string;
   ONSHAPE_REDIRECT_URI?: string;
   ONSHAPE_BASE_URL?: string;
   // Onshape export state storage (Phase 78-03)
-  ONSHAPE_EXPORTS: KvNamespace;
+  ONSHAPE_EXPORTS: KVNamespace;
 };
 
 export type Variables = {

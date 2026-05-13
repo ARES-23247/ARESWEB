@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../../middleware/utils";
 import { getDb } from "../../middleware";
+import { requireAuth, getSessionUser } from "../../middleware/auth";
 import {
 	generateAuthUrl,
 	exchangeCodeForTokens,
@@ -38,18 +39,10 @@ const generateState = () => customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
  */
 authApp.get("/authorize", async (c) => {
 	const env = c.env;
-	const userId = c.get("cf-access-authenticated-user-email") as string | undefined;
+	const user = await requireAuth(c);
+	const userId = user.id;
 
-	// Zero Trust: Verify user authentication
-	if (!userId) {
-		throw new ApiError(
-			"Unauthorized. Please log in to connect your Onshape account.",
-			401,
-			"UNAUTHORIZED"
-		);
-	}
-
-	const config = getOnshapeConfig(env);
+	const config = getOnshapeConfig(env as unknown as Record<string, string | undefined>);
 	const state = generateState();
 	const redirectPath = c.req.query("redirect") || "/onshape";
 
@@ -131,7 +124,7 @@ authApp.get("/callback", async (c) => {
 
 	try {
 		// Exchange authorization code for tokens
-		const config = getOnshapeConfig(env);
+		const config = getOnshapeConfig(env as unknown as Record<string, string | undefined>);
 		const tokens = await exchangeCodeForTokens(code, config);
 
 		// Store tokens in D1
@@ -165,7 +158,8 @@ authApp.get("/callback", async (c) => {
  */
 authApp.get("/status", async (c) => {
 	const db = getDb(c);
-	const userId = c.get("cf-access-authenticated-user-email") as string | undefined;
+	const user = await getSessionUser(c);
+	const userId = user?.id;
 
 	if (!userId) {
 		return c.json({ connected: false });
@@ -196,12 +190,8 @@ const _logoutSchema = z.object({
  */
 authApp.post("/logout", async (c) => {
 	const db = getDb(c);
-	const userId = c.get("cf-access-authenticated-user-email") as string | undefined;
-
-	// Zero Trust: Verify user authentication
-	if (!userId) {
-		throw new ApiError("Unauthorized. Please log in.", 401, "UNAUTHORIZED");
-	}
+	const user = await requireAuth(c);
+	const userId = user.id;
 
 	// Clear credentials from D1
 	await clearOnshapeCredentials(userId, db);

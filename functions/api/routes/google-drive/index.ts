@@ -39,16 +39,12 @@ const healthRoute = createRoute({
   },
 });
 
-// Create the router
+// Create the router and apply middleware
 const driveApp = new OpenAPIHono<AppEnv>();
-
-// Apply admin middleware to all routes per zero-trust security
-// This ensures only authenticated admin users can access Google Drive endpoints
 driveApp.use("*", ensureAdmin);
 
 // Health check endpoint
-// Tests authentication by making a minimal API call to Google Drive
-driveApp.openapi(healthRoute, async (c) => {
+const app1 = driveApp.openapi(healthRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -94,7 +90,7 @@ driveApp.openapi(healthRoute, async (c) => {
 // Files endpoint - List Google Workspace documents
 // Returns Google Workspace files (Docs, Sheets, Slides, Drawings) from the configured folder
 // Supports name search, pagination, and MIME type filtering per D-02/D-03/D-12
-driveApp.openapi(listDriveFilesRoute, async (c) => {
+const driveRouter = app1.openapi(listDriveFilesRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
   const query = c.req.valid("query");
@@ -103,7 +99,7 @@ driveApp.openapi(listDriveFilesRoute, async (c) => {
   const token = await getDriveAccessToken(db, env);
 
   // Check for required environment variable
-  const folderId = env.GOOGLE_DRIVE_FOLDER_ID;
+  const folderId = (env as any).GOOGLE_DRIVE_FOLDER_ID;
   if (!folderId) {
     throw new ApiError(
       "GOOGLE_DRIVE_FOLDER_ID environment variable is not configured",
@@ -192,6 +188,5 @@ driveApp.openapi(listDriveFilesRoute, async (c) => {
   } as any, 200);
 });
 
-// Export the router for registration in the main app
-export const driveRouter = driveApp;
+export { driveRouter };
 export default driveRouter;

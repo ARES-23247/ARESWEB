@@ -83,7 +83,13 @@
       "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs plan validate)",
       "Bash(npx --yes gsd-sdk query frontmatter.validate __TRACKED_VAR__/.planning/phases/77-file-manager/77-01-PLAN.md --schema plan)",
       "Bash(node -e \"const s = require\\('./src/db/schema.ts'\\); console.log\\('uploadedFiles:', typeof s.uploadedFiles\\); console.log\\('fileUsage:', typeof s.fileUsage\\);\")",
-      "Bash(node -e \"const s = require\\('./functions/utils/fileValidation.ts'\\); console.log\\('Exports:', Object.keys\\(s\\).join\\(', '\\)\\);\")"
+      "Bash(node -e \"const s = require\\('./functions/utils/fileValidation.ts'\\); console.log\\('Exports:', Object.keys\\(s\\).join\\(', '\\)\\);\")",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx eslint . --ext .ts,.tsx --max-warnings=0)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx --format compact)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx tsc --noEmit)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx --format json)",
+      "Bash(npx jq *)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

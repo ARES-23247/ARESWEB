@@ -95,7 +95,7 @@ export async function handleGetDocs(c: Ctx) {
 // ──── GET /docs/search — FTS search ─────────────────────────────────────────
 
 export async function handleSearchDocs(c: Ctx) {
-    const query = c.req.valid("query");
+    const query = c.req.query();
     const { q } = query;
     if (!q || q.length < 3) {
         return c.json({ results: [] }, 200);
@@ -212,7 +212,7 @@ export async function handleAdminList(c: Ctx) {
 // ──── GET /docs/admin/:slug/detail — Admin detail ───────────────────────────
 
 export async function handleAdminDetail(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     let row;
@@ -286,7 +286,7 @@ export async function handleAdminDetail(c: Ctx) {
 // ──── GET /docs/:slug — Public single doc ───────────────────────────────────
 
 export async function handleGetDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     let row;
@@ -396,7 +396,7 @@ export async function handleGetDoc(c: Ctx) {
 // ──── GET /docs/admin/:slug/history — History ───────────────────────────────
 
 export async function handleGetHistory(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     const results = await db.select({
@@ -426,8 +426,8 @@ export async function handleGetHistory(c: Ctx) {
 // ──── POST /docs/:slug/feedback — Submit Feedback ───────────────────────────
 
 export async function handleSubmitFeedback(c: Ctx) {
-    const params = c.req.valid("param");
-    const body = c.req.valid("json");
+    const params = c.req.param();
+    const body = await c.req.json();
     const { slug } = params;
     const { isHelpful, comment, turnstileToken } = body;
     const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
@@ -482,7 +482,7 @@ export async function handleExportAllDocs(c: Ctx) {
 // ──── GET /docs/admin/export/:slug — Export single doc ──────────────────────
 
 export async function handleExportSingleDoc(c: Ctx) {
-    const params = c.req.valid("param");
+    const params = c.req.param();
     const { slug } = params;
     const db = getDb(c);
     const doc = await db.select({

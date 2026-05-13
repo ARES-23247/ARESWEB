@@ -19,7 +19,7 @@ vi.mock("../../middleware/auth", async () => {
 });
 
 vi.mock("../../middleware", async () => {
-  const actual = await vi.importActual<typeof import("../../middleware.js")>("../../middleware");
+  const actual = await vi.importActual<typeof import("../../middleware")>("../../middleware");
   return {
     ...actual,
     getDb: vi.fn((c: any) => c.get("db")),
@@ -73,7 +73,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toEqual({
         status: "ok",
         service: "google-photos",
@@ -171,7 +171,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toHaveProperty("mediaItems");
       expect(Array.isArray(body.mediaItems)).toBe(true);
     });
@@ -203,7 +203,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body.mediaItems).toHaveLength(1);
       expect(body.mediaItems[0]).toMatchObject({
         id: "photo123",
@@ -250,7 +250,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body.mediaItems).toHaveLength(2); // Only images, video filtered out
       expect(body.mediaItems.every((item: { mimeType: string }) => item.mimeType.startsWith("image/"))).toBe(true);
     });
@@ -277,7 +277,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toHaveProperty("nextPageToken", "next-page-token-123");
       expect(global.fetch).toHaveBeenCalledWith(
         "https://photoslibrary.googleapis.com/v1/mediaItems:search",
@@ -376,7 +376,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toHaveProperty("albums");
       expect(Array.isArray(body.albums)).toBe(true);
     });
@@ -402,7 +402,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body.albums).toHaveLength(1);
       expect(body.albums[0]).toMatchObject({
         id: "album123",
@@ -432,7 +432,7 @@ describe("google-photos router", () => {
       });
 
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toHaveProperty("nextPageToken", "next-album-page-token");
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("photoslibrary.googleapis.com/v1/albums"),

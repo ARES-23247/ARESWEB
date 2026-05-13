@@ -82,9 +82,11 @@ const appRoutes = baseRouter.openapi(listVideosRoute, async (c) => {
     const db = getDb(c);
     const results = await db.select({
         id: schema.videos.id,
-        youtubeId: schema.videos.youtubeId,
+        videoId: schema.videos.videoId,
         title: schema.videos.title,
-        thumbnailUrl: schema.videos.thumbnailUrl,
+        description: schema.videos.description,
+        platform: schema.videos.platform,
+        thumbnailKey: schema.videos.thumbnailKey,
         type: schema.videos.type,
         createdAt: schema.videos.createdAt,
         updatedAt: schema.videos.updatedAt,

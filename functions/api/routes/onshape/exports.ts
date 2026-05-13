@@ -10,8 +10,8 @@
  */
 
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import type { AppEnv } from "../../../middleware/utils";
-import { requireAuth } from "../middleware/auth";
+import { getDb, type AppEnv } from "../../middleware/utils";
+import { requireAuth } from "../../middleware/auth";
 import { getOnshapeToken, getOnshapeConfig } from "../../../utils/onshapeAuth";
 import { ApiError } from "../../middleware/errorHandler";
 
@@ -44,7 +44,7 @@ const stlExportRoute = createRoute({
 			description: "STL file stream",
 			content: {
 				"application/sla": {
-					schema: z.string().binary(),
+					schema: z.string().openapi({ format: "binary" }),
 				},
 			},
 		},
@@ -66,12 +66,14 @@ const stlExportRoute = createRoute({
  * Synchronous STL export for 3D printing.
  * Streams response directly from Onshape to client.
  */
-exportsApp.openapi(stlExportRoute, requireAuth(async (c, { userId }) => {
-	const { documentId, elementId } = c.req.param();
-	const { units, mode } = c.req.query();
+const app1 = exportsApp.openapi(stlExportRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { documentId, elementId } = c.req.valid("param");
+	const { units, mode } = c.req.valid("query");
 
-	const config = getOnshapeConfig(c.env);
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+	const config = getOnshapeConfig(c.env as unknown as Record<string, string | undefined>);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 
 	// Onshape STL export endpoint
 	const url = `${config.baseUrl}/api/partstudios/d/${documentId}/e/${elementId}/stl`;
@@ -108,7 +110,7 @@ exportsApp.openapi(stlExportRoute, requireAuth(async (c, { userId }) => {
 			"Cache-Control": "no-cache",
 		},
 	});
-}));
+});
 
 // ============================================================================
 // STEP Export (Asynchronous)
@@ -126,9 +128,15 @@ const stepExportInitRoute = createRoute({
 			documentId: z.string().length(24).describe("Onshape document ID"),
 			elementId: z.string().length(24).describe("Assembly or PartStudio element ID"),
 		}),
-		body: z.object({
-			format: z.literal("step").describe("Export format"),
-		}),
+		body: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						format: z.literal("step").describe("Export format"),
+					}),
+				},
+			},
+		},
 	},
 	responses: {
 		200: {
@@ -167,10 +175,12 @@ interface ExportState {
  * Initiates an asynchronous STEP export.
  * Stores export state in Workers KV for polling.
  */
-exportsApp.openapi(stepExportInitRoute, requireAuth(async (c, { userId }) => {
-	const { documentId, elementId } = c.req.param();
-	const config = getOnshapeConfig(c.env);
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+const app2 = app1.openapi(stepExportInitRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { documentId, elementId } = c.req.valid("param");
+	const config = getOnshapeConfig(c.env as unknown as Record<string, string | undefined>);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 
 	// Onshape export endpoint
 	const url = `${config.baseUrl}/api/assemblies/d/${documentId}/e/${elementId}/export`;
@@ -217,7 +227,7 @@ exportsApp.openapi(stepExportInitRoute, requireAuth(async (c, { userId }) => {
 		exportId,
 		status: "pending" as const,
 	});
-}));
+});
 
 // ============================================================================
 // Export Status Check
@@ -260,9 +270,10 @@ const exportStatusRoute = createRoute({
  *
  * Checks the status of an async export from Onshape.
  */
-exportsApp.openapi(exportStatusRoute, requireAuth(async (c, { userId }) => {
-	const { exportId } = c.req.param();
-	const config = getOnshapeConfig(c.env);
+const app3 = app2.openapi(exportStatusRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { exportId } = c.req.valid("param");
+	const config = getOnshapeConfig(c.env as unknown as Record<string, string | undefined>);
 
 	// Get export state from KV
 	const stateJson = await c.env.ONSHAPE_EXPORTS.get(exportId);
@@ -288,7 +299,8 @@ exportsApp.openapi(exportStatusRoute, requireAuth(async (c, { userId }) => {
 	}
 
 	// Check Onshape API for current status
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 	const url = `${config.baseUrl}/api/translations/${exportId}`;
 
 	const response = await fetch(url, {
@@ -353,7 +365,7 @@ exportsApp.openapi(exportStatusRoute, requireAuth(async (c, { userId }) => {
 		resultUrl: updatedState.resultUrl,
 		failureReason: updatedState.failureReason,
 	});
-}));
+});
 
 // ============================================================================
 // Export Download
@@ -376,7 +388,7 @@ const exportDownloadRoute = createRoute({
 			description: "Export file stream",
 			content: {
 				"application/octet-stream": {
-					schema: z.string().binary(),
+					schema: z.string().openapi({ format: "binary" }),
 				},
 			},
 		},
@@ -391,8 +403,9 @@ const exportDownloadRoute = createRoute({
  *
  * Downloads a completed export file from Onshape.
  */
-exportsApp.openapi(exportDownloadRoute, requireAuth(async (c, { userId }) => {
-	const { exportId } = c.req.param();
+const app4 = app3.openapi(exportDownloadRoute, async (c) => {
+	const { id: userId } = await requireAuth(c);
+	const { exportId } = c.req.valid("param");
 
 	// Get export state from KV
 	const stateJson = await c.env.ONSHAPE_EXPORTS.get(exportId);
@@ -413,7 +426,8 @@ exportsApp.openapi(exportDownloadRoute, requireAuth(async (c, { userId }) => {
 	}
 
 	// Stream file from Onshape
-	const token = await getOnshapeToken(userId, c.env.DB, c.env);
+	const db = getDb(c);
+	const token = await getOnshapeToken(userId, db, c.env as unknown as Record<string, string | undefined>);
 
 	const response = await fetch(state.resultUrl, {
 		headers: {
@@ -445,6 +459,6 @@ exportsApp.openapi(exportDownloadRoute, requireAuth(async (c, { userId }) => {
 			"Content-Disposition": `attachment; filename="${filename}"`,
 		},
 	});
-}));
+});
 
-export default exportsApp;
+export default app4;

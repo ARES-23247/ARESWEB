@@ -83,7 +83,7 @@ describe("googleAuth Utilities", () => {
     } as any;
 
     // Helper to set execute results for sequential calls
-    (db as any).__setExecuteResults = (results: unknown[]) => {
+    (db as any).__setExecuteResults = (results: unknown[][]) => {
       executeResults = results;
       executeCallCount = 0;
     };
