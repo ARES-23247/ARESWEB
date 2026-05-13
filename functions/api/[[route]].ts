@@ -238,7 +238,7 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/videos", videosRouter)
   .route("/youtube", youtubeRouter);
 
-export const group4 = new OpenAPIHono<AppEnv>()
+export const group5 = new OpenAPIHono<AppEnv>()
   .route("/gmail", gmailRouter);
 
 export const group3 = new OpenAPIHono<AppEnv>()
@@ -285,6 +285,7 @@ const routes = new OpenAPIHono<AppEnv>()
   .route("/", group2)
   .route("/", group3)
   .route("/", group4)
+  .route("/", group5)
   .openapi(searchRoute, async (c) => {
     const { q } = c.req.valid("query");
     // SEC-F01: D1 FTS5 MATCH cannot use parameterized bindings (SQLite limitation).
