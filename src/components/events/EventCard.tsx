@@ -36,6 +36,15 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
     return startStr;
   }, [startDate, endDate]);
 
+  const mapUrl = useMemo(() => {
+    if (!event.location && !event.locationAddress) return null;
+    const searchString = event.locationAddress || (event.location!.includes('—') ? event.location!.split('—').pop()!.trim() : event.location!);
+    const encoded = encodeURIComponent(searchString);
+    // Google Maps Static API with Dark Mode styling matching ARESWEB obsidian theme
+    const style = `&style=feature:all|element:geometry|color:0x1b1b1b&style=feature:all|element:labels.text.stroke|color:0x1b1b1b&style=feature:all|element:labels.text.fill|color:0x8a8a8a&style=feature:water|element:geometry|color:0x000000`;
+    return `https://maps.googleapis.com/maps/api/staticmap?center=${encoded}&zoom=14&size=400x200&markers=color:0xff0000%7C${encoded}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}${style}`;
+  }, [event.location, event.locationAddress]);
+
   return (
     <div className={`relative flex flex-col md:flex-row gap-6 bg-black/40 border ${isPast ? 'border-white/5 opacity-80' : 'border-ares-gold/30 shadow-lg shadow-ares-gold/10'} hero-card overflow-hidden group transition-all duration-300`}>
       {/* Date / Image Block */}
@@ -55,7 +64,7 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
 
       {/* Content Block */}
       <div className="p-6 md:p-8 flex-1 flex flex-col justify-center relative">
-        <div className="flex items-center gap-4 mb-3 text-sm font-semibold uppercase tracking-wider text-marble/90">
+        <div className="flex items-center gap-4 mb-3 text-sm font-semibold uppercase tracking-wider text-marble/90 relative z-30">
           <span className="flex items-center gap-1.5">
             <span className={`w-2.5 h-2.5 rounded-full ${event.category === 'internal' ? 'bg-ares-red' : event.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'}`}></span> 
             {formattedTime}
@@ -65,11 +74,24 @@ export const EventCard = ({ event, isPast }: { event: EventItem; isPast: boolean
               href={`https://maps.google.com/maps?q=${encodeURIComponent(event.locationAddress || (event.location.includes('—') ? event.location.split('—').pop()!.trim() : event.location))}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 relative z-20 pointer-events-auto hover:text-ares-gold transition-colors"
+              className="group/location relative flex items-center gap-1.5 pointer-events-auto hover:text-ares-gold transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${event.category === 'internal' ? 'bg-ares-red' : event.category === 'outreach' ? 'bg-ares-gold' : 'bg-ares-cyan'} opacity-50`}></span>
               {event.location} ↗
+              
+              {/* Map Hover Popover */}
+              {mapUrl && (
+                <div className="absolute top-full left-0 mt-2 w-64 h-32 opacity-0 invisible group-hover/location:opacity-100 group-hover/location:visible transition-all duration-300 z-50 bg-black border border-white/20 rounded shadow-2xl shadow-black overflow-hidden pointer-events-none">
+                  {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                    <img src={mapUrl} alt="Map preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-obsidian text-[10px] text-white/50 text-center p-4">
+                      <span>Maps Static API Key Missing</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </a>
           )}
         </div>
