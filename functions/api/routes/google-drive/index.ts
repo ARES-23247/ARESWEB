@@ -1,9 +1,10 @@
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
+import { OpenAPIHono, createRoute, openapi } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
 import { getDriveAccessToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
+import { listDriveFilesRoute } from "../../../../shared/routes/google-drive";
 
 // Health check response schema
 const healthResponseSchema = z.object({
@@ -33,30 +34,6 @@ const healthRoute = createRoute({
     },
     500: {
       description: "Internal server error - API call failed",
-    },
-  },
-});
-
-// Files placeholder response schema (to be implemented in Phase 74)
-const filesResponseSchema = z.object({
-  files: z.array(z.any()).optional(),
-  message: z.string().optional(),
-});
-
-// Files route definition (placeholder for Phase 74)
-const filesRoute = createRoute({
-  method: "get",
-  path: "/files",
-  summary: "List Google Drive files",
-  description: "PLACEHOLDER: This endpoint will be implemented in Phase 74 to browse Google Drive files.",
-  responses: {
-    200: {
-      content: {
-        "application/json": {
-          schema: filesResponseSchema,
-        },
-      },
-      description: "Files list (placeholder)",
     },
   },
 });
@@ -113,16 +90,105 @@ driveApp.openapi(healthRoute, async (c) => {
   );
 });
 
-// Files endpoint (placeholder for Phase 74)
-// This route is established now to avoid breaking changes when file browsing is added later
-driveApp.openapi(filesRoute, async (c) => {
-  // TODO: Implement Google Drive file listing in Phase 74
-  // This endpoint will:
-  // - Fetch files and folders from Google Drive API v3
-  // - Support pagination for large file collections
-  // - Return file metadata (id, name, mimeType, modifiedTime, webViewLink)
-  // - Support filtering by folder/mime type
-  return c.json([], 200);
+// Files endpoint - List Google Workspace documents
+// Returns Google Workspace files (Docs, Sheets, Slides, Drawings) from the configured folder
+// Supports name search, pagination, and MIME type filtering per D-02/D-03/D-12
+driveApp.openapi(listDriveFilesRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+  const query = c.req.valid("query");
+
+  // Get access token using lazy refresh pattern
+  const token = await getDriveAccessToken(db, env);
+
+  // Check for required environment variable
+  const folderId = env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!folderId) {
+    throw new ApiError(
+      "GOOGLE_DRIVE_FOLDER_ID environment variable is not configured",
+      500,
+      "MISSING_CONFIG"
+    );
+  }
+
+  // Build Drive API query with folder, MIME type, and search filters
+  // Per D-03: Only Google Workspace MIME types (document, spreadsheet, presentation, drawing)
+  // Per D-04: Search filters by name using 'name contains'
+  const googleWorkspaceMimeTypes = [
+    "application/vnd.google-apps.document",
+    "application/vnd.google-apps.spreadsheet",
+    "application/vnd.google-apps.presentation",
+    "application/vnd.google-apps.drawing",
+  ];
+
+  let driveQuery = `'${folderId}' in parents and trashed=false and mimeType in ('${googleWorkspaceMimeTypes.join("','")}')`;
+
+  // Add name search filter if provided (per D-04)
+  if (query.q) {
+    // Escape single quotes in user query to prevent injection (per T-74-07)
+    const escapedQuery = query.q.replace(/'/g, "\\'");
+    driveQuery += ` and name contains '${escapedQuery}'`;
+  }
+
+  // Build URL parameters
+  const urlParams = new URLSearchParams({
+    q: driveQuery,
+    fields: "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,owners)",
+    pageSize: String(query.pageSize ?? 50),
+  });
+
+  // Add pageToken if provided for pagination
+  if (query.pageToken) {
+    urlParams.append("pageToken", query.pageToken);
+  }
+
+  // Call Drive API v3 files.list endpoint
+  const driveUrl = `https://www.googleapis.com/drive/v3/files?${urlParams.toString()}`;
+  const driveResponse = await fetch(driveUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  // Handle API errors
+  if (!driveResponse.ok) {
+    const errorText = await driveResponse.text();
+    console.error("[google-drive] Files API error:", driveResponse.status, errorText);
+    throw new ApiError(
+      `Google Drive API error: ${driveResponse.status} ${driveResponse.statusText}`,
+      driveResponse.status,
+      "DRIVE_API_ERROR"
+    );
+  }
+
+  const driveData = await driveResponse.json() as {
+    files?: Array<{
+      id: string;
+      name: string;
+      mimeType: string;
+      modifiedTime: string;
+      webViewLink?: string;
+      owners?: Array<{ displayName?: string; emailAddress?: string }>;
+    }>;
+    nextPageToken?: string;
+  };
+
+  // Transform Drive API response to match our schema
+  // Map owners[0].displayName to owner field (per plan)
+  const files = (driveData.files ?? []).map((file) => ({
+    id: file.id,
+    name: file.name,
+    mimeType: file.mimeType,
+    modifiedTime: file.modifiedTime,
+    owner: file.owners?.[0]?.displayName ?? file.owners?.[0]?.emailAddress,
+    webViewLink: file.webViewLink,
+  }));
+
+  // Return response with files array and nextPageToken
+  return c.json({
+    files,
+    nextPageToken: driveData.nextPageToken,
+  } as any, 200);
 });
 
 // Export the router for registration in the main app
