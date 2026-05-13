@@ -168,6 +168,23 @@ test.describe('Member Impact Dashboard', () => {
       });
     });
 
+    await page.route('**/api/profile/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          userId: 'member-user',
+          nickname: 'Regular Member',
+          memberType: 'student',
+          auth: {
+            id: 'member-user',
+            email: 'member@ares.org',
+            name: 'Regular Member',
+            role: 'member',
+          }
+        }
+      });
+    });
+
     await page.goto('/dashboard/impact_roster');
 
     // Verify access denied message

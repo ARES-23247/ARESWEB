@@ -311,6 +311,7 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     'favicon',
     '400',
     '401',
+    '403',
     '404',
     '429',
     '500',
