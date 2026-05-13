@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Image, RefreshCw } from "lucide-react";
+import { Search, Image, RefreshCw, CheckSquare, Square } from "lucide-react";
 import { useGetMediaItems, useGetAlbums } from "@/api/google-photos";
 import { PhotoUploadModal } from "@/components/dashboard/PhotoUploadModal";
+import { PhotoGrid } from "@/components/dashboard/PhotoGrid";
+import { PhotoImportButton } from "@/components/dashboard/PhotoImportButton";
 
 export const Route = createFileRoute("/dashboard/photos")({
   component: PhotosDashboard,
@@ -12,6 +14,10 @@ function PhotosDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Selection state for photo import (IMG-02)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Fetch media items and albums
   const {
@@ -34,6 +40,38 @@ function PhotosDashboard() {
 
   const mediaItems = mediaData?.mediaItems ?? [];
   const albums = albumsData?.albums ?? [];
+
+  // Selection handlers
+  const handleSelectPhoto = (id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedIds(new Set(mediaItems.map((item) => item.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+  };
+
+  const handleImportSuccess = () => {
+    // Clear selection and exit select mode after import
+    // Note: Actual import mutation will be added in 76-04
+    handleClearSelection();
+  };
 
   return (
     <div className="min-h-screen bg-obsidian">
@@ -61,6 +99,49 @@ function PhotosDashboard() {
                   aria-label="Search photos"
                 />
               </div>
+
+              {/* Select Photos Toggle (IMG-02) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSelectMode) {
+                    handleClearSelection();
+                  } else {
+                    setIsSelectMode(true);
+                  }
+                }}
+                className={`
+                  rounded-lg border px-4 py-2 text-sm font-medium transition-colors
+                  focus-visible:ring-2 focus-visible:ring-ares-cyan
+                  ${
+                    isSelectMode
+                      ? "border-ares-red bg-ares-red/10 text-ares-red"
+                      : "border-ares-bronze/30 text-marble hover:border-ares-bronze hover:bg-marble/5"
+                  }
+                `}
+                aria-label={isSelectMode ? "Cancel selection" : "Select photos"}
+                aria-pressed={isSelectMode}
+              >
+                {isSelectMode ? (
+                  <>
+                    <Square className="mr-2 inline h-4 w-4" />
+                    Cancel Selection
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="mr-2 inline h-4 w-4" />
+                    Select Photos
+                  </>
+                )}
+              </button>
+
+              {/* Import Button (shown when in select mode with selections) */}
+              {isSelectMode && selectedIds.size > 0 && (
+                <PhotoImportButton
+                  selectedIds={Array.from(selectedIds)}
+                  onImport={handleImportSuccess}
+                />
+              )}
 
               {/* Upload Button */}
               <button
@@ -115,7 +196,11 @@ function PhotosDashboard() {
                   {/* All Photos option */}
                   <button
                     type="button"
-                    onClick={() => setSelectedAlbumId(null)}
+                    onClick={() => {
+                      setSelectedAlbumId(null);
+                      // Clear selection when switching albums
+                      handleClearSelection();
+                    }}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                       selectedAlbumId === null
                         ? "bg-ares-red text-white"
@@ -131,7 +216,11 @@ function PhotosDashboard() {
                     <button
                       key={album.id}
                       type="button"
-                      onClick={() => setSelectedAlbumId(album.id)}
+                      onClick={() => {
+                        setSelectedAlbumId(album.id);
+                        // Clear selection when switching albums
+                        handleClearSelection();
+                      }}
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                         selectedAlbumId === album.id
                           ? "bg-ares-red text-white"
@@ -188,28 +277,12 @@ function PhotosDashboard() {
                   <p className="text-marble">No photos found</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {mediaItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="group relative aspect-square overflow-hidden rounded-lg border border-ares-bronze/20 bg-marble/5 transition-all hover:border-ares-red hover:shadow-lg hover:shadow-ares-red/20"
-                    >
-                      <img
-                        src={`${item.baseUrl}=w200-h200`}
-                        alt={item.filename || "Photo"}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                        <div className="absolute bottom-0 left-0 right-0 p-2">
-                          <p className="truncate text-xs font-medium text-white">
-                            {item.filename}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <PhotoGrid
+                  mediaItems={mediaItems}
+                  selectable={isSelectMode}
+                  selectedIds={selectedIds}
+                  onSelectChange={handleSelectPhoto}
+                />
               )}
             </div>
           </section>
