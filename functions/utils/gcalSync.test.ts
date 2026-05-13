@@ -1,14 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+// Track JWT payload for testing
+let capturedJWTPayload: Record<string, unknown> = {};
+
 // Mock jose â€” we don't want real crypto in unit tests
 vi.mock("jose", () => {
   class MockSignJWT {
+    private payload: Record<string, unknown> = {};
+    constructor(payload: Record<string, unknown>) {
+      this.payload = payload;
+      // Capture payload for testing
+      capturedJWTPayload = payload;
+    }
     setProtectedHeader() { return this; }
     setIssuer() { return this; }
     setAudience() { return this; }
     setIssuedAt() { return this; }
     setExpirationTime() { return this; }
     async sign() { return "mock-jwt-token"; }
+    getPayload() { return this.payload; }
   }
   return {
     importPKCS8: vi.fn().mockResolvedValue("mock-pk"),
@@ -72,6 +82,60 @@ describe("gcalSync Utilities", () => {
       });
 
       await expect(getGcalAccessToken(config)).rejects.toThrow("Failed to get Google Calendar access token");
+    });
+
+    it("should include calendar scope in JWT", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
+
+      await getGcalAccessToken(config);
+      expect(capturedJWTPayload.scope).toContain("https://www.googleapis.com/auth/calendar");
+    });
+
+    it("should include photoslibrary.readonly scope in JWT", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
+
+      await getGcalAccessToken(config);
+      expect(capturedJWTPayload.scope).toContain("https://www.googleapis.com/auth/photoslibrary.readonly");
+    });
+
+    it("should include photoslibrary.appendonly (write) scope in JWT", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
+
+      await getGcalAccessToken(config);
+      expect(capturedJWTPayload.scope).toContain("https://www.googleapis.com/auth/photoslibrary.appendonly");
+    });
+
+    it("should include drive.readonly scope in JWT", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
+
+      await getGcalAccessToken(config);
+      expect(capturedJWTPayload.scope).toContain("https://www.googleapis.com/auth/drive.readonly");
+    });
+
+    it("should include all four required scopes in single space-delimited string", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "gcloud-token-123" }),
+      });
+
+      await getGcalAccessToken(config);
+      const scope = capturedJWTPayload.scope as string;
+      expect(scope).toContain("https://www.googleapis.com/auth/calendar");
+      expect(scope).toContain("https://www.googleapis.com/auth/drive.readonly");
+      expect(scope).toContain("https://www.googleapis.com/auth/photoslibrary.readonly");
+      expect(scope).toContain("https://www.googleapis.com/auth/photoslibrary.appendonly");
     });
   });
 
