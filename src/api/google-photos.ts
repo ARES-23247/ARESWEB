@@ -247,3 +247,100 @@ export function useUploadPhotos(
     }),
   });
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GOOGLE PHOTOS IMPORT MUTATION (Phase 76)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Mutation hook for importing photos from Google Photos to R2 storage.
+ * Per IMG-03/IMG-04: Downloads from Photos API, validates, uploads to R2.
+ * Per IMG-06: Tracks imports in D1 and invalidates media queries on success.
+ * Per IMG-07: Returns detailed error information for failed imports.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Parameters for importing photos
+ */
+export interface ImportPhotosParams {
+  /** Google Photos media item IDs to import */
+  mediaItemIds: string[];
+  /** Optional album ID for R2 folder structure (per D-11) */
+  albumId?: string;
+}
+
+/**
+ * Response from importPhotos mutation
+ * Per D-23: Returns success/failure counts and per-item results
+ */
+export interface ImportPhotosResponse {
+  /** Number of photos successfully imported */
+  imported: number;
+  /** Number of failed imports */
+  failed: number;
+  /** Per-item import results */
+  results: Array<{
+    mediaItemId: string;
+    status: "success" | "failed";
+    r2Key?: string;
+    error?: string;
+    filename: string;
+  }>;
+}
+
+/**
+ * React Query mutation hook for importing photos from Google Photos to R2
+ *
+ * @param options - Optional mutation callbacks (onSuccess, onError, etc.)
+ * @returns Mutation object with mutate, mutateAsync, isLoading, error
+ *
+ * @example
+ * ```tsx
+ * const importMutation = useImportPhotos({
+ *   onSuccess: (data) => {
+ *     toast.success(`Imported ${data.imported} photos`);
+ *   },
+ * });
+ *
+ * const handleImport = (ids: string[]) => {
+ *   importMutation.mutate({
+ *     mediaItemIds: ids,
+ *     albumId: selectedAlbumId ?? undefined,
+ *   });
+ * };
+ * ```
+ */
+export function useImportPhotos(
+  options?: import("@tanstack/react-query").UseMutationOptions<
+    ImportPhotosResponse,
+    unknown,
+    ImportPhotosParams
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: ImportPhotosParams) => {
+      const res = await client.googlePhotos.import.$post({
+        json: {
+          mediaItemIds: params.mediaItemIds,
+          albumId: params.albumId,
+        },
+      });
+
+      return unwrapResponse<ImportPhotosResponse>(res);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (queryClient, data) => {
+        // Invalidate media items query to refresh list per IMG-06
+        queryClient.invalidateQueries({
+          queryKey: mediaItemsQueryKey,
+        });
+      },
+      onError: (queryClient, error) => {
+        // Display toast error with diagnostic code per IMG-07
+        toastApiError(error, "Photo import failed");
+      },
+    }),
+  });
+}

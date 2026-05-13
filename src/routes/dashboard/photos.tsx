@@ -5,6 +5,7 @@ import { useGetMediaItems, useGetAlbums } from "@/api/google-photos";
 import { PhotoUploadModal } from "@/components/dashboard/PhotoUploadModal";
 import { PhotoGrid } from "@/components/dashboard/PhotoGrid";
 import { PhotoImportButton } from "@/components/dashboard/PhotoImportButton";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/photos")({
   component: PhotosDashboard,
@@ -69,8 +70,27 @@ function PhotosDashboard() {
 
   const handleImportSuccess = () => {
     // Clear selection and exit select mode after import
-    // Note: Actual import mutation will be added in 76-04
     handleClearSelection();
+  };
+
+  const handleImportComplete = (data: { imported: number; failed: number }) => {
+    // Show success toast (per IMG-07)
+    if (data.imported > 0) {
+      toast.success(`Imported ${data.imported} photo${data.imported === 1 ? "" : "s"}`);
+    }
+
+    // Show warning for failed imports (per D-20)
+    if (data.failed > 0) {
+      toast.warning(`${data.failed} photo${data.failed === 1 ? "" : "s"} failed to import`);
+    }
+
+    // Clear selection and exit select mode
+    handleImportSuccess();
+  };
+
+  const handleImportError = () => {
+    // Error display is handled by PhotoImportButton component
+    toast.error("Photo import failed");
   };
 
   return (
@@ -139,7 +159,9 @@ function PhotosDashboard() {
               {isSelectMode && selectedIds.size > 0 && (
                 <PhotoImportButton
                   selectedIds={Array.from(selectedIds)}
-                  onImport={handleImportSuccess}
+                  albumId={selectedAlbumId ?? undefined}
+                  onSuccess={handleImportComplete}
+                  onError={handleImportError}
                 />
               )}
 
