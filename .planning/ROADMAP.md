@@ -205,3 +205,9 @@
 **Requirements:** TBD
 **Plans:** 0 plans
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.7: Embedded FFmpeg Web Video Trimmer (BACKLOG)
+**Goal:** [Captured for future planning] Implement a client-side Wasm video trimmer with COOP/COEP isolation for fast local clipping
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
