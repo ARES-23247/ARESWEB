@@ -11,7 +11,7 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 });
 
 import { getUnifiedOAuthToken } from "./googleAuth";
-import { settings } from "../../src/db/schema";
+
 
 // Mock Env
 const mockEnv = {

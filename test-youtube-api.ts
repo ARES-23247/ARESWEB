@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { getDb } from "./functions/api/middleware";
 import { settings } from "./src/db/schema";
 import { eq } from "drizzle-orm";

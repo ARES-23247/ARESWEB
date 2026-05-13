@@ -30,7 +30,7 @@ export const syncHandlers = {
         let oauthToken: string;
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
-        } catch (error) {
+        } catch (_error) {
             throw new ApiError("Google OAuth config missing or not connected", 500);
         }
 
@@ -112,7 +112,7 @@ export const syncHandlers = {
         let oauthToken: string;
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
-        } catch (error) {
+        } catch (_error) {
             throw new ApiError("Google OAuth config missing or not connected", 500);
         }
         

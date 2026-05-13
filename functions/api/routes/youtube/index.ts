@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Context } from "hono";
-import type { Bindings as Env, AppEnv } from "../../middleware/utils";
+import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin } from "../../middleware";
 import {
   getAuthUrlRoute,
@@ -17,7 +17,7 @@ import { eq } from "drizzle-orm";
 import { ApiError } from "../../middleware/errorHandler";
 import { logAuditAction } from "../../middleware";
 
-import { getUnifiedOAuthToken } from "../../utils/googleAuth";
+import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 
 const adminApp = new OpenAPIHono<AppEnv>();
 
@@ -26,7 +26,6 @@ adminApp.use("*", ensureAdmin);
 // Re-export for anything that might still be importing it directly
 export const getGoogleAccessToken = getUnifiedOAuthToken;
 
-}
 
 // Check if user is allowed to set videos to public (coaches and mentors only)
 function canSetPublicPrivacy(c: Context<AppEnv>): boolean {
