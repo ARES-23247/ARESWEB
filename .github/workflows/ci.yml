@@ -149,10 +149,12 @@ jobs:
 
       - name: TypeScript Type Check
         env:
-          NODE_OPTIONS: "--max-old-space-size=6144"
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: npx tsc --noEmit
 
       - name: Accessibility & Lint Audit
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: npm run lint
 
   security:
