@@ -222,8 +222,30 @@ const routes = adminApp
 
     const accessToken = await getGoogleAccessToken(env, db);
 
-    // Fetch the authenticated user's uploaded videos via the "mine=true" search parameter
-    const response = await fetch("https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=50&order=date", {
+    // The YouTube search API with forMine=true does not reliably return private/unlisted videos.
+    // The officially recommended approach is to fetch the channel's "uploads" playlist instead.
+    const channelRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!channelRes.ok) {
+      const errorText = await channelRes.text();
+      console.error("Failed to fetch YouTube channel details:", errorText);
+      throw new ApiError("Failed to fetch channel details from YouTube.", 500, "YOUTUBE_CHANNEL_FAILED");
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channelData: any = await channelRes.json();
+    const uploadsPlaylistId = channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+
+    if (!uploadsPlaylistId) {
+      return c.json({ videos: [] }, 200);
+    }
+
+    // Fetch the authenticated user's uploaded videos via their uploads playlist
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${uploadsPlaylistId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -238,9 +260,9 @@ const routes = adminApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
 
-    // We need to fetch the status (privacyStatus) for these videos since search doesn't return it
+    // We need to fetch the status (privacyStatus) for these videos
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const videoIds = (data.items || []).map((item: any) => item.id.videoId).join(",");
+    const videoIds = (data.items || []).map((item: any) => item.snippet.resourceId.videoId).join(",");
     
     let videos = [];
     if (videoIds) {
