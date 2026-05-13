@@ -39,6 +39,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AcademyIndexRouteImport } from './routes/academy/index'
 import { Route as VideosIdRouteImport } from './routes/videos/$id'
 import { Route as ProfileUserIdRouteImport } from './routes/profile/$userId'
+import { Route as OnshapeBomHistoryRouteImport } from './routes/onshape/bom-history'
 import { Route as LocationsMorgantownRouteImport } from './routes/locations/morgantown'
 import { Route as JudgesPrintRouteImport } from './routes/judges/print'
 import { Route as GalleriesIdRouteImport } from './routes/galleries/$id'
@@ -241,6 +242,11 @@ const VideosIdRoute = VideosIdRouteImport.update({
 const ProfileUserIdRoute = ProfileUserIdRouteImport.update({
   id: '/profile/$userId',
   path: '/profile/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnshapeBomHistoryRoute = OnshapeBomHistoryRouteImport.update({
+  id: '/onshape/bom-history',
+  path: '/onshape/bom-history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocationsMorgantownRoute = LocationsMorgantownRouteImport.update({
@@ -570,6 +576,7 @@ export interface FileRoutesByFullPath {
   '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
+  '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
@@ -654,6 +661,7 @@ export interface FileRoutesByTo {
   '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
+  '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy': typeof AcademyIndexRoute
@@ -740,6 +748,7 @@ export interface FileRoutesById {
   '/galleries/$id': typeof GalleriesIdRoute
   '/judges/print': typeof JudgesPrintRoute
   '/locations/morgantown': typeof LocationsMorgantownRoute
+  '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
@@ -827,6 +836,7 @@ export interface FileRouteTypes {
     | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
+    | '/onshape/bom-history'
     | '/profile/$userId'
     | '/videos/$id'
     | '/academy/'
@@ -911,6 +921,7 @@ export interface FileRouteTypes {
     | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
+    | '/onshape/bom-history'
     | '/profile/$userId'
     | '/videos/$id'
     | '/academy'
@@ -996,6 +1007,7 @@ export interface FileRouteTypes {
     | '/galleries/$id'
     | '/judges/print'
     | '/locations/morgantown'
+    | '/onshape/bom-history'
     | '/profile/$userId'
     | '/videos/$id'
     | '/academy/'
@@ -1049,6 +1061,7 @@ export interface RootRouteChildren {
   GalleriesIdRoute: typeof GalleriesIdRoute
   JudgesPrintRoute: typeof JudgesPrintRoute
   LocationsMorgantownRoute: typeof LocationsMorgantownRoute
+  OnshapeBomHistoryRoute: typeof OnshapeBomHistoryRoute
   ProfileUserIdRoute: typeof ProfileUserIdRoute
   VideosIdRoute: typeof VideosIdRoute
   AcademyIndexRoute: typeof AcademyIndexRoute
@@ -1274,6 +1287,13 @@ declare module '@tanstack/react-router' {
       path: '/profile/$userId'
       fullPath: '/profile/$userId'
       preLoaderRoute: typeof ProfileUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onshape/bom-history': {
+      id: '/onshape/bom-history'
+      path: '/onshape/bom-history'
+      fullPath: '/onshape/bom-history'
+      preLoaderRoute: typeof OnshapeBomHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locations/morgantown': {
@@ -1788,6 +1808,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleriesIdRoute: GalleriesIdRoute,
   JudgesPrintRoute: JudgesPrintRoute,
   LocationsMorgantownRoute: LocationsMorgantownRoute,
+  OnshapeBomHistoryRoute: OnshapeBomHistoryRoute,
   ProfileUserIdRoute: ProfileUserIdRoute,
   VideosIdRoute: VideosIdRoute,
   AcademyIndexRoute: AcademyIndexRoute,

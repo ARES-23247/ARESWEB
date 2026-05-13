@@ -3,6 +3,7 @@ import type { AppEnv } from "../../middleware/utils";
 import auth from "./auth";
 import documents from "./documents";
 import exports from "./exports";
+import bom from "./bom";
 
 // Create the router
 const onshapeApp = new OpenAPIHono<AppEnv>();
@@ -15,6 +16,9 @@ onshapeApp.route("/documents", documents);
 
 // Mount export routes
 onshapeApp.route("/export", exports);
+
+// Mount BOM routes
+onshapeApp.route("/bom", bom);
 
 // OpenAPI documentation
 const healthRoute = createRoute({

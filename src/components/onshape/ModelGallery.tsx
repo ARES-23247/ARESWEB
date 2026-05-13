@@ -10,7 +10,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Box, AlertCircle } from "lucide-react";
-import { ModelCard, type OnshapeDocument } from "./ModelCard";
+import { ModelCard, type OnshapeDocument, type OnshapeElement } from "./ModelCard";
 
 interface ModelGalleryProps {
 	mode: "public" | "user";

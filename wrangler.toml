@@ -20,6 +20,12 @@ binding = "ONSHAPE_OAUTH_STATE"
 id = "your-onshape-oauth-kv-id" # TODO: Create with `wrangler kv:namespace create "ONSHAPE_OAUTH_STATE"`
 preview_id = "your-preview-onshape-oauth-kv-id"
 
+# Onshape export state storage (Phase 78-03)
+[[kv_namespaces]]
+binding = "ONSHAPE_EXPORTS"
+id = "your-onshape-exports-kv-id" # TODO: Create with `wrangler kv:namespace create "ONSHAPE_EXPORTS"`
+preview_id = "your-preview-onshape-exports-kv-id"
+
 # Onshape OAuth Environment Variables (Phase 78)
 # Required secrets (add via `wrangler secret put` or Cloudflare dashboard):
 #   ONSHAPE_CLIENT_ID - Onshape OAuth application client ID
@@ -62,6 +68,12 @@ bucket_name = "ares-media"
 binding = "ONSHAPE_OAUTH_STATE"
 id = "your-preview-onshape-oauth-kv-id"
 preview_id = "your-preview-onshape-oauth-kv-id"
+
+# Onshape export state storage for preview environment
+[[env.preview.kv_namespaces]]
+binding = "ONSHAPE_EXPORTS"
+id = "your-preview-onshape-exports-kv-id"
+preview_id = "your-preview-onshape-exports-kv-id"
 
 [env.preview.ai]
 binding = "AI"

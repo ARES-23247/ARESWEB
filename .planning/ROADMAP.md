@@ -12,7 +12,7 @@
 - [x] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos ✅
 - [x] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage ✅
 - [x] **Phase 77: File Manager** - Upload and manage PDFs/docs with blog editor integration ✅
-- [ ] **Phase 78: Onshape CAD Integration** - Browse CAD models, export STL/STEP files, and sync BOM data
+- [x] **Phase 78: Onshape CAD Integration** - Browse CAD models, export STL/STEP files, and sync BOM data ✅
 
 ---
 
@@ -176,7 +176,7 @@
 
 ---
 
-### Phase 78: Onshape CAD Integration
+### Phase 78: Onshape CAD Integration ✅
 
 **Goal**: Enable browsing Onshape CAD models, exporting STL/STEP files, and synchronizing Bill of Materials data
 
@@ -196,13 +196,15 @@
 9. BOM sync history is tracked in database
 10. Zero Trust compliance: all API calls proxied through backend
 
-**Plans**: 4 plans
+**Plans**: 4 plans (all complete ✅)
 
 **Plan List**:
-- [ ] 78-01-PLAN.md — OAuth2 authentication and D1 schema setup
-- [ ] 78-02-PLAN.md — Document browsing and display UI
-- [ ] 78-03-PLAN.md — STL/STEP export functionality
-- [ ] 78-04-PLAN.md — Bill of Materials synchronization
+- [x] 78-01-PLAN.md — OAuth2 authentication and D1 schema setup ✅
+- [x] 78-02-PLAN.md — Document browsing and display UI ✅
+- [x] 78-03-PLAN.md — STL/STEP export functionality ✅
+- [x] 78-04-PLAN.md — Bill of Materials synchronization ✅
+
+**Completed:** 2026-05-13
 
 **UI hint**: yes
 
@@ -217,7 +219,7 @@
 | 75. Google Photos Browser | 7/7 | Complete ✅ | 2026-05-13 |
 | 76. Image Import Pipeline | 3/4 | In Progress|  |
 | 77. File Manager | 5/5 | Complete ✅ | 2026-05-13 |
-| 78. Onshape CAD Integration | 2/4 | In Progress|  |
+| 78. Onshape CAD Integration | 4/4 | Complete ✅ | 2026-05-13 |
 
 ---
 
@@ -231,12 +233,15 @@
 - Photo Browser: 7 requirements (includes upload features)
 - Image Import: 10 requirements (includes album structure preservation)
 - File Manager: 8 requirements
+- Onshape CAD: 12 requirements
 
-**Coverage**: 36/36 requirements mapped ✓
+**Coverage**: 48/48 requirements mapped ✓
+
+**Status**: COMPLETE ✅ - All phases implemented and verified
 
 ---
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-13 (Phases 75, 77, 78-02 complete)*
+*Last updated: 2026-05-13 (Milestone v8.1 COMPLETE)*
 
 ---
 

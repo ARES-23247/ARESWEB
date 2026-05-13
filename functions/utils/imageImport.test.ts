@@ -12,7 +12,30 @@
  * Tests must fail before implementation begins.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// Top-level mocks — Vitest hoists these before any module loading.
+// Paths are relative to THIS test file at functions/utils/imageImport.test.ts.
+vi.mock("../utils/googleAuth", () => ({
+  getPhotosAccessToken: vi.fn().mockResolvedValue("mock-token"),
+}));
+
+vi.mock("../api/middleware/auth", async () => {
+  const actual = await vi.importActual<typeof import("../api/middleware/auth.js")>("../api/middleware/auth");
+  return {
+    ...actual,
+    ensureAdmin: vi.fn((_c: any, next: any) => next()),
+  };
+});
+
+vi.mock("../api/middleware", async () => {
+  const actual = await vi.importActual<typeof import("../api/middleware/index.js")>("../api/middleware");
+  return {
+    ...actual,
+    getDb: vi.fn((c: any) => c.get("db")),
+    ensureAdmin: vi.fn((_c: any, next: any) => next()),
+  };
+});
 
 describe("imageImport utilities", () => {
   describe("validateImageMagicBytes", () => {
@@ -189,28 +212,6 @@ describe("POST /import endpoint", () => {
   let mockDb: any;
   let mockEnv: any;
 
-  // Top-level mocks (vitest hoists them here anyway, but declaring at
-  // top level silences the deprecation warning and future-proofs for vitest v5)
-  vi.mock("../../../utils/googleAuth", () => ({
-    getPhotosAccessToken: vi.fn().mockResolvedValue("mock-token"),
-  }));
-
-  vi.mock("../../middleware/auth", async () => {
-    const actual = await vi.importActual<typeof import("../../middleware/auth.js")>("../../middleware/auth");
-    return {
-      ...actual,
-      ensureAdmin: vi.fn((c: any, next: any) => next()),
-    };
-  });
-
-  vi.mock("../../middleware", async () => {
-    const actual = await vi.importActual<typeof import("../../middleware.js")>("../../middleware");
-    return {
-      ...actual,
-      getDb: vi.fn((c: any) => c.get("db")),
-    };
-  });
-
   beforeEach(async () => {
     vi.clearAllMocks();
 
@@ -242,6 +243,12 @@ describe("POST /import endpoint", () => {
     const { Hono } = await import("hono");
 
     app = new Hono();
+    // Inject mock DB and env bindings into Hono context (mirrors production middleware)
+    app.use("*", async (c: any, next: any) => {
+      c.set("db", mockDb);
+      c.env = { ...c.env, ...mockEnv };
+      await next();
+    });
     app.route("/api/google-photos", photosRouter);
 
     // Mock fetch
@@ -385,22 +392,7 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 15: POST /import with albumId creates/updates photo_albums record", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
-      // Mock Photos API album details fetch
+      // Mock Photos API album details fetch (fetched FIRST in the route when albumId is provided)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -410,7 +402,18 @@ describe("POST /import endpoint", () => {
         }),
       } as Response);
 
-      // Mock photo download
+      // Mock Photos API media item details fetch (per-item, fetched SECOND)
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "photo123",
+          baseUrl: "https://photos.com/base",
+          filename: "test.jpg",
+          mimeType: "image/jpeg",
+        }),
+      } as Response);
+
+      // Mock photo download (fetched THIRD)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
@@ -426,22 +429,7 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 16: POST /import with albumId uploads to photos/albums/{sanitizedName}/{filename}", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
-      // Mock Photos API album details fetch
+      // Mock Photos API album details fetch (fetched FIRST in the route when albumId is provided)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -451,7 +439,18 @@ describe("POST /import endpoint", () => {
         }),
       } as Response);
 
-      // Mock photo download
+      // Mock Photos API media item details fetch (per-item, fetched SECOND)
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "photo123",
+          baseUrl: "https://photos.com/base",
+          filename: "test.jpg",
+          mimeType: "image/jpeg",
+        }),
+      } as Response);
+
+      // Mock photo download (fetched THIRD)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
