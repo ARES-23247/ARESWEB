@@ -55,3 +55,16 @@ export function useUpdateYoutubeVideoMutation() {
     },
   });
 }
+
+export function useDisconnectYoutubeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await client.youtube.disconnect.$post();
+      return unwrapResponse(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["youtube"] });
+    },
+  });
+}

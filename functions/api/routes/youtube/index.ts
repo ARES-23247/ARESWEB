@@ -9,6 +9,7 @@ import {
   updateYoutubeVideoRoute,
   listYoutubeVideosRoute,
   checkAuthStatusRoute,
+  disconnectYoutubeRoute,
 } from "../../../../shared/routes/youtube";
 import { getDb } from "../../middleware";
 import { settings } from "../../../../src/db/schema";
@@ -336,6 +337,30 @@ const routes = adminApp
 
     if (c.executionCtx) {
         c.executionCtx.waitUntil(logAuditAction(c, "youtube_video_update", "video", id, `Updated YouTube video: ${metadata.snippet.title}`));
+    }
+
+    return c.json({ success: true }, 200);
+  })
+  .openapi(disconnectYoutubeRoute, async (c) => {
+    const db = getDb(c);
+    
+    // Check if connected first
+    const tokenSetting = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, "youtube_refresh_token"))
+      .execute()
+      .then((res: Array<{ key: string; value: string | null }>) => res[0]);
+
+    if (!tokenSetting) {
+      return c.json({ success: true }, 200);
+    }
+
+    // Delete token
+    await db.delete(settings).where(eq(settings.key, "youtube_refresh_token")).execute();
+
+    if (c.executionCtx) {
+        c.executionCtx.waitUntil(logAuditAction(c, "youtube_disconnect", "system", "youtube", "Disconnected YouTube integration"));
     }
 
     return c.json({ success: true }, 200);

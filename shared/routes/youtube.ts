@@ -164,3 +164,20 @@ export const checkAuthStatusRoute = createRoute({
   },
   tags: ["youtube", "admin"],
 });
+
+export const disconnectYoutubeRoute = createRoute({
+  method: "post",
+  path: "/disconnect",
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ success: z.boolean() }),
+        },
+      },
+      description: "Disconnect YouTube account by removing refresh token",
+    },
+  },
+  tags: ["youtube", "admin"],
+});
