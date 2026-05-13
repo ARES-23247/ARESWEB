@@ -4,9 +4,9 @@ import { Hono } from "hono";
 import type { AppEnv } from "../../middleware/utils";
 import { createMockDrizzleDb } from "../../../test/test-env";
 
-// Mock googleAuth module BEFORE importing google-photos
-vi.mock("../../../utils/googleAuth", () => ({
-  getPhotosAccessToken: vi.fn(),
+// Mock youtube module BEFORE importing google-photos
+vi.mock("../youtube/index", () => ({
+  getGoogleAccessToken: vi.fn(),
 }));
 
 // Mock middleware modules BEFORE importing google-photos
@@ -28,7 +28,7 @@ vi.mock("../../middleware", async () => {
 
 // Now import after mocks are set up
 import { photosRouter } from "./index";
-import { getPhotosAccessToken } from "../../../utils/googleAuth";
+import { getGoogleAccessToken } from "../youtube/index";
 import { getDb } from "../../middleware";
 import { ApiError as _ApiError } from "../../middleware/errorHandler";
 
@@ -45,7 +45,7 @@ describe("google-photos router", () => {
 
     // Setup token mocks
     mockToken = "mock-photos-token-" + Date.now();
-    vi.mocked(getPhotosAccessToken).mockResolvedValue(mockToken);
+    vi.mocked(getGoogleAccessToken).mockResolvedValue(mockToken);
     vi.mocked(getDb).mockReturnValue(mockDb as any);
 
     // Create test app
@@ -114,7 +114,7 @@ describe("google-photos router", () => {
 
     it("Test 4: Token refresh failures trigger retry logic (3 retries)", async () => {
       let attempts = 0;
-      vi.mocked(getPhotosAccessToken).mockImplementation(() => {
+      vi.mocked(getGoogleAccessToken).mockImplementation(() => {
         attempts++;
         if (attempts <= 3) {
           return Promise.reject(new Error("Token refresh failed"));
@@ -142,7 +142,7 @@ describe("google-photos router", () => {
 
     it("Test 5: Exhausted retries throw ApiError with AUTH_FAILURE code", async () => {
       // Mock token refresh that always fails
-      vi.mocked(getPhotosAccessToken).mockRejectedValue(
+      vi.mocked(getGoogleAccessToken).mockRejectedValue(
         new Error("Failed to refresh photos access token after 3 attempts: Authentication failed")
       );
 
