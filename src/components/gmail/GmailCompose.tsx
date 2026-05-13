@@ -30,6 +30,7 @@ export function GmailCompose({
         const from = fromHeader?.value || "";
         const subj = subjectHeader?.value || "";
 
+        const originalBody = replyToMsg.snippet || "";
         setTimeout(() => {
           setTo(from);
           setSubject(subj.startsWith("Re:") ? subj : `Re: ${subj}`);
