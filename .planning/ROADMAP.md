@@ -126,7 +126,13 @@
 9. System mirrors albums as R2 folders (e.g., `photos/{albumName}/{filename}`)
 10. System stores album metadata in D1 for lookup
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+**Plan List**:
+- [ ] 76-01-PLAN.md — Define database schema and API contracts
+- [ ] 76-02-PLAN.md — Implement import pipeline with TDD
+- [ ] 76-03-PLAN.md — Build photo selection UI
+- [ ] 76-04-PLAN.md — Connect import mutation with error handling
 
 **UI hint**: yes
 
@@ -195,7 +201,7 @@
 | 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
 | 74. Google Drive Document Browser | 4/4 | Complete ✅ | 2026-05-13 |
 | 75. Google Photos Browser | 1/7 | In Progress|  |
-| 76. Image Import Pipeline | 0/10 | Not started | - |
+| 76. Image Import Pipeline | 0/4 | Not started | - |
 | 77. File Manager | 0/8 | Not started | - |
 | 78. Onshape CAD Integration | 0/4 | Not started | - |
 
@@ -215,9 +221,8 @@
 **Coverage**: 36/36 requirements mapped ✓
 
 ---
-
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-13 (Phase 75: Google Photos Browser plans created)*
+*Last updated: 2026-05-13 (Phase 76: Image Import Pipeline plans created)*
 
 ---
 

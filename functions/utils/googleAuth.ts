@@ -2,12 +2,12 @@ import { getGcalAccessToken, type GCalConfig } from "./gcalSync";
 import type { DrizzleDB } from "../../src/db/types";
 import { settings } from "../../src/db/schema";
 import { eq } from "drizzle-orm";
-import { ApiError } from "../shared/errors/api";
+import { ApiError } from "../api/middleware/errorHandler";
 
 /**
  * Token cache entry stored in D1 settings
  */
-interface TokenCache {
+interface _TokenCache {
   accessToken: string;
   expiresAt: string; // ISO timestamp
 }

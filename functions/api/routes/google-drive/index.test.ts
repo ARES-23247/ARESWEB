@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { AppEnv } from "../../middleware/utils";
@@ -170,7 +171,7 @@ describe("google-drive router", () => {
   });
 
   describe("GET /files", () => {
-    const mockFolderId = "root-folder-123";
+    const _mockFolderId = "root-folder-123";
     const mockDriveFiles = [
       {
         id: "doc1",

@@ -340,7 +340,7 @@ export default function VideoPickerModal({
                     <select
                       id="newPrivacyStatus"
                       value={newPrivacyStatus}
-                      onChange={(e) => setNewPrivacyStatus(e.target.value as any)}
+                      onChange={(e) => setNewPrivacyStatus(e.target.value as "" | "public" | "unlisted" | "private")}
                       className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all appearance-none text-sm"
                     >
                       <option value="">-- Keep Current Visibility --</option>

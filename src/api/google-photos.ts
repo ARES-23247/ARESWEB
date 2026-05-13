@@ -234,13 +234,13 @@ export function useUploadPhotos(
       return unwrapResponse<UploadPhotosResponse>(res);
     },
     ...withMutationCallbacks(queryClient, options, {
-      onSuccess: (queryClient, data, variables) => {
+      onSuccess: (queryClient, _data, _variables) => {
         // Invalidate media items query to refresh list per D-14
         queryClient.invalidateQueries({
           queryKey: mediaItemsQueryKey,
         });
       },
-      onError: (queryClient, error, variables) => {
+      onError: (queryClient, error, _variables) => {
         // Display toast error with diagnostic code per D-21
         toastApiError(error, "Photo upload failed");
       },

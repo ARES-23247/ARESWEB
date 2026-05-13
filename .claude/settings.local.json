@@ -58,7 +58,15 @@
       "Skill(gsd-phase)",
       "Skill(gsd-phase:*)",
       "Skill(gsd-new-milestone)",
-      "Skill(gsd-new-milestone:*)"
+      "Skill(gsd-new-milestone:*)",
+      "Skill(gsd-code-review)",
+      "Skill(gsd-code-review:*)",
+      "Bash(cat C:/Users/david/.claude/skills/gsd-code-review/SKILL.md | head -60)",
+      "Read(//c/Users/david/.claude/skills/gsd-code-review/**)",
+      "Bash(npx gsd-sdk *)",
+      "Bash(git restore *)",
+      "Read(//c/Users/david/.claude/get-shit-done/workflows/**)",
+      "Read(//c/Users/david/.claude/get-shit-done/skills/aresweb-typescript-safety/**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

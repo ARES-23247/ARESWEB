@@ -1,4 +1,5 @@
-import { OpenAPIHono, createRoute, openapi } from "@hono/zod-openapi";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
 import { getDriveAccessToken } from "../../../utils/googleAuth";

@@ -54,6 +54,7 @@ import { Route as DashboardSimulationsRouteImport } from './routes/dashboard/sim
 import { Route as DashboardSimsRouteImport } from './routes/dashboard/sims'
 import { Route as DashboardScoutingRouteImport } from './routes/dashboard/scouting'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardPhotosRouteImport } from './routes/dashboard/photos'
 import { Route as DashboardOutreachRouteImport } from './routes/dashboard/outreach'
 import { Route as DashboardMass_emailRouteImport } from './routes/dashboard/mass_email'
 import { Route as DashboardManage_seasonsRouteImport } from './routes/dashboard/manage_seasons'
@@ -69,6 +70,7 @@ import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/in
 import { Route as DashboardInquiriesRouteImport } from './routes/dashboard/inquiries'
 import { Route as DashboardImpact_rosterRouteImport } from './routes/dashboard/impact_roster'
 import { Route as DashboardFinanceRouteImport } from './routes/dashboard/finance'
+import { Route as DashboardDriveDocsRouteImport } from './routes/dashboard/drive-docs'
 import { Route as DashboardDb_studioRouteImport } from './routes/dashboard/db_studio'
 import { Route as DashboardCommand_centerRouteImport } from './routes/dashboard/command_center'
 import { Route as DashboardBadgesRouteImport } from './routes/dashboard/badges'
@@ -314,6 +316,11 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardPhotosRoute = DashboardPhotosRouteImport.update({
+  id: '/photos',
+  path: '/photos',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardOutreachRoute = DashboardOutreachRouteImport.update({
   id: '/outreach',
   path: '/outreach',
@@ -388,6 +395,11 @@ const DashboardImpact_rosterRoute = DashboardImpact_rosterRouteImport.update({
 const DashboardFinanceRoute = DashboardFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardDriveDocsRoute = DashboardDriveDocsRouteImport.update({
+  id: '/drive-docs',
+  path: '/drive-docs',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardDb_studioRoute = DashboardDb_studioRouteImport.update({
@@ -512,6 +524,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
+  '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -527,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
+  '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -592,6 +606,7 @@ export interface FileRoutesByTo {
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
+  '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -607,6 +622,7 @@ export interface FileRoutesByTo {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
+  '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -674,6 +690,7 @@ export interface FileRoutesById {
   '/dashboard/badges': typeof DashboardBadgesRoute
   '/dashboard/command_center': typeof DashboardCommand_centerRoute
   '/dashboard/db_studio': typeof DashboardDb_studioRoute
+  '/dashboard/drive-docs': typeof DashboardDriveDocsRoute
   '/dashboard/finance': typeof DashboardFinanceRoute
   '/dashboard/impact_roster': typeof DashboardImpact_rosterRoute
   '/dashboard/inquiries': typeof DashboardInquiriesRoute
@@ -689,6 +706,7 @@ export interface FileRoutesById {
   '/dashboard/manage_seasons': typeof DashboardManage_seasonsRoute
   '/dashboard/mass_email': typeof DashboardMass_emailRoute
   '/dashboard/outreach': typeof DashboardOutreachRoute
+  '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
@@ -757,6 +775,7 @@ export interface FileRouteTypes {
     | '/dashboard/badges'
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
+    | '/dashboard/drive-docs'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -772,6 +791,7 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
+    | '/dashboard/photos'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -837,6 +857,7 @@ export interface FileRouteTypes {
     | '/dashboard/badges'
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
+    | '/dashboard/drive-docs'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -852,6 +873,7 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
+    | '/dashboard/photos'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -918,6 +940,7 @@ export interface FileRouteTypes {
     | '/dashboard/badges'
     | '/dashboard/command_center'
     | '/dashboard/db_studio'
+    | '/dashboard/drive-docs'
     | '/dashboard/finance'
     | '/dashboard/impact_roster'
     | '/dashboard/inquiries'
@@ -933,6 +956,7 @@ export interface FileRouteTypes {
     | '/dashboard/manage_seasons'
     | '/dashboard/mass_email'
     | '/dashboard/outreach'
+    | '/dashboard/photos'
     | '/dashboard/profile'
     | '/dashboard/scouting'
     | '/dashboard/sims'
@@ -1332,6 +1356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/photos': {
+      id: '/dashboard/photos'
+      path: '/photos'
+      fullPath: '/dashboard/photos'
+      preLoaderRoute: typeof DashboardPhotosRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/outreach': {
       id: '/dashboard/outreach'
       path: '/outreach'
@@ -1435,6 +1466,13 @@ declare module '@tanstack/react-router' {
       path: '/finance'
       fullPath: '/dashboard/finance'
       preLoaderRoute: typeof DashboardFinanceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/drive-docs': {
+      id: '/dashboard/drive-docs'
+      path: '/drive-docs'
+      fullPath: '/dashboard/drive-docs'
+      preLoaderRoute: typeof DashboardDriveDocsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/db_studio': {
@@ -1593,6 +1631,7 @@ interface DashboardRouteChildren {
   DashboardBadgesRoute: typeof DashboardBadgesRoute
   DashboardCommand_centerRoute: typeof DashboardCommand_centerRoute
   DashboardDb_studioRoute: typeof DashboardDb_studioRoute
+  DashboardDriveDocsRoute: typeof DashboardDriveDocsRoute
   DashboardFinanceRoute: typeof DashboardFinanceRoute
   DashboardImpact_rosterRoute: typeof DashboardImpact_rosterRoute
   DashboardInquiriesRoute: typeof DashboardInquiriesRoute
@@ -1608,6 +1647,7 @@ interface DashboardRouteChildren {
   DashboardManage_seasonsRoute: typeof DashboardManage_seasonsRoute
   DashboardMass_emailRoute: typeof DashboardMass_emailRoute
   DashboardOutreachRoute: typeof DashboardOutreachRoute
+  DashboardPhotosRoute: typeof DashboardPhotosRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardScoutingRoute: typeof DashboardScoutingRoute
   DashboardSimsRoute: typeof DashboardSimsRoute
@@ -1637,6 +1677,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBadgesRoute: DashboardBadgesRoute,
   DashboardCommand_centerRoute: DashboardCommand_centerRoute,
   DashboardDb_studioRoute: DashboardDb_studioRoute,
+  DashboardDriveDocsRoute: DashboardDriveDocsRoute,
   DashboardFinanceRoute: DashboardFinanceRoute,
   DashboardImpact_rosterRoute: DashboardImpact_rosterRoute,
   DashboardInquiriesRoute: DashboardInquiriesRoute,
@@ -1652,6 +1693,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardManage_seasonsRoute: DashboardManage_seasonsRoute,
   DashboardMass_emailRoute: DashboardMass_emailRoute,
   DashboardOutreachRoute: DashboardOutreachRoute,
+  DashboardPhotosRoute: DashboardPhotosRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardScoutingRoute: DashboardScoutingRoute,
   DashboardSimsRoute: DashboardSimsRoute,

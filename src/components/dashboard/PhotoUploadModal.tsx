@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { X, Upload, AlertCircle } from "lucide-react";
-import { useUploadPhotos, type Album } from "@/api/google-photos";
+import { useUploadPhotos } from "@/api/google-photos";
 
 interface PhotoUploadModalProps {
   isOpen: boolean;

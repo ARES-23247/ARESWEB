@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../middleware";
 import { ensureAdmin, getDb } from "../middleware";

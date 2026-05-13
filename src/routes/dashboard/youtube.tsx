@@ -549,7 +549,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
         <div className="flex flex-col gap-3 mt-2 border border-white/10 p-3 bg-black/20">
           <span className="block text-xs font-bold text-ares-red uppercase tracking-wider mb-1">Automation (Optional)</span>
           
-          <label className="flex items-start gap-3 cursor-pointer group">
+          <label className="flex items-start gap-3 cursor-pointer group" aria-label="Generate Blog Post">
             <div className="relative flex items-center justify-center mt-0.5">
               <input
                 type="checkbox"
@@ -569,7 +569,7 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
             </div>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer group">
+          <label className="flex items-start gap-3 cursor-pointer group" aria-label="Cross-Post to Social Media">
             <div className="relative flex items-center justify-center mt-0.5">
               <input
                 type="checkbox"

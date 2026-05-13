@@ -7,8 +7,6 @@ import { z } from "zod";
 import {
   listMediaRoute,
   listAlbumsRoute,
-  uploadPhotosRoute,
-  photoMediaItemSchema,
 } from "../../../../shared/routes/google-photos";
 
 // Health check response schema
@@ -277,7 +275,7 @@ photosApp.post("/upload", async (c) => {
   const formData = await c.req.formData();
 
   // Extract metadata fields
-  const title = formData.get("title") as string | null;
+  const _title = formData.get("title") as string | null;
   const description = formData.get("description") as string | null;
   const albumId = formData.get("albumId") as string | null;
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { AppEnv } from "../../middleware/utils";
@@ -29,7 +30,7 @@ vi.mock("../../middleware", async () => {
 import { photosRouter } from "./index";
 import { getPhotosAccessToken } from "../../../utils/googleAuth";
 import { getDb } from "../../middleware";
-import { ApiError } from "../../middleware/errorHandler";
+import { ApiError as _ApiError } from "../../middleware/errorHandler";
 
 describe("google-photos router", () => {
   let app: Hono<AppEnv>;

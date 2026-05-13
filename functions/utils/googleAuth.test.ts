@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock jose library
@@ -118,7 +119,7 @@ describe("googleAuth Utilities", () => {
     });
 
     it("Test 2: should return cached token if not within 5-minute expiry buffer", async () => {
-      const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
+      const _getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
 
       const futureExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
 
