@@ -26,7 +26,7 @@ export interface OnshapeTokenResponse {
 /**
  * Stored credential record from D1
  */
-interface StoredCredential {
+interface _StoredCredential {
 	userId: string;
 	accessToken: string;
 	refreshToken: string;

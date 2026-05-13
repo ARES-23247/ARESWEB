@@ -6,7 +6,7 @@
  */
 
 import { useRef, useState } from "react";
-import { UploadCloud, X, Loader2 } from "lucide-react";
+import { UploadCloud, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface FileUploadZoneProps {

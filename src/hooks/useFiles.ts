@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * File Manager React Query Hooks
  *
  * Type-safe hooks for file operations with automatic cache management.
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { toastApiError, withMutationCallbacks } from "../api/honoClient";
 import {
@@ -46,7 +45,7 @@ export function useUploadMutation(options?: {
 
 	return useUploadFile(
 		withMutationCallbacks(queryClient, options, {
-			onSuccess: async (queryClient, data, variables) => {
+			onSuccess: async (queryClient, _data, _variables) => {
 				// Invalidate files query
 				await queryClient.invalidateQueries({ queryKey: ["files"] });
 				toast.success("File uploaded successfully");
@@ -68,7 +67,7 @@ export function useImportFromDriveMutation(options?: {
 
 	return useImportFromDrive(
 		withMutationCallbacks(queryClient, options, {
-			onSuccess: async (queryClient, data, variables) => {
+			onSuccess: async (queryClient, data, _variables) => {
 				// Invalidate files query
 				await queryClient.invalidateQueries({ queryKey: ["files"] });
 				toast.success(`Imported "${data.filename}" from Google Drive`);
@@ -90,7 +89,7 @@ export function useDeleteMutation(options?: {
 
 	return useDeleteFile(
 		withMutationCallbacks(queryClient, options, {
-			onSuccess: async (queryClient, data, variables) => {
+			onSuccess: async (queryClient, _data, _variables) => {
 				// Invalidate files query
 				await queryClient.invalidateQueries({ queryKey: ["files"] });
 				toast.success("File deleted");

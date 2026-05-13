@@ -6,7 +6,6 @@
  * Per D-03: Size limit validation (25MB default).
  */
 
-import { ApiError } from "../api/middleware/errorHandler";
 
 /**
  * Magic byte signatures for document validation
@@ -169,7 +168,7 @@ export function sanitizeFilename(name: string): string {
 		// Remove duplicate dots
 		.replace(/\.+/g, ".")
 		// Trim hyphens and dots from start/end
-		.replace(/^[\.-]+|[\.-]+$/g, "");
+		.replace(/^[.-]+|[.-]+$/g, "");
 
 	// Reattach extension
 	return sanitized ? sanitized + extension.toLowerCase() : "untitled" + extension;

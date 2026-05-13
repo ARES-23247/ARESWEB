@@ -334,6 +334,8 @@ export function shouldIgnoreConsoleError(text: string): boolean {
     // TanStack Query retry errors (harmless in E2E tests)
     '[Query Error] Too many requests',
     'Too many requests. Please try again later',
+    // QUIC protocol errors (transient network errors from Chrome's QUIC implementation)
+    'ERR_QUIC_PROTOCOL_ERROR',
   ];
   return ignorePatterns.some((pattern) => text.includes(pattern));
 }

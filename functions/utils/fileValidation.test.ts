@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Phase 77-02: File Manager - TDD Tests
  *
@@ -10,7 +9,7 @@
  * - MIME type icon mapping
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 describe("fileValidation utilities", () => {
 	describe("validateDocumentFile", () => {

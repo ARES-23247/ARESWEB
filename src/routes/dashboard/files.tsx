@@ -7,7 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileUp, Search, RefreshCw, FolderOpen } from "lucide-react";
+import { Search, RefreshCw, FolderOpen } from "lucide-react";
 import { useFilesQuery, useUploadMutation, useDeleteMutation, useScanUsageMutation } from "../../hooks/useFiles";
 import { FileUploadZone } from "../../components/FileUploadZone";
 import { FileList } from "../../components/FileList";

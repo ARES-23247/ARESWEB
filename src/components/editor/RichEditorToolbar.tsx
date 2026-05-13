@@ -19,7 +19,6 @@ import GalleryPickerModal from "../GalleryPickerModal";
 import VideoPickerModal from "../VideoPickerModal";
 import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
-import { FileText } from "lucide-react";
 
 /* ---------- Props ---------- */
 export interface RichEditorToolbarProps {

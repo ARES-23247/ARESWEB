@@ -181,7 +181,7 @@ export async function getDocuments(
 	env: Record<string, string | undefined>,
 	search?: string
 ): Promise<OnshapeDocument[]> {
-	const config = getOnshapeConfig(env);
+	const _config = getOnshapeConfig(env);
 
 	// Build query params for Onshape API
 	const params = new URLSearchParams();
@@ -222,6 +222,7 @@ export async function getDocuments(
 						ownerName: doc.owner,
 						isPublic: 0, // Default to private, user can mark as public
 						lastSyncedAt: new Date().toISOString(),
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Drizzle insert values shape mismatch
 					} as any)
 					.run();
 			}

@@ -254,7 +254,7 @@ const bomHistoryRoute = createRoute({
  * Retrieves BOM sync history from D1.
  */
 const app2 = app1.openapi(bomHistoryRoute, async (c) => {
-	const { id: userId } = await requireAuth(c);
+	const { id: _userId } = await requireAuth(c);
 	const { documentId } = c.req.valid("param");
 	const limit = parseInt(c.req.query("limit") || "50", 10);
 	const db = getDb(c);
