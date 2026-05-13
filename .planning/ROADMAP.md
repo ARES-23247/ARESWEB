@@ -7,7 +7,7 @@
 
 ## Phases
 
-- [ ] **Phase 73: Service Account Authentication** - OAuth tokens for Google Photos and Drive APIs
+- [x] **Phase 73: Service Account Authentication** - OAuth tokens for Google Photos and Drive APIs ✅
 - [ ] **Phase 74: Google Drive Document Browser** - Browse and open Google Workspace documents
 - [ ] **Phase 75: Google Photos Browser** - Browse albums and photos from Google Photos
 - [ ] **Phase 76: Image Import Pipeline** - Import photos from Google Photos to R2 storage
@@ -32,12 +32,14 @@
 4. Token refresh failures trigger alerts and retry logic
 5. Service account has write scope for Google Photos upload (`photoslibrary.edit` or `photoslibrary.appendonly`)
 
-**Plans**: 3 plans
+**Plans**: 3 plans (all complete ✅)
 
 **Plan List**:
-- [ ] 73-01-PLAN.md — Extend JWT scope for Photos and Drive APIs
-- [ ] 73-02-PLAN.md — Create token management utilities with lazy refresh
-- [ ] 73-03-PLAN.md — Create Photos and Drive API routers with health checks
+- [x] 73-01-PLAN.md — Extend JWT scope for Photos and Drive APIs ✅
+- [x] 73-02-PLAN.md — Create token management utilities with lazy refresh ✅
+- [x] 73-03-PLAN.md — Create Photos and Drive API routers with health checks ✅
+
+**Completed:** 2026-05-12
 
 ---
 
@@ -140,7 +142,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 73. Service Account Authentication | 0/3 | Planning complete | - |
+| 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
 | 74. Google Drive Document Browser | 0/6 | Not started | - |
 | 75. Google Photos Browser | 0/7 | Not started | - |
 | 76. Image Import Pipeline | 0/10 | Not started | - |
@@ -164,7 +166,7 @@
 ---
 
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-12 (Phase 73 planning complete)*
+*Last updated: 2026-05-12 (Phase 73 complete)*
 
 ---
 
