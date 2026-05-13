@@ -154,15 +154,221 @@ describe("google-drive router", () => {
     });
   });
 
-  describe("GET /files (placeholder)", () => {
-    it("should return empty array for placeholder endpoint", async () => {
+  describe("GET /files", () => {
+    const mockFolderId = "root-folder-123";
+    const mockDriveFiles = [
+      {
+        id: "doc1",
+        name: "Team Meeting Notes",
+        mimeType: "application/vnd.google-apps.document",
+        modifiedTime: "2024-05-12T10:30:00.000Z",
+        webViewLink: "https://docs.google.com/document/d/doc1/edit",
+        owners: [{ displayName: "mentor@aresfirst.org", emailAddress: "mentor@aresfirst.org" }],
+      },
+      {
+        id: "sheet1",
+        name: "Budget Tracker",
+        mimeType: "application/vnd.google-apps.spreadsheet",
+        modifiedTime: "2024-05-11T14:20:00.000Z",
+        webViewLink: "https://docs.google.com/spreadsheets/d/sheet1/edit",
+        owners: [{ displayName: "student@aresfirst.org", emailAddress: "student@aresfirst.org" }],
+      },
+      {
+        id: "slide1",
+        name: "Competition Presentation",
+        mimeType: "application/vnd.google-apps.presentation",
+        modifiedTime: "2024-05-10T09:15:00.000Z",
+        webViewLink: "https://docs.google.com/presentation/d/slide1/edit",
+        owners: [{ displayName: "coach@aresfirst.org", emailAddress: "coach@aresfirst.org" }],
+      },
+      {
+        id: "draw1",
+        name: "Robot CAD Drawing",
+        mimeType: "application/vnd.google-apps.drawing",
+        modifiedTime: "2024-05-09T16:45:00.000Z",
+        webViewLink: "https://docs.google.com/drawings/d/draw1/edit",
+        owners: [{ displayName: "mentor@aresfirst.org", emailAddress: "mentor@aresfirst.org" }],
+      },
+    ];
+
+    it("Test 6: should return array of Google Workspace documents with proper metadata", async () => {
+      // Mock Drive API response with Google Workspace files
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          files: mockDriveFiles,
+          nextPageToken: "next-page-token-123",
+        }),
+      } as Response);
+
       const response = await app.request("/api/google-drive/files", {
         method: "GET",
       });
 
       expect(response.status).toBe(200);
       const body = await response.json();
-      expect(body).toEqual([]);
+      expect(body.files).toBeDefined();
+      expect(body.files.length).toBe(4);
+      expect(body.files[0]).toMatchObject({
+        id: "doc1",
+        name: "Team Meeting Notes",
+        mimeType: "application/vnd.google-apps.document",
+        modifiedTime: "2024-05-12T10:30:00.000Z",
+        owner: "mentor@aresfirst.org",
+        webViewLink: "https://docs.google.com/document/d/doc1/edit",
+      });
+      expect(body.nextPageToken).toBe("next-page-token-123");
+    });
+
+    it("Test 7: query parameter q filters files by name using Drive API", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          files: mockDriveFiles.filter(f => f.name.toLowerCase().includes("meeting")),
+        }),
+      } as Response);
+
+      const response = await app.request("/api/google-drive/files?q=meeting", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("name+contains+'meeting'"),
+        expect.any(Object)
+      );
+    });
+
+    it("Test 8: query parameter pageToken enables pagination", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          files: mockDriveFiles.slice(2),
+        }),
+      } as Response);
+
+      const response = await app.request("/api/google-drive/files?pageToken=abc123", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("pageToken=abc123"),
+        expect.any(Object)
+      );
+    });
+
+    it("Test 9: query parameter pageSize limits results with default 50", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          files: mockDriveFiles,
+        }),
+      } as Response);
+
+      const response = await app.request("/api/google-drive/files?pageSize=10", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("pageSize=10"),
+        expect.any(Object)
+      );
+    });
+
+    it("Test 10: response excludes non-Google Workspace files (PDF, images, etc.)", async () => {
+      const mixedFiles = [
+        ...mockDriveFiles,
+        {
+          id: "pdf1",
+          name: "Manual.pdf",
+          mimeType: "application/pdf",
+          modifiedTime: "2024-05-12T10:30:00.000Z",
+          owners: [{ displayName: "mentor@aresfirst.org" }],
+        },
+        {
+          id: "img1",
+          name: "robot.jpg",
+          mimeType: "image/jpeg",
+          modifiedTime: "2024-05-12T10:30:00.000Z",
+          owners: [{ displayName: "student@aresfirst.org" }],
+        },
+      ];
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          files: mixedFiles,
+        }),
+      } as Response);
+
+      const response = await app.request("/api/google-drive/files", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      // Should only include Google Workspace types (not PDF or JPEG)
+      expect(body.files.length).toBe(4);
+      expect(body.files.every(f =>
+        f.mimeType.startsWith("application/vnd.google-apps.")
+      )).toBe(true);
+    });
+
+    it("Test 11: uses getDriveAccessToken for authenticated API calls", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ files: [] }),
+      } as Response);
+
+      await app.request("/api/google-drive/files", {
+        method: "GET",
+      });
+
+      expect(getDriveAccessToken).toHaveBeenCalledWith(mockDb, expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${mockToken}`,
+          }),
+        })
+      );
+    });
+
+    it("Test 12: returns 500 error when Drive API call fails", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        json: () => Promise.resolve({ error: { message: "API error" } }),
+      } as Response);
+
+      const response = await app.request("/api/google-drive/files", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(500);
+    });
+
+    it("Test 13: MIME type filter includes only Google Workspace types", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ files: mockDriveFiles }),
+      } as Response);
+
+      await app.request("/api/google-drive/files", {
+        method: "GET",
+      });
+
+      // Verify the query includes only the four Google Workspace MIME types
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      const url = fetchCall[0] as string;
+      expect(url).toContain("application/vnd.google-apps.document");
+      expect(url).toContain("application/vnd.google-apps.spreadsheet");
+      expect(url).toContain("application/vnd.google-apps.presentation");
+      expect(url).toContain("application/vnd.google-apps.drawing");
     });
   });
 });
