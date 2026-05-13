@@ -59,7 +59,13 @@
 5. UI displays Google Workspace documents with appropriate icons
 6. System excludes non-Google Workspace files from document browser
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+**Plan List**:
+- [ ] 74-01-PLAN.md — Create OpenAPI route contracts for Drive files endpoint
+- [ ] 74-02-PLAN.md — Implement GET /files endpoint with TDD
+- [ ] 74-03-PLAN.md — Create frontend React Query hooks
+- [ ] 74-04-PLAN.md — Build dashboard UI with search and file table
 
 **UI hint**: yes
 
@@ -143,7 +149,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 73. Service Account Authentication | 3/3 | Complete ✅ | 2026-05-12 |
-| 74. Google Drive Document Browser | 0/6 | Not started | - |
+| 74. Google Drive Document Browser | 0/4 | Not started | - |
 | 75. Google Photos Browser | 0/7 | Not started | - |
 | 76. Image Import Pipeline | 0/10 | Not started | - |
 | 77. File Manager | 0/8 | Not started | - |
@@ -166,7 +172,7 @@
 ---
 
 *Roadmap created: 2026-05-12*
-*Last updated: 2026-05-12 (Phase 73 complete)*
+*Last updated: 2026-05-12 (Phase 74 plans created)*
 
 ---
 
