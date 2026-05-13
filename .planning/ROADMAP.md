@@ -165,3 +165,43 @@
 
 *Roadmap created: 2026-05-12*
 *Last updated: 2026-05-12 (Phase 73 planning complete)*
+
+---
+
+## Backlog
+
+### Phase 999.1: Embedded Robot Telemetry (AdvantageScope Web) (BACKLOG)
+**Goal:** [Captured for future planning] Embed AdvantageScope viewer for reviewing robot `.wpilog` pathing and telemetry in-browser
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.2: Live Scouting & Pick-List Engine (PWA) (BACKLOG)
+**Goal:** [Captured for future planning] Touch-optimized PWA scouting module with Statbotics integration and auto-generated pick lists
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.3: Inventory & CAD BOM Synchronization (BACKLOG)
+**Goal:** [Captured for future planning] Sync Onshape API BOMs and use barcode scanning for inventory checkouts
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.4: Sponsor ROI & Parent Portals (BACKLOG)
+**Goal:** [Captured for future planning] Dedicated portals for sponsors (ROI reports) and parents (YPP consent, itineraries)
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.5: Gamification & Progression System (BACKLOG)
+**Goal:** [Captured for future planning] XP economy based on ARESWEB contributions to unlock Discord roles and themes
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.6: AI-Assisted Impact Award Drafter (BACKLOG)
+**Goal:** [Captured for future planning] Scan team history and draft FIRST Impact Award essays meeting rubric criteria
+**Requirements:** TBD
+**Plans:** 0 plans
+- [ ] TBD (promote with /gsd-review-backlog when ready)
