@@ -918,3 +918,47 @@ export const fileUsage = sqliteTable("file_usage", {
 	index("idx_file_usage_linked").on(table.linkedAt),
 ]);
 
+// Onshape OAuth credentials per user (Phase 78)
+// Per D-03: Store OAuth tokens with expiry tracking
+export const onshapeCredentials = sqliteTable("onshape_credentials", {
+	userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+	accessToken: text("access_token").notNull(),
+	refreshToken: text("refresh_token").notNull(),
+	expiresAt: integer("expires_at").notNull(), // Unix timestamp
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	lastUsedAt: text("last_used_at"),
+},
+(table) => [
+	index("idx_onshape_credentials_last_used").on(table.lastUsedAt),
+]);
+
+// Cached Onshape document metadata (Phase 78)
+// Per D-04/D-05: Public documents cached, private fetched real-time
+export const onshapeDocuments = sqliteTable("onshape_documents", {
+	documentId: text("document_id").primaryKey(),
+	name: text().notNull(),
+	description: text(),
+	thumbnailUrl: text("thumbnail_url"),
+	ownerName: text("owner_name"),
+	isPublic: integer("is_public").default(0).notNull(),
+	lastSyncedAt: text("last_synced_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_onshape_documents_public").on(table.isPublic),
+]);
+
+// BOM sync history audit trail (Phase 78)
+// Per D-14: Track BOM synchronization with sync history
+export const onshapeBomHistory = sqliteTable("onshape_bom_history", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	documentId: text("document_id").notNull(),
+	elementId: text("element_id").notNull(),
+	partCount: integer("part_count").notNull(),
+	syncedBy: text("synced_by").notNull().references(() => user.id, { onDelete: "set null" }),
+	syncedAt: text("synced_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_onshape_bom_history_document").on(table.documentId),
+	index("idx_onshape_bom_history_synced_at").on(table.syncedAt),
+]);
+

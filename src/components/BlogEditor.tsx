@@ -6,6 +6,7 @@ import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
 import { CopilotMenu } from "./editor/CopilotMenu";
 import AssetPickerModal from "./AssetPickerModal";
+import FileBrowserModal from "./FileBrowserModal";
 import { DEFAULT_coverImage } from "../utils/constants";
 import { useAdminSettings } from "../hooks/useAdminSettings";
 import { useImageUpload } from "../hooks/useImageUpload";
@@ -26,16 +27,18 @@ import { useGetAdminPost, useDeletePost, useUpdatePost, useSavePost } from "../a
 import { useModal } from "../contexts/ModalContext";
 import { type SavePostResponse, type UpdatePostResponse } from "../api/posts";
 import { toastApiError } from "../api/honoClient";
+import type { UploadedFile } from "../api/files";
 function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();
-  
+
   // Custom Hooks
   const { availableSocials } = useAdminSettings();
   const { uploadFile, isUploading: isUploadingCover, errorMsg: uploadError, setErrorMsg: setUploadError } = useImageUpload();
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -60,11 +63,20 @@ function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, us
 
 
   const { ydoc, provider } = useCollaborativeEditor();
-  const editor = useRichEditor({ 
+  const editor = useRichEditor({
     placeholder: "<p>Start drafting your robotics article here. Tell us about your journey to Einstein...</p>",
     ydoc,
     provider
   });
+
+  // Handle file selection from FileBrowserModal
+  const handleFileSelect = (file: UploadedFile) => {
+    if (!editor) return;
+    const linkText = file.title || file.filename;
+    const markdown = `[${linkText}](/api/files/download/${file.id})`;
+    editor.commands.insertContent(markdown);
+    setIsFileBrowserOpen(false);
+  };
 
   // Use standard API query instead of custom useEntityFetch
   const { data: postRes, isLoading, isError } = useGetAdminPost(editSlug || "");

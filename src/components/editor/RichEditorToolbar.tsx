@@ -19,12 +19,15 @@ import GalleryPickerModal from "../GalleryPickerModal";
 import VideoPickerModal from "../VideoPickerModal";
 import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
+import { FileText } from "lucide-react";
 
 /* ---------- Props ---------- */
 export interface RichEditorToolbarProps {
   editor: Editor;
   /** Used as the filename stem for exports. */
   documentTitle?: string;
+  /** Optional callback to open file browser for file link insertion */
+  onInsertFileLink?: () => void;
 }
 
 /* ---------- Helper: export HTML document ---------- */
@@ -116,7 +119,7 @@ import PresenceAvatars from "./PresenceAvatars";
 import EditorChatSidebar from "./EditorChatSidebar";
 
 /* ---------- Component ---------- */
-export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
+export default function RichEditorToolbar({ editor, documentTitle, onInsertFileLink }: RichEditorToolbarProps) {
   const modal = useModal();
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -242,6 +245,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         {/* Media */}
         <button type="button" aria-label="Select Image" title="Select Image" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
         <button type="button" aria-label="Insert Gallery" title="Insert Photo Gallery" onClick={() => setIsGalleryPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📷 Gallery</button>
+        <button type="button" aria-label="Insert File Link" title="Insert File Link" onClick={() => onInsertFileLink?.()} className="px-3 py-2 border border-ares-bronze/30 text-ares-bronze hover:bg-ares-bronze hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📄 File</button>
         <button type="button" aria-label="Insert Video" title="Insert Video" onClick={() => setIsVideoPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-danger-soft hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🎬 Video</button>
         <button type="button" aria-label="Insert Simulator" title="Insert Simulator" onClick={() => setIsSimPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-danger-soft hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🕹 Simulator</button>
         <Sep />
