@@ -26,22 +26,18 @@ vi.mock("./gcalSync", () => ({
   GCalConfig: {},
 }));
 
+// Mock drizzle-orm eq function
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: vi.fn((field: unknown, value: unknown) => ({ _field: field, _value: value })),
+  };
+});
+
 import { getDriveAccessToken, getPhotosAccessToken } from "./googleAuth";
 import { getGcalAccessToken } from "./gcalSync";
 import { settings } from "../../src/db/schema";
-import { eq } from "drizzle-orm";
-
-// Mock Drizzle DB
-const mockDb = {
-  select: vi.fn(() => mockDb),
-  from: vi.fn(() => mockDb),
-  where: vi.fn(() => mockDb),
-  execute: vi.fn(),
-  insert: vi.fn(() => mockDb),
-  values: vi.fn(() => mockDb),
-  onConflictDoUpdate: vi.fn(() => mockDb),
-  run: vi.fn(),
-};
 
 // Mock Env
 const mockEnv = {
@@ -49,9 +45,54 @@ const mockEnv = {
   GCAL_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
 };
 
-describe("googleAuth Utilities (RED phase)", () => {
+describe("googleAuth Utilities", () => {
+  let mockDb: ReturnType<typeof createMockDrizzleDb>;
+  let mockExecute: ReturnType<typeof vi.fn>;
+  let mockRun: ReturnType<typeof vi.fn>;
+  let mockValues: ReturnType<typeof vi.fn>;
+  let executeCallCount: number;
+  let executeResults: unknown[][];
+
+  // Helper to create a properly chained mock Drizzle DB
+  function createMockDrizzleDb() {
+    executeCallCount = 0;
+    executeResults = [];
+    mockExecute = vi.fn(() => {
+      const result = executeResults[executeCallCount] || [];
+      executeCallCount++;
+      return Promise.resolve(result);
+    });
+    mockRun = vi.fn(() => Promise.resolve(undefined));
+    mockValues = vi.fn(() => ({
+      onConflictDoUpdate: vi.fn(() => ({ run: mockRun })),
+      run: mockRun,
+    }));
+
+    const db = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            execute: mockExecute,
+          })),
+        })),
+      })),
+      insert: vi.fn(() => ({
+        values: mockValues,
+      })),
+    } as any;
+
+    // Helper to set execute results for sequential calls
+    (db as any).__setExecuteResults = (results: unknown[]) => {
+      executeResults = results;
+      executeCallCount = 0;
+    };
+
+    return db;
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDb = createMockDrizzleDb();
   });
 
   afterEach(() => {
@@ -63,27 +104,31 @@ describe("googleAuth Utilities (RED phase)", () => {
       const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
       getGcalAccessTokenMock.mockResolvedValueOnce("new-drive-token");
 
-      mockDb.execute.mockResolvedValueOnce([]); // No cached token
+      // No cached token
+      (mockDb as any).__setExecuteResults([[]]);
 
-      await getDriveAccessToken(mockDb as any, mockEnv as any);
+      await getDriveAccessToken(mockDb, mockEnv as any);
 
-      expect(getGcalAccessToken).toHaveBeenCalledWith({
-        email: mockEnv.GCAL_SERVICE_ACCOUNT_EMAIL,
-        privateKey: mockEnv.GCAL_PRIVATE_KEY,
-      });
+      expect(getGcalAccessToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: mockEnv.GCAL_SERVICE_ACCOUNT_EMAIL,
+          privateKey: mockEnv.GCAL_PRIVATE_KEY,
+        })
+      );
     });
 
     it("Test 2: should return cached token if not within 5-minute expiry buffer", async () => {
       const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
-      getGcalAccessTokenMock.mockResolvedValueOnce("should-not-be-called");
 
       const futureExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-      mockDb.execute.mockResolvedValueOnce([
-        { key: "drive_access_token", value: "cached-drive-token", updatedAt: futureExpiry },
-        { key: "drive_token_expires_at", value: futureExpiry, updatedAt: futureExpiry },
+
+      // First call returns token entry, second call returns expiry entry
+      (mockDb as any).__setExecuteResults([
+        [{ key: "drive_access_token", value: "cached-drive-token" }],
+        [{ key: "drive_token_expires_at", value: futureExpiry }],
       ]);
 
-      const token = await getDriveAccessToken(mockDb as any, mockEnv as any);
+      const token = await getDriveAccessToken(mockDb, mockEnv as any);
 
       expect(token).toBe("cached-drive-token");
       expect(getGcalAccessToken).not.toHaveBeenCalled();
@@ -94,12 +139,14 @@ describe("googleAuth Utilities (RED phase)", () => {
       getGcalAccessTokenMock.mockResolvedValueOnce("refreshed-drive-token");
 
       const pastExpiry = new Date(Date.now() - 10000).toISOString(); // Expired
-      mockDb.execute.mockResolvedValueOnce([
-        { key: "drive_access_token", value: "expired-token", updatedAt: pastExpiry },
-        { key: "drive_token_expires_at", value: pastExpiry, updatedAt: pastExpiry },
+
+      // First call returns token entry, second returns expiry entry
+      (mockDb as any).__setExecuteResults([
+        [{ key: "drive_access_token", value: "expired-token" }],
+        [{ key: "drive_token_expires_at", value: pastExpiry }],
       ]);
 
-      const token = await getDriveAccessToken(mockDb as any, mockEnv as any);
+      const token = await getDriveAccessToken(mockDb, mockEnv as any);
 
       expect(token).toBe("refreshed-drive-token");
       expect(getGcalAccessToken).toHaveBeenCalled();
@@ -109,15 +156,15 @@ describe("googleAuth Utilities (RED phase)", () => {
       const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
       getGcalAccessTokenMock.mockResolvedValueOnce("new-token");
 
-      mockDb.execute.mockResolvedValueOnce([]); // No cached token
-      mockDb.insert.mockResolvedValueOnce(mockDb as any);
-      mockDb.onConflictDoUpdate.mockResolvedValueOnce(mockDb as any);
-      mockDb.run.mockResolvedValueOnce(undefined);
+      // No cached token
+      (mockDb as any).__setExecuteResults([[]]);
 
-      await getDriveAccessToken(mockDb as any, mockEnv as any);
+      await getDriveAccessToken(mockDb, mockEnv as any);
 
       expect(mockDb.insert).toHaveBeenCalledWith(settings);
-      expect(mockDb.values).toHaveBeenCalledWith(
+      expect(mockValues).toHaveBeenCalledTimes(2); // Called for token and expiry
+      // First call should be for the token itself
+      expect(mockValues).toHaveBeenNthCalledWith(1,
         expect.objectContaining({
           key: "drive_access_token",
           value: "new-token",
@@ -129,15 +176,14 @@ describe("googleAuth Utilities (RED phase)", () => {
       const getGcalAccessTokenMock = vi.mocked(getGcalAccessToken);
       getGcalAccessTokenMock.mockResolvedValueOnce("new-photos-token");
 
-      mockDb.execute.mockResolvedValueOnce([]); // No cached token
-      mockDb.insert.mockResolvedValueOnce(mockDb as any);
-      mockDb.onConflictDoUpdate.mockResolvedValueOnce(mockDb as any);
-      mockDb.run.mockResolvedValueOnce(undefined);
+      // No cached token
+      (mockDb as any).__setExecuteResults([[]]);
 
-      const token = await getPhotosAccessToken(mockDb as any, mockEnv as any);
+      const token = await getPhotosAccessToken(mockDb, mockEnv as any);
 
       expect(token).toBe("new-photos-token");
-      expect(mockDb.values).toHaveBeenCalledWith(
+      // First call should be for the photos_access_token key
+      expect(mockValues).toHaveBeenNthCalledWith(1,
         expect.objectContaining({
           key: "photos_access_token",
         })
@@ -152,13 +198,11 @@ describe("googleAuth Utilities (RED phase)", () => {
         .mockRejectedValueOnce(new Error("Network error"))
         .mockResolvedValueOnce("retry-success-token");
 
-      mockDb.execute.mockResolvedValueOnce([]); // No cached token
-      mockDb.insert.mockResolvedValueOnce(mockDb as any);
-      mockDb.onConflictDoUpdate.mockResolvedValueOnce(mockDb as any);
-      mockDb.run.mockResolvedValueOnce(undefined);
+      // No cached token
+      (mockDb as any).__setExecuteResults([[]]);
 
       const startTime = Date.now();
-      const token = await getDriveAccessToken(mockDb as any, mockEnv as any);
+      const token = await getDriveAccessToken(mockDb, mockEnv as any);
       const elapsed = Date.now() - startTime;
 
       expect(token).toBe("retry-success-token");
