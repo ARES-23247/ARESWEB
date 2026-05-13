@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   listMediaRoute,
   listAlbumsRoute,
+  uploadPhotosRoute,
   photoMediaItemSchema,
 } from "../../../../shared/routes/google-photos";
 
@@ -264,6 +265,202 @@ photosApp.openapi(albumsRoute, async (c) => {
     albums,
     nextPageToken: photosData.nextPageToken,
   }, 200);
+});
+
+// Upload endpoint (Phase 75-05)
+// Uploads photos to Google Photos using mediaItems:batchCreate endpoint
+photosApp.post("/upload", async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+
+  // Parse multipart/form-data from request
+  const formData = await c.req.formData();
+
+  // Extract metadata fields
+  const title = formData.get("title") as string | null;
+  const description = formData.get("description") as string | null;
+  const albumId = formData.get("albumId") as string | null;
+
+  // Extract files array from formData
+  const files: File[] = [];
+  for (const [key, value] of formData.entries()) {
+    if (key === "files" && value instanceof File) {
+      files.push(value);
+    }
+  }
+
+  // Validate files exist
+  if (files.length === 0) {
+    throw new ApiError("No files provided for upload", 400, "NO_FILES");
+  }
+
+  // Allowed MIME types per D-01/D-11: images only (no videos)
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/heic",
+  ];
+
+  // File size limit: 50MB per file
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+  // Validate each file type and size
+  const invalidFiles: Array<{ filename: string; error: string }> = [];
+  for (const file of files) {
+    if (!allowedMimeTypes.includes(file.type)) {
+      invalidFiles.push({ filename: file.name, error: `Invalid MIME type: ${file.type}` });
+    } else if (file.size > MAX_FILE_SIZE) {
+      invalidFiles.push({ filename: file.name, error: "File size exceeds 50MB limit" });
+    }
+  }
+
+  // If any files are invalid, return error with details
+  if (invalidFiles.length > 0) {
+    throw new ApiError(
+      `Invalid files: ${invalidFiles.map((f) => `${f.filename} (${f.error})`).join(", ")}`,
+      400,
+      "INVALID_FILES"
+    );
+  }
+
+  // Get access token using lazy refresh pattern
+  const token = await getPhotosAccessToken(db, env);
+
+  // Upload each file to Photos API uploads endpoint
+  const uploadResults: Array<{
+    filename: string;
+    uploadToken?: string;
+    error?: string;
+  }> = [];
+
+  for (const file of files) {
+    try {
+      // POST to Photos API uploads endpoint
+      const uploadResponse = await fetch("https://photoslibrary.googleapis.com/v1/uploads", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/octet-stream",
+          "X-Goog-Upload-File-Name": file.name,
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+      }
+
+      // Parse upload token from response (raw text, not JSON)
+      const uploadToken = await uploadResponse.text();
+      uploadResults.push({ filename: file.name, uploadToken });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      uploadResults.push({ filename: file.name, error: errorMessage });
+    }
+  }
+
+  // Filter successful uploads and prepare batchCreate request
+  const successfulUploads = uploadResults.filter((r) => r.uploadToken);
+  const failures = uploadResults.filter((r) => r.error).map((r) => ({
+    filename: r.filename,
+    error: r.error ?? "Unknown error",
+  }));
+
+  // If all uploads failed, return failures
+  if (successfulUploads.length === 0) {
+    return c.json(
+      {
+        uploadedCount: 0,
+        failures,
+      },
+      200
+    );
+  }
+
+  // Build batchCreate request body
+  const newMediaItems = successfulUploads.map((upload) => ({
+    description: description ?? "",
+    simpleMediaItem: {
+      uploadToken: upload.uploadToken!,
+      fileName: upload.filename,
+    },
+  }));
+
+  const batchCreateBody: Record<string, unknown> = {
+    newMediaItems,
+  };
+
+  if (albumId) {
+    batchCreateBody.albumId = albumId;
+  }
+
+  // Call Photos API batchCreate endpoint
+  const batchCreateResponse = await fetch(
+    "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(batchCreateBody),
+    }
+  );
+
+  if (!batchCreateResponse.ok) {
+    const errorText = await batchCreateResponse.text();
+    console.error("[google-photos] Batch create failed:", errorText);
+    // Return partial success with failures
+    return c.json(
+      {
+        uploadedCount: 0,
+        failures: [...failures, { filename: "batch", error: `Batch create failed: ${errorText}` }],
+      },
+      200
+    );
+  }
+
+  const batchCreateData = await batchCreateResponse.json() as {
+    newMediaItemResults?: Array<{
+      uploadToken: string;
+      status?: {
+        message?: string;
+        errors?: Array<{ message: string }>;
+      };
+    }>;
+  };
+
+  // Process batchCreate response for additional failures
+  if (batchCreateData.newMediaItemResults) {
+    for (const result of batchCreateData.newMediaItemResults) {
+      if (result.status?.errors && result.status.errors.length > 0) {
+        // Find the filename for this upload token
+        const uploadResult = successfulUploads.find((r) => r.uploadToken === result.uploadToken);
+        if (uploadResult) {
+          failures.push({
+            filename: uploadResult.filename,
+            error: result.status.errors.map((e) => e.message).join(", "),
+          });
+        }
+      }
+    }
+  }
+
+  // Return success response
+  const uploadedCount = successfulUploads.length - failures.filter(
+    (f) => successfulUploads.some((s) => s.filename === f.filename)
+  ).length;
+
+  return c.json(
+    {
+      uploadedCount: Math.max(0, uploadedCount),
+      failures: failures.length > 0 ? failures : undefined,
+    },
+    200
+  );
 });
 
 // Export the router for registration in the main app

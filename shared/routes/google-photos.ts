@@ -247,33 +247,6 @@ export const listAlbumsRoute = createRoute({
 export const uploadPhotosRoute = createRoute({
   method: "post",
   path: "/upload",
-  request: {
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: z.object({
-            files: z.array(z.instanceof(File)).optional().openapi({
-              description: "Array of image files to upload (JPG, PNG, WEBP, GIF, HEIC per D-11)",
-              type: "array",
-              items: { type: "string", format: "binary" },
-            }),
-            title: z.string().optional().openapi({
-              description: "Optional title for all uploaded photos",
-              example: "Team Photos from Competition",
-            }),
-            description: z.string().optional().openapi({
-              description: "Optional description for all uploaded photos",
-              example: "Photos taken during the FTC championship event",
-            }),
-            albumId: z.string().optional().openapi({
-              description: "Optional album ID to assign photos to (per D-12)",
-              example: "AKcabcdefGhiJklmnoPqrsTuvWxYz",
-            }),
-          }),
-        },
-      },
-    },
-  },
   responses: {
     ...standardErrors,
     200: {
