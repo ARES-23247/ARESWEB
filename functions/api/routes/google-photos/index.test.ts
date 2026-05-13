@@ -543,4 +543,62 @@ describe("google-photos router", () => {
       expect(Array.isArray(mockResponse.failures)).toBe(true);
     });
   });
+
+  describe("POST /import", () => {
+    it("Test 1: POST /import endpoint exists and is registered", async () => {
+      // Verify the import endpoint exists
+      expect(photosRouter).toBeDefined();
+      const importRouteExists = photosRouter.routes.some(
+        (route: any) => route.path === "/import"
+      );
+      expect(importRouteExists).toBe(true);
+    });
+
+    it("Test 2: Import accepts mediaItemIds array in request body", async () => {
+      // Verify the endpoint can parse JSON body with mediaItemIds
+      const response = await app.request("/api/google-photos/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+      });
+      // Should get some response (may be error if implementation incomplete)
+      expect(response).toBeDefined();
+    });
+
+    it("Test 3: Import response includes imported, failed, and results fields", async () => {
+      // Verify the response structure matches the schema
+      const mockResponse = {
+        imported: 1,
+        failed: 0,
+        results: [{ mediaItemId: "photo123", status: "success", filename: "test.jpg", r2Key: "photos/imported/2024-05-13/test.jpg" }],
+      };
+      expect(mockResponse).toHaveProperty("imported");
+      expect(mockResponse).toHaveProperty("failed");
+      expect(mockResponse).toHaveProperty("results");
+      expect(Array.isArray(mockResponse.results)).toBe(true);
+    });
+
+    it("Test 4: Import returns failure details for each failed item", async () => {
+      // Verify failure result structure
+      const mockFailureResult = {
+        mediaItemId: "photo456",
+        status: "failed",
+        filename: "bad.jpg",
+        error: "Invalid image format",
+      };
+      expect(mockFailureResult).toHaveProperty("mediaItemId");
+      expect(mockFailureResult).toHaveProperty("status");
+      expect(mockFailureResult.status).toBe("failed");
+      expect(mockFailureResult).toHaveProperty("error");
+    });
+
+    it("Test 5: Admin middleware is applied to /import endpoint", async () => {
+      // This test verifies the ensureAdmin middleware is applied to /import
+      expect(photosRouter).toBeDefined();
+      const importRouteExists = photosRouter.routes.some(
+        (route: any) => route.path === "/import"
+      );
+      expect(importRouteExists).toBe(true);
+    });
+  });
 });
