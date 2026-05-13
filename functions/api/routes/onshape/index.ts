@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import auth from "./auth";
 import documents from "./documents";
+import exports from "./exports";
 
 // Create the router
 const onshapeApp = new OpenAPIHono<AppEnv>();
@@ -11,6 +12,9 @@ onshapeApp.route("/auth", auth);
 
 // Mount documents routes
 onshapeApp.route("/documents", documents);
+
+// Mount export routes
+onshapeApp.route("/export", exports);
 
 // OpenAPI documentation
 const healthRoute = createRoute({
