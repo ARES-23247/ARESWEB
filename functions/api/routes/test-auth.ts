@@ -57,7 +57,7 @@ authTestApp.openapi(
     const db = getDb(c);
     const env = c.env;
 
-    const accessToken = await getUnifiedOAuthToken(db, env);
+    const accessToken = await getUnifiedOAuthToken(env, db);
 
     // Calculate expiry time (tokens are valid for 1 hour from generation)
     const expiresAt = new Date(Date.now() + 3600000).toISOString();
@@ -112,7 +112,7 @@ authTestApp.openapi(
     const db = getDb(c);
     const env = c.env;
 
-    const accessToken = await getUnifiedOAuthToken(db, env);
+    const accessToken = await getUnifiedOAuthToken(env, db);
 
     // Calculate expiry time (tokens are valid for 1 hour from generation)
     const expiresAt = new Date(Date.now() + 3600000).toISOString();

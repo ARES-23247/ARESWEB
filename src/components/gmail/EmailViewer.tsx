@@ -146,13 +146,13 @@ function MessageBubble({ message, isLast, onReply }: MessageBubbleProps) {
       </div>
 
       {/* Attachments */}
-      {message.payload?.parts?.some((p) => p.filename && p.filename !== "") && (
+      {(message.payload as any)?.parts?.some((p: any) => p.filename && p.filename !== "") && (
         <div className="mt-4 pt-4 border-t border-ares-gray-dark/50">
           <p className="text-xs font-bold text-marble/60 uppercase mb-2">Attachments</p>
           <div className="flex flex-wrap gap-2">
-            {message.payload.parts
-              .filter((p) => p.filename && p.filename !== "")
-              .map((part, i) => (
+            {(message.payload as any).parts
+              .filter((p: any) => p.filename && p.filename !== "")
+              .map((part: any, i: number) => (
                 <div
                   key={i}
                   className="px-3 py-2 bg-ares-black border border-ares-gray-dark rounded text-sm text-marble/70 flex items-center gap-2"
@@ -183,8 +183,8 @@ function getMessageBody(message: GmailMessage): string {
   }
 
   // Try to get body from parts
-  if (message.payload.parts) {
-    for (const part of message.payload.parts) {
+  if ((message.payload as any).parts) {
+    for (const part of (message.payload as any).parts) {
       if (part.mimeType === "text/html" && part.body?.data) {
         return decodeBase64(part.body.data);
       }

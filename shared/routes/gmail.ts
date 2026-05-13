@@ -8,7 +8,16 @@ export const gmailHeaderSchema = z.object({
   value: z.string(),
 });
 
-export const gmailPayloadSchema = z.object({
+export type GmailPayload = {
+  partId?: string;
+  mimeType?: string;
+  filename?: string;
+  headers?: { name: string; value: string; }[];
+  body?: { data?: string; size?: number; attachmentId?: string; };
+  parts?: GmailPayload[];
+};
+
+export const gmailPayloadSchema: z.ZodType<GmailPayload> = z.object({
   partId: z.string().optional(),
   mimeType: z.string().optional(),
   filename: z.string().optional(),

@@ -250,7 +250,7 @@ export async function pullEventsFromGcal(calendarId: string, token: string): Pro
 
     if (!res.ok) {
       const text = await res.text().catch(() => "(no body)");
-      throw new Error(`Failed to pull from GCal (${config.calendarId}): ${res.status} â€” ${text}`);
+      throw new Error(`Failed to pull from GCal (${calendarId}): ${res.status} - ${text}`);
     }
 
     const data = (await res.json()) as Record<string, unknown>;

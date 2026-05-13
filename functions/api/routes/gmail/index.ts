@@ -60,8 +60,8 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
-    const data = await response.json();
-    return c.json(data, 200);
+    const data = await response.json() as any;
+    return c.json(data as any, 200);
   })
   .openapi(listMessagesRoute, async (c) => {
     const db = getDb(c);
@@ -88,7 +88,7 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     // Fetch snippets for each message (Gmail API doesn't return them in list)
     const messages = data.messages
@@ -105,7 +105,7 @@ const routes = adminApp
                   }
                 );
                 if (msgRes.ok) {
-                  const msgData = await msgRes.json();
+                  const msgData = await msgRes.json() as any;
                   return {
                     id: msg.id,
                     threadId: msg.threadId,
@@ -129,7 +129,7 @@ const routes = adminApp
         messages,
         nextPageToken: data.nextPageToken,
         resultSizeEstimate: data.resultSizeEstimate,
-      },
+      } as any,
       200
     );
   })
@@ -155,8 +155,8 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
-    const data = await response.json();
-    return c.json(data, 200);
+    const data = await response.json() as any;
+    return c.json(data as any, 200);
   })
   .openapi(getThreadRoute, async (c) => {
     const db = getDb(c);
@@ -180,8 +180,8 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
-    const data = await response.json();
-    return c.json(data, 200);
+    const data = await response.json() as any;
+    return c.json(data as any, 200);
   })
   .openapi(sendMessageRoute, async (c) => {
     const db = getDb(c);
@@ -233,8 +233,8 @@ const routes = adminApp
       throw new Error(`Gmail API Error: ${errorText}`);
     }
 
-    const data = await response.json();
-    return c.json(data, 200);
+    const data = await response.json() as any;
+    return c.json(data as any, 200);
   });
 
 export const gmailRouter = routes;
