@@ -277,9 +277,6 @@ interface FTSResult {
   snippet: string;
 }
 
-// @ts-expect-error TS2590: Union type too complex — known Hono limitation with large route chains.
-// This suppression is safe: the routes chain is structurally correct, TypeScript just can't
-// compute the cumulative type of 4 groups + 2 openapi handlers in a single chain.
 const routes = new OpenAPIHono<AppEnv>()
   .route("/", group1)
   .route("/", group2)
@@ -344,7 +341,6 @@ const routes = new OpenAPIHono<AppEnv>()
     return c.json({ logs }, 200);
   });
 
-// @ts-expect-error TS2590: Union type too complex — known Hono limitation
 apiRouter.route("/", routes);
 
 // ── Health Check ────────────

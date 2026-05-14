@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import type { AppEnv } from "../../middleware/utils";
-import { createMockDrizzleDb } from "../../../test/test-env";
+import { createMockDrizzleDb, createTestEnv } from "../../../test/test-env";
 
 // Mock googleAuth module BEFORE importing google-photos
 vi.mock("../../../utils/googleAuth", () => ({
@@ -15,7 +15,11 @@ vi.mock("../../middleware/auth", async () => {
   const actual = await vi.importActual<typeof import("../../middleware/auth.js")>("../../middleware/auth");
   return {
     ...actual,
-    ensureAdmin: vi.fn((c: any, next: any) => next()),
+    ensureAdmin: vi.fn((c: any, next: any) => {
+      c.env = c.env || {};
+      return next();
+    }),
+    getSessionUser: vi.fn(() => Promise.resolve({ id: "test-user@aresfirst.org" })),
   };
 });
 
@@ -27,33 +31,52 @@ vi.mock("../../middleware", async () => {
   };
 });
 
+// Mock imageImport utilities
+vi.mock("../../../utils/imageImport", () => ({
+  validateImageMagicBytes: vi.fn(() => ({ valid: true })),
+  downloadPhoto: vi.fn(() => Promise.resolve(new ArrayBuffer(1024))),
+  uploadToR2: vi.fn(() => Promise.resolve("photos/imported/test.jpg")),
+  sanitizeAlbumName: vi.fn((name: string) => name.toLowerCase().replace(/\s+/g, "-")),
+}));
+
 // Now import after mocks are set up
 import { photosRouter } from "./index";
-import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
+import { getUnifiedOAuthToken, clearCachedOAuthToken } from "../../../utils/googleAuth";
 import { getDb } from "../../middleware";
-import { ApiError as _ApiError } from "../../middleware/errorHandler";
 
-describe("google-photos router", () => {
+const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
+
+describe("google-photos router (Picker API)", () => {
   let app: Hono<AppEnv>;
   let mockDb: ReturnType<typeof createMockDrizzleDb>;
   let mockToken: string;
+  let testEnv: AppEnv['Bindings'];
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Create mock DB
     mockDb = createMockDrizzleDb();
-
-    // Setup token mocks
     mockToken = "mock-photos-token-" + Date.now();
     vi.mocked(getUnifiedOAuthToken).mockResolvedValue(mockToken);
     vi.mocked(getDb).mockReturnValue(mockDb as any);
 
-    // Create test app
+    testEnv = createTestEnv({} as any);
+
     app = new Hono<AppEnv>();
+    app.use('*', async (c, next) => {
+      (c as any).env = testEnv;
+      await next();
+    });
+    // Register onError handler to convert ApiError to proper status codes
+    app.onError((err, c) => {
+      if (err && typeof (err as any).status === "number" && typeof (err as any).code === "string") {
+        const apiErr = err as any;
+        return c.json({ error: apiErr.message, code: apiErr.code }, apiErr.status);
+      }
+      return c.json({ error: err.message }, 500);
+    });
     app.route("/api/google-photos", photosRouter);
 
-    // Mock fetch globally
     global.fetch = vi.fn();
   });
 
@@ -61,49 +84,107 @@ describe("google-photos router", () => {
     vi.restoreAllMocks();
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // HEALTH CHECK
+  // ─────────────────────────────────────────────────────────────────────────
+
   describe("GET /health", () => {
-    it("Test 1: should return 200 with service status when authentication succeeds", async () => {
-      // Mock successful Photos API response
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ mediaItems: [] }),
-        text: () => Promise.resolve("{}"),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/health", {
-        method: "GET",
+    it("Test 1: should return 200 when Picker API session creation succeeds", async () => {
+      vi.mocked(global.fetch).mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url.toString();
+        if (urlStr.includes("/sessions") && (opts as any)?.method === "POST") {
+          return { ok: true, json: () => Promise.resolve({ id: "test-session-123" }) } as Response;
+        }
+        if (urlStr.includes("/sessions/test-session-123") && (opts as any)?.method === "DELETE") {
+          return { ok: true } as Response;
+        }
+        return { ok: true } as Response;
       });
 
-      const responseText = await response.text();
-      console.log("HEALTH RESPONSE:", response.status, responseText);
-
-      // Re-create the response since text() consumes it
-      const newResponse = new Response(responseText, { status: response.status, headers: response.headers });
-      
-      expect(newResponse.status).toBe(200);
-      const body = await newResponse.json() as any;
-      expect(body).toEqual({
-        status: "ok",
-        service: "google-photos",
-        authenticated: true,
-        test: "API call successful",
-      });
+      const response = await app.request("/api/google-photos/health", { method: "GET" });
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.status).toBe("ok");
+      expect(body.service).toBe("google-photos-picker");
+      expect(body.authenticated).toBe(true);
     });
 
-    it("Test 2: Health endpoint calls Photos API to verify token works", async () => {
-      // Mock successful Photos API response
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ mediaItems: [] }),
-        text: () => Promise.resolve("{}"),
-      } as Response);
-
-      await app.request("/api/google-photos/health", {
-        method: "GET",
+    it("Test 2: should retry with force refresh on 403", async () => {
+      let callCount = 0;
+      vi.mocked(global.fetch).mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url.toString();
+        if (urlStr.includes("/sessions") && (opts as any)?.method === "POST") {
+          callCount++;
+          if (callCount === 1) {
+            return { ok: false, status: 403, text: () => Promise.resolve("Forbidden") } as Response;
+          }
+          return { ok: true, json: () => Promise.resolve({ id: "retry-session" }) } as Response;
+        }
+        return { ok: true } as Response;
       });
 
+      const response = await app.request("/api/google-photos/health", { method: "GET" });
+      expect(response.status).toBe(200);
+      expect(clearCachedOAuthToken).toHaveBeenCalled();
+    });
+
+    it("Test 3: should return 500 with scope diagnostics on API failure", async () => {
+      vi.mocked(global.fetch).mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url.toString();
+        if (urlStr.includes("/sessions") && (opts as any)?.method === "POST") {
+          return { ok: false, status: 400, text: () => Promise.resolve("Bad Request") } as Response;
+        }
+        if (urlStr.includes("tokeninfo")) {
+          return {
+            ok: true,
+            json: () => Promise.resolve({ scope: "photospicker.mediaitems.readonly" }),
+          } as Response;
+        }
+        return { ok: true } as Response;
+      });
+
+      const response = await app.request("/api/google-photos/health", { method: "GET" });
+      expect(response.status).toBe(500);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PICKER SESSION LIFECYCLE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  describe("POST /picker/session", () => {
+    it("Test 4: should create a Picker session and return pickerUri", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "session-abc",
+          pickerUri: "https://photos.google.com/picker/session-abc",
+          mediaItemsSet: false,
+          pollingConfig: { pollInterval: "5s", timeoutIn: "3600s" },
+        }),
+      } as Response);
+
+      const response = await app.request("/api/google-photos/picker/session", {
+        method: "POST",
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.id).toBe("session-abc");
+      expect(body.pickerUri).toContain("photos.google.com/picker");
+      expect(body.mediaItemsSet).toBe(false);
+    });
+
+    it("Test 5: should call Picker API with correct auth header", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: "s1", pickerUri: "https://x", mediaItemsSet: false }),
+      } as Response);
+
+      await app.request("/api/google-photos/picker/session", { method: "POST" });
+
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://photoslibrary.googleapis.com/v1/mediaItems:search",
+        `${PICKER_API_BASE}/sessions`,
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
@@ -113,502 +194,217 @@ describe("google-photos router", () => {
       );
     });
 
-    it("Test 3: Router requires admin authentication via ensureAdmin", async () => {
-      // This test verifies the ensureAdmin middleware is applied
-      // The middleware is mocked to pass, but we verify the route structure
-      expect(photosRouter).toBeDefined();
-      const routes = photosRouter.routes;
-      expect(routes.length).toBeGreaterThan(0);
-    });
-
-    it("Test 4: Token refresh failures trigger retry logic (3 retries)", async () => {
-      let attempts = 0;
-      vi.mocked(getUnifiedOAuthToken).mockImplementation(() => {
-        attempts++;
-        if (attempts <= 3) {
-          return Promise.reject(new Error("Token refresh failed"));
-        }
-        return Promise.resolve(mockToken);
-      });
-
-      // Mock successful Photos API response after retry
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ mediaItems: [] }),
-        text: () => Promise.resolve("{}"),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/health", {
-        method: "GET",
-      });
-
-      // After 3 failures, the function should succeed on the 4th attempt
-      // But since getOrRefreshToken only retries 3 times, it will throw
-      expect(response.status).toBe(500);
-      // Error may be plain text or JSON depending on error handler
-      const text = await response.text();
-      expect(text.length).toBeGreaterThan(0);
-    });
-
-    it("Test 5: Exhausted retries throw ApiError with AUTH_FAILURE code", async () => {
-      // Mock token refresh that always fails
-      vi.mocked(getUnifiedOAuthToken).mockRejectedValue(
-        new Error("Failed to refresh photos access token after 3 attempts: Authentication failed")
-      );
-
-      const response = await app.request("/api/google-photos/health", {
-        method: "GET",
-      });
-
-      // Should return 500 due to unhandled error from token refresh
-      // (In production, the global error handler would catch this)
-      expect(response.status).toBe(500);
-      const text = await response.text();
-      expect(text.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("GET /media", () => {
-    it("Test 1: GET /media returns 200 with mediaItems array (even when empty)", async () => {
-      // Mock Photos API response with empty mediaItems
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ mediaItems: [] }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/media", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body).toHaveProperty("mediaItems");
-      expect(Array.isArray(body.mediaItems)).toBe(true);
-    });
-
-    it("Test 2: Response includes photo fields: id, filename, mimeType, baseUrl, width, height, creationTime", async () => {
-      // Mock Photos API response with media items
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-              baseUrl: "https://photos.com/abc",
-              mediaMetadata: {
-                width: "1920",
-                height: "1080",
-                creationTime: "2024-01-15T10:30:00Z",
-              },
-              description: "Test photo",
-            },
-          ],
-        }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/media", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body.mediaItems).toHaveLength(1);
-      expect(body.mediaItems[0]).toMatchObject({
-        id: "photo123",
-        filename: "test.jpg",
-        mimeType: "image/jpeg",
-        baseUrl: "https://photos.com/abc",
-        width: "1920",
-        height: "1080",
-        creationTime: "2024-01-15T10:30:00Z",
-        description: "Test photo",
-      });
-    });
-
-    it("Test 3: mimeType is always an image type (never video/* per D-01)", async () => {
-      // Mock Photos API response with mixed media types
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo1",
-              filename: "image.jpg",
-              mimeType: "image/jpeg",
-              baseUrl: "https://photos.com/img1",
-            },
-            {
-              id: "video1",
-              filename: "video.mp4",
-              mimeType: "video/mp4",
-              baseUrl: "https://photos.com/vid1",
-            },
-            {
-              id: "photo2",
-              filename: "image.png",
-              mimeType: "image/png",
-              baseUrl: "https://photos.com/img2",
-            },
-          ],
-        }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/media", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body.mediaItems).toHaveLength(2); // Only images, video filtered out
-      expect(body.mediaItems.every((item: { mimeType: string }) => item.mimeType.startsWith("image/"))).toBe(true);
-    });
-
-    it("Test 4: Pagination works with pageToken parameter", async () => {
-      // Mock Photos API response with nextPageToken
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo1",
-              filename: "page1.jpg",
-              mimeType: "image/jpeg",
-              baseUrl: "https://photos.com/p1",
-            },
-          ],
-          nextPageToken: "next-page-token-123",
-        }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/media?pageToken=token123", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body).toHaveProperty("nextPageToken", "next-page-token-123");
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://photoslibrary.googleapis.com/v1/mediaItems:search",
-        expect.objectContaining({
-          body: expect.stringContaining("pageToken"),
-        })
-      );
-    });
-
-    it("Test 5: Album filtering works when albumId query parameter provided", async () => {
-      // Mock Photos API response for album-filtered results
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "albumPhoto1",
-              filename: "album.jpg",
-              mimeType: "image/jpeg",
-              baseUrl: "https://photos.com/album1",
-            },
-          ],
-        }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/media?albumId=album123", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://photoslibrary.googleapis.com/v1/mediaItems:search",
-        expect.objectContaining({
-          body: expect.stringContaining("albumId"),
-        })
-      );
-    });
-
-    it("Test 6: PageSize parameter defaults to 25 when not specified", async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ mediaItems: [] }),
-      } as Response);
-
-      await app.request("/api/google-photos/media", {
-        method: "GET",
-      });
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://photoslibrary.googleapis.com/v1/mediaItems:search",
-        expect.objectContaining({
-          body: expect.stringContaining('"pageSize":25'),
-        })
-      );
-    });
-
-    it("Test 7: Admin middleware is applied to /media endpoint", async () => {
-      // This test verifies the ensureAdmin middleware is applied to /media
-      // The middleware is mocked to pass in this test suite
-      // We verify the route structure exists
-      expect(photosRouter).toBeDefined();
-      const mediaRouteExists = photosRouter.routes.some(
-        (route: any) => route.path === "/media" || route.method === "GET"
-      );
-      expect(mediaRouteExists).toBe(true);
-    });
-
-    it("Test 8: Photos API errors are handled with proper error response", async () => {
-      // Mock Photos API 500 response (server error)
+    it("Test 6: should throw on Picker API error", async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 500,
         statusText: "Internal Server Error",
-        text: () => Promise.resolve("Internal Server Error"),
+        text: () => Promise.resolve("API error"),
       } as Response);
 
-      const response = await app.request("/api/google-photos/media", {
-        method: "GET",
-      });
-
-      // Should return error response (may be JSON or text)
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      const response = await app.request("/api/google-photos/picker/session", { method: "POST" });
+      expect(response.status).toBe(500);
     });
   });
 
-  describe("GET /albums", () => {
-    it("Test 1: GET /albums returns 200 with albums array (even when empty)", async () => {
-      // Mock Photos API response with empty albums
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ albums: [] }),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/albums", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body).toHaveProperty("albums");
-      expect(Array.isArray(body.albums)).toBe(true);
-    });
-
-    it("Test 2: Response includes album fields: id, title, mediaItemsCount, coverPhotoBaseUrl", async () => {
-      // Mock Photos API response with albums
+  describe("GET /picker/session/:sessionId", () => {
+    it("Test 7: should poll session status and return mediaItemsSet flag", async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          albums: [
-            {
-              id: "album123",
-              title: "Test Album",
-              mediaItemsCount: "42",
-              coverPhotoBaseUrl: "https://photos.com/cover",
-            },
-          ],
+          id: "session-xyz",
+          pickerUri: "https://photos.google.com/picker/session-xyz",
+          mediaItemsSet: true,
+          pollingConfig: { pollInterval: "5s" },
         }),
       } as Response);
 
-      const response = await app.request("/api/google-photos/albums", {
+      const response = await app.request("/api/google-photos/picker/session/session-xyz", {
         method: "GET",
       });
 
       expect(response.status).toBe(200);
       const body = await response.json() as any;
-      expect(body.albums).toHaveLength(1);
-      expect(body.albums[0]).toMatchObject({
-        id: "album123",
-        title: "Test Album",
-        mediaItemsCount: "42",
-        coverPhotoBaseUrl: "https://photos.com/cover",
-      });
+      expect(body.mediaItemsSet).toBe(true);
     });
 
-    it("Test 3: Pagination works with pageToken parameter", async () => {
-      // Mock Photos API response with nextPageToken
+    it("Test 8: should call correct Picker API endpoint with sessionId", async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          albums: [
-            {
-              id: "album1",
-              title: "Page 1 Album",
-            },
-          ],
-          nextPageToken: "next-album-page-token",
-        }),
+        json: () => Promise.resolve({ id: "s1", pickerUri: "https://x", mediaItemsSet: false }),
       } as Response);
 
-      const response = await app.request("/api/google-photos/albums?pageToken=token123", {
-        method: "GET",
-      });
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
-      expect(body).toHaveProperty("nextPageToken", "next-album-page-token");
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("photoslibrary.googleapis.com/v1/albums"),
-        expect.objectContaining({
-          method: "GET",
-        })
-      );
-    });
-
-    it("Test 4: PageSize parameter can be customized", async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ albums: [] }),
-      } as Response);
-
-      await app.request("/api/google-photos/albums?pageSize=50", {
-        method: "GET",
-      });
+      await app.request("/api/google-photos/picker/session/my-session-id", { method: "GET" });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("pageSize=50"),
-        expect.objectContaining({
-          method: "GET",
-        })
+        `${PICKER_API_BASE}/sessions/my-session-id`,
+        expect.objectContaining({ method: "GET" })
       );
-    });
-
-    it("Test 5: Admin middleware is applied to /albums endpoint", async () => {
-      // This test verifies the ensureAdmin middleware is applied to /albums
-      // The middleware is mocked to pass in this test suite
-      expect(photosRouter).toBeDefined();
-      const albumsRouteExists = photosRouter.routes.some(
-        (route: any) => route.path === "/albums" || route.method === "GET"
-      );
-      expect(albumsRouteExists).toBe(true);
-    });
-
-    it("Test 6: Photos API errors are handled with proper error response", async () => {
-      // Mock Photos API 500 response (server error)
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-        text: () => Promise.resolve("Internal Server Error"),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/albums", {
-        method: "GET",
-      });
-
-      // Should return error response
-      expect(response.status).toBeGreaterThanOrEqual(400);
     });
   });
+
+  describe("GET /picker/session/:sessionId/items", () => {
+    it("Test 9: should return selected media items from completed session", async () => {
+      const mockItems = [
+        {
+          id: "item-1",
+          baseUrl: "https://lh3.googleusercontent.com/abc",
+          mimeType: "image/jpeg",
+          mediaFile: { filename: "photo1.jpg", fileSize: "1024" },
+        },
+        {
+          id: "item-2",
+          baseUrl: "https://lh3.googleusercontent.com/def",
+          mimeType: "image/png",
+          mediaFile: { filename: "photo2.png" },
+        },
+      ];
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ mediaItems: mockItems }),
+      } as Response);
+
+      const response = await app.request("/api/google-photos/picker/session/session-done/items", {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.mediaItems).toHaveLength(2);
+      expect(body.mediaItems[0].id).toBe("item-1");
+      expect(body.mediaItems[0].mimeType).toBe("image/jpeg");
+    });
+
+    it("Test 10: should call mediaItems endpoint with sessionId query param", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ mediaItems: [] }),
+      } as Response);
+
+      await app.request("/api/google-photos/picker/session/abc123/items", { method: "GET" });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${PICKER_API_BASE}/mediaItems?sessionId=abc123`,
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe("DELETE /picker/session/:sessionId", () => {
+    it("Test 11: should delete session and return success", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({ ok: true } as Response);
+
+      const response = await app.request("/api/google-photos/picker/session/session-cleanup", {
+        method: "DELETE",
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.success).toBe(true);
+    });
+
+    it("Test 12: should return success even if session already expired (404)", async () => {
+      vi.mocked(global.fetch).mockResolvedValue({ ok: false, status: 404 } as Response);
+
+      const response = await app.request("/api/google-photos/picker/session/expired-session", {
+        method: "DELETE",
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.success).toBe(true);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // UPLOAD (unchanged — uses photoslibrary.appendonly)
+  // ─────────────────────────────────────────────────────────────────────────
 
   describe("POST /upload", () => {
-    it("Test 1: POST /upload endpoint exists and is registered", async () => {
-      // Verify the upload endpoint exists
-      expect(photosRouter).toBeDefined();
-      const uploadRouteExists = photosRouter.routes.some(
-        (route: any) => route.path === "/upload" || route.method === "POST"
-      );
-      expect(uploadRouteExists).toBe(true);
-    });
-
-    it("Test 2: Upload accepts multipart/form-data requests", async () => {
-      // Test that the endpoint handles multipart requests (even if empty)
-      // Note: Full multipart testing is skipped due to test environment limitations
-      // The actual implementation is tested in integration/e2e tests
+    it("Test 13: should reject requests with no files", async () => {
       const formData = new FormData();
-      // Empty form data - should return error about no files
       const response = await app.request("/api/google-photos/upload", {
         method: "POST",
         body: formData,
       });
-      // Should get some response (400 for no files, or other error)
-      expect(response).toBeDefined();
-    });
-
-    it("Test 3: Upload enforces MIME type validation (images only per D-01)", async () => {
-      // Verify the allowed MIME types array is correct
-      const allowedMimeTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif",
-        "image/heic",
-      ];
-      expect(allowedMimeTypes).not.toContain("video/mp4");
-      expect(allowedMimeTypes).not.toContain("video/quicktime");
-      expect(allowedMimeTypes.every((t) => t.startsWith("image/"))).toBe(true);
-    });
-
-    it("Test 4: Upload enforces 50MB file size limit", async () => {
-      // Verify the size limit constant
-      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-      expect(MAX_FILE_SIZE).toBe(52428800);
-    });
-
-    it("Test 5: Upload response includes uploadedCount and failures fields", async () => {
-      // Verify the response structure matches the schema
-      const mockResponse = {
-        uploadedCount: 1,
-        failures: [{ filename: "test.jpg", error: "Upload failed" }],
-      };
-      expect(mockResponse).toHaveProperty("uploadedCount");
-      expect(mockResponse).toHaveProperty("failures");
-      expect(Array.isArray(mockResponse.failures)).toBe(true);
+      expect(response.status).toBe(400);
     });
   });
 
-  describe("POST /import", () => {
-    it("Test 1: POST /import endpoint exists and is registered", async () => {
-      // Verify the import endpoint exists
-      expect(photosRouter).toBeDefined();
-      const importRouteExists = photosRouter.routes.some(
-        (route: any) => route.path === "/import"
-      );
-      expect(importRouteExists).toBe(true);
-    });
+  // ─────────────────────────────────────────────────────────────────────────
+  // IMPORT (updated for Picker items)
+  // ─────────────────────────────────────────────────────────────────────────
 
-    it("Test 2: Import accepts mediaItemIds array in request body", async () => {
-      // Verify the endpoint can parse JSON body with mediaItemIds
+  describe("POST /import", () => {
+    it("Test 14: should import Picker items with baseUrls to R2", async () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify({
+          items: [
+            {
+              id: "picker-item-1",
+              baseUrl: "https://lh3.googleusercontent.com/abc",
+              filename: "team-photo.jpg",
+              mimeType: "image/jpeg",
+            },
+          ],
+        }),
       });
-      // Should get some response (may be error if implementation incomplete)
-      expect(response).toBeDefined();
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.imported).toBe(1);
+      expect(body.failed).toBe(0);
+      expect(body.results[0].status).toBe("success");
+      expect(body.results[0].r2Key).toBeDefined();
     });
 
-    it("Test 3: Import response includes imported, failed, and results fields", async () => {
-      // Verify the response structure matches the schema
-      const mockResponse = {
-        imported: 1,
-        failed: 0,
-        results: [{ mediaItemId: "photo123", status: "success", filename: "test.jpg", r2Key: "photos/imported/2024-05-13/test.jpg" }],
-      };
-      expect(mockResponse).toHaveProperty("imported");
-      expect(mockResponse).toHaveProperty("failed");
-      expect(mockResponse).toHaveProperty("results");
-      expect(Array.isArray(mockResponse.results)).toBe(true);
+    it("Test 15: should handle import failures gracefully", async () => {
+      const { downloadPhoto } = await import("../../../utils/imageImport");
+      vi.mocked(downloadPhoto).mockRejectedValueOnce(new Error("Download timeout"));
+
+      const response = await app.request("/api/google-photos/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              id: "picker-item-fail",
+              baseUrl: "https://lh3.googleusercontent.com/fail",
+              filename: "broken.jpg",
+              mimeType: "image/jpeg",
+            },
+          ],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.imported).toBe(0);
+      expect(body.failed).toBe(1);
+      expect(body.results[0].status).toBe("failed");
+      expect(body.results[0].error).toContain("Download timeout");
     });
 
-    it("Test 4: Import returns failure details for each failed item", async () => {
-      // Verify failure result structure
-      const mockFailureResult = {
-        mediaItemId: "photo456",
-        status: "failed",
-        filename: "bad.jpg",
-        error: "Invalid image format",
-      };
-      expect(mockFailureResult).toHaveProperty("mediaItemId");
-      expect(mockFailureResult).toHaveProperty("status");
-      expect(mockFailureResult.status).toBe("failed");
-      expect(mockFailureResult).toHaveProperty("error");
-    });
+    it("Test 16: should default filename when not provided", async () => {
+      const response = await app.request("/api/google-photos/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              id: "no-name-item",
+              baseUrl: "https://lh3.googleusercontent.com/xyz",
+            },
+          ],
+        }),
+      });
 
-    it("Test 5: Admin middleware is applied to /import endpoint", async () => {
-      // This test verifies the ensureAdmin middleware is applied to /import
-      expect(photosRouter).toBeDefined();
-      const importRouteExists = photosRouter.routes.some(
-        (route: any) => route.path === "/import"
-      );
-      expect(importRouteExists).toBe(true);
+      expect(response.status).toBe(200);
+      const body = await response.json() as any;
+      expect(body.results[0].filename).toContain("photo-");
     });
   });
 });

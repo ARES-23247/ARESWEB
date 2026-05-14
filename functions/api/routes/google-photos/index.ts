@@ -6,10 +6,11 @@ import { getSessionUser } from "../../middleware/auth";
 import { getUnifiedOAuthToken, clearCachedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
 import {
-  listMediaRoute,
-  listAlbumsRoute,
+  createPickerSessionRoute,
+  getPickerSessionRoute,
+  getPickerItemsRoute,
+  deletePickerSessionRoute,
   importPhotosRoute,
 } from "../../../../shared/routes/google-photos";
 import * as schema from "../../../../src/db/schema";
@@ -17,23 +18,30 @@ import {
   validateImageMagicBytes,
   downloadPhoto,
   uploadToR2,
-  sanitizeAlbumName,
 } from "../../../utils/imageImport";
 
-// Health check response schema
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HEALTH CHECK
+// ─────────────────────────────────────────────────────────────────────────────
+
 const healthResponseSchema = z.object({
   status: z.literal("ok"),
-  service: z.literal("google-photos"),
+  service: z.literal("google-photos-picker"),
   authenticated: z.boolean(),
   test: z.string(),
 });
 
-// Health check route definition
 const healthRoute = createRoute({
   method: "get",
   path: "/health",
-  summary: "Check Google Photos API health",
-  description: "Verifies that the Google Photos API is accessible and authentication is working.",
+  summary: "Check Google Photos Picker API health",
+  description: "Verifies that the Picker API is accessible and authentication is working.",
   responses: {
     200: {
       content: {
@@ -43,294 +51,283 @@ const healthRoute = createRoute({
       },
       description: "Health check successful",
     },
-    401: {
-      description: "Unauthorized - Admin access required",
-    },
-    500: {
-      description: "Internal server error - API call failed",
-    },
+    401: { description: "Unauthorized - Admin access required" },
+    500: { description: "Internal server error - API call failed" },
   },
 });
 
-// Media route definition (implemented in Phase 75-02)
-// Media items route uses listMediaRoute from shared contracts
-const mediaRoute = listMediaRoute;
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTER SETUP
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Albums route definition (to be implemented in Phase 75-03)
-const albumsRoute = listAlbumsRoute;
-
-// Create the router
 const photosApp = new OpenAPIHono<AppEnv>();
-
-// Apply admin middleware to all routes per zero-trust security
-// This ensures only authenticated admin users can access Google Photos endpoints
 photosApp.use("*", ensureAdmin);
 
-// Health check endpoint
-// Tests authentication by making a minimal API call to Google Photos
+// ─────────────────────────────────────────────────────────────────────────────
+// HEALTH CHECK ENDPOINT
+// ─────────────────────────────────────────────────────────────────────────────
+
 const app1 = photosApp.openapi(healthRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
-  // Step 1: Get a fresh token (force refresh to ensure latest scopes)
-  await clearCachedOAuthToken(db);
-  const token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
+  let token = await getUnifiedOAuthToken(env, db);
 
-  // Step 2: Introspect the token to see exactly which scopes it has
-  const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
-  const tokenInfoText = await tokenInfoRes.text();
-  let tokenScopes = "unknown";
-  let _tokenAudience = "unknown";
-  try {
-    const tokenInfo = JSON.parse(tokenInfoText) as { scope?: string; azp?: string; error_description?: string };
-    tokenScopes = tokenInfo.scope || tokenInfo.error_description || "empty";
-    _tokenAudience = tokenInfo.azp || "unknown";
-  } catch { /* ignore */ }
-
-  // Step 3: Test Photos API
-  const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+  // Test Picker API by creating and immediately deleting a session
+  let testResponse = await fetch(`${PICKER_API_BASE}/sessions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ pageSize: 1 }),
+    body: JSON.stringify({}),
   });
 
-  const photosBody = await photosResponse.text();
-
-  // If success, return OK
-  if (photosResponse.ok) {
-    return c.json({
-      status: "ok" as const,
-      service: "google-photos" as const,
-      authenticated: true,
-      test: "API call successful",
-    }, 200);
-  }
-
-  // If failed, return diagnostic info instead of throwing
-  // This lets us see the exact error without needing Cloudflare logs
-  const hasPhotosScope = tokenScopes.includes("photoslibrary");
-  
-  console.error("[google-photos] Health FAILED", {
-    photosStatus: photosResponse.status,
-    photosBody,
-    tokenScopes,
-    hasPhotosScope,
-  });
-
-  throw new ApiError(
-    `Photos API ${photosResponse.status}. ` +
-    `Token scopes: [${tokenScopes}]. ` +
-    `Has photos scope: ${hasPhotosScope}. ` +
-    `Google said: ${photosBody.substring(0, 200)}`,
-    500,
-    "API_FAILURE"
-  );
-});
-
-// Media items endpoint (Phase 75-02)
-// Lists Google Photos media items with server-side video filtering
-const app2 = app1.openapi(mediaRoute, async (c) => {
-  const db = getDb(c);
-  const env = c.env;
-
-  // Extract query parameters
-  const { albumId, pageToken, pageSize = 25 } = c.req.valid("query");
-
-  // Get access token using lazy refresh pattern (with retry logic per D-07)
-  let token = await getUnifiedOAuthToken(env, db);
-
-  // Build Photos API search request body
-  const searchBody: Record<string, unknown> = { pageSize };
-  if (albumId) {
-    searchBody.albumId = albumId;
-  }
-  if (pageToken) {
-    searchBody.pageToken = pageToken;
-  }
-
-  // Helper to call Photos API
-  async function callPhotosSearch(accessToken: string) {
-    return fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+  // Retry on 403 with force refresh
+  if (testResponse.status === 403) {
+    console.warn("[google-photos] Health check got 403 — force-refreshing token...");
+    await clearCachedOAuthToken(db);
+    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
+    testResponse = await fetch(`${PICKER_API_BASE}/sessions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(searchBody),
+      body: JSON.stringify({}),
     });
   }
 
-  // Call Photos API with 403 auto-retry
-  let photosResponse = await callPhotosSearch(token);
-
-  if (photosResponse.status === 403) {
-    console.warn("[google-photos] Media search got 403 — force-refreshing token...");
-    await clearCachedOAuthToken(db);
-    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
-    photosResponse = await callPhotosSearch(token);
-  }
-
-  // Handle authentication failures from Photos API
-  if (photosResponse.status === 401) {
+  if (testResponse.status === 401) {
     throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
   }
 
-  // Handle other API errors
-  if (!photosResponse.ok) {
-    const errorText = await photosResponse.text();
-    console.error("[google-photos] Media API search failed:", { status: photosResponse.status, body: errorText });
+  if (!testResponse.ok) {
+    const errorText = await testResponse.text();
+    console.error("[google-photos] Picker health check failed:", { status: testResponse.status, body: errorText });
+
+    // Include token scope diagnostic info
+    const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+    const tokenScopes = tokenInfoRes.ok
+      ? (await tokenInfoRes.json() as { scope?: string }).scope ?? "unknown"
+      : "unable to introspect";
+
     throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
-      502,
+      `Picker API ${testResponse.status}. Token scopes: [${tokenScopes}]. Google said: ${errorText.substring(0, 200)}`,
+      500,
       "API_FAILURE"
     );
   }
 
-  const photosData = await photosResponse.json() as {
+  // Clean up the test session
+  const sessionData = await testResponse.json() as { id?: string };
+  if (sessionData.id) {
+    // Fire and forget cleanup
+    fetch(`${PICKER_API_BASE}/sessions/${sessionData.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => { /* ignore cleanup errors */ });
+  }
+
+  return c.json(
+    {
+      status: "ok" as const,
+      service: "google-photos-picker" as const,
+      authenticated: true,
+      test: "Picker API session created successfully",
+    },
+    200
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /picker/session — Create Picker session
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app2 = app1.openapi(createPickerSessionRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+
+  const token = await getUnifiedOAuthToken(env, db);
+
+  const response = await fetch(`${PICKER_API_BASE}/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[google-photos] Create picker session failed:", errorText);
+    throw new ApiError(
+      `Picker API error: ${response.status} ${response.statusText}`,
+      response.status,
+      "PICKER_SESSION_CREATE_FAILED"
+    );
+  }
+
+  const session = await response.json() as {
+    id: string;
+    pickerUri: string;
+    mediaItemsSet: boolean;
+    pollingConfig?: {
+      pollInterval?: string;
+      timeoutIn?: string;
+    };
+  };
+
+  return c.json({
+    id: session.id,
+    pickerUri: session.pickerUri,
+    mediaItemsSet: session.mediaItemsSet ?? false,
+    pollingConfig: session.pollingConfig,
+  }, 200);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /picker/session/:sessionId — Poll session status
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app3 = app2.openapi(getPickerSessionRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+  const { sessionId } = c.req.valid("param");
+
+  const token = await getUnifiedOAuthToken(env, db);
+
+  const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[google-photos] Poll picker session failed:", errorText);
+    throw new ApiError(
+      `Picker API error: ${response.status} ${response.statusText}`,
+      response.status,
+      "PICKER_SESSION_POLL_FAILED"
+    );
+  }
+
+  const session = await response.json() as {
+    id: string;
+    pickerUri: string;
+    mediaItemsSet: boolean;
+    pollingConfig?: {
+      pollInterval?: string;
+      timeoutIn?: string;
+    };
+  };
+
+  return c.json({
+    id: session.id,
+    pickerUri: session.pickerUri,
+    mediaItemsSet: session.mediaItemsSet ?? false,
+    pollingConfig: session.pollingConfig,
+  }, 200);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /picker/session/:sessionId/items — Get selected media items
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app4 = app3.openapi(getPickerItemsRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+  const { sessionId } = c.req.valid("param");
+
+  const token = await getUnifiedOAuthToken(env, db);
+
+  const response = await fetch(`${PICKER_API_BASE}/mediaItems?sessionId=${sessionId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[google-photos] Get picker items failed:", errorText);
+    throw new ApiError(
+      `Picker API error: ${response.status} ${response.statusText}`,
+      response.status,
+      "PICKER_ITEMS_FAILED"
+    );
+  }
+
+  const data = await response.json() as {
     mediaItems?: Array<{
       id: string;
-      filename: string;
-      mimeType: string;
       baseUrl: string;
-      mediaMetadata?: {
-        width?: string;
-        height?: string;
-        creationTime?: string;
+      mimeType: string;
+      mediaFile?: {
+        filename?: string;
+        fileSize?: string;
+        mediaFileMetadata?: {
+          width?: string;
+          height?: string;
+          cameraMake?: string;
+          cameraModel?: string;
+        };
       };
-      description?: string;
     }>;
-    nextPageToken?: string;
   };
 
-  // Filter server-side to exclude video MIME types per D-01/PHOTO-02
-  // Allowed MIME types: image/jpeg, image/png, image/webp, image/gif, image/heic
-  // Excluded MIME types: video/mp4, video/quicktime, video/x-msvideo, video/*
-  const allowedMimePrefixes = ["image/"];
-  const filteredMediaItems = (photosData.mediaItems ?? []).filter(
-    (item) => allowedMimePrefixes.some((prefix) => item.mimeType.startsWith(prefix))
-  );
-
-  // Transform each media item to match photoMediaItemSchema
-  const mediaItems = filteredMediaItems.map((item) => ({
-    id: item.id,
-    filename: item.filename,
-    mimeType: item.mimeType,
-    baseUrl: item.baseUrl,
-    width: item.mediaMetadata?.width,
-    height: item.mediaMetadata?.height,
-    creationTime: item.mediaMetadata?.creationTime,
-    description: item.description,
-  }));
-
-  // Return response with pagination token
   return c.json({
-    mediaItems,
-    nextPageToken: photosData.nextPageToken,
+    mediaItems: (data.mediaItems ?? []).map((item) => ({
+      id: item.id,
+      baseUrl: item.baseUrl,
+      mimeType: item.mimeType,
+      mediaFile: item.mediaFile,
+    })),
   }, 200);
 });
 
-// Albums endpoint (Phase 75-03)
-// Lists Google Photos albums with cover photos and item counts
-const app3 = app2.openapi(albumsRoute, async (c) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /picker/session/:sessionId — Delete session
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app5 = app4.openapi(deletePickerSessionRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
+  const { sessionId } = c.req.valid("param");
 
-  // Extract query parameters
-  const { pageToken, pageSize = 25 } = c.req.valid("query");
+  const token = await getUnifiedOAuthToken(env, db);
 
-  // Get access token using lazy refresh pattern (with retry logic per D-07)
-  let token = await getUnifiedOAuthToken(env, db);
-
-  // Build search params for albums API
-  const searchParams = new URLSearchParams({
-    pageSize: String(pageSize),
+  const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
-  if (pageToken) {
-    searchParams.append("pageToken", pageToken);
+
+  // 404 is acceptable (session already expired)
+  if (!response.ok && response.status !== 404) {
+    console.warn("[google-photos] Delete picker session failed:", response.status);
   }
 
-  // Helper to call Albums API
-  async function callAlbumsApi(accessToken: string) {
-    return fetch(
-      `https://photoslibrary.googleapis.com/v1/albums?${searchParams.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-  }
-
-  // Call Albums API with 403 auto-retry
-  let photosResponse = await callAlbumsApi(token);
-
-  if (photosResponse.status === 403) {
-    console.warn("[google-photos] Albums list got 403 — force-refreshing token...");
-    await clearCachedOAuthToken(db);
-    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
-    photosResponse = await callAlbumsApi(token);
-  }
-
-  // Handle authentication failures from Photos API
-  if (photosResponse.status === 401) {
-    throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
-  }
-
-  // Handle other API errors
-  if (!photosResponse.ok) {
-    const errorText = await photosResponse.text();
-    console.error("[google-photos] Albums API list failed:", { status: photosResponse.status, body: errorText });
-    throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
-      502,
-      "API_FAILURE"
-    );
-  }
-
-  const photosData = await photosResponse.json() as {
-    albums?: Array<{
-      id: string;
-      title: string;
-      mediaItemsCount?: string;
-      coverPhotoBaseUrl?: string;
-    }>;
-    nextPageToken?: string;
-  };
-
-  // Transform Photos API response to match listAlbumsResponseSchema
-  const albums = (photosData.albums ?? []).map((album) => ({
-    id: album.id,
-    title: album.title,
-    mediaItemsCount: album.mediaItemsCount,
-    coverPhotoBaseUrl: album.coverPhotoBaseUrl,
-  }));
-
-  // Return response with pagination token
-  return c.json({
-    albums,
-    nextPageToken: photosData.nextPageToken,
-  }, 200);
+  return c.json({ success: true }, 200);
 });
 
-// Upload endpoint (Phase 75-05)
-// Uploads photos to Google Photos using mediaItems:batchCreate endpoint
-app3.post("/upload", async (c) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /upload — Upload to Google Photos (unchanged, uses appendonly)
+// ─────────────────────────────────────────────────────────────────────────────
+
+app5.post("/upload", async (c) => {
   const db = getDb(c);
   const env = c.env;
 
-  // Parse multipart/form-data from request
   const formData = await c.req.formData();
-
-  // Extract metadata fields
   const _title = formData.get("title") as string | null;
   const description = formData.get("description") as string | null;
   const albumId = formData.get("albumId") as string | null;
 
-  // Extract files array from formData
   const files: File[] = [];
   for (const [key, value] of formData.entries()) {
     if (key === "files" && value instanceof File) {
@@ -338,24 +335,13 @@ app3.post("/upload", async (c) => {
     }
   }
 
-  // Validate files exist
   if (files.length === 0) {
     throw new ApiError("No files provided for upload", 400, "NO_FILES");
   }
 
-  // Allowed MIME types per D-01/D-11: images only (no videos)
-  const allowedMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-    "image/heic",
-  ];
-
-  // File size limit: 50MB per file
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"];
   const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
-  // Validate each file type and size
   const invalidFiles: Array<{ filename: string; error: string }> = [];
   for (const file of files) {
     if (!allowedMimeTypes.includes(file.type)) {
@@ -365,7 +351,6 @@ app3.post("/upload", async (c) => {
     }
   }
 
-  // If any files are invalid, return error with details
   if (invalidFiles.length > 0) {
     throw new ApiError(
       `Invalid files: ${invalidFiles.map((f) => `${f.filename} (${f.error})`).join(", ")}`,
@@ -374,19 +359,12 @@ app3.post("/upload", async (c) => {
     );
   }
 
-  // Get access token using lazy refresh pattern
   const token = await getUnifiedOAuthToken(env, db);
 
-  // Upload each file to Photos API uploads endpoint
-  const uploadResults: Array<{
-    filename: string;
-    uploadToken?: string;
-    error?: string;
-  }> = [];
+  const uploadResults: Array<{ filename: string; uploadToken?: string; error?: string }> = [];
 
   for (const file of files) {
     try {
-      // POST to Photos API uploads endpoint
       const uploadResponse = await fetch("https://photoslibrary.googleapis.com/v1/uploads", {
         method: "POST",
         headers: {
@@ -402,7 +380,6 @@ app3.post("/upload", async (c) => {
         throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
       }
 
-      // Parse upload token from response (raw text, not JSON)
       const uploadToken = await uploadResponse.text();
       uploadResults.push({ filename: file.name, uploadToken });
     } catch (err) {
@@ -411,25 +388,16 @@ app3.post("/upload", async (c) => {
     }
   }
 
-  // Filter successful uploads and prepare batchCreate request
   const successfulUploads = uploadResults.filter((r) => r.uploadToken);
   const failures = uploadResults.filter((r) => r.error).map((r) => ({
     filename: r.filename,
     error: r.error ?? "Unknown error",
   }));
 
-  // If all uploads failed, return failures
   if (successfulUploads.length === 0) {
-    return c.json(
-      {
-        uploadedCount: 0,
-        failures,
-      },
-      200
-    );
+    return c.json({ uploadedCount: 0, failures }, 200);
   }
 
-  // Build batchCreate request body
   const newMediaItems = successfulUploads.map((upload) => ({
     description: description ?? "",
     simpleMediaItem: {
@@ -438,15 +406,11 @@ app3.post("/upload", async (c) => {
     },
   }));
 
-  const batchCreateBody: Record<string, unknown> = {
-    newMediaItems,
-  };
-
+  const batchCreateBody: Record<string, unknown> = { newMediaItems };
   if (albumId) {
     batchCreateBody.albumId = albumId;
   }
 
-  // Call Photos API batchCreate endpoint
   const batchCreateResponse = await fetch(
     "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
     {
@@ -462,31 +426,22 @@ app3.post("/upload", async (c) => {
   if (!batchCreateResponse.ok) {
     const errorText = await batchCreateResponse.text();
     console.error("[google-photos] Batch create failed:", errorText);
-    // Return partial success with failures
-    return c.json(
-      {
-        uploadedCount: 0,
-        failures: [...failures, { filename: "batch", error: `Batch create failed: ${errorText}` }],
-      },
-      200
-    );
+    return c.json({
+      uploadedCount: 0,
+      failures: [...failures, { filename: "batch", error: `Batch create failed: ${errorText}` }],
+    }, 200);
   }
 
   const batchCreateData = await batchCreateResponse.json() as {
     newMediaItemResults?: Array<{
       uploadToken: string;
-      status?: {
-        message?: string;
-        errors?: Array<{ message: string }>;
-      };
+      status?: { message?: string; errors?: Array<{ message: string }> };
     }>;
   };
 
-  // Process batchCreate response for additional failures
   if (batchCreateData.newMediaItemResults) {
     for (const result of batchCreateData.newMediaItemResults) {
       if (result.status?.errors && result.status.errors.length > 0) {
-        // Find the filename for this upload token
         const uploadResult = successfulUploads.find((r) => r.uploadToken === result.uploadToken);
         if (uploadResult) {
           failures.push({
@@ -498,109 +453,31 @@ app3.post("/upload", async (c) => {
     }
   }
 
-  // Return success response
   const uploadedCount = successfulUploads.length - failures.filter(
     (f) => successfulUploads.some((s) => s.filename === f.filename)
   ).length;
 
-  return c.json(
-    {
-      uploadedCount: Math.max(0, uploadedCount),
-      failures: failures.length > 0 ? failures : undefined,
-    },
-    200
-  );
+  return c.json({
+    uploadedCount: Math.max(0, uploadedCount),
+    failures: failures.length > 0 ? failures : undefined,
+  }, 200);
 });
 
-// Import endpoint (Phase 76-02)
-// Imports selected Google Photos media items to R2 storage
-// Per D-22: Accepts mediaItemIds array and optional albumId
-// Per IMG-03: Downloads from Photos API with =d suffix
-// Per IMG-04: Validates magic bytes before upload
-// Per IMG-06: Tracks imports in imported_photos and audit log
-// Per D-06: Sequential processing to avoid memory overflow
-const app4 = app3.openapi(importPhotosRoute, async (c) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /import — Import picked photos to R2
+// Updated to accept Picker items with baseUrls directly
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app6 = app5.openapi(importPhotosRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
-  // Parse request body
-  const { mediaItemIds, albumId } = await c.req.json();
+  const { items } = await c.req.json();
 
-  // Get access token
   const token = await getUnifiedOAuthToken(env, db);
-
-  // Get user email for audit tracking
   const user = await getSessionUser(c);
   const userEmail = user?.id ?? "unknown";
 
-  // Fetch album details if albumId provided
-  let albumName: string | null = null;
-  let albumRecord: { id: string; googleAlbumId: string; name: string; r2Folder: string; syncedAt: string } | null = null;
-
-  if (albumId) {
-    // Fetch album details from Google Photos API
-    const albumResponse = await fetch(
-      `https://photoslibrary.googleapis.com/v1/albums/${albumId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (albumResponse.ok) {
-      const albumData = await albumResponse.json() as {
-        id: string;
-        title: string;
-        mediaItemsCount?: string;
-      };
-
-      albumName = albumData.title;
-      const sanitizedFolder = sanitizeAlbumName(albumName);
-      const now = new Date().toISOString();
-
-      // Check if album already exists in D1
-      const existingAlbum = await db
-        .select({
-          id: schema.photoAlbums.id,
-          googleAlbumId: schema.photoAlbums.googleAlbumId,
-          name: schema.photoAlbums.name,
-          r2Folder: schema.photoAlbums.r2Folder,
-          syncedAt: schema.photoAlbums.syncedAt,
-        })
-        .from(schema.photoAlbums)
-        .where(eq(schema.photoAlbums.googleAlbumId, albumId))
-        .get();
-
-      if (existingAlbum) {
-        albumRecord = existingAlbum;
-      } else {
-        // Create new album record
-        const albumId_uuid = crypto.randomUUID();
-        await db
-          .insert(schema.photoAlbums)
-          .values({
-            id: albumId_uuid,
-            googleAlbumId: albumId,
-            name: albumName,
-            r2Folder: sanitizedFolder,
-            syncedAt: now,
-            mediaItemsCount: albumData.mediaItemsCount ?? null,
-          } as any)
-          .run();
-
-        albumRecord = {
-          id: albumId_uuid,
-          googleAlbumId: albumId,
-          name: albumName,
-          r2Folder: sanitizedFolder,
-          syncedAt: now,
-        };
-      }
-    }
-  }
-
-  // Results tracking
   const results: Array<{
     mediaItemId: string;
     status: "success" | "failed";
@@ -609,118 +486,67 @@ const app4 = app3.openapi(importPhotosRoute, async (c) => {
     filename: string;
   }> = [];
 
-  // Per D-06: Sequential processing to avoid memory overflow
-  for (const mediaItemId of mediaItemIds) {
+  // Sequential processing to avoid memory overflow
+  for (const item of items) {
+    const filename = item.filename ?? `photo-${item.id}.jpg`;
+    const mimeType = item.mimeType ?? "image/jpeg";
+
     try {
-      // Fetch media item details from Google Photos API
-      const mediaResponse = await fetch(
-        `https://photoslibrary.googleapis.com/v1/mediaItems/${mediaItemId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Download photo from Picker baseUrl (append =d for full resolution)
+      const buffer = await downloadPhoto(item.baseUrl, token);
 
-      if (!mediaResponse.ok) {
-        results.push({
-          mediaItemId,
-          status: "failed",
-          filename: "unknown",
-          error: `Failed to fetch media item: ${mediaResponse.status}`,
-        });
-
-        // Log failure to audit log
-        await db
-          .insert(schema.importAuditLog)
-          .values({
-            id: crypto.randomUUID(),
-            mediaItemId,
-            filename: "unknown",
-            status: "failed",
-            error: `Failed to fetch media item: ${mediaResponse.status}`,
-            importedBy: userEmail,
-            importedAt: new Date().toISOString(),
-          } as any)
-          .run();
-
-        continue;
-      }
-
-      const mediaData = await mediaResponse.json() as {
-        id: string;
-        filename: string;
-        mimeType: string;
-        baseUrl: string;
-      };
-
-      const { filename, mimeType, baseUrl } = mediaData;
-
-      // Download photo from Google Photos (Per IMG-03: =d for full resolution)
-      const buffer = await downloadPhoto(baseUrl, token);
-
-      // Validate magic bytes (Per IMG-04)
+      // Validate magic bytes
       const validation = validateImageMagicBytes(buffer);
       if (!validation.valid) {
         results.push({
-          mediaItemId,
+          mediaItemId: item.id,
           status: "failed",
           filename,
           error: validation.error ?? "Invalid image format",
         });
 
-        // Log failure to audit log
-        await db
-          .insert(schema.importAuditLog)
-          .values({
-            id: crypto.randomUUID(),
-            mediaItemId,
-            filename,
-            status: "failed",
-            error: validation.error ?? "Invalid image format",
-            importedBy: userEmail,
-            importedAt: new Date().toISOString(),
-          } as any)
-          .run();
+        await db.insert(schema.importAuditLog).values({
+          id: crypto.randomUUID(),
+          mediaItemId: item.id,
+          filename,
+          status: "failed",
+          error: validation.error ?? "Invalid image format",
+          importedBy: userEmail,
+          importedAt: new Date().toISOString(),
+        } as any).run();
 
         continue;
       }
 
       // Upload to R2
-      const r2Key = await uploadToR2(buffer, filename, mimeType, albumName ?? null, env as any);
+      const r2Key = await uploadToR2(buffer, filename, mimeType, null, env as any);
 
-      // Record in imported_photos table (Per IMG-06)
-      await db
-        .insert(schema.importedPhotos)
-        .values({
-          id: crypto.randomUUID(),
-          r2Key,
-          originalFilename: filename,
-          googleMediaItemId: mediaItemId,
-          albumId: albumRecord?.id ?? null,
-          importedBy: userEmail,
-          importedAt: new Date().toISOString(),
-          mimeType,
-          fileSize: String(buffer.byteLength),
-        } as any)
-        .run();
+      // Record in imported_photos table
+      await db.insert(schema.importedPhotos).values({
+        id: crypto.randomUUID(),
+        r2Key,
+        originalFilename: filename,
+        googleMediaItemId: item.id,
+        albumId: null,
+        importedBy: userEmail,
+        importedAt: new Date().toISOString(),
+        mimeType,
+        fileSize: String(buffer.byteLength),
+      } as any).run();
 
-      // Log success to audit log (Per D-16/D-17)
-      await db
-        .insert(schema.importAuditLog)
-        .values({
-          id: crypto.randomUUID(),
-          mediaItemId,
-          filename,
-          status: "success",
-          r2Key,
-          importedBy: userEmail,
-          importedAt: new Date().toISOString(),
-        } as any)
-        .run();
+      // Log success to audit log
+      await db.insert(schema.importAuditLog).values({
+        id: crypto.randomUUID(),
+        mediaItemId: item.id,
+        filename,
+        status: "success",
+        r2Key,
+        importedBy: userEmail,
+        importedAt: new Date().toISOString(),
+      } as any).run();
 
       results.push({
-        mediaItemId,
+        mediaItemId: item.id,
         status: "success",
         filename,
         r2Key,
@@ -728,42 +554,30 @@ const app4 = app3.openapi(importPhotosRoute, async (c) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       results.push({
-        mediaItemId,
+        mediaItemId: item.id,
         status: "failed",
-        filename: "unknown",
+        filename,
         error: errorMessage,
       });
 
-      // Log failure to audit log
-      await db
-        .insert(schema.importAuditLog)
-        .values({
-          id: crypto.randomUUID(),
-          mediaItemId,
-          filename: "unknown",
-          status: "failed",
-          error: errorMessage,
-          importedBy: userEmail,
-          importedAt: new Date().toISOString(),
-        } as any)
-        .run();
+      await db.insert(schema.importAuditLog).values({
+        id: crypto.randomUUID(),
+        mediaItemId: item.id,
+        filename,
+        status: "failed",
+        error: errorMessage,
+        importedBy: userEmail,
+        importedAt: new Date().toISOString(),
+      } as any).run();
     }
   }
 
-  // Calculate counts
   const imported = results.filter((r) => r.status === "success").length;
   const failed = results.filter((r) => r.status === "failed").length;
 
-  return c.json(
-    {
-      imported,
-      failed,
-      results,
-    } as any,
-    200
-  );
+  return c.json({ imported, failed, results } as any, 200);
 });
 
 // Export the router for registration in the main app
-export const photosRouter = app4;
+export const photosRouter = app6;
 export default photosRouter;

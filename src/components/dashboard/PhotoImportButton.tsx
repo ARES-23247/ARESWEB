@@ -1,32 +1,32 @@
 import { Check, Loader2, AlertCircle, RotateCcw } from "lucide-react";
-import { useImportPhotos, type ImportPhotosResponse } from "@/api/google-photos";
+import { useImportPhotos, type ImportPhotosResponse, type PickedMediaItem } from "@/api/google-photos";
 import { useState } from "react";
 
 interface PhotoImportButtonProps {
-  selectedIds: string[];
-  albumId?: string;
+  /** Picked media items from the Picker API */
+  items: PickedMediaItem[];
   disabled?: boolean;
   onSuccess?: (response: ImportPhotosResponse) => void;
   onError?: () => void;
 }
 
 /**
- * PhotoImportButton - Import selected photos button component
+ * PhotoImportButton - Import selected Picker photos to R2
  *
- * Per IMG-02: Button for importing selected photos from Google Photos to R2
+ * Updated for Picker API: now receives full media items with baseUrls
+ * instead of just IDs (Library API is deprecated).
  * Per IMG-07: Displays error details with retry options per D-19/D-20
  * Per ARES Brand Guidelines: Uses ares-red for primary action
  * Per Accessibility: Proper aria labels and loading state announcements
  */
 export function PhotoImportButton({
-  selectedIds,
-  albumId,
+  items,
   disabled = false,
   onSuccess,
   onError,
 }: PhotoImportButtonProps) {
   const [failedResults, setFailedResults] = useState<
-    Array<{ mediaItemId: string; filename: string; error: string }>
+    Array<{ mediaItemId: string; filename: string; error: string; baseUrl: string; mimeType: string }>
   >([]);
 
   const importMutation = useImportPhotos({
@@ -36,11 +36,16 @@ export function PhotoImportButton({
         (r) => r.status === "failed" && r.error
       );
       setFailedResults(
-        failures.map((f) => ({
-          mediaItemId: f.mediaItemId,
-          filename: f.filename,
-          error: f.error ?? "Unknown error",
-        }))
+        failures.map((f) => {
+          const originalItem = items.find((i) => i.id === f.mediaItemId);
+          return {
+            mediaItemId: f.mediaItemId,
+            filename: f.filename,
+            error: f.error ?? "Unknown error",
+            baseUrl: originalItem?.baseUrl ?? "",
+            mimeType: originalItem?.mimeType ?? "image/jpeg",
+          };
+        })
       );
 
       // Call parent success callback
@@ -51,7 +56,7 @@ export function PhotoImportButton({
     },
   });
 
-  const count = selectedIds.length;
+  const count = items.length;
   const isLoading = importMutation.isPending;
   const isDisabled = disabled || count === 0 || isLoading;
   const failedCount = failedResults.length;
@@ -59,25 +64,38 @@ export function PhotoImportButton({
   const handleImport = () => {
     setFailedResults([]);
     importMutation.mutate({
-      mediaItemIds: selectedIds,
-      albumId,
+      items: items.map((item) => ({
+        id: item.id,
+        baseUrl: item.baseUrl,
+        filename: item.mediaFile?.filename,
+        mimeType: item.mimeType,
+      })),
     });
   };
 
   const handleRetryFailed = () => {
-    const failedIds = failedResults.map((f) => f.mediaItemId);
+    const failedItems = failedResults.map((f) => ({
+      id: f.mediaItemId,
+      baseUrl: f.baseUrl,
+      filename: f.filename,
+      mimeType: f.mimeType,
+    }));
     setFailedResults([]);
-    importMutation.mutate({
-      mediaItemIds: failedIds,
-      albumId,
-    });
+    importMutation.mutate({ items: failedItems });
   };
 
   const handleRetryOne = (mediaItemId: string) => {
+    const failedItem = failedResults.find((f) => f.mediaItemId === mediaItemId);
+    if (!failedItem) return;
+
     setFailedResults((prev) => prev.filter((f) => f.mediaItemId !== mediaItemId));
     importMutation.mutate({
-      mediaItemIds: [mediaItemId],
-      albumId,
+      items: [{
+        id: failedItem.mediaItemId,
+        baseUrl: failedItem.baseUrl,
+        filename: failedItem.filename,
+        mimeType: failedItem.mimeType,
+      }],
     });
   };
 
