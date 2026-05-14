@@ -20,16 +20,12 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────
-  # Build, deploy preview, and run smoke tests in one job.
-  # This avoids a separate smoke test job (saving ~60s runner spinup
-  # + another npm ci + playwright install cycle). Node + npm are already
-  # installed from the build step, so we just add Playwright browsers.
+  # Single install job - all other jobs depend on this artifact.
+  # Saves ~2-3 min per job by avoiding redundant npm ci calls.
   # ──────────────────────────────────────────────────────────────────────
-  deploy-preview:
-    name: Deploy Preview
+  install:
+    name: Install Dependencies
     runs-on: ubuntu-latest
-    outputs:
-      preview-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,6 +38,40 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Upload node_modules artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
+          retention-days: 1
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Build, deploy preview, and run smoke tests in one job.
+  # This avoids a separate smoke test job (saving ~60s runner spinup
+  # + another npm ci + playwright install cycle). Node + npm are already
+  # installed from the build step, so we just add Playwright browsers.
+  # ──────────────────────────────────────────────────────────────────────
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: install
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Download node_modules
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
 
       - name: Build with Vite
         env:
@@ -101,21 +131,18 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-latest
-    needs: deploy-preview
+    needs: [install, deploy-preview]
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Download node_modules
+        uses: actions/download-artifact@v4
         with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        run: npm ci
+          name: node-modules
+          path: node_modules/
 
       - name: E2E Smoke Tests
         env:
@@ -134,6 +161,7 @@ jobs:
   static-checks:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -142,10 +170,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: "npm"
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Download node_modules
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
 
       - name: TypeScript Type Check
         env:
@@ -160,6 +190,7 @@ jobs:
   security:
     name: Security Audit
     runs-on: ubuntu-latest
+    needs: install
     continue-on-error: true
     steps:
       - name: Checkout
@@ -169,10 +200,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: "npm"
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Download node_modules
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
 
       - name: Automated Vulnerability & SAST Check
         run: npm run audit:security
@@ -180,6 +213,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -188,10 +222,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: "npm"
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Download node_modules
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
 
       - name: Component Tests (Vitest)
         run: npm run test
@@ -200,7 +236,7 @@ jobs:
   e2e-playwright:
     name: E2E Playwright
     runs-on: ubuntu-latest
-    needs: deploy-preview
+    needs: [install, deploy-preview]
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     strategy:
@@ -227,16 +263,12 @@ jobs:
             echo "run_e2e=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Setup Node.js
+      - name: Download node_modules
         if: steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/download-artifact@v4
         with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        run: npm ci
+          name: node-modules
+          path: node_modules/
 
       - name: Playwright Tests (Shard ${{ matrix.shard }}/5)
         if: steps.check_e2e.outputs.run_e2e == 'true'
@@ -328,15 +360,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "npm"
-
-      - name: Install Dependencies
-        run: npm ci
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
