@@ -446,12 +446,6 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       <GooglePhotoPickerModal
         isOpen={isGooglePhotoPickerOpen}
         onClose={() => setIsGooglePhotoPickerOpen(false)}
-        onAlbumSelected={(albumId, title) => {
-          editor.chain().focus().insertContent({
-            type: 'galleryEmbed',
-            attrs: { albumId, title }
-          }).run();
-        }}
         onPhotosImported={(urls) => {
           // Insert multiple images back-to-back
           urls.forEach(url => {

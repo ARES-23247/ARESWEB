@@ -6,9 +6,7 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Download,
-  FolderOpen,
   RefreshCw,
-  LayoutGrid,
 } from "lucide-react";
 import {
   useCreatePickerSession,
@@ -16,18 +14,13 @@ import {
   useGetPickerItems,
   useDeletePickerSession,
   useImportPhotos,
-  useGetAlbums,
-  useSyncAlbum,
   PickedMediaItem,
-  GoogleAlbum,
 } from "../api/google-photos";
 import { toast } from "sonner";
 
 interface GooglePhotoPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // If provided, selecting an album will call this (e.g. for embedding in blog)
-  onAlbumSelected?: (albumId: string, title: string) => void;
   // If provided, after importing photos, it returns the URLs (e.g. for inserting images)
   onPhotosImported?: (urls: string[]) => void;
 }
@@ -35,10 +28,8 @@ interface GooglePhotoPickerModalProps {
 export default function GooglePhotoPickerModal({
   isOpen,
   onClose,
-  onAlbumSelected,
   onPhotosImported,
 }: GooglePhotoPickerModalProps) {
-  const [activeTab, setActiveTab] = useState<"picker" | "albums">("picker");
 
   // ==========================================
   // PICKER TAB STATE
@@ -194,24 +185,7 @@ export default function GooglePhotoPickerModal({
   const hasPickedItems = pickedItems.length > 0;
   const selectedCount = pickedItems.filter((item) => selectedForImport.has(item.id)).length;
 
-  // ==========================================
-  // ALBUMS TAB STATE
-  // ==========================================
-  const { data: albumsData, isLoading: albumsLoading } = useGetAlbums();
-  const syncAlbumMutation = useSyncAlbum();
-  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
 
-  const handleSyncAlbum = (album: GoogleAlbum) => {
-    syncAlbumMutation.mutate(album.id, {
-      onSuccess: (data) => {
-        toast.success(`Album "${album.title}" synchronized with ${data.importResults.imported} new photos!`);
-        if (onAlbumSelected) {
-          onAlbumSelected(album.id, album.title);
-          onClose();
-        }
-      }
-    });
-  };
 
   if (!isOpen) return null;
 
@@ -238,29 +212,7 @@ export default function GooglePhotoPickerModal({
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex border-b border-white/10 bg-black/20">
-            <button
-              onClick={() => setActiveTab("picker")}
-              className={`flex-1 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === "picker" ? "bg-ares-cyan/10 text-ares-cyan border-b-2 border-ares-cyan" : "text-marble/60 hover:text-white hover:bg-white/5"}`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <LayoutGrid size={16} />
-                Select Photos
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("albums")}
-              className={`flex-1 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === "albums" ? "bg-ares-cyan/10 text-ares-cyan border-b-2 border-ares-cyan" : "text-marble/60 hover:text-white hover:bg-white/5"}`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <FolderOpen size={16} />
-                Import Albums
-              </div>
-            </button>
-          </div>
-
-          {/* PICKER TAB CONTENT */}
-          {activeTab === "picker" && (
+          {/* PICKER CONTENT */}
             <div className="flex-1 overflow-y-auto p-6 focus:outline-none">
             {importMutation.isPending && (
               <div className="rounded-lg border border-ares-cyan/20 bg-marble/5 p-12">
@@ -387,80 +339,6 @@ export default function GooglePhotoPickerModal({
               </div>
             )}
             </div>
-          )}
-
-          {/* ALBUMS TAB CONTENT */}
-          {activeTab === "albums" && (
-            <div className="flex-1 overflow-y-auto p-6 focus:outline-none bg-black/20">
-            {albumsLoading ? (
-              <div className="flex justify-center p-12">
-                <Loader2 className="h-8 w-8 animate-spin text-ares-cyan" />
-              </div>
-            ) : albumsData?.albums && albumsData.albums.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {albumsData.albums.map((album) => (
-                  <div
-                    key={album.id}
-                    className="relative flex flex-col overflow-hidden ares-cut-sm border border-white/10 bg-obsidian group hover:border-ares-cyan/50 transition-all"
-                  >
-                    <div className="aspect-[4/3] bg-black/50 relative">
-                      {album.coverPhotoBaseUrl ? (
-                        <img
-                          src={`${album.coverPhotoBaseUrl}=w500-h400-c`}
-                          alt={album.title}
-                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FolderOpen className="w-12 h-12 text-marble/20" />
-                        </div>
-                      )}
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-md ares-cut-sm text-xs font-mono text-ares-cyan border border-ares-cyan/30">
-                        {album.mediaItemsCount || 0} items
-                      </div>
-                    </div>
-                    <div className="p-4 flex flex-col flex-1">
-                      <h3 className="font-bold text-sm text-white line-clamp-1 mb-1" title={album.title}>
-                        {album.title}
-                      </h3>
-                      <div className="mt-auto pt-4 flex gap-2">
-                        {onAlbumSelected && (
-                          <button
-                            onClick={() => onAlbumSelected(album.id, album.title)}
-                            className="flex-1 px-3 py-1.5 ares-cut-sm bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase tracking-wider transition-colors text-center border border-white/10"
-                          >
-                            Embed
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setSelectedAlbumId(album.id);
-                            handleSyncAlbum(album);
-                          }}
-                          disabled={syncAlbumMutation.isPending && selectedAlbumId === album.id}
-                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 ares-cut-sm bg-ares-cyan/10 hover:bg-ares-cyan text-ares-cyan hover:text-black border border-ares-cyan/30 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                        >
-                          {syncAlbumMutation.isPending && selectedAlbumId === album.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-3 h-3" />
-                          )}
-                          Sync
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-marble/60">
-                <FolderOpen className="h-12 w-12 mb-4 opacity-50" />
-                <p>No albums found in Google Photos.</p>
-              </div>
-            )}
-            </div>
-          )}
         </div>
       </div>
     </div>

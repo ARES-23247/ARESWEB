@@ -98,7 +98,9 @@
       "Bash(mkdir -p ../archive)",
       "Bash(sort -u -t' ' -k2 -n)",
       "Bash(cat \"c:/Users/david/AppData/Roaming/npm/gsd-sdk\" | head -100)",
-      "Read(//c/Users/david/AppData/Roaming/npm/**)"
+      "Read(//c/Users/david/AppData/Roaming/npm/**)",
+      "Skill(gsd-health)",
+      "Skill(gsd-health:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
