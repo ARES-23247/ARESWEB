@@ -79,7 +79,7 @@ describe("gcalSync Utilities", () => {
           json: async () => ({ error: "forbidden" }),
         });
 
-      await expect(pushEventToGcal(event, calendarId, token)).rejects.toThrow("Google API Error: 403");
+      await expect(pushEventToGcal(event, calendarId, token)).rejects.toThrow("Google Calendar API 403");
     });
   });
 
