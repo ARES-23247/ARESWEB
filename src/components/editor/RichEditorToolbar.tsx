@@ -16,6 +16,7 @@ import { Maximize, Minimize } from "lucide-react";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";
 import GalleryPickerModal from "../GalleryPickerModal";
+import GooglePhotoPickerModal from "../GooglePhotoPickerModal";
 import VideoPickerModal from "../VideoPickerModal";
 import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
@@ -124,6 +125,7 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
   const [isGalleryPickerOpen, setIsGalleryPickerOpen] = useState(false);
+  const [isGooglePhotoPickerOpen, setIsGooglePhotoPickerOpen] = useState(false);
   const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -243,6 +245,7 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
 
         {/* Media */}
         <button type="button" aria-label="Select Image" title="Select Image" onClick={() => setIsPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🖼 Image</button>
+        <button type="button" aria-label="Google Photos" title="Google Photos & Albums" onClick={() => setIsGooglePhotoPickerOpen(true)} className="px-3 py-2 border border-[#4285F4]/30 text-[#4285F4] hover:bg-[#4285F4] hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📸 GPhotos</button>
         <button type="button" aria-label="Insert Gallery" title="Insert Photo Gallery" onClick={() => setIsGalleryPickerOpen(true)} className="px-3 py-2 border border-ares-gold/30 text-ares-gold hover:bg-ares-gold hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📷 Gallery</button>
         <button type="button" aria-label="Insert File Link" title="Insert File Link" onClick={() => onInsertFileLink?.()} className="px-3 py-2 border border-ares-bronze/30 text-ares-bronze hover:bg-ares-bronze hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">📄 File</button>
         <button type="button" aria-label="Insert Video" title="Insert Video" onClick={() => setIsVideoPickerOpen(true)} className="px-3 py-2 border border-ares-red/30 text-ares-danger-soft hover:bg-ares-red hover:text-white ares-cut-sm text-sm font-bold transition-all shadow-sm flex items-center gap-2">🎬 Video</button>
@@ -467,6 +470,23 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
             attrs: { galleryId, title }
           }).run();
           setIsGalleryPickerOpen(false);
+        }}
+      />
+
+      <GooglePhotoPickerModal
+        isOpen={isGooglePhotoPickerOpen}
+        onClose={() => setIsGooglePhotoPickerOpen(false)}
+        onAlbumSelected={(albumId, title) => {
+          editor.chain().focus().insertContent({
+            type: 'galleryEmbed',
+            attrs: { albumId, title }
+          }).run();
+        }}
+        onPhotosImported={(urls) => {
+          // Insert multiple images back-to-back
+          urls.forEach(url => {
+            editor.chain().focus().setImage({ src: url, alt: "Imported Google Photo" }).run();
+          });
         }}
       />
 

@@ -127,7 +127,7 @@ function prepareGcalPayload(event: ARES_Event) {
  */
 export async function pushEventToGcal(event: ARES_Event, calendarId: string, token: string): Promise<string | undefined> {
   if (!calendarId || !token) return undefined;
-  
+
   const payload = prepareGcalPayload(event);
 
   let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
@@ -138,7 +138,7 @@ export async function pushEventToGcal(event: ARES_Event, calendarId: string, tok
     method = "PUT";
   }
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(5000),
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000),
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -150,7 +150,14 @@ export async function pushEventToGcal(event: ARES_Event, calendarId: string, tok
   const data = (await res.json()) as Record<string, unknown>;
   if (!res.ok) {
     console.error("Failed to push to GCal:", data);
-    throw new Error(`Google API Error: ${res.status}`);
+    // Extract detailed error message from Google API response
+    const gcalError = data.error as Record<string, unknown> | undefined;
+    const message = gcalError?.message as string | undefined;
+    const gcalErrors = gcalError?.errors as Array<{ message?: string }> | undefined;
+    const firstError = gcalErrors?.[0]?.message;
+
+    const detail = firstError || message || JSON.stringify(data);
+    throw new Error(`Google Calendar API ${res.status}: ${detail}`);
   }
 
   return data.id as string | undefined; // Returns the generated or existing gcal_id

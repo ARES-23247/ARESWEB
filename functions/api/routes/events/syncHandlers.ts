@@ -105,45 +105,69 @@ export const syncHandlers = {
             .all();
 
         if (events.length === 0) {
-            return { status: 200 as const, body: { success: true, pushed: 0, failed: 0 } };
+            return { status: 200 as const, body: { success: true, pushed: 0, failed: 0, message: "No events needing repair" } };
         }
 
-        const socialConfig = await getSocialConfig(c);
+        const dbSettings = await getDbSettings(c);
         let oauthToken: string;
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
-        } catch (_error) {
-            throw new ApiError("Google OAuth config missing or not connected", 500);
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            console.error("[repairCalendar] OAuth token fetch failed:", msg);
+            throw new ApiError(`Google OAuth error: ${msg}`, 500);
         }
-        
+
         let pushed = 0;
         let failed = 0;
         const errors: string[] = [];
 
         for (const event of events) {
             const cat = event.category || "internal";
-            const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof socialConfig;
-            const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+            const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof dbSettings;
+            const calId = dbSettings[calKey] || dbSettings["CALENDAR_ID"];
 
             if (!calId) {
-                throw new ApiError("GCal config missing", 500);
+                const msg = `No calendar ID configured for category "${cat}" (tried ${calKey}, CALENDAR_ID)`;
+                console.error(`[repairCalendar] ${event.title}: ${msg}`);
+                errors.push(`${event.title}: ${msg}`);
+                failed++;
+                continue;
             }
 
-            const gcalId = await pushEventToGcal(
-                { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: undefined, meetingNotes: event.meetingNotes || undefined },
-                calId as string,
-                oauthToken
-            );
-            if (gcalId) {
-                await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
-                pushed++;
-            } else {
-                errors.push(`${event.title}: GCal returned no ID`);
+            try {
+                const gcalId = await pushEventToGcal(
+                    { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: undefined, meetingNotes: event.meetingNotes || undefined },
+                    calId as string,
+                    oauthToken
+                );
+                if (gcalId) {
+                    await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
+                    pushed++;
+                    console.log(`[repairCalendar] Successfully pushed "${event.title}" to GCal (ID: ${gcalId})`);
+                } else {
+                    const msg = `Google Calendar did not return an event ID`;
+                    errors.push(`${event.title}: ${msg}`);
+                    failed++;
+                }
+            } catch (pushErr) {
+                const msg = pushErr instanceof Error ? pushErr.message : String(pushErr);
+                console.error(`[repairCalendar] Failed to push "${event.title}":`, msg);
+                errors.push(`${event.title}: ${msg}`);
                 failed++;
             }
         }
 
         invalidateEventsCache(c);
-        return { status: 200 as const, body: { success: true, pushed, failed, errors: errors.length > 0 ? errors : undefined } };
+        return {
+            status: 200 as const,
+            body: {
+                success: true,
+                pushed,
+                failed,
+                message: `Repaired ${pushed} events, ${failed} failed`,
+                errors: errors.length > 0 ? errors : undefined
+            }
+        };
     },
 };

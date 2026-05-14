@@ -5,6 +5,7 @@ import { CodeBlock } from "./docs/CodeBlock";
 import ErrorBoundary from "./ErrorBoundary";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
 import { useGetGallery, useGetVideo } from "../api";
+import { useGetAlbumMedia } from "../api/google-photos";
 import { Link } from "@tanstack/react-router";
 
 /* ---------- Lazy Loaded Simulators & Tools ---------- */
@@ -375,9 +376,76 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
   );
 }
 
+// Album Embed Renderer Component (Masonry Grid)
+function AlbumEmbedRenderer({ albumId, title }: { albumId: string; title?: string }) {
+  const { data, isLoading, isError } = useGetAlbumMedia(albumId);
+
+  if (isLoading) {
+    return (
+      <div className="my-8 ares-cut-sm border border-[#4285F4]/30 bg-black/40 p-12 text-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <Images className="w-12 h-12 text-[#4285F4]/60" />
+          <div className="text-white/60 font-mono text-sm">Loading album photos...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !data?.mediaItems || data.mediaItems.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="my-10">
+      <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
+        <div className="p-2 bg-[#4285F4]/10 text-[#4285F4] ares-cut-sm">
+          <Images size={20} />
+        </div>
+        <div>
+          <h3 className="text-white font-bold text-xl">{title || "Google Photos Album"}</h3>
+          <p className="text-white/40 text-xs font-mono uppercase tracking-widest">{data.mediaItems.length} Photos</p>
+        </div>
+      </div>
+      
+      {/* CSS Columns Masonry */}
+      <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        {data.mediaItems.map((item) => {
+          if (!item.mediaFile?.baseUrl) return null;
+          return (
+            <div key={item.id} className="break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10 hover:border-[#4285F4]/50 transition-colors">
+              <img
+                src={`${item.mediaFile.baseUrl}=w800`}
+                alt="Album photo"
+                className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                <a 
+                  href={`${item.mediaFile.baseUrl}=d`}
+                  target="_blank"
+                  rel="noopener noreferrer" 
+                  className="px-4 py-2 ares-cut-sm bg-[#4285F4] text-white font-bold text-sm flex items-center gap-2 hover:bg-[#4285F4]/80 transition-colors"
+                >
+                  <Eye size={16} /> View Full
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const renderGalleryEmbed = (node: ASTNode) => {
   const galleryId = node.attrs?.galleryId as string;
+  const albumId = node.attrs?.albumId as string;
   const title = node.attrs?.title as string;
+
+  if (albumId) {
+    return <AlbumEmbedRenderer albumId={albumId} title={title} />;
+  }
 
   if (!galleryId) return null;
 

@@ -101,15 +101,31 @@ export default function EventManagerTab({
   });
 
   const repairGcalMutation = useRepairCalendar({
-    onSuccess: (res: unknown) => {  
+    onSuccess: (res: unknown) => {
       const result = res as Record<string, unknown>;
       if (result.success) {
-        const msg = `Repair Complete! Pushed ${result.pushed || 0} events to GCal.`;
-        if (result.failed) {
-          toast.warning(`${msg} (${result.failed} failed)`);
-          console.warn("[RepairCalendar] Errors:", result.errors);
+        const pushed = Number(result.pushed || 0);
+        const failed = Number(result.failed || 0);
+        const message = result.message as string | undefined;
+
+        if (failed > 0) {
+          const errors = result.errors as string[] | undefined;
+          // Show individual error toasts for each failure
+          errors?.forEach((err, idx) => {
+            setTimeout(() => {
+              toast.error(`Repair failed: ${err}`, {
+                duration: 10000,
+                description: "Check calendar configuration and OAuth connection"
+              });
+            }, idx * 500); // Stagger toasts
+          });
+          toast.warning(`${message || `Repair: ${pushed} pushed, ${failed} failed`}`, {
+            description: `${failed} event(s) could not be synced to Google Calendar`
+          });
+        } else if (pushed > 0) {
+          toast.success(message || `Repaired ${pushed} event(s)!`);
         } else {
-          toast.success(msg);
+          toast.info("No events needed repair");
         }
       } else {
         toast.error("Repair failed");

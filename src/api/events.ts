@@ -331,12 +331,12 @@ export function useSyncEvents(
  * POST /api/events/admin/repair-calendar - Repair Google Calendar integration
  */
 export function useRepairCalendar(
-  options?: Omit<UseMutationOptions<{ success: boolean; pushed: number; failed: number; errors?: string[] }, Error, void>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean; pushed: number; failed: number; message?: string; errors?: string[] }, Error, void>, "mutationFn">
 ) {
-  return useMutation<{ success: boolean; pushed: number; failed: number; errors?: string[] }, Error, void>({
+  return useMutation<{ success: boolean; pushed: number; failed: number; message?: string; errors?: string[] }, Error, void>({
     mutationFn: async () => {
       const response = await client.events.admin["repair-calendar"].$post();
-      return unwrapResponse<{ success: boolean; pushed: number; failed: number; errors?: string[] }>(response);
+      return unwrapResponse<{ success: boolean; pushed: number; failed: number; message?: string; errors?: string[] }>(response);
     },
     ...options,
   });

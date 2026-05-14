@@ -352,11 +352,12 @@ export const repairCalendarRoute = createRoute({
     200: {
       content: {
         "application/json": {
-          schema: z.object({ 
-            success: z.boolean(), 
-            pushed: z.number(), 
-            failed: z.number(), 
-            errors: z.array(z.string()).optional() 
+          schema: z.object({
+            success: z.boolean(),
+            pushed: z.number(),
+            failed: z.number(),
+            message: z.string().optional(),
+            errors: z.array(z.string()).optional()
           }),
         },
       },

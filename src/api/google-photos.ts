@@ -323,3 +323,89 @@ export function useUploadGooglePhotosToYoutube(
     }),
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ALBUM API HOOKS (Phase 76)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface GoogleAlbum {
+  id: string;
+  title: string;
+  productUrl: string;
+  coverPhotoBaseUrl?: string;
+  mediaItemsCount?: string;
+}
+
+export interface GetAlbumsResponse {
+  albums: GoogleAlbum[];
+  nextPageToken?: string;
+}
+
+export function useGetAlbums(pageToken?: string) {
+  return useQuery({
+    queryKey: ["google-photos", "albums", pageToken],
+    queryFn: async () => {
+      const res = await client["google-photos"].albums.$get({
+        query: { pageToken },
+      });
+      return unwrapResponse<GetAlbumsResponse>(res);
+    },
+  });
+}
+
+export function useGetAlbumMedia(albumId: string | null, pageToken?: string) {
+  return useQuery({
+    queryKey: ["google-photos", "albums", albumId, "media", pageToken],
+    queryFn: async () => {
+      if (!albumId) throw new Error("No album ID provided");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono parameterized route typing
+      const res = await (client["google-photos"].albums as any)[":albumId"].media.$get({
+        param: { albumId },
+        query: { pageToken },
+      });
+      return unwrapResponse<{ mediaItems: PickedMediaItem[] }>(res);
+    },
+    enabled: !!albumId,
+  });
+}
+
+export interface SyncAlbumResponse {
+  album: {
+    id: string;
+    name: string;
+    r2Folder: string;
+    mediaItemsCount?: string;
+  };
+  importResults: ImportPhotosResponse;
+}
+
+export function useSyncAlbum(
+  options?: import("@tanstack/react-query").UseMutationOptions<
+    SyncAlbumResponse,
+    unknown,
+    string
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (albumId: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono parameterized route typing
+      const res = await (client["google-photos"].albums as any)[":albumId"].sync.$post({
+        param: { albumId },
+      });
+
+      return unwrapResponse<SyncAlbumResponse>(res);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (queryClient, _data) => {
+        queryClient.invalidateQueries({
+          queryKey: ["google-photos"],
+        });
+      },
+      onError: (queryClient, error) => {
+        toastApiError(error, "Album sync failed");
+      },
+    }),
+  });
+}

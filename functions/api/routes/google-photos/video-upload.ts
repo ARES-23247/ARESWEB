@@ -1,10 +1,6 @@
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
-import type { AppEnv } from "../../middleware/utils";
-import { ensureAdmin, getDb } from "../../middleware";
+import { getDb } from "../../middleware";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
-import { z } from "zod";
-import { standardErrors } from "../../../shared/routes/common";
 import * as schema from "../../../../src/db/schema";
 
 // Re-export the route from the shared types
