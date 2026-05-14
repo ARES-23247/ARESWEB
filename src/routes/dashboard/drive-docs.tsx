@@ -130,7 +130,18 @@ function DriveDocs() {
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tighter">Google Drive Documents</h2>
-          <p className="text-marble/60 text-sm mt-1">Browse and open team documents from Google Drive.</p>
+          <p className="text-marble/60 text-sm mt-1 mb-3">Browse and open team documents from Google Drive.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-ares-cyan/10 hover:bg-ares-cyan/20 text-ares-cyan font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 border border-ares-cyan/20 text-[10px]">
+              <FileText size={12} /> New Doc
+            </a>
+            <a href="https://docs.google.com/spreadsheets/create" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 border border-ares-gold/20 text-[10px]">
+              <Table size={12} /> New Sheet
+            </a>
+            <a href="https://docs.google.com/presentation/create" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-orange-400/10 hover:bg-orange-400/20 text-orange-400 font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-2 border border-orange-400/20 text-[10px]">
+              <Presentation size={12} /> New Slide
+            </a>
+          </div>
         </div>
         <button
           onClick={() => refetch()}

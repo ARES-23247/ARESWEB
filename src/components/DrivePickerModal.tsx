@@ -127,9 +127,20 @@ export default function DrivePickerModal({ isOpen, onClose, onSelect }: DrivePic
                 <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">
                   Select Document
                 </Dialog.Title>
-                <Dialog.Description className="text-xs text-white/60 font-mono m-0">
+                <Dialog.Description className="text-xs text-white/60 font-mono m-0 mb-3">
                   Browse Google Drive to embed a file
                 </Dialog.Description>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a href="https://docs.google.com/document/create" target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-ares-cyan/10 hover:bg-ares-cyan/20 text-ares-cyan font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-1.5 border border-ares-cyan/20 text-[9px]">
+                    <FileText size={10} /> New Doc
+                  </a>
+                  <a href="https://docs.google.com/spreadsheets/create" target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-1.5 border border-ares-gold/20 text-[9px]">
+                    <Table size={10} /> New Sheet
+                  </a>
+                  <a href="https://docs.google.com/presentation/create" target="_blank" rel="noopener noreferrer" className="px-2 py-1 bg-orange-400/10 hover:bg-orange-400/20 text-orange-400 font-bold uppercase tracking-widest ares-cut-sm transition-all flex items-center gap-1.5 border border-orange-400/20 text-[9px]">
+                    <Presentation size={10} /> New Slide
+                  </a>
+                </div>
               </div>
             </div>
             
