@@ -394,6 +394,7 @@ mediaRouter.get("/:key{.+$}", async (c) => {
         keyLower.startsWith("events/") || 
         keyLower.startsWith("posts/") || 
         keyLower.startsWith("seasons/") || 
+        keyLower.startsWith("photos/") || 
         !key.includes("/");
     
     if (!isPublicFolder) {
