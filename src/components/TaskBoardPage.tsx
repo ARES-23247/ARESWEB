@@ -356,6 +356,7 @@ export default function TaskBoardPage() {
           {viewMode === "kanban" ? (
             <ProjectBoardKanban
               tasks={filteredTasks}
+              allTasks={tasks as TaskItem[]}
               isLoading={isTasksLoading}
               onCreateTask={handleCreateTaskWithSubteam}
               onUpdateTask={handleUpdateTask}

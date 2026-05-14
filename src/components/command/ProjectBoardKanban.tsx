@@ -25,6 +25,7 @@ export const KANBAN_SUBTEAMS = [
 
 interface ProjectBoardKanbanProps {
   tasks: TaskItem[];
+  allTasks?: TaskItem[];
   isLoading: boolean;
   onCreateTask: (title: string) => void;
   onUpdateTask: (id: string, updates: import("../../api").UpdateTaskRequest) => Promise<void>;
@@ -61,7 +62,7 @@ function DragOverlayCard({ task }: { task: TaskItem }) {
 
 // ── Main Kanban Component ────────────────────────────────────────────
 export default function ProjectBoardKanban({
-  tasks, isLoading, onCreateTask, onUpdateTask, onDeleteTask, onReorder, isCreating,
+  tasks, allTasks, isLoading, onCreateTask, onUpdateTask, onDeleteTask, onReorder, isCreating,
 }: ProjectBoardKanbanProps) {
   const [activeKanbanFilter, setActiveKanbanFilter] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -139,7 +140,8 @@ export default function ProjectBoardKanban({
         onFilterChange={setActiveKanbanFilter}
         emptyStateText="No tasks"
         renderItem={(task) => {
-          const taskSubtasks = tasks.filter((t) => t.parentId === task.id);
+          const taskListToUse = allTasks && allTasks.length > 0 ? allTasks : tasks;
+          const taskSubtasks = taskListToUse.filter((t) => t.parentId === task.id);
           const completedSubtasksCount = taskSubtasks.filter((t) => t.status === "done").length;
           return (
             <SortableTaskCard

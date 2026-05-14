@@ -446,10 +446,18 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       <GooglePhotoPickerModal
         isOpen={isGooglePhotoPickerOpen}
         onClose={() => setIsGooglePhotoPickerOpen(false)}
-        onPhotosImported={(urls) => {
+        onPhotosImported={async (urls) => {
+          setIsGooglePhotoPickerOpen(false);
+          const altText = await modal.prompt({
+            title: "Alt Text",
+            description: "Provide descriptive alt text for accessibility (or leave empty for decorative images):",
+            defaultValue: ""
+          });
+
           // Insert multiple images back-to-back
-          urls.forEach(url => {
-            editor.chain().focus().setImage({ src: url, alt: "" }).run();
+          urls.forEach((url, index) => {
+            const specificAlt = (urls.length > 1 && altText) ? `${altText} ${index + 1}` : (altText || "");
+            editor.chain().focus().setImage({ src: url, alt: specificAlt }).run();
           });
         }}
       />
