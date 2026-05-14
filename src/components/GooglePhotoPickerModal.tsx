@@ -94,8 +94,16 @@ export default function GooglePhotoPickerModal({
       setIsPickerOpen(true);
       setPickedItems([]);
 
+      let finalUri = session.pickerUri;
+      if (finalUri.includes("?")) {
+        const [base, query] = finalUri.split("?");
+        finalUri = `${base}/autoclose?${query}`;
+      } else {
+        finalUri = `${finalUri}/autoclose`;
+      }
+
       const popup = window.open(
-        `${session.pickerUri}/autoclose`,
+        finalUri,
         "google-photos-picker",
         "width=1200,height=800,scrollbars=yes,resizable=yes"
       );

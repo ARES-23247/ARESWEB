@@ -187,6 +187,22 @@ const app2 = app1.openapi(createPickerSessionRoute, async (c) => {
     };
   };
 
+  try {
+    const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+    if (tokenInfoRes.ok) {
+      const tokenInfo = await tokenInfoRes.json() as { email?: string };
+      if (tokenInfo.email) {
+        if (session.pickerUri.includes("?")) {
+          session.pickerUri += `&login_hint=${encodeURIComponent(tokenInfo.email)}`;
+        } else {
+          session.pickerUri += `?login_hint=${encodeURIComponent(tokenInfo.email)}`;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[google-photos] Failed to get token email for login_hint", e);
+  }
+
   return c.json({
     id: session.id,
     pickerUri: session.pickerUri,
@@ -233,6 +249,22 @@ const app2v = app2.openapi(createVideoPickerSessionRoute, async (c) => {
       timeoutIn?: string;
     };
   };
+
+  try {
+    const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+    if (tokenInfoRes.ok) {
+      const tokenInfo = await tokenInfoRes.json() as { email?: string };
+      if (tokenInfo.email) {
+        if (session.pickerUri.includes("?")) {
+          session.pickerUri += `&login_hint=${encodeURIComponent(tokenInfo.email)}`;
+        } else {
+          session.pickerUri += `?login_hint=${encodeURIComponent(tokenInfo.email)}`;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[google-photos] Failed to get token email for video picker login_hint", e);
+  }
 
   return c.json({
     id: session.id,

@@ -103,8 +103,14 @@ export default function YouTubeVideoPickerModal({
       setIsPickerOpen(true);
       setPickedItems([]);
 
-      // Open picker in popup with /autoclose for web
-      const pickerUrl = `${session.pickerUri}/autoclose`;
+      let pickerUrl = session.pickerUri;
+      if (pickerUrl.includes("?")) {
+        const [base, query] = pickerUrl.split("?");
+        pickerUrl = `${base}/autoclose?${query}`;
+      } else {
+        pickerUrl = `${pickerUrl}/autoclose`;
+      }
+
       const popup = window.open(
         pickerUrl,
         "google-photos-video-picker",
