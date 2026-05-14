@@ -379,3 +379,70 @@ export const importPhotosRoute = createRoute({
   },
   tags: ["google-photos", "admin"],
 });
+
+/**
+ * Request schema for uploading Google Photos videos to YouTube
+ */
+const googlePhotosToYoutubeSchema = z.object({
+  videos: z.array(z.object({
+    id: z.string().openapi({ description: "Google Photos media item ID" }),
+    baseUrl: z.string().url().openapi({ description: "Base URL for video download (valid for 60 minutes)" }),
+    filename: z.string().openapi({ description: "Original filename" }),
+    mimeType: z.string().openapi({ description: "MIME type of the video" }),
+  })).min(1).openapi({ description: "Videos to upload from Google Photos" }),
+  title: z.string().min(1).openapi({ description: "YouTube video title (will be numbered for batch)" }),
+  description: z.string().optional().openapi({ description: "YouTube video description" }),
+  privacyStatus: z.enum(["public", "unlisted", "private"]).optional().default("private").openapi({
+    description: "Privacy status for uploaded videos",
+  }),
+  mediaType: z.enum(["video", "short"]).optional().default("video").openapi({
+    description: "Media type (standard video or YouTube Short)",
+  }),
+});
+
+/**
+ * Response schema for Google Photos to YouTube upload
+ */
+const googlePhotosToYoutubeResponseSchema = z.object({
+  results: z.array(z.object({
+    googlePhotosId: z.string().openapi({ description: "Original Google Photos media item ID" }),
+    filename: z.string().openapi({ description: "Original filename" }),
+    status: z.enum(["success", "failed"]).openapi({ description: "Upload status" }),
+    youtubeVideoId: z.string().optional().openapi({ description: "YouTube video ID (on success)" }),
+    error: z.string().optional().openapi({ description: "Error message (on failure)" }),
+  })).openapi({ description: "Per-video upload results" }),
+  summary: z.object({
+    total: z.number().openapi({ description: "Total videos processed" }),
+    successful: z.number().openapi({ description: "Number of successful uploads" }),
+    failed: z.number().openapi({ description: "Number of failed uploads" }),
+  }).openapi({ description: "Upload summary" }),
+});
+
+/**
+ * POST /picker/videos-to-youtube — Upload Google Photos videos to YouTube
+ */
+export const uploadGooglePhotosToYoutubeRoute = createRoute({
+  method: "post",
+  path: "/picker/videos-to-youtube",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: googlePhotosToYoutubeSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: googlePhotosToYoutubeResponseSchema,
+        },
+      },
+      description: "Videos uploaded successfully with per-video results",
+    },
+  },
+  tags: ["google-photos", "youtube", "admin"],
+});

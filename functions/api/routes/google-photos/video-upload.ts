@@ -1,78 +1,73 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
-import type { AppEnv } from "../../../middleware/utils";
-import { ensureAdmin, getDb } from "../../../middleware";
+import type { AppEnv } from "../../middleware/utils";
+import { ensureAdmin, getDb } from "../../middleware";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
-import { ApiError } from "../../../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
-import { client as youtubeClient } from "../youtube";
-import { standardErrors } from "../../../../shared/routes/common";
+import { standardErrors } from "../../../shared/routes/common";
+import * as schema from "../../../../src/db/schema";
+
+// Re-export the route from the shared types
+export { uploadGooglePhotosToYoutubeRoute } from "../../../shared/routes/google-photos";
+
+type GooglePhotosVideo = {
+  id: string;
+  baseUrl: string;
+  filename: string;
+  mimeType: string;
+};
 
 /**
- * Request schema for uploading Google Photos videos to YouTube
+ * Get YouTube resumable upload URL
+ * Based on the implementation in routes/youtube/index.ts
  */
-const googlePhotosToYoutubeSchema = z.object({
-  videos: z.array(z.object({
-    id: z.string().openapi({ description: "Google Photos media item ID" }),
-    baseUrl: z.string().url().openapi({ description: "Base URL for video download (valid for 60 minutes)" }),
-    filename: z.string().openapi({ description: "Original filename" }),
-    mimeType: z.string().openapi({ description: "MIME type of the video" }),
-  })).min(1).openapi({ description: "Videos to upload from Google Photos" }),
-  title: z.string().min(1).openapi({ description: "YouTube video title (will be numbered for batch)" }),
-  description: z.string().optional().openapi({ description: "YouTube video description" }),
-  privacyStatus: z.enum(["public", "unlisted", "private"]).optional().default("private").openapi({
-    description: "Privacy status for uploaded videos",
-  }),
-  mediaType: z.enum(["video", "short"]).optional().default("video").openapi({
-    description: "Media type (standard video or YouTube Short)",
-  }),
-});
-
-/**
- * Response schema for Google Photos to YouTube upload
- */
-const googlePhotosToYoutubeResponseSchema = z.object({
-  results: z.array(z.object({
-    googlePhotosId: z.string().openapi({ description: "Original Google Photos media item ID" }),
-    filename: z.string().openapi({ description: "Original filename" }),
-    status: z.enum(["success", "failed"]).openapi({ description: "Upload status" }),
-    youtubeVideoId: z.string().optional().openapi({ description: "YouTube video ID (on success)" }),
-    error: z.string().optional().openapi({ description: "Error message (on failure)" }),
-  })).openapi({ description: "Per-video upload results" }),
-  summary: z.object({
-    total: z.number().openapi({ description: "Total videos processed" }),
-    successful: z.number().openapi({ description: "Number of successful uploads" }),
-    failed: z.number().openapi({ description: "Number of failed uploads" }),
-  }).openapi({ description: "Upload summary" }),
-});
-
-/**
- * POST /picker/videos-to-youtube — Upload Google Photos videos to YouTube
- */
-export const uploadGooglePhotosToYoutubeRoute = createRoute({
-  method: "post",
-  path: "/picker/videos-to-youtube",
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: googlePhotosToYoutubeSchema,
-        },
-      },
+async function getYouTubeResumableUrl(
+  accessToken: string,
+  title: string,
+  description: string,
+  privacyStatus: string,
+  fileSize: number,
+  mimeType: string,
+  origin: string
+): Promise<string> {
+  const metadata = {
+    snippet: {
+      title,
+      description,
     },
-  },
-  responses: {
-    ...standardErrors,
-    200: {
-      content: {
-        "application/json": {
-          schema: googlePhotosToYoutubeResponseSchema,
-        },
-      },
-      description: "Videos uploaded successfully with per-video results",
+    status: {
+      privacyStatus,
     },
-  },
-  tags: ["google-photos", "youtube", "admin"],
-});
+  };
+
+  const response = await fetch(
+    "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "X-Upload-Content-Length": fileSize.toString(),
+        "X-Upload-Content-Type": mimeType,
+        "Origin": origin,
+      },
+      body: JSON.stringify(metadata),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to initiate resumable upload session:", errorText);
+    throw new ApiError("Failed to initiate YouTube upload session.", 500, "YOUTUBE_SESSION_FAILED");
+  }
+
+  const uploadUrl = response.headers.get("Location");
+  if (!uploadUrl) {
+    throw new ApiError("YouTube did not provide a resumable upload URL.", 500, "YOUTUBE_SESSION_FAILED");
+  }
+
+  return uploadUrl;
+}
 
 export const handler = async (c: any) => {
   const db = getDb(c);
@@ -83,124 +78,124 @@ export const handler = async (c: any) => {
 
   const token = await getUnifiedOAuthToken(env, db);
 
-  const results = await Promise.all(videos.map(async (video, index) => {
-    const googlePhotosId = video.id;
-    const filename = video.filename;
-    const baseUrl = video.baseUrl;
-    const mimeType = video.mimeType;
+  const results = await Promise.all(
+    videos.map(async (video: GooglePhotosVideo, index: number) => {
+      const googlePhotosId = video.id;
+      const filename = video.filename;
+      const baseUrl = video.baseUrl;
+      const mimeType = video.mimeType;
 
-    try {
-      // Step 1: Download the video from Google Photos
-      // Append =dv (download video) to get the actual video file
-      const videoUrl = `${baseUrl}=dv`;
+      try {
+        // Step 1: Download the video from Google Photos
+        // Append =dv (download video) to get the actual video file
+        const videoUrl = `${baseUrl}=dv`;
 
-      const downloadResponse = await fetch(videoUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal: AbortSignal.timeout(300000), // 5 minute timeout per video
-      });
+        const downloadResponse = await fetch(videoUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: AbortSignal.timeout(300000), // 5 minute timeout per video
+        });
 
-      if (!downloadResponse.ok) {
-        throw new Error(`Failed to download video from Google Photos: ${downloadResponse.statusText}`);
-      }
+        if (!downloadResponse.ok) {
+          throw new Error(`Failed to download video from Google Photos: ${downloadResponse.statusText}`);
+        }
 
-      // Get file size from Content-Length header
-      const contentLength = downloadResponse.headers.get("Content-Length");
-      const fileSize = contentLength ? parseInt(contentLength, 10) : 0;
+        // Get file size from Content-Length header
+        const contentLength = downloadResponse.headers.get("Content-Length");
+        const fileSize = contentLength ? parseInt(contentLength, 10) : 0;
 
-      // Step 2: Get YouTube resumable upload URL
-      const videoTitle = videos.length > 1 ? `${title} (${index + 1}/${videos.length})` : title;
-      const finalDescription = mediaType === "short" && !description.toLowerCase().includes("#shorts")
-        ? `${description}\n\n#Shorts`
-        : description;
+        // Step 2: Get YouTube resumable upload URL
+        const videoTitle = videos.length > 1 ? `${title} (${index + 1}/${videos.length})` : title;
+        const finalDescription =
+          mediaType === "short" && !description.toLowerCase().includes("#shorts")
+            ? `${description}\n\n#Shorts`
+            : description;
 
-      const resumableUrlResponse = await youtubeClient.youtube.resumable.$post({
-        json: {
-          title: videoTitle,
-          description: finalDescription,
+        const origin = new URL(c.req.url).origin;
+        const uploadUrl = await getYouTubeResumableUrl(
+          token,
+          videoTitle,
+          finalDescription,
           privacyStatus,
           fileSize,
-          mimeType: mimeType || "video/mp4",
-        },
-      });
+          mimeType || "video/mp4",
+          origin
+        );
 
-      if (!resumableUrlResponse.ok) {
-        const errorText = await resumableUrlResponse.text();
-        throw new Error(`Failed to get YouTube resumable URL: ${errorText}`);
-      }
-
-      const { uploadUrl } = await resumableUrlResponse.json();
-
-      // Step 3: Stream the video directly to YouTube
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": mimeType || "video/mp4",
-        },
-        body: downloadResponse.body, // Stream directly without buffering
-        credentials: "omit",
-        mode: "cors",
-        signal: AbortSignal.timeout(600000), // 10 minute timeout for upload
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        let detail = uploadResponse.statusText;
-        try {
-          const res = JSON.parse(errorText);
-          if (res.error?.message) detail = res.error.message;
-        } catch {
-          if (errorText) detail = errorText.substring(0, 200);
-        }
-        throw new Error(`YouTube upload failed: ${uploadResponse.status} ${detail}`);
-      }
-
-      // Step 4: Get the uploaded video ID
-      const uploadedVideo = await uploadResponse.json() as {
-        id: string;
-        snippet?: { thumbnails?: { high?: { url?: string } } };
-      };
-      const youtubeVideoId = uploadedVideo.id;
-      const thumbnailKey = uploadedVideo.snippet?.thumbnails?.high?.url || null;
-
-      // Step 5: Sync to ARES dashboard database
-      try {
-        await youtubeClient.videos.admin.$post({
-          json: {
-            title: videoTitle,
-            description: finalDescription,
-            platform: "youtube",
-            videoId: youtubeVideoId,
-            thumbnailKey,
-            type: mediaType,
-            createBlogPost: false,
-            crossPostSocial: false,
-          }
+        // Step 3: Stream the video directly to YouTube
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": mimeType || "video/mp4",
+          },
+          body: downloadResponse.body, // Stream directly without buffering
+          credentials: "omit",
+          mode: "cors",
+          signal: AbortSignal.timeout(600000), // 10 minute timeout for upload
         });
-      } catch (dbError) {
-        console.error("[GooglePhotos->YouTube] Failed to sync video to dashboard:", dbError);
-        // Don't fail the upload if DB sync fails
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          let detail = uploadResponse.statusText;
+          try {
+            const res = JSON.parse(errorText);
+            if (res.error?.message) detail = res.error.message;
+          } catch {
+            if (errorText) detail = errorText.substring(0, 200);
+          }
+          throw new Error(`YouTube upload failed: ${uploadResponse.status} ${detail}`);
+        }
+
+        // Step 4: Get the uploaded video ID
+        const uploadedVideo = (await uploadResponse.json()) as {
+          id: string;
+          snippet?: { thumbnails?: { high?: { url?: string } } };
+        };
+        const youtubeVideoId = uploadedVideo.id;
+        const thumbnailKey = uploadedVideo.snippet?.thumbnails?.high?.url || null;
+
+        // Step 5: Sync to ARES dashboard database
+        try {
+          const now = new Date().toISOString();
+          await db
+            .insert(schema.videos)
+            .values({
+              id: `vid_${crypto.randomUUID()}`,
+              title: videoTitle,
+              description: finalDescription,
+              platform: "youtube",
+              videoId: youtubeVideoId,
+              thumbnailKey,
+              type: mediaType,
+              createdAt: now,
+              updatedAt: now,
+            } as any)
+            .execute();
+        } catch (dbError) {
+          console.error("[GooglePhotos->YouTube] Failed to sync video to dashboard:", dbError);
+          // Don't fail the upload if DB sync fails
+        }
+
+        return {
+          googlePhotosId,
+          filename,
+          status: ("success" as const),
+          youtubeVideoId,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error(`[GooglePhotos->YouTube] Failed to upload video ${googlePhotosId}:`, error);
+
+        return {
+          googlePhotosId,
+          filename,
+          status: ("failed" as const),
+          error: errorMessage,
+        };
       }
-
-      return {
-        googlePhotosId,
-        filename,
-        status: "success" as const,
-        youtubeVideoId,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error(`[GooglePhotos->YouTube] Failed to upload video ${googlePhotosId}:`, error);
-
-      return {
-        googlePhotosId,
-        filename,
-        status: "failed" as const,
-        error: errorMessage,
-      };
-    }
-  }));
+    })
+  );
 
   const summary = {
     total: results.length,
@@ -208,8 +203,11 @@ export const handler = async (c: any) => {
     failed: results.filter((r) => r.status === "failed").length,
   };
 
-  return c.json({
-    results,
-    summary,
-  }, 200);
+  return c.json(
+    {
+      results,
+      summary,
+    },
+    200
+  );
 };
