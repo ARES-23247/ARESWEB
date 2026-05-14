@@ -1,9 +1,22 @@
 import { useState } from "react";
-import { FileText, X, Plus } from "lucide-react";
+import { FileText, FileSpreadsheet, Presentation, Link, X, Plus, ExternalLink } from "lucide-react";
+import DrivePickerModal from "../../DrivePickerModal";
 import { useDeleteTaskAttachment, useCreateTaskAttachment } from "../../../api";
 import { toastApiError } from "../../../api/honoClient";
 import type { TaskItem } from "./constants";
-import DrivePickerModal from "../../DrivePickerModal";
+// Helper to determine icon and color based on URL
+const getGoogleDocInfo = (url: string) => {
+  if (url.includes("docs.google.com/spreadsheets")) {
+    return { Icon: FileSpreadsheet, color: "text-[#34A853]", bg: "bg-[#34A853]/10", border: "border-[#34A853]/30", label: "Sheet" };
+  }
+  if (url.includes("docs.google.com/presentation")) {
+    return { Icon: Presentation, color: "text-[#FBBC04]", bg: "bg-[#FBBC04]/10", border: "border-[#FBBC04]/30", label: "Slides" };
+  }
+  if (url.includes("docs.google.com/document")) {
+    return { Icon: FileText, color: "text-[#4285F4]", bg: "bg-[#4285F4]/10", border: "border-[#4285F4]/30", label: "Doc" };
+  }
+  return { Icon: Link, color: "text-ares-cyan", bg: "bg-ares-cyan/10", border: "border-ares-cyan/30", label: "Link" };
+};
 
 interface TaskDocumentsProps {
   task: TaskItem;
@@ -41,23 +54,33 @@ export function TaskDocuments({ task }: TaskDocumentsProps) {
         </button>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {documents.map(doc => (
-          <div key={doc.id} className={`w-full aspect-video ares-cut-sm overflow-hidden border border-white/10 relative group bg-black/40 ${deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-            {/* The iframe url replaces /edit or /view with /preview for better embedding */}
-            <iframe 
-              src={doc.url.replace(/\/(edit|view).*$/, '/preview')} 
-              className="w-full h-full border-0" 
-              title={doc.title}
-              allowFullScreen
-            />
-            
-            {/* Overlay to show delete button on hover */}
-            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-bl from-black/80 to-transparent pointer-events-none w-24 h-24 flex justify-end items-start rounded-tr-xl">
+      <div className="flex flex-col gap-2">
+        {documents.map(doc => {
+          const info = getGoogleDocInfo(doc.url);
+          const Icon = info.Icon;
+          return (
+            <div 
+              key={doc.id} 
+              className={`flex items-center justify-between p-3 ares-cut-sm border border-white/5 bg-black/40 hover:bg-white/5 transition-colors group ${deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className={`p-2 ares-cut-sm border ${info.bg} ${info.border}`}>
+                  <Icon size={16} className={info.color} />
+                </div>
+                <a 
+                  href={doc.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm font-bold text-white hover:text-ares-cyan truncate transition-colors flex items-center gap-1.5 flex-1"
+                >
+                  {doc.title}
+                  <ExternalLink size={12} className="text-ares-gray opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </a>
+              </div>
               <button
                 onClick={() => deleteAttachmentMutation.mutate({ id: task.id, attachmentId: doc.id })}
                 disabled={deleteAttachmentMutation.isPending}
-                className="p-1.5 text-white/70 hover:text-ares-red transition-all bg-black/80 rounded pointer-events-auto shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 ml-2 text-ares-gray hover:text-ares-red transition-all rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Remove Document"
               >
                 {deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? (
@@ -67,19 +90,8 @@ export function TaskDocuments({ task }: TaskDocumentsProps) {
                 )}
               </button>
             </div>
-            
-            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none flex justify-between items-end">
-              <a 
-                href={doc.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-xs font-bold text-white hover:text-ares-cyan truncate block transition-colors drop-shadow-md pointer-events-auto"
-              >
-                {doc.title}
-              </a>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <DrivePickerModal
         isOpen={isPickerOpen}
