@@ -80,14 +80,15 @@ const routes = adminApp
     const { code, error } = c.req.valid("query");
     const env = c.env;
 
-    const frontendUrl = new URL(c.req.url).origin; // Can be configured if frontend and backend differ
+    const frontendUrl = new URL(c.req.url).origin;
+    const dashboardPath = "/dashboard/youtube";
 
     if (error) {
-      return c.redirect(`${frontendUrl}/admin/media?error=${encodeURIComponent(error)}`);
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent(error)}`);
     }
 
     if (!code) {
-      return c.redirect(`${frontendUrl}/admin/media?error=no_code`);
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=no_code`);
     }
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
@@ -109,7 +110,7 @@ const routes = adminApp
     if (!tokenResponse.ok) {
       const tokenError = await tokenResponse.text();
       console.error("Token Exchange Error:", tokenError);
-      return c.redirect(`${frontendUrl}/admin/media?error=token_exchange_failed`);
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=token_exchange_failed`);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,7 +124,7 @@ const routes = adminApp
       
       if (!userInfoRes.ok) {
         console.error("Failed to fetch user info for OAuth verification", await userInfoRes.text());
-        return c.redirect(`${frontendUrl}/admin/media?error=user_verification_failed`);
+        return c.redirect(`${frontendUrl}${dashboardPath}?error=user_verification_failed`);
       }
       
       const userInfo = await userInfoRes.json() as { email?: string };
@@ -131,13 +132,13 @@ const routes = adminApp
       
       if (userInfo.email !== authorizedEmail) {
         console.warn(`Unauthorized Google Account connection attempt by ${userInfo.email}. Expected ${authorizedEmail}.`);
-        return c.redirect(`${frontendUrl}/admin/media?error=unauthorized_email`);
+        return c.redirect(`${frontendUrl}${dashboardPath}?error=unauthorized_email`);
       }
     }
 
+    const db = getDb(c);
+
     if (tokenData.refresh_token) {
-      const db = getDb(c);
-      
       // Upsert the refresh token in the settings table
       await db
         .insert(settings)
@@ -163,7 +164,25 @@ const routes = adminApp
         console.warn("No refresh token received. User might have previously authorized.");
     }
 
-    return c.redirect(`${frontendUrl}/admin/media?youtube=connected`);
+    // Store the initial access token so the status check immediately shows "connected"
+    if (tokenData.access_token) {
+      const expiresInSec = tokenData.expires_in || 3600;
+      const expiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
+      
+      await db
+        .insert(settings)
+        .values({ key: "oauth_access_token", value: tokenData.access_token, updatedAt: new Date().toISOString() })
+        .onConflictDoUpdate({ target: settings.key, set: { value: tokenData.access_token, updatedAt: new Date().toISOString() } })
+        .execute();
+      
+      await db
+        .insert(settings)
+        .values({ key: "oauth_token_expires_at", value: expiresAt, updatedAt: new Date().toISOString() })
+        .onConflictDoUpdate({ target: settings.key, set: { value: expiresAt, updatedAt: new Date().toISOString() } })
+        .execute();
+    }
+
+    return c.redirect(`${frontendUrl}${dashboardPath}?youtube=connected`);
   })
   .openapi(getResumableUrlRoute, async (c) => {
     const body = c.req.valid("json");
@@ -353,8 +372,10 @@ const routes = adminApp
       return c.json({ success: true }, 200);
     }
 
-    // Delete token
+    // Delete refresh token and cached access token
     await db.delete(settings).where(eq(settings.key, "youtube_refresh_token")).execute();
+    await db.delete(settings).where(eq(settings.key, "oauth_access_token")).execute();
+    await db.delete(settings).where(eq(settings.key, "oauth_token_expires_at")).execute();
 
     if (c.executionCtx) {
         c.executionCtx.waitUntil(logAuditAction(c, "youtube_disconnect", "system", "youtube", "Disconnected YouTube integration"));
