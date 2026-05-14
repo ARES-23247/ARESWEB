@@ -277,6 +277,7 @@ interface FTSResult {
   snippet: string;
 }
 
+// @ts-ignore TS2590: Union type too complex — known Hono limitation
 const routes = new OpenAPIHono<AppEnv>()
   .route("/", group1)
   .route("/", group2)
