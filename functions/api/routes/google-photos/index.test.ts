@@ -7,6 +7,7 @@ import { createMockDrizzleDb } from "../../../test/test-env";
 // Mock googleAuth module BEFORE importing google-photos
 vi.mock("../../../utils/googleAuth", () => ({
   getUnifiedOAuthToken: vi.fn(),
+  clearCachedOAuthToken: vi.fn(),
 }));
 
 // Mock middleware modules BEFORE importing google-photos
@@ -66,14 +67,21 @@ describe("google-photos router", () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ mediaItems: [] }),
+        text: () => Promise.resolve("{}"),
       } as Response);
 
       const response = await app.request("/api/google-photos/health", {
         method: "GET",
       });
 
-      expect(response.status).toBe(200);
-      const body = await response.json() as any;
+      const responseText = await response.text();
+      console.log("HEALTH RESPONSE:", response.status, responseText);
+
+      // Re-create the response since text() consumes it
+      const newResponse = new Response(responseText, { status: response.status, headers: response.headers });
+      
+      expect(newResponse.status).toBe(200);
+      const body = await newResponse.json() as any;
       expect(body).toEqual({
         status: "ok",
         service: "google-photos",
@@ -87,6 +95,7 @@ describe("google-photos router", () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ mediaItems: [] }),
+        text: () => Promise.resolve("{}"),
       } as Response);
 
       await app.request("/api/google-photos/health", {
@@ -126,6 +135,7 @@ describe("google-photos router", () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ mediaItems: [] }),
+        text: () => Promise.resolve("{}"),
       } as Response);
 
       const response = await app.request("/api/google-photos/health", {
