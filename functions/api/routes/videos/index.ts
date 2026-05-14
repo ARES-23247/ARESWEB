@@ -70,7 +70,11 @@ const serializeVideo = (v: typeof schema.videos.$inferSelect): z.infer<typeof vi
         platform: v.platform as "youtube" | "other",
         videoId: v.videoId,
         thumbnailKey: v.thumbnailKey ?? null,
-        thumbnailUrl: v.thumbnailKey ? `/api/media/${v.thumbnailKey}` : null,
+        thumbnailUrl: v.thumbnailKey
+            ? `/api/media/${v.thumbnailKey}`
+            : v.platform === "youtube"
+                ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`
+                : null,
         embedUrl,
         type: (v.type as "video" | "short") ?? "video",
         createdAt: v.createdAt ?? new Date().toISOString(),

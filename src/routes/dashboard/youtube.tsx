@@ -181,24 +181,33 @@ function VideoHub() {
                       key={video.id}
                       className="bg-obsidian border border-white/10 ares-cut-sm overflow-hidden group hover:border-ares-red/30 transition-colors"
                     >
-                      {video.platform === 'youtube' ? (
-                        <div className="w-full h-40 bg-black/20 relative">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${video.videoId}`}
-                            title={video.title}
-                            className="absolute inset-0 w-full h-full border-0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
+                      {video.thumbnailUrl ? (
+                        <a
+                          href={
+                            video.platform === 'youtube'
+                              ? `https://www.youtube.com/watch?v=${video.videoId}`
+                              : video.embedUrl.startsWith('http') ? video.embedUrl : `https://${video.embedUrl}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full h-40 bg-black/20 relative group/thumb overflow-hidden"
+                        >
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
                             loading="lazy"
-                          ></iframe>
-                        </div>
-                      ) : video.thumbnailUrl ? (
-                        <div className="w-full h-40 bg-black/20 flex items-center justify-center">
-                          <img src={video.thumbnailUrl} alt={video.title} className="max-w-full max-h-full object-contain" />
-                        </div>
+                          />
+                          {/* Play button overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                            <div className="w-12 h-12 bg-ares-red/90 rounded-full flex items-center justify-center shadow-lg">
+                              <Play size={20} className="text-white ml-0.5" fill="white" />
+                            </div>
+                          </div>
+                        </a>
                       ) : (
                         <div className="w-full h-40 bg-ares-red/10 flex items-center justify-center">
-                          <span className={`text-4xl ${video.platform === "youtube" ? "text-ares-red" : "text-white/60"}`}>▶</span>
+                          <span className="text-4xl text-white/60">▶</span>
                         </div>
                       )}
                       <div className="p-4">
