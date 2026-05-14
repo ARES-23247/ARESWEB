@@ -77,7 +77,8 @@ const routes = adminApp
     authUrl.searchParams.append("access_type", "offline");
     authUrl.searchParams.append("prompt", "consent"); // Force consent to ensure refresh token is provided
     authUrl.searchParams.append("login_hint", env.AUTHORIZED_GOOGLE_ACCOUNT || "ares23247wv@gmail.com");
-    authUrl.searchParams.append("include_granted_scopes", "true");
+    // NOTE: Do NOT use include_granted_scopes=true — it causes scope fragmentation
+    // where Google may issue refresh tokens with only previously-granted scopes.
 
     return c.json({ url: authUrl.toString() }, 200);
   })
@@ -131,13 +132,21 @@ const routes = adminApp
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tokenData: any = await tokenResponse.json();
+    const grantedScope = tokenData.scope || "";
     console.log("[OAuth Callback] Token exchange successful", {
       hasAccessToken: !!tokenData.access_token,
       hasRefreshToken: !!tokenData.refresh_token,
       expiresIn: tokenData.expires_in,
-      scope: tokenData.scope,
+      scope: grantedScope,
       tokenType: tokenData.token_type,
     });
+
+    // Verify critical scopes were granted
+    const requiredScopes = ["photoslibrary.readonly", "youtube.readonly", "youtube.upload"];
+    const missingScopes = requiredScopes.filter(s => !grantedScope.includes(s));
+    if (missingScopes.length > 0) {
+      console.warn("[OAuth Callback] WARNING: Missing critical scopes:", missingScopes, "Granted:", grantedScope);
+    }
 
     if (tokenData.access_token) {
       // Verify the authorized email matches the authorized team account
