@@ -449,7 +449,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
         onPhotosImported={(urls) => {
           // Insert multiple images back-to-back
           urls.forEach(url => {
-            editor.chain().focus().setImage({ src: url, alt: "Imported Google Photo" }).run();
+            editor.chain().focus().setImage({ src: url, alt: "" }).run();
           });
         }}
       />
