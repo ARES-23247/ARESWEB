@@ -3,7 +3,7 @@ import { mergeAttributes, Node } from '@tiptap/core';
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     googleDriveEmbed: {
-      setGoogleDriveEmbed: (options: { src: string }) => ReturnType;
+      setGoogleDriveEmbed: (options: { src: string; title?: string }) => ReturnType;
     };
   }
 }
@@ -36,6 +36,9 @@ export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
       src: {
         default: null,
       },
+      title: {
+        default: null,
+      },
     };
   },
 
@@ -52,6 +55,7 @@ export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
 
   renderHTML({ HTMLAttributes }) {
     const src = (HTMLAttributes.src as string) || '';
+    const title = (HTMLAttributes.title as string) || src || 'Google Drive File';
     
     let typeName = 'Google Document';
     let iconColor = 'text-ares-red';
@@ -80,6 +84,7 @@ export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
         target: '_blank',
         rel: 'noopener noreferrer',
         'data-google-drive': 'true',
+        title: title,
         contenteditable: 'false'
       }),
       ['div', { class: `flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-md bg-white/5 border border-white/10 ${iconColor}` },
@@ -92,8 +97,8 @@ export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
         ]
       ],
       ['div', { class: 'flex flex-col overflow-hidden w-full' },
-        ['span', { class: 'font-bold text-sm text-zinc-100 truncate' }, typeName],
-        ['span', { class: 'text-xs text-zinc-400 truncate w-full block' }, src]
+        ['span', { class: 'font-bold text-sm text-zinc-100 truncate' }, title],
+        ['span', { class: 'text-xs text-zinc-400 truncate w-full block' }, typeName]
       ]
     ];
   },
@@ -101,12 +106,13 @@ export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
   addCommands() {
     return {
       setGoogleDriveEmbed:
-        (options: { src: string }) =>
+        (options: { src: string; title?: string }) =>
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
             attrs: {
               src: options.src,
+              title: options.title,
             },
           });
         },
