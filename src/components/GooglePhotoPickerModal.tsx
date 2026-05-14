@@ -157,7 +157,7 @@ export default function GooglePhotoPickerModal({
             // Send back the URLs of successfully imported photos
             const successUrls = data.results
               .filter(r => r.status === "success" && r.r2Key)
-              .map(r => `/cdn-cgi/image/width=800,quality=80/${r.r2Key}`);
+              .map(r => `/api/media/${r.r2Key}`);
               
             if (onPhotosImported && successUrls.length > 0) {
               onPhotosImported(successUrls);
