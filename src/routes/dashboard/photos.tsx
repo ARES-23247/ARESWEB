@@ -209,7 +209,7 @@ function PhotosDashboard() {
                 </div>
               ) : albumsError ? (
                 <p className="text-sm text-ares-red">
-                  Failed to load albums
+                  {albumsError instanceof Error ? albumsError.message : "Failed to load albums"}
                 </p>
               ) : albums.length === 0 ? (
                 <p className="text-sm text-ares-bronze">No albums found</p>
@@ -290,8 +290,11 @@ function PhotosDashboard() {
                   ))}
                 </div>
               ) : mediaError ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <p className="text-ares-red">Failed to load photos</p>
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <p className="text-ares-red font-bold">Failed to load photos</p>
+                  <p className="text-ares-red/70 text-sm text-center max-w-md">
+                    {mediaError instanceof Error ? mediaError.message : "Unknown error"}
+                  </p>
                 </div>
               ) : mediaItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">

@@ -73,7 +73,22 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   const env = c.env;
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getUnifiedOAuthToken(env, db);
+  let token: string;
+  try {
+    token = await getUnifiedOAuthToken(env, db);
+  } catch (err) {
+    console.error("[google-photos] Failed to get unified OAuth token:", err);
+    throw err;
+  }
+
+  // Introspect the token to check scopes
+  const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+  const tokenInfo = tokenInfoRes.ok ? await tokenInfoRes.json() as { scope?: string; error_description?: string } : null;
+  console.log("[google-photos] Token introspection:", {
+    status: tokenInfoRes.status,
+    scope: tokenInfo && 'scope' in tokenInfo ? (tokenInfo as { scope: string }).scope : "N/A",
+    error: tokenInfo && 'error_description' in tokenInfo ? (tokenInfo as { error_description: string }).error_description : undefined,
+  });
 
   // Test Photos API with a minimal search request
   const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
@@ -90,12 +105,16 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
     throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
   }
 
-  // Handle other API errors
+  // Handle other API errors — include Google's error body for diagnostics
   if (!photosResponse.ok) {
     const errorText = await photosResponse.text();
-    console.error("[google-photos] API health check failed:", errorText);
+    console.error("[google-photos] API health check failed:", {
+      status: photosResponse.status,
+      body: errorText,
+      tokenScopes: tokenInfo && 'scope' in tokenInfo ? (tokenInfo as { scope: string }).scope : "unknown",
+    });
     throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}`,
+      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
       500,
       "API_FAILURE"
     );
@@ -153,9 +172,9 @@ const app2 = app1.openapi(mediaRoute, async (c) => {
   // Handle other API errors
   if (!photosResponse.ok) {
     const errorText = await photosResponse.text();
-    console.error("[google-photos] Media API search failed:", errorText);
+    console.error("[google-photos] Media API search failed:", { status: photosResponse.status, body: errorText });
     throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}`,
+      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
       502,
       "API_FAILURE"
     );
@@ -243,9 +262,9 @@ const app3 = app2.openapi(albumsRoute, async (c) => {
   // Handle other API errors
   if (!photosResponse.ok) {
     const errorText = await photosResponse.text();
-    console.error("[google-photos] Albums API list failed:", errorText);
+    console.error("[google-photos] Albums API list failed:", { status: photosResponse.status, body: errorText });
     throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}`,
+      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
       502,
       "API_FAILURE"
     );
