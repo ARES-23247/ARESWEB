@@ -12,12 +12,13 @@ import { EditorContent } from "@tiptap/react";
 import { toast } from "sonner";
 import mammoth from "mammoth";
 import { compressImage as _compressImage } from "../../utils/imageProcessor";
-import { Maximize, Minimize } from "lucide-react";
+import { Maximize, Minimize, HardDrive } from "lucide-react";
 import AssetPickerModal from "../AssetPickerModal";
 import SimPickerModal from "../SimPickerModal";
 import GalleryPickerModal from "../GalleryPickerModal";
 import GooglePhotoPickerModal from "../GooglePhotoPickerModal";
 import VideoPickerModal from "../VideoPickerModal";
+import DrivePickerModal from "../DrivePickerModal";
 import { uploadFile } from "../../utils/apiClient";
 import { useModal } from "../../contexts/ModalContext";
 
@@ -127,6 +128,7 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
   const [isGalleryPickerOpen, setIsGalleryPickerOpen] = useState(false);
   const [isGooglePhotoPickerOpen, setIsGooglePhotoPickerOpen] = useState(false);
   const [isVideoPickerOpen, setIsVideoPickerOpen] = useState(false);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"Saved ✓" | "Saving...">("Saved ✓");
@@ -266,41 +268,10 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
         }} className="px-3 py-2 border border-white/20 text-white hover:bg-white hover:text-black ares-cut-sm text-sm font-bold transition-all shadow-sm">Reveal</button>
         <Sep />
 
-        {/* Link / YT */}
-        <button type="button" aria-label="Insert Link or YouTube Video" title="Insert Link or YouTube Video" onClick={async () => {
-          const previousUrl = editor.getAttributes('link').href;
-          const url = await modal.prompt({
-            title: "Insert Link",
-            description: "Enter the URL (leave blank to remove link):",
-            defaultValue: previousUrl || "",
-          });
-          if (url === null) return;
-          if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
-          
-          let finalUrl = url.trim();
-          if (!/^https?:\/\//i.test(finalUrl) && !finalUrl.startsWith('mailto:') && !finalUrl.startsWith('/')) {
-            finalUrl = `https://${finalUrl}`;
-          }
-
-          const isYoutube = finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be');
-          if (isYoutube) {
-            const embed = await modal.confirm({
-              title: "Embed YouTube Video?",
-              description: "Would you like to embed this as a YouTube player instead of a simple link?",
-              confirmText: "Embed",
-            });
-            if (embed) {
-              editor.chain().focus().setYoutubeVideo({ src: finalUrl }).run();
-              return;
-            }
-          }
-          
-          if (editor.state.selection.empty) {
-            editor.chain().focus().insertContent(`<a href="${finalUrl}">${url}</a>`).run();
-          } else {
-            editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
-          }
-        }} className="px-3 py-2 ares-cut-sm text-sm font-bold transition-all text-ares-cyan hover:bg-ares-gray-dark hover:text-white">🔗 / YT</button>
+        {/* Drive Embed */}
+        <button type="button" aria-label="Insert Google Drive Embed" title="Insert Google Drive Embed" onClick={() => setIsDrivePickerOpen(true)} className="px-3 py-2 ares-cut-sm text-sm font-bold transition-all text-ares-cyan hover:bg-ares-gray-dark hover:text-white flex items-center gap-1.5 shadow-sm">
+          <HardDrive size={14} /> Drive
+        </button>
 
         {/* Table */}
         <Btn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} ariaLabel="Insert Table">Table</Btn>
@@ -499,6 +470,15 @@ export default function RichEditorToolbar({ editor, documentTitle, onInsertFileL
             attrs: { videoId, title, platform, mediaId }
           }).run();
           setIsVideoPickerOpen(false);
+        }}
+      />
+
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={(url) => {
+          editor.chain().focus().setGoogleDriveEmbed({ src: url }).run();
+          setIsDrivePickerOpen(false);
         }}
       />
     </div>

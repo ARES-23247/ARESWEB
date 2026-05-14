@@ -95,7 +95,8 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" pnpm run typecheck)",
       "Read(//c/Users/david/.claude/skills/gsd-health/**)",
       "Bash(mv comprehensive-code-review *)",
-      "Bash(mkdir -p ../archive)"
+      "Bash(mkdir -p ../archive)",
+      "Bash(sort -u -t' ' -k2 -n)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
