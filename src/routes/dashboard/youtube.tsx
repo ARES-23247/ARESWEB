@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { toastApiError, ApiError, client } from '../../api/honoClient';
 import { useQueryClient } from '@tanstack/react-query';
 import VideoPickerModal from '../../components/VideoPickerModal';
+import YouTubeVideoPickerModal from '../../components/YouTubeVideoPickerModal';
 
 export const Route = createFileRoute('/dashboard/youtube')({
   component: VideoHub,
@@ -20,6 +21,7 @@ function VideoHub() {
   const queryClient = useQueryClient();
   const search = useSearch({ from: '/dashboard/youtube' });
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isGooglePhotosPickerOpen, setIsGooglePhotosPickerOpen] = useState(false);
   const [editVideoId, setEditVideoId] = useState<string | undefined>(undefined);
 
   const { data: authStatus, isLoading: isStatusLoading } = useGetYoutubeAuthStatus();
@@ -106,7 +108,7 @@ function VideoHub() {
       {/* Main Layout: Uploader (left) + Video Library (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         {/* Left Panel: YouTube Direct Upload */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-4">
           {isStatusLoading ? (
             <div className="bg-obsidian border border-white/10 ares-cut-sm p-5 h-full flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-white/10 border-t-ares-red rounded-full animate-spin" />
@@ -115,6 +117,23 @@ function VideoHub() {
             <YouTubeConnectPanel />
           ) : (
             <YouTubeUploader memberType={authStatus.memberType} />
+          )}
+
+          {/* Google Photos Video Picker */}
+          {authStatus?.isAuthenticated && (
+            <div className="bg-obsidian border border-ares-red/30 ares-cut-sm p-5">
+              <h3 className="text-ares-gold font-black uppercase tracking-widest text-sm mb-3">Import from Google Photos</h3>
+              <p className="text-marble/60 text-xs mb-4">
+                Select videos from your Google Photos library to upload to YouTube.
+              </p>
+              <button
+                onClick={() => setIsGooglePhotosPickerOpen(true)}
+                className="w-full py-2.5 bg-ares-gold/20 hover:bg-ares-gold/30 text-ares-gold font-black uppercase tracking-widest ares-cut-sm transition-colors flex items-center justify-center gap-2 text-xs"
+              >
+                <Video size={16} />
+                Pick Videos from Google Photos
+              </button>
+            </div>
           )}
         </div>
 
@@ -283,6 +302,12 @@ function VideoHub() {
           queryClient.invalidateQueries({ queryKey: ["videos"] });
         }}
         editVideoId={editVideoId}
+      />
+
+      <YouTubeVideoPickerModal
+        isOpen={isGooglePhotosPickerOpen}
+        onClose={() => setIsGooglePhotosPickerOpen(false)}
+        memberType={authStatus?.memberType}
       />
     </div>
   );

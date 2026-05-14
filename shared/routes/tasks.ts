@@ -116,6 +116,7 @@ export const listTasksRoute = createRoute({
   description: "Fetches all tasks with optional filtering.",
   request: {
     query: z.object({
+      id: z.string().optional(),
       status: z.string().optional(),
       parentId: z.string().optional(),
       subteam: z.string().optional(),

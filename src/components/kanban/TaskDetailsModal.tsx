@@ -4,7 +4,7 @@ import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
   X, Save, Trash2, Flag, Layout,
 } from "lucide-react";
-import { useSetTaskLabels } from "../../api";
+import { useSetTaskLabels, useGetTasks } from "../../api";
 import { type Task as TaskItem } from "../../api";
 import { toastApiError } from "../../api/honoClient";
 
@@ -141,6 +141,9 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const setLabelsMutation = useSetTaskLabels({ onError: (err: unknown) => toastApiError(err) });
   const [labelIds, setLabelIds] = useState<string[]>(task.labels?.map(l => l.id) || []);
 
+  const { data: freshTaskData } = useGetTasks({ id: task.id }) as any;
+  const freshTask = freshTaskData?.tasks?.[0] || task;
+
   // Accessibility: Focus trap for keyboard navigation
   const { modalRef: focusTrapRef } = useFocusTrap({
     isOpen: true,
@@ -248,15 +251,15 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
               </CollaborativeEditorRoom>
             </div>
 
-            <TaskSubtasks task={task} onTaskClick={onTaskClick} />
-            <TaskChecklists task={task} />
-            <TaskDocuments task={task} />
-            <TaskAttachments task={task} />
+            <TaskSubtasks task={freshTask} onTaskClick={onTaskClick} />
+            <TaskChecklists task={freshTask} />
+            <TaskDocuments task={freshTask} />
+            <TaskAttachments task={freshTask} />
           </div>
 
           {/* Right Column: Meta & Zulip */}
           <TaskMetaSidebar
-            task={task}
+            task={freshTask}
             status={status} setStatus={setStatus}
             priority={priority} setPriority={setPriority}
             subteam={subteam} setSubteam={setSubteam}
@@ -271,16 +274,16 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         {/* Footer */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-t border-white/5 bg-white/5">
           <div className="flex items-center gap-4 text-[10px] text-ares-gray font-mono">
-            <span>Created {new Date(task.createdAt || 0).toLocaleDateString()}</span>
-            {task.creatorName && <span>by {task.creatorName}</span>}
-            <span>Updated {new Date(task.updatedAt || 0).toLocaleDateString()}</span>
+            <span>Created {new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
+            {freshTask.creatorName && <span>by {freshTask.creatorName}</span>}
+            <span>Updated {new Date(freshTask.updatedAt || 0).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center gap-3">
             {confirmDelete ? (
               <div className="flex items-center gap-2 mr-4">
                 <span className="text-xs text-ares-red font-bold">Confirm?</span>
                 <button
-                  onClick={() => { onDelete(task.id); onClose(); }}
+                  onClick={() => { onDelete(freshTask.id); onClose(); }}
                   className="px-3 py-1.5 bg-ares-red/20 hover:bg-ares-red/30 text-ares-red text-xs font-bold ares-cut-sm border border-ares-red/30"
                 >
                   Delete Task

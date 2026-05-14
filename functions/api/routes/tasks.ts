@@ -66,6 +66,9 @@ export const tasksRouter = _tasksRouter
             assigneeName: string | null;
             assignedTo: string | null;
             assignees_json: string | null;
+            checklists_json: string | null;
+            attachments_json: string | null;
+            labels_json: string | null;
         }
 
         let tasks: TaskQueryResult[];
@@ -73,6 +76,7 @@ export const tasksRouter = _tasksRouter
             tasks = await queryHelpers.getTasksList(db, {
                 limit,
                 offset: Number(offset),
+                id: query.id,
                 status: query.status,
                 parentId: query.parentId,
                 assignedTo: query.assignedTo,
@@ -96,6 +100,31 @@ export const tasksRouter = _tasksRouter
                     // ignore
                 }
             }
+            
+            let checklists: any[] = [];
+            if (t.checklists_json) {
+                try {
+                    const parsed = JSON.parse(t.checklists_json);
+                    checklists = parsed.filter((c: any) => c && c.id !== null);
+                } catch (_e) {}
+            }
+            
+            let attachments: any[] = [];
+            if (t.attachments_json) {
+                try {
+                    const parsed = JSON.parse(t.attachments_json);
+                    attachments = parsed.filter((a: any) => a && a.id !== null);
+                } catch (_e) {}
+            }
+            
+            let labels: any[] = [];
+            if (t.labels_json) {
+                try {
+                    const parsed = JSON.parse(t.labels_json);
+                    labels = parsed.filter((l: any) => l && l.id !== null);
+                } catch (_e) {}
+            }
+            
             return {
                 ...t,
                 sortOrder: t.sortOrder ?? 0,
@@ -106,6 +135,9 @@ export const tasksRouter = _tasksRouter
                 assignedTo: t.assignedTo ?? null,
                 assigneeName: t.assigneeName ?? null,
                 assignees,
+                checklists,
+                attachments,
+                labels,
                 creatorName: t.creatorName ?? "ARES Member",
                 zulipStream: null,
                 zulipTopic: null,

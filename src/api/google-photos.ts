@@ -94,6 +94,19 @@ export function useCreatePickerSession() {
 }
 
 /**
+ * Mutation hook to create a new video-only Picker session
+ * Returns the pickerUri to open in a popup for user video selection
+ */
+export function useCreateVideoPickerSession() {
+  return useMutation({
+    mutationFn: async () => {
+      const res = await client["google-photos"].picker["video-session"].$post({});
+      return unwrapResponse<PickerSession>(res);
+    },
+  });
+}
+
+/**
  * Query hook to poll a Picker session status
  * Enabled only when sessionId is provided and mediaItemsSet is not yet true
  * @param sessionId - Active session ID to poll
@@ -241,6 +254,71 @@ export function useUploadPhotos(
       },
       onError: (queryClient, error, _variables) => {
         toastApiError(error, "Photo upload failed");
+      },
+    }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GOOGLE PHOTOS VIDEOS TO YOUTUBE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface GooglePhotosToYoutubeParams {
+  videos: Array<{
+    id: string;
+    baseUrl: string;
+    filename: string;
+    mimeType: string;
+  }>;
+  title: string;
+  description?: string;
+  privacyStatus?: "public" | "unlisted" | "private";
+  mediaType?: "video" | "short";
+}
+
+export interface GooglePhotosToYoutubeResponse {
+  results: Array<{
+    googlePhotosId: string;
+    filename: string;
+    status: "success" | "failed";
+    youtubeVideoId?: string;
+    error?: string;
+  }>;
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
+}
+
+/**
+ * Mutation hook for uploading Google Photos videos to YouTube
+ */
+export function useUploadGooglePhotosToYoutube(
+  options?: import("@tanstack/react-query").UseMutationOptions<
+    GooglePhotosToYoutubeResponse,
+    unknown,
+    GooglePhotosToYoutubeParams
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: GooglePhotosToYoutubeParams) => {
+      const res = await client["google-photos"].picker["videos-to-youtube"].$post({
+        json: params,
+      });
+
+      return unwrapResponse<GooglePhotosToYoutubeResponse>(res);
+    },
+    ...withMutationCallbacks(queryClient, options, {
+      onSuccess: (queryClient, _data) => {
+        queryClient.invalidateQueries({
+          queryKey: ["videos"],
+        });
+      },
+      onError: (queryClient, error) => {
+        toastApiError(error, "Failed to upload videos to YouTube");
       },
     }),
   });

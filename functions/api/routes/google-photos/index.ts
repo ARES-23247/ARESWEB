@@ -8,10 +8,12 @@ import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
 import {
   createPickerSessionRoute,
+  createVideoPickerSessionRoute,
   getPickerSessionRoute,
   getPickerItemsRoute,
   deletePickerSessionRoute,
   importPhotosRoute,
+  uploadGooglePhotosToYoutubeRoute,
 } from "../../../../shared/routes/google-photos";
 import * as schema from "../../../../src/db/schema";
 import {
@@ -200,10 +202,61 @@ const app2 = app1.openapi(createPickerSessionRoute, async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /picker/video-session — Create video-only Picker session for YouTube
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app2v = app2.openapi(createVideoPickerSessionRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+
+  const token = await getUnifiedOAuthToken(env, db);
+
+  const response = await fetch(`${PICKER_API_BASE}/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      filter: {
+        include: ["VIDEO"]  // Only show videos, exclude photos
+      }
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[google-photos] Create video picker session failed:", errorText);
+    throw new ApiError(
+      `Picker API error: ${response.status} ${response.statusText}`,
+      response.status,
+      "VIDEO_PICKER_SESSION_CREATE_FAILED"
+    );
+  }
+
+  const session = await response.json() as {
+    id: string;
+    pickerUri: string;
+    mediaItemsSet: boolean;
+    pollingConfig?: {
+      pollInterval?: string;
+      timeoutIn?: string;
+    };
+  };
+
+  return c.json({
+    id: session.id,
+    pickerUri: session.pickerUri,
+    mediaItemsSet: session.mediaItemsSet ?? false,
+    pollingConfig: session.pollingConfig,
+  }, 200);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /picker/session/:sessionId — Poll session status
 // ─────────────────────────────────────────────────────────────────────────────
 
-const app3 = app2.openapi(getPickerSessionRoute, async (c) => {
+const app3 = app2v.openapi(getPickerSessionRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
   const { sessionId } = c.req.valid("param");
@@ -590,6 +643,14 @@ const app6 = app5.openapi(importPhotosRoute, async (c) => {
   return c.json({ imported, failed, results } as any, 200);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /picker/videos-to-youtube — Upload Google Photos videos to YouTube
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { handler: uploadGooglePhotosToYoutubeHandler } = await import("./video-upload");
+
+const app7 = app6.openapi(uploadGooglePhotosToYoutubeRoute, uploadGooglePhotosToYoutubeHandler);
+
 // Export the router for registration in the main app
-export const photosRouter = app6;
+export const photosRouter = app7;
 export default photosRouter;

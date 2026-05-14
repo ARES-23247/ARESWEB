@@ -49,7 +49,7 @@ export interface ReorderTasksRequest {
  * GET /api/tasks - Get all tasks
  */
 export function useGetTasks(
-  query?: { status?: string; parentId?: string },
+  query?: { id?: string; status?: string; parentId?: string },
   options?: Omit<UseQueryOptions<TasksResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery<TasksResponse>({

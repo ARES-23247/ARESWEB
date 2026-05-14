@@ -412,8 +412,12 @@ export const queryHelpers = {
 		status?: string;
 		parentId?: string;
 		assignedTo?: string;
+		id?: string;
 	}) => {
 		const conditions = [];
+		if (options.id) {
+			conditions.push(eq(schema.tasks.id, options.id));
+		}
 		if (options.status) {
 			conditions.push(eq(schema.tasks.status, options.status));
 		}
@@ -455,6 +459,44 @@ export const queryHelpers = {
           FROM task_assignments ta
           LEFT JOIN user_profiles up ON ta.user_id = up.user_id
           WHERE ta.task_id = ${schema.tasks.id}
+        )`,
+			checklists_json: sql<string>`(
+          SELECT json_group_array(
+            json_object(
+              'id', id,
+              'content', content,
+              'isCompleted', is_completed,
+              'sortOrder', sort_order
+            )
+          )
+          FROM task_checklists
+          WHERE task_id = ${schema.tasks.id}
+        )`,
+			attachments_json: sql<string>`(
+          SELECT json_group_array(
+            json_object(
+              'id', id,
+              'url', url,
+              'title', title,
+              'type', type,
+              'thumbnailUrl', thumbnail_url,
+              'createdAt', created_at
+            )
+          )
+          FROM task_attachments
+          WHERE task_id = ${schema.tasks.id}
+        )`,
+			labels_json: sql<string>`(
+          SELECT json_group_array(
+            json_object(
+              'id', l.id,
+              'name', l.name,
+              'colorTheme', l.color_theme
+            )
+          )
+          FROM task_labels tl
+          LEFT JOIN labels l ON tl.label_id = l.id
+          WHERE tl.task_id = ${schema.tasks.id}
         )`,
 		})
 			.from(schema.tasks)
