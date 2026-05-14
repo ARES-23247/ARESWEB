@@ -332,6 +332,9 @@ importers:
       web-vitals:
         specifier: ^5.2.0
         version: 5.2.0
+      workbox-window:
+        specifier: ^7.4.1
+        version: 7.4.1
       y-partykit:
         specifier: ^0.0.33
         version: 0.0.33(react@19.2.6)(y-protocols@1.0.7(yjs@13.6.30))(yjs@13.6.30)

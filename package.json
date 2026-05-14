@@ -160,6 +160,7 @@
     "uuid": "^14.0.0",
     "vaul": "^1.1.2",
     "web-vitals": "^5.2.0",
+    "workbox-window": "^7.4.1",
     "y-partykit": "^0.0.33",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.30",
