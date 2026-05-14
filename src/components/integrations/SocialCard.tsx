@@ -1,4 +1,4 @@
-import { Calendar, Share2, CloudLightning, MessageSquare, Hash, Square, Users, Camera, Zap } from "lucide-react";
+import { Share2, CloudLightning, MessageSquare, Hash, Square, Users, Camera, Zap } from "lucide-react";
 
 export function SocialCard({
   localSettings,
@@ -91,27 +91,6 @@ export function SocialCard({
         </div>
       </div>
 
-      <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Calendar size={20} className="text-ares-gold" /> Google Calendar Admin
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="cal_id" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
-              Google Calendar ID
-            </label>
-            <input
-              id="cal_id"
-              type="text"
-              placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
-              value={localSettings["CALENDAR_ID"] || ""}
-              onChange={(e) => handleChange("CALENDAR_ID", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
-            />
-          </div>
-        </div>
-      </div>
 
       <div className="glass-card bg-black/40 p-6 ares-cut border border-white/5 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/10 blur-3xl rounded-full pointer-events-none" />

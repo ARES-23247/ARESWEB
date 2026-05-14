@@ -5,7 +5,7 @@
  */
 
 import { ApiError } from "../../middleware/errorHandler";
-import { getDbSettings, getDb } from "../../middleware";
+import { getDb } from "../../middleware";
 
 import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
@@ -26,7 +26,7 @@ import {
 export const syncHandlers = {
     syncEvents: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof syncEventsRoute>> => {
         const db = getDb(c);
-        const dbSettings = await getDbSettings(c);
+        const calendarId = "primary";
         let oauthToken: string;
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -34,12 +34,7 @@ export const syncHandlers = {
             throw new ApiError("Google OAuth not connected. Please connect your Google account in Settings.", 500);
         }
 
-        const calendarId = dbSettings["CALENDAR_ID"];
-        if (!calendarId) {
-            throw new ApiError("Calendar ID not configured. Add it in Settings → Integrations.", 500);
-        }
-
-        let total = 0;
+        let total: number;
         try {
             const events = await pullEventsFromGcal(calendarId, oauthToken);
 
@@ -86,6 +81,7 @@ export const syncHandlers = {
 
     repairCalendar: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof repairCalendarRoute>> => {
         const db = getDb(c);
+        const calendarId = "primary";
         const events = await db.select()
             .from(schema.events)
             .where(and(
@@ -97,12 +93,6 @@ export const syncHandlers = {
 
         if (events.length === 0) {
             return { status: 200 as const, body: { success: true, pushed: 0, failed: 0, message: "No events needing repair" } };
-        }
-
-        const dbSettings = await getDbSettings(c);
-        const calendarId = dbSettings["CALENDAR_ID"];
-        if (!calendarId) {
-            throw new ApiError("Calendar ID not configured. Add it in Settings → Integrations.", 500);
         }
 
         let oauthToken: string;

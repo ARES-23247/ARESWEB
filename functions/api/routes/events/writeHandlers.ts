@@ -5,7 +5,7 @@
  */
 
 import { ApiError } from "../../middleware/errorHandler";
-import { getDbSettings, getSessionUser, getDb } from "../../middleware";
+import { getSessionUser, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
@@ -72,8 +72,7 @@ export const writeHandlers = {
         const cat = category || 'internal';
         const genId = crypto.randomUUID();
 
-        const dbSettings = await getDbSettings(c);
-        const calendarId = dbSettings["CALENDAR_ID"];
+        const calendarId = "primary";
         const user = await requireAuth(c);
         const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 

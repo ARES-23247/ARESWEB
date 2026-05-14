@@ -7,7 +7,7 @@
 
 import { getSocialConfig, getDb } from "../../middleware";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
-import { inArray, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { z } from "zod";
 import { eventResponseSchema } from "../../../../shared/routes/events";

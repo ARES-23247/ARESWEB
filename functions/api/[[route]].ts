@@ -343,6 +343,8 @@ const routes = new OpenAPIHono<AppEnv>()
     return c.json({ logs }, 200);
   });
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS2590: Union type too complex — known Hono limitation
 apiRouter.route("/", routes);
 
 // ── Health Check ────────────

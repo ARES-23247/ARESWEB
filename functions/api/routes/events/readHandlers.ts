@@ -71,20 +71,12 @@ export const readHandlers = {
     },
 
     getCalendarSettings: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
-        const db = getDb(c);
-        const result = await db.select({
-            value: schema.settings.value,
-        })
-            .from(schema.settings)
-            .where(eq(schema.settings.key, "CALENDAR_ID"))
-            .get();
-
         return {
             status: 200 as const,
             body: {
-                calendarIdInternal: result?.value || "",
-                calendarIdOutreach: result?.value || "",
-                calendarIdExternal: result?.value || "",
+                calendarIdInternal: "primary",
+                calendarIdOutreach: "primary",
+                calendarIdExternal: "primary",
             }
         };
     },
