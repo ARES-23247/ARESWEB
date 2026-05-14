@@ -42,6 +42,7 @@ const customFetch = async (
  * This client uses the exported AppType from the backend to provide
  * end-to-end type inference for request bodies and response shapes.
  */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore TS2590: Union type too complex — known Hono limitation
 export const client = hc<AppType>("/api", {
   init: {

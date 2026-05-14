@@ -277,6 +277,7 @@ interface FTSResult {
   snippet: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore TS2590: Union type too complex — known Hono limitation
 const routes = new OpenAPIHono<AppEnv>()
   .route("/", group1)
