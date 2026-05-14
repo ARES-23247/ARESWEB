@@ -1,4 +1,4 @@
-﻿import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, createColumnHelper, SortingState } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, createColumnHelper, SortingState } from '@tanstack/react-table';
 import { MessageSquare, Zap, Edit3, Trash2, ChevronDown } from 'lucide-react';
 import { memo } from 'react';
 import { ROLES, memberTypeS } from './adminConstants';
@@ -33,7 +33,7 @@ interface User {
 interface UserTableProps {
   users: User[];
   sorting: SortingState;
-  onSortingChange: (updater: import('@tanstack/table-core').Updater<SortingState>) => void;
+  onSortingChange: (updater: import('@tanstack/react-table').Updater<SortingState>) => void;
   globalFilter: string;
   onGlobalFilterChange: (value: string) => void;
   onRoleChange: (userId: string, newRole: string) => void;
