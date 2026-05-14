@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Paperclip, FileText, Image as ImageIcon, Link as LinkIcon, X, HardDrive } from "lucide-react";
+import { Paperclip, Image as ImageIcon, Link as LinkIcon, X, HardDrive } from "lucide-react";
 import { useCreateTaskAttachment, useDeleteTaskAttachment } from "../../../api";
 import { toastApiError } from "../../../api/honoClient";
 import type { TaskItem } from "./constants";
@@ -29,10 +29,9 @@ export function TaskAttachments({ task }: TaskAttachmentsProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {task.attachments?.map(a => {
+        {task.attachments?.filter(a => !(a.type === 'document' || a.type === 'spreadsheet' || a.type === 'presentation' || a.type === 'google_drive')).map(a => {
           let Icon = LinkIcon;
-          if (a.type === 'document' || a.type === 'spreadsheet' || a.type === 'presentation' || a.type === 'google_drive') Icon = FileText;
-          else if (a.type === 'image') Icon = ImageIcon;
+          if (a.type === 'image') Icon = ImageIcon;
 
           return (
             <div key={a.id} className="relative group p-3 border border-white/5 bg-black/40 hover:bg-white/5 ares-cut-sm transition-colors flex items-center gap-3">

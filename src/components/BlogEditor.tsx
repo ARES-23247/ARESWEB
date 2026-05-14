@@ -29,6 +29,11 @@ import { type SavePostResponse, type UpdatePostResponse } from "../api/posts";
 import { toastApiError } from "../api/honoClient";
 import type { UploadedFile } from "../api/files";
 function BlogEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
+  const { providerId } = useCollaborativeEditor();
+  return <BlogEditorImpl key={providerId} editSlug={editSlug} userRole={userRole} roomId={roomId} />;
+}
+
+function BlogEditorImpl({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const modal = useModal();

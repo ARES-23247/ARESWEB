@@ -39,6 +39,11 @@ import { CopilotMenu } from "./editor/CopilotMenu";
 import ZulipThread from "./ZulipThread";
 
 function DocsEditorInner({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
+  const { providerId } = useCollaborativeEditor();
+  return <DocsEditorImpl key={providerId} editSlug={editSlug} userRole={userRole} roomId={roomId} />;
+}
+
+function DocsEditorImpl({ editSlug, userRole, roomId }: { editSlug?: string, userRole?: string | unknown, roomId?: string | null }) {
   const navigate = useNavigate();
   const modal = useModal();
   const [errorMsg, setErrorMsg] = useState("");

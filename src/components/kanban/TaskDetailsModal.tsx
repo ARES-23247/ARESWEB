@@ -14,7 +14,7 @@ import { EditorContent } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
 
 // Sub-components
-import { TaskSubtasks, TaskChecklists, TaskAttachments, TaskMetaSidebar } from "./task-detail";
+import { TaskSubtasks, TaskChecklists, TaskAttachments, TaskMetaSidebar, TaskDocuments } from "./task-detail";
 
 interface TaskDetailsModalProps {
   task: TaskItem;
@@ -24,8 +24,11 @@ interface TaskDetailsModalProps {
   onTaskClick?: (task: TaskItem) => void;
 }
 
+import { HardDrive } from "lucide-react";
+import DrivePickerModal from "../DrivePickerModal";
+
 // Compact toolbar for the task modal – only essential formatting buttons
-function CompactEditorToolbar({ editor }: { editor: Editor }) {
+function CompactEditorToolbar({ editor, onInsertDriveEmbed }: { editor: Editor, onInsertDriveEmbed?: () => void }) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("bold") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>B</button>
@@ -39,13 +42,28 @@ function CompactEditorToolbar({ editor }: { editor: Editor }) {
       <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
       <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
+      {onInsertDriveEmbed && (
+        <>
+          <div className="w-px h-4 bg-white/10 mx-0.5" />
+          <button type="button" onClick={onInsertDriveEmbed} className="px-2 py-1 text-xs font-bold uppercase tracking-widest ares-cut-sm transition-all text-ares-cyan hover:bg-ares-cyan hover:text-black flex items-center gap-1.5 border border-ares-cyan/30">
+            <HardDrive size={12} /> Drive
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
-// Inner Editor that connects to PartyKit
 function TaskEditorInner({ initialContent, onDescriptionChange }: { initialContent: string; onDescriptionChange: (content: string) => void }) {
+  const { providerId } = useCollaborativeEditor();
+  return <TaskEditorImpl key={providerId} initialContent={initialContent} onDescriptionChange={onDescriptionChange} />;
+}
+
+// Inner Editor that connects to PartyKit
+function TaskEditorImpl({ initialContent, onDescriptionChange }: { initialContent: string; onDescriptionChange: (content: string) => void }) {
   const { ydoc, provider } = useCollaborativeEditor();
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+  
   const editor = useRichEditor({
     placeholder: "<p>Write a detailed task description...</p>",
     ydoc,
@@ -90,11 +108,19 @@ function TaskEditorInner({ initialContent, onDescriptionChange }: { initialConte
   }, [editor, onDescriptionChange]);
 
   return (
-    <div className="flex flex-col border border-white/10 ares-cut-sm bg-black/40 overflow-hidden flex-1 min-h-[250px]">
-      {editor && <CompactEditorToolbar editor={editor} />}
+    <div className="flex flex-col border border-white/10 ares-cut-sm bg-black/40 overflow-hidden flex-1 min-h-[250px] relative">
+      {editor && <CompactEditorToolbar editor={editor} onInsertDriveEmbed={() => setIsDrivePickerOpen(true)} />}
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-obsidian">
         <EditorContent editor={editor} className="prose prose-sm prose-invert max-w-none focus:outline-none" />
       </div>
+      <DrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelect={(url) => {
+          editor?.chain().focus().setGoogleDriveEmbed({ src: url }).run();
+          setIsDrivePickerOpen(false);
+        }}
+      />
     </div>
   );
 }
@@ -224,6 +250,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
 
             <TaskSubtasks task={task} onTaskClick={onTaskClick} />
             <TaskChecklists task={task} />
+            <TaskDocuments task={task} />
             <TaskAttachments task={task} />
           </div>
 

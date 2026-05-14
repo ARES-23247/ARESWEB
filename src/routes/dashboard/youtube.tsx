@@ -619,6 +619,32 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
           </label>
         </div>
 
+        {/* Upload Button - moved here from bottom */}
+        <div className="shrink-0">
+          {isUploading ? (
+            <div className="w-full flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs font-bold text-white uppercase">
+                <span>Uploading to YouTube...</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-ares-cyan transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleUpload}
+              disabled={!file || !title.trim()}
+              className="w-full py-3 bg-ares-cyan hover:bg-ares-cyan/90 text-black font-black uppercase tracking-widest ares-cut-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Upload size={18} /> Upload Video
+            </button>
+          )}
+        </div>
+
         {uploadError && (
           <div className="p-3 bg-ares-red/10 border border-ares-red/30 flex items-start gap-2 text-xs text-ares-red">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -627,31 +653,6 @@ function YouTubeUploader({ memberType }: { memberType?: "student" | "mentor" | "
               <p className="font-mono leading-relaxed opacity-90 break-words">{uploadError}</p>
             </div>
           </div>
-        )}
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-white/10 shrink-0">
-        {isUploading ? (
-          <div className="w-full flex flex-col gap-2">
-            <div className="flex items-center justify-between text-xs font-bold text-white uppercase">
-              <span>Uploading to YouTube...</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-ares-cyan transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={handleUpload}
-            disabled={!file || !title.trim()}
-            className="w-full py-3 bg-ares-cyan hover:bg-ares-cyan/90 text-black font-black uppercase tracking-widest ares-cut-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Upload size={18} /> Upload Video
-          </button>
         )}
       </div>
     </div>

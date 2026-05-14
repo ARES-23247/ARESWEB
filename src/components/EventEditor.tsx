@@ -28,7 +28,12 @@ import ZulipThread from "./ZulipThread";
 import { CreateLocationModal } from "./CreateLocationModal";
 import { LocationCombobox } from "./LocationCombobox";
 
-function EventEditorInner({ editId, userRole }: { editId?: string, userRole?: string, roomId?: string | null }) {
+function EventEditorInner({ editId, userRole, roomId }: { editId?: string, userRole?: string, roomId?: string | null }) {
+  const { providerId } = useCollaborativeEditor();
+  return <EventEditorImpl key={providerId} editId={editId} userRole={userRole} roomId={roomId} />;
+}
+
+function EventEditorImpl({ editId, userRole }: { editId?: string, userRole?: string, roomId?: string | null }) {
   const navigate = useNavigate();
   // const queryClient = useQueryClient(); // Reserved for future query invalidation
   const modal = useModal();

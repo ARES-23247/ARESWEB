@@ -199,7 +199,7 @@ export const importPhotosResponseSchema = z.object({
  */
 
 /**
- * POST /picker/session — Create a new Picker session
+ * POST /picker/session — Create a new Picker session (photos only)
  * Returns pickerUri for the user to open and select photos
  */
 export const createPickerSessionRoute = createRoute({
@@ -214,6 +214,27 @@ export const createPickerSessionRoute = createRoute({
         },
       },
       description: "Picker session created successfully",
+    },
+  },
+  tags: ["google-photos", "admin"],
+});
+
+/**
+ * POST /picker/video-session — Create a new Picker session for videos only
+ * Returns pickerUri for the user to open and select videos for YouTube upload
+ */
+export const createVideoPickerSessionRoute = createRoute({
+  method: "post",
+  path: "/picker/video-session",
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: pickerSessionSchema,
+        },
+      },
+      description: "Video picker session created successfully",
     },
   },
   tags: ["google-photos", "admin"],

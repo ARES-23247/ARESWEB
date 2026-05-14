@@ -7,12 +7,14 @@ interface CollaborativeEditorContextType {
   ydoc: Y.Doc | undefined;
   provider: WebsocketProvider | undefined;
   isCollaborative: boolean;
+  providerId: number;
 }
 
 const CollaborativeEditorContext = createContext<CollaborativeEditorContextType>({
   ydoc: undefined,
   provider: undefined,
   isCollaborative: false,
+  providerId: 0,
 });
 
 export function useCollaborativeEditor() {
@@ -44,6 +46,7 @@ function ConnectedEditorRoom({
   onDocLoaded?: (ydoc: Y.Doc) => void;
 }) {
   const [provider, setProvider] = useState<WebsocketProvider | undefined>(undefined);
+  const [providerId, setProviderId] = useState(0);
   const [isSynced, setIsSynced] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +91,7 @@ function ConnectedEditorRoom({
           setIsReconnecting(false);
           setReconnectAttempt(0); // Reset on success
           setProvider(newProvider);
+          setProviderId(prev => prev + 1);
           onDocLoaded?.(ydoc);
         }
       });
@@ -141,6 +145,7 @@ function ConnectedEditorRoom({
       setIsSynced(synced);
       setProvider(newProvider);
       if (synced) {
+        setProviderId(prev => prev + 1);
         onDocLoaded?.(ydoc);
       }
     });
@@ -216,6 +221,7 @@ function ConnectedEditorRoom({
           setIsReconnecting(false);
           setReconnectAttempt(0);
           setProvider(newProvider);
+          setProviderId(prev => prev + 1);
           onDocLoaded?.(ydoc);
         }
       });
@@ -252,7 +258,7 @@ function ConnectedEditorRoom({
   }
 
   return (
-    <CollaborativeEditorContext.Provider value={{ ydoc, provider, isCollaborative }}>
+    <CollaborativeEditorContext.Provider value={{ ydoc, provider, isCollaborative, providerId }}>
       <div className="relative">
         <StatusBadge
           isCollaborative={isCollaborative}
@@ -350,7 +356,7 @@ export function CollaborativeEditorRoom({
   if (!host) {
     console.warn("[CollaborativeEditor] VITE_PARTYKIT_HOST is not set! Collaborative editing will be disabled.");
     return (
-      <CollaborativeEditorContext.Provider value={{ ydoc, provider: undefined, isCollaborative: false }}>
+      <CollaborativeEditorContext.Provider value={{ ydoc, provider: undefined, isCollaborative: false, providerId: 0 }}>
         <div className="relative">
           <StatusBadge isCollaborative={false} />
           {children}

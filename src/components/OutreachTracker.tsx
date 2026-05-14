@@ -143,12 +143,12 @@ export default function OutreachTracker() {
   };
 
   const totals = useMemo(() => logs.reduce((acc, l) => ({
-    hours: acc.hours + (l.hours || 0),
-    mentoringHours: acc.mentoringHours + (l.isMentoring ? (l.hours || 0) : 0),
-    mentorHours: acc.mentorHours + (l.mentorHours || 0),
-    reach: acc.reach + (l.peopleReached || 0),
-    students: acc.students + (l.studentsCount || 0),
-    mentors: acc.mentors + (l.mentorCount || 0),
+    hours: acc.hours + (Number(l.hours) || 0),
+    mentoringHours: acc.mentoringHours + (l.isMentoring ? (Number(l.hours) || 0) : 0),
+    mentorHours: acc.mentorHours + (Number(l.mentorHours) || 0),
+    reach: acc.reach + (Number(l.peopleReached) || 0),
+    students: acc.students + (Number(l.studentsCount) || 0),
+    mentors: acc.mentors + (Number(l.mentorCount) || 0),
     events: acc.events + 1
   }), { hours: 0, mentoringHours: 0, mentorHours: 0, reach: 0, students: 0, mentors: 0, events: 0 }), [logs]);
 
@@ -157,10 +157,10 @@ export default function OutreachTracker() {
       <DashboardMetricsGrid
         metrics={[
           { label: "Community Reach", value: totals.reach.toLocaleString(), icon: <Target className="text-ares-red" /> },
-          { label: "Service Hours", value: totals.hours.toLocaleString(), icon: <Clock className="text-ares-gold" /> },
-          { label: "Mentoring Hours", value: totals.mentoringHours.toLocaleString(), icon: <Users className="text-ares-cyan" /> },
-          { label: "Mentor Hours", value: totals.mentorHours.toLocaleString(), icon: <Users className="text-ares-bronze" /> },
-          { label: "Total Events", value: totals.events, icon: <CheckCircle className="text-ares-gold" /> },
+          { label: "Service Hours", value: totals.hours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), icon: <Clock className="text-ares-gold" /> },
+          { label: "Mentoring Hours", value: totals.mentoringHours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), icon: <Users className="text-ares-cyan" /> },
+          { label: "Mentor Hours", value: totals.mentorHours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), icon: <Users className="text-ares-bronze" /> },
+          { label: "Total Events", value: totals.events.toLocaleString(), icon: <CheckCircle className="text-ares-gold" /> },
         ]}
       />
 
@@ -446,23 +446,23 @@ export default function OutreachTracker() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-gold uppercase tracking-tighter">Reach</span>
-                <span className="text-lg font-black text-white">{log.peopleReached || 0}</span>
+                <span className="text-lg font-black text-white">{Number(log.peopleReached) || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-cyan uppercase tracking-tighter">Hours</span>
-                <span className="text-lg font-black text-white">{(log.hours || 0).toFixed(1)}</span>
+                <span className="text-lg font-black text-white">{(Number(log.hours) || 0).toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-red uppercase tracking-tighter">Students</span>
-                <span className="text-lg font-black text-white">{log.studentsCount || 0}</span>
+                <span className="text-lg font-black text-white">{Number(log.studentsCount) || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-bronze uppercase tracking-tighter">Mentors</span>
-                <span className="text-lg font-black text-white">{log.mentorCount || 0}</span>
+                <span className="text-lg font-black text-white">{Number(log.mentorCount) || 0}</span>
               </div>
               <div className="flex flex-col items-center px-4 py-2 bg-white/5 ares-cut min-w-[70px]">
                 <span className="text-[10px] font-black text-ares-bronze uppercase tracking-tighter">Mnt Hrs</span>
-                <span className="text-lg font-black text-white">{(log.mentorHours || 0).toFixed(1)}</span>
+                <span className="text-lg font-black text-white">{(Number(log.mentorHours) || 0).toFixed(1)}</span>
               </div>
               
               {log.isDynamic && !log.eventId && (

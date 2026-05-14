@@ -80,7 +80,11 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({
+      filter: {
+        include: ["PHOTO"]  // Only show photos, exclude videos
+      }
+    }),
   });
 
   // Retry on 403 with force refresh
@@ -94,7 +98,11 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        filter: {
+          include: ["PHOTO"]  // Only show photos, exclude videos
+        }
+      }),
     });
   }
 
@@ -156,7 +164,11 @@ const app2 = app1.openapi(createPickerSessionRoute, async (c) => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({
+      filter: {
+        include: ["PHOTO"]  // Only show photos, exclude videos
+      }
+    }),
   });
 
   if (!response.ok) {
