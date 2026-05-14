@@ -20,12 +20,13 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────
-  # Single install job - all other jobs depend on this artifact.
-  # Saves ~2-3 min per job by avoiding redundant npm ci calls.
+  # Install dependencies once with pnpm, cache node_modules as artifact
   # ──────────────────────────────────────────────────────────────────────
   install:
     name: Install Dependencies
     runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache.outputs.key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,28 +35,44 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: "npm"
 
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Upload node_modules artifact
-        uses: actions/upload-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: node-modules
-          path: node_modules/
-          retention-days: 1
+          version: 9
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache node_modules
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
   # ──────────────────────────────────────────────────────────────────────
   # Build, deploy preview, and run smoke tests in one job.
   # This avoids a separate smoke test job (saving ~60s runner spinup
-  # + another npm ci + playwright install cycle). Node + npm are already
+  # + another npm ci + playwright install cycle). Node + pnpm are already
   # installed from the build step, so we just add Playwright browsers.
   # ──────────────────────────────────────────────────────────────────────
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    needs: install
     outputs:
       preview-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
@@ -67,11 +84,16 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: node-modules
-          path: node_modules/
+          version: 9
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Cache Vite build
         uses: actions/cache@v4
@@ -79,15 +101,15 @@ jobs:
           path: |
             node_modules/.vite
             .vite
-          key: ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx', 'vite.config.ts') }}
+          key: ${{ runner.os }}-vite-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx', 'vite.config.ts') }}
           restore-keys: |
-            ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-vite-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-vite-
 
       - name: Build with Vite
         env:
           VITE_DISABLE_PAGES_REDIRECT: "true"
-        run: npm run build
+        run: pnpm run build
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -129,18 +151,28 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-latest
-    needs: [install, deploy-preview]
+    needs: deploy-preview
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: node-modules
-          path: node_modules/
+          node-version: "22.x"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: E2E Smoke Tests
         env:
@@ -159,7 +191,6 @@ jobs:
   static-checks:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -169,26 +200,30 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: node-modules
-          path: node_modules/
+          version: 9
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: TypeScript Type Check
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: npm run typecheck
+        run: pnpm run typecheck
 
       - name: Accessibility & Lint Audit
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: npm run lint
+        run: pnpm run lint
 
   security:
     name: Security Audit
     runs-on: ubuntu-latest
-    needs: install
     continue-on-error: true
     steps:
       - name: Checkout
@@ -199,19 +234,23 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: node-modules
-          path: node_modules/
+          version: 9
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Automated Vulnerability & SAST Check
-        run: npm run audit:security
+        run: pnpm run audit:security
 
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -221,20 +260,25 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          name: node-modules
-          path: node_modules/
+          version: 9
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Component Tests (Vitest)
-        run: npm run test
+        run: pnpm run test
 
   # Full E2E test suite - informational only
   e2e-playwright:
     name: E2E Playwright
     runs-on: ubuntu-latest
-    needs: [install, deploy-preview]
+    needs: deploy-preview
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-jammy
     strategy:
@@ -261,12 +305,24 @@ jobs:
             echo "run_e2e=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download node_modules
+      - name: Setup Node.js
         if: steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/setup-node@v4
         with:
-          name: node-modules
-          path: node_modules/
+          node-version: "22.x"
+
+      - name: Install pnpm
+        if: steps.check_e2e.outputs.run_e2e == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Restore node_modules
+        if: steps.check_e2e.outputs.run_e2e == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Playwright Tests (Shard ${{ matrix.shard }}/5)
         if: steps.check_e2e.outputs.run_e2e == 'true'
