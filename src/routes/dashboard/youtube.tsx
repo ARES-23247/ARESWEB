@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useState, useRef, useMemo } from 'react';
+import { createFileRoute, useSearch } from '@tanstack/react-router';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useGetYoutubeAuthStatus, useGetYoutubeAuthUrl, useGetYoutubeResumableUrlMutation } from '../../api/youtube';
 import { useGetVideos, useSyncYoutubeVideosMutation } from '../../api';
 import { Upload, Video, AlertCircle, Settings, Pencil, Play, Plus, ExternalLink, RefreshCw, Filter, ArrowUpDown } from 'lucide-react';
@@ -10,15 +10,32 @@ import VideoPickerModal from '../../components/VideoPickerModal';
 
 export const Route = createFileRoute('/dashboard/youtube')({
   component: VideoHub,
+  validateSearch: (search: Record<string, unknown>) => ({
+    youtube: (search.youtube as string) || undefined,
+    error: (search.error as string) || undefined,
+  }),
 });
 
 function VideoHub() {
   const queryClient = useQueryClient();
+  const search = useSearch({ from: '/dashboard/youtube' });
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [editVideoId, setEditVideoId] = useState<string | undefined>(undefined);
 
   const { data: authStatus, isLoading: isStatusLoading } = useGetYoutubeAuthStatus();
   const { data: videosResponse, isLoading: isVideosLoading } = useGetVideos();
+
+  // Display OAuth callback results from URL query params
+  useEffect(() => {
+    if (search.error) {
+      toast.error(`YouTube OAuth Error: ${decodeURIComponent(search.error)}`, { duration: 10000 });
+      console.error("[YouTube OAuth] Callback error:", search.error);
+    }
+    if (search.youtube === "connected") {
+      toast.success("YouTube connected successfully!");
+      queryClient.invalidateQueries({ queryKey: ["youtube", "authStatus"] });
+    }
+  }, [search.error, search.youtube, queryClient]);
 
   const [typeFilter, setTypeFilter] = useState<"all" | "video" | "short">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");

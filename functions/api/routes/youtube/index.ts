@@ -73,6 +73,8 @@ const routes = adminApp
     authUrl.searchParams.append("scope", scopes);
     authUrl.searchParams.append("access_type", "offline");
     authUrl.searchParams.append("prompt", "consent"); // Force consent to ensure refresh token is provided
+    authUrl.searchParams.append("login_hint", env.AUTHORIZED_GOOGLE_ACCOUNT || "ares23247wv@gmail.com");
+    authUrl.searchParams.append("include_granted_scopes", "true");
 
     return c.json({ url: authUrl.toString() }, 200);
   })
@@ -83,38 +85,56 @@ const routes = adminApp
     const frontendUrl = new URL(c.req.url).origin;
     const dashboardPath = "/dashboard/youtube";
 
+    console.log("[OAuth Callback] Starting callback handler", { hasCode: !!code, hasError: !!error });
+
     if (error) {
+      console.error("[OAuth Callback] Google returned error:", error);
       return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent(error)}`);
     }
 
     if (!code) {
+      console.error("[OAuth Callback] No authorization code received");
       return c.redirect(`${frontendUrl}${dashboardPath}?error=no_code`);
     }
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
+    console.log("[OAuth Callback] Exchanging code for tokens", { redirectUri, hasClientId: !!env.YOUTUBE_CLIENT_ID, hasClientSecret: !!env.YOUTUBE_CLIENT_SECRET });
 
-    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        client_id: env.YOUTUBE_CLIENT_ID || "",
-        client_secret: env.YOUTUBE_CLIENT_SECRET || "",
-        code,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }).toString(),
-    });
+    let tokenResponse: Response;
+    try {
+      tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: env.YOUTUBE_CLIENT_ID || "",
+          client_secret: env.YOUTUBE_CLIENT_SECRET || "",
+          code,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }).toString(),
+      });
+    } catch (fetchErr) {
+      console.error("[OAuth Callback] Token exchange fetch failed:", fetchErr);
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent("token_fetch_exception: " + String(fetchErr))}`);
+    }
 
     if (!tokenResponse.ok) {
       const tokenError = await tokenResponse.text();
-      console.error("Token Exchange Error:", tokenError);
-      return c.redirect(`${frontendUrl}${dashboardPath}?error=token_exchange_failed`);
+      console.error("[OAuth Callback] Token exchange failed:", { status: tokenResponse.status, body: tokenError });
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent("token_exchange_failed_" + tokenResponse.status + ": " + tokenError.substring(0, 200))}`);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tokenData: any = await tokenResponse.json();
+    console.log("[OAuth Callback] Token exchange successful", {
+      hasAccessToken: !!tokenData.access_token,
+      hasRefreshToken: !!tokenData.refresh_token,
+      expiresIn: tokenData.expires_in,
+      scope: tokenData.scope,
+      tokenType: tokenData.token_type,
+    });
 
     if (tokenData.access_token) {
       // Verify the authorized email matches the authorized team account
@@ -123,22 +143,28 @@ const routes = adminApp
       });
       
       if (!userInfoRes.ok) {
-        console.error("Failed to fetch user info for OAuth verification", await userInfoRes.text());
-        return c.redirect(`${frontendUrl}${dashboardPath}?error=user_verification_failed`);
+        const userInfoError = await userInfoRes.text();
+        console.error("[OAuth Callback] User info fetch failed:", { status: userInfoRes.status, body: userInfoError });
+        return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent("user_verification_failed_" + userInfoRes.status)}`);
       }
       
       const userInfo = await userInfoRes.json() as { email?: string };
       const authorizedEmail = env.AUTHORIZED_GOOGLE_ACCOUNT || "ares23247wv@gmail.com";
+      console.log("[OAuth Callback] Email verification", { receivedEmail: userInfo.email, expectedEmail: authorizedEmail, match: userInfo.email === authorizedEmail });
       
       if (userInfo.email !== authorizedEmail) {
-        console.warn(`Unauthorized Google Account connection attempt by ${userInfo.email}. Expected ${authorizedEmail}.`);
-        return c.redirect(`${frontendUrl}${dashboardPath}?error=unauthorized_email`);
+        console.warn(`[OAuth Callback] BLOCKED: Unauthorized account ${userInfo.email}. Expected ${authorizedEmail}.`);
+        return c.redirect(`${frontendUrl}${dashboardPath}?error=${encodeURIComponent("unauthorized_email_" + (userInfo.email || "unknown"))}`);
       }
+    } else {
+      console.error("[OAuth Callback] No access token in response — cannot verify email");
+      return c.redirect(`${frontendUrl}${dashboardPath}?error=no_access_token_received`);
     }
 
     const db = getDb(c);
 
     if (tokenData.refresh_token) {
+      console.log("[OAuth Callback] Storing refresh token in D1...");
       // Upsert the refresh token in the settings table
       await db
         .insert(settings)
@@ -155,19 +181,20 @@ const routes = adminApp
           },
         })
         .execute();
+      console.log("[OAuth Callback] Refresh token stored successfully");
 
       if (c.executionCtx) {
          c.executionCtx.waitUntil(logAuditAction(c, "youtube_auth", "settings", "youtube_refresh_token", "Authorized YouTube Resumable Uploads"));
       }
     } else {
-        // If they already authorized but we don't have the token, we need to ask them to disconnect and reconnect in Google to get a new refresh token.
-        console.warn("No refresh token received. User might have previously authorized.");
+      console.warn("[OAuth Callback] WARNING: No refresh_token in response. Status will show disconnected. User may need to revoke app access at https://myaccount.google.com/permissions and re-authorize.");
     }
 
     // Store the initial access token so the status check immediately shows "connected"
     if (tokenData.access_token) {
       const expiresInSec = tokenData.expires_in || 3600;
       const expiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
+      console.log("[OAuth Callback] Caching access token", { expiresAt });
       
       await db
         .insert(settings)
@@ -182,6 +209,7 @@ const routes = adminApp
         .execute();
     }
 
+    console.log("[OAuth Callback] Complete — redirecting to dashboard with success");
     return c.redirect(`${frontendUrl}${dashboardPath}?youtube=connected`);
   })
   .openapi(getResumableUrlRoute, async (c) => {
