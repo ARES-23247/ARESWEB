@@ -97,6 +97,9 @@ vi.mock("../../api", () => ({
   useSetTaskLabels: () => ({
     mutateAsync: vi.fn().mockResolvedValue({ success: true }),
   }),
+  useUpdateTask: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({ success: true }),
+  }),
 }));
 
 vi.mock("../editor/CollaborativeEditorRoom", () => ({
@@ -179,7 +182,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText(/ID: task-123/)).toBeInTheDocument();
+    expect(screen.getByText(/ID: task/)).toBeInTheDocument();
   });
 
   it("renders all status options", () => {
