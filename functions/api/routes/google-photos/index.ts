@@ -3,7 +3,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import type { AppEnv } from "../../middleware/utils";
 import { ensureAdmin, getDb } from "../../middleware";
 import { getSessionUser } from "../../middleware/auth";
-import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
+import { getUnifiedOAuthToken, clearCachedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -72,35 +72,31 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
-  // Get access token using lazy refresh pattern (with retry logic per D-07)
-  let token: string;
-  try {
-    token = await getUnifiedOAuthToken(env, db);
-  } catch (err) {
-    console.error("[google-photos] Failed to get unified OAuth token:", err);
-    throw err;
+  // Helper to test the Photos API with a given token
+  async function testPhotosApi(token: string) {
+    return fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pageSize: 1 }),
+    });
   }
 
-  // Introspect the token to check scopes
-  const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
-  const tokenInfo = tokenInfoRes.ok ? await tokenInfoRes.json() as { scope?: string; error_description?: string } : null;
-  console.log("[google-photos] Token introspection:", {
-    status: tokenInfoRes.status,
-    scope: tokenInfo && 'scope' in tokenInfo ? (tokenInfo as { scope: string }).scope : "N/A",
-    error: tokenInfo && 'error_description' in tokenInfo ? (tokenInfo as { error_description: string }).error_description : undefined,
-  });
+  // Step 1: Try with cached token
+  let token = await getUnifiedOAuthToken(env, db);
+  let photosResponse = await testPhotosApi(token);
 
-  // Test Photos API with a minimal search request
-  const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ pageSize: 1 }),
-  });
+  // Step 2: If 403 (insufficient scopes), clear cache and retry with a fresh token
+  if (photosResponse.status === 403) {
+    console.warn("[google-photos] Health check got 403 — clearing cached token and retrying with fresh refresh...");
+    await clearCachedOAuthToken(db);
+    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
+    photosResponse = await testPhotosApi(token);
+  }
 
-  // Handle authentication failures from Photos API
+  // Handle authentication failures
   if (photosResponse.status === 401) {
     throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
   }
@@ -108,10 +104,9 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   // Handle other API errors — include Google's error body for diagnostics
   if (!photosResponse.ok) {
     const errorText = await photosResponse.text();
-    console.error("[google-photos] API health check failed:", {
+    console.error("[google-photos] API health check failed after retry:", {
       status: photosResponse.status,
       body: errorText,
-      tokenScopes: tokenInfo && 'scope' in tokenInfo ? (tokenInfo as { scope: string }).scope : "unknown",
     });
     throw new ApiError(
       `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
@@ -120,8 +115,6 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
     );
   }
 
-  // Return success response
-  // Per T-73-13: Health endpoint returns only status, not access token
   return c.json(
     {
       status: "ok" as const,
@@ -143,7 +136,7 @@ const app2 = app1.openapi(mediaRoute, async (c) => {
   const { albumId, pageToken, pageSize = 25 } = c.req.valid("query");
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getUnifiedOAuthToken(env, db);
+  let token = await getUnifiedOAuthToken(env, db);
 
   // Build Photos API search request body
   const searchBody: Record<string, unknown> = { pageSize };
@@ -154,15 +147,27 @@ const app2 = app1.openapi(mediaRoute, async (c) => {
     searchBody.pageToken = pageToken;
   }
 
-  // Call Photos API mediaItems:search endpoint
-  const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(searchBody),
-  });
+  // Helper to call Photos API
+  async function callPhotosSearch(accessToken: string) {
+    return fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(searchBody),
+    });
+  }
+
+  // Call Photos API with 403 auto-retry
+  let photosResponse = await callPhotosSearch(token);
+
+  if (photosResponse.status === 403) {
+    console.warn("[google-photos] Media search got 403 — force-refreshing token...");
+    await clearCachedOAuthToken(db);
+    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
+    photosResponse = await callPhotosSearch(token);
+  }
 
   // Handle authentication failures from Photos API
   if (photosResponse.status === 401) {
@@ -233,7 +238,7 @@ const app3 = app2.openapi(albumsRoute, async (c) => {
   const { pageToken, pageSize = 25 } = c.req.valid("query");
 
   // Get access token using lazy refresh pattern (with retry logic per D-07)
-  const token = await getUnifiedOAuthToken(env, db);
+  let token = await getUnifiedOAuthToken(env, db);
 
   // Build search params for albums API
   const searchParams = new URLSearchParams({
@@ -243,16 +248,28 @@ const app3 = app2.openapi(albumsRoute, async (c) => {
     searchParams.append("pageToken", pageToken);
   }
 
-  // Call Photos API albums:list endpoint
-  const photosResponse = await fetch(
-    `https://photoslibrary.googleapis.com/v1/albums?${searchParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  // Helper to call Albums API
+  async function callAlbumsApi(accessToken: string) {
+    return fetch(
+      `https://photoslibrary.googleapis.com/v1/albums?${searchParams.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+  }
+
+  // Call Albums API with 403 auto-retry
+  let photosResponse = await callAlbumsApi(token);
+
+  if (photosResponse.status === 403) {
+    console.warn("[google-photos] Albums list got 403 — force-refreshing token...");
+    await clearCachedOAuthToken(db);
+    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
+    photosResponse = await callAlbumsApi(token);
+  }
 
   // Handle authentication failures from Photos API
   if (photosResponse.status === 401) {

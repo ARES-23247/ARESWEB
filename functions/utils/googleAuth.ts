@@ -37,9 +37,20 @@ function sleep(ms: number): Promise<void> {
  * @returns The access token string
  * @throws ApiError if token refresh fails
  */
+/**
+ * Clear the cached OAuth access token from D1.
+ * Call this when a Google API returns 403 (insufficient scopes) to force a refresh.
+ */
+export async function clearCachedOAuthToken(db: DrizzleDB): Promise<void> {
+  await db.delete(settings).where(eq(settings.key, "oauth_access_token")).execute();
+  await db.delete(settings).where(eq(settings.key, "oauth_token_expires_at")).execute();
+  console.log("[googleAuth] Cleared cached OAuth token (forced refresh on next call)");
+}
+
 export async function getUnifiedOAuthToken(
   env: { YOUTUBE_CLIENT_ID?: string; YOUTUBE_CLIENT_SECRET?: string },
-  db: DrizzleDB
+  db: DrizzleDB,
+  options?: { forceRefresh?: boolean }
 ): Promise<string> {
   const tokenKey = "oauth_access_token";
   const expiryKey = "oauth_token_expires_at";
@@ -53,37 +64,41 @@ export async function getUnifiedOAuthToken(
     );
   }
 
-  // Step 1: Check D1 settings for cached token
-  const cachedEntries = await db
-    .select({ key: settings.key, value: settings.value })
-    .from(settings)
-    .where(eq(settings.key, tokenKey))
-    .execute();
+  // Step 1: Check D1 settings for cached token (skip if forceRefresh)
+  if (!options?.forceRefresh) {
+    const cachedEntries = await db
+      .select({ key: settings.key, value: settings.value })
+      .from(settings)
+      .where(eq(settings.key, tokenKey))
+      .execute();
 
-  // Step 2: Check if cached token is valid (not within expiry buffer)
-  if (cachedEntries.length > 0) {
-    const tokenEntry = cachedEntries[0];
-    if (tokenEntry.value) {
-      // Fetch expiry timestamp
-      const expiryEntries = await db
-        .select({ key: settings.key, value: settings.value })
-        .from(settings)
-        .where(eq(settings.key, expiryKey))
-        .execute();
+    // Step 2: Check if cached token is valid (not within expiry buffer)
+    if (cachedEntries.length > 0) {
+      const tokenEntry = cachedEntries[0];
+      if (tokenEntry.value) {
+        // Fetch expiry timestamp
+        const expiryEntries = await db
+          .select({ key: settings.key, value: settings.value })
+          .from(settings)
+          .where(eq(settings.key, expiryKey))
+          .execute();
 
-      if (expiryEntries.length > 0 && expiryEntries[0].value) {
-        const expiresAt = new Date(expiryEntries[0].value).getTime();
-        const now = Date.now();
+        if (expiryEntries.length > 0 && expiryEntries[0].value) {
+          const expiresAt = new Date(expiryEntries[0].value).getTime();
+          const now = Date.now();
 
-        // Return cached token if not expiring within buffer
-        if (expiresAt > now + EXPIRY_BUFFER_MS) {
-          console.debug(`[googleAuth] Using cached unified OAuth token (expires at ${new Date(expiresAt).toISOString()})`);
-          return tokenEntry.value;
+          // Return cached token if not expiring within buffer
+          if (expiresAt > now + EXPIRY_BUFFER_MS) {
+            console.debug(`[googleAuth] Using cached unified OAuth token (expires at ${new Date(expiresAt).toISOString()})`);
+            return tokenEntry.value;
+          }
+
+          console.debug(`[googleAuth] Cached unified OAuth token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
         }
-
-        console.debug(`[googleAuth] Cached unified OAuth token expiring soon (expires at ${new Date(expiresAt).toISOString()}), refreshing...`);
       }
     }
+  } else {
+    console.log("[googleAuth] Force refresh requested — skipping cache");
   }
 
   // Step 3: Fetch refresh token from D1
