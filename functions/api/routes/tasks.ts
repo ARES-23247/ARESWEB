@@ -555,9 +555,25 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
+        
+        // Define global labels to auto-seed if they don't exist
+        const GLOBAL_LABELS = [
+          { id: "lbl-bug", name: "Bug", colorTheme: "text-ares-red bg-ares-red/10 border-ares-red/30" },
+          { id: "lbl-feature", name: "Feature", colorTheme: "text-ares-cyan bg-ares-cyan/10 border-ares-cyan/30" },
+          { id: "lbl-urgent", name: "Urgent", colorTheme: "text-ares-gold bg-ares-gold/10 border-ares-gold/30" },
+          { id: "lbl-design", name: "Design", colorTheme: "text-purple-400 bg-purple-400/10 border-purple-400/30" },
+          { id: "lbl-backend", name: "Backend", colorTheme: "text-green-400 bg-green-400/10 border-green-400/30" },
+        ];
+
         await db.delete(schema.taskLabels).where(eq(schema.taskLabels.taskId, params.id)).run();
 
         if (body.labelIds.length > 0) {
+            // Seed the labels table to prevent foreign key constraint violations
+            const labelsToInsert = GLOBAL_LABELS.filter(l => body.labelIds.includes(l.id));
+            if (labelsToInsert.length > 0) {
+                await db.insert(schema.labels).values(labelsToInsert).onConflictDoNothing().run();
+            }
+
             const inserts = body.labelIds.map((labelId: string) => ({
                 taskId: params.id,
                 labelId: labelId,
