@@ -18,6 +18,7 @@ import {
   syncAlbumRoute,
   uploadGooglePhotosToYoutubeRoute,
   uploadPhotosRoute,
+  proxyMediaRoute,
 } from "../../../../shared/routes/google-photos";
 import * as schema from "../../../../src/db/schema";
 import { eq } from "drizzle-orm";
@@ -288,10 +289,49 @@ const app3 = app2v.openapi(getPickerSessionRoute, async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /picker/media-proxy — Proxy media URL for img src tags
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app3p = app3.openapi(proxyMediaRoute, async (c) => {
+  const db = getDb(c);
+  const env = c.env;
+  const { url } = c.req.valid("query");
+
+  const token = await getUnifiedOAuthToken(env, db);
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[google-photos] Proxy media failed:", errorText);
+    throw new ApiError(
+      `Picker proxy error: ${response.status} ${response.statusText}`,
+      response.status,
+      "PICKER_PROXY_FAILED"
+    );
+  }
+
+  const contentType = response.headers.get("Content-Type") || "image/jpeg";
+  const buffer = await response.arrayBuffer();
+  
+  // Create a new Response object to return the buffer correctly
+  return new Response(buffer, {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=3600"
+    }
+  }) as any;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /picker/session/:sessionId/items — Get selected media items
 // ─────────────────────────────────────────────────────────────────────────────
 
-const app4 = app3.openapi(getPickerItemsRoute, async (c) => {
+const app4 = app3p.openapi(getPickerItemsRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
   const { sessionId } = c.req.valid("param");
@@ -546,6 +586,21 @@ const app6 = app5b.openapi(importPhotosRoute, async (c) => {
     const mimeType = item.mimeType ?? "image/jpeg";
 
     try {
+      // Check if already imported to prevent UNIQUE constraint failure
+      const existing = await db.select().from(schema.importedPhotos)
+        .where(eq(schema.importedPhotos.googleMediaItemId, item.id))
+        .get();
+
+      if (existing) {
+        results.push({
+          mediaItemId: item.id,
+          status: "success",
+          filename: existing.originalFilename,
+          r2Key: existing.r2Key,
+        });
+        continue;
+      }
+
       // Download photo from Picker baseUrl (append =d for full resolution)
       const buffer = await downloadPhoto(item.baseUrl, token);
 

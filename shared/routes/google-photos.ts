@@ -299,6 +299,35 @@ export const getPickerItemsRoute = createRoute({
 });
 
 /**
+ * GET /picker/media-proxy
+ * Proxies the Google Photos media URL to inject the Authorization header,
+ * which is required by the Picker API baseUrl for displaying thumbnails.
+ */
+export const proxyMediaRoute = createRoute({
+  method: "get",
+  path: "/picker/media-proxy",
+  tags: ["google-photos", "admin"],
+  summary: "Proxy Picker Media",
+  description: "Proxies a Picker API baseUrl to inject the required OAuth Authorization header for img src tags.",
+  request: {
+    query: z.object({
+      url: z.string().url().openapi({ description: "The baseUrl from the Picker API" }),
+    }),
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      description: "Image data",
+      content: {
+        "image/*": {
+          schema: z.string().openapi({ format: "binary" }),
+        },
+      },
+    },
+  },
+});
+
+/**
  * DELETE /picker/session/:sessionId — Delete a completed session
  * Cleanup resources after importing selected items
  */

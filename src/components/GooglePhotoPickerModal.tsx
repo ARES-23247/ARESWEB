@@ -67,8 +67,10 @@ export default function GooglePhotoPickerModal({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (itemsData?.mediaItems && itemsData.mediaItems.length > 0) {
-      setPickedItems(itemsData.mediaItems);
-      setSelectedForImport(new Set(itemsData.mediaItems.map((i) => i.id)));
+      // Filter out videos client-side since Picker API doesn't support mediaFilter
+      const photosOnly = itemsData.mediaItems.filter(item => item.mimeType?.startsWith("image/"));
+      setPickedItems(photosOnly);
+      setSelectedForImport(new Set(photosOnly.map((i) => i.id)));
       setIsPickerOpen(false);
     }
   }, [itemsData]);
@@ -147,7 +149,7 @@ export default function GooglePhotoPickerModal({
             // Send back the URLs of successfully imported photos
             const successUrls = data.results
               .filter(r => r.status === "success" && r.r2Key)
-              .map(r => `/cdn-cgi/image/width=800,quality=80/photos/imported/${r.r2Key}`);
+              .map(r => `/cdn-cgi/image/width=800,quality=80/${r.r2Key}`);
               
             if (onPhotosImported && successUrls.length > 0) {
               onPhotosImported(successUrls);
@@ -330,9 +332,15 @@ export default function GooglePhotoPickerModal({
                           isSelected ? "border-2 border-ares-cyan" : "border-white/10 hover:border-ares-cyan/50"
                         }`}
                       >
-                        {item.mediaFile?.baseUrl ? (
+                        {item.baseUrl ? (
                           <img
-                            src={`${item.mediaFile.baseUrl}=w400-h400-c`}
+                            src={`/api/google-photos/picker/media-proxy?url=${encodeURIComponent(`${item.baseUrl}=w400-h400-c`)}`}
+                            alt="Picker thumb"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : item.mediaFile?.baseUrl ? (
+                          <img
+                            src={`/api/google-photos/picker/media-proxy?url=${encodeURIComponent(`${item.mediaFile.baseUrl}=w400-h400-c`)}`}
                             alt="Picker thumb"
                             className="w-full h-full object-cover"
                           />

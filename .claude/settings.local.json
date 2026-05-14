@@ -96,7 +96,9 @@
       "Read(//c/Users/david/.claude/skills/gsd-health/**)",
       "Bash(mv comprehensive-code-review *)",
       "Bash(mkdir -p ../archive)",
-      "Bash(sort -u -t' ' -k2 -n)"
+      "Bash(sort -u -t' ' -k2 -n)",
+      "Bash(cat \"c:/Users/david/AppData/Roaming/npm/gsd-sdk\" | head -100)",
+      "Read(//c/Users/david/AppData/Roaming/npm/**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",
