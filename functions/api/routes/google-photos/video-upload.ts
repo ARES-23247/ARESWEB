@@ -8,7 +8,7 @@ import { standardErrors } from "../../../shared/routes/common";
 import * as schema from "../../../../src/db/schema";
 
 // Re-export the route from the shared types
-export { uploadGooglePhotosToYoutubeRoute } from "../../../shared/routes/google-photos";
+export { uploadGooglePhotosToYoutubeRoute } from "../../../../shared/routes/google-photos";
 
 type GooglePhotosVideo = {
   id: string;

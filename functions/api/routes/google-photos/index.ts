@@ -13,6 +13,9 @@ import {
   getPickerItemsRoute,
   deletePickerSessionRoute,
   importPhotosRoute,
+  getAlbumsRoute,
+  getAlbumMediaRoute,
+  syncAlbumRoute,
   uploadGooglePhotosToYoutubeRoute,
 } from "../../../../shared/routes/google-photos";
 import * as schema from "../../../../src/db/schema";
@@ -647,7 +650,7 @@ const app6 = app5.openapi(importPhotosRoute, async (c) => {
 // POST /picker/videos-to-youtube — Upload Google Photos videos to YouTube
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { handler: uploadGooglePhotosToYoutubeHandler } = await import("./video-upload");
+import { handler as uploadGooglePhotosToYoutubeHandler } from "./video-upload";
 
 const app7 = app6.openapi(uploadGooglePhotosToYoutubeRoute, uploadGooglePhotosToYoutubeHandler);
 
