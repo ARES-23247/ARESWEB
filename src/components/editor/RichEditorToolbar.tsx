@@ -120,7 +120,7 @@ import PresenceAvatars from "./PresenceAvatars";
 import EditorChatSidebar from "./EditorChatSidebar";
 
 /* ---------- Component ---------- */
-export default function RichEditorToolbar({ editor, documentTitle, onInsertFileLink }: RichEditorToolbarProps) {
+export default function RichEditorToolbar({ editor, documentTitle }: RichEditorToolbarProps) {
   const modal = useModal();
   const [isImporting, setIsImporting] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);

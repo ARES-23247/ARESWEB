@@ -52,7 +52,7 @@ export function TaskSubtasks({ task, onTaskClick }: TaskSubtasksProps) {
                 key={st.id}
                 className="flex items-center justify-between p-3 border border-white/5 bg-black/40 hover:bg-white/5 ares-cut-sm transition-colors group w-full text-left"
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => onTaskClick?.(st)}>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <button 
                     onClick={(e) => toggleStatus(e, st)}
                     className="flex-shrink-0 text-ares-gray hover:text-ares-cyan transition-colors"
@@ -60,9 +60,13 @@ export function TaskSubtasks({ task, onTaskClick }: TaskSubtasksProps) {
                   >
                     {st.status === "done" ? <CheckCircle2 size={16} className="text-ares-gold" /> : <Circle size={16} />}
                   </button>
-                  <span className={`text-sm font-bold group-hover:text-ares-cyan transition-colors truncate cursor-pointer ${st.status === "done" ? "text-ares-gray line-through" : "text-white"}`}>
+                  <button
+                    type="button"
+                    onClick={() => onTaskClick?.(st)}
+                    className={`text-sm text-left flex-1 font-bold group-hover:text-ares-cyan transition-colors truncate cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan ${st.status === "done" ? "text-ares-gray line-through" : "text-white"}`}
+                  >
                     {st.title}
-                  </span>
+                  </button>
                 </div>
                 <span className="text-xs text-ares-gray uppercase tracking-wider ml-2 flex-shrink-0">{st.status}</span>
               </div>
