@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Layout } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import ProjectBoardKanban from "./command/ProjectBoardKanban";
+import TaskDetailsModal from "./kanban/TaskDetailsModal";
 import { TaskTableView } from "./kanban/TaskTableView";
 import { KANBAN_SUBTEAMS } from "./command/ProjectBoardKanban";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +20,7 @@ export interface TaskNode extends TaskItem {
 
 export default function TaskBoardPage() {
   const queryClient = useQueryClient();
+  const [tableEditingTask, setTableEditingTask] = useState<TaskItem | null>(null);
 
   // Zustand store for all board state
   const {
@@ -365,10 +368,23 @@ export default function TaskBoardPage() {
             <div className="w-full h-full pb-4">
               <TaskTableView
                 tasks={taskTree}
-                onRowClick={(_t) => {
-                  // If we need to open modal for task from table
+                onRowClick={(t) => {
+                  const { subRows, ...taskData } = t;
+                  setTableEditingTask(taskData as TaskItem);
                 }}
               />
+              <AnimatePresence>
+                {tableEditingTask && (
+                  <TaskDetailsModal
+                    key={tableEditingTask.id}
+                    task={tableEditingTask}
+                    onClose={() => setTableEditingTask(null)}
+                    onSave={handleUpdateTask}
+                    onDelete={handleDeleteTask}
+                    onTaskClick={(t) => setTableEditingTask(t)}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
