@@ -73,6 +73,17 @@ jobs:
           name: node-modules
           path: node_modules/
 
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.vite
+            .vite
+          key: ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx', 'vite.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-vite-
+
       - name: Build with Vite
         env:
           VITE_DISABLE_PAGES_REDIRECT: "true"
@@ -85,30 +96,17 @@ jobs:
           path: dist/
           retention-days: 1
 
-      - name: Apply D1 Migrations
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply DB --env preview --remote
-          packageManager: npm
-
-      - name: Seed Test Data
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 execute DB --env preview --remote --file=scripts/seed-test-data.sql
-          packageManager: npm
-
-      - name: Deploy Preview to Cloudflare Pages
+      - name: Deploy Preview (migrations + seed + pages deploy)
         id: deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name aresweb --branch=${{ github.head_ref || format('master-ci-{0}', github.sha) }}
-          packageManager: npm
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 migrations apply DB --env preview --remote
+          npx wrangler d1 execute DB --env preview --remote --file=scripts/seed-test-data.sql
+          DEPLOYMENT_URL=$(npx wrangler pages deploy dist --project-name aresweb --branch="${{ github.head_ref || format('master-ci-{0}', github.sha) }}" | grep -oP 'https://.*?\.pages\.dev' | head -1)
+          echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $DEPLOYMENT_URL"
 
       - name: Wait for deployment to be ready
         run: |
@@ -367,21 +365,13 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Apply D1 Migrations (Production)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: d1 migrations apply DB --remote
-          packageManager: npm
-
-      - name: Deploy to Production
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name aresweb
-          packageManager: npm
+      - name: Deploy Production (migrations + pages deploy)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 migrations apply DB --remote
+          npx wrangler pages deploy dist --project-name aresweb
 
       - name: Post Deploy Status
         run: |

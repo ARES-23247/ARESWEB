@@ -36,5 +36,17 @@ jobs:
         with:
           name: node-modules
           path: node_modules/
+
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.vite
+            .vite
+          key: ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx', 'vite.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-vite-
+
       - run: npm run build
       - run: node scripts/check-bundle-size.mjs
