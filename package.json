@@ -51,11 +51,11 @@
     "lodash": "^4.18.1",
     "serialize-javascript": "^7.0.5",
     "esbuild": "^0.25.0",
-    "drizzle-orm": "^1.0.0-beta.22"
+    "drizzle-orm": "1.0.0-rc.2-e38a2ba"
   },
   "pnpm": {
     "overrides": {
-      "drizzle-orm": "^1.0.0-beta.22"
+      "drizzle-orm": "1.0.0-rc.2-e38a2ba"
     }
   },
   "dependencies": {
