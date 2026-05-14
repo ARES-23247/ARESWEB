@@ -1,8 +1,8 @@
 import { Suspense, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  PenTool, Calendar, Book, BookOpen, Image, AppWindow, PlusCircle, Edit3, Settings, History, FileText,
-  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Folders, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database, Inbox,
+  PenTool, Calendar, Book, BookOpen, Image, AppWindow, Edit3, Settings, History, FileText,
+  User, Users, Utensils, BarChart3, Gem, Target, Trophy, Menu, X, Award, MapPin, MessageSquare, Radio, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck, Mail, DollarSign, Package, Sparkles, Crosshair, Puzzle, Share2, Globe, Play, Database, Inbox,
   type LucideIcon
 } from "lucide-react";
 import { signOut, useSession } from "../../utils/auth-client";

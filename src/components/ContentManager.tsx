@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "@tanstack/react-router";
-import { PlusCircle, PenTool, Calendar, Book, History } from "lucide-react";
+import { PenTool, Calendar, Book, History } from "lucide-react";
 import BroadcastModal from "./BroadcastModal";
 import { ViewType } from "./ContentManager/shared";
 import EventManagerTab from "./ContentManager/EventManagerTab";
