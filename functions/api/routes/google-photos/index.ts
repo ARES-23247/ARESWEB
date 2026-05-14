@@ -80,11 +80,11 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
   const tokenInfoText = await tokenInfoRes.text();
   let tokenScopes = "unknown";
-  let tokenAudience = "unknown";
+  let _tokenAudience = "unknown";
   try {
     const tokenInfo = JSON.parse(tokenInfoText) as { scope?: string; azp?: string; error_description?: string };
     tokenScopes = tokenInfo.scope || tokenInfo.error_description || "empty";
-    tokenAudience = tokenInfo.azp || "unknown";
+    _tokenAudience = tokenInfo.azp || "unknown";
   } catch { /* ignore */ }
 
   // Step 3: Test Photos API
