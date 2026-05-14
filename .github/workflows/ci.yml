@@ -178,7 +178,7 @@ jobs:
       - name: TypeScript Type Check
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Accessibility & Lint Audit
         env:
