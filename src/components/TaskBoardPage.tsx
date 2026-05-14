@@ -369,7 +369,7 @@ export default function TaskBoardPage() {
               <TaskTableView
                 tasks={taskTree}
                 onRowClick={(t) => {
-                  const { subRows, ...taskData } = t;
+                  const { subRows: _subRows, ...taskData } = t;
                   setTableEditingTask(taskData as TaskItem);
                 }}
               />
