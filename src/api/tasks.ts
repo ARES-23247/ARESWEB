@@ -143,12 +143,12 @@ export function useReorderTasks(
 }
 
 export function useCreateTaskAttachment(
-  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; url: string }>, "mutationFn">
+  options?: Omit<UseMutationOptions<{ success: boolean }, Error, { id: string; url: string; title?: string }>, "mutationFn">
 ) {
   const queryClient = useQueryClient();
-  return useMutation<{ success: boolean }, Error, { id: string; url: string }>({
-    mutationFn: async ({ id, url }) => {
-      const response = await client.tasks[":id"].attachments.$post({ param: { id }, json: { url } });
+  return useMutation<{ success: boolean }, Error, { id: string; url: string; title?: string }>({
+    mutationFn: async ({ id, url, title }) => {
+      const response = await client.tasks[":id"].attachments.$post({ param: { id }, json: { url, title } });
       return unwrapResponse<{ success: boolean }>(response);
     },
     ...withMutationCallbacks(queryClient, options, {

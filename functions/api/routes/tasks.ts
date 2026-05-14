@@ -407,12 +407,12 @@ export const tasksRouter = _tasksRouter
         const params = c.req.valid("param");
         const body = c.req.valid("json");
         const db = getDb(c);
-        let title = body.url;
+        let title = body.title || body.url;
         let type = "link";
 
         try {
             const urlObj = new URL(body.url);
-            title = urlObj.hostname;
+            if (!body.title) title = urlObj.hostname;
 
             if (urlObj.hostname.includes("docs.google.com")) {
                 if (urlObj.pathname.includes("/document/")) type = "document";
@@ -423,13 +423,15 @@ export const tasksRouter = _tasksRouter
                 type = "github";
             }
 
-            // Fetch HTML for title
-            const res = await fetch(body.url, { headers: { "User-Agent": "ARESWEB-Unfurler/1.0" } });
-            if (res.ok) {
-                const html = await res.text();
-                const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-                if (match && match[1]) {
-                    title = match[1].trim().replace(/\n/g, "").substring(0, 100);
+            // Fetch HTML for title if not provided
+            if (!body.title) {
+                const res = await fetch(body.url, { headers: { "User-Agent": "ARESWEB-Unfurler/1.0" } });
+                if (res.ok) {
+                    const html = await res.text();
+                    const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+                    if (match && match[1]) {
+                        title = match[1].trim().replace(/\n/g, "").substring(0, 100);
+                    }
                 }
             }
         } catch (_e) {

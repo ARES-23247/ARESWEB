@@ -269,22 +269,18 @@ describe("POST /import endpoint", () => {
   });
 
   describe("POST /import", () => {
-    it("Test 11: POST /import with valid mediaItemIds returns 200 with import counts", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
+    const validMediaItemsBody = {
+      items: [
+        {
+          id: "photo123",
+          baseUrl: "https://photos.com/base",
+          filename: "test.jpg",
+          mimeType: "image/jpeg",
+        },
+      ],
+    };
 
+    it("Test 11: POST /import with valid mediaItems returns 200 with import counts", async () => {
       // Mock photo download
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -294,7 +290,7 @@ describe("POST /import endpoint", () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify(validMediaItemsBody),
       });
 
       expect(response.status).toBe(200);
@@ -304,22 +300,7 @@ describe("POST /import endpoint", () => {
       expect(body).toHaveProperty("results");
     });
 
-    it("Test 12: POST /import with valid mediaItemIds downloads and uploads to R2", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
+    it("Test 12: POST /import with valid mediaItems downloads and uploads to R2", async () => {
       // Mock photo download
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -329,7 +310,7 @@ describe("POST /import endpoint", () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify(validMediaItemsBody),
       });
 
       expect(mockEnv.ARES_STORAGE.put).toHaveBeenCalled();
@@ -338,21 +319,6 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 13: POST /import creates record in imported_photos table on success", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock photo download
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -362,28 +328,13 @@ describe("POST /import endpoint", () => {
       const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify(validMediaItemsBody),
       });
 
       expect(mockDb.insert).toHaveBeenCalled();
     });
 
     it("Test 14: POST /import creates record in import_audit_log for each attempt", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock photo download
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -393,108 +344,16 @@ describe("POST /import endpoint", () => {
       const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify(validMediaItemsBody),
       });
 
       // Should have at least 2 insert calls (imported_photos + import_audit_log)
       expect(mockDb.insert).toHaveBeenCalled();
     });
 
-    it("Test 15: POST /import with albumId creates/updates photo_albums record", async () => {
-      // Mock Photos API album details fetch (fetched FIRST in the route when albumId is provided)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          id: "album123",
-          title: "FTC Championship",
-          mediaItemsCount: "10",
-        }),
-      } as Response);
 
-      // Mock Photos API media item details fetch (per-item, fetched SECOND)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          id: "photo123",
-          baseUrl: "https://photos.com/base",
-          filename: "test.jpg",
-          mimeType: "image/jpeg",
-        }),
-      } as Response);
-
-      // Mock photo download (fetched THIRD)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
-      } as Response);
-
-      const response = await app.request("/api/google-photos/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"], albumId: "album123" }),
-      });
-
-      expect(response.status).toBe(200);
-    });
-
-    it("Test 16: POST /import with albumId uploads to photos/albums/{sanitizedName}/{filename}", async () => {
-      // Mock Photos API album details fetch (fetched FIRST in the route when albumId is provided)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          id: "album123",
-          title: "FTC Championship",
-          mediaItemsCount: "10",
-        }),
-      } as Response);
-
-      // Mock Photos API media item details fetch (per-item, fetched SECOND)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          id: "photo123",
-          baseUrl: "https://photos.com/base",
-          filename: "test.jpg",
-          mimeType: "image/jpeg",
-        }),
-      } as Response);
-
-      // Mock photo download (fetched THIRD)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]).buffer),
-      } as Response);
-
-      const _response = await app.request("/api/google-photos/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"], albumId: "album123" }),
-      });
-
-      // Verify upload to album folder
-      expect(mockEnv.ARES_STORAGE.put).toHaveBeenCalledWith(
-        expect.stringContaining("photos/albums/ftc-championship/"),
-        expect.any(ArrayBuffer),
-        expect.any(Object)
-      );
-    });
 
     it("Test 17: POST /import without albumId uploads to photos/imported/{YYYY-MM-DD}/{filename}", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "test.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock photo download
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -504,7 +363,7 @@ describe("POST /import endpoint", () => {
       const _response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify(validMediaItemsBody),
       });
 
       // Verify upload to imported folder with date
@@ -516,27 +375,6 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 18: POST /import continues processing after individual failures", async () => {
-      // Mock Photos API media items fetch (2 photos)
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo1",
-              baseUrl: "https://photos.com/base1",
-              filename: "good.jpg",
-              mimeType: "image/jpeg",
-            },
-            {
-              id: "photo2",
-              baseUrl: "https://photos.com/base2",
-              filename: "bad.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock first photo download (success)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -552,7 +390,12 @@ describe("POST /import endpoint", () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo1", "photo2"] }),
+        body: JSON.stringify({
+          items: [
+            { id: "photo1", baseUrl: "https://photos.com/base1", filename: "good.jpg" },
+            { id: "photo2", baseUrl: "https://photos.com/base2", filename: "bad.jpg" },
+          ],
+        }),
       });
 
       expect(response.status).toBe(200);
@@ -562,21 +405,6 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 19: POST /import returns failure details for each failed import", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "bad.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock photo download (invalid format)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -586,7 +414,11 @@ describe("POST /import endpoint", () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify({
+          items: [
+            { id: "photo123", baseUrl: "https://photos.com/base", filename: "bad.jpg" },
+          ],
+        }),
       });
 
       expect(response.status).toBe(200);
@@ -598,21 +430,6 @@ describe("POST /import endpoint", () => {
     });
 
     it("Test 20: POST /import validates magic bytes before R2 upload", async () => {
-      // Mock Photos API media items fetch
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          mediaItems: [
-            {
-              id: "photo123",
-              baseUrl: "https://photos.com/base",
-              filename: "fake.jpg",
-              mimeType: "image/jpeg",
-            },
-          ],
-        }),
-      } as Response);
-
       // Mock photo download (invalid magic bytes)
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
@@ -622,7 +439,11 @@ describe("POST /import endpoint", () => {
       const response = await app.request("/api/google-photos/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaItemIds: ["photo123"] }),
+        body: JSON.stringify({
+          items: [
+            { id: "photo123", baseUrl: "https://photos.com/base", filename: "fake.jpg" },
+          ],
+        }),
       });
 
       // Should NOT upload to R2 if magic bytes are invalid

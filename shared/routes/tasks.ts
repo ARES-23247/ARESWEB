@@ -264,7 +264,10 @@ export const createTaskAttachmentRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({ url: z.string().url() }),
+          schema: z.object({ 
+            url: z.string().url(),
+            title: z.string().optional()
+          }),
         },
       },
     },
