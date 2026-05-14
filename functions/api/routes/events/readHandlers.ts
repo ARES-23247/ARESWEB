@@ -6,7 +6,7 @@
 
 import { ApiError } from "../../middleware/errorHandler";
 import { getSessionUser, getDb } from "../../middleware";
-import { eq, or, and, isNull, desc, lte, sql, inArray } from "drizzle-orm";
+import { eq, or, and, isNull, desc, lte, sql } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 import { queryHelpers } from "@/db/query-helpers";
@@ -70,7 +70,7 @@ export const readHandlers = {
         return { status: 200 as const, body: { events } };
     },
 
-    getCalendarSettings: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
+    getCalendarSettings: async (_input: HandlerInput, _c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
         return {
             status: 200 as const,
             body: {
