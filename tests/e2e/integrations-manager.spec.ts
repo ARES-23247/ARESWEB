@@ -62,7 +62,6 @@ test.describe('Integrations Manager', () => {
     // Verify key integration cards are visible
     await expect(integrationsPage.zulipCard).toBeVisible();
     await expect(integrationsPage.githubCard).toBeVisible();
-    await expect(integrationsPage.discordCard).toBeVisible();
     await expect(integrationsPage.resendCard).toBeVisible();
   });
 

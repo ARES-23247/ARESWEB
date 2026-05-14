@@ -16,6 +16,11 @@ export const authHandlers = [
     return HttpResponse.json(mockAuthState.session);
   }),
 
+  // Get Session
+  http.get("*/auth/get-session", () => {
+    return HttpResponse.json(mockAuthState.session);
+  }),
+
   // Settings
   http.get("*/settings/admin/settings", () => {
     return HttpResponse.json({ success: true, settings: mockAuthState.settings });

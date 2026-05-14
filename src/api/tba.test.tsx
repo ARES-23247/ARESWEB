@@ -8,14 +8,13 @@ import * as tbaApi from "./tba";
 vi.mock("./honoClient", () => ({
   client: {
     tba: {
-      rankings: {
-        ":eventKey": {
-          $get: vi.fn(),
-        },
-      },
-      matches: {
-        ":eventKey": {
-          $get: vi.fn(),
+      "ftc-events": {
+        ":season": {
+          ":eventCode": {
+            ":type": {
+              $get: vi.fn(),
+            },
+          },
         },
       },
     },
@@ -67,21 +66,21 @@ describe("TBA API", () => {
         { team_key: "frc5678", rank: 2 },
       ];
       const mockResponse = { rankings: mockRankings };
-      mockClient.tba.rankings[":eventKey"].$get.mockResolvedValue({ ok: true });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => tbaApi.useGetTBARankings("2024mike"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
-      expect(mockClient.tba.rankings[":eventKey"].$get).toHaveBeenCalledWith({
-        param: { eventKey: "2024mike" },
+      expect(mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get).toHaveBeenCalledWith({
+        param: { season: "2024", eventCode: "MIKE", type: "rankings" },
       });
     });
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch rankings");
-      mockClient.tba.rankings[":eventKey"].$get.mockResolvedValue({ ok: false });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => tbaApi.useGetTBARankings("2024mike"), { wrapper });
@@ -92,7 +91,7 @@ describe("TBA API", () => {
 
     it("should handle empty rankings", async () => {
       const mockResponse = { rankings: [] };
-      mockClient.tba.rankings[":eventKey"].$get.mockResolvedValue({ ok: true });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => tbaApi.useGetTBARankings("2024mike"), { wrapper });
@@ -115,21 +114,21 @@ describe("TBA API", () => {
         },
       ];
       const mockResponse = { matches: mockMatches };
-      mockClient.tba.matches[":eventKey"].$get.mockResolvedValue({ ok: true });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => tbaApi.useGetTBAMatches("2024mike"), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
-      expect(mockClient.tba.matches[":eventKey"].$get).toHaveBeenCalledWith({
-        param: { eventKey: "2024mike" },
+      expect(mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get).toHaveBeenCalledWith({
+        param: { season: "2024", eventCode: "MIKE", type: "matches" },
       });
     });
 
     it("should handle API errors", async () => {
       const mockError = new Error("Failed to fetch matches");
-      mockClient.tba.matches[":eventKey"].$get.mockResolvedValue({ ok: false });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: false });
       mockUnwrapResponse.mockRejectedValue(mockError);
 
       const { result } = renderHook(() => tbaApi.useGetTBAMatches("2024mike"), { wrapper });
@@ -140,7 +139,7 @@ describe("TBA API", () => {
 
     it("should handle empty matches", async () => {
       const mockResponse = { matches: [] };
-      mockClient.tba.matches[":eventKey"].$get.mockResolvedValue({ ok: true });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => tbaApi.useGetTBAMatches("2024mike"), { wrapper });
@@ -161,7 +160,7 @@ describe("TBA API", () => {
         },
       ];
       const mockResponse = { matches: mockMatches };
-      mockClient.tba.matches[":eventKey"].$get.mockResolvedValue({ ok: true });
+      mockClient.tba["ftc-events"][":season"][":eventCode"][":type"].$get.mockResolvedValue({ ok: true });
       mockUnwrapResponse.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(() => tbaApi.useGetTBAMatches("2024mike"), { wrapper });

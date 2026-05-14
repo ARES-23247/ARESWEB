@@ -28,17 +28,9 @@ export class IntegrationsManagerPage extends DashboardPage {
   readonly githubWebhookSecretInput: Locator;
 
   // Social Integrations Locators
-  readonly discordCard: Locator;
-  readonly discordWebhookInput: Locator;
   readonly blueskyCard: Locator;
   readonly blueskyHandleInput: Locator;
   readonly blueskyAppPasswordInput: Locator;
-
-  // Google Calendar Locators
-  readonly gcalCard: Locator;
-  readonly gcalInternalIdInput: Locator;
-  readonly gcalOutreachIdInput: Locator;
-  readonly gcalExternalIdInput: Locator;
 
   // Resend Card Locators
   readonly resendCard: Locator;
@@ -74,17 +66,9 @@ export class IntegrationsManagerPage extends DashboardPage {
     this.githubWebhookSecretInput = page.locator('#github_webhook_secret');
 
     // Social Integrations
-    this.discordCard = page.locator('.glass-card').filter({ hasText: 'Discord Publishing' }).first();
-    this.discordWebhookInput = page.locator('#discord_webhook');
     this.blueskyCard = page.locator('.glass-card').filter({ hasText: 'Bluesky Network' }).first();
     this.blueskyHandleInput = page.locator('#bsky_handle');
     this.blueskyAppPasswordInput = page.locator('#bsky_app_pw');
-
-    // Google Calendar
-    this.gcalCard = page.locator('.glass-card').filter({ hasText: 'Google Calendar Admin' }).first();
-    this.gcalInternalIdInput = page.locator('#cal_id_internal');
-    this.gcalOutreachIdInput = page.locator('#cal_id_outreach');
-    this.gcalExternalIdInput = page.locator('#cal_id_external');
 
     // Resend Card
     this.resendCard = page.locator('.bg-obsidian').filter({ hasText: 'Resend Mass Email' }).first();
