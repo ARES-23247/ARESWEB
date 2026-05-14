@@ -55,6 +55,9 @@ const routes = adminApp
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
     const scopes = [
+      "openid",
+      "email",
+      "profile",
       "https://www.googleapis.com/auth/youtube.readonly",
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/photoslibrary.readonly",
