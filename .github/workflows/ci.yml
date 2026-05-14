@@ -90,9 +90,27 @@ jobs:
 
       - name: Wait for deployment to be ready
         run: |
+          PREVIEW_URL="${{ steps.deploy.outputs.deployment-url }}"
+          MAX_WAIT=180  # 3 minutes
+          CHECK_INTERVAL=5
+
           echo "Waiting for preview deployment to propagate..."
-          timeout 60 bash -c 'until curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.deployment-url }}" | grep -q "200"; do sleep 2; done'
-          echo "Preview deployment is ready!"
+          echo "URL: $PREVIEW_URL"
+
+          for ((i=0; i<MAX_WAIT; i+=CHECK_INTERVAL)); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✓ Preview deployment is ready after ${i}s!"
+              exit 0
+            fi
+            echo "  Status: $STATUS (${i}s elapsed, waiting...)"
+            sleep $CHECK_INTERVAL
+          done
+
+          echo "✗ Timed out after ${MAX_WAIT}s waiting for deployment"
+          echo "Final status check:"
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" "$PREVIEW_URL" || echo "Connection failed"
+          exit 1
 
       - name: Comment Preview URL on PR
         if: github.event_name == 'pull_request'
