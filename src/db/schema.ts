@@ -859,7 +859,7 @@ export const importedPhotos = sqliteTable("imported_photos", {
 	albumId: text("album_id").references(() => photoAlbums.id),
 	importedBy: text("imported_by").notNull(),
 	importedAt: text("imported_at").notNull(),
-	mimeType: text().notNull(),
+	mimeType: text("mime_type").notNull(),
 	fileSize: text("file_size").notNull(),
 },
 (table) => [
