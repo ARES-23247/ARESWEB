@@ -89,7 +89,8 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx tsc --noEmit)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx --format json)",
       "Bash(npx jq *)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx)",
+      "Bash(pnpm install *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

@@ -39,7 +39,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Cache pnpm store
         uses: actions/cache@v4
@@ -82,7 +82,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -169,7 +169,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -207,7 +207,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -258,7 +258,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -285,7 +285,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -345,7 +345,7 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Restore node_modules
         if: steps.check_e2e.outputs.run_e2e == 'true'
