@@ -131,12 +131,12 @@ function PhotosDashboard() {
   // Import selected items to R2
   const handleImport = () => {
     const items = pickedItems
-      .filter((item) => selectedForImport.has(item.id))
+      .filter((item) => selectedForImport.has(item.id) && item.mediaFile)
       .map((item) => ({
         id: item.id,
-        baseUrl: item.baseUrl,
-        filename: item.mediaFile?.filename,
-        mimeType: item.mimeType,
+        baseUrl: item.mediaFile!.baseUrl,
+        filename: item.mediaFile!.filename,
+        mimeType: item.mediaFile!.mimeType,
       }));
 
     if (items.length === 0) {
@@ -325,7 +325,7 @@ function PhotosDashboard() {
                   >
                     {/* Photo thumbnail */}
                     <img
-                      src={`${item.baseUrl}=w300-h300-c`}
+                      src={`${item.mediaFile?.baseUrl || ""}=w300-h300-c`}
                       alt={filename}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                       loading="lazy"

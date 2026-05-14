@@ -26,9 +26,9 @@ export interface PickerSession {
 
 export interface PickedMediaItem {
   id: string;
-  baseUrl: string;
-  mimeType: string;
   mediaFile?: {
+    baseUrl: string;
+    mimeType: string;
     filename?: string;
     fileSize?: string;
     mediaFileMetadata?: {
