@@ -68,7 +68,7 @@ export default function GooglePhotoPickerModal({
   useEffect(() => {
     if (itemsData?.mediaItems && itemsData.mediaItems.length > 0) {
       // Filter out videos client-side since Picker API doesn't support mediaFilter
-      const photosOnly = itemsData.mediaItems.filter(item => item.mimeType?.startsWith("image/"));
+      const photosOnly = itemsData.mediaItems.filter(item => item.mediaFile?.mimeType?.startsWith("image/"));
       setPickedItems(photosOnly);
       setSelectedForImport(new Set(photosOnly.map((i) => i.id)));
       setIsPickerOpen(false);
@@ -332,13 +332,7 @@ export default function GooglePhotoPickerModal({
                           isSelected ? "border-2 border-ares-cyan" : "border-white/10 hover:border-ares-cyan/50"
                         }`}
                       >
-                        {item.baseUrl ? (
-                          <img
-                            src={`/api/google-photos/picker/media-proxy?url=${encodeURIComponent(`${item.baseUrl}=w400-h400-c`)}`}
-                            alt="Picker thumb"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : item.mediaFile?.baseUrl ? (
+                        {item.mediaFile?.baseUrl ? (
                           <img
                             src={`/api/google-photos/picker/media-proxy?url=${encodeURIComponent(`${item.mediaFile.baseUrl}=w400-h400-c`)}`}
                             alt="Picker thumb"
