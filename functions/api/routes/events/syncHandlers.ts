@@ -58,8 +58,8 @@ export const syncHandlers = {
                         target: schema.events.gcalEventId,
                         set: {
                             title: sql`excluded.title`,
-                            dateStart: sql`excluded.dateStart`,
-                            dateEnd: sql`excluded.dateEnd`,
+                            dateStart: sql`excluded.date_start`,
+                            dateEnd: sql`excluded.date_end`,
                             location: sql`excluded.location`,
                             description: sql`excluded.description`,
                             category: sql`excluded.category`,
