@@ -159,6 +159,7 @@ export default function ProjectBoardKanban({
       <AnimatePresence>
         {editingTask && (
           <TaskDetailsModal
+            key={editingTask.id}
             task={editingTask}
             onClose={() => setEditingTask(null)}
             onSave={onUpdateTask}
