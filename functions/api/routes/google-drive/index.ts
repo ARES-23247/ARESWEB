@@ -111,7 +111,8 @@ const driveRouter = app1.openapi(listDriveFilesRoute, async (c) => {
     "application/vnd.google-apps.drawing",
   ];
 
-  let driveQuery = `trashed=false and mimeType in ('${googleWorkspaceMimeTypes.join("','")}')`;
+  let driveQuery = `trashed=false and (${googleWorkspaceMimeTypes.map(m => `mimeType='${m}'`).join(" or ")})`;
+
 
   // If a specific folder is configured, scope the search to that folder
   if (folderId) {

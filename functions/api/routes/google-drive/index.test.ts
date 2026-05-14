@@ -311,7 +311,7 @@ describe("google-drive router", () => {
       // Verify that the query includes MIME type filter
       const fetchCall = vi.mocked(global.fetch).mock.calls[0];
       const url = fetchCall[0] as string;
-      expect(url).toContain("mimeType+in");
+      expect(url).toContain("mimeType%3D%27");
       // URL-encoded MIME type (slashes are encoded as %2F)
       expect(url).toContain("application%2Fvnd.google-apps.document");
     });
