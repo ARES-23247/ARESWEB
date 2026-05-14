@@ -138,15 +138,21 @@ export default function ProjectBoardKanban({
         activeFilter={activeKanbanFilter}
         onFilterChange={setActiveKanbanFilter}
         emptyStateText="No tasks"
-        renderItem={(task) => (
-          <SortableTaskCard
-            key={task.id}
-            task={task}
-            onDelete={onDeleteTask}
-            onUpdateStatus={(id, s) => onUpdateTask(id, { status: s as import("../../api").UpdateTaskRequest["status"] })}
-            onEdit={(t) => setEditingTask(t)}
-          />
-        )}
+        renderItem={(task) => {
+          const taskSubtasks = tasks.filter((t) => t.parentId === task.id);
+          const completedSubtasksCount = taskSubtasks.filter((t) => t.status === "done").length;
+          return (
+            <SortableTaskCard
+              key={task.id}
+              task={task}
+              subtasksCount={taskSubtasks.length}
+              completedSubtasksCount={completedSubtasksCount}
+              onDelete={onDeleteTask}
+              onUpdateStatus={(id, s) => onUpdateTask(id, { status: s as import("../../api").UpdateTaskRequest["status"] })}
+              onEdit={(t) => setEditingTask(t)}
+            />
+          );
+        }}
         renderDragOverlay={(task) => <DragOverlayCard task={task} />}
       />
 

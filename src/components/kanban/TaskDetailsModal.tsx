@@ -144,6 +144,12 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const { data: freshTaskData } = useGetTasks({ id: task.id }) as { data?: { tasks?: TaskItem[] } };
   const freshTask = freshTaskData?.tasks?.[0] || task;
 
+  const { data: parentTaskData } = useGetTasks(
+    { id: task.parentId || "skip" },
+    { enabled: !!task.parentId }
+  ) as { data?: { tasks?: TaskItem[] } };
+  const parentTask = parentTaskData?.tasks?.[0];
+
   // Accessibility: Focus trap for keyboard navigation
   const { modalRef: focusTrapRef } = useFocusTrap({
     isOpen: true,
@@ -212,26 +218,37 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         className="relative w-full max-w-6xl max-h-full bg-obsidian border border-white/10 ares-cut-md shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/20">
-              <Layout size={18} className="text-ares-cyan" />
-            </div>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-transparent border-none text-white text-xl font-bold px-0 focus:outline-none focus:ring-0 min-w-[300px]"
-              placeholder="Task title..."
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-[10px] text-ares-gray font-mono tracking-wider uppercase">
-              ID: {task.id.slice(0, 8)}
-            </div>
-            <button onClick={onClose} className="p-2 text-ares-gray hover:text-white transition-colors" title="Close modal">
-              <X size={20} />
+        <div className="flex-shrink-0 flex flex-col p-4 border-b border-white/5 bg-white/5">
+          {parentTask && (
+            <button
+              onClick={() => onTaskClick?.(parentTask)}
+              className="text-[10px] font-bold text-ares-cyan hover:text-white flex items-center gap-1 mb-3 self-start transition-colors uppercase tracking-widest px-2 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm"
+            >
+              <Layout size={10} />
+              ← Back to Parent Task: {parentTask.title}
             </button>
+          )}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/20">
+                <Layout size={18} className="text-ares-cyan" />
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-transparent border-none text-white text-xl font-bold px-0 focus:outline-none focus:ring-0 min-w-[300px]"
+                placeholder="Task title..."
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-[10px] text-ares-gray font-mono tracking-wider uppercase hidden sm:block">
+                ID: {task.id.split("-")[0]}
+              </div>
+              <button onClick={onClose} className="p-2 text-ares-gray hover:text-white transition-colors" title="Close modal">
+                <X size={20} />
+              </button>
+            </div>
           </div>
         </div>
 

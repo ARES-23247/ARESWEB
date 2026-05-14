@@ -92,7 +92,8 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=12288\" npx eslint . --ext .ts,.tsx)",
       "Bash(pnpm install *)",
       "Bash(pnpm run *)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" pnpm run typecheck)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" pnpm run typecheck)",
+      "Read(//c/Users/david/.claude/skills/gsd-health/**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

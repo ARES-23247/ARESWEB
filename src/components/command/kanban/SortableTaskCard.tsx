@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  ChevronDown, Edit3, GripVertical, Trash2, ListTodo, Paperclip
+  ChevronDown, Edit3, GripVertical, Trash2, ListTodo, Paperclip, Layers
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -12,10 +12,12 @@ interface SortableTaskCardProps {
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: string) => void;
   onEdit: (task: TaskItem) => void;
+  subtasksCount?: number;
+  completedSubtasksCount?: number;
 }
 
 export function SortableTaskCard({
-  task, onDelete, onUpdateStatus, onEdit,
+  task, onDelete, onUpdateStatus, onEdit, subtasksCount = 0, completedSubtasksCount = 0,
 }: SortableTaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const {
@@ -105,9 +107,15 @@ export function SortableTaskCard({
         </div>
       )}
 
-      {/* Attachments & Checklists */}
-      {(task.checklists?.length || task.attachments?.length || false) ? (
+      {/* Attachments, Checklists & Subtasks */}
+      {(task.checklists?.length || task.attachments?.length || subtasksCount > 0) ? (
         <div className="flex items-center gap-2 mb-1.5 text-[10px] text-ares-gray font-bold">
+          {subtasksCount > 0 && (
+            <span className={`flex items-center gap-1 ${completedSubtasksCount === subtasksCount ? 'text-ares-cyan' : ''}`}>
+              <Layers size={10} /> 
+              {completedSubtasksCount}/{subtasksCount}
+            </span>
+          )}
           {task.checklists && task.checklists.length > 0 && (
             <span className={`flex items-center gap-1 ${task.checklists.every(c => c.isCompleted === 1) ? 'text-ares-cyan' : ''}`}>
               <ListTodo size={10} /> 
