@@ -5,7 +5,7 @@
  */
 
 import { ApiError } from "../../middleware/errorHandler";
-import { getSessionUser, getDb } from "../../middleware";
+import { getDbSettings, getSessionUser, getDb } from "../../middleware";
 import { triggerBackgroundReindex } from "../ai/autoReindex";
 import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";

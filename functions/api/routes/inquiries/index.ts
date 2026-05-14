@@ -336,8 +336,8 @@ async function processInquiryInBackground(
         const msg = `🔔 *New ${type.toUpperCase()} Inquiry* (ID: ${id.slice(0, 8)})\n*Review:* ${baseUrl}/dashboard/inquiries`;
 
         // Discord webhook
-        if (social.DISCORD_WEBHOOK_URL) {
-            await fetch(social.DISCORD_WEBHOOK_URL, {
+        if (c.env.DISCORD_WEBHOOK_URL) {
+            await fetch(c.env.DISCORD_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ content: msg })

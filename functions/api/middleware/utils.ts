@@ -133,13 +133,8 @@ export interface SessionUser {
 }
 
 export type SocialConfig = {
-  DISCORD_WEBHOOK_URL?: string;
-  MAKE_WEBHOOK_URL?: string;
   BLUESKY_HANDLE?: string;
   BLUESKY_APP_PASSWORD?: string;
-  SLACK_WEBHOOK_URL?: string;
-  TEAMS_WEBHOOK_URL?: string;
-  GCHAT_WEBHOOK_URL?: string;
   FACEBOOK_PAGE_ID?: string;
   FACEBOOK_ACCESS_TOKEN?: string;
   TWITTER_API_KEY?: string;
@@ -148,7 +143,8 @@ export type SocialConfig = {
   TWITTER_ACCESS_SECRET?: string;
   INSTAGRAM_ACCOUNT_ID?: string;
   INSTAGRAM_ACCESS_TOKEN?: string;
-  CALENDAR_ID?: string;
+  COMMUNITY_PHOTO_DRIVE_URL?: string;
+  COMMUNITY_DOCS_URL?: string;
   ZULIP_BOT_EMAIL?: string;
   ZULIP_API_KEY?: string;
   ZULIP_URL?: string;
@@ -339,15 +335,13 @@ export async function requestIdMiddleware(c: Context<AppEnv>, next: () => Promis
 // ── Centralized Settings Fetch ──────────────────────────────
 export async function getDbSettings(c: Context<AppEnv>): Promise<Record<string, string>> {
   const keys = [
-    'DISCORD_WEBHOOK_URL', 'MAKE_WEBHOOK_URL', 'BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD',
-    'SLACK_WEBHOOK_URL', 'TEAMS_WEBHOOK_URL', 'GCHAT_WEBHOOK_URL', 'FACEBOOK_PAGE_ID',
-    'FACEBOOK_ACCESS_TOKEN', 'TWITTER_API_KEY', 'TWITTER_API_SECRET', 'TWITTER_ACCESS_TOKEN',
-    'TWITTER_ACCESS_SECRET', 'INSTAGRAM_ACCOUNT_ID', 'INSTAGRAM_ACCESS_TOKEN',
-    'CALENDAR_ID',
+    'BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD',
+    'FACEBOOK_PAGE_ID', 'FACEBOOK_ACCESS_TOKEN',
+    'TWITTER_API_KEY', 'TWITTER_API_SECRET', 'TWITTER_ACCESS_TOKEN', 'TWITTER_ACCESS_SECRET',
+    'INSTAGRAM_ACCOUNT_ID', 'INSTAGRAM_ACCESS_TOKEN',
+    'COMMUNITY_PHOTO_DRIVE_URL', 'COMMUNITY_DOCS_URL',
     'ZULIP_BOT_EMAIL', 'ZULIP_API_KEY', 'ZULIP_URL', 'ZULIP_ADMIN_STREAM', 'ZULIP_COMMENT_STREAM', 'ZULIP_WEBHOOK_TOKEN',
     'GITHUB_PAT', 'GITHUB_PROJECT_ID', 'GITHUB_ORG', 'GITHUB_WEBHOOK_SECRET',
-    'ENCRYPTION_SECRET', 'BETTER_AUTH_SECRET', 'BETTER_AUTH_URL',
-    'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_DATABASE_ID', 'R2_ACCESS_KEY', 'R2_SECRET_KEY',
     'RESEND_API_KEY', 'RESEND_FROM_EMAIL'
   ];
 
@@ -374,13 +368,8 @@ export async function getSocialConfig(c: Context<AppEnv>): Promise<SocialConfig>
     const dbSettings = await getDbSettings(c);
 
     const config = {
-      DISCORD_WEBHOOK_URL: c.env.DISCORD_WEBHOOK_URL || dbSettings["DISCORD_WEBHOOK_URL"],
-      MAKE_WEBHOOK_URL: dbSettings["MAKE_WEBHOOK_URL"],
       BLUESKY_HANDLE: dbSettings["BLUESKY_HANDLE"],
       BLUESKY_APP_PASSWORD: dbSettings["BLUESKY_APP_PASSWORD"],
-      SLACK_WEBHOOK_URL: dbSettings["SLACK_WEBHOOK_URL"],
-      TEAMS_WEBHOOK_URL: dbSettings["TEAMS_WEBHOOK_URL"],
-      GCHAT_WEBHOOK_URL: dbSettings["GCHAT_WEBHOOK_URL"],
       FACEBOOK_PAGE_ID: dbSettings["FACEBOOK_PAGE_ID"],
       FACEBOOK_ACCESS_TOKEN: dbSettings["FACEBOOK_ACCESS_TOKEN"],
       TWITTER_API_KEY: dbSettings["TWITTER_API_KEY"],
@@ -389,7 +378,8 @@ export async function getSocialConfig(c: Context<AppEnv>): Promise<SocialConfig>
       TWITTER_ACCESS_SECRET: dbSettings["TWITTER_ACCESS_SECRET"],
       INSTAGRAM_ACCOUNT_ID: dbSettings["INSTAGRAM_ACCOUNT_ID"],
       INSTAGRAM_ACCESS_TOKEN: dbSettings["INSTAGRAM_ACCESS_TOKEN"],
-      CALENDAR_ID: dbSettings["CALENDAR_ID"],
+      COMMUNITY_PHOTO_DRIVE_URL: dbSettings["COMMUNITY_PHOTO_DRIVE_URL"],
+      COMMUNITY_DOCS_URL: dbSettings["COMMUNITY_DOCS_URL"],
       ZULIP_BOT_EMAIL: c.env.ZULIP_BOT_EMAIL || dbSettings["ZULIP_BOT_EMAIL"],
       ZULIP_API_KEY: c.env.ZULIP_API_KEY || dbSettings["ZULIP_API_KEY"],
       ZULIP_URL: c.env.ZULIP_URL || dbSettings["ZULIP_URL"] || "https://aresfirst.zulipchat.com",

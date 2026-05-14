@@ -14,7 +14,7 @@ import { indexSiteContent } from "./routes/ai/indexer";
 import authRouter from "./routes/auth";
 import analyticsRouter from "./routes/analytics";
 import sponsorsRouter from "./routes/sponsors";
-import tbaRouter from "./routes/tba";
+import ftcRouter from "./routes/ftc";
 import outreachRouter from "./routes/outreach/index";
 import awardsRouter from "./routes/awards";
 import postsRouter from "./routes/posts/index";
@@ -229,7 +229,7 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/awards", awardsRouter)
   .route("/outreach", outreachRouter)
   .route("/seasons", seasonsRouter)
-  .route("/tba", tbaRouter)
+  .route("/tba", ftcRouter)
   .route("/judges", judgesRouter)
   .route("/profile", profilesRouter)
   .route("/logistics", logisticsRouter)

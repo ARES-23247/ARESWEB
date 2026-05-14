@@ -1,14 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sendZulipMessage } from './zulipSync';
-import {
-  dispatchDiscord, dispatchDiscordPhoto,
-  dispatchSlack, dispatchSlackPhoto,
-  dispatchTeams, dispatchTeamsPhoto,
-  dispatchGChat, dispatchGChatPhoto,
-  dispatchMake
-} from './social/webhooks';
 import { dispatchBluesky } from './social/bluesky';
-import { dispatchBand } from './social/band';
 import { dispatchTwitterPhoto } from './social/twitter';
 import { dispatchFacebook, dispatchMetaPhoto } from './social/meta';
 import { logSystemError, DrizzleDB } from '../api/middleware';
@@ -18,15 +10,8 @@ import * as schema from "../../src/db/schema";
 import { SocialQueuePost } from "../../shared/routes/socialQueue";
 
 export interface SocialConfig {
-  DISCORD_WEBHOOK_URL?: string;
-  MAKE_WEBHOOK_URL?: string;
   BLUESKY_HANDLE?: string;
   BLUESKY_APP_PASSWORD?: string;
-  SLACK_WEBHOOK_URL?: string;
-  TEAMS_WEBHOOK_URL?: string;
-  GCHAT_WEBHOOK_URL?: string;
-  BAND_ACCESS_TOKEN?: string;
-  BAND_KEY?: string;
   FACEBOOK_PAGE_ID?: string;
   FACEBOOK_ACCESS_TOKEN?: string;
   INSTAGRAM_ACCOUNT_ID?: string;
@@ -42,6 +27,9 @@ export interface SocialConfig {
   ZULIP_ADMIN_STREAM?: string;
   ZULIP_COMMENT_STREAM?: string;
   ZULIP_WEBHOOK_TOKEN?: string;
+  // ── Community URLs ──
+  COMMUNITY_PHOTO_DRIVE_URL?: string;
+  COMMUNITY_DOCS_URL?: string;
 }
 
 export interface PostPayload {
@@ -78,14 +66,7 @@ export async function dispatchSocials(
     });
   };
 
-  // 1. Webhooks & Integrated Services
-  if (isEnabled('discord')) promises.push(wrapRetry(() => dispatchDiscord(payload, config), 'Discord'));
-  if (isEnabled('slack')) promises.push(wrapRetry(() => dispatchSlack(payload, config), 'Slack'));
-  if (isEnabled('teams')) promises.push(wrapRetry(() => dispatchTeams(payload, config), 'Teams'));
-  if (isEnabled('gchat')) promises.push(wrapRetry(() => dispatchGChat(payload, config), 'GChat'));
-  if (isEnabled('make')) promises.push(wrapRetry(() => dispatchMake(payload, config), 'Make'));
-
-  // 2. Zulip Announcements Channel
+  // Zulip Announcements Channel
   if (config.ZULIP_BOT_EMAIL && config.ZULIP_API_KEY && isEnabled('zulip')) {
     promises.push(
       wrapRetry(() => sendZulipMessage(
@@ -102,14 +83,13 @@ export async function dispatchSocials(
     );
   }
 
-  // 3. Social Platforms
+  // Social Platforms
   if (isEnabled('facebook')) promises.push(wrapRetry(() => dispatchFacebook(payload, config), 'Facebook'));
   if (isEnabled('bluesky')) promises.push(wrapRetry(() => dispatchBluesky(payload, config), 'Bluesky'));
-  if (isEnabled('band')) promises.push(wrapRetry(() => dispatchBand(payload, config), 'Band'));
 
   const results = await Promise.allSettled(promises);
   const failures: string[] = [];
-  
+
   results.forEach((result) => {
     if (result.status === 'rejected') {
       const rejected = result as PromiseRejectedResult;
@@ -147,12 +127,6 @@ export async function dispatchPhotoSocials(imageUrl: string, caption: string, co
     console.error("[PhotoSocialSync:TwitterPhoto] All retries exhausted:", err);
   }));
 
-  // 3. Webhooks
-  promises.push(wrapRetry(() => dispatchDiscordPhoto(imageUrl, caption, config), 'DiscordPhoto'));
-  promises.push(wrapRetry(() => dispatchSlackPhoto(imageUrl, caption, config), 'SlackPhoto'));
-  promises.push(wrapRetry(() => dispatchTeamsPhoto(imageUrl, caption, config), 'TeamsPhoto'));
-  promises.push(wrapRetry(() => dispatchGChatPhoto(imageUrl, caption, config), 'GChatPhoto'));
-
   await Promise.allSettled(promises);
 }
 
@@ -165,7 +139,7 @@ export async function dispatchQueuePost(
   config: SocialConfig
 ) {
   const baseUrl = config.ZULIP_URL ? new URL(config.ZULIP_URL).origin : "https://aresfirst.org";
-  
+
   const payload: PostPayload = {
     title: "ARES Update",
     url: baseUrl,
@@ -229,6 +203,6 @@ export async function dispatchQueuePost(
 
   // Cast platforms to expected type for dispatchSocials
   const platformsFilter = post.platforms as Record<string, boolean>;
-  
+
   return dispatchSocials(db, payload, config, platformsFilter);
 }

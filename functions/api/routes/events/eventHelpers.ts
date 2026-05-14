@@ -141,8 +141,8 @@ export function mapToEventResponse(e: Record<string, unknown>, locationMap: Reco
  */
 export async function getCalendarId(c: AresContext, category: string): Promise<{ calId: string | undefined; socialConfig: Awaited<ReturnType<typeof getSocialConfig>> }> {
     const socialConfig = await getSocialConfig(c);
-    const calKey = `CALENDAR_ID_${category.toUpperCase()}` as keyof typeof socialConfig;
-    const calId = (socialConfig as Record<string, string | undefined>)[calKey] || socialConfig.CALENDAR_ID;
+    const calKey = `CALENDAR_ID_${category.toUpperCase()}` as string;
+    const calId = (socialConfig as Record<string, string | undefined>)[calKey] || (socialConfig as Record<string, string | undefined>).CALENDAR_ID;
     return { calId, socialConfig };
 }
 
