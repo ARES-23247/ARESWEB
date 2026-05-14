@@ -44,9 +44,9 @@ export function TaskDocuments({ task }: TaskDocumentsProps) {
       <div className="flex flex-col gap-4">
         {documents.map(doc => (
           <div key={doc.id} className={`w-full aspect-video ares-cut-sm overflow-hidden border border-white/10 relative group bg-black/40 ${deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-            {/* The iframe url replaces /edit with /preview for better embedding */}
+            {/* The iframe url replaces /edit or /view with /preview for better embedding */}
             <iframe 
-              src={doc.url.replace(/\/edit.*$/, '/preview')} 
+              src={doc.url.replace(/\/(edit|view).*$/, '/preview')} 
               className="w-full h-full border-0" 
               title={doc.title}
               allowFullScreen
