@@ -104,6 +104,7 @@ export function useGetPickerSession(sessionId: string | null, enabled = true) {
     queryKey: ["google-photos", "picker-session", sessionId],
     queryFn: async () => {
       if (!sessionId) throw new Error("No session ID");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono parameterized route typing
       const res = await (client["google-photos"].picker.session as any)[":sessionId"].$get({
         param: { sessionId },
       });
@@ -123,6 +124,7 @@ export function useGetPickerItems(sessionId: string | null) {
     queryKey: ["google-photos", "picker-items", sessionId],
     queryFn: async () => {
       if (!sessionId) throw new Error("No session ID");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono parameterized route typing
       const res = await (client["google-photos"].picker.session as any)[":sessionId"].items.$get({
         param: { sessionId },
       });
@@ -140,6 +142,7 @@ export function useDeletePickerSession() {
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Hono parameterized route typing
       const res = await (client["google-photos"].picker.session as any)[":sessionId"].$delete({
         param: { sessionId },
       });

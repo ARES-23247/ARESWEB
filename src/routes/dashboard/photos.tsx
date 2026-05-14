@@ -59,6 +59,7 @@ function PhotosDashboard() {
   // When items arrive, populate the review grid
   useEffect(() => {
     if (itemsData?.mediaItems && itemsData.mediaItems.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Expected behavior to initialize selection grid from API data
       setPickedItems(itemsData.mediaItems);
       setSelectedForImport(new Set(itemsData.mediaItems.map((i) => i.id)));
       setIsPickerOpen(false);
@@ -311,10 +312,10 @@ function PhotosDashboard() {
                       }
                     `}
                     onClick={() => handleToggleSelect(item.id)}
-                    role="button"
+                    role="checkbox"
                     tabIndex={0}
                     aria-label={`${isSelected ? "Deselect" : "Select"} ${filename}`}
-                    aria-selected={isSelected}
+                    aria-checked={isSelected}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
