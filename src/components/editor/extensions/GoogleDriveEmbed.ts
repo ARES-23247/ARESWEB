@@ -9,7 +9,7 @@ declare module '@tiptap/core' {
 }
 
 export interface GoogleDriveEmbedOptions {
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, unknown>;
 }
 
 export const GoogleDriveEmbed = Node.create<GoogleDriveEmbedOptions>({
