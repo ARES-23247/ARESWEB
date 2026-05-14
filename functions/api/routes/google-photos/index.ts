@@ -72,57 +72,61 @@ const app1 = photosApp.openapi(healthRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
-  // Helper to test the Photos API with a given token
-  async function testPhotosApi(token: string) {
-    return fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ pageSize: 1 }),
-    });
-  }
+  // Step 1: Get a fresh token (force refresh to ensure latest scopes)
+  await clearCachedOAuthToken(db);
+  const token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
 
-  // Step 1: Try with cached token
-  let token = await getUnifiedOAuthToken(env, db);
-  let photosResponse = await testPhotosApi(token);
+  // Step 2: Introspect the token to see exactly which scopes it has
+  const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+  const tokenInfoText = await tokenInfoRes.text();
+  let tokenScopes = "unknown";
+  let tokenAudience = "unknown";
+  try {
+    const tokenInfo = JSON.parse(tokenInfoText) as { scope?: string; azp?: string; error_description?: string };
+    tokenScopes = tokenInfo.scope || tokenInfo.error_description || "empty";
+    tokenAudience = tokenInfo.azp || "unknown";
+  } catch { /* ignore */ }
 
-  // Step 2: If 403 (insufficient scopes), clear cache and retry with a fresh token
-  if (photosResponse.status === 403) {
-    console.warn("[google-photos] Health check got 403 — clearing cached token and retrying with fresh refresh...");
-    await clearCachedOAuthToken(db);
-    token = await getUnifiedOAuthToken(env, db, { forceRefresh: true });
-    photosResponse = await testPhotosApi(token);
-  }
+  // Step 3: Test Photos API
+  const photosResponse = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:search", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ pageSize: 1 }),
+  });
 
-  // Handle authentication failures
-  if (photosResponse.status === 401) {
-    throw new ApiError("Authentication failed: Invalid or expired token.", 401, "AUTH_FAILURE");
-  }
+  const photosBody = await photosResponse.text();
 
-  // Handle other API errors — include Google's error body for diagnostics
-  if (!photosResponse.ok) {
-    const errorText = await photosResponse.text();
-    console.error("[google-photos] API health check failed after retry:", {
-      status: photosResponse.status,
-      body: errorText,
-    });
-    throw new ApiError(
-      `Google Photos API error: ${photosResponse.status} ${photosResponse.statusText}. Details: ${errorText.substring(0, 300)}`,
-      500,
-      "API_FAILURE"
-    );
-  }
-
-  return c.json(
-    {
+  // If success, return OK
+  if (photosResponse.ok) {
+    return c.json({
       status: "ok" as const,
       service: "google-photos" as const,
       authenticated: true,
       test: "API call successful",
-    },
-    200
+    }, 200);
+  }
+
+  // If failed, return diagnostic info instead of throwing
+  // This lets us see the exact error without needing Cloudflare logs
+  const hasPhotosScope = tokenScopes.includes("photoslibrary");
+  
+  console.error("[google-photos] Health FAILED", {
+    photosStatus: photosResponse.status,
+    photosBody,
+    tokenScopes,
+    hasPhotosScope,
+  });
+
+  throw new ApiError(
+    `Photos API ${photosResponse.status}. ` +
+    `Token scopes: [${tokenScopes}]. ` +
+    `Has photos scope: ${hasPhotosScope}. ` +
+    `Google said: ${photosBody.substring(0, 200)}`,
+    500,
+    "API_FAILURE"
   );
 });
 
