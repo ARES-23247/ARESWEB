@@ -49,14 +49,7 @@
       "serialize-javascript": "^7.0.5",
       "esbuild": "^0.25.0",
       "drizzle-orm": "1.0.0-rc.2-e38a2ba"
-    },
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild",
-      "msw",
-      "sharp",
-      "workerd"
-    ]
+    }
   },
   "dependencies": {
     "@atproto/api": "^0.19.11",
