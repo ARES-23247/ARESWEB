@@ -43,7 +43,9 @@ export function useGetTBARankings(
   return useQuery<RankingsResponse>({
     queryKey: ["tba", "rankings", eventKey],
     queryFn: async () => {
-      const response = await client.tba.rankings[":eventKey"].$get({ param: { eventKey } });
+      const season = eventKey.slice(0, 4);
+      const eventCode = eventKey.slice(4).toUpperCase();
+      const response = await client.tba["ftc-events"][":season"][":eventCode"][":type"].$get({ param: { season, eventCode, type: "rankings" } });
       return unwrapResponse<RankingsResponse>(response);
     },
     ...options,
@@ -60,7 +62,9 @@ export function useGetTBAMatches(
   return useQuery<MatchesResponse>({
     queryKey: ["tba", "matches", eventKey],
     queryFn: async () => {
-      const response = await client.tba.matches[":eventKey"].$get({ param: { eventKey } });
+      const season = eventKey.slice(0, 4);
+      const eventCode = eventKey.slice(4).toUpperCase();
+      const response = await client.tba["ftc-events"][":season"][":eventCode"][":type"].$get({ param: { season, eventCode, type: "matches" } });
       return unwrapResponse<MatchesResponse>(response);
     },
     ...options,
