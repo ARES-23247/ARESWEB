@@ -90,9 +90,13 @@ export function createMockDb() {
     tasks: new Map<string, unknown>(),
   };
 
-  const firstMock = vi.fn();
-  const allMock = vi.fn();
-  const runMock = vi.fn();
+  // Create mocks with proper default return values for drizzle-orm compatibility
+  // drizzle-orm expects .all() to return an object with a results array
+  // and .first() to return the first result or null
+  // These must return Promises because drizzle uses .then() on them
+  const firstMock = vi.fn(() => Promise.resolve(null));
+  const allMock = vi.fn(() => Promise.resolve({ results: [] }));
+  const runMock = vi.fn(() => Promise.resolve(mockMutationResult(0)));
 
   // Setup mock data helper
   const setMockData = (table: string, id: string, data: unknown) => {
@@ -104,9 +108,13 @@ export function createMockDb() {
   };
 
   // Track prepare calls for debugging
+  // The mock needs to support both direct .all() and chained .bind().all() calls
   const prepareMock = vi.fn((_query: string) => {
-    return {
-      bind: vi.fn(() => {
+    // Create a prepared statement mock that returns the same mock functions
+    // regardless of whether .bind() is called or not
+    const stmt = {
+      bind: vi.fn((..._params: unknown[]) => {
+        // Return the same statement interface with the same mocks
         return {
           raw: vi.fn(() => ({ raw: true })),
           first: firstMock,
@@ -118,6 +126,7 @@ export function createMockDb() {
       all: allMock,
       run: runMock,
     };
+    return stmt;
   });
 
   const mockDb = {
