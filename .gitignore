@@ -29,6 +29,8 @@ eslint-utf8.txt
 eslint_errors.txt
 eslint-results.json
 vitest_*.txt
+.tsbuildinfo
+.eslintcache
 tsc_*.txt
 tsc_output_*.txt
 
