@@ -116,8 +116,8 @@ function TaskEditorImpl({ initialContent, onDescriptionChange }: { initialConten
       <DrivePickerModal
         isOpen={isDrivePickerOpen}
         onClose={() => setIsDrivePickerOpen(false)}
-        onSelect={(url) => {
-          editor?.chain().focus().setGoogleDriveEmbed({ src: url }).run();
+        onSelect={(url, title) => {
+          editor?.chain().focus().setGoogleDriveEmbed({ src: url, title }).run();
           setIsDrivePickerOpen(false);
         }}
       />
