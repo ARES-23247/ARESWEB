@@ -42,8 +42,8 @@ export function PhotoImportButton({
             mediaItemId: f.mediaItemId,
             filename: f.filename,
             error: f.error ?? "Unknown error",
-            baseUrl: originalItem?.baseUrl ?? "",
-            mimeType: originalItem?.mimeType ?? "image/jpeg",
+            baseUrl: originalItem?.mediaFile?.baseUrl ?? "",
+            mimeType: originalItem?.mediaFile?.mimeType ?? "image/jpeg",
           };
         })
       );
@@ -66,9 +66,9 @@ export function PhotoImportButton({
     importMutation.mutate({
       items: items.map((item) => ({
         id: item.id,
-        baseUrl: item.baseUrl,
+        baseUrl: item.mediaFile?.baseUrl || "",
         filename: item.mediaFile?.filename,
-        mimeType: item.mimeType,
+        mimeType: item.mediaFile?.mimeType || "image/jpeg",
       })),
     });
   };

@@ -1,5 +1,13 @@
 import { mergeAttributes, Node } from '@tiptap/core';
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    googleDriveEmbed: {
+      setGoogleDriveEmbed: (options: { src: string }) => ReturnType;
+    };
+  }
+}
+
 export interface GoogleDriveEmbedOptions {
   HTMLAttributes: Record<string, any>;
 }
