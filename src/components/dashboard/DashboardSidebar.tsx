@@ -237,29 +237,12 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-xs uppercase font-black tracking-widest text-marble/90 mb-2 px-6 flex items-center gap-2">
-                <PlusCircle size={12} className="text-ares-cyan" /> Quick Create
-              </h4>
-              <div className="space-y-1 px-3">
-                <NavButton tab="blog" icon={PenTool} label={location.pathname.includes("/dashboard/blog/") ? "Edit Post (Active)" : "New Blog Post"} currentPath={location.pathname} />
-                <NavButton tab="event" icon={Calendar} label={location.pathname.includes("/dashboard/event/") ? "Edit Event (Active)" : "New Event"} currentPath={location.pathname} />
-                <NavButton tab="docs" icon={Book} label={location.pathname.includes("/dashboard/docs/") ? "Edit Doc (Active)" : "New Document"} currentPath={location.pathname} />
-                <NavButton tab="seasons" icon={History} label={location.pathname.includes("/dashboard/seasons/") ? "Edit Legacy (Active)" : "Forge Legacy"} currentPath={location.pathname} />
-              </div>
-            </div>
-          )}
-
-          {isAuthorized && (
-            <div>
               <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Content Hub</h4>
               <div className="space-y-1 px-3">
-                <div className="flex items-center gap-3 px-4 py-2 mt-1 mb-1 text-[11px] font-black uppercase tracking-wider text-marble/70">
-                  <Folders size={14} className="text-marble/50" /> Database Manager
-                </div>
-                <NavButton tab="manage_blog" label="1. Blogs / News" sub={true} currentPath={location.pathname} pendingCount={pendingPostsCount} />
-                <NavButton tab="manage_event" label="2. Calendar Events" sub={true} currentPath={location.pathname} pendingCount={pendingEventsCount} />
-                <NavButton tab="manage_docs" label="3. ARESLib Docs" sub={true} currentPath={location.pathname} pendingCount={pendingDocsCount} />
-                <NavButton tab="manage_seasons" label="4. Seasonal Legacies" sub={true} currentPath={location.pathname} />
+                <NavButton tab="manage_blog" icon={PenTool} label="Blogs & News" currentPath={location.pathname} pendingCount={pendingPostsCount} />
+                <NavButton tab="manage_event" icon={Calendar} label="Calendar Events" currentPath={location.pathname} pendingCount={pendingEventsCount} />
+                <NavButton tab="manage_docs" icon={Book} label="ARESLib Docs" currentPath={location.pathname} pendingCount={pendingDocsCount} />
+                <NavButton tab="manage_seasons" icon={History} label="Seasonal Legacies" currentPath={location.pathname} />
                 <div className="h-px bg-white/5 my-3 mx-4" />
                 <NavButton tab="assets" icon={Image} label="Media Gallery" currentPath={location.pathname} />
                 <NavButton tab="photos" icon={Image} label="Google Photos" sub={true} currentPath={location.pathname} />

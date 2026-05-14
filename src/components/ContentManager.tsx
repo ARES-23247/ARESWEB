@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, Link } from "@tanstack/react-router";
+import { PlusCircle, PenTool, Calendar, Book, History } from "lucide-react";
 import BroadcastModal from "./BroadcastModal";
 import { ViewType } from "./ContentManager/shared";
 import EventManagerTab from "./ContentManager/EventManagerTab";
@@ -45,11 +46,33 @@ export default function ContentManager({
   return (
     <div className="flex-1 w-full flex flex-col min-h-0">
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tighter">
-            {mode === "blog" ? "Manage Blogs & News" : mode === "event" ? "Manage Events" : mode === "docs" ? "Manage Documentation" : mode === "seasons" ? "Manage Seasonal Legacy" : mode === "badges" ? "Manage User Badges" : "Manage Content"}
-          </h2>
-          <p className="text-marble/60 text-sm mt-1">Review and manage the lifecycle of Platform resources.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white tracking-tighter">
+              {mode === "blog" ? "Manage Blogs & News" : mode === "event" ? "Manage Events" : mode === "docs" ? "Manage Documentation" : mode === "seasons" ? "Manage Seasonal Legacy" : mode === "badges" ? "Manage User Badges" : "Manage Content"}
+            </h2>
+            <p className="text-marble/60 text-sm mt-1">Review and manage the lifecycle of Platform resources.</p>
+          </div>
+          {mode === "blog" && (
+            <Link to="/dashboard/blog" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <PenTool size={16} /> New Blog Post
+            </Link>
+          )}
+          {mode === "event" && (
+            <Link to="/dashboard/event" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <Calendar size={16} /> New Event
+            </Link>
+          )}
+          {mode === "docs" && (
+            <Link to="/dashboard/docs" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <Book size={16} /> New Document
+            </Link>
+          )}
+          {mode === "seasons" && (
+            <Link to="/dashboard/seasons" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <History size={16} /> Forge Legacy
+            </Link>
+          )}
         </div>
         
         <div className="flex bg-obsidian/50 p-1 ares-cut-sm border border-white/10 self-start md:self-auto w-full md:w-auto overflow-x-auto custom-scrollbar shadow-inner gap-1">
