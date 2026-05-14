@@ -98,68 +98,16 @@ export function SocialCard({
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="cal_id_internal" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
-              ARES Practices — Calendar ID
+            <label htmlFor="cal_id" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
+              Google Calendar ID
             </label>
             <input
-              id="cal_id_internal"
+              id="cal_id"
               type="text"
               placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
-              value={localSettings["CALENDAR_ID_INTERNAL"] || ""}
-              onChange={(e) => handleChange("CALENDAR_ID_INTERNAL", e.target.value)}
+              value={localSettings["CALENDAR_ID"] || ""}
+              onChange={(e) => handleChange("CALENDAR_ID", e.target.value)}
               className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="cal_id_outreach" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
-              ARES Outreach &amp; Volunteer — Calendar ID
-            </label>
-            <input
-              id="cal_id_outreach"
-              type="text"
-              placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
-              value={localSettings["CALENDAR_ID_OUTREACH"] || ""}
-              onChange={(e) => handleChange("CALENDAR_ID_OUTREACH", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="cal_id_external" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
-              ARES Community Spotlight — Calendar ID
-            </label>
-            <input
-              id="cal_id_external"
-              type="text"
-              placeholder="c_XXXXXXXXXXXXXXXX@group.calendar.google.com"
-              value={localSettings["CALENDAR_ID_EXTERNAL"] || ""}
-              onChange={(e) => handleChange("CALENDAR_ID_EXTERNAL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="gcal_service_email" className="block text-xs font-bold text-ares-gray uppercase tracking-wider mb-2">
-              Service Account Email
-            </label>
-            <input
-              id="gcal_service_email"
-              type="text"
-              placeholder="ares-bot@ares-project.iam.gserviceaccount.com"
-              value={localSettings["GCAL_SERVICE_ACCOUNT_EMAIL"] || ""}
-              onChange={(e) => handleChange("GCAL_SERVICE_ACCOUNT_EMAIL", e.target.value)}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="gcal_service_pk" className="text-xs font-bold text-ares-gray uppercase tracking-wider mb-2 flex items-center gap-2">
-              RSA Private Key
-            </label>
-            <textarea
-              id="gcal_service_pk"
-              placeholder="-----BEGIN PRIVATE KEY-----\n..."
-              value={localSettings["GCAL_PRIVATE_KEY"] || ""}
-              onChange={(e) => handleChange("GCAL_PRIVATE_KEY", e.target.value)}
-              rows={4}
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-4 py-3 text-white focus:outline-none focus:border-ares-gold transition-colors resize-none font-mono text-xs"
             />
           </div>
         </div>

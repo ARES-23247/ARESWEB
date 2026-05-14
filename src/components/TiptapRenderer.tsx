@@ -415,7 +415,7 @@ function AlbumEmbedRenderer({ albumId, title }: { albumId: string; title?: strin
             <div key={item.id} className="break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10 hover:border-[#4285F4]/50 transition-colors">
               <img
                 src={`${item.mediaFile.baseUrl}=w800`}
-                alt="Album photo"
+                alt="Gallery item"
                 className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
                 decoding="async"

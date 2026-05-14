@@ -141,7 +141,7 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
   const setLabelsMutation = useSetTaskLabels({ onError: (err: unknown) => toastApiError(err) });
   const [labelIds, setLabelIds] = useState<string[]>(task.labels?.map(l => l.id) || []);
 
-  const { data: freshTaskData } = useGetTasks({ id: task.id }) as any;
+  const { data: freshTaskData } = useGetTasks({ id: task.id }) as { data?: { tasks?: TaskItem[] } };
   const freshTask = freshTaskData?.tasks?.[0] || task;
 
   // Accessibility: Focus trap for keyboard navigation

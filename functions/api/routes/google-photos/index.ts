@@ -17,6 +17,7 @@ import {
   getAlbumMediaRoute,
   syncAlbumRoute,
   uploadGooglePhotosToYoutubeRoute,
+  uploadPhotosRoute,
 } from "../../../../shared/routes/google-photos";
 import * as schema from "../../../../src/db/schema";
 import { eq } from "drizzle-orm";
@@ -388,7 +389,7 @@ const app5 = app4.openapi(deletePickerSessionRoute, async (c) => {
 // POST /upload — Upload to Google Photos (unchanged, uses appendonly)
 // ─────────────────────────────────────────────────────────────────────────────
 
-app5.post("/upload", async (c) => {
+const app5b = app5.openapi(uploadPhotosRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -537,7 +538,7 @@ app5.post("/upload", async (c) => {
 // Updated to accept Picker items with baseUrls directly
 // ─────────────────────────────────────────────────────────────────────────────
 
-const app6 = app5.openapi(importPhotosRoute, async (c) => {
+const app6 = app5b.openapi(importPhotosRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
 
@@ -661,7 +662,9 @@ const app7 = app6.openapi(uploadGooglePhotosToYoutubeRoute, uploadGooglePhotosTo
 
 const LIBRARY_API_BASE = "https://photoslibrary.googleapis.com/v1";
 
-const app8 = app7.openapi(getAlbumsRoute, async (c) => {
+const albumsRouterBase = new OpenAPIHono<AppEnv>();
+
+const app8 = albumsRouterBase.openapi(getAlbumsRoute, async (c) => {
   const db = getDb(c);
   const env = c.env;
   const token = await getUnifiedOAuthToken(env, db);
@@ -851,5 +854,7 @@ const app10 = app9.openapi(syncAlbumRoute, async (c) => {
 });
 
 // Export the router for registration in the main app
-export const photosRouter = app10;
+export const photosRouter = new OpenAPIHono<AppEnv>()
+  .route("/", app7)
+  .route("/", app10);
 export default photosRouter;

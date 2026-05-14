@@ -7,7 +7,7 @@
 
 import { getSocialConfig, getDb } from "../../middleware";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
-import { inArray } from "drizzle-orm";
+import { inArray, eq } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { z } from "zod";
 import { eventResponseSchema } from "../../../../shared/routes/events";
@@ -151,13 +151,18 @@ export async function getCalendarId(c: AresContext, category: string): Promise<{
  */
 export async function getCalendarSettingsFromDb(c: AresContext) {
     const db = getDb(c);
-    const results = await db.select({
-        key: schema.settings.key,
+    const result = await db.select({
         value: schema.settings.value,
     })
         .from(schema.settings)
-        .where(inArray(schema.settings.key, ["CALENDAR_ID", "CALENDAR_ID_INTERNAL", "CALENDAR_ID_OUTREACH", "CALENDAR_ID_EXTERNAL"]))
-        .all();
+        .where(eq(schema.settings.key, "CALENDAR_ID"))
+        .get();
 
-    return results.reduce<Record<string, string>>((acc, row) => ({ ...acc, [row.key ?? ""]: row.value ?? "" }), {});
+    const calendarId = result?.value || "";
+    return {
+        CALENDAR_ID: calendarId,
+        CALENDAR_ID_INTERNAL: calendarId,
+        CALENDAR_ID_OUTREACH: calendarId,
+        CALENDAR_ID_EXTERNAL: calendarId,
+    };
 }

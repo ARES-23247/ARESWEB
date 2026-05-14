@@ -3,7 +3,6 @@ import {
   X,
   Loader2,
   Check,
-  AlertCircle,
   Image as ImageIcon,
   ExternalLink,
   Download,
@@ -65,6 +64,7 @@ export default function GooglePhotoPickerModal({
     sessionStatus?.mediaItemsSet ? activeSessionId : null
   );
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (itemsData?.mediaItems && itemsData.mediaItems.length > 0) {
       setPickedItems(itemsData.mediaItems);
@@ -72,6 +72,7 @@ export default function GooglePhotoPickerModal({
       setIsPickerOpen(false);
     }
   }, [itemsData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Monitor popup close
   useEffect(() => {
@@ -321,10 +322,11 @@ export default function GooglePhotoPickerModal({
                   {pickedItems.map((item) => {
                     const isSelected = selectedForImport.has(item.id);
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={item.id}
                         onClick={() => handleToggleSelect(item.id)}
-                        className={`group relative cursor-pointer overflow-hidden ares-cut-sm border transition-all aspect-square ${
+                        className={`group relative cursor-pointer overflow-hidden ares-cut-sm border transition-all aspect-square block w-full text-left ${
                           isSelected ? "border-2 border-ares-cyan" : "border-white/10 hover:border-ares-cyan/50"
                         }`}
                       >
@@ -346,7 +348,7 @@ export default function GooglePhotoPickerModal({
                         >
                           <Check className="h-3.5 w-3.5" />
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Loader2, Check, AlertCircle, Video, ExternalLink, Upload, RefreshCw } from "lucide-react";
+import { X, Loader2, Check, Video, ExternalLink, Upload, RefreshCw, AlertCircle } from "lucide-react";
 import {
   useCreateVideoPickerSession,
   useGetPickerSession,
@@ -66,6 +66,7 @@ export default function YouTubeVideoPickerModal({
   );
 
   // When items arrive, populate the review grid
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (itemsData?.mediaItems && itemsData.mediaItems.length > 0) {
       setPickedItems(itemsData.mediaItems as PickedVideo[]);
@@ -79,6 +80,7 @@ export default function YouTubeVideoPickerModal({
       }
     }
   }, [itemsData, title]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Monitor popup close
   useEffect(() => {
@@ -214,6 +216,7 @@ export default function YouTubeVideoPickerModal({
   // Reset everything when modal closes
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleCleanup();
     }
   }, [isOpen, handleCleanup]);

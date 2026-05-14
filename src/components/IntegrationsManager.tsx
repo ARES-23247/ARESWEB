@@ -28,11 +28,7 @@ export default function IntegrationsManager() {
 
   useEffect(() => {
     if (rawData?.settings) {
-      const merged: SettingsData = { ...rawData.settings };
-      if (merged["CALENDAR_ID"] && !merged["CALENDAR_ID_INTERNAL"]) {
-        merged["CALENDAR_ID_INTERNAL"] = merged["CALENDAR_ID"];
-      }
-      form.reset(merged);
+      form.reset(rawData.settings);
     }
   }, [rawData?.settings, form]);
 

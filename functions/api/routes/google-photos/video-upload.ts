@@ -3,8 +3,10 @@ import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { ApiError } from "../../middleware/errorHandler";
 import * as schema from "../../../../src/db/schema";
 
+import { uploadGooglePhotosToYoutubeRoute } from "../../../../shared/routes/google-photos";
+
 // Re-export the route from the shared types
-export { uploadGooglePhotosToYoutubeRoute } from "../../../../shared/routes/google-photos";
+export { uploadGooglePhotosToYoutubeRoute };
 
 type GooglePhotosVideo = {
   id: string;
@@ -65,7 +67,10 @@ async function getYouTubeResumableUrl(
   return uploadUrl;
 }
 
-export const handler = async (c: any) => {
+import type { RouteHandler } from "@hono/zod-openapi";
+import type { AppEnv } from "../../middleware/utils";
+
+export const handler: RouteHandler<typeof uploadGooglePhotosToYoutubeRoute, AppEnv> = async (c) => {
   const db = getDb(c);
   const env = c.env;
   const body = c.req.valid("json");
@@ -166,7 +171,7 @@ export const handler = async (c: any) => {
               type: mediaType,
               createdAt: now,
               updatedAt: now,
-            } as any)
+            })
             .execute();
         } catch (dbError) {
           console.error("[GooglePhotos->YouTube] Failed to sync video to dashboard:", dbError);
@@ -193,10 +198,18 @@ export const handler = async (c: any) => {
     })
   );
 
+  interface UploadResult {
+    googlePhotosId: string;
+    filename: string;
+    status: "success" | "failed";
+    youtubeVideoId?: string;
+    error?: string;
+  }
+
   const summary = {
     total: results.length,
-    successful: results.filter((r) => r.status === "success").length,
-    failed: results.filter((r) => r.status === "failed").length,
+    successful: results.filter((r: UploadResult) => r.status === "success").length,
+    failed: results.filter((r: UploadResult) => r.status === "failed").length,
   };
 
   return c.json(

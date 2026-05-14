@@ -101,28 +101,29 @@ export const tasksRouter = _tasksRouter
                 }
             }
             
-            let checklists: any[] = [];
+            interface Identifiable { id: string | null; [key: string]: unknown; }
+            let checklists: Identifiable[] = [];
             if (t.checklists_json) {
                 try {
-                    const parsed = JSON.parse(t.checklists_json);
-                    checklists = parsed.filter((c: any) => c && c.id !== null);
-                } catch (_e) {}
+                    const parsed = JSON.parse(t.checklists_json) as Identifiable[];
+                    checklists = parsed.filter((c: Identifiable) => c && c.id !== null);
+                } catch (_e) { /* ignore */ }
             }
             
-            let attachments: any[] = [];
+            let attachments: Identifiable[] = [];
             if (t.attachments_json) {
                 try {
-                    const parsed = JSON.parse(t.attachments_json);
-                    attachments = parsed.filter((a: any) => a && a.id !== null);
-                } catch (_e) {}
+                    const parsed = JSON.parse(t.attachments_json) as Identifiable[];
+                    attachments = parsed.filter((a: Identifiable) => a && a.id !== null);
+                } catch (_e) { /* ignore */ }
             }
             
-            let labels: any[] = [];
+            let labels: Identifiable[] = [];
             if (t.labels_json) {
                 try {
-                    const parsed = JSON.parse(t.labels_json);
-                    labels = parsed.filter((l: any) => l && l.id !== null);
-                } catch (_e) {}
+                    const parsed = JSON.parse(t.labels_json) as Identifiable[];
+                    labels = parsed.filter((l: Identifiable) => l && l.id !== null);
+                } catch (_e) { /* ignore */ }
             }
             
             return {

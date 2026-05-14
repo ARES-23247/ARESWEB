@@ -6,7 +6,7 @@
 
 import { ApiError } from "../../middleware/errorHandler";
 import { getDbSettings, getDb } from "../../middleware";
-import { getSocialConfig } from "../../middleware";
+
 import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { eq, and, isNull, sql } from "drizzle-orm";
@@ -31,62 +31,53 @@ export const syncHandlers = {
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
         } catch (_error) {
-            throw new ApiError("Google OAuth config missing or not connected", 500);
+            throw new ApiError("Google OAuth not connected. Please connect your Google account in Settings.", 500);
         }
 
-        const calendars = [
-            { id: dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"], category: "internal" },
-            { id: dbSettings["CALENDAR_ID_OUTREACH"], category: "outreach" },
-            { id: dbSettings["CALENDAR_ID_EXTERNAL"], category: "external" }
-        ].filter((cal) => !!cal.id);
-
-        if (calendars.length === 0) {
-            throw new ApiError("GCal config missing", 500);
+        const calendarId = dbSettings["CALENDAR_ID"];
+        if (!calendarId) {
+            throw new ApiError("Calendar ID not configured. Add it in Settings → Integrations.", 500);
         }
 
         let total = 0;
-        const errors: string[] = [];
+        try {
+            const events = await pullEventsFromGcal(calendarId, oauthToken);
 
-        for (const cal of calendars) {
-            try {
-                const events = await pullEventsFromGcal(cal.id as string, oauthToken);
+            const CHUNK_SIZE = 20;
+            for (let i = 0; i < events.length; i += CHUNK_SIZE) {
+                const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
+                    id: crypto.randomUUID(),
+                    title: ev.title,
+                    dateStart: ev.dateStart,
+                    dateEnd: ev.dateEnd || null,
+                    location: ev.location,
+                    description: ev.description,
+                    gcalEventId: ev.gcalEventId,
+                    status: 'published' as const,
+                    category: 'internal' as const,
+                }));
 
-                const CHUNK_SIZE = 20;
-                for (let i = 0; i < events.length; i += CHUNK_SIZE) {
-                    const chunk = events.slice(i, i + CHUNK_SIZE).map((ev: ARES_Event) => ({
-                        id: crypto.randomUUID(),
-                        title: ev.title,
-                        dateStart: ev.dateStart,
-                        dateEnd: ev.dateEnd || null,
-                        location: ev.location,
-                        description: ev.description,
-                        gcalEventId: ev.gcalEventId,
-                        status: 'published' as const,
-                        category: cal.category,
-                    }));
-
-                    await db.insert(schema.events)
-                        .values(chunk)
-                        .onConflictDoUpdate({
-                            target: schema.events.gcalEventId,
-                            set: {
-                                title: sql`excluded.title`,
-                                dateStart: sql`excluded.dateStart`,
-                                dateEnd: sql`excluded.dateEnd`,
-                                location: sql`excluded.location`,
-                                description: sql`excluded.description`,
-                                category: sql`excluded.category`,
-                            }
-                        })
-                        .run();
-                }
-
-                total += events.length;
-            } catch (calErr) {
-                const msg = calErr instanceof Error ? calErr.message : String(calErr);
-                console.error(`SYNC_EVENTS: Calendar ${cal.category} (${cal.id}) failed:`, msg);
-                errors.push(`${cal.category}: ${msg}`);
+                await db.insert(schema.events)
+                    .values(chunk)
+                    .onConflictDoUpdate({
+                        target: schema.events.gcalEventId,
+                        set: {
+                            title: sql`excluded.title`,
+                            dateStart: sql`excluded.dateStart`,
+                            dateEnd: sql`excluded.dateEnd`,
+                            location: sql`excluded.location`,
+                            description: sql`excluded.description`,
+                            category: sql`excluded.category`,
+                        }
+                    })
+                    .run();
             }
+
+            total = events.length;
+        } catch (calErr) {
+            const msg = calErr instanceof Error ? calErr.message : String(calErr);
+            console.error(`SYNC_EVENTS: Calendar sync failed:`, msg);
+            throw new ApiError(`Calendar sync failed: ${msg}`, 500);
         }
 
         invalidateEventsCache(c);
@@ -109,13 +100,18 @@ export const syncHandlers = {
         }
 
         const dbSettings = await getDbSettings(c);
+        const calendarId = dbSettings["CALENDAR_ID"];
+        if (!calendarId) {
+            throw new ApiError("Calendar ID not configured. Add it in Settings → Integrations.", 500);
+        }
+
         let oauthToken: string;
         try {
             oauthToken = await getUnifiedOAuthToken(c.env, db);
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             console.error("[repairCalendar] OAuth token fetch failed:", msg);
-            throw new ApiError(`Google OAuth error: ${msg}`, 500);
+            throw new ApiError(`Google OAuth not connected: ${msg}`, 500);
         }
 
         let pushed = 0;
@@ -123,22 +119,10 @@ export const syncHandlers = {
         const errors: string[] = [];
 
         for (const event of events) {
-            const cat = event.category || "internal";
-            const calKey = `CALENDAR_ID_${cat.toUpperCase()}` as keyof typeof dbSettings;
-            const calId = dbSettings[calKey] || dbSettings["CALENDAR_ID"];
-
-            if (!calId) {
-                const msg = `No calendar ID configured for category "${cat}" (tried ${calKey}, CALENDAR_ID)`;
-                console.error(`[repairCalendar] ${event.title}: ${msg}`);
-                errors.push(`${event.title}: ${msg}`);
-                failed++;
-                continue;
-            }
-
             try {
                 const gcalId = await pushEventToGcal(
                     { id: event.id, title: event.title, dateStart: event.dateStart, dateEnd: event.dateEnd || undefined, location: event.location || undefined, description: event.description || undefined, coverImage: event.coverImage || undefined, gcalEventId: undefined, meetingNotes: event.meetingNotes || undefined },
-                    calId as string,
+                    calendarId,
                     oauthToken
                 );
                 if (gcalId) {

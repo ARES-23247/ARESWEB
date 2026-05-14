@@ -18,9 +18,15 @@ const customFetch = async (
   const normalizedPath = url.replace(/\/+(\?|$)/, "$1");
   const headers = new Headers(init?.headers);
   const body = init?.body;
-  if (!(body instanceof FormData) && !headers.has("Content-Type")) {
+
+  // FormData requires browser to set Content-Type with boundary
+  // Remove any manually set Content-Type to avoid conflicts
+  if (body instanceof FormData) {
+    headers.delete("Content-Type");
+  } else if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+
   const response = await fetch(normalizedPath, {
     ...init,
     headers,

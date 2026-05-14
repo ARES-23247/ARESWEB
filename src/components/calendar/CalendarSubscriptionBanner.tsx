@@ -4,8 +4,8 @@ import { useGetCalendarSettings } from "../../api/events";
 export const CalendarSubscriptionBanner = () => {
   const { data } = useGetCalendarSettings();
 
-  // We use the Internal calendar for team members (which this portal is for)
-  const calendarId = data?.calendarIdInternal || "c_e1bd19ab921a209fae48dcc25fdb5ec634d0b1d033f7ccb4249a5b6c3da985a7@group.calendar.google.com";
+  // Use the single calendar ID
+  const calendarId = data?.calendarIdInternal || "";
 
   const googleCalLink = `https://calendar.google.com/calendar/render?cid=${calendarId}`;
   const appleCalLink = `webcal://calendar.google.com/calendar/ical/${calendarId}/public/basic.ics`;
