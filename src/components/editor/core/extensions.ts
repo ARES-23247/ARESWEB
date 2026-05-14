@@ -25,12 +25,13 @@ import { MermaidBlock } from '../extensions/MermaidBlock';
 import { InteractiveComponent } from '../extensions/InteractiveComponent';
 import { GalleryEmbed } from '../extensions/GalleryEmbed';
 import { VideoEmbed } from '../extensions/VideoEmbed';
+import { GoogleDriveEmbed } from '../extensions/GoogleDriveEmbed';
 import { CommandsList } from '../CommandsList';
 import { MentionList } from '../MentionList';
 import { suggestionRenderer } from '../suggestionRenderer';
 
 import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import * as Y from 'yjs';
 
 /**
@@ -55,6 +56,7 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
   CharacterCount,
   ImageResize.configure({ inline: false, HTMLAttributes: { class: 'ares-cut-sm border border-white/10 shadow-lg my-6 max-h-[600px] w-auto mx-auto object-contain bg-black/40' } }),
   Youtube.configure({ inline: false, HTMLAttributes: { class: 'w-full aspect-video ares-cut-sm shadow-lg my-6 glass-card' } }),
+  GoogleDriveEmbed,
   Table.configure({ resizable: true, HTMLAttributes: { class: 'w-full text-left border-collapse border border-ares-gray-dark ares-cut-sm hidden-border-corners shadow-lg table-auto my-6' } }),
   TableRow.configure({ HTMLAttributes: { class: 'border-b border-ares-gray-dark hover:bg-obsidian/50 transition-colors odd:bg-black/20 even:bg-black/40' } }),
   TableHeader.configure({ HTMLAttributes: { class: 'bg-obsidian border border-ares-gray-dark p-3 font-bold text-ares-gold whitespace-nowrap uppercase tracking-wider text-sm' } }),
@@ -89,10 +91,11 @@ export const getEditorExtensions = (lowlight: unknown, ydoc?: Y.Doc, provider?: 
     },
   }),
 
-  // Optional Collaborative Extensions
-  ...(ydoc ? [Collaboration.configure({ document: ydoc, field: yfield })] : []),
-  ...(provider ? [
-    CollaborationCursor.configure({
+  // Optional Collaborative Extensions — only enable when BOTH ydoc AND provider are available
+  // This prevents Tiptap from trying to initialize collaboration without a complete setup
+  ...(ydoc && provider ? [
+    Collaboration.configure({ document: ydoc, field: yfield }),
+    CollaborationCaret.configure({
       provider: provider,
       user: {
         name: (provider as { room?: { getSelf?: () => { info?: { name?: string } } } })?.room?.getSelf?.()?.info?.name || 'Anonymous',
