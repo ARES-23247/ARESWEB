@@ -99,7 +99,7 @@ export default function GenericManagerList<T>({
       </div>
 
       <div className="text-[10px] font-black text-marble/20 mb-6 px-4 py-2 bg-white/5 ares-cut-sm flex justify-between items-center uppercase tracking-[0.3em] border border-white/5">
-        <span>MODE: {view} // REGISTRY_SIZE: {rawCount} // STREAM_ACTIVE: {items.length}</span>
+        <span>MODE: {view} {" // "} REGISTRY_SIZE: {rawCount} {" // "} STREAM_ACTIVE: {items.length}</span>
         {isError && <span className="text-ares-red font-black animate-pulse" title={errorMessage}>{errorMessage || "TELEMETRY_FAULT"}</span>}
       </div>
 

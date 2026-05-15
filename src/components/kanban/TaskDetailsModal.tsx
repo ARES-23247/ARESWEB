@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
-  X, Save, Trash2, Flag, Layout,
+  X, Save, Trash2, Layout,
 } from "lucide-react";
 import { useSetTaskLabels, useGetTasks } from "../../api";
 import { type Task as TaskItem } from "../../api";
