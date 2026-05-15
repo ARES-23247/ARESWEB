@@ -30,6 +30,7 @@ Created [shared/routes/google-photos.ts](shared/routes/google-photos.ts) with co
 
 All routes tagged with `["google-photos", "admin"]` for OpenAPI documentation.
 
+requirements_completed: [PHOTO-01, PHOTO-02, PHOTO-03, PHOTO-04, PHOTO-05, UPLOAD-01, UPLOAD-03]
 ---
 
 ## Threat Mitigation

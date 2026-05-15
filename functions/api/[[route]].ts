@@ -50,6 +50,7 @@ import scoutingRouter from "./routes/scouting/index";
 import galleriesRouter from "./routes/galleries/index";
 import videosRouter from "./routes/videos/index";
 import youtubeRouter from "./routes/youtube/index";
+import { albumsRouter } from "./routes/albums";
 import gmailRouter from "./routes/gmail/index";
 import { aiToolsRouter } from "./routes/ai-tools/index";
 import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
@@ -239,7 +240,8 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/youtube", youtubeRouter);
 
 export const group5 = new OpenAPIHono<AppEnv>()
-  .route("/gmail", gmailRouter);
+  .route("/gmail", gmailRouter)
+  .route("/albums", albumsRouter);
 
 export const group3 = new OpenAPIHono<AppEnv>()
   .route("/badges", badgesRouter)

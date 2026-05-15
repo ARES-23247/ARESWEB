@@ -962,3 +962,25 @@ export const onshapeBomHistory = sqliteTable("onshape_bom_history", {
 	index("idx_onshape_bom_history_synced_at").on(table.syncedAt),
 ]);
 
+export const albums = sqliteTable("albums", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	coverImageId: text("cover_image_id"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const albumMedia = sqliteTable("album_media", {
+	albumId: text("album_id").notNull().references(() => albums.id, { onDelete: "cascade" }),
+	mediaId: text("media_id").notNull().references(() => importedPhotos.id, { onDelete: "cascade" }),
+	sortOrder: integer("sort_order").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	primaryKey({ columns: [table.albumId, table.mediaId], name: "album_media_album_id_media_id_pk"}),
+	index("idx_album_media_album").on(table.albumId),
+	index("idx_album_media_media").on(table.mediaId),
+]);
+

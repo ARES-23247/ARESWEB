@@ -81,6 +81,7 @@ Updated [wrangler.toml](wrangler.toml):
   - `ONSHAPE_REDIRECT_URI` - Optional (has default)
   - `ONSHAPE_BASE_URL` - Optional (has default)
 
+requirements_completed: []
 ---
 
 ## Threat Mitigation
