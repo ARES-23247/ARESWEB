@@ -455,7 +455,7 @@ export default function FinanceManager() {
           </AnimatePresence>
         </>
       ) : (
-      {activeTab === 'ledger' && (
+        activeTab === 'ledger' && (
         <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden shadow-2xl backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -504,7 +504,7 @@ export default function FinanceManager() {
             </table>
           </div>
         </div>
-      )}
+        )
       )}
     </div>
   );

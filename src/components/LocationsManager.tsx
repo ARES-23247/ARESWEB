@@ -386,6 +386,4 @@ export default function LocationsManager() {
     </div>
   );
 }
-  );
-}
 

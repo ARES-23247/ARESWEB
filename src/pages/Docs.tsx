@@ -64,6 +64,7 @@ export default function Docs() {
 
       {/* Search Overlay */}
       <AnimatePresence>
+        {searchOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

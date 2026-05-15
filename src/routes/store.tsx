@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag } from 'lucide-react'
-import { useGetProducts } from '../hooks/useGetProducts'
-import ProductCard from '../components/ProductCard'
+import { useGetProducts } from '@/api/store'
+import { ProductCard } from '@/components/store/ProductCard'
 
 function StorePage() {
   const { data: productsData, isLoading } = useGetProducts();

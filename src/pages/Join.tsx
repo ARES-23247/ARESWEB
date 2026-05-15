@@ -469,10 +469,9 @@ export default function Join() {
 										</p>
 									</div>
 								</form>
-							<>
+							</>
 						</div>
 					</motion.div>
-v>
 				</div>
 			</section>
 		</div>

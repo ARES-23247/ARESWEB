@@ -30,7 +30,6 @@ export default function Videos() {
         description="Watch ARES 23247's video collection including robot reveals, match footage, and team documentaries."
       />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
-      <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
         <div className="mb-20">
           <div className="bg-ares-gold/10 text-ares-gold px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-8 border border-ares-gold/20 inline-block">
              Cine-Log // Operations
