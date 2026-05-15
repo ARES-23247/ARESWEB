@@ -290,7 +290,7 @@ export default function TaskBoardPage() {
                     {user.image ? (
                       <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-bold text-ares-cyan">{user.name.charAt(0).toUpperCase()}</span>
+                      <span className="text-xs font-bold text-ares-cyan">{(user.name || "?").charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                 ))}

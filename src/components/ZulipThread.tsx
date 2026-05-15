@@ -131,7 +131,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
                   <img src={msg.avatar_url} alt={msg.sender_full_name} className="w-10 h-10 rounded-full border border-white/10" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-ares-gray flex items-center justify-center font-bold text-black">
-                    {msg.sender_full_name.charAt(0).toUpperCase()}
+                    {(msg.sender_full_name || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
