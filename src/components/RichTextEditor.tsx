@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { useRichEditor } from "./editor/useRichEditor";
 import RichEditorToolbar from "./editor/RichEditorToolbar";
-import { EditorContent } from "@tiptap/react";
+import type { JSONContent } from "@tiptap/react";
 import { FileBrowserModal } from "./FileBrowserModal";
 
 interface RichTextEditorProps {
-  content: any;
-  onChange: (ast: any) => void;
+  content: JSONContent | Record<string, unknown>;
+  onChange: (ast: JSONContent) => void;
   editable?: boolean;
 }
 
