@@ -359,6 +359,9 @@ export default function GooglePhotoPickerModal({
                   <ExternalLink className="h-4 w-4" />
                   {createSession.isPending ? "Opening..." : "Open Google Photos Picker"}
                 </button>
+                <p className="text-xs text-ares-cyan/80 max-w-sm mt-2 font-mono">
+                  Note: Google will display videos in the popup, but only selected images will be imported.
+                </p>
               </div>
             )}
             </div>
