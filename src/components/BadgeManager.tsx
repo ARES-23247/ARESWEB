@@ -189,7 +189,7 @@ export default function BadgeManager() {
             <select id="grant-user" value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-black/60 border border-white/10 ares-cut-sm px-5 py-4 text-white focus:outline-none focus:border-ares-red text-xs font-black uppercase tracking-widest">
               <option value="">-- SELECT_MEMBER --</option>
               {users.map((u: UserRecord) => (
-                <option key={u.id} value={u.id}>{u.name || u.nickname} // {u.email}</option>
+                <option key={u.id} value={u.id}>{`${u.name || u.nickname} // ${u.email}`}</option>
               ))}
             </select>
           </div>

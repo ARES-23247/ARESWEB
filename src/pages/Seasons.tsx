@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
+import { Trophy, MapPin, Cpu, ExternalLink } from "lucide-react";
 import SEO from "../components/SEO";
 import { useGetSeasons, useGetAwards, type Season, type Award } from "../api";
 
@@ -60,7 +60,7 @@ export default function Seasons() {
                          <div className={`md:w-1/2 flex flex-col ${isEven ? 'md:items-end md:text-right' : 'md:items-start md:text-left'}`}>
                             <div className="mb-6">
                               <span className="bg-ares-red/10 text-ares-red text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 ares-cut-sm border border-ares-red/20 inline-block">
-                                REV-{season.startYear} // {season.endYear}
+                                 {`REV-${season.startYear} // ${season.endYear}`}
                               </span>
                             </div>
                             <h3 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-8 uppercase leading-[0.9]">

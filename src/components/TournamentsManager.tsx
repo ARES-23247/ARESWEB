@@ -47,7 +47,7 @@ function TournamentDetailEditor({ tournamentId, onBack }: { tournamentId: string
             <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all">
               <Trophy className="text-ares-gold" />
             </div>
-            {t?.name} <span className="text-marble/20">// DETAIL_RECORDS</span>
+            {t?.name} <span className="text-marble/20">{`// DETAIL_RECORDS`}</span>
           </h2>
           <p className="text-marble/40 text-[10px] mt-4 uppercase tracking-[0.4em] font-black flex items-center gap-2">
             <span className="w-8 h-px bg-white/10"></span>
@@ -342,7 +342,7 @@ export default function TournamentsManager() {
               <div className="absolute top-0 left-0 w-1 h-0 bg-ares-gold/20 group-hover:h-full transition-all duration-500"></div>
               <div className="flex items-center gap-3 text-marble/20 mb-4">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{stat.label} //</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{`${stat.label} //`}</span>
               </div>
               <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
             </div>

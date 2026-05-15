@@ -1,6 +1,6 @@
 import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Clock, Zap, Circle, UserMinus } from "lucide-react";
+import { Users, Clock, Zap, UserMinus } from "lucide-react";
 import { useGetPresence } from "../api/zulip";
 import ZulipQuickChat from "./zulip/ZulipQuickChat";
 

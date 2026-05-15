@@ -1,4 +1,4 @@
-import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard, MessageSquare, Workflow, CheckCircle, Eye, ShieldCheck, Activity, Rocket, Paintbrush, Users } from "lucide-react";
+import { Cloud, Zap, Database, GlobeLock, DollarSign, HardDrive, LayoutDashboard, MessageSquare, Workflow, CheckCircle, Eye, ShieldCheck, Activity, Paintbrush, Users, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import GitHubHeatmap from "../components/GitHubHeatmap";
 import SEO from "../components/SEO";

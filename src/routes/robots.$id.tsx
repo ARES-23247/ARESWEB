@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useGetRobot } from '../api/robots';
 import { useGetSeasons } from '../api/seasons';
 import TiptapRenderer from '../components/TiptapRenderer';
-import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft } from 'lucide-react';
+import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, XCircle } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import AlbumDetail from '../pages/AlbumDetail';
 
@@ -56,7 +56,7 @@ function RobotDetailPage() {
             <div className="flex-1">
               {season && (
                 <div className="inline-block bg-ares-red/10 text-ares-red px-3 py-1 ares-cut-sm text-[10px] font-black uppercase tracking-[0.2em] mb-6 border border-ares-red/20">
-                  {season.startYear}-{season.endYear} // {season.challengeName}
+                  {`${season.startYear}-${season.endYear} // ${season.challengeName}`}
                 </div>
               )}
               <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-orange-500 uppercase">
