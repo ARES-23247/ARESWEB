@@ -368,14 +368,14 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
           }
         `}</style>
         <div className="flex w-max animate-scroll-infinite-embed items-center">
-          {carouselItems.map((item: any, index: number) => {
+          {carouselItems.map((item: { id: string; photo?: { r2Key?: string } }, index: number) => {
             const imageUrl = `/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`;
             return (
               <div key={`${item.id}-${index}`} className="px-2 w-[70vw] sm:w-[45vw] md:w-[35vw] lg:w-[25vw] flex-shrink-0 group">
                 <Link to="/albums/$id" params={{ id: galleryId }} className="block relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3] cursor-pointer">
                   <img
                     src={imageUrl}
-                    alt="Album photo"
+                    alt="Gallery item"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
                   />
