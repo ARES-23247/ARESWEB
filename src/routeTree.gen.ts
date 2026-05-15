@@ -64,6 +64,7 @@ import { Route as DashboardManage_galleriesRouteImport } from './routes/dashboar
 import { Route as DashboardManage_eventRouteImport } from './routes/dashboard/manage_event'
 import { Route as DashboardManage_docsRouteImport } from './routes/dashboard/manage_docs'
 import { Route as DashboardManage_blogRouteImport } from './routes/dashboard/manage_blog'
+import { Route as DashboardManage_albumsRouteImport } from './routes/dashboard/manage_albums'
 import { Route as DashboardLogisticsRouteImport } from './routes/dashboard/logistics'
 import { Route as DashboardLocationsRouteImport } from './routes/dashboard/locations'
 import { Route as DashboardLegacyRouteImport } from './routes/dashboard/legacy'
@@ -91,6 +92,7 @@ import { Route as SponsorsRoiTokenIdRouteImport } from './routes/sponsors/roi/$t
 import { Route as DashboardTasksTaskIdRouteImport } from './routes/dashboard/tasks/$taskId'
 import { Route as DashboardSeasonsEditIdRouteImport } from './routes/dashboard/seasons/$editId'
 import { Route as DashboardManage_galleriesIdRouteImport } from './routes/dashboard/manage_galleries.$id'
+import { Route as DashboardManage_albumsIdRouteImport } from './routes/dashboard/manage_albums.$id'
 import { Route as DashboardEventEditIdRouteImport } from './routes/dashboard/event/$editId'
 import { Route as DashboardDocsEditSlugRouteImport } from './routes/dashboard/docs/$editSlug'
 import { Route as DashboardBlogEditSlugRouteImport } from './routes/dashboard/blog/$editSlug'
@@ -371,6 +373,11 @@ const DashboardManage_blogRoute = DashboardManage_blogRouteImport.update({
   path: '/manage_blog',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManage_albumsRoute = DashboardManage_albumsRouteImport.update({
+  id: '/manage_albums',
+  path: '/manage_albums',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardLogisticsRoute = DashboardLogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -507,6 +514,12 @@ const DashboardManage_galleriesIdRoute =
     path: '/$id',
     getParentRoute: () => DashboardManage_galleriesRoute,
   } as any)
+const DashboardManage_albumsIdRoute =
+  DashboardManage_albumsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => DashboardManage_albumsRoute,
+  } as any)
 const DashboardEventEditIdRoute = DashboardEventEditIdRouteImport.update({
   id: '/event/$editId',
   path: '/event/$editId',
@@ -559,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
+  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -600,6 +614,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
+  '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
   '/dashboard/manage_galleries/$id': typeof DashboardManage_galleriesIdRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
@@ -645,6 +660,7 @@ export interface FileRoutesByTo {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
+  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -686,6 +702,7 @@ export interface FileRoutesByTo {
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
+  '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
   '/dashboard/manage_galleries/$id': typeof DashboardManage_galleriesIdRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
@@ -733,6 +750,7 @@ export interface FileRoutesById {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
+  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -774,6 +792,7 @@ export interface FileRoutesById {
   '/dashboard/blog/$editSlug': typeof DashboardBlogEditSlugRoute
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
+  '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
   '/dashboard/manage_galleries/$id': typeof DashboardManage_galleriesIdRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
@@ -822,6 +841,7 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
+    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -863,6 +883,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
+    | '/dashboard/manage_albums/$id'
     | '/dashboard/manage_galleries/$id'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
@@ -908,6 +929,7 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
+    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -949,6 +971,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
+    | '/dashboard/manage_albums/$id'
     | '/dashboard/manage_galleries/$id'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
@@ -995,6 +1018,7 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
+    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -1036,6 +1060,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog/$editSlug'
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
+    | '/dashboard/manage_albums/$id'
     | '/dashboard/manage_galleries/$id'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
@@ -1476,6 +1501,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManage_blogRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/manage_albums': {
+      id: '/dashboard/manage_albums'
+      path: '/manage_albums'
+      fullPath: '/dashboard/manage_albums'
+      preLoaderRoute: typeof DashboardManage_albumsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/logistics': {
       id: '/dashboard/logistics'
       path: '/logistics'
@@ -1665,6 +1697,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManage_galleriesIdRouteImport
       parentRoute: typeof DashboardManage_galleriesRoute
     }
+    '/dashboard/manage_albums/$id': {
+      id: '/dashboard/manage_albums/$id'
+      path: '/$id'
+      fullPath: '/dashboard/manage_albums/$id'
+      preLoaderRoute: typeof DashboardManage_albumsIdRouteImport
+      parentRoute: typeof DashboardManage_albumsRoute
+    }
     '/dashboard/event/$editId': {
       id: '/dashboard/event/$editId'
       path: '/event/$editId'
@@ -1688,6 +1727,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface DashboardManage_albumsRouteChildren {
+  DashboardManage_albumsIdRoute: typeof DashboardManage_albumsIdRoute
+}
+
+const DashboardManage_albumsRouteChildren: DashboardManage_albumsRouteChildren =
+  {
+    DashboardManage_albumsIdRoute: DashboardManage_albumsIdRoute,
+  }
+
+const DashboardManage_albumsRouteWithChildren =
+  DashboardManage_albumsRoute._addFileChildren(
+    DashboardManage_albumsRouteChildren,
+  )
 
 interface DashboardManage_galleriesRouteChildren {
   DashboardManage_galleriesIdRoute: typeof DashboardManage_galleriesIdRoute
@@ -1720,6 +1773,7 @@ interface DashboardRouteChildren {
   DashboardLegacyRoute: typeof DashboardLegacyRoute
   DashboardLocationsRoute: typeof DashboardLocationsRoute
   DashboardLogisticsRoute: typeof DashboardLogisticsRoute
+  DashboardManage_albumsRoute: typeof DashboardManage_albumsRouteWithChildren
   DashboardManage_blogRoute: typeof DashboardManage_blogRoute
   DashboardManage_docsRoute: typeof DashboardManage_docsRoute
   DashboardManage_eventRoute: typeof DashboardManage_eventRoute
@@ -1768,6 +1822,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLegacyRoute: DashboardLegacyRoute,
   DashboardLocationsRoute: DashboardLocationsRoute,
   DashboardLogisticsRoute: DashboardLogisticsRoute,
+  DashboardManage_albumsRoute: DashboardManage_albumsRouteWithChildren,
   DashboardManage_blogRoute: DashboardManage_blogRoute,
   DashboardManage_docsRoute: DashboardManage_docsRoute,
   DashboardManage_eventRoute: DashboardManage_eventRoute,

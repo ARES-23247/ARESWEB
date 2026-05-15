@@ -21,8 +21,8 @@ import { toast } from "sonner";
 interface GooglePhotoPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // If provided, after importing photos, it returns the URLs (e.g. for inserting images)
-  onPhotosImported?: (urls: string[]) => void;
+  // If provided, after importing photos, it returns the items (url and r2Key)
+  onPhotosImported?: (items: { url: string; r2Key: string }[]) => void;
 }
 
 export default function GooglePhotoPickerModal({
@@ -145,13 +145,13 @@ export default function GooglePhotoPickerModal({
           if (data.imported > 0) {
             toast.success(`Successfully imported ${data.imported} photos to R2!`);
             
-            // Send back the URLs of successfully imported photos
-            const successUrls = data.results
-              .filter(r => r.status === "success" && r.r2Key)
-              .map(r => `/api/media/${r.r2Key}`);
+            // Send back the items of successfully imported photos
+            const successItems = data.results
+              .filter((r): r is typeof r & { r2Key: string } => r.status === "success" && !!r.r2Key)
+              .map(r => ({ url: `/api/media/${r.r2Key}`, r2Key: r.r2Key }));
               
-            if (onPhotosImported && successUrls.length > 0) {
-              onPhotosImported(successUrls);
+            if (onPhotosImported && successItems.length > 0) {
+              onPhotosImported(successItems);
             }
           }
           if (data.failed > 0) {

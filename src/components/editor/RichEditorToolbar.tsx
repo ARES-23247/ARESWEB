@@ -446,7 +446,7 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       <GooglePhotoPickerModal
         isOpen={isGooglePhotoPickerOpen}
         onClose={() => setIsGooglePhotoPickerOpen(false)}
-        onPhotosImported={async (urls) => {
+        onPhotosImported={async (items) => {
           setIsGooglePhotoPickerOpen(false);
           const altText = await modal.prompt({
             title: "Alt Text",
@@ -455,9 +455,9 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
           });
 
           // Insert multiple images back-to-back
-          urls.forEach((url, index) => {
-            const specificAlt = (urls.length > 1 && altText) ? `${altText} ${index + 1}` : (altText || "");
-            editor.chain().focus().setImage({ src: url, alt: specificAlt }).run();
+          items.forEach((item, index) => {
+            const specificAlt = (items.length > 1 && altText) ? `${altText} ${index + 1}` : (altText || "");
+            editor.chain().focus().setImage({ src: item.url, alt: specificAlt }).run();
           });
         }}
       />
