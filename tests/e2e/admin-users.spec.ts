@@ -74,7 +74,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users');
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 

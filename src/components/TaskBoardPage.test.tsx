@@ -80,11 +80,11 @@ describe("TaskBoardPage Component", () => {
     });
 
     // Check if the header is present
-    expect(screen.getAllByText("Task Board").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Native D1-powered project management kanban/i)).toBeInTheDocument();
+    expect(screen.getAllByText("TASK_COMMAND_BOARD").length).toBeGreaterThan(0);
+    expect(screen.getByText(/NATIVE_D1_POWERED_PROJECT_MANAGEMENT_TELEMETRY/i)).toBeInTheDocument();
 
     // Check if empty columns from the Kanban board are rendered
-    expect(screen.getAllByText("Todo").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("In Progress").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("BACKLOG_PENDING").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ACTIVE_EXECUTION").length).toBeGreaterThan(0);
   });
 });

@@ -67,15 +67,15 @@ test.describe('Sponsor Manager', () => {
       timeout: TEST_TIMEOUTS.DEFAULT,
     });
 
-    // Verify "Add Partner" button is visible
-    await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
+    // Verify "REGISTER_NEW_PARTNER" button is visible
+    await expect(page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i })).toBeVisible();
   });
 
   test.skip('SPONSORS-02: Sponsor creation workflow', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Click "Add Partner" button to expand creation form
-    await page.getByRole('button', { name: /Add Partner/i }).click();
+    // Click "REGISTER_NEW_PARTNER" button to expand creation form
+    await page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i }).click();
 
     // Wait for form to appear
     await page.waitForTimeout(200);
@@ -93,13 +93,13 @@ test.describe('Sponsor Manager', () => {
     await page.getByLabel(/Website/i).fill('https://example.com');
 
     // Submit the form - actual button text is "Commit Partner to D1"
-    await page.getByRole('button', { name: /Commit Partner to D1|Commit/i }).click();
+    await page.getByRole('button', { name: /Commit to Global Registry|Commit/i }).click();
 
     // Wait for form to close (partner name input should disappear)
     await expect(page.getByLabel(/Partner Name/i)).not.toBeVisible({ timeout: 5000 });
 
-    // Verify the form was closed (Add Partner button should be visible again)
-    await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
+    // Verify the form was closed (REGISTER_NEW_PARTNER button should be visible again)
+    await expect(page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i })).toBeVisible();
   });
 
   test('SPONSORS-03: Sponsor editing workflow', async ({ page }) => {
@@ -119,14 +119,14 @@ test.describe('Sponsor Manager', () => {
       // Modify the sponsor data
       await page.getByLabel(/Partner Name/i).fill(`Updated Sponsor ${Date.now()}`);
 
-      // Submit the form - actual button text is "Update Partner in D1"
-      await page.getByRole('button', { name: /Update Partner in D1|Update/i }).click();
+      // Submit the form - actual button text is "Update Partner Registry"
+      await page.getByRole('button', { name: /Update Partner Registry|Update/i }).click();
 
       // Wait for mutation to complete
       await page.waitForTimeout(500);
 
       // Verify the form was closed
-      await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i })).toBeVisible();
     }
     // Test passes even if no sponsors exist to edit
   });
@@ -173,11 +173,11 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-06: Form validation prevents invalid submissions', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Click "Add Partner" button to expand creation form
-    await page.getByRole('button', { name: /Add Partner/i }).click();
+    // Click "REGISTER_NEW_PARTNER" button to expand creation form
+    await page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i }).click();
 
-    // Verify the submit button is visible after opening the form - actual text is "Commit Partner to D1"
-    const submitButton = page.getByRole('button', { name: /Commit Partner to D1|Commit/i });
+    // Verify the submit button is visible after opening the form - actual text is "Commit to Global Registry"
+    const submitButton = page.getByRole('button', { name: /Commit to Global Registry|Commit/i });
     await expect(submitButton).toBeVisible();
 
     // Verify form fields are present and can be filled
@@ -192,8 +192,8 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-07: Logo upload functionality', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Click "Add Partner" button to expand creation form
-    await page.getByRole('button', { name: /Add Partner/i }).click();
+    // Click "REGISTER_NEW_PARTNER" button to expand creation form
+    await page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i }).click();
 
     // Verify the logo input field is visible (the visible text input, not the hidden file input)
     await expect(page.getByPlaceholder(/https:\/\/\.\.\. or upload/i)).toBeVisible();
@@ -202,8 +202,8 @@ test.describe('Sponsor Manager', () => {
   test('SPONSORS-08: Sponsor form can be cancelled', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Click "Add Partner" button to expand creation form
-    await page.getByRole('button', { name: /Add Partner/i }).click();
+    // Click "REGISTER_NEW_PARTNER" button to expand creation form
+    await page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i }).click();
 
     // Verify form fields are visible
     await expect(page.getByLabel(/Partner Name/i)).toBeVisible();
@@ -212,19 +212,19 @@ test.describe('Sponsor Manager', () => {
     await page.getByLabel(/Partner Name/i).fill('Test Sponsor');
     await page.getByLabel(/Website/i).fill('https://example.com');
 
-    // Click Cancel button
-    await page.getByRole('button', { name: /Cancel/i }).click();
+    // Click ABORT_MISSION button (Cancel)
+    await page.getByRole('button', { name: /ABORT_MISSION/i }).click();
 
-    // Verify form is hidden (Add Partner button is visible again)
-    await expect(page.getByRole('button', { name: /Add Partner/i })).toBeVisible();
+    // Verify form is hidden (REGISTER_NEW_PARTNER button is visible again)
+    await expect(page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i })).toBeVisible();
     await expect(page.getByLabel(/Partner Name/i)).not.toBeVisible();
   });
 
   test('SPONSORS-09: All tier options are available', async ({ page }) => {
     await page.goto('/dashboard/sponsors');
 
-    // Click "Add Partner" button to expand creation form
-    await page.getByRole('button', { name: /Add Partner/i }).click();
+    // Click "REGISTER_NEW_PARTNER" button to expand creation form
+    await page.getByRole('button', { name: /REGISTER_NEW_PARTNER/i }).click();
 
     // Get all options from the tier select
     const tierSelect = page.getByLabel(/Tier/i);

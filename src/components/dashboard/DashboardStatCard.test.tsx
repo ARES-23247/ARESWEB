@@ -161,9 +161,9 @@ describe("DashboardStatCard Component", () => {
     const labelElement = screen.getByText("Label Text");
     // The label text is in a span, but the styling is on the parent div
     const parentElement = labelElement.parentElement;
-    expect(parentElement).toHaveClass("text-marble/60");
-    expect(parentElement).toHaveClass("uppercase");
-    expect(parentElement).toHaveClass("tracking-widest");
+    expect(parentElement).toHaveClass("text-marble/20");
+    expect(labelElement).toHaveClass("uppercase");
+    expect(labelElement).toHaveClass("tracking-[0.3em]");
   });
 
   it("has proper text styling for value", () => {
@@ -192,8 +192,8 @@ describe("DashboardStatCard Component", () => {
     const icon = screen.getByTestId("row-icon");
     const label = screen.getByText("Label");
 
-    // Both should be in the container
-    expect(icon.parentElement).toContainElement(label);
+    // Both should be in the same header container
+    expect(icon.parentElement?.parentElement).toContainElement(label);
   });
 
   it("handles negative numbers", () => {

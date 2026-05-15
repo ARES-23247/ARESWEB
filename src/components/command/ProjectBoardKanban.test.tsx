@@ -37,10 +37,10 @@ describe("ProjectBoardKanban Component", () => {
 
   it("renders empty columns correctly", () => {
     render(<ProjectBoardKanban {...defaultProps} />);
-    expect(screen.getAllByText("Todo").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("In Progress").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Done").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Parked").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("BACKLOG_PENDING").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ACTIVE_EXECUTION").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("MISSION_COMPLETE").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("CRITICAL_HALT").length).toBeGreaterThan(0);
   });
 
   it("renders tasks with assignees", async () => {
