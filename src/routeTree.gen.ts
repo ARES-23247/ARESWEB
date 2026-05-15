@@ -62,7 +62,6 @@ import { Route as DashboardManage_seasonsRouteImport } from './routes/dashboard/
 import { Route as DashboardManage_eventRouteImport } from './routes/dashboard/manage_event'
 import { Route as DashboardManage_docsRouteImport } from './routes/dashboard/manage_docs'
 import { Route as DashboardManage_blogRouteImport } from './routes/dashboard/manage_blog'
-import { Route as DashboardManage_albumsRouteImport } from './routes/dashboard/manage_albums'
 import { Route as DashboardLogisticsRouteImport } from './routes/dashboard/logistics'
 import { Route as DashboardLocationsRouteImport } from './routes/dashboard/locations'
 import { Route as DashboardLegacyRouteImport } from './routes/dashboard/legacy'
@@ -84,6 +83,7 @@ import { Route as AlbumsIdRouteImport } from './routes/albums/$id'
 import { Route as AcademySlugRouteImport } from './routes/academy/$slug'
 import { Route as DashboardTasksIndexRouteImport } from './routes/dashboard/tasks/index'
 import { Route as DashboardSeasonsIndexRouteImport } from './routes/dashboard/seasons/index'
+import { Route as DashboardManage_albumsIndexRouteImport } from './routes/dashboard/manage_albums.index'
 import { Route as DashboardEventIndexRouteImport } from './routes/dashboard/event/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardBlogIndexRouteImport } from './routes/dashboard/blog/index'
@@ -360,11 +360,6 @@ const DashboardManage_blogRoute = DashboardManage_blogRouteImport.update({
   path: '/manage_blog',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardManage_albumsRoute = DashboardManage_albumsRouteImport.update({
-  id: '/manage_albums',
-  path: '/manage_albums',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardLogisticsRoute = DashboardLogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -470,6 +465,12 @@ const DashboardSeasonsIndexRoute = DashboardSeasonsIndexRouteImport.update({
   path: '/seasons/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManage_albumsIndexRoute =
+  DashboardManage_albumsIndexRouteImport.update({
+    id: '/manage_albums/',
+    path: '/manage_albums/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardEventIndexRoute = DashboardEventIndexRouteImport.update({
   id: '/event/',
   path: '/event/',
@@ -502,9 +503,9 @@ const DashboardSeasonsEditIdRoute = DashboardSeasonsEditIdRouteImport.update({
 } as any)
 const DashboardManage_albumsIdRoute =
   DashboardManage_albumsIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => DashboardManage_albumsRoute,
+    id: '/manage_albums/$id',
+    path: '/manage_albums/$id',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardEventEditIdRoute = DashboardEventEditIdRouteImport.update({
   id: '/event/$editId',
@@ -559,7 +560,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
-  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -606,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/blog/': typeof DashboardBlogIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/event/': typeof DashboardEventIndexRoute
+  '/dashboard/manage_albums/': typeof DashboardManage_albumsIndexRoute
   '/dashboard/seasons/': typeof DashboardSeasonsIndexRoute
   '/dashboard/tasks/': typeof DashboardTasksIndexRoute
 }
@@ -645,7 +646,6 @@ export interface FileRoutesByTo {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
-  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -692,6 +692,7 @@ export interface FileRoutesByTo {
   '/dashboard/blog': typeof DashboardBlogIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/event': typeof DashboardEventIndexRoute
+  '/dashboard/manage_albums': typeof DashboardManage_albumsIndexRoute
   '/dashboard/seasons': typeof DashboardSeasonsIndexRoute
   '/dashboard/tasks': typeof DashboardTasksIndexRoute
 }
@@ -733,7 +734,6 @@ export interface FileRoutesById {
   '/dashboard/legacy': typeof DashboardLegacyRoute
   '/dashboard/locations': typeof DashboardLocationsRoute
   '/dashboard/logistics': typeof DashboardLogisticsRoute
-  '/dashboard/manage_albums': typeof DashboardManage_albumsRouteWithChildren
   '/dashboard/manage_blog': typeof DashboardManage_blogRoute
   '/dashboard/manage_docs': typeof DashboardManage_docsRoute
   '/dashboard/manage_event': typeof DashboardManage_eventRoute
@@ -780,6 +780,7 @@ export interface FileRoutesById {
   '/dashboard/blog/': typeof DashboardBlogIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/event/': typeof DashboardEventIndexRoute
+  '/dashboard/manage_albums/': typeof DashboardManage_albumsIndexRoute
   '/dashboard/seasons/': typeof DashboardSeasonsIndexRoute
   '/dashboard/tasks/': typeof DashboardTasksIndexRoute
 }
@@ -822,7 +823,6 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
-    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -869,6 +869,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog/'
     | '/dashboard/docs/'
     | '/dashboard/event/'
+    | '/dashboard/manage_albums/'
     | '/dashboard/seasons/'
     | '/dashboard/tasks/'
   fileRoutesByTo: FileRoutesByTo
@@ -908,7 +909,6 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
-    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -955,6 +955,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog'
     | '/dashboard/docs'
     | '/dashboard/event'
+    | '/dashboard/manage_albums'
     | '/dashboard/seasons'
     | '/dashboard/tasks'
   id:
@@ -995,7 +996,6 @@ export interface FileRouteTypes {
     | '/dashboard/legacy'
     | '/dashboard/locations'
     | '/dashboard/logistics'
-    | '/dashboard/manage_albums'
     | '/dashboard/manage_blog'
     | '/dashboard/manage_docs'
     | '/dashboard/manage_event'
@@ -1042,6 +1042,7 @@ export interface FileRouteTypes {
     | '/dashboard/blog/'
     | '/dashboard/docs/'
     | '/dashboard/event/'
+    | '/dashboard/manage_albums/'
     | '/dashboard/seasons/'
     | '/dashboard/tasks/'
   fileRoutesById: FileRoutesById
@@ -1461,13 +1462,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManage_blogRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/manage_albums': {
-      id: '/dashboard/manage_albums'
-      path: '/manage_albums'
-      fullPath: '/dashboard/manage_albums'
-      preLoaderRoute: typeof DashboardManage_albumsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/logistics': {
       id: '/dashboard/logistics'
       path: '/logistics'
@@ -1615,6 +1609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSeasonsIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/manage_albums/': {
+      id: '/dashboard/manage_albums/'
+      path: '/manage_albums'
+      fullPath: '/dashboard/manage_albums/'
+      preLoaderRoute: typeof DashboardManage_albumsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/event/': {
       id: '/dashboard/event/'
       path: '/event'
@@ -1659,10 +1660,10 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/manage_albums/$id': {
       id: '/dashboard/manage_albums/$id'
-      path: '/$id'
+      path: '/manage_albums/$id'
       fullPath: '/dashboard/manage_albums/$id'
       preLoaderRoute: typeof DashboardManage_albumsIdRouteImport
-      parentRoute: typeof DashboardManage_albumsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/event/$editId': {
       id: '/dashboard/event/$editId'
@@ -1688,20 +1689,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface DashboardManage_albumsRouteChildren {
-  DashboardManage_albumsIdRoute: typeof DashboardManage_albumsIdRoute
-}
-
-const DashboardManage_albumsRouteChildren: DashboardManage_albumsRouteChildren =
-  {
-    DashboardManage_albumsIdRoute: DashboardManage_albumsIdRoute,
-  }
-
-const DashboardManage_albumsRouteWithChildren =
-  DashboardManage_albumsRoute._addFileChildren(
-    DashboardManage_albumsRouteChildren,
-  )
-
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardAssetsRoute: typeof DashboardAssetsRoute
@@ -1719,7 +1706,6 @@ interface DashboardRouteChildren {
   DashboardLegacyRoute: typeof DashboardLegacyRoute
   DashboardLocationsRoute: typeof DashboardLocationsRoute
   DashboardLogisticsRoute: typeof DashboardLogisticsRoute
-  DashboardManage_albumsRoute: typeof DashboardManage_albumsRouteWithChildren
   DashboardManage_blogRoute: typeof DashboardManage_blogRoute
   DashboardManage_docsRoute: typeof DashboardManage_docsRoute
   DashboardManage_eventRoute: typeof DashboardManage_eventRoute
@@ -1741,11 +1727,13 @@ interface DashboardRouteChildren {
   DashboardBlogEditSlugRoute: typeof DashboardBlogEditSlugRoute
   DashboardDocsEditSlugRoute: typeof DashboardDocsEditSlugRoute
   DashboardEventEditIdRoute: typeof DashboardEventEditIdRoute
+  DashboardManage_albumsIdRoute: typeof DashboardManage_albumsIdRoute
   DashboardSeasonsEditIdRoute: typeof DashboardSeasonsEditIdRoute
   DashboardTasksTaskIdRoute: typeof DashboardTasksTaskIdRoute
   DashboardBlogIndexRoute: typeof DashboardBlogIndexRoute
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
   DashboardEventIndexRoute: typeof DashboardEventIndexRoute
+  DashboardManage_albumsIndexRoute: typeof DashboardManage_albumsIndexRoute
   DashboardSeasonsIndexRoute: typeof DashboardSeasonsIndexRoute
   DashboardTasksIndexRoute: typeof DashboardTasksIndexRoute
 }
@@ -1767,7 +1755,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLegacyRoute: DashboardLegacyRoute,
   DashboardLocationsRoute: DashboardLocationsRoute,
   DashboardLogisticsRoute: DashboardLogisticsRoute,
-  DashboardManage_albumsRoute: DashboardManage_albumsRouteWithChildren,
   DashboardManage_blogRoute: DashboardManage_blogRoute,
   DashboardManage_docsRoute: DashboardManage_docsRoute,
   DashboardManage_eventRoute: DashboardManage_eventRoute,
@@ -1789,11 +1776,13 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBlogEditSlugRoute: DashboardBlogEditSlugRoute,
   DashboardDocsEditSlugRoute: DashboardDocsEditSlugRoute,
   DashboardEventEditIdRoute: DashboardEventEditIdRoute,
+  DashboardManage_albumsIdRoute: DashboardManage_albumsIdRoute,
   DashboardSeasonsEditIdRoute: DashboardSeasonsEditIdRoute,
   DashboardTasksTaskIdRoute: DashboardTasksTaskIdRoute,
   DashboardBlogIndexRoute: DashboardBlogIndexRoute,
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
   DashboardEventIndexRoute: DashboardEventIndexRoute,
+  DashboardManage_albumsIndexRoute: DashboardManage_albumsIndexRoute,
   DashboardSeasonsIndexRoute: DashboardSeasonsIndexRoute,
   DashboardTasksIndexRoute: DashboardTasksIndexRoute,
 }

@@ -7,7 +7,7 @@ import { useModal } from '../../contexts/ModalContext'
 import AlbumEditorModal from '../../components/AlbumEditorModal'
 import { toastApiError } from '../../api/honoClient'
 
-export const Route = createFileRoute('/dashboard/manage_albums')({
+export const Route = createFileRoute('/dashboard/manage_albums/')({
   component: RouteComponent,
 })
 
