@@ -347,6 +347,13 @@ function RouteComponent() {
 
       <GooglePhotoPickerModal
         isOpen={isGooglePickerOpen}
+        existingGoogleIds={
+          new Set(
+            mediaItems
+              .map((item) => item.photo?.googleMediaItemId)
+              .filter(Boolean) as string[]
+          )
+        }
         onClose={() => setIsGooglePickerOpen(false)}
         onPhotosImported={(items) => {
           setIsGooglePickerOpen(false)

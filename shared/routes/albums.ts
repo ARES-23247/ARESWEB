@@ -14,6 +14,7 @@ export const importedPhotoSchema = z.object({
   filename: z.string().nullable().optional(),
   mimeType: z.string(),
   createdAt: z.string(),
+  googleMediaItemId: z.string().nullable().optional(),
 });
 
 export const albumDetailSchema = albumSchema.extend({

@@ -23,12 +23,15 @@ interface GooglePhotoPickerModalProps {
   onClose: () => void;
   // If provided, after importing photos, it returns the items (url and r2Key)
   onPhotosImported?: (items: { url: string; r2Key: string }[]) => void;
+  // Set of google photo IDs that are already in the album
+  existingGoogleIds?: Set<string>;
 }
 
 export default function GooglePhotoPickerModal({
   isOpen,
   onClose,
   onPhotosImported,
+  existingGoogleIds,
 }: GooglePhotoPickerModalProps) {
 
   // ==========================================
@@ -125,10 +128,11 @@ export default function GooglePhotoPickerModal({
   };
 
   const handleSelectAll = () => {
-    if (selectedForImport.size === pickedItems.length) {
+    const availableItems = pickedItems.filter((i) => !existingGoogleIds?.has(i.id));
+    if (selectedForImport.size === availableItems.length) {
       setSelectedForImport(new Set());
     } else {
-      setSelectedForImport(new Set(pickedItems.map((i) => i.id)));
+      setSelectedForImport(new Set(availableItems.map((i) => i.id)));
     }
   };
 
@@ -289,13 +293,19 @@ export default function GooglePhotoPickerModal({
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {pickedItems.map((item) => {
                     const isSelected = selectedForImport.has(item.id);
+                    const isAlreadyInAlbum = existingGoogleIds?.has(item.id);
                     return (
                       <button
                         type="button"
                         key={item.id}
-                        onClick={() => handleToggleSelect(item.id)}
-                        className={`group relative cursor-pointer overflow-hidden ares-cut-sm border transition-all aspect-square block w-full text-left ${
-                          isSelected ? "border-2 border-ares-cyan" : "border-white/10 hover:border-ares-cyan/50"
+                        onClick={() => !isAlreadyInAlbum && handleToggleSelect(item.id)}
+                        disabled={isAlreadyInAlbum}
+                        className={`group relative overflow-hidden ares-cut-sm border transition-all aspect-square block w-full text-left ${
+                          isAlreadyInAlbum
+                            ? "border-white/10 opacity-50 cursor-not-allowed"
+                            : isSelected 
+                              ? "border-2 border-ares-cyan cursor-pointer" 
+                              : "border-white/10 hover:border-ares-cyan/50 cursor-pointer"
                         }`}
                       >
                         {item.mediaFile?.baseUrl ? (
@@ -309,8 +319,15 @@ export default function GooglePhotoPickerModal({
                             <ImageIcon className="text-marble/30 w-8 h-8" />
                           </div>
                         )}
+                        {isAlreadyInAlbum && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 backdrop-blur-[2px]">
+                            <span className="bg-black/80 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider rounded">
+                              Already Added
+                            </span>
+                          </div>
+                        )}
                         <div
-                          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
+                          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all z-20 ${
                             isSelected ? "border-ares-cyan bg-ares-cyan text-black" : "border-white/80 bg-black/30 text-transparent"
                           }`}
                         >

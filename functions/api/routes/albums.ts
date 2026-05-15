@@ -66,7 +66,8 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
           r2Key: m.id,
           filename: m.photo?.originalFilename ?? m.id.split('/').pop() ?? null,
           mimeType: m.photo?.mimeType ?? "image/jpeg",
-          createdAt: m.photo?.importedAt ?? new Date().toISOString()
+          createdAt: m.photo?.importedAt ?? new Date().toISOString(),
+          googleMediaItemId: m.photo?.googleMediaItemId ?? null
         }
       })),
     }
