@@ -18,12 +18,12 @@ function StorePage() {
     );
   }
 
-  const products = productsData?.products || [];
-  const categories = ["All", ...new Set(products.map(p => p.category || "Other"))];
+  const products = productsData || [];
+  const categories = ["All", ...new Set(products.map((p: any) => p.category || "Other"))];
   
   const filteredProducts = activeCategory === "All" 
     ? products 
-    : products.filter(p => p.category === activeCategory);
+    : products.filter((p: any) => p.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-obsidian text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -66,7 +66,7 @@ function StorePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <motion.div
                   key={product.id}
                   layout

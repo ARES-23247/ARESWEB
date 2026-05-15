@@ -13,7 +13,7 @@ import { useGetRobots } from "../api/robots";
 import { Plus, Trash2, Edit2, XCircle, Trophy, RefreshCw, Award, ArrowLeft, Swords, BarChart3, ImageIcon, Hash, Video } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import AlbumPickerModal from "./AlbumPickerModal";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
