@@ -92,7 +92,7 @@ test.describe('Sponsor Manager', () => {
     await page.getByLabel(/Logo/i).fill('https://example.com/logo.png');
     await page.getByLabel(/Website/i).fill('https://example.com');
 
-    // Submit the form - actual button text is "Commit Partner to D1"
+    // Submit the form - actual button text is "Commit to Global Registry"
     await page.getByRole('button', { name: /Commit to Global Registry|Commit/i }).click();
 
     // Wait for form to close (partner name input should disappear)

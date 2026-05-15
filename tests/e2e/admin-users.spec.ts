@@ -91,7 +91,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users', { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -122,7 +122,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users', { waitUntil: 'domcontentloaded' });
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible();
 
     // Wait for select elements to appear (indicating table data is loaded)
     await expect(page.locator('select').first()).toBeVisible({ timeout: 10000 });
@@ -147,7 +147,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users');
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible();
 
     // Verify search input exists
     const searchInput = page.getByPlaceholder(/Search/i);
@@ -158,7 +158,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users');
 
     // Wait for the page to fully load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
@@ -186,7 +186,7 @@ test.describe('Admin Users Dashboard', () => {
     await page.goto('/dashboard/users');
 
     // Wait for the page to load
-    await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /OPERATIVE_REGISTRY/i })).toBeVisible();
 
     // Verify table exists
     const userTable = page.getByRole('table');

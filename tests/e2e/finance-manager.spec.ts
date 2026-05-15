@@ -101,8 +101,8 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
-    // Verify main heading is visible (defaults to Sponsorship Pipeline)
-    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible();
+    // Verify main heading is visible (ARES uses "PIPELINE_DASHBOARD" heading in DashboardPageHeader)
+    await expect(page.getByRole('heading', { name: /PIPELINE_DASHBOARD/i })).toBeVisible();
 
     // Verify summary metrics are displayed
     await expect(page.getByText('Total Income')).toBeVisible();
@@ -117,12 +117,12 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
-    // Verify all pipeline column headers are visible
-    await expect(page.getByRole('heading', { name: 'Potential' }).or(page.getByText('Potential').first())).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Contacted' }).or(page.getByText('Contacted').first())).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Pledged' }).or(page.getByText('Pledged').first())).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Secured' }).or(page.getByText('Secured').first())).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Lost' }).or(page.getByText('Lost').first())).toBeVisible();
+    // Verify all pipeline column headers are visible (ARES uses uppercase underscore-separated labels)
+    await expect(page.getByRole('heading', { name: 'POTENTIAL_LEAD' }).or(page.getByText('POTENTIAL_LEAD').first())).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ENGAGED_CONTACT' }).or(page.getByText('ENGAGED_CONTACT').first())).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'PLEDGED_COMMIT' }).or(page.getByText('PLEDGED_COMMIT').first())).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'SECURED_FUNDS' }).or(page.getByText('SECURED_FUNDS').first())).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'DROPPED_LINK' }).or(page.getByText('DROPPED_LINK').first())).toBeVisible();
   });
 
   test('should switch between pipeline and ledger tabs', async ({ page }) => {
@@ -132,22 +132,22 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
-    // Verify main heading is visible (defaults to Sponsorship Pipeline)
-    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible({
+    // Verify main heading is visible (defaults to Pipeline Dashboard - ARES uses "PIPELINE_DASHBOARD")
+    await expect(page.getByRole('heading', { name: /PIPELINE_DASHBOARD/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
 
-    // Click on Ledger tab - use text-based selector
-    await page.getByText('Ledger & Expenses').click();
+    // Click on Ledger tab - use text-based selector (ARES uses "CENTRAL_LEDGER" tab text)
+    await page.getByText('CENTRAL_LEDGER').click();
 
     // Wait for tab switch to complete
     await page.waitForTimeout(500);
 
-    // Verify ledger heading changed
-    await expect(page.getByRole('heading', { name: /Financial Ledger/i })).toBeVisible();
+    // Verify ledger heading changed (ARES uses "FINANCIAL_LEDGER")
+    await expect(page.getByRole('heading', { name: /FINANCIAL_LEDGER/i })).toBeVisible();
 
-    // Verify ledger view is displayed - check for Add Transaction text
-    await expect(page.getByText('Add Transaction')).toBeVisible();
+    // Verify ledger view is displayed - check for Record Transaction text (ARES branding)
+    await expect(page.getByText('RECORD_TRANSACTION')).toBeVisible();
 
     // Verify table headers
     await expect(page.getByText('Date')).toBeVisible();
@@ -164,17 +164,17 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Switch to ledger tab - use text selector for reliability
-    await page.getByText('Ledger & Expenses').click();
+    await page.getByText('CENTRAL_LEDGER').click();
 
     // Wait for tab switch and content to load
     await page.waitForTimeout(500);
 
     // Income and expense amounts may not be visible if no transactions exist, but the UI should render
     // The Add button changes text based on active tab
-    await expect(page.getByText('Add Transaction')).toBeVisible();
+    await expect(page.getByText('RECORD_TRANSACTION')).toBeVisible();
   });
 
-  test('should show add form when Add Lead button is clicked', async ({ page }) => {
+  test('should show add form when INITIALIZE_LEAD button is clicked', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
     // Wait for page to load completely
@@ -189,8 +189,8 @@ test.describe('Finance Manager Dashboard', () => {
       await page.waitForTimeout(300);
     }
 
-    // Click Add Lead button - use role selector with exact text
-    await page.getByRole('button', { name: 'Add Lead' }).click();
+    // Click INITIALIZE_LEAD button - use role selector with exact text
+    await page.getByRole('button', { name: 'INITIALIZE_LEAD' }).click();
 
     // Verify form container is visible (use more specific selector to avoid strict mode violation)
     const formContainer = page.locator('.bg-obsidian.border-ares-red\\/30');
@@ -206,7 +206,7 @@ test.describe('Finance Manager Dashboard', () => {
     await expect(page.getByText('Initial Status')).toBeVisible();
   });
 
-  test('should show add transaction form when Add Transaction button is clicked', async ({ page }) => {
+  test('should show add transaction form when RECORD_TRANSACTION button is clicked', async ({ page }) => {
     await page.goto('/dashboard/finance');
 
     // Wait for page to load completely
@@ -214,13 +214,13 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Switch to ledger tab
-    await page.getByText('Ledger & Expenses').click();
+    await page.getByText('CENTRAL_LEDGER').click();
 
     // Wait for tab switch
     await page.waitForTimeout(500);
 
-    // Click Add Transaction button - use text-based selector
-    await page.getByText('Add Transaction').click();
+    // Click RECORD_TRANSACTION button - use text-based selector
+    await page.getByText('RECORD_TRANSACTION').click();
 
     // Verify form container is visible (use more specific selector to avoid strict mode violation)
     const formContainer = page.locator('.bg-obsidian.border-ares-red\\/30');
@@ -261,7 +261,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Switch to ledger tab
-    await page.getByRole('button', { name: /Ledger & Expenses/i }).click();
+    await page.getByRole('button', { name: /CENTRAL_LEDGER/i }).click();
 
     // Wait for ledger to load and stabilize
     await page.waitForLoadState('domcontentloaded');
@@ -284,7 +284,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Switch to ledger tab
-    await page.getByRole('button', { name: /Ledger & Expenses/i }).click();
+    await page.getByRole('button', { name: /CENTRAL_LEDGER/i }).click();
 
     // Wait for ledger to load
     await page.waitForLoadState('domcontentloaded');
@@ -305,8 +305,8 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Verify tab buttons exist - use role selector to avoid matching the heading
-    await expect(page.getByRole('button', { name: 'Sponsorship Pipeline' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Ledger & Expenses' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'SPONSORSHIP_PIPELINE' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'CENTRAL_LEDGER' })).toBeVisible();
   });
 
   test('should handle empty pipeline state', async ({ page }) => {
@@ -327,7 +327,7 @@ test.describe('Finance Manager Dashboard', () => {
     } else {
       // If there are leads, the empty state won't show - that's also valid
       // Just verify the page loaded
-      await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /SPONSORSHIP_PIPELINE/i })).toBeVisible();
     }
   });
 
@@ -339,7 +339,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.waitForTimeout(1000);
 
     // Switch to ledger tab - use text selector
-    await page.getByText('Ledger & Expenses').click();
+    await page.getByText('CENTRAL_LEDGER').click();
 
     // Wait for ledger to load
     await page.waitForTimeout(500);
@@ -361,7 +361,7 @@ test.describe('Finance Manager Dashboard', () => {
     await page.goto('/dashboard/finance');
 
     // The loading state may be too brief to catch reliably, so we just verify the page eventually loads
-    await expect(page.getByRole('heading', { name: /Sponsorship Pipeline/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /SPONSORSHIP_PIPELINE/i })).toBeVisible({
       timeout: TEST_TIMEOUTS.SLOW_PAGE,
     });
   });
@@ -424,7 +424,7 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
     await page.waitForTimeout(1000);
 
     // Focus the pipeline tab - use locator with text content
-    const pipelineTab = page.locator('button').filter({ hasText: 'Sponsorship Pipeline' });
+    const pipelineTab = page.locator('button').filter({ hasText: 'SPONSORSHIP_PIPELINE' });
     await pipelineTab.focus();
     await expect(pipelineTab).toBeFocused();
 
@@ -435,8 +435,8 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
     // Wait for tab switch
     await page.waitForTimeout(500);
 
-    // Verify ledger view is now active - check for Add Transaction text
-    await expect(page.getByText('Add Transaction')).toBeVisible();
+    // Verify ledger view is now active - check for RECORD_TRANSACTION text
+    await expect(page.getByText('RECORD_TRANSACTION')).toBeVisible();
   });
 
   test('should have visible focus states on interactive elements', async ({ page }) => {
@@ -454,9 +454,9 @@ test.describe('Finance Manager - Keyboard Navigation', () => {
       await page.waitForTimeout(300);
     }
 
-    // Focus the Add Lead button and verify it's focused
+    // Focus the INITIALIZE_LEAD button and verify it's focused
     // The Add button is in the DashboardPageHeader action area
-    const addButton = page.getByRole('button', { name: 'Add Lead' });
+    const addButton = page.getByRole('button', { name: 'INITIALIZE_LEAD' });
     await addButton.focus();
     await expect(addButton).toBeFocused();
   });
