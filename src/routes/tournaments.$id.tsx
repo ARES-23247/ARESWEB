@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useGetTournament } from '../api/tournaments';
 import TiptapRenderer from '../components/TiptapRenderer';
-import { Trophy, ChevronLeft, Calendar, Video, Award } from 'lucide-react';
+import { Trophy, ChevronLeft, Calendar, Video, Award, XCircle } from 'lucide-react';
 import AlbumDetail from '../pages/AlbumDetail';
 
 export const Route = createFileRoute('/tournaments/$id')({

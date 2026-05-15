@@ -73,7 +73,7 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
             {TIERS.find(t => t.name === s.tier)?.icon}
           </div>
           <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${TIERS.find(t => t.name === s.tier)?.color}`}>
-            {s.tier} // MISSION_PARTNER
+            {`${s.tier} // MISSION_PARTNER`}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -290,7 +290,7 @@ export default function SponsorEditor() {
               <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red/20 group-hover:h-full transition-all duration-500"></div>
               <div className="flex items-center gap-3 text-marble/20 mb-4">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{stat.label} //</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{`${stat.label} //`}</span>
               </div>
               <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
             </div>

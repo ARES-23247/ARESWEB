@@ -5,7 +5,7 @@ import { useGetSeasons } from "../api/seasons";
 import { Plus, Trash2, Edit2, XCircle, Bot, Cpu, Wrench, Code2, RefreshCw, Video, Link2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import AlbumPickerModal from "./AlbumPickerModal";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
@@ -201,7 +201,7 @@ export default function RobotsManager() {
               <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan/20 group-hover:h-full transition-all duration-500"></div>
               <div className="flex items-center gap-3 text-marble/20 mb-4">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{stat.label} //</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{`${stat.label} //`}</span>
               </div>
               <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
             </div>

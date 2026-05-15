@@ -157,7 +157,7 @@ export default function AdminUsers() {
           </div>
           <div>
             <span className="text-sm font-black text-white block uppercase tracking-wider group-hover/user:text-ares-red transition-colors">{info.row.original.nickname || info.getValue() || "ARES_OPERATIVE"}</span>
-            <span className="text-[10px] text-marble/20 font-black uppercase tracking-widest">{info.row.original.id.slice(0, 8)} // NODE_ID</span>
+            <span className="text-[10px] text-marble/20 font-black uppercase tracking-widest">{`${info.row.original.id.slice(0, 8)} // NODE_ID`}</span>
           </div>
         </a>
       ),
