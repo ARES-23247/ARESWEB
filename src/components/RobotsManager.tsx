@@ -5,7 +5,7 @@ import { useGetSeasons } from "../api/seasons";
 import { Plus, Trash2, Edit2, XCircle, Bot, Cpu, Wrench, Code2, RefreshCw, Video, Link2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { RichTextEditor } from "@/components/RichTextEditor";
+import { RichTextEditor } from "./RichTextEditor";
 import AlbumPickerModal from "./AlbumPickerModal";
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 import DashboardEmptyState from "./dashboard/DashboardEmptyState";
@@ -40,24 +40,21 @@ function RobotCard({ robot, onEdit }: RobotCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-black/40 border border-white/5 ares-cut-lg p-10 relative group transition-all hover:border-ares-cyan/20 shadow-2xl backdrop-blur-sm overflow-hidden"
+      className="bg-black/40 border border-white/5 ares-cut-lg p-6 relative group transition-all hover:border-white/20"
     >
-      <div className="absolute top-0 right-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
-      <div className="flex justify-between items-start mb-8 relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-ares-cyan/20 transition-all duration-500">
-            <Bot className="text-ares-cyan" size={18} />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-ares-cyan/40 group-hover:text-ares-cyan transition-colors">
-            {robot.drivetrainType || "UNCLASSIFIED_ASSET"}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-2">
+          <Bot className="text-ares-cyan" size={16} />
+          <span className="text-[10px] font-black uppercase tracking-widest text-ares-cyan">
+            {robot.drivetrainType || "UNCLASSIFIED"}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit(robot)}
             disabled={deleteRobot.isPending}
             aria-label={`Edit ${robot.name}`}
-            className="text-marble/20 hover:text-ares-cyan transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
+            className="text-white/60 hover:text-ares-cyan transition-colors disabled:opacity-30"
           >
             <Edit2 size={16} />
           </button>
@@ -65,47 +62,47 @@ function RobotCard({ robot, onEdit }: RobotCardProps) {
             onClick={handleDelete}
             disabled={deleteRobot.isPending}
             aria-label={`Delete ${robot.name}`}
-            className="text-marble/20 hover:text-ares-red transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
+            className="text-white/60 hover:text-ares-red transition-colors disabled:opacity-30"
           >
             {deleteRobot.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
           </button>
         </div>
       </div>
 
-      <h4 className="text-3xl font-black text-white mb-8 uppercase tracking-tighter leading-none group-hover:text-ares-cyan transition-colors relative z-10">{robot.name}</h4>
+      <h4 className="text-lg font-bold text-white mb-2">{robot.name}</h4>
 
-      <div className="flex flex-wrap gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-marble/20 mb-10 relative z-10">
+      <div className="flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-widest text-marble/40 mt-3">
         {robot.weightLbs && (
-          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-white">
-            <Wrench size={12} className="text-ares-red" /> {robot.weightLbs} LBS
+          <span className="flex items-center gap-1">
+            <Wrench size={10} /> {robot.weightLbs} lbs
           </span>
         )}
         {robot.programmingLanguage && (
-          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-cyan">
-            <Code2 size={12} className="text-ares-cyan" /> {robot.programmingLanguage}
+          <span className="flex items-center gap-1">
+            <Code2 size={10} /> {robot.programmingLanguage}
           </span>
         )}
         {robot.primaryMechanism && (
-          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-gold">
-            <Cpu size={12} className="text-ares-gold" /> {robot.primaryMechanism}
+          <span className="flex items-center gap-1">
+            <Cpu size={10} /> {robot.primaryMechanism}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-6 mt-8 pt-8 border-t border-white/5 relative z-10">
+      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
         {robot.revealVideoId && (
-          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-ares-gold/40 flex items-center gap-2 hover:text-ares-gold transition-colors cursor-help">
-            <Video size={12} /> REVEAL_LINK
+          <div className="text-[10px] font-black uppercase tracking-widest text-ares-gold flex items-center gap-1">
+            <Video size={12} /> Reveal Video
           </div>
         )}
         {robot.onshapeUrl && (
-          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-ares-cyan/40 flex items-center gap-2 hover:text-ares-cyan transition-colors cursor-help">
-            <Link2 size={12} /> CAD_SOURCE
+          <div className="text-[10px] font-black uppercase tracking-widest text-ares-cyan flex items-center gap-1">
+            <Link2 size={12} /> CAD
           </div>
         )}
         {robot.albumId && (
-          <div className="text-[9px] font-black uppercase tracking-[0.3em] text-marble/20 flex items-center gap-2 hover:text-marble transition-colors cursor-help">
-            <ImageIcon size={12} /> GALLERY_SYNC
+          <div className="text-[10px] font-black uppercase tracking-widest text-green-400 flex items-center gap-1">
+            <ImageIcon size={12} /> Album
           </div>
         )}
       </div>
@@ -169,8 +166,8 @@ export default function RobotsManager() {
     }
   };
 
-  const inputClass = "w-full bg-black/40 border border-white/5 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:border-ares-red/40 focus:bg-black/60 focus:outline-none transition-all duration-300 text-sm font-bold uppercase tracking-widest";
-  const labelClass = "block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3";
+  const inputClass = "w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all";
+  const labelClass = "block text-xs font-bold text-white/60 uppercase tracking-wider mb-2";
 
   return (
     <div className="space-y-8">
@@ -181,10 +178,10 @@ export default function RobotsManager() {
         action={
           <button
             onClick={isFormOpen ? handleCancel : handleCreate}
-            className={`flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm transition-all shadow-xl ${isFormOpen ? 'bg-white/5 border border-white/10 text-marble' : 'bg-ares-cyan text-black hover:bg-white shadow-ares-cyan/20 hover:scale-105 active:scale-95'}`}
+            className={`flex items-center gap-2 px-4 py-2 font-bold ares-cut-sm transition-all shadow-lg ${isFormOpen ? 'bg-obsidian border border-white/10 text-white' : 'bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20'}`}
           >
             {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
-            {isFormOpen ? "ABORT_DEPLOYMENT" : "COMMISSION_NEW_ASSET"}
+            {isFormOpen ? "Cancel" : "Deploy Robot"}
           </button>
         }
       />
@@ -197,13 +194,12 @@ export default function RobotsManager() {
             { label: "With CAD", val: robots.filter(r => r.onshapeUrl || r.cadViewerUrl).length, icon: <Link2 size={16} className="text-ares-cyan" /> },
             { label: "With Video", val: robots.filter(r => r.revealVideoId).length, icon: <Video size={16} className="text-ares-gold" /> }
           ].map((stat, i) => (
-            <div key={i} className="bg-black/40 border border-white/5 p-8 ares-cut-lg shadow-xl backdrop-blur-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan/20 group-hover:h-full transition-all duration-500"></div>
-              <div className="flex items-center gap-3 text-marble/20 mb-4">
+            <div key={i} className="bg-obsidian/50 border border-white/5 p-4 ares-cut-sm">
+              <div className="flex items-center gap-2 text-marble/40 mb-1">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{`${stat.label} //`}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
               </div>
-              <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
+              <div className="text-xl font-black text-white">{stat.val}</div>
             </div>
           ))}
         </div>
@@ -319,9 +315,9 @@ export default function RobotsManager() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full py-5 font-black ares-cut-sm transition-all flex items-center justify-center gap-4 bg-ares-cyan text-black hover:shadow-2xl hover:bg-white disabled:opacity-50 uppercase tracking-[0.3em] text-xs"
+            className={`w-full py-4 font-black ares-cut transition-all flex items-center justify-center gap-2 bg-ares-cyan text-black hover:shadow-[0_0_30px_rgba(0,255,255,0.3)] disabled:opacity-50`}
           >
-            {isSaving ? "SYNCHRONIZING_FLEET_DATA..." : editingId === "new" ? "COMMIT_ASSET_TO_REGISTRY" : "UPDATE_FLEET_RECORD"}
+            {isSaving ? "Syncing..." : editingId === "new" ? "Deploy to Fleet Registry" : "Update Fleet Record"}
           </button>
         </div>
       )}

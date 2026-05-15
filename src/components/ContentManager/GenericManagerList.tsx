@@ -90,23 +90,20 @@ export default function GenericManagerList<T>({
 
   return (
     <div className="flex flex-col">
-      <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-        <div className="flex items-center gap-4">
-          <div className="w-1 h-8 bg-ares-red shadow-[0_0_15px_rgba(192,0,0,0.4)]"></div>
-          {headerTitle}
-        </div>
-        {headerActions && <div className="flex items-center gap-3">{headerActions}</div>}
+      <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+        {headerTitle}
+        {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
       </div>
 
-      <div className="text-[10px] font-black text-marble/20 mb-6 px-4 py-2 bg-white/5 ares-cut-sm flex justify-between items-center uppercase tracking-[0.3em] border border-white/5">
-        <span>MODE: {view} {" // "} REGISTRY_SIZE: {rawCount} {" // "} STREAM_ACTIVE: {items.length}</span>
-        {isError && <span className="text-ares-red font-black animate-pulse" title={errorMessage}>{errorMessage || "TELEMETRY_FAULT"}</span>}
+      <div className="text-xs text-marble/20 mb-2 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+        <span>VIEW: {view} | RAW: {rawCount} | FILTERED: {items.length}</span>
+        {isError && <span className="text-ares-red font-bold animate-pulse" title={errorMessage}>{errorMessage || "API ERROR!"}</span>}
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         {items.length === 0 ? (
           <DashboardEmptyState
-            className="text-marble/20 text-[10px] font-black uppercase tracking-[0.4em] py-16 text-center border-2 border-dashed border-white/5 ares-cut-lg shadow-inner"
+            className="text-marble/50 text-xs italic py-8 text-center border border-dashed border-white/5 ares-cut-sm"
             icon={emptyIcon}
             message={emptyMessage}
           />
@@ -120,59 +117,56 @@ export default function GenericManagerList<T>({
             return (
               <div
                 key={id}
-                className={`bg-black/40 border backdrop-blur-sm transition-all hover:border-white/20 shadow-xl overflow-hidden group ${
-                  deleted ? "border-ares-red/30 bg-ares-red/[0.02]" : "border-white/5"
-                } ares-cut-lg p-8 flex flex-col justify-between gap-6 relative`}
+                className={`bg-black/40 border ${
+                  deleted ? "border-ares-red/30 bg-ares-red/[0.02]" : "border-white/10"
+                } ares-cut-sm p-4 flex flex-col justify-between gap-4 hover:border-white/20 transition-colors`}
               >
-                <div className="absolute top-0 right-0 w-1 h-0 bg-white/10 group-hover:h-full transition-all duration-500"></div>
-                <div className="flex-1 min-w-0 relative z-10">
-                  <div className="text-2xl font-black text-white uppercase tracking-tighter truncate flex items-center gap-4 group-hover:text-ares-cyan transition-colors leading-none mb-4">
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-marble/90 truncate flex items-center gap-2">
                     {renderTitle(item)}
-                    <div className="flex gap-2">
-                      {deleted && (
-                        <span className="text-[9px] font-black text-white bg-ares-red px-3 py-1 ares-cut-sm uppercase tracking-widest shadow-lg shadow-ares-red/20">
-                          DELETED
-                        </span>
-                      )}
-                      {isRevision && (
-                        <span className="text-[9px] font-black text-black bg-ares-gold px-3 py-1 ares-cut-sm uppercase tracking-widest shadow-lg shadow-ares-gold/20">
-                          REVISION
-                        </span>
-                      )}
-                      {status === "rejected" && (
-                        <span className="text-[9px] font-black text-white bg-ares-bronze px-3 py-1 ares-cut-sm uppercase tracking-widest shadow-lg shadow-ares-bronze/20">
-                          REJECTED
-                        </span>
-                      )}
-                      {status === "draft" && (
-                        <span className="text-[9px] font-black text-black bg-ares-gold px-3 py-1 ares-cut-sm uppercase tracking-widest shadow-lg shadow-ares-gold/20">
-                          DRAFT
-                        </span>
-                      )}
-                    </div>
+                    {deleted && (
+                      <span className="text-[9px] font-black text-white bg-ares-red px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        Deleted
+                      </span>
+                    )}
+                    {isRevision && (
+                      <span className="text-[9px] font-black text-black bg-ares-gold px-1.5 py-0.5 rounded uppercase tracking-wider shadow-[0_0_10px_rgba(255,191,0,0.3)]">
+                        Revision
+                      </span>
+                    )}
+                    {status === "rejected" && (
+                      <span className="text-[9px] font-black text-white bg-ares-bronze px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        Rejected
+                      </span>
+                    )}
+                    {status === "draft" && (
+                      <span className="text-[9px] font-black text-black bg-ares-gold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        Draft
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-6 mt-1">
+                  <div className="flex items-center gap-2 mt-1">
                     {renderSubtitle(item)}
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-white/5 relative z-10">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
                   {!deleted ? (
                     <>
                       {onEdit && (
                         <button
                           onClick={() => onEdit(item)}
-                          className="text-[10px] font-black text-white/60 hover:text-ares-cyan bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 ares-cut-sm transition-all uppercase tracking-widest shadow-md"
+                          className="text-xs font-bold text-marble/60 hover:text-ares-cyan bg-white/5 hover:bg-white/10 px-3 py-1 ares-cut-sm transition-colors"
                         >
-                          EDIT_RECORD
+                          EDIT
                         </button>
                       )}
                       {onHistory && view === "active" && (
                         <button
                           onClick={() => onHistory(item)}
-                          className="text-[10px] font-black text-white/60 hover:text-ares-gold bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 ares-cut-sm transition-all uppercase tracking-widest shadow-md"
+                          className="text-xs font-bold text-marble/60 hover:text-ares-gold bg-white/5 hover:bg-white/10 px-3 py-1 ares-cut-sm transition-colors"
                         >
-                          VIEW_HISTORY
+                          HISTORY
                         </button>
                       )}
                       {view === "pending" ? (
@@ -181,18 +175,18 @@ export default function GenericManagerList<T>({
                             <button
                               onClick={() => onApprove(item)}
                               disabled={isApprovePending?.(item)}
-                              className="text-[10px] font-black text-black bg-ares-cyan hover:bg-white px-5 py-2 ares-cut-sm transition-all disabled:opacity-50 uppercase tracking-widest shadow-lg shadow-ares-cyan/20"
+                              className="text-xs font-bold text-ares-cyan hover:text-white bg-ares-cyan/10 hover:bg-ares-cyan px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
                             >
-                              APPROVE_MISSION
+                              APPROVE
                             </button>
                           )}
                           {onReject && (
                             <button
                               onClick={() => onReject(item)}
                               disabled={isRejectPending?.(item)}
-                              className="text-[10px] font-black text-white bg-ares-red/80 hover:bg-ares-red px-5 py-2 ares-cut-sm transition-all disabled:opacity-50 uppercase tracking-widest shadow-lg shadow-ares-red/20"
+                              className="text-xs font-bold text-white bg-ares-red/80 hover:bg-ares-red px-3 py-1 ares-cut-sm transition-colors disabled:opacity-50"
                             >
-                              REJECT_DEPLOYMENT
+                              REJECT
                             </button>
                           )}
                         </>
@@ -200,15 +194,13 @@ export default function GenericManagerList<T>({
                         renderCustomActions && renderCustomActions(item)
                       )}
                       {onDelete && (
-                        <div className="ml-auto">
-                          <ClickToDeleteButton
-                            id={id}
-                            onDelete={() => onDelete(item)}
-                            isDeleting={isDeletePending?.(item) || false}
-                            confirmId={confirmId}
-                            setConfirmId={setConfirmId}
-                          />
-                        </div>
+                        <ClickToDeleteButton
+                          id={id}
+                          onDelete={() => onDelete(item)}
+                          isDeleting={isDeletePending?.(item) || false}
+                          confirmId={confirmId}
+                          setConfirmId={setConfirmId}
+                        />
                       )}
                     </>
                   ) : (
@@ -217,21 +209,19 @@ export default function GenericManagerList<T>({
                         <button
                           onClick={() => onRestore(item)}
                           disabled={isRestorePending?.(item)}
-                          className="text-[10px] font-black text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan hover:text-black border border-ares-cyan/20 px-5 py-2 ares-cut-sm transition-all uppercase tracking-widest shadow-lg shadow-ares-cyan/10"
+                          className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors"
                         >
-                          {isRestorePending?.(item) ? "RESTORING_ASSET..." : "RESTORE_TO_ACTIVE"}
+                          {isRestorePending?.(item) ? "RESTORING..." : "RESTORE"}
                         </button>
                       )}
                       {onPurge && (
-                        <div className="ml-auto">
-                          <ClickToDeleteButton
-                            id={`purge-${id}`}
-                            onDelete={() => onPurge(item)}
-                            isDeleting={isPurgePending?.(item) || false}
-                            confirmId={confirmId}
-                            setConfirmId={setConfirmId}
-                          />
-                        </div>
+                        <ClickToDeleteButton
+                          id={`purge-${id}`}
+                          onDelete={() => onPurge(item)}
+                          isDeleting={isPurgePending?.(item) || false}
+                          confirmId={confirmId}
+                          setConfirmId={setConfirmId}
+                        />
                       )}
                     </>
                   )}

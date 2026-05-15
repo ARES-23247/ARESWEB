@@ -35,62 +35,58 @@ export function TaskDocuments({ task }: TaskDocumentsProps) {
   ) || [];
 
   return (
-    <div className="flex flex-col gap-4 mt-8 border-t border-white/5 pt-8">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] flex items-center gap-3">
-          <div className="w-6 h-px bg-marble/10"></div>
-          <FileText size={12} className="text-ares-cyan" /> INTELLIGENCE_REPORTS
+    <div className="flex flex-col gap-3 mt-6 border-t border-white/5 pt-6">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-bold text-ares-gray uppercase tracking-widest flex items-center gap-2">
+          <FileText size={14} className="text-ares-cyan" /> Embedded Documents
         </div>
         <button
           onClick={() => setIsPickerOpen(true)}
           disabled={createAttachmentMutation.isPending}
-          className="text-[10px] font-black text-ares-cyan hover:text-white uppercase tracking-[0.2em] flex items-center gap-2 transition-all disabled:opacity-30 px-3 py-1.5 bg-ares-cyan/5 border border-ares-cyan/20 ares-cut-sm shadow-lg shadow-ares-cyan/5"
+          className="text-xs font-bold text-ares-cyan hover:text-white uppercase tracking-wider flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {createAttachmentMutation.isPending ? (
             <div className="w-3 h-3 border-2 border-ares-cyan border-t-transparent rounded-full animate-spin" />
           ) : (
             <Plus size={14} />
           )}
-          {createAttachmentMutation.isPending ? 'INGESTING...' : 'INGEST_NEW'}
+          {createAttachmentMutation.isPending ? 'Adding...' : 'Add'}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="flex flex-col gap-2">
         {documents.map(doc => {
           const info = getGoogleDocInfo(doc.url);
           const Icon = info.Icon;
           return (
             <div 
               key={doc.id} 
-              className={`flex items-center justify-between p-4 ares-cut-sm border border-white/5 bg-black/40 hover:bg-white/[0.05] transition-all group shadow-lg shadow-black/20 ${deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? 'opacity-30 pointer-events-none' : ''}`}
+              className={`flex items-center justify-between p-3 ares-cut-sm border border-white/5 bg-black/40 hover:bg-white/5 transition-colors group ${deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? 'opacity-50 pointer-events-none' : ''}`}
             >
-              <div className="flex items-center gap-5 flex-1 min-w-0">
-                <div className={`p-3 ares-cut-sm border shadow-inner ${info.bg} ${info.border}`}>
-                  <Icon size={20} className={info.color} />
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className={`p-2 ares-cut-sm border ${info.bg} ${info.border}`}>
+                  <Icon size={16} className={info.color} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <a 
-                    href={doc.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-[11px] font-black uppercase tracking-widest text-white hover:text-ares-cyan transition-all flex items-center gap-2"
-                  >
-                    {doc.title}
-                    <ExternalLink size={12} className="text-marble/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                  </a>
-                  <span className="text-[9px] font-black text-marble/20 uppercase tracking-[0.2em]">{info.label.toUpperCase()}_REPORT</span>
-                </div>
+                <a 
+                  href={doc.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-sm font-bold text-white hover:text-ares-cyan truncate transition-colors flex items-center gap-1.5 flex-1"
+                >
+                  {doc.title}
+                  <ExternalLink size={12} className="text-ares-gray opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </a>
               </div>
               <button
                 onClick={() => deleteAttachmentMutation.mutate({ id: task.id, attachmentId: doc.id })}
                 disabled={deleteAttachmentMutation.isPending}
-                className="p-3 ml-4 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/30 shadow-xl disabled:opacity-30"
-                title="Decommission Report"
+                className="p-1.5 ml-2 text-ares-gray hover:text-ares-red transition-all rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Remove Document"
               >
                 {deleteAttachmentMutation.variables?.attachmentId === doc.id && deleteAttachmentMutation.isPending ? (
-                  <div className="w-5 h-5 border-2 border-ares-red border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-ares-red border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <X size={18} />
+                  <X size={16} />
                 )}
               </button>
             </div>

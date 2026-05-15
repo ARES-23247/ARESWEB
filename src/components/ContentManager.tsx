@@ -44,98 +44,106 @@ export default function ContentManager({
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col min-h-0 bg-obsidian">
-      <div className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-black/40 border border-white/5 p-10 ares-cut-lg backdrop-blur-sm relative overflow-hidden group">
-        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover:h-full transition-all duration-700"></div>
-        <div className="flex flex-col md:flex-row md:items-center gap-8 relative z-10">
+    <div className="flex-1 w-full flex flex-col min-h-0">
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">
-              {mode === "blog" ? "EDITORIAL_DEPLOYS" : mode === "event" ? "EVENT_LOGISTICS" : mode === "docs" ? "KNOWLEDGE_BASE" : mode === "seasons" ? "LEGACY_ARCHIVE" : mode === "badges" ? "MERIT_REGISTRY" : "CONTENT_OPERATIONS"}
+            <h2 className="text-2xl font-bold text-white tracking-tighter">
+              {mode === "blog" ? "Manage Blogs & News" : mode === "event" ? "Manage Events" : mode === "docs" ? "Manage Documentation" : mode === "seasons" ? "Manage Seasonal Legacy" : mode === "badges" ? "Manage User Badges" : "Manage Content"}
             </h2>
-            <p className="text-marble/20 text-[10px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-              <span className="w-6 h-px bg-white/10"></span>
-              Review and manage the lifecycle of Platform resources.
-            </p>
+            <p className="text-marble/60 text-sm mt-1">Review and manage the lifecycle of Platform resources.</p>
           </div>
           {mode === "blog" && (
-            <Link to="/dashboard/blog" className="flex items-center gap-3 bg-ares-red/10 hover:bg-ares-red text-white px-6 py-3 ares-cut-sm border border-ares-red/30 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-ares-red/10 self-start sm:self-auto">
-              <PenTool size={16} /> INITIALIZE_POST
+            <Link to="/dashboard/blog" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <PenTool size={16} /> New Blog Post
             </Link>
           )}
           {mode === "event" && (
-            <Link to="/dashboard/event" className="flex items-center gap-3 bg-ares-red/10 hover:bg-ares-red text-white px-6 py-3 ares-cut-sm border border-ares-red/30 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-ares-red/10 self-start sm:self-auto">
-              <Calendar size={16} /> SCHEDULE_MISSION
+            <Link to="/dashboard/event" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <Calendar size={16} /> New Event
             </Link>
           )}
           {mode === "docs" && (
-            <Link to="/dashboard/docs" className="flex items-center gap-3 bg-ares-red/10 hover:bg-ares-red text-white px-6 py-3 ares-cut-sm border border-ares-red/30 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-ares-red/10 self-start sm:self-auto">
-              <Book size={16} /> COMMIT_KNOWLEDGE
+            <Link to="/dashboard/docs" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <Book size={16} /> New Document
             </Link>
           )}
           {mode === "seasons" && (
-            <Link to="/dashboard/seasons" className="flex items-center gap-3 bg-ares-red/10 hover:bg-ares-red text-white px-6 py-3 ares-cut-sm border border-ares-red/30 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-ares-red/10 self-start sm:self-auto">
-              <History size={16} /> FORGE_LEGACY
+            <Link to="/dashboard/seasons" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
+              <History size={16} /> Forge Legacy
             </Link>
           )}
         </div>
         
-        <div className="flex bg-white/5 p-1.5 ares-cut-sm border border-white/10 self-start xl:self-auto w-full xl:w-auto overflow-x-auto custom-scrollbar shadow-inner gap-1 relative z-10">
+        <div className="flex bg-obsidian/50 p-1 ares-cut-sm border border-white/10 self-start md:self-auto w-full md:w-auto overflow-x-auto custom-scrollbar shadow-inner gap-1">
           {mode === "event" ? (
             <>
-              {[
-                { id: "all", label: "ALL_NODES" },
-                { id: "internal", label: "PRACTICE", color: "bg-ares-red" },
-                { id: "outreach", label: "OUTREACH", color: "bg-ares-gold" },
-                { id: "external", label: "COMMUNITY", color: "bg-ares-cyan" }
-              ].map(t => (
-                <button 
-                  key={t.id}
-                  onClick={() => setView(t.id as ViewType)}
-                  className={`px-4 py-2 ares-cut-sm text-[9px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-2 ${view === t.id || (t.id === "all" && view === "active") ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-marble/40 hover:text-marble'}`}
-                >
-                  {t.color && <span className={`w-1.5 h-1.5 rounded-full ${t.color}`}></span>}
-                  {t.label}
-                </button>
-              ))}
+              <button 
+                onClick={() => setView("all")}
+                className={`px-3 py-1.5 ares-cut-sm text-xs font-bold transition-all whitespace-nowrap ${view === "all" || view === "active" ? 'bg-white/10 text-white border border-white/20 shadow-sm' : 'text-marble/50 hover:text-marble'}`}
+              >
+                ALL
+              </button>
+              <button 
+                onClick={() => setView("internal")}
+                className={`px-3 py-1.5 ares-cut-sm text-xs sm:text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${view === "internal" ? 'bg-white/10 text-white border border-white/20 shadow-sm' : 'text-marble/50 hover:text-marble'}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-ares-red"></span>
+                PRACTICES
+              </button>
+              <button 
+                onClick={() => setView("outreach")}
+                className={`px-3 py-1.5 ares-cut-sm text-xs sm:text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${view === "outreach" ? 'bg-white/10 text-white border border-white/20 shadow-sm' : 'text-marble/50 hover:text-marble'}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-ares-gold"></span>
+                OUTREACH
+              </button>
+              <button 
+                onClick={() => setView("external")}
+                className={`px-3 py-1.5 ares-cut-sm text-xs sm:text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${view === "external" ? 'bg-white/10 text-white border border-white/20 shadow-sm' : 'text-marble/50 hover:text-marble'}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-ares-cyan"></span>
+                COMMUNITY
+              </button>
               <button 
                 onClick={() => setView("pending")}
-                className={`relative px-4 py-2 ares-cut-sm text-[9px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap ${view === "pending" ? 'bg-ares-gold/20 text-ares-gold border border-ares-gold/20 shadow-lg shadow-ares-gold/10' : 'text-marble/40 hover:text-ares-gold/60'} ${((pendingCount ?? 0) > 0 && view !== "pending") ? 'animate-pulse text-ares-danger' : ''}`}
+                className={`relative px-3 py-1.5 ares-cut-sm text-xs sm:text-xs font-bold transition-all whitespace-nowrap ${view === "pending" ? 'bg-ares-gold/10 text-ares-gold border border-ares-gold/20 shadow-sm' : 'text-marble/50 hover:text-ares-gold/60'} ${((pendingCount ?? 0) > 0 && view !== "pending") ? 'animate-pulse text-ares-danger shadow-[0_0_10px_rgba(239,68,68,0.2)]' : ''}`}
               >
-                PENDING_REVIEWS
+                PENDING
                 {(pendingCount ?? 0) > 0 && view !== "pending" ? (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-ares-danger rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                 ) : null}
               </button>
               <button 
                 onClick={() => setView("trash")}
-                className={`px-4 py-2 ares-cut-sm text-[9px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap ${view === "trash" ? 'bg-ares-red/20 text-ares-red border border-ares-red/20 shadow-lg shadow-ares-red/10' : 'text-marble/40 hover:text-ares-red/60'}`}
+                className={`px-3 py-1.5 ares-cut-sm text-xs sm:text-xs font-bold transition-all whitespace-nowrap ${view === "trash" ? 'bg-ares-red/10 text-ares-red border border-ares-red/20 shadow-sm' : 'text-marble/50 hover:text-ares-red/60'}`}
               >
-                TRASH_BIN
+                TRASH
               </button>
             </>
           ) : (
             <>
-              {[
-                { id: "active", label: "ACTIVE_DEPLOYS" },
-                { id: "pending", label: "PENDING_REVIEWS", special: "gold" },
-                { id: "trash", label: "TRASH_BIN", special: "red" }
-              ].map(t => (
-                <button 
-                  key={t.id}
-                  onClick={() => setView(t.id as ViewType)}
-                  className={`relative px-5 py-2 ares-cut-sm text-[9px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap 
-                    ${view === t.id 
-                      ? (t.special === "gold" ? 'bg-ares-gold/20 text-ares-gold border border-ares-gold/20' : t.special === "red" ? 'bg-ares-red/20 text-ares-red border border-ares-red/20' : 'bg-white/10 text-ares-cyan border border-white/20 shadow-lg') 
-                      : 'text-marble/40 hover:text-marble'
-                    } 
-                    ${t.id === "pending" && (pendingCount ?? 0) > 0 && view !== "pending" ? 'animate-pulse text-ares-danger' : ''}`}
-                >
-                  {t.label}
-                  {t.id === "pending" && (pendingCount ?? 0) > 0 && view !== "pending" ? (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-ares-danger rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                  ) : null}
-                </button>
-              ))}
+              <button 
+                onClick={() => setView("active")}
+                className={`px-4 py-1.5 ares-cut-sm text-xs font-bold transition-all whitespace-nowrap ${view === "active" ? 'bg-white/10 text-ares-cyan border border-white/20 shadow-sm' : 'text-marble/50 hover:text-marble'}`}
+              >
+                ACTIVE
+              </button>
+              <button 
+                onClick={() => setView("pending")}
+                className={`relative px-4 py-1.5 ares-cut-sm text-xs font-bold transition-all whitespace-nowrap ${view === "pending" ? 'bg-ares-gold/10 text-ares-gold border border-ares-gold/20 shadow-sm' : 'text-marble/50 hover:text-ares-gold/60'} ${((pendingCount ?? 0) > 0 && view !== "pending") ? 'animate-pulse text-ares-danger shadow-[0_0_10px_rgba(239,68,68,0.2)]' : ''}`}
+              >
+                PENDING
+                {(pendingCount ?? 0) > 0 && view !== "pending" ? (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-ares-danger rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                ) : null}
+              </button>
+              <button 
+                onClick={() => setView("trash")}
+                className={`px-4 py-1.5 ares-cut-sm text-xs font-bold transition-all whitespace-nowrap ${view === "trash" ? 'bg-ares-red/10 text-ares-red border border-ares-red/20 shadow-sm' : 'text-marble/50 hover:text-ares-red/60'}`}
+              >
+                TRASH
+              </button>
             </>
           )}
         </div>

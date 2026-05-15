@@ -72,15 +72,15 @@ export default function SeasonManagerTab({
       emptyIcon={<History size={24} />}
       emptyMessage={`No ${view} seasons found.`}
       headerTitle={
-        <div className="flex flex-col">
-          <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-            <History size={16} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
-            SEASON_ARCHIVE // LEGACY
-          </h2>
-          <p className="text-[9px] font-black text-marble/20 uppercase tracking-[0.4em] mt-1">
-            HISTORICAL_RECORDS // CHRONOLOGICAL_INDEX
-          </p>
-        </div>
+        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 px-1 flex items-center gap-2">
+          <History size={12} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
+          Season Archive
+          {isError && (
+            <span className="ml-auto text-[9px] text-ares-red animate-pulse flex items-center gap-1">
+              TELEMETRY FAULT
+            </span>
+          )}
+        </h3>
       }
       getItemId={(s) => s.startYear.toString()}
       isItemDeleted={(s) => Number(s.isDeleted) === 1}

@@ -17,46 +17,45 @@ function JudgeCodeRow({ code: c, onCopy }: JudgeCodeRowProps) {
   const isPending = deleteMutation.isPending;
 
   return (
-    <tr className={`hover:bg-white/[0.04] transition-all group ${isExpired ? "opacity-30 grayscale" : ""} ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
-      <td className="px-8 py-5 relative">
-        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-300"></div>
-        <p className="text-white font-black uppercase tracking-wider text-sm">{c.label || "UNTITLED_NODE"}</p>
-        <p className="text-[9px] text-marble/20 font-black uppercase tracking-[0.2em] mt-1 italic">INITIALIZED: {new Date(c.createdAt).toLocaleDateString()}</p>
+    <tr className={`hover:bg-white/[0.02] transition-all ${isExpired ? "opacity-40" : ""} ${isPending ? "opacity-50 grayscale bg-ares-red/5" : ""}`}>
+      <td className="px-6 py-4">
+        <p className="text-white font-bold">{c.label || "Untitled"}</p>
+        <p className="text-[10px] text-marble/40 font-mono uppercase tracking-tighter">Created {new Date(c.createdAt).toLocaleDateString()}</p>
       </td>
-      <td className="px-8 py-5">
-        <div className="flex items-center gap-3">
-          <code className="bg-black/60 px-4 py-2 ares-cut-sm border border-white/10 text-ares-cyan font-black tracking-[0.3em] text-sm shadow-inner">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <code className="bg-black/60 px-3 py-1.5 ares-cut-sm border border-white/10 text-ares-cyan font-black tracking-widest text-sm">
             {c.code}
           </code>
           <button 
             onClick={() => onCopy(c.code)}
-            className="p-2 text-marble/20 hover:text-white transition-all bg-white/5 hover:bg-white/10 ares-cut-sm border border-white/5"
+            className="p-1.5 text-marble/40 hover:text-white transition-colors"
             title="Copy Code"
           >
             <Copy size={14} />
           </button>
         </div>
       </td>
-      <td className="px-8 py-5">
+      <td className="px-6 py-4">
         {c.expiresAt ? (
-          <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isExpired ? "text-ares-red animate-pulse" : "text-marble/40"}`}>
-            <Calendar size={12} className={isExpired ? "text-ares-red" : "text-white/20"} />
-            {isExpired ? "DECOMMISSIONED" : new Date(c.expiresAt).toLocaleDateString()}
+          <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpired ? "text-ares-red" : "text-marble/60"}`}>
+            <Calendar size={12} />
+            {new Date(c.expiresAt).toLocaleDateString()}
           </div>
         ) : (
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-ares-cyan bg-ares-cyan/5 px-3 py-1 ares-cut-sm border border-ares-cyan/10">PERMANENT_ACCESS</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-ares-cyan/40">Permanent Access</span>
         )}
       </td>
-      <td className="px-8 py-5">
-        <div className="flex items-center gap-3">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
           <a 
             href={`/judges?code=${c.code}`} 
             target="_blank" 
             rel="noreferrer"
-            className="p-3 bg-white/5 hover:bg-ares-cyan text-marble/40 hover:text-black ares-cut-sm border border-white/5 hover:border-ares-cyan transition-all duration-300"
+            className="p-2 bg-white/5 hover:bg-ares-cyan/20 text-marble/60 hover:text-ares-cyan ares-cut-sm border border-white/10 transition-all"
             title="Test as Judge"
           >
-            <ExternalLink size={16} />
+            <ExternalLink size={14} />
           </a>
           <button
             onClick={() => {
@@ -67,10 +66,10 @@ function JudgeCodeRow({ code: c, onCopy }: JudgeCodeRowProps) {
               }
             }}
             disabled={isPending}
-            className={`p-3 bg-white/5 hover:bg-ares-red text-marble/40 hover:text-white ares-cut-sm border border-white/5 hover:border-ares-red transition-all duration-300 ${isPending ? 'animate-pulse' : ''}`}
+            className={`p-2 bg-white/5 hover:bg-ares-red/20 text-marble/60 hover:text-ares-red ares-cut-sm border border-white/10 transition-all ${isPending ? 'animate-pulse' : ''}`}
             title="Revoke Access"
           >
-            {isPending ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            {isPending ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
           </button>
         </div>
       </td>
@@ -125,65 +124,63 @@ export default function JudgeCodeManager() {
       )}
 
       {/* Generate Action */}
-      <div className="bg-black/40 border border-white/5 ares-cut-lg p-10 backdrop-blur-sm relative group overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
-        <h3 className="text-2xl font-black text-white mb-8 uppercase tracking-tighter flex items-center gap-3">
-          <Plus size={28} className="text-ares-cyan" /> INITIALIZE_ACCESS_NODE
+      <div className="bg-obsidian/50 border border-white/5 ares-cut-lg p-6">
+        <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest flex items-center gap-2">
+          <Plus size={16} className="text-ares-cyan" /> Create New Access Code
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-2">
-            <label htmlFor="judge-code-label" className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/40 ml-1">LABEL_EVENT_IDENTIFIER</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label htmlFor="judge-code-label" className="text-[10px] font-black uppercase tracking-widest text-marble/60 ml-1">Label / Event Name</label>
             <input 
               id="judge-code-label"
               type="text"
-              placeholder="E.G. CHAMPIONSHIP_2026"
-              className="w-full bg-black/60 border border-white/10 ares-cut-sm px-5 py-4 text-xs font-black uppercase tracking-widest text-white focus:border-ares-cyan focus:outline-none placeholder:text-white/5"
+              placeholder="e.g. Championship 2026"
+              className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-2.5 text-sm font-bold text-white focus:border-ares-cyan focus:outline-none"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
             />
           </div>
-          <div className="space-y-2">
-            <label htmlFor="judge-code-expiry" className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/40 ml-1">DECOMMISSION_DATETIME (OPTIONAL)</label>
+          <div className="space-y-1">
+            <label htmlFor="judge-code-expiry" className="text-[10px] font-black uppercase tracking-widest text-marble/60 ml-1">Expiration (Optional)</label>
             <div className="relative">
               <input 
                 id="judge-code-expiry"
                 type="datetime-local"
-                className="w-full bg-black/60 border border-white/10 ares-cut-sm px-5 py-4 text-xs font-black uppercase tracking-widest text-white focus:border-ares-cyan focus:outline-none [color-scheme:dark]"
+                className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-2.5 text-sm font-bold text-white focus:border-ares-cyan focus:outline-none [color-scheme:dark]"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
               />
-              <Calendar className="absolute right-5 top-4 text-marble/20 pointer-events-none" size={18} />
+              <Calendar className="absolute right-3 top-3 text-marble/30 pointer-events-none" size={16} />
             </div>
           </div>
           <div className="flex items-end">
             <button
               disabled={createMutation.isPending}
               onClick={() => createMutation.mutate({ label, expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined })}
-              className="w-full py-4 bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/30 hover:bg-ares-cyan hover:text-black font-black uppercase tracking-[0.2em] text-[10px] ares-cut-sm transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-ares-cyan/5"
+              className="w-full py-2.5 bg-ares-cyan hover:opacity-90 text-black font-black uppercase tracking-widest ares-cut-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {createMutation.isPending ? <RefreshCw className="animate-spin" size={18} /> : <Plus size={18} />} 
-              GENERATE_ENCRYPTION_KEY
+              {createMutation.isPending ? <RefreshCw className="animate-spin" size={16} /> : <Plus size={16} />} 
+              Generate Code
             </button>
           </div>
         </div>
       </div>
 
       {/* List */}
-      <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden backdrop-blur-sm">
+      <div className="bg-obsidian/50 border border-white/5 ares-cut-lg overflow-hidden">
         {codes.length === 0 ? (
-          <div className="p-16 text-center text-marble/20 font-black uppercase tracking-[0.4em] text-[10px] flex flex-col items-center justify-center">
-            <ShieldCheck size={48} className="text-white/5 mb-4" />
-            NO_ACCESS_NODES_ACTIVE
+          <div className="p-8 text-center text-white/60 font-bold uppercase tracking-widest text-xs">
+            No judge access codes active.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-black/60 border-b border-white/10">
+              <thead className="bg-black/40 border-b border-white/5">
                 <tr>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-marble/40">NODE_IDENTIFIER</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-marble/40">ENCRYPTION_KEY</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-marble/40">OPERATIONAL_STATUS</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-marble/40">COMMAND_OVERRIDE</th>
+                  <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Label</th>
+                  <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Access Code</th>
+                  <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Expires</th>
+                  <th className="px-6 py-3 text-xs font-black uppercase tracking-widest text-white/60">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">

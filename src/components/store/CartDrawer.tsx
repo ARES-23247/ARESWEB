@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, ShoppingCart, Plus, Minus, Loader2, ShoppingBag } from "lucide-react";
+import { X, ShoppingCart, Plus, Minus, Loader2 } from "lucide-react";
 import { useCartStore } from "../../store/useCartStore";
 import { useCreateCheckoutSession } from "../../api/store";
 
@@ -39,86 +39,79 @@ export const CartDrawer: React.FC = () => {
     <>
       <button 
         type="button"
-        className="fixed inset-0 bg-black/80 z-40 backdrop-blur-md transition-opacity w-full border-none cursor-default"
+        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity w-full border-none cursor-default"
         onClick={() => setIsOpen(false)}
         aria-label="Close cart backdrop"
       />
-      <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-obsidian border-l border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] z-50 flex flex-col transform transition-transform duration-500 ease-[0.23, 1, 0.32, 1]">
-        
-        {/* Header */}
-        <div className="p-8 border-b border-white/5 flex items-center justify-between bg-black/20">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-ares-red/10 ares-cut-sm border border-ares-red/20">
-              <ShoppingCart className="w-6 h-6 text-ares-red" />
-            </div>
-            <div>
-              <h2 className="font-black text-xl text-white uppercase tracking-tighter">Your Manifest</h2>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30">
-                {items.length} {items.length === 1 ? 'Deployment' : 'Deployments'}
-              </span>
-            </div>
+      <div className="fixed inset-y-0 right-0 w-full md:w-[400px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-ares-gold" />
+            <h2 className="font-heading font-bold text-lg text-white">Your Cart</h2>
+            <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded-full ml-2">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
+            </span>
           </div>
           <button 
             onClick={() => setIsOpen(false)}
-            className="p-3 text-marble/20 hover:text-ares-red hover:bg-ares-red/10 ares-cut-sm transition-all"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-marble/20 space-y-6">
-              <ShoppingCart className="w-24 h-24 opacity-10" />
-              <p className="font-black uppercase tracking-widest text-sm">Manifest is empty</p>
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+              <ShoppingCart className="w-16 h-16 opacity-20" />
+              <p>Your cart is empty.</p>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="clipped-button-sm bg-white/5 text-marble/40 hover:text-white border border-white/10"
+                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
               >
-                Return to Forge
+                Continue Shopping
               </button>
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.product.id} className="flex gap-6 bg-black/40 p-5 ares-cut-lg border border-white/5 group">
-                <div className="w-24 h-24 bg-white/5 ares-cut-sm overflow-hidden flex-shrink-0 border border-white/5">
+              <div key={item.product.id} className="flex gap-4 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
                   {item.product.imageUrl ? (
-                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-marble/10">
-                       <ShoppingBag size={32} />
+                    <div className="w-full h-full flex items-center justify-center text-slate-600">
+                      No Image
                     </div>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-between py-1">
+                <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-black text-white uppercase tracking-tight leading-tight group-hover:text-ares-red transition-colors">{item.product.name}</h3>
-                    <p className="text-ares-cyan font-black text-sm mt-2 tracking-widest">
+                    <h3 className="font-bold text-white leading-tight">{item.product.name}</h3>
+                    <p className="text-ares-gold font-mono mt-1">
                       ${(item.product.priceCents / 100).toFixed(2)}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-4 bg-black/40 ares-cut-sm border border-white/5 p-1">
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-3 bg-slate-900 rounded-lg border border-slate-700 p-1">
                       <button 
                         onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="p-2 hover:bg-white/5 ares-cut-sm text-marble/40 hover:text-white transition-all"
+                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-3 h-3" />
                       </button>
-                      <span className="text-sm font-black text-white w-6 text-center">{item.quantity}</span>
+                      <span className="text-sm font-mono text-white w-4 text-center">{item.quantity}</span>
                       <button 
                         onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="p-2 hover:bg-white/5 ares-cut-sm text-marble/40 hover:text-white transition-all"
+                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3 h-3" />
                       </button>
                     </div>
                     <button
                       onClick={() => removeItem(item.product.id)}
-                      className="text-[10px] font-black uppercase tracking-widest text-ares-red/40 hover:text-ares-red transition-colors"
+                      className="text-xs text-ares-danger hover:text-ares-danger/80 transition-colors"
                     >
-                      Eject
+                      Remove
                     </button>
                   </div>
                 </div>
@@ -127,35 +120,28 @@ export const CartDrawer: React.FC = () => {
           )}
         </div>
 
-        {/* Footer */}
         {items.length > 0 && (
-          <div className="p-8 border-t border-white/10 bg-black/40 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-marble/40">Total Valuation</span>
-              <span className="text-3xl font-black text-white tracking-tighter">
+          <div className="p-4 border-t border-slate-800 bg-slate-900/90 backdrop-blur-md">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-slate-400">Subtotal</span>
+              <span className="text-xl font-bold text-white font-mono">
                 ${(getCartTotal() / 100).toFixed(2)}
               </span>
             </div>
             <button
               onClick={handleCheckout}
               disabled={isCheckingOut}
-              className="clipped-button w-full bg-ares-red text-white py-4 shadow-2xl shadow-ares-red/20 hover:shadow-ares-red/40 disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full bg-ares-gold hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,183,27,0.2)] hover:shadow-[0_0_25px_rgba(255,183,27,0.4)] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isCheckingOut ? (
                 <>
-                  <Loader2 className="w-6 h-6 animate-spin mr-3" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Processing...
                 </>
               ) : (
-                <>
-                  Confirm Deployment
-                  <Plus size={20} className="ml-2 group-hover:rotate-90 transition-transform" />
-                </>
+                "Proceed to Checkout"
               )}
             </button>
-            <div className="mt-6 text-center">
-               <span className="text-[8px] font-black uppercase tracking-[0.4em] text-marble/10">Secure Checkout // Stripe Terminal</span>
-            </div>
           </div>
         )}
       </div>
