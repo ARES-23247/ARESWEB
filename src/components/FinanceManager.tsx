@@ -31,11 +31,11 @@ import {
 const PIPELINE_COLUMNS = ["potential", "contacted", "pledged", "secured", "lost"] as const;
 
 const pipelineConfig: Record<string, KanbanColumnConfig> = {
-  potential: { bg: "bg-white/5", text: "text-marble/50", border: "border-white/10", label: "Potential", icon: Circle },
-  contacted: { bg: "bg-ares-cyan/10", text: "text-ares-cyan", border: "border-ares-cyan/30", label: "Contacted", icon: UserPlus },
-  pledged:   { bg: "bg-ares-gold/10", text: "text-ares-gold", border: "border-ares-gold/30", label: "Pledged", icon: Handshake },
-  secured:   { bg: "bg-ares-green/10", text: "text-ares-green", border: "border-ares-green/30", label: "Secured", icon: CheckCircle2 },
-  lost:      { bg: "bg-ares-red/10", text: "text-ares-red", border: "border-ares-red/30", label: "Lost", icon: XCircleIcon },
+  potential: { bg: "bg-white/[0.03]", text: "text-marble/40", border: "border-white/5", label: "POTENTIAL_LEAD", icon: Circle },
+  contacted: { bg: "bg-ares-cyan/5", text: "text-ares-cyan", border: "border-ares-cyan/20", label: "ENGAGED_CONTACT", icon: UserPlus },
+  pledged:   { bg: "bg-ares-gold/5", text: "text-ares-gold", border: "border-ares-gold/20", label: "PLEDGED_COMMIT", icon: Handshake },
+  secured:   { bg: "bg-ares-green/5", text: "text-ares-green", border: "border-ares-green/20", label: "SECURED_FUNDS", icon: CheckCircle2 },
+  lost:      { bg: "bg-ares-red/5", text: "text-ares-red", border: "border-ares-red/20", label: "DROPPED_LINK", icon: XCircleIcon },
 };
 
 export type { PipelineItem, TransactionItem };
@@ -195,36 +195,39 @@ export default function FinanceManager() {
         ]}
       />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex bg-black/40 p-1 ares-cut-sm border border-white/5">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex bg-black/40 p-1.5 ares-cut-sm border border-white/5 shadow-inner backdrop-blur-md">
           <button 
             onClick={() => { setActiveTab("pipeline"); setIsAdding(false); }}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ares-cut-sm ${activeTab === 'pipeline' ? 'bg-ares-red text-white' : 'text-marble/60 hover:text-white'}`}
+            className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all ares-cut-sm ${activeTab === 'pipeline' ? 'bg-ares-red text-white shadow-lg shadow-ares-red/20' : 'text-marble/40 hover:text-white hover:bg-white/5'}`}
           >
-            Sponsorship Pipeline
+            SPONSORSHIP_PIPELINE
           </button>
           <button 
             onClick={() => { setActiveTab("ledger"); setIsAdding(false); }}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ares-cut-sm ${activeTab === 'ledger' ? 'bg-ares-red text-white' : 'text-marble/60 hover:text-white'}`}
+            className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all ares-cut-sm ${activeTab === 'ledger' ? 'bg-ares-red text-white shadow-lg shadow-ares-red/20' : 'text-marble/40 hover:text-white hover:bg-white/5'}`}
           >
-            Ledger & Expenses
+            CENTRAL_LEDGER
           </button>
         </div>
 
-        <SeasonPicker value={selectedSeason || ""} onChange={(v) => setSelectedSeason(v ? parseInt(v) : null)} />
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-marble/20">SEASON_FILTER:</span>
+          <SeasonPicker value={selectedSeason || ""} onChange={(v) => setSelectedSeason(v ? parseInt(v) : null)} />
+        </div>
       </div>
 
       <DashboardPageHeader
-        title={activeTab === 'pipeline' ? "Sponsorship Pipeline" : "Financial Ledger"}
-        subtitle={activeTab === 'pipeline' ? "Track potential funding sources and company outreach." : "Record every income and expense for the team's budget."}
-        icon={activeTab === 'pipeline' ? <Building className="text-ares-cyan" /> : <DollarSign className="text-ares-gold" />}
+        title={activeTab === 'pipeline' ? "PIPELINE_DASHBOARD" : "FINANCIAL_LEDGER"}
+        subtitle={activeTab === 'pipeline' ? "TRACK_POTENTIAL_FUNDING_SOURCES_AND_OUTREACH_TELEMETRY" : "RECONCILE_EVERY_INCOME_AND_EXPENSE_IN_CORE_BUDGET"}
+        icon={activeTab === 'pipeline' ? <Building size={32} /> : <DollarSign size={32} />}
         action={
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-2 px-4 py-2 bg-ares-red text-white font-bold ares-cut-sm hover:bg-ares-danger transition-colors shadow-lg shadow-ares-red/20"
+            className={`flex items-center gap-3 px-8 py-3 font-black uppercase tracking-[0.2em] text-[10px] ares-cut-sm transition-all duration-300 shadow-xl ${isAdding ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20' : 'bg-ares-red text-white border border-ares-red/50 hover:bg-ares-danger shadow-ares-red/20'}`}
           >
             {isAdding ? <XCircle size={18} /> : <Plus size={18} />}
-            {isAdding ? "Cancel" : activeTab === 'pipeline' ? "Add Lead" : "Add Transaction"}
+            {isAdding ? "ABORT_ENTRY" : activeTab === 'pipeline' ? "INITIALIZE_LEAD" : "RECORD_TRANSACTION"}
           </button>
         }
       />
@@ -452,52 +455,56 @@ export default function FinanceManager() {
           </AnimatePresence>
         </>
       ) : (
-        <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-white/5 border-b border-white/5">
-                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-marble/60">Date</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-marble/60">Category</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-marble/60">Description</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-marble/60 text-right">Amount</th>
-                <th className="p-4 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {transactions.map((t: TransactionItem) => (
-                <tr key={t.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="p-4 text-xs font-bold text-marble/60">{t.date}</td>
-                  <td className="p-4">
-                    <span className="px-2 py-0.5 bg-white/5 border border-white/10 ares-cut-sm text-[10px] font-black uppercase tracking-widest text-marble">
-                      {t.category}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-white font-medium">{t.description || "—"}</td>
-                  <td className={`p-4 text-sm font-black text-right ${t.type === 'income' ? 'text-ares-green' : 'text-ares-red'}`}>
-                    {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
-                  </td>
-                  <td className="p-4">
-                    <button 
-                      onClick={() => confirm("Delete transaction?") && handleDeleteTransaction(t.id!)} 
-                      className="opacity-0 group-hover:opacity-100 text-marble/20 hover:text-ares-red transition-all"
-                      title="Delete transaction"
-                      aria-label="Delete transaction"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {transactions.length === 0 && (
+      {activeTab === 'ledger' && (
+        <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden shadow-2xl backdrop-blur-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-black/60 border-b border-white/10">
                 <tr>
-                  <td colSpan={5} className="p-12 text-center">
-                    <DashboardEmptyState icon={<RefreshCw size={48} />} message="No transactions recorded for this season." />
-                  </td>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-marble/40">TIMESTAMP</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-marble/40">CLASSIFICATION</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-marble/40">OPERATIONAL_DESCRIPTION</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-marble/40 text-right">QUANTUM_VALUE</th>
+                  <th className="px-8 py-6 w-10"></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {transactions.map((t: TransactionItem) => (
+                  <tr key={t.id} className="hover:bg-white/[0.04] transition-all group">
+                    <td className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-marble/20">{t.date}</td>
+                    <td className="px-8 py-5">
+                      <span className="px-3 py-1 bg-white/5 border border-white/10 ares-cut-sm text-[10px] font-black uppercase tracking-widest text-marble/60">
+                        {t.category}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-sm font-black uppercase tracking-tight text-white">{t.description || "—"}</td>
+                    <td className={`px-8 py-5 text-sm font-black text-right tracking-tighter ${t.type === 'income' ? 'text-ares-green' : 'text-ares-red'}`}>
+                      {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
+                    </td>
+                    <td className="px-8 py-5">
+                      <button 
+                        onClick={() => confirm("Delete transaction?") && handleDeleteTransaction(t.id!)} 
+                        className="opacity-0 group-hover:opacity-100 p-2 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 hover:bg-ares-red/10 border border-white/5 hover:border-ares-red/20"
+                        title="Delete transaction"
+                        aria-label="Delete transaction"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-20 text-center bg-white/[0.02]">
+                      <DashboardEmptyState icon={<RefreshCw size={48} className="text-marble/10" />} message="NO_TRANSACTIONS_RECORDED_FOR_THIS_SEASON" />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+      )}
       )}
     </div>
   );

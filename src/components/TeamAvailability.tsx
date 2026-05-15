@@ -92,61 +92,70 @@ export default function TeamAvailability() {
   }) : [];
 
   return (
-    <div className="bg-obsidian/50 border border-white/5 ares-cut p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
-          <Users size={16} className="text-ares-cyan" />
-          Team Availability
-        </h3>
+    <div className="bg-black/40 border border-white/5 ares-cut-lg p-10 h-full flex flex-col shadow-2xl backdrop-blur-sm relative overflow-hidden group">
+      <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
+      <div className="flex items-center justify-between mb-10 relative z-10">
+        <div>
+          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3">
+            <Users size={16} className="text-ares-cyan" />
+            Operational // Team_Radar
+          </h3>
+          <div className="mt-2 text-marble/20 text-[8px] font-black uppercase tracking-[0.3em]">SECURE_TELEMETRY // SYNC_ACTIVE</div>
+        </div>
         {presences && (
-          <span className="text-xs font-bold text-marble/60 uppercase tracking-wider">
-            {sortedMembers.filter(m => m.status === "active").length} Online
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-[9px] font-black text-ares-cyan uppercase tracking-[0.2em] px-3 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm animate-pulse">
+              {sortedMembers.filter(m => m.status === "active").length} ACTIVE_NODES
+            </span>
+          </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-[250px] scrollbar-thin scrollbar-thumb-white/5 pr-2">
+      <div className="flex-1 overflow-y-auto min-h-[300px] scrollbar-thin scrollbar-thumb-white/10 pr-4 relative z-10">
         {isLoading && !presences ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
-            <Circle className="text-marble/20 animate-pulse" size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest text-marble/60">Syncing Radar...</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-50">
+            <div className="w-12 h-12 border-2 border-ares-cyan/20 border-t-ares-cyan rounded-full animate-spin"></div>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-marble/40">CALIBRATING_RADAR...</span>
           </div>
         ) : isError || error ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <span className="text-xs font-bold text-ares-red border border-ares-red/50 px-3 py-1 ares-cut-sm">{error}</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="px-4 py-2 bg-ares-red/10 border border-ares-red/30 text-ares-red text-[9px] font-black uppercase tracking-widest ares-cut-sm">
+              TELEMETRY_FAILURE: {error}
+            </div>
           </div>
         ) : sortedMembers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
-            <Users className="text-marble/20" size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest text-marble/60">No telemetry data</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-50">
+            <Users className="text-marble/20" size={32} />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-marble/40">NO_ACTIVE_TELEMETRY</span>
           </div>
         ) : (
           <AnimatePresence>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {sortedMembers.map((member) => (
                 <motion.div
                   key={member.email}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`p-3 ares-cut-sm bg-white/5 border transition-all flex items-center gap-3 ${getBorderColor(member.status)}`}
+                  whileHover={{ scale: 1.02, x: 5 }}
+                  className={`p-4 ares-cut-sm bg-white/5 border transition-all flex items-center gap-4 group/member ${getBorderColor(member.status)} hover:bg-white/10`}
                 >
                   <div className="relative">
                     <img
                       src={userAvatars[member.email] || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.seed}`}
                       alt={`${userNames[member.email] || member.email.split("@")[0]}'s avatar`}
-                      className="w-8 h-8 rounded-full border border-white/10 bg-obsidian object-cover"
+                      className="w-10 h-10 rounded-full border border-white/10 bg-obsidian object-cover group-hover/member:border-white/30 transition-all"
                     />
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-obsidian ${getStatusColor(member.status)}`} />
+                    <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-obsidian ${getStatusColor(member.status)}`} />
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">
+                    <p className="text-[11px] font-black text-white uppercase tracking-tighter truncate group-hover/member:text-ares-cyan transition-colors">
                       {userNames[member.email] || member.email.split("@")[0]}
                     </p>
-                    <div className="flex items-center gap-1 mt-0.5">
+                    <div className="flex items-center gap-2 mt-1">
                       {getIcon(member.status)}
-                      <span className="text-[9px] uppercase tracking-wider font-bold text-marble/60">
-                        {member.status}
+                      <span className="text-[8px] uppercase tracking-[0.2em] font-black text-marble/20 group-hover/member:text-marble/40 transition-colors">
+                        {member.status}_SESSION
                       </span>
                     </div>
                   </div>
@@ -157,7 +166,9 @@ export default function TeamAvailability() {
         )}
       </div>
 
-      <ZulipQuickChat />
+      <div className="mt-8 pt-8 border-t border-white/5 relative z-10">
+        <ZulipQuickChat />
+      </div>
     </div>
   );
 }

@@ -92,15 +92,15 @@ export default function PostManagerTab({
         emptyIcon={<FileText size={24} />}
         emptyMessage={`No ${view} posts found.`}
         headerTitle={
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 px-1 flex items-center gap-2">
-            <Radio size={12} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
-            Post Registry
-            {isError && (
-              <span className="ml-auto text-[9px] text-ares-red animate-pulse flex items-center gap-1 font-bold">
-                TELEMETRY FAULT
-              </span>
-            )}
-          </h3>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <Radio size={16} className={isLoading ? "animate-pulse text-ares-red" : "text-ares-red"} />
+              POST_REGISTRY // ARCHIVE
+            </h2>
+            <p className="text-[9px] font-black text-marble/20 uppercase tracking-[0.4em] mt-1">
+              EDITORIAL_OPERATIONS // SYSTEM_BROADCAST
+            </p>
+          </div>
         }
         getItemId={(p) => p.slug}
         isItemDeleted={(p) => Number(p.isDeleted) === 1}

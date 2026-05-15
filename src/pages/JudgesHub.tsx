@@ -61,7 +61,7 @@ export default function JudgesHub() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-ares-black flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="min-h-screen bg-obsidian flex items-center justify-center p-6 relative overflow-hidden">
         <SEO title="Judges Hub" description="Secure rapid-review portal for Team ARES 23247 competition judges." />
         {/* Background Effects */}
         <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-ares-cyan/10 blur-[150px] rounded-full animate-pulse" />
@@ -70,14 +70,14 @@ export default function JudgesHub() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-black border border-ares-cyan/20 p-10 ares-cut shadow-[0_0_40px_rgba(0,183,235,0.15)] relative z-10"
+          className="w-full max-w-md bg-black/60 border border-white/5 p-12 ares-cut-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] relative z-10 backdrop-blur-xl"
         >
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-ares-cyan to-ares-blue ares-cut-lg flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,183,235,0.3)]">
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight text-center">Judge&apos;s Hub</h1>
-            <p className="text-gray-300 text-center text-sm mt-3 leading-relaxed">
+            <h1 className="text-4xl font-black text-white tracking-tighter text-center uppercase">Judge&apos;s Hub //</h1>
+            <p className="text-marble/40 text-center text-base mt-4 leading-relaxed font-medium">
               Secure, rapid-review portal for competition judges. <br/>
               Enter your unique access code below.
             </p>
@@ -92,7 +92,7 @@ export default function JudgesHub() {
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin(accessCode)}
-                className="w-full bg-black/40 border border-white/10 focus:border-ares-cyan/50 text-white pl-12 pr-4 py-4 ares-cut focus:outline-none focus:ring-4 focus:ring-ares-cyan/10 transition-all font-mono tracking-[0.2em] text-center text-lg"
+                className="w-full bg-black/40 border border-white/5 focus:border-ares-cyan/30 text-white pl-12 pr-4 py-5 ares-cut-sm focus:outline-none focus:ring-4 focus:ring-ares-cyan/5 transition-all font-mono tracking-[0.4em] text-center text-xl uppercase placeholder:text-white/5"
                 placeholder="ARES-XXXX"
               />
             </div>
@@ -100,10 +100,10 @@ export default function JudgesHub() {
             <button
               onClick={() => handleLogin(accessCode)}
               disabled={isLoading || !accessCode}
-              className="w-full bg-ares-cyan hover:bg-white text-black font-black py-4 ares-cut transition-all duration-500 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(0,183,235,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-ares-cyan hover:bg-white text-black font-black py-5 ares-cut-sm transition-all duration-500 flex items-center justify-center gap-4 group shadow-lg shadow-ares-cyan/10 hover:shadow-white/20 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-[0.2em] text-xs"
             >
-              {isLoading ? "VERIFYING..." : "ENTER PORTAL"}
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {isLoading ? "VERIFYING ENCRYPTION..." : "ENTER SECURE PORTAL"}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
             </button>
 
             {error && (
@@ -131,7 +131,7 @@ export default function JudgesHub() {
   }
 
   return (
-    <div className="min-h-screen bg-ares-black text-white selection:bg-ares-cyan/30">
+    <div className="min-h-screen bg-obsidian text-marble selection:bg-ares-cyan/30">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -144,20 +144,20 @@ export default function JudgesHub() {
               <span className="text-xs text-marble font-bold uppercase tracking-tighter">Secure Rapid Review Protocol</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <a 
               href="/judges/print"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-bold text-ares-gold hover:text-black transition-colors px-4 py-2 ares-cut-sm bg-ares-gold/10 hover:bg-ares-gold border border-ares-gold/50 flex items-center gap-2"
+              className="text-[10px] font-black text-ares-gold hover:text-black transition-all px-6 py-2.5 ares-cut-sm bg-ares-gold/10 hover:bg-ares-gold border border-ares-gold/20 flex items-center gap-3 uppercase tracking-widest shadow-lg shadow-ares-gold/5"
             >
               <FileText size={14} /> GENERATE PDF PORTFOLIO
             </a>
             <button 
               onClick={logout}
-              className="text-xs font-bold text-marble hover:text-ares-red transition-colors px-4 py-2 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/20"
+              className="text-[10px] font-black text-marble/40 hover:text-ares-red transition-all px-6 py-2.5 ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/30 uppercase tracking-widest"
             >
-              DISCONNECT
+              TERMINATE SESSION
             </button>
           </div>
         </div>
@@ -184,17 +184,18 @@ export default function JudgesHub() {
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
                     target="_blank"
-                    whileHover={{ y: -4 }}
-                    className="group flex flex-col p-6 bg-obsidian/50 border border-ares-gold/20 ares-cut-lg hover:border-ares-gold/50 transition-all shadow-xl"
+                    whileHover={{ y: -8 }}
+                    className="group flex flex-col p-8 bg-black/40 border border-white/5 ares-cut-lg hover:border-ares-gold/30 transition-all duration-500 shadow-2xl backdrop-blur-sm relative overflow-hidden"
                   >
-                    <div className="text-xs font-bold text-ares-gold uppercase tracking-widest mb-2 flex items-center gap-2">
-                       <ShieldCheck size={12} /> Priority Document
+                    <div className="absolute top-0 right-0 w-1 h-0 bg-ares-gold group-hover:h-full transition-all duration-700"></div>
+                    <div className="text-[10px] font-black text-ares-gold uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
+                       <ShieldCheck size={12} /> Priority Briefing //
                     </div>
-                    <h4 className="text-xl font-bold group-hover:text-ares-gold transition-colors">{doc.title}</h4>
-                    <p className="text-marble text-sm mt-2 line-clamp-2">{doc.description}</p>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="text-xs font-black bg-ares-gold/10 text-ares-gold px-3 py-1 ares-cut-sm uppercase tracking-widest">RAPID REVIEW</span>
-                      <ChevronRight className="text-marble group-hover:text-ares-gold transition-colors" />
+                    <h4 className="text-2xl font-black text-white group-hover:text-ares-gold transition-colors uppercase tracking-tight leading-none mb-4">{doc.title}</h4>
+                    <p className="text-marble/40 text-sm font-medium line-clamp-2 leading-relaxed">{doc.description}</p>
+                    <div className="mt-8 flex items-center justify-between pt-6 border-t border-white/5">
+                      <span className="text-[10px] font-black text-white/20 px-3 py-1 ares-cut-sm uppercase tracking-widest group-hover:text-ares-gold transition-colors">RAPID REVIEW PROTOCOL</span>
+                      <ChevronRight className="text-marble/20 group-hover:text-ares-gold transition-colors group-hover:translate-x-2" />
                     </div>
                   </motion.a>
                 ))}
@@ -216,17 +217,17 @@ export default function JudgesHub() {
                     key={doc.slug}
                     href={`/docs/${doc.slug}`}
                     target="_blank"
-                    whileHover={{ x: 4 }}
-                    className="group flex items-center gap-4 p-5 bg-obsidian/30 border border-white/5 ares-cut hover:bg-black hover:border-ares-cyan/30 transition-all"
+                    whileHover={{ x: 8 }}
+                    className="group flex items-center gap-6 p-6 bg-black/20 border border-white/5 ares-cut-lg hover:bg-white/[0.02] hover:border-ares-cyan/30 transition-all duration-500 backdrop-blur-sm"
                   >
-                    <div className="w-12 h-12 bg-black ares-cut-sm flex items-center justify-center border border-white/10 text-marble group-hover:text-ares-cyan group-hover:border-ares-cyan/50 transition-all">
+                    <div className="w-14 h-14 bg-black ares-cut-sm flex items-center justify-center border border-white/5 text-marble group-hover:text-ares-cyan group-hover:border-ares-cyan/30 transition-all duration-500">
                       <FileText size={24} />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold group-hover:text-ares-cyan transition-colors">{doc.title}</h4>
-                      <div className="text-xs uppercase tracking-widest text-marble mt-0.5">{doc.category}</div>
+                      <h4 className="font-black text-white uppercase tracking-tight group-hover:text-ares-cyan transition-colors">{doc.title}</h4>
+                      <div className="text-[10px] uppercase tracking-[0.2em] font-black text-marble/20 mt-1">{doc.category}</div>
                     </div>
-                    <ChevronRight size={18} className="text-marble group-hover:text-ares-cyan transform transition-all group-hover:translate-x-1" />
+                    <ChevronRight size={18} className="text-marble/20 group-hover:text-ares-cyan transform transition-all duration-500 group-hover:translate-x-2" />
                   </motion.a>
                 ))}
               </div>
@@ -243,13 +244,14 @@ export default function JudgesHub() {
               
               <div className="space-y-4">
                 {portfolio?.outreach.map((log, i: number) => (
-                  <div key={i} className="p-6 bg-black/40 border border-white/10 ares-cut-lg">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-xs font-bold text-ares-gold bg-ares-gold/10 px-3 py-1 ares-cut-sm uppercase tracking-widest">{format(new Date(log.date), 'MMM yyyy')}</div>
-                      <div className="text-lg font-black text-white">{log.hours_logged} <span className="text-xs text-marble uppercase tracking-tighter">Team Hours</span></div>
+                  <div key={i} className="p-8 bg-black/40 border border-white/5 ares-cut-lg backdrop-blur-sm group/log hover:border-ares-gold/30 transition-all duration-700 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-0 bg-ares-gold group-hover/log:h-full transition-all duration-700"></div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="text-[10px] font-black text-ares-gold bg-ares-gold/10 px-4 py-1.5 ares-cut-sm uppercase tracking-[0.2em] border border-ares-gold/20">{format(new Date(log.date), 'MMMM yyyy')}</div>
+                      <div className="text-2xl font-black text-white uppercase tracking-tighter">{log.hours_logged} <span className="text-[10px] text-marble/20 uppercase tracking-[0.2em] font-black">Hrs // Output</span></div>
                     </div>
-                    <h4 className="font-bold text-white">{log.title}</h4>
-                    <p className="text-marble text-sm mt-2 leading-relaxed">{log.description}</p>
+                    <h4 className="font-black text-white uppercase tracking-tight text-lg mb-4 group-hover/log:text-ares-gold transition-colors">{log.title}</h4>
+                    <p className="text-marble/40 text-sm font-medium leading-relaxed">{log.description}</p>
                   </div>
                 ))}
               </div>
@@ -276,32 +278,33 @@ export default function JudgesHub() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="p-5 bg-gradient-to-br from-obsidian to-black border border-white/5 ares-cut relative overflow-hidden group shadow-lg"
+                    className="p-8 bg-black/40 border border-white/5 ares-cut-lg relative overflow-hidden group hover:border-ares-gold/30 transition-all duration-700 backdrop-blur-sm shadow-2xl"
                   >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-ares-gold/5 blur-2xl rounded-full" />
-                    <div className="text-xs font-black text-ares-gold/70 uppercase tracking-widest mb-1">{award.eventName}</div>
-                    <h4 className="font-bold text-white text-lg leading-tight group-hover:text-ares-gold transition-colors">{award.title}</h4>
-                    <div className="text-xs text-marble mt-2 font-mono uppercase italic">{award.description}</div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none group-hover:bg-ares-gold/10 transition-colors" />
+                    <div className="text-[10px] font-black text-ares-gold/40 uppercase tracking-[0.2em] mb-3 leading-none">{award.eventName}</div>
+                    <h4 className="font-black text-white text-xl leading-tight group-hover:text-ares-gold transition-colors uppercase tracking-tight mb-4">{award.title}</h4>
+                    <div className="text-[10px] text-marble/20 font-black uppercase tracking-[0.2em] italic border-t border-white/5 pt-4">{award.description}</div>
                   </motion.div>
                 ))}
               </div>
             </section>
 
             {/* Snapshot Stats */}
-            <section className="bg-ares-cyan/5 border border-ares-cyan/20 ares-cut p-8">
-              <h3 className="text-xs font-black text-ares-cyan uppercase tracking-[0.2em] mb-6">Seasonal Efficiency</h3>
-              <div className="space-y-6">
+            <section className="bg-black/40 border border-ares-cyan/10 ares-cut-lg p-10 backdrop-blur-md relative overflow-hidden group/stats">
+              <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover/stats:h-full transition-all duration-700"></div>
+              <h3 className="text-[10px] font-black text-ares-cyan uppercase tracking-[0.3em] mb-10 border-b border-ares-cyan/10 pb-4">Efficiency Metrics //</h3>
+              <div className="space-y-8">
                 <div className="flex items-center justify-between">
-                  <span className="text-marble text-sm">Outreach Frequency</span>
-                  <span className="font-black text-white">{portfolio?.outreach.length || 0} Events</span>
+                  <span className="text-marble/40 text-[10px] font-black uppercase tracking-widest">Outreach Load</span>
+                  <span className="font-black text-white uppercase tracking-tight">{portfolio?.outreach.length || 0} Events</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-marble text-sm">Engagement Reach</span>
-                  <span className="font-black text-white">~{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.reach_count || 0), 0)} Impacted</span>
+                  <span className="text-marble/40 text-[10px] font-black uppercase tracking-widest">Engagement Yield</span>
+                  <span className="font-black text-white uppercase tracking-tight">~{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.reach_count || 0), 0)} Impacted</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-ares-cyan/20 pt-6">
-                  <span className="text-marble font-bold uppercase tracking-tighter text-xs">Total Service Hours</span>
-                  <span className="font-black text-2xl text-ares-cyan">{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.hours_logged || 0), 0)}</span>
+                <div className="flex items-center justify-between border-t border-white/5 pt-8">
+                  <span className="text-marble/60 font-black uppercase tracking-widest text-[10px]">Service Output</span>
+                  <span className="font-black text-4xl text-ares-cyan tracking-tighter">{portfolio?.outreach.reduce((acc: number, curr) => acc + (curr.hours_logged || 0), 0)} <span className="text-[10px] uppercase tracking-widest ml-1">Hrs</span></span>
                 </div>
               </div>
             </section>

@@ -16,33 +16,34 @@ export function TaskChecklists({ task }: TaskChecklistsProps) {
   const deleteChecklistMutation = useDeleteTaskChecklist({ onError: (err: unknown) => toastApiError(err) });
 
   return (
-    <div className="flex flex-col gap-3 mt-6 border-t border-white/5 pt-6">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-bold text-ares-gray uppercase tracking-widest flex items-center gap-2">
-          <ListTodo size={14} className="text-ares-cyan" /> Checklists
+    <div className="flex flex-col gap-4 mt-8 border-t border-white/5 pt-8">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] flex items-center gap-3">
+          <div className="w-6 h-px bg-marble/10"></div>
+          <ListTodo size={12} className="text-ares-cyan" /> OPERATIONAL_CHECKLIST
         </div>
         {task.checklists && task.checklists.length > 0 && (
-          <div className="text-xs text-ares-gray font-bold">
-            {Math.round((task.checklists.filter(c => c.isCompleted === 1).length / task.checklists.length) * 100)}%
+          <div className="text-[10px] text-ares-cyan font-black tracking-widest px-2 py-1 bg-ares-cyan/5 border border-ares-cyan/20 ares-cut-sm shadow-sm">
+            {Math.round((task.checklists.filter(c => c.isCompleted === 1).length / task.checklists.length) * 100)}%_COMPLETE
           </div>
         )}
       </div>
 
       <div className="flex flex-col gap-2">
         {task.checklists?.sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
-          <div key={c.id} className="flex items-center gap-3 group">
+          <div key={c.id} className="flex items-center gap-4 group/item py-1">
             <button
               onClick={() => updateChecklistMutation.mutate({ id: task.id, checklistId: c.id, updates: { isCompleted: c.isCompleted === 1 ? 0 : 1 } })}
-              className={`flex-shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${c.isCompleted === 1 ? "bg-ares-cyan border-ares-cyan text-black" : "border-white/20 hover:border-ares-cyan"}`}
+              className={`flex-shrink-0 w-5 h-5 ares-cut-sm border flex items-center justify-center transition-all ${c.isCompleted === 1 ? "bg-ares-cyan border-ares-cyan text-black shadow-lg shadow-ares-cyan/20" : "bg-white/5 border-white/10 hover:border-ares-cyan/50 shadow-inner"}`}
             >
-              {c.isCompleted === 1 ? <CheckCircle2 size={12} /> : null}
+              {c.isCompleted === 1 ? <CheckCircle2 size={14} /> : null}
             </button>
-            <span className={`flex-1 text-sm ${c.isCompleted === 1 ? "text-ares-gray line-through" : "text-white"}`}>
+            <span className={`flex-1 text-[11px] font-black uppercase tracking-widest transition-all ${c.isCompleted === 1 ? "text-marble/20 line-through" : "text-white"}`}>
               {c.content}
             </span>
             <button
               onClick={() => deleteChecklistMutation.mutate({ id: task.id, checklistId: c.id })}
-              className="opacity-0 group-hover:opacity-100 p-1 text-ares-gray hover:text-ares-red transition-all"
+              className="opacity-0 group-hover/item:opacity-100 p-2 text-marble/20 hover:text-ares-red transition-all ares-cut-sm hover:bg-ares-red/5"
             >
               <X size={14} />
             </button>
@@ -50,7 +51,7 @@ export function TaskChecklists({ task }: TaskChecklistsProps) {
         ))}
 
         <form
-          className="mt-4"
+          className="mt-6"
           onSubmit={async (e) => {
             e.preventDefault();
             if (newChecklist.trim()) {
@@ -59,17 +60,17 @@ export function TaskChecklists({ task }: TaskChecklistsProps) {
             }
           }}
         >
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-3">
             <input
               type="text"
               value={newChecklist}
               onChange={(e) => setNewChecklist(e.target.value)}
-              placeholder="Add an item..."
-              className="flex-1 bg-black/40 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
+              placeholder="EXECUTE_NEW_CHECK_ITEM..."
+              className="flex-1 bg-black/60 border border-white/5 text-white text-[11px] font-black uppercase tracking-widest px-4 py-3.5 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner"
             />
             <button
               type="submit"
-              className="bg-ares-cyan hover:bg-ares-cyan/80 text-black p-2.5 ares-cut-sm font-bold flex items-center justify-center transition-colors disabled:opacity-50"
+              className="bg-ares-cyan hover:bg-ares-cyan/90 text-black px-6 py-3.5 ares-cut-sm font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center transition-all disabled:opacity-30 shadow-lg shadow-ares-cyan/10 active:scale-95"
               disabled={!newChecklist.trim() || createChecklistMutation.isPending}
               title="Add Checklist Item"
             >

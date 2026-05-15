@@ -65,20 +65,23 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
   };
 
   return (
-    <div className={`bg-black/40 border ares-cut-lg p-6 relative group transition-all hover:border-white/20 ${!s.isActive ? 'border-ares-red/20 opacity-60' : 'border-white/5'}`}>
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-2">
-          {TIERS.find(t => t.name === s.tier)?.icon}
-          <span className={`text-[10px] font-black uppercase tracking-widest ${TIERS.find(t => t.name === s.tier)?.color}`}>
-            {s.tier}
+    <div className={`bg-black/40 border ares-cut-lg p-10 relative group transition-all hover:border-ares-gold/20 shadow-2xl backdrop-blur-sm overflow-hidden ${!s.isActive ? 'border-ares-red/20 opacity-60' : 'border-white/5'}`}>
+      <div className="absolute top-0 right-0 w-1 h-0 bg-ares-gold group-hover:h-full transition-all duration-700"></div>
+      <div className="flex justify-between items-start mb-8 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-ares-gold/20 transition-all duration-500">
+            {TIERS.find(t => t.name === s.tier)?.icon}
+          </div>
+          <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${TIERS.find(t => t.name === s.tier)?.color}`}>
+            {s.tier} // MISSION_PARTNER
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => onEdit(s)}
             disabled={isPending}
             aria-label={`Edit ${s.name}`}
-            className="text-white/60 hover:text-ares-cyan transition-colors disabled:opacity-30"
+            className="text-marble/20 hover:text-ares-cyan transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
           >
             <Edit2 size={16} />
           </button>
@@ -87,7 +90,7 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
               onClick={handleRestore}
               disabled={isPending}
               aria-label={`Restore ${s.name}`}
-              className="text-white/60 hover:text-ares-cyan transition-colors disabled:opacity-30"
+              className="text-marble/20 hover:text-ares-cyan transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
               title="Restore to active status"
             >
               {saveMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -97,7 +100,7 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
               onClick={handleDeactivate}
               disabled={isPending}
               aria-label={`Deactivate ${s.name}`}
-              className="text-white/60 hover:text-ares-red transition-colors disabled:opacity-30"
+              className="text-marble/20 hover:text-ares-red transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
               title="Deactivate partner"
             >
               {saveMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <XCircle size={16} />}
@@ -107,7 +110,7 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
             onClick={handleDelete}
             disabled={isPending}
             aria-label={`Permanently delete ${s.name}`}
-            className="text-white/60 hover:text-ares-red transition-colors disabled:opacity-30"
+            className="text-marble/20 hover:text-ares-red transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
             title="Permanently delete from database"
           >
             {deleteMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
@@ -115,30 +118,32 @@ function SponsorCard({ sponsor: s, onEdit }: SponsorCardProps) {
         </div>
       </div>
       
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-6 mb-8 relative z-10">
         {s.logoUrl && (
-          <div className="w-12 h-12 bg-black/40 ares-cut-sm border border-white/10 flex items-center justify-center p-1.5 overflow-hidden">
-             <img src={s.logoUrl} alt={s.name} className="max-w-full max-h-full object-contain" />
+          <div className="w-16 h-16 bg-white/5 ares-cut-sm border border-white/10 flex items-center justify-center p-2 overflow-hidden group-hover:border-white/20 transition-all">
+             <img src={s.logoUrl} alt={s.name} className="max-w-full max-h-full object-contain filter brightness-110" />
           </div>
         )}
-        <h4 className="text-lg font-bold text-white flex-1">{s.name}</h4>
+        <h4 className="text-2xl font-black text-white uppercase tracking-tighter leading-none group-hover:text-ares-gold transition-colors">{s.name}</h4>
       </div>
       
       {!s.isActive && (
-        <div className="text-[10px] font-black uppercase tracking-tighter text-ares-red mb-3">
-          Status: Deactivated / Legacy
+        <div className="text-[10px] font-black uppercase tracking-widest text-ares-red mb-6 relative z-10">
+          STATUS // DEACTIVATED_LEGACY
         </div>
       )}
       
-      <div className="flex items-center gap-3 mt-auto pt-2">
-        {s.websiteUrl && (
-          <a href={s.websiteUrl} target="_blank" rel="noreferrer" title={`Visit ${s.name} website`} className="text-marble/60 hover:text-ares-gold transition-colors">
-            <Globe size={16} />
-          </a>
-        )}
+      <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5 relative z-10">
+        <div className="flex items-center gap-4">
+          {s.websiteUrl && (
+            <a href={s.websiteUrl} target="_blank" rel="noreferrer" title={`Visit ${s.name} website`} className="text-marble/20 hover:text-ares-gold transition-all hover:scale-110">
+              <Globe size={18} />
+            </a>
+          )}
+        </div>
         {s.logoUrl && (
-          <div className="text-[10px] font-black uppercase tracking-widest text-ares-gold flex items-center gap-1">
-            <CheckCircle2 size={12} /> Asset Synchronized
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold/40 flex items-center gap-2">
+            <CheckCircle2 size={12} /> ASSET_SYNC_OK
           </div>
         )}
       </div>
@@ -257,10 +262,10 @@ export default function SponsorEditor() {
                 setIsFormOpen(true);
               }
             }}
-            className={`flex items-center gap-2 px-4 py-2 font-bold ares-cut-sm transition-all shadow-lg ${isFormOpen ? 'bg-obsidian border border-white/10 text-white' : 'bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20'}`}
+            className={`flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm transition-all shadow-xl ${isFormOpen ? 'bg-white/5 border border-white/10 text-marble' : 'bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20 hover:scale-105 active:scale-95'}`}
           >
             {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
-            {isFormOpen ? "Cancel" : "Add Partner"}
+            {isFormOpen ? "ABORT_MISSION" : "REGISTER_NEW_PARTNER"}
           </button>
         }
       />
@@ -281,12 +286,13 @@ export default function SponsorEditor() {
             { label: "Gold", val: sponsors.filter(s => s.tier === "Gold").length, icon: <Star size={16} className="text-ares-gold" /> },
             { label: "Active Registry", val: sponsors.filter(s => s.isActive).length, icon: <TrendingUp size={16} className="text-green-400" /> }
           ].map((stat, i) => (
-            <div key={i} className="bg-obsidian/50 border border-white/5 p-4 ares-cut-sm">
-              <div className="flex items-center gap-2 text-marble/40 mb-1">
+            <div key={i} className="bg-black/40 border border-white/5 p-8 ares-cut-lg shadow-xl backdrop-blur-sm relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red/20 group-hover:h-full transition-all duration-500"></div>
+              <div className="flex items-center gap-3 text-marble/20 mb-4">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{stat.label} //</span>
               </div>
-              <div className="text-xl font-black text-white">{stat.val}</div>
+              <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
             </div>
           ))}
         </div>

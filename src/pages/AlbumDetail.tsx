@@ -58,25 +58,28 @@ export default function AlbumDetail({ id }: { id: string }) {
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-16">
         <Link
           to="/albums"
-          className="inline-flex items-center gap-2 text-ares-cyan hover:text-white transition-colors mb-8"
+          className="inline-flex items-center justify-center gap-4 px-8 py-3 ares-cut-sm bg-black/40 border border-white/5 text-ares-cyan font-black uppercase tracking-[0.2em] text-[10px] hover:bg-ares-cyan hover:text-black transition-all duration-500 shadow-lg shadow-ares-cyan/10 mb-16 backdrop-blur-sm group"
         >
-          <ArrowLeft size={16} />
-          Back to Albums
+          <ArrowLeft size={14} className="group-hover:-translate-x-2 transition-transform" />
+          Back to Archives
         </Link>
 
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tighter mb-4">
+        <div className="mb-20">
+          <div className="bg-ares-cyan/10 text-ares-cyan px-4 py-1 ares-cut-sm font-black uppercase tracking-[0.3em] text-[10px] border border-ares-cyan/20 inline-block mb-8 shadow-[0_0_20px_rgba(0,192,192,0.1)]">
+             Mission Log // Imagery
+          </div>
+          <h1 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-8">
             {album.title}
           </h1>
           {album.description && (
-            <p className="text-white/60 text-lg max-w-3xl">{album.description}</p>
+            <p className="text-marble/40 text-xl max-w-3xl font-medium leading-relaxed">{album.description}</p>
           )}
         </div>
 
         {media.length === 0 ? (
-          <div className="bg-black/40 border border-white/10 ares-cut-sm p-12 text-center text-white/50">
-            <Images className="mx-auto mb-4 opacity-50" size={48} />
-            <p className="font-mono">This album has no photos yet.</p>
+          <div className="bg-black/40 border border-white/5 ares-cut-lg p-20 text-center text-marble/20 backdrop-blur-sm">
+            <Images className="mx-auto mb-8 opacity-10" size={80} />
+            <p className="font-black uppercase tracking-[0.4em] text-xs">This vault is currently empty //</p>
           </div>
         ) : (
           <MasonryLayout media={media} onOpenLightbox={openLightbox} />
@@ -115,7 +118,7 @@ function MasonryLayout({
             type="button"
             key={item.id}
             onClick={() => onOpenLightbox(imageUrl, altText)}
-            className="w-full text-left break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10 bg-black/40 mb-6 cursor-pointer"
+            className="w-full text-left break-inside-avoid relative group overflow-hidden ares-cut-lg border border-white/5 bg-black/40 mb-8 cursor-pointer transition-all duration-700 hover:border-ares-red/30 hover:shadow-[0_20px_40px_rgba(192,0,0,0.15)]"
           >
             <img
               src={imageUrl}
@@ -128,9 +131,9 @@ function MasonryLayout({
               <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{altText}</p>
             </div>
             {/* Zoom Icon Overlay */}
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20 transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                <Maximize2 className="w-5 h-5 text-white" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="w-14 h-14 rounded-full bg-ares-red/20 backdrop-blur-md flex items-center justify-center border border-ares-red/30 scale-90 group-hover:scale-100 transition-transform duration-500">
+                <Maximize2 className="w-6 h-6 text-white" />
               </div>
             </div>
           </button>

@@ -59,35 +59,34 @@ export default function Docs() {
   };
 
   return (
-    <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
+    <div className="min-h-screen bg-obsidian text-marble flex flex-col">
       <SEO title={currentDoc?.title ? `${currentDoc.title} — ARESLib` : "ARESLib Documentation"} description={currentDoc?.description || "ARESLib documentation for the ARES 23247 FTC framework."} />
 
       {/* Search Overlay */}
       <AnimatePresence>
-        {searchOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center pt-[15vh]"
             onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
           >
             <motion.div
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-ares-gray-dark border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl bg-black/60 border border-white/5 ares-cut-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-                <Search size={18} className="text-white/60" />
+              <div className="flex items-center gap-6 px-8 py-6 border-b border-white/5 bg-white/[0.02]">
+                <Search size={24} className="text-ares-gold/60" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search documentation..."
-                  className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
+                  placeholder="SEARCH DOCUMENTATION //"
+                  className="flex-1 bg-transparent text-white outline-none text-xl font-black uppercase tracking-widest placeholder:text-white/20"
                 />
-                <kbd className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
+                <kbd className="text-[10px] bg-white/5 text-marble/20 px-3 py-1 ares-cut-sm font-black border border-white/10 uppercase tracking-widest">ESC</kbd>
               </div>
               {searchResults.length > 0 && (
                 <div className="max-h-80 overflow-y-auto">
@@ -220,15 +219,17 @@ export default function Docs() {
                     return (
                       <>
                         {prevDoc ? (
-                          <Link to="/docs/$slug" params={{ slug: prevDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
-                            <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Previous</span>
-                            <span className="text-white font-bold group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
+                          <Link to="/docs/$slug" params={{ slug: prevDoc.slug }} className="flex flex-col p-8 ares-cut-lg border border-white/5 hover:border-ares-red/30 bg-black/40 hover:bg-white/[0.02] transition-all duration-500 group relative overflow-hidden">
+                             <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover:h-full transition-all duration-700"></div>
+                            <span className="text-marble/20 text-[10px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-3"><ArrowLeft size={12} className="group-hover:-translate-x-2 transition-transform" /> Previous // Protocol</span>
+                            <span className="text-white text-lg font-black uppercase tracking-tight group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
                           </Link>
                         ) : <div />}
                         {nextDoc ? (
-                          <Link to="/docs/$slug" params={{ slug: nextDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
-                            <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /></span>
-                            <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
+                          <Link to="/docs/$slug" params={{ slug: nextDoc.slug }} className="flex flex-col p-8 ares-cut-lg border border-white/5 hover:border-ares-cyan/30 bg-black/40 hover:bg-white/[0.02] transition-all duration-500 group text-right items-end relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
+                            <span className="text-marble/20 text-[10px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-3">Next // Deployment <ArrowRight size={12} className="group-hover:translate-x-2 transition-transform" /></span>
+                            <span className="text-white text-lg font-black uppercase tracking-tight group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
                           </Link>
                         ) : <div />}
                       </>
@@ -271,21 +272,28 @@ export default function Docs() {
               )}
 
               {/* Documentation Feedback */}
-              <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
-                  <BookOpen size={64} className="text-ares-gold rotate-12" />
+              <div className="mt-20 p-10 ares-cut-lg bg-black/40 border border-white/5 relative overflow-hidden group/feedback mb-8 backdrop-blur-sm">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover/feedback:opacity-[0.05] transition-opacity duration-1000">
+                  <BookOpen size={120} className="text-white rotate-12" />
                 </div>
                 <div className="relative z-10">
-                  <h4 className="text-xl font-bold text-white mb-2">Was this helpful?</h4>
-                  <p className="text-white/50 text-sm mb-6 max-w-md">Your feedback helps our engineering team improve the documentation for the entire community.</p>
-                  <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-4" />
-                  <div className="flex flex-wrap gap-4">
+                  <div className="bg-ares-gold/10 text-ares-gold px-4 py-1 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-ares-gold/20 inline-block shadow-[0_0_20px_rgba(212,175,55,0.1)]">
+                    Direct Feedback Loop
+                  </div>
+                  <h4 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter">Was this briefing helpful?</h4>
+                  <p className="text-marble/40 text-base mb-10 max-w-xl font-medium leading-relaxed">Your feedback helps our engineering team improve the documentation for the entire ARES community.</p>
+                  
+                  <div className="mb-10">
+                    <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" />
+                  </div>
+
+                  <div className="flex flex-wrap gap-6">
                     <button
                       onClick={() => handleFeedback(true)}
                       disabled={feedbackMutation.isPending}
-                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
+                      className="flex items-center justify-center gap-4 px-10 py-4 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/20 text-ares-cyan font-black uppercase tracking-[0.2em] text-[10px] hover:bg-ares-cyan hover:text-black transition-all duration-500 shadow-lg shadow-ares-cyan/10 disabled:opacity-50"
                     >
-                      <span className="text-lg">👍</span> Yes, it was
+                      <CheckCircle size={14} /> Affirmative
                     </button>
                     <button
                       onClick={async () => {
@@ -299,9 +307,9 @@ export default function Docs() {
                         }
                       }}
                       disabled={feedbackMutation.isPending}
-                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
+                      className="flex items-center justify-center gap-4 px-10 py-4 ares-cut-sm bg-ares-red/10 border border-ares-red/20 text-ares-red font-black uppercase tracking-[0.2em] text-[10px] hover:bg-ares-red hover:text-white transition-all duration-500 shadow-lg shadow-ares-red/10 disabled:opacity-50"
                     >
-                      <span className="text-lg">👎</span> No, it wasn&apos;t
+                      <ArrowRight size={14} /> Report Fault
                     </button>
                   </div>
                 </div>

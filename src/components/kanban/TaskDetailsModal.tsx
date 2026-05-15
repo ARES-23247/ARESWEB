@@ -30,23 +30,22 @@ import DrivePickerModal from "../DrivePickerModal";
 // Compact toolbar for the task modal – only essential formatting buttons
 function CompactEditorToolbar({ editor, onInsertDriveEmbed }: { editor: Editor, onInsertDriveEmbed?: () => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
-      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("bold") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>B</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2 py-1 text-xs italic ares-cut-sm transition-all ${editor.isActive("italic") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>I</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2 py-1 text-xs line-through ares-cut-sm transition-all ${editor.isActive("strike") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>S</button>
-      <div className="w-px h-4 bg-white/10 mx-0.5" />
-      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>H2</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>• List</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>☑️</button>
-      <div className="w-px h-4 bg-white/10 mx-0.5" />
-      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
-      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
+    <div className="flex flex-wrap items-center gap-1 bg-black/80 border-b border-white/5 p-2 w-full backdrop-blur-md shadow-inner">
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2.5 py-1 text-[10px] font-black ares-cut-sm transition-all border ${editor.isActive("bold") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>B</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2.5 py-1 text-[10px] italic ares-cut-sm transition-all border ${editor.isActive("italic") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>I</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2.5 py-1 text-[10px] line-through ares-cut-sm transition-all border ${editor.isActive("strike") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>S</button>
+      <div className="w-px h-4 bg-white/5 mx-1" />
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("heading", { level: 2 }) ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>H2</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("bulletList") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>• LIST</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("taskList") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>☑ CHECKLIST</button>
+      <div className="w-px h-4 bg-white/5 mx-1" />
+      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2.5 py-1 text-[10px] font-mono ares-cut-sm transition-all border ${editor.isActive("codeBlock") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>{"<>"}</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("blockquote") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>&quot; QUOTE</button>
       {onInsertDriveEmbed && (
         <>
-          <div className="w-px h-4 bg-white/10 mx-0.5" />
-          <button type="button" onClick={onInsertDriveEmbed} className="px-2 py-1 text-xs font-bold uppercase tracking-widest ares-cut-sm transition-all text-ares-cyan hover:bg-ares-cyan hover:text-black flex items-center gap-1.5 border border-ares-cyan/30">
-            <HardDrive size={12} /> Drive
+          <div className="w-px h-4 bg-white/5 mx-1" />
+          <button type="button" onClick={onInsertDriveEmbed} className="px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm transition-all text-ares-cyan border border-ares-cyan/20 hover:bg-ares-cyan hover:text-black flex items-center gap-2 shadow-lg shadow-ares-cyan/5">
+            <HardDrive size={12} /> DRIVE_ASSET
           </button>
         </>
       )}
@@ -218,35 +217,35 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         className="relative w-full max-w-6xl max-h-full bg-obsidian border border-white/10 ares-cut-md shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex flex-col p-4 border-b border-white/5 bg-white/5">
+        <div className="flex-shrink-0 flex flex-col p-6 border-b border-white/5 bg-black/40 backdrop-blur-xl">
           {parentTask && (
             <button
               onClick={() => onTaskClick?.(parentTask)}
-              className="text-[10px] font-bold text-ares-cyan hover:text-white flex items-center gap-1 mb-3 self-start transition-colors uppercase tracking-widest px-2 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm"
+              className="text-[10px] font-black text-ares-cyan hover:text-white flex items-center gap-2 mb-4 self-start transition-all uppercase tracking-[0.3em] px-4 py-2 bg-ares-cyan/5 border border-ares-cyan/20 ares-cut-sm shadow-lg shadow-ares-cyan/5 group"
             >
-              <Layout size={10} />
-              ← Back to Parent Task: {parentTask.title}
+              <Layout size={12} className="group-hover:scale-110 transition-transform" />
+              BACK_TO_PARENT_COMMAND: {parentTask.title}
             </button>
           )}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/20">
-                <Layout size={18} className="text-ares-cyan" />
+            <div className="flex items-center gap-5">
+              <div className="p-3 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/30 shadow-lg shadow-ares-cyan/10">
+                <Layout size={24} className="text-ares-cyan" />
               </div>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-transparent border-none text-white text-xl font-bold px-0 focus:outline-none focus:ring-0 min-w-[300px]"
-                placeholder="Task title..."
+                className="bg-transparent border-none text-3xl font-black text-white px-0 focus:outline-none focus:ring-0 min-w-[400px] uppercase tracking-tighter placeholder:text-marble/10"
+                placeholder="OBJECTIVE_NOMENCLATURE..."
               />
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-[10px] text-ares-gray font-mono tracking-wider uppercase hidden sm:block">
-                ID: {task.id.split("-")[0]}
+            <div className="flex items-center gap-6">
+              <div className="text-[10px] text-marble/20 font-black tracking-[0.4em] uppercase hidden sm:block border-l border-white/5 pl-6">
+                TACTICAL_ID: {task.id.split("-")[0]}
               </div>
-              <button onClick={onClose} className="p-2 text-ares-gray hover:text-white transition-colors" title="Close modal">
-                <X size={20} />
+              <button onClick={onClose} className="p-2 text-marble/20 hover:text-ares-red transition-all hover:rotate-90" title="Close interface">
+                <X size={24} />
               </button>
             </div>
           </div>
@@ -256,9 +255,10 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-[600px]">
           {/* Left Column: Editor & Main Info */}
           <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar border-r border-white/5">
-            <div className="flex flex-col flex-1 gap-2">
-              <div className="text-xs font-bold text-ares-gray uppercase tracking-widest flex items-center gap-2">
-                <Flag size={14} /> Description
+            <div className="flex flex-col flex-1 gap-4">
+              <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] flex items-center gap-3">
+                <div className="w-6 h-px bg-marble/10"></div>
+                MISSION_DESCRIPTION
               </div>
               <CollaborativeEditorRoom roomId={`task-${task.id}`}>
                 <TaskEditorInner
@@ -289,52 +289,52 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between p-4 border-t border-white/5 bg-white/5">
-          <div className="flex items-center gap-4 text-[10px] text-ares-gray font-mono">
-            <span>Created {new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
-            {freshTask.creatorName && <span>by {freshTask.creatorName}</span>}
-            <span>Updated {new Date(freshTask.updatedAt || 0).toLocaleDateString()}</span>
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-t border-white/5 bg-black/60 backdrop-blur-xl">
+          <div className="flex items-center gap-6 text-[9px] font-black text-marble/20 uppercase tracking-[0.2em]">
+            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-cyan/30 rounded-full"></div> INIT: {new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
+            {freshTask.creatorName && <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-gold/30 rounded-full"></div> ASSET: {freshTask.creatorName}</span>}
+            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-cyan/30 rounded-full"></div> SYNC: {new Date(freshTask.updatedAt || 0).toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {confirmDelete ? (
-              <div className="flex items-center gap-2 mr-4">
-                <span className="text-xs text-ares-red font-bold">Confirm?</span>
+              <div className="flex items-center gap-4 mr-6 bg-ares-red/5 px-4 py-2 ares-cut-sm border border-ares-red/20 shadow-lg shadow-ares-red/5">
+                <span className="text-[10px] text-ares-red font-black uppercase tracking-[0.2em]">CONFIRM_TERMINATION?</span>
                 <button
                   onClick={() => { onDelete(freshTask.id); onClose(); }}
-                  className="px-3 py-1.5 bg-ares-red/20 hover:bg-ares-red/30 text-ares-red text-xs font-bold ares-cut-sm border border-ares-red/30"
+                  className="px-5 py-2 bg-ares-red text-white text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm shadow-lg shadow-ares-red/20 hover:scale-105 active:scale-95 transition-all"
                 >
-                  Delete Task
+                  TERMINATE_TASK
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-ares-gray text-xs font-bold ares-cut-sm border border-white/5"
+                  className="px-5 py-2 bg-white/5 hover:bg-white/10 text-marble/40 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all"
                 >
-                  Cancel
+                  ABORT
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="p-2 text-ares-gray hover:text-ares-red transition-colors mr-2"
-                title="Delete task"
+                className="p-3 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/30 shadow-xl"
+                title="Initialize deletion sequence"
               >
-                <Trash2 size={16} />
+                <Trash2 size={20} />
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-marble text-sm font-bold ares-cut-sm border border-white/5"
+              className="px-6 py-3 bg-white/5 hover:bg-white/10 text-marble/60 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all shadow-xl"
             >
-              Cancel
+              CLOSE_INTERFACE
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving || !title.trim()}
-              className="px-6 py-2 bg-ares-cyan text-black hover:bg-ares-cyan/80 text-sm font-bold ares-cut-sm flex items-center gap-2 disabled:opacity-50 transition-all"
+              className="px-8 py-3 bg-ares-cyan text-black hover:bg-ares-cyan/90 text-[10px] font-black uppercase tracking-[0.3em] ares-cut-sm flex items-center gap-3 disabled:opacity-30 transition-all shadow-lg shadow-ares-cyan/20 active:scale-95"
             >
               <Save size={16} />
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? "TRANSMITTING..." : "COMMIT_CHANGES"}
             </button>
           </div>
         </div>

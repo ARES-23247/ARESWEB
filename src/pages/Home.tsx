@@ -16,65 +16,69 @@ export default function Home() {
       <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <ReviewSchema reviews={ARES_REVIEWS} />
       <SpeakableSchema />
+      
       {/* ─── HERO ─── */}
-      <section className="relative w-full min-h-[95vh] flex items-center overflow-hidden bg-obsidian">
+      <section className="relative w-full min-h-screen flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
-            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.png')]"
+            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.03] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.png')]"
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20 pb-16 flex flex-col items-start text-left">
-          <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16 mb-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-32 pb-24 flex flex-col items-start text-left">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-12 mb-12">
             <img
               src="/favicon.svg"
               alt="ARES 23247 Logo"
               fetchPriority="high"
               decoding="sync"
-              className="w-32 md:w-56 lg:w-[22rem] h-32 md:h-56 lg:h-[22rem] object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0"
+              className="w-40 md:w-56 lg:w-72 h-40 md:h-56 lg:h-72 object-contain drop-shadow-[0_0_50px_rgba(192,0,0,0.4)] shrink-0"
             />
-            <div className="bg-obsidian">
-              <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading mb-4">
+            <div className="bg-transparent">
+              <p className="text-ares-gold font-black uppercase tracking-[0.4em] text-[10px] md:text-xs mb-6 border-l-2 border-ares-gold pl-4">
                 Appalachian Robotics & Engineering Society
               </p>
-              <h1 className="text-[3.5rem] md:text-[7rem] lg:text-[10rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="block mb-2 text-white">Engineered</span>
-                <span className="bg-ares-red px-3 sm:px-6 py-2 pb-3 mt-2 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white font-bold">To Inspire</span>
+              <h1 className="text-[4rem] md:text-[8rem] lg:text-[12rem] font-black text-white leading-[0.8] uppercase tracking-tighter relative z-10 w-full xl:w-2/3">
+                <span className="block mb-4 text-white">Engineered</span>
+                <span className="bg-ares-red px-6 py-4 mt-4 inline-block ares-cut-sm shadow-2xl text-white">To Inspire</span>
               </h1>
             </div>
           </div>
 
-          <div className="max-w-2xl mb-10 border-l-4 border-ares-bronze pl-6">
-            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed text-marble px-4 py-3 bg-obsidian ares-cut">
-              Building the future of West Virginia robotics with the <strong className="text-white">Mountaineer Mindset</strong>. Proudly competing as <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-all underline decoration-ares-red decoration-2 underline-offset-8 font-black italic tracking-tight">FIRST® Tech Challenge</a> Team #23247.
+          <div className="max-w-2xl mb-12 border-l border-white/10 pl-8">
+            <div id="hero-mountaineer-mindset" className="text-xl md:text-2xl font-medium leading-relaxed text-marble/60">
+              Building the future of West Virginia robotics with the <strong className="text-white font-black uppercase tracking-tight">Mountaineer Mindset</strong>. Proudly competing as <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-all font-black italic tracking-tighter">FIRST® Tech Challenge</a> Team #23247.
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-6 mt-4">
-            <Link to="/about" className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all shadow-xl text-white font-bold">
-              Meet the Team
+          <div className="flex flex-col sm:flex-row gap-8">
+            <Link to="/about" className="clipped-button bg-ares-red hover:bg-white hover:text-ares-red transition-all shadow-[0_0_30px_rgba(192,0,0,0.3)] text-white px-12 py-5 text-xs font-black uppercase tracking-[0.2em] group">
+              Meet the Team <ArrowRight size={18} className="inline ml-3 group-hover:translate-x-2 transition-transform" />
             </Link>
-            <Link to="/sponsors" className="clipped-button bg-obsidian border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all">
-              Support Our Mission
+            <Link to="/sponsors" className="clipped-button bg-transparent border border-white/10 text-marble/40 hover:text-white hover:bg-white/5 hover:border-white/30 transition-all px-12 py-5 text-xs font-black uppercase tracking-[0.2em]">
+              Support Mission
             </Link>
           </div>
         </div>
       </section>
 
       {/* ─── TECHNICAL SPECS (DARK CARDS) ─── */}
-      <section className="py-24 bg-obsidian border-t border-white/5">
+      <section className="py-40 bg-obsidian border-t border-white/5 relative">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
             <div className="max-w-2xl">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading text-white">Our Objectives</h2>
-              <p className="text-marble/70 text-lg">Engineering precision meets community impact in our quest for the 2026 season.</p>
+               <div className="inline-block bg-ares-cyan/10 text-ares-cyan px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-ares-cyan/20">
+                System Objectives
+              </div>
+              <h2 className="text-5xl md:text-7xl font-black mb-6 uppercase tracking-tight text-white leading-none">Engineering <span className="text-ares-cyan">Precision</span></h2>
+              <p className="text-marble/40 text-xl font-medium leading-relaxed">Precision meets community impact in our quest for the 2026 season.</p>
             </div>
-            <div className="h-px flex-grow bg-white/5 mx-8 mb-4 hidden md:block"></div>
+            <div className="h-px flex-grow bg-white/5 mx-12 mb-6 hidden lg:block"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               {
                 title: "Engineering Excellence",
@@ -83,30 +87,34 @@ export default function Home() {
                 linkText: "Subsystem Specs",
                 externalLink: "https://www.printables.com/@ARESFTC_3784306",
                 externalLinkText: "View 3D Models",
+                accent: "ares-red"
               },
               {
                 title: "Outreach & Impact",
-                body: "We share our mission with everyone. From the Spark! Center to local labs, we bring <a href='https://www.firstinspires.org/' target='_blank' rel='noopener noreferrer' class='hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4'><em>FIRST</em>®</a> to all of West Virginia.",
+                body: "We share our mission with everyone. From the Spark! Center to local labs, we bring <a href='https://www.firstinspires.org/' target='_blank' rel='noopener noreferrer' class='hover:text-ares-cyan transition-colors font-black uppercase'><em>FIRST</em>®</a> to all of West Virginia.",
                 link: "/outreach",
                 linkText: "Our Impact",
+                accent: "ares-cyan"
               },
               {
                 title: "Mentorship Pipeline",
                 body: "Our team learns from the best. With help from MARS mentors and local experts, we are training the leaders of tomorrow.",
                 link: "/join",
                 linkText: "Join the Mission",
+                accent: "ares-gold"
               },
             ].map((card) => (
-              <div key={card.title} className="bg-white/5 border border-white/10 hero-card p-10 flex flex-col h-full group backdrop-blur-sm hover:border-ares-red/30 transition-colors">
-                <h3 className="text-white text-2xl font-bold mb-6 font-heading group-hover:text-ares-gold transition-colors">{card.title}</h3>
-                <p className="text-marble/70 text-base leading-relaxed mb-8 flex-grow" dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.body) }} />
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <Link to={card.link} className="text-white font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                    <span className="text-white">{card.linkText}</span> <ArrowRight size={16} className="text-ares-red" />
+              <div key={card.title} className="bg-black/40 border border-white/5 p-12 ares-cut-lg flex flex-col h-full group backdrop-blur-sm hover:border-white/20 transition-all duration-500 relative overflow-hidden">
+                <div className={`absolute top-0 right-0 w-32 h-32 opacity-[0.02] -mr-8 -mt-8 bg-${card.accent} blur-3xl group-hover:opacity-10 transition-opacity`}></div>
+                <h3 className="text-white text-3xl font-black mb-8 uppercase tracking-tighter group-hover:text-ares-gold transition-colors">{card.title}</h3>
+                <p className="text-marble/40 text-lg leading-relaxed mb-10 flex-grow font-medium" dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.body) }} />
+                <div className="flex flex-col gap-6 items-start">
+                  <Link to={card.link} className="text-white font-black text-xs tracking-widest uppercase hover:translate-x-3 transition-transform inline-flex items-center gap-3">
+                    {card.linkText} <ArrowRight size={16} className={`text-${card.accent}`} />
                   </Link>
                   {card.externalLink && (
-                    <a href={card.externalLink} target="_blank" rel="noopener noreferrer" className="text-marble font-bold text-sm tracking-widest uppercase hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                      <span className="text-marble">{card.externalLinkText}</span> <ArrowRight size={16} className="text-ares-bronze" />
+                    <a href={card.externalLink} target="_blank" rel="noopener noreferrer" className="text-marble/40 font-black text-xs tracking-widest uppercase hover:translate-x-3 transition-transform inline-flex items-center gap-3">
+                      {card.externalLinkText} <ArrowRight size={16} className="text-ares-gold" />
                     </a>
                   )}
                 </div>
@@ -117,20 +125,20 @@ export default function Home() {
       </section>
 
       {/* ─── CALL TO ACTION SECTION ─── */}
-      <GreekMeander variant="thin" opacity="opacity-60" className="relative -bottom-[1px] z-10" />
-      <section className="py-24 obsidian-section relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold mb-8 font-heading">
-            Join <span className="bg-ares-red px-3 py-1 pb-2 ares-cut-sm text-white font-bold">ARES</span>
+      <GreekMeander variant="thin" opacity="opacity-10" className="relative -bottom-[1px] z-10" />
+      <section className="py-40 obsidian-section relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
+          <h2 className="text-6xl md:text-[10rem] font-black mb-12 uppercase tracking-tighter leading-none">
+            Join <span className="bg-ares-red px-6 py-2 ares-cut-sm text-white font-black">ARES</span>
           </h2>
-          <p className="text-marble text-xl mb-12 leading-relaxed">
-            Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
+          <p className="text-marble/40 text-2xl mb-16 leading-relaxed font-medium max-w-3xl mx-auto">
+            Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future, there is a place for you at the table.
           </p>
-          <div className="flex flex-wrap justify-center gap-6">
-            <Link to="/sponsors" className="clipped-button bg-ares-bronze text-obsidian hover:bg-white hover:text-ares-red transition-all">
+          <div className="flex flex-wrap justify-center gap-8">
+            <Link to="/sponsors" className="clipped-button bg-ares-gold text-black hover:bg-white transition-all px-12 py-5 text-xl font-black">
               Become a Sponsor
             </Link>
-            <Link to="/join" className="clipped-button bg-transparent border-2 border-white text-white hover:bg-white hover:text-obsidian transition-all">
+            <Link to="/join" className="clipped-button bg-transparent border-2 border-white text-white hover:bg-white hover:text-obsidian transition-all px-12 py-5 text-xl font-black">
               Team Application
             </Link>
           </div>
@@ -138,17 +146,22 @@ export default function Home() {
       </section>
 
       {/* ─── OUTREACH CALENDAR BANNER ─── */}
-      <section className="py-20 bg-ares-red text-white font-bold">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="text-center md:text-left">
-            <h3 className="text-3xl md:text-4xl font-bold mb-2 font-heading">Event Calendar</h3>
-            <p className="text-white text-lg opacity-90 font-medium">Tracks our upcoming demos, qualifiers, and community workshops.</p>
+      <section className="py-24 bg-black border-y border-white/5 relative overflow-hidden">
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5"></div>
+         <div className="absolute right-0 top-0 w-1/3 h-full bg-ares-red/10 skew-x-[-20deg] translate-x-24"></div>
+        <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
+          <div className="text-center lg:text-left">
+            <div className="bg-ares-red/20 text-ares-red px-4 py-1 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-4 border border-ares-red/30 inline-block">
+              Operational Roadmap
+            </div>
+            <h3 className="text-4xl md:text-7xl font-black mb-4 uppercase tracking-tighter text-white">Event Calendar</h3>
+            <p className="text-marble/40 text-xl font-medium max-w-xl">Tracks our upcoming demos, qualifiers, and community workshops.</p>
           </div>
           <Link
             to="/events"
-            className="clipped-button bg-obsidian text-marble hover:bg-ares-bronze transition-all shadow-2xl"
+            className="clipped-button bg-ares-red text-white hover:bg-white hover:text-ares-red transition-all shadow-[0_0_30px_rgba(192,0,0,0.3)] px-12 py-6 text-xs font-black uppercase tracking-[0.2em] group"
           >
-            Open Event Calendar
+            Launch Calendar <ArrowRight size={18} className="inline ml-3 group-hover:translate-x-2 transition-transform" />
           </Link>
         </div>
       </section>

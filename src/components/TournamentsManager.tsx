@@ -40,61 +40,72 @@ function TournamentDetailEditor({ tournamentId, onBack }: { tournamentId: string
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-black/40 border border-white/10 p-6 ares-cut mb-2">
-        <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <Trophy className="text-ares-gold" /> {t?.name} — Details
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-black/40 border border-white/5 p-10 ares-cut-lg mb-10 shadow-2xl backdrop-blur-sm relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-gold group-hover:h-full transition-all duration-700"></div>
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black text-white flex items-center gap-6 uppercase tracking-tighter leading-none">
+            <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all">
+              <Trophy className="text-ares-gold" />
+            </div>
+            {t?.name} <span className="text-marble/20">// DETAIL_RECORDS</span>
           </h2>
-          <p className="text-marble/50 text-sm mt-1">Match results, awards, and FTC Events API synchronization.</p>
+          <p className="text-marble/40 text-[10px] mt-4 uppercase tracking-[0.4em] font-black flex items-center gap-2">
+            <span className="w-8 h-px bg-white/10"></span>
+            Match results, awards, and FTC Events API synchronization protocol.
+          </p>
         </div>
         <button
           onClick={onBack}
-          className="mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 font-bold ares-cut-sm bg-obsidian border border-white/10 text-white hover:border-white/30 transition-all"
+          className="mt-8 md:mt-0 flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 hover:border-white/30 transition-all relative z-10"
         >
-          <ArrowLeft size={16} /> Back to List
+          <ArrowLeft size={16} /> RETURN TO REGISTRY
         </button>
       </div>
 
       {/* Matches */}
-      <div className="bg-black/40 border border-white/10 ares-cut-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-black text-white flex items-center gap-2">
-            <Swords size={18} className="text-ares-red" /> Match Results ({matches.length})
-          </h3>
+      <div className="bg-black/40 border border-white/5 ares-cut-lg p-10 shadow-2xl backdrop-blur-sm relative overflow-hidden group/matches">
+        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover/matches:h-full transition-all duration-700"></div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 relative z-10">
+          <div>
+            <h3 className="text-[10px] font-black text-white flex items-center gap-3 uppercase tracking-[0.4em]">
+              <Swords size={16} className="text-ares-red" /> Operational // Match Logs ({matches.length})
+            </h3>
+            <div className="mt-2 text-marble/20 text-[8px] font-black uppercase tracking-[0.3em]">SECURE_FEED // SYNC_ACTIVE</div>
+          </div>
           <button
             onClick={() => syncMatches.mutateAsync().then(() => toast.success("Match data synchronized from FTC Events API."))}
             disabled={syncMatches.isPending}
-            className="flex items-center gap-2 px-4 py-2 font-bold ares-cut-sm bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20 shadow-lg disabled:opacity-50 transition-all text-sm"
+            className="flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm bg-ares-red text-white hover:bg-ares-danger shadow-lg shadow-ares-red/20 disabled:opacity-50 transition-all"
           >
             <RefreshCw size={14} className={syncMatches.isPending ? "animate-spin" : ""} />
-            Sync from FTC Events
+            {syncMatches.isPending ? "SYNCHRONIZING..." : "SYNC FROM FTC EVENTS"}
           </button>
         </div>
 
         {matches.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="p-3 text-[10px] font-black uppercase tracking-widest text-marble/40">Match</th>
-                  <th className="p-3 text-[10px] font-black uppercase tracking-widest text-marble/40">Red Score</th>
-                  <th className="p-3 text-[10px] font-black uppercase tracking-widest text-marble/40">Blue Score</th>
-                  <th className="p-3 text-[10px] font-black uppercase tracking-widest text-marble/40">Video</th>
+                <tr className="border-b border-white/5">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-marble/20">Match // Protocol</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-ares-red/40">Red // Alliance</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-ares-cyan/40">Blue // Alliance</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-marble/20 text-right">Data // Link</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {matches.map(m => (
-                  <tr key={m.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-bold text-white">{m.matchType}</td>
-                    <td className="p-3 text-ares-red font-bold">{m.redScore}</td>
-                    <td className="p-3 text-ares-cyan font-bold">{m.blueScore}</td>
-                    <td className="p-3">
+                  <tr key={m.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-6 font-black text-white uppercase tracking-tighter text-base">{m.matchType}</td>
+                    <td className="p-6 text-ares-red font-black text-xl tracking-tighter">{m.redScore}</td>
+                    <td className="p-6 text-ares-cyan font-black text-xl tracking-tighter">{m.blueScore}</td>
+                    <td className="p-6 text-right">
                       {m.youtubeVideoId ? (
-                        <a href={`https://youtube.com/watch?v=${m.youtubeVideoId}`} target="_blank" rel="noreferrer" className="text-ares-gold hover:text-ares-gold/80 flex items-center gap-1">
-                          <Video size={14} /> Watch
+                        <a href={`https://youtube.com/watch?v=${m.youtubeVideoId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-4 py-2 ares-cut-sm bg-ares-gold/10 text-ares-gold text-[10px] font-black uppercase tracking-widest border border-ares-gold/20 hover:bg-ares-gold/20 transition-all">
+                          <Video size={14} /> Playback
                         </a>
                       ) : (
-                        <span className="text-marble/30">—</span>
+                        <span className="text-marble/10 text-[10px] font-black uppercase tracking-widest">N/A</span>
                       )}
                     </td>
                   </tr>
@@ -106,30 +117,32 @@ function TournamentDetailEditor({ tournamentId, onBack }: { tournamentId: string
           <DashboardEmptyState
             icon={<Swords size={36} />}
             message="No matches found. Ensure the FTC Event Code is correct and click Sync."
-            className="py-8 text-center border-2 border-dashed border-white/5 ares-cut-lg"
+            className="py-16 text-center border-2 border-dashed border-white/5 ares-cut-lg bg-black/20"
           />
         )}
       </div>
 
       {/* Awards */}
-      <div className="bg-black/40 border border-white/10 ares-cut-lg p-6">
-        <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4">
-          <Award size={18} className="text-ares-gold" /> Awards ({awards.length})
+      <div className="bg-black/40 border border-white/5 ares-cut-lg p-10 shadow-2xl backdrop-blur-sm">
+        <h3 className="text-[10px] font-black text-white flex items-center gap-3 mb-10 uppercase tracking-[0.4em]">
+          <Award size={16} className="text-ares-gold" /> Achievement // Awards ({awards.length})
         </h3>
         {awards.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {awards.map((a) => (
-              <div key={a.id} className="bg-obsidian/50 border border-white/5 p-4 ares-cut-sm flex items-center gap-3">
-                <Award size={16} className="text-ares-gold flex-shrink-0" />
+              <div key={a.id} className="bg-black/40 border border-white/5 p-6 ares-cut-sm flex items-center gap-4 group hover:border-ares-gold/40 transition-all duration-500">
+                <div className="p-3 ares-cut-sm bg-ares-gold/10 border border-ares-gold/20 group-hover:bg-ares-gold/20 transition-all">
+                  <Award size={18} className="text-ares-gold" />
+                </div>
                 <div>
-                  <div className="text-sm font-bold text-white">{a.name}</div>
-                  {a.placement && <div className="text-[10px] text-marble/40 mt-1">{a.placement}</div>}
+                  <div className="text-sm font-black text-white uppercase tracking-tighter leading-tight">{a.name}</div>
+                  {a.placement && <div className="text-[9px] font-black text-marble/20 uppercase tracking-[0.2em] mt-1 italic">{a.placement}</div>}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-marble/40 text-sm italic">No awards recorded for this tournament.</p>
+          <p className="text-marble/20 text-[10px] font-black uppercase tracking-[0.3em] italic">No achievement data recorded.</p>
         )}
       </div>
     </div>
@@ -166,21 +179,24 @@ function TournamentCard({ tournament: t, onEdit, onManage }: TournamentCardProps
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-black/40 border border-white/5 ares-cut-lg p-6 transition-all hover:border-white/20 group"
+      className="bg-black/40 border border-white/5 ares-cut-lg p-10 transition-all hover:border-ares-gold/20 group shadow-2xl backdrop-blur-sm relative overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2">
-          <Trophy className="text-ares-gold" size={16} />
-          <span className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-            {t.ftcEventCode || "NO EVENT CODE"}
+      <div className="absolute top-0 right-0 w-1 h-0 bg-ares-gold group-hover:h-full transition-all duration-700"></div>
+      <div className="flex justify-between items-start mb-8 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-ares-gold/20 transition-all duration-500">
+            <Trophy className="text-ares-gold" size={18} />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-marble/20 group-hover:text-ares-gold transition-colors">
+            {t.ftcEventCode || "EXTERNAL_EVENT"}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => onEdit(t)}
             disabled={deleteTournament.isPending}
             aria-label={`Edit ${t.name}`}
-            className="text-white/60 hover:text-ares-cyan transition-colors disabled:opacity-30"
+            className="text-marble/20 hover:text-ares-cyan transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
           >
             <Edit2 size={16} />
           </button>
@@ -188,39 +204,39 @@ function TournamentCard({ tournament: t, onEdit, onManage }: TournamentCardProps
             onClick={handleDelete}
             disabled={deleteTournament.isPending}
             aria-label={`Delete ${t.name}`}
-            className="text-white/60 hover:text-ares-red transition-colors disabled:opacity-30"
+            className="text-marble/20 hover:text-ares-red transition-all disabled:opacity-30 p-2 hover:bg-white/5 ares-cut-sm border border-transparent hover:border-white/10"
           >
             {deleteTournament.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
           </button>
         </div>
       </div>
 
-      <h4 className="text-lg font-bold text-white mb-2">{t.name}</h4>
+      <h4 className="text-3xl font-black text-white mb-8 uppercase tracking-tighter leading-none group-hover:text-ares-gold transition-colors relative z-10">{t.name}</h4>
 
-      <div className="flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-widest text-marble/40">
+      <div className="flex flex-wrap gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-marble/20 mb-10 relative z-10">
         {t.rank && (
-          <span className="flex items-center gap-1">
-            <Hash size={10} /> Rank {t.rank}
+          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-white">
+            <Hash size={12} className="text-ares-red" /> RANK_{t.rank}
           </span>
         )}
         {t.opr && (
-          <span className="flex items-center gap-1">
-            <BarChart3 size={10} /> OPR {t.opr}
+          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-cyan">
+            <BarChart3 size={12} className="text-ares-cyan" /> OPR_{t.opr}
           </span>
         )}
         {t.allianceRole && (
-          <span className="flex items-center gap-1">
-            <Swords size={10} /> {t.allianceRole}
+          <span className="flex items-center gap-3 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-gold">
+            <Swords size={12} className="text-ares-gold" /> {t.allianceRole}
           </span>
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-white/5">
+      <div className="pt-8 border-t border-white/5 relative z-10">
         <button
           onClick={() => onManage(t.id)}
-          className="flex items-center gap-2 px-4 py-2 w-full justify-center bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-white text-sm font-bold transition-colors"
+          className="flex items-center gap-4 px-6 py-5 w-full justify-center bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm text-white text-[10px] font-black uppercase tracking-[0.4em] transition-all duration-500 hover:shadow-2xl group/btn"
         >
-          <Swords size={14} /> Manage Matches & Awards
+          <Swords size={16} className="text-ares-red group-hover/btn:rotate-12 transition-transform" /> MANAGE_OPERATIONAL_DATA
         </button>
       </div>
     </motion.div>
@@ -294,8 +310,8 @@ export default function TournamentsManager() {
     return <TournamentDetailEditor tournamentId={managingId} onBack={() => setManagingId(null)} />;
   }
 
-  const inputClass = "w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/40 focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all";
-  const labelClass = "block text-xs font-bold text-white/60 uppercase tracking-wider mb-2";
+  const inputClass = "w-full bg-black/40 border border-white/5 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:border-ares-red/40 focus:bg-black/60 focus:outline-none transition-all duration-300 text-sm font-bold uppercase tracking-widest";
+  const labelClass = "block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3";
 
   return (
     <div className="space-y-8">
@@ -306,10 +322,10 @@ export default function TournamentsManager() {
         action={
           <button
             onClick={isFormOpen ? handleCancel : handleCreate}
-            className={`flex items-center gap-2 px-4 py-2 font-bold ares-cut-sm transition-all shadow-lg ${isFormOpen ? 'bg-obsidian border border-white/10 text-white' : 'bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20'}`}
+            className={`flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm transition-all shadow-xl ${isFormOpen ? 'bg-white/5 border border-white/10 text-marble' : 'bg-ares-red text-white hover:bg-ares-danger shadow-ares-red/20 hover:scale-105 active:scale-95'}`}
           >
             {isFormOpen ? <XCircle size={18} /> : <Plus size={18} />}
-            {isFormOpen ? "Cancel" : "Add Tournament"}
+            {isFormOpen ? "ABORT_MISSION" : "ARCHIVE_NEW_TOURNAMENT"}
           </button>
         }
       />
@@ -322,12 +338,13 @@ export default function TournamentsManager() {
             { label: "With FTC Code", val: tournaments.filter(t => t.ftcEventCode).length, icon: <Hash size={16} className="text-ares-cyan" /> },
             { label: "Ranked Events", val: tournaments.filter(t => t.rank).length, icon: <BarChart3 size={16} className="text-ares-gold" /> }
           ].map((stat, i) => (
-            <div key={i} className="bg-obsidian/50 border border-white/5 p-4 ares-cut-sm">
-              <div className="flex items-center gap-2 text-marble/40 mb-1">
+            <div key={i} className="bg-black/40 border border-white/5 p-8 ares-cut-lg shadow-xl backdrop-blur-sm relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-0 bg-ares-gold/20 group-hover:h-full transition-all duration-500"></div>
+              <div className="flex items-center gap-3 text-marble/20 mb-4">
                 {stat.icon}
-                <span className="text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">{stat.label} //</span>
               </div>
-              <div className="text-xl font-black text-white">{stat.val}</div>
+              <div className="text-4xl font-black text-white uppercase tracking-tighter leading-none">{stat.val}</div>
             </div>
           ))}
         </div>
@@ -424,9 +441,9 @@ export default function TournamentsManager() {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full py-4 font-black ares-cut transition-all flex items-center justify-center gap-2 bg-ares-gold text-black hover:shadow-[0_0_30px_rgba(255,191,0,0.3)] disabled:opacity-50"
+              className="w-full py-5 font-black ares-cut-sm transition-all flex items-center justify-center gap-4 bg-ares-gold text-black hover:shadow-2xl hover:bg-white disabled:opacity-50 uppercase tracking-[0.3em] text-xs"
             >
-              {isSaving ? "Syncing..." : editingId === "new" ? "Archive to Event Registry" : "Update Tournament Record"}
+              {isSaving ? "SYNCHRONIZING_BUFFER..." : editingId === "new" ? "COMMIT_TO_EVENT_REGISTRY" : "UPDATE_TOURNAMENT_RECORD"}
             </button>
           </motion.div>
         )}

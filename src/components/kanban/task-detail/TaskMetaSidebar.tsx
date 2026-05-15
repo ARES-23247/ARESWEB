@@ -74,18 +74,21 @@ export function TaskMetaSidebar({
       <div className="p-6 space-y-6 flex flex-col">
         {/* Status */}
         <div>
-          <span className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">Status</span>
-          <div className="grid grid-cols-2 gap-1.5">
+          <span className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+            <div className="w-4 h-px bg-marble/10"></div>
+            DEPLOYMENT_STATUS
+          </span>
+          <div className="grid grid-cols-2 gap-2">
             {STATUS_OPTIONS.map(opt => {
               const Icon = opt.icon;
               return (
                 <button
                   key={opt.value}
                   onClick={() => setStatus(opt.value)}
-                  className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-bold ares-cut-sm transition-all ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 text-[9px] font-black uppercase tracking-[0.1em] ares-cut-sm transition-all border ${
                     status === opt.value
-                      ? "bg-white/10 border border-white/20 text-white shadow-inner"
-                      : "bg-ares-gray-dark/30 border border-white/5 text-ares-gray hover:text-white hover:bg-white/5"
+                      ? "bg-white/10 border-white/20 text-white shadow-lg shadow-white/5"
+                      : "bg-white/[0.02] border-white/5 text-marble/40 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   <Icon size={12} className={opt.color} />
@@ -98,16 +101,19 @@ export function TaskMetaSidebar({
 
         {/* Priority */}
         <div>
-          <span className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">Priority</span>
-          <div className="grid grid-cols-2 gap-1.5">
+          <span className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+            <div className="w-4 h-px bg-marble/10"></div>
+            THREAT_LEVEL
+          </span>
+          <div className="grid grid-cols-2 gap-2">
             {PRIORITY_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => setPriority(opt.value)}
-                className={`px-2.5 py-2 text-xs font-bold ares-cut-sm transition-all ${
+                className={`px-3 py-2.5 text-[9px] font-black uppercase tracking-[0.1em] ares-cut-sm transition-all border ${
                   priority === opt.value
-                    ? `${opt.color} border border-white/20 shadow-inner`
-                    : "bg-ares-gray-dark/30 border border-white/5 text-ares-gray hover:text-white hover:bg-white/5"
+                    ? `${opt.color} border-white/20 shadow-lg`
+                    : "bg-white/[0.02] border-white/5 text-marble/40 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {opt.label}
@@ -118,18 +124,19 @@ export function TaskMetaSidebar({
 
         {/* Labels */}
         <div className="relative" ref={labelDropdownRef}>
-          <span className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 flex items-center gap-1">
-            <Tag size={10} /> Labels
+          <span className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+            <div className="w-4 h-px bg-marble/10"></div>
+            <Tag size={10} /> CLASSIFICATION_LABELS
           </span>
 
-          <div className="flex flex-wrap gap-1.5 p-2 bg-ares-gray-dark/50 border border-white/10 ares-cut-sm min-h-[42px] content-start">
+          <div className="flex flex-wrap gap-2 p-3 bg-black/40 border border-white/5 ares-cut-sm min-h-[48px] content-start shadow-inner">
             {labelIds.map(labelId => {
               const label = GLOBAL_LABELS.find(l => l.id === labelId) || task.labels?.find(l => l.id === labelId);
               if (!label) return null;
               return (
-                <span key={label.id} className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black ares-cut-sm uppercase tracking-wider border ${label.colorTheme}`}>
+                <span key={label.id} className={`inline-flex items-center gap-2 px-2.5 py-1 text-[9px] font-black ares-cut-sm uppercase tracking-widest border shadow-sm ${label.colorTheme}`}>
                   {label.name}
-                  <button onClick={() => setLabelIds(labelIds.filter(id => id !== label.id))} className="opacity-70 hover:opacity-100 transition-opacity" title="Remove Label">
+                  <button onClick={() => setLabelIds(labelIds.filter(id => id !== label.id))} className="opacity-40 hover:opacity-100 transition-opacity" title="Declassify">
                     <X size={10} />
                   </button>
                 </span>
@@ -137,10 +144,10 @@ export function TaskMetaSidebar({
             })}
             <button
               onClick={() => setShowLabelDropdown(!showLabelDropdown)}
-              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-ares-gray hover:text-white transition-all ml-auto"
-              title="Add label"
+              className="inline-flex items-center justify-center w-7 h-7 ares-cut-sm bg-white/5 border border-white/10 hover:bg-ares-cyan/10 hover:text-ares-cyan hover:border-ares-cyan/30 text-marble/20 transition-all ml-auto shadow-xl"
+              title="Add classification"
             >
-              <Plus size={14} />
+              <Plus size={16} />
             </button>
           </div>
 
@@ -177,40 +184,44 @@ export function TaskMetaSidebar({
 
         {/* Subteam */}
         <div>
-          <span className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">Subteam</span>
+          <span className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+            <div className="w-4 h-px bg-marble/10"></div>
+            OPERATIONAL_SECTOR
+          </span>
           <select
             value={subteam}
             onChange={(e) => setSubteam(e.target.value)}
-            className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
+            className="w-full bg-black/40 border border-white/5 text-white text-[11px] font-black uppercase tracking-widest px-4 py-3 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner appearance-none cursor-pointer"
           >
-            <option value="">No Subteam</option>
+            <option value="">UNCATEGORIZED_SECTOR</option>
             {KANBAN_SUBTEAMS.map(team => (
-              <option key={team} value={team}>{team}</option>
+              <option key={team} value={team}>{team.toUpperCase()}</option>
             ))}
           </select>
         </div>
 
         {/* Assignees */}
         <div className="relative" ref={dropdownRef}>
-          <label className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 flex items-center gap-1">
-            <User size={10} /> Assignees ({assigneeIds.length})
+          <label className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+            <div className="w-4 h-px bg-marble/10"></div>
+            <User size={10} /> OPERATIONAL_ASSETS ({assigneeIds.length})
           </label>
 
-          <div className="flex flex-wrap gap-1.5 p-2 bg-ares-gray-dark/50 border border-white/10 ares-cut-sm min-h-[42px] content-start">
+          <div className="flex flex-wrap gap-2 p-3 bg-black/40 border border-white/5 ares-cut-sm min-h-[48px] content-start shadow-inner">
             {currentAssignees.map((m) => (
-              <span key={m.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan text-[10px] font-black ares-cut-sm uppercase tracking-wider">
+              <span key={m.id} className="inline-flex items-center gap-2 px-2.5 py-1 bg-ares-cyan/5 border border-ares-cyan/20 text-ares-cyan text-[9px] font-black ares-cut-sm uppercase tracking-widest shadow-sm">
                 {m.nickname || m.name}
-                <button onClick={() => toggleAssignee(m.id)} className="hover:text-white transition-colors" title="Remove Assignee">
+                <button onClick={() => toggleAssignee(m.id)} className="opacity-40 hover:opacity-100 transition-opacity" title="Remove Asset">
                   <X size={10} />
                 </button>
               </span>
             ))}
             <button
               onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-ares-gray hover:text-white transition-all ml-auto"
-              title="Add assignee"
+              className="inline-flex items-center justify-center w-7 h-7 ares-cut-sm bg-white/5 border border-white/10 hover:bg-ares-cyan/10 hover:text-ares-cyan hover:border-ares-cyan/30 text-marble/20 transition-all ml-auto shadow-xl"
+              title="Add asset"
             >
-              <Plus size={14} />
+              <Plus size={16} />
             </button>
           </div>
 
@@ -242,10 +253,11 @@ export function TaskMetaSidebar({
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="modal-start-date" className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">
-              <Calendar size={10} className="inline mr-1" /> Start Date
+            <label htmlFor="modal-start-date" className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+              <div className="w-4 h-px bg-marble/10"></div>
+              <Calendar size={10} /> INIT_DATE
             </label>
             <input
               id="modal-start-date"
@@ -253,14 +265,15 @@ export function TaskMetaSidebar({
               type="date"
               value={task.startDate || ""}
               onChange={(e) => onSave(task.id, { startDate: e.target.value })}
-              className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2.5 ares-cut-sm outline-none focus:border-ares-cyan/50 transition-colors"
+              className="w-full bg-black/40 border border-white/5 text-white text-[11px] font-black uppercase tracking-widest px-4 py-3 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner"
             />
           </div>
           <div>
-            <label htmlFor="modal-due-date" className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">
-              <Calendar size={10} className="inline mr-1" /> Due Date
+            <label htmlFor="modal-due-date" className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+              <div className="w-4 h-px bg-marble/10"></div>
+              <Calendar size={10} /> TERMINATION
               {isOverdue && (
-                <span className="ml-1.5 text-ares-red text-[9px] uppercase font-black">Overdue</span>
+                <span className="ml-2 text-ares-red text-[8px] uppercase font-black animate-pulse">! OVERDUE</span>
               )}
             </label>
             <input
@@ -269,22 +282,23 @@ export function TaskMetaSidebar({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className={`w-full bg-ares-gray-dark/50 border text-sm px-3 py-2.5 ares-cut-sm outline-none transition-colors ${
+              className={`w-full bg-black/40 border text-[11px] font-black uppercase tracking-widest px-4 py-3 ares-cut-sm outline-none transition-all shadow-inner ${
                 isOverdue
-                  ? "border-ares-red/40 text-ares-red focus:border-ares-red/60"
-                  : "border-white/10 text-white focus:border-ares-cyan/50"
+                  ? "border-ares-red/30 text-ares-red focus:border-ares-red/50"
+                  : "border-white/5 text-white focus:border-ares-cyan/30"
               }`}
             />
           </div>
         </div>
 
         {/* Time & Estimates */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <div className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">
-              <Clock size={10} className="inline mr-1 text-ares-gold" /> Time Logged
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="group/chrono">
+            <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/chrono:text-ares-gold transition-colors">
+              <div className="w-4 h-px bg-marble/10 group-hover/chrono:w-6 transition-all"></div>
+              <Clock size={10} className="text-ares-gold" /> SYSTEM_CHRONO
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 ares-cut-sm shadow-inner group-hover/chrono:border-ares-gold/20 transition-all">
               <input
                 type="number"
                 min="0"
@@ -295,9 +309,9 @@ export function TaskMetaSidebar({
                   const m = Math.floor((timeSpentSeconds % 3600) / 60);
                   setTimeSpentSeconds(h * 3600 + m * 60);
                 }}
-                className="w-16 bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-2 py-2 ares-cut-sm outline-none focus:border-ares-gold/50 text-center transition-colors"
+                className="w-full bg-white/5 border border-white/5 text-white text-xs font-mono font-black uppercase px-2 py-2 ares-cut-sm outline-none focus:border-ares-gold/30 text-center transition-all placeholder:text-marble/10"
               />
-              <span className="text-ares-gray font-bold">:</span>
+              <span className="text-marble/20 font-black animate-pulse">:</span>
               <input
                 type="number"
                 min="0"
@@ -309,22 +323,26 @@ export function TaskMetaSidebar({
                   const m = parseInt(e.target.value) || 0;
                   setTimeSpentSeconds(h * 3600 + m * 60);
                 }}
-                className="w-16 bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-2 py-2 ares-cut-sm outline-none focus:border-ares-gold/50 text-center transition-colors"
+                className="w-full bg-white/5 border border-white/5 text-white text-xs font-mono font-black uppercase px-2 py-2 ares-cut-sm outline-none focus:border-ares-gold/30 text-center transition-all placeholder:text-marble/10"
               />
             </div>
           </div>
-          <div>
-            <div className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 block">
-              <AlertTriangle size={10} className="inline mr-1 text-ares-gray" /> Estimate (Min)
+          <div className="group/estimate">
+            <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/estimate:text-ares-cyan transition-colors">
+              <div className="w-4 h-px bg-marble/10 group-hover/estimate:w-6 transition-all"></div>
+              <AlertTriangle size={10} className="text-marble/20 group-hover:text-ares-cyan" /> PREDICTIVE_T_MIN
             </div>
-            <input
-              type="number"
-              min="0"
-              placeholder="Total Minutes"
-              value={task.estimatedMinutes || ""}
-              onChange={(e) => onSave(task.id, { estimatedMinutes: parseInt(e.target.value) || undefined })}
-              className="w-full bg-ares-gray-dark/50 border border-white/10 text-white text-sm px-3 py-2 ares-cut-sm outline-none focus:border-white/30 transition-colors"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                placeholder="000"
+                value={task.estimatedMinutes || ""}
+                onChange={(e) => onSave(task.id, { estimatedMinutes: parseInt(e.target.value) || undefined })}
+                className="w-full bg-black/40 border border-white/5 text-white text-xs font-mono font-black uppercase tracking-widest px-4 py-[14px] ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner placeholder:text-marble/10 group-hover/estimate:bg-ares-cyan/5"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-marble/20 uppercase tracking-widest pointer-events-none">MIN</div>
+            </div>
           </div>
         </div>
 

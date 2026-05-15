@@ -186,33 +186,39 @@ export default function EventManagerTab({
       emptyIcon={<Calendar size={24} />}
       emptyMessage={`No ${view} events found.`}
       headerTitle={
-        <div className="flex items-center gap-4">
-          <h3 className={`font-bold uppercase tracking-widest text-xs ${view === 'trash' ? 'text-ares-red' : view === 'pending' ? 'text-ares-gold' : 'text-ares-cyan'}`}>
-            {view === 'trash' ? 'Trashed Events' : view === 'pending' ? 'Pending Events' : view === 'internal' ? 'Practices' : view === 'outreach' ? 'Outreach Events' : view === 'external' ? 'Community Events' : 'All Events'}
-          </h3>
-          {view !== 'trash' && view !== 'pending' && lastSyncedAt && !isNaN(new Date(lastSyncedAt).getTime()) && (
-            <span className="text-xs text-marble/50 font-medium uppercase tracking-tight bg-obsidian border border-white/10 px-2 py-0.5 ares-cut-sm">
-              Last Sync: {format(new Date(lastSyncedAt), 'MMM do, h:mm a')}
-            </span>
-          )}
+        <div className="flex flex-col">
+          <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+            <Calendar size={16} className={view === 'trash' ? 'text-ares-red' : view === 'pending' ? 'text-ares-gold' : 'text-ares-cyan'} />
+            {view === 'trash' ? 'TRASHED_EVENTS' : view === 'pending' ? 'PENDING_APPROVALS' : view === 'internal' ? 'PRACTICE_SESSIONS' : view === 'outreach' ? 'OUTREACH_DEPLOYMENTS' : view === 'external' ? 'COMMUNITY_RELATIONS' : 'ALL_OPERATIONS'}
+          </h2>
+          <div className="flex items-center gap-4 mt-1">
+            <p className="text-[9px] font-black text-marble/20 uppercase tracking-[0.4em]">
+              LOGISTICS_CORE // SCHEDULE_MANAGER
+            </p>
+            {view !== 'trash' && view !== 'pending' && lastSyncedAt && !isNaN(new Date(lastSyncedAt).getTime()) && (
+              <span className="text-[8px] font-black text-ares-cyan/40 uppercase tracking-[0.2em] bg-ares-cyan/5 border border-ares-cyan/10 px-2 py-0.5 ares-cut-sm">
+                LAST_SYNC: {format(new Date(lastSyncedAt), 'MMM do, h:mm a')}
+              </span>
+            )}
+          </div>
         </div>
       }
       headerActions={
         view !== 'trash' && view !== 'pending' ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => syncGcalMutation.mutate()}
               disabled={syncGcalMutation.isPending}
-              className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="text-[10px] font-black text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan hover:text-black border border-ares-cyan/20 px-4 py-2 ares-cut-sm transition-all uppercase tracking-widest shadow-lg shadow-ares-cyan/5"
             >
-              {syncGcalMutation.isPending ? "SYNCING..." : "SYNC GCAL"}
+              {syncGcalMutation.isPending ? "SYNCING..." : "SYNC_GCAL"}
             </button>
             <button
               onClick={() => repairGcalMutation.mutate()}
               disabled={repairGcalMutation.isPending}
-              className="text-xs font-bold text-ares-gold bg-ares-gold/10 hover:bg-ares-gold/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+              className="text-[10px] font-black text-ares-gold bg-ares-gold/10 hover:bg-ares-gold hover:text-black border border-ares-gold/20 px-4 py-2 ares-cut-sm transition-all uppercase tracking-widest shadow-lg shadow-ares-gold/5"
             >
-              {repairGcalMutation.isPending ? "REPAIRING..." : "REPAIR GCAL"}
+              {repairGcalMutation.isPending ? "REPAIRING..." : "REPAIR_GCAL"}
             </button>
           </div>
         ) : undefined

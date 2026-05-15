@@ -144,20 +144,25 @@ export default function DocManagerTab({
         emptyIcon={<FileText size={24} />}
         emptyMessage={`No ${view} docs found.`}
         headerTitle={
-          <span className="flex items-center gap-2">
-            {view === 'active' ? (
-              <><span className="font-heading font-bold text-ares-red uppercase tracking-wider">ARES</span><span className="font-heading font-medium text-white uppercase tracking-widest">Lib</span>&nbsp;Documentation</>
-            ) : view === 'pending' ? 'Pending Docs' : 'Trashed Docs'}
-          </span>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              {view === 'active' ? (
+                <><span className="text-ares-red">ARES</span>LIB // DOCUMENTATION</>
+              ) : view === 'pending' ? 'PENDING_REVIEWS' : 'TRASHED_ASSETS'}
+            </h2>
+            <p className="text-[9px] font-black text-marble/20 uppercase tracking-[0.4em] mt-1">
+              CENTRAL_INTELLIGENCE // DATABASE_ACCESS
+            </p>
+          </div>
         }
         headerActions={
           view === 'active' ? (
             <button
               onClick={exportAllDocs}
-              className="text-xs font-bold text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan normal-case tracking-normal"
+              className="text-[10px] font-black text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan hover:text-black border border-ares-cyan/20 px-4 py-2 ares-cut-sm transition-all flex items-center gap-2 uppercase tracking-widest shadow-lg shadow-ares-cyan/5"
             >
-              <Download size={12} />
-              BACKUP ALL
+              <Download size={14} />
+              BACKUP_ALL
             </button>
           ) : undefined
         }

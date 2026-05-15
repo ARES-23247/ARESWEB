@@ -37,8 +37,9 @@ export function SortableTaskCard({
       ref={setNodeRef}
       {...({ style } as React.HTMLAttributes<HTMLDivElement>)}
       data-testid="task-card"
-      className="p-2.5 bg-obsidian/60 hover:bg-ares-gray-dark/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all group relative flex gap-2"
+      className="p-3.5 bg-black/60 hover:bg-black/80 ares-cut-sm border border-white/5 hover:border-ares-cyan/30 transition-all group relative flex gap-3 shadow-lg hover:shadow-ares-cyan/10 overflow-hidden"
     >
+      <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-300"></div>
       <button 
         {...attributes}
         {...listeners}
@@ -54,10 +55,10 @@ export function SortableTaskCard({
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-            className="text-sm font-bold text-white leading-tight flex-1 text-left hover:text-ares-cyan transition-colors flex items-center gap-1.5 group/title"
+            className="text-[11px] font-black uppercase tracking-[0.1em] text-white leading-tight flex-1 text-left hover:text-ares-cyan transition-colors flex items-start gap-2 group/title"
           >
-          {task.title}
-          <Edit3 size={10} className="text-ares-gray opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0" />
+          <span className="flex-1">{task.title}</span>
+          <Edit3 size={10} className="text-marble/20 opacity-0 group-hover/title:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
         </button>
         <div className="relative flex-shrink-0">
           <button
@@ -98,9 +99,9 @@ export function SortableTaskCard({
       
       {/* Labels */}
       {task.labels && task.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-1.5">
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
           {task.labels.map(l => (
-            <span key={l.id} className={`px-1 py-0.5 text-[8px] font-black uppercase border ares-cut-sm ${l.colorTheme || "border-white/10 bg-white/5 text-white"}`}>
+            <span key={l.id} className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest border ares-cut-sm shadow-sm ${l.colorTheme || "border-white/5 bg-white/[0.02] text-marble/40"}`}>
               {l.name}
             </span>
           ))}
@@ -109,21 +110,21 @@ export function SortableTaskCard({
 
       {/* Attachments, Checklists & Subtasks */}
       {(task.checklists?.length || task.attachments?.length || subtasksCount > 0) ? (
-        <div className="flex items-center gap-2 mb-1.5 text-[10px] text-ares-gray font-bold">
+        <div className="flex items-center gap-3 mb-3 text-[9px] font-black uppercase tracking-[0.2em]">
           {subtasksCount > 0 && (
-            <span className={`flex items-center gap-1 ${completedSubtasksCount === subtasksCount ? 'text-ares-cyan' : ''}`}>
+            <span className={`flex items-center gap-1.5 px-1.5 py-0.5 ares-cut-sm border ${completedSubtasksCount === subtasksCount ? 'bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20' : 'bg-white/5 text-marble/20 border-white/5'}`}>
               <Layers size={10} /> 
               {completedSubtasksCount}/{subtasksCount}
             </span>
           )}
           {task.checklists && task.checklists.length > 0 && (
-            <span className={`flex items-center gap-1 ${task.checklists.every(c => c.isCompleted === 1) ? 'text-ares-cyan' : ''}`}>
+            <span className={`flex items-center gap-1.5 px-1.5 py-0.5 ares-cut-sm border ${task.checklists.every(c => c.isCompleted === 1) ? 'bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20' : 'bg-white/5 text-marble/20 border-white/5'}`}>
               <ListTodo size={10} /> 
               {task.checklists.filter(c => c.isCompleted === 1).length}/{task.checklists.length}
             </span>
           )}
           {task.attachments && task.attachments.length > 0 && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5 px-1.5 py-0.5 ares-cut-sm border bg-white/5 text-marble/20 border-white/5">
               <Paperclip size={10} />
               {task.attachments.length}
             </span>
@@ -139,11 +140,11 @@ export function SortableTaskCard({
             </span>
           )}
           {task.assignees && task.assignees.length > 0 ? (
-            <div className="flex -space-x-1 overflow-hidden">
+            <div className="flex -space-x-2 shrink-0">
               {task.assignees?.map((a) => (
                 <div 
                   key={a.id} 
-                  className="w-4 h-4 rounded-full bg-ares-gray-dark border border-white/20 flex items-center justify-center text-[8px] font-black"
+                  className="w-5 h-5 ares-cut-sm bg-black border border-ares-cyan/40 flex items-center justify-center text-[8px] font-black text-ares-cyan shadow-lg"
                   title={a.nickname || "Anonymous"}
                 >
                   {a.nickname?.charAt(0).toUpperCase() || "?"}

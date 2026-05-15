@@ -97,47 +97,53 @@ export default function Outreach() {
   }), { hours: 0, reach: 0, events: 0 });
 
   return (
-    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
+    <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
       <SEO title="Community Impact" description="Empowering Morgantown and beyond through STEM outreach. Track our service hours, community reach, and impact initiatives." />
       
-      {/* Background Ambience Removed for Axe Testing */}
-
       {/* Hero */}
-      <section className="py-32 px-6 relative z-10 bg-ares-gray-deep">
-        <div className="max-w-5xl mx-auto text-center bg-obsidian p-10 ares-cut-lg border border-white/5 shadow-2xl relative z-10">
-          <div className="inline-flex items-center gap-2 px-6 py-2 ares-cut-sm bg-ares-red text-white text-xs font-black uppercase tracking-widest mb-8 shadow-lg shadow-ares-red/20">
+      <section className="py-40 px-6 relative z-10 bg-obsidian">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
+           <div className="absolute left-[10%] top-[20%] w-[40%] h-[40%] opacity-[0.03] bg-contain bg-no-repeat bg-[url('/favicon.png')] -rotate-12"></div>
+        </div>
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-4 px-6 py-2 ares-cut-sm bg-ares-red/10 text-ares-red text-[10px] font-black uppercase tracking-[0.4em] mb-12 border border-ares-red/20 shadow-[0_0_20px_rgba(192,0,0,0.1)]">
             <Activity size={14} className="animate-pulse" />
             Active Impact Reporting
           </div>
-          <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter">
-            Engineering <br/> <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white font-bold">Change</span>.
+          <h1 className="text-7xl md:text-[10rem] font-black text-white mb-10 uppercase tracking-tighter leading-[0.8]">
+            Engineering <br/><span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20 italic">Change.</span>
           </h1>
-          <p className="text-marble text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
+          <p className="text-marble/40 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
             ARES 23247 isn&apos;t just about building robots. We&apos;re building a community that values curiosity, innovation, and service.
           </p>
         </div>
       </section>
 
       {/* Live Impact Stats */}
-      <section className="py-12 px-6 relative z-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section className="py-24 px-6 relative z-10 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { label: "Community Reach", val: totals.reach.toLocaleString(), icon: <div className="w-16 h-16 ares-cut bg-ares-red flex items-center justify-center shadow-lg"><Target className="text-white" size={32} /></div>, desc: "Estimated lives touched by ARES demos and events." },
-              { label: "Service Hours", val: totals.hours.toLocaleString(), icon: <div className="w-16 h-16 ares-cut bg-ares-gold flex items-center justify-center shadow-lg"><Clock className="text-black" size={32} /></div>, desc: "Total student hours dedicated to community STEM engagement." },
-              { label: "Impact Events", val: totals.events, icon: <div className="w-16 h-16 ares-cut bg-ares-cyan flex items-center justify-center shadow-lg"><Heart className="text-black" size={32} /></div>, desc: "Unique workshops, demos, and volunteer sessions completed." },
+              { label: "Community Reach", val: totals.reach.toLocaleString(), icon: <Target size={32} />, accent: "ares-red", desc: "Estimated lives touched by ARES demos and events." },
+              { label: "Service Hours", val: totals.hours.toLocaleString(), icon: <Clock size={32} />, accent: "ares-gold", desc: "Total student hours dedicated to community STEM engagement." },
+              { label: "Impact Events", val: totals.events, icon: <Heart size={32} />, accent: "ares-cyan", desc: "Unique workshops, demos, and volunteer sessions completed." },
             ].map((stat, idx) => (
               <motion.div
                 key={stat.label}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + (idx * 0.1) }}
-                className="bg-obsidian border border-white/10 p-8 ares-cut-lg relative group hover:border-white/20 transition-all shadow-xl"
+                className="bg-black/40 border border-white/5 p-12 ares-cut-lg relative group hover:border-white/20 transition-all duration-700 shadow-2xl backdrop-blur-sm overflow-hidden"
               >
-                <div className="mb-6">{stat.icon}</div>
-                <div className="text-5xl font-black text-white mb-2 tracking-tighter">{stat.val}</div>
-                <div className="text-xs font-bold uppercase tracking-widest text-white mb-4">{stat.label}</div>
-                <p className="text-marble text-sm italic">{stat.desc}</p>
+                <div className={`absolute top-0 right-0 w-48 h-48 opacity-[0.02] -mr-12 -mt-12 bg-${stat.accent} blur-[100px] group-hover:opacity-20 transition-opacity duration-1000`}></div>
+                <div className={`w-20 h-20 ares-cut-sm bg-black/60 border border-white/5 flex items-center justify-center mb-10 group-hover:border-${stat.accent}/30 transition-all duration-500 shadow-xl group-hover:scale-110`}>
+                  <div className={`text-white transition-colors duration-500 group-hover:text-${stat.accent}`}>
+                    {stat.icon}
+                  </div>
+                </div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter tabular-nums leading-none">{stat.val}</div>
+                <div className={`text-[10px] font-black uppercase tracking-[0.4em] text-${stat.accent} mb-8`}>{stat.label}</div>
+                <p className="text-marble/40 text-base leading-relaxed font-medium italic">{stat.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -145,29 +151,31 @@ export default function Outreach() {
       </section>
 
       {/* Spark! Initiative */}
-      <section className="py-32 px-6 bg-obsidian border-t border-white/5 text-marble ares-cut-lg relative z-10 mt-20">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tighter">Sparking Curiosity.</h2>
-            <p className="text-lg leading-relaxed mb-6 font-medium text-marble/80">
-              ARES is proud to partner with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors underline font-black">Spark! Imagination and Science Center</a> in Morgantown. 
+      <section className="py-40 px-6 bg-black border-y border-white/5 text-marble relative z-10 mt-32 overflow-hidden">
+        <div className="absolute inset-0 bg-ares-red/5 skew-y-[-5deg] translate-y-32"></div>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-24 items-center relative z-10">
+          <div className="lg:col-span-7">
+            <div className="bg-ares-gold/10 text-ares-gold px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-ares-gold/20 inline-block shadow-[0_0_20px_rgba(212,175,55,0.1)]">
+              Strategic Partnership
+            </div>
+            <h2 className="text-5xl md:text-8xl font-black text-white mb-10 uppercase tracking-tighter leading-none">Sparking <br /><span className="text-ares-red italic">Curiosity.</span></h2>
+            <p className="text-xl leading-relaxed mb-8 font-medium text-marble/60 max-w-2xl">
+              ARES is proud to partner with <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors underline font-black uppercase tracking-widest text-xs border-b border-white/10 pb-1">Spark! Imagination and Science Center</a> in Morgantown. 
             </p>
-            <p className="text-lg leading-relaxed text-marble/80">
+            <p className="text-xl leading-relaxed text-marble/60 max-w-2xl">
               Together, we are developing a new rotating exhibit structure that highlights STEM stories unique to West Virginia. Our first project is the <strong>WV Bridge Exhibit</strong>, using the Engineering Design Process to teach children about structural integrity and local history.
             </p>
-            <div className="mt-10 flex gap-4">
-               <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-ares-red text-white font-black ares-cut-sm hover:scale-105 transition-all shadow-lg shadow-ares-red/20">Support Spark!</a>
-               <a href="/join" className="px-6 py-3 bg-white/5 border border-white/10 text-marble font-black ares-cut-sm hover:bg-white/10 transition-all">Join the Mission</a>
+            <div className="mt-16 flex flex-wrap gap-8">
+               <a href="https://sparkwv.org" target="_blank" rel="noopener noreferrer" className="px-10 py-5 bg-ares-red text-white font-black uppercase tracking-[0.2em] text-xs ares-cut-sm hover:bg-white hover:text-ares-red transition-all shadow-[0_0_30px_rgba(192,0,0,0.3)]">Support Spark!</a>
+               <a href="/join" className="px-10 py-5 bg-white/5 border border-white/10 text-marble/40 font-black uppercase tracking-[0.2em] text-xs ares-cut-sm hover:bg-white/10 hover:text-white transition-all">Join the Mission</a>
             </div>
           </div>
-          <div className="relative">
-             <div className="aspect-square bg-ares-red ares-cut-lg overflow-hidden rotate-3 shadow-2xl border-8 border-obsidian">
-                <div className="w-full h-full flex items-center justify-center text-white">
-                   <Target size={120} strokeWidth={1} />
-                </div>
+          <div className="lg:col-span-5 relative">
+             <div className="aspect-square bg-black/40 border border-white/5 ares-cut-lg overflow-hidden rotate-3 shadow-2xl backdrop-blur-sm group hover:rotate-0 transition-all duration-1000 flex items-center justify-center">
+                <Target size={160} strokeWidth={1} className="text-white/20 group-hover:text-ares-red transition-colors duration-1000 group-hover:scale-110" />
              </div>
-             <div className="absolute -bottom-8 -left-8 bg-ares-gold text-black p-8 ares-cut-lg font-black -rotate-6 shadow-xl max-w-[200px] text-center">
-                Empowering the next generation.
+             <div className="absolute -bottom-10 -left-10 bg-ares-gold text-black px-10 py-8 ares-cut-lg font-black -rotate-6 shadow-[0_0_50px_rgba(212,175,55,0.3)] max-w-[240px] text-center text-xs uppercase tracking-[0.2em] leading-loose">
+                Empowering the next generation of Mountaineers.
              </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import SEO from "../components/SEO";
@@ -30,20 +30,17 @@ export default function Blog() {
     >
       <SEO title="Team Blog" description="Latest updates, engineering insights, and outreach recaps from ARES 23247." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="mb-12"
-        >
-          <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-4">Engineering & Outreach</h3>
-          <h1 className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter">
-            Team <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white font-bold">Blog</span>.
+        <div className="mb-20">
+          <div className="bg-ares-gold/10 text-ares-gold px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-8 border border-ares-gold/20 inline-block">
+             Field Log // Engineering
+          </div>
+          <h1 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-8">
+            Team <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">Blog</span>
           </h1>
-          <p className="text-marble text-lg font-medium mt-4 max-w-2xl text-balance">
+          <p className="text-marble/40 text-xl max-w-2xl font-medium leading-relaxed">
             Read deep dives into our codebase, mechanical design process, and reflections on our outreach events.
           </p>
-        </motion.div>
+        </div>
 
         <motion.div 
           initial={{ y: 30, opacity: 0 }}
@@ -52,28 +49,39 @@ export default function Blog() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {posts.map((post: PostRecord) => (
-            <Link to="/blog/$slug" params={{ slug: post.slug }} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-              <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
-                <div className="relative h-56 w-full overflow-hidden">
-                  <img src={post.thumbnail || DEFAULT_coverImage} alt={post.title} className={`w-full h-full group-hover:scale-110 transition-transform duration-700 ${post.thumbnail ? 'object-cover' : 'object-contain p-8 bg-black/80'}`} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+            <Link to="/blog/$slug" params={{ slug: post.slug }} key={post.slug} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan h-full">
+              <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden cursor-pointer flex flex-col h-full transition-all duration-700 hover:border-ares-red/30 hover:shadow-[0_20px_40px_rgba(192,0,0,0.15)] backdrop-blur-sm">
+                <div className="relative h-64 w-full overflow-hidden bg-black/60">
+                  <img 
+                    src={post.thumbnail || DEFAULT_coverImage} 
+                    alt={post.title} 
+                    className={`w-full h-full group-hover:scale-110 transition-transform duration-1000 ${post.thumbnail ? 'object-cover' : 'object-contain p-12 opacity-20'}`} 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+                  <div className="absolute bottom-6 left-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-red bg-ares-red/10 border border-ares-red/20 px-3 py-1 ares-cut-sm backdrop-blur-md">
+                      {post.date ? format(new Date(post.date), 'MMM yyyy') : 'Recent'}
+                    </span>
+                  </div>
                 </div>
-                <div className="p-6 flex-grow flex flex-col">
-                  <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red transition-colors">{post.title}</h4>
-                  <p className="text-sm text-white/60 line-clamp-3 mb-4">{post.snippet}</p>
+                <div className="p-8 flex-grow flex flex-col">
+                  <h4 className="text-xl font-black text-white mb-4 group-hover:text-ares-red transition-colors uppercase tracking-tighter leading-tight line-clamp-2">{post.title}</h4>
+                  <p className="text-marble/40 text-sm font-medium line-clamp-3 mb-8 leading-relaxed">{post.snippet}</p>
                   
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                    <p className="text-xs text-white/50">{post.date ? format(new Date(post.date), 'MMMM do, yyyy') : 'No date'}</p>
+                  <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
                     {(post.authorAvatar || post.authorNickname) && (
-                      <div className="flex items-center gap-1.5" title={post.authorNickname ?? undefined}>
+                      <div className="flex items-center gap-3" title={post.authorNickname ?? undefined}>
                         <img
-                          src={post.authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorNickname || post.slug}`}
+                          src={post.authorAvatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${post.authorNickname || post.slug}`}
                           alt={`${post.authorNickname || "Author"}'s avatar`}
-                          className="w-5 h-5 rounded-full object-cover border border-white/10"
+                          className="w-6 h-6 ares-cut border border-white/10 object-cover"
                         />
-                        <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[100px]">{post.authorNickname || "ARES Author"}</span>
+                        <span className="text-[10px] uppercase font-black tracking-[0.2em] text-marble/60 truncate max-w-[120px]">{post.authorNickname || "ARES Author"}</span>
                       </div>
                     )}
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ares-red transition-colors flex items-center gap-2">
+                       Read More <span className="text-lg">→</span>
+                    </div>
                   </div>
                 </div>
               </div>

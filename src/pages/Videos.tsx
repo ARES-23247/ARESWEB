@@ -30,14 +30,15 @@ export default function Videos() {
         description="Watch ARES 23247's video collection including robot reveals, match footage, and team documentaries."
       />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
-        <div className="mb-12">
-          <h3 className="text-ares-danger-soft font-bold uppercase tracking-widest text-sm mb-2">
-            Moving Pictures
-          </h3>
-          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm">
-            Team <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">Videos</span>
+      <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
+        <div className="mb-20">
+          <div className="bg-ares-gold/10 text-ares-gold px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-8 border border-ares-gold/20 inline-block">
+             Cine-Log // Operations
+          </div>
+          <h1 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-8">
+            Team <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">Videos</span>
           </h1>
-          <p className="text-white/60 mt-4 max-w-2xl text-balance">
+          <p className="text-marble/40 text-xl max-w-2xl font-medium leading-relaxed">
             Watch robot reveals, match footage, and behind-the-scenes content from our journey through FIRST Tech Challenge.
           </p>
         </div>
@@ -57,14 +58,14 @@ export default function Videos() {
                 key={video.id}
                 to="/videos/$id"
                 params={{ id: video.id }}
-                className="group bg-black/40 border border-white/10 ares-cut-sm overflow-hidden hover:border-ares-red/50 transition-all hover:shadow-[0_0_30px_rgba(220,38,38,0.1)]"
+                className="group bg-black/40 border border-white/5 ares-cut-lg overflow-hidden transition-all duration-700 hover:border-ares-red/30 hover:shadow-[0_20px_40px_rgba(192,0,0,0.15)] backdrop-blur-sm"
               >
-                <div className="relative aspect-video overflow-hidden bg-black">
+                <div className="relative aspect-video overflow-hidden bg-black/60">
                   {video.thumbnailUrl ? (
                     <img
                       src={video.thumbnailUrl}
                       alt={video.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -73,21 +74,21 @@ export default function Videos() {
                       </span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-16 h-16 bg-ares-red/90 rounded-full flex items-center justify-center">
-                      <Play className="text-white ml-1" size={24} />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-ares-red/90 ares-cut flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-500">
+                      <Play className="text-white ml-1 fill-white" size={24} />
                     </div>
                   </div>
-                  <div className="absolute top-2 left-2">
-                    <span className={`text-[10px] uppercase font-bold tracking-wider bg-black/60 px-2 py-1 rounded ${getPlatformColor(video.platform)}`}>
+                  <div className="absolute top-4 left-4">
+                    <span className={`text-[8px] uppercase font-black tracking-[0.2em] bg-black/80 px-3 py-1 ares-cut-sm border border-white/10 ${getPlatformColor(video.platform)}`}>
                       {video.platform}
                     </span>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h2 className="text-white font-bold text-lg mb-1 line-clamp-2">{video.title}</h2>
+                <div className="p-8">
+                  <h2 className="text-white font-black text-lg mb-3 line-clamp-2 uppercase tracking-tighter leading-tight group-hover:text-ares-red transition-colors">{video.title}</h2>
                   {video.description && (
-                    <p className="text-white/60 text-sm line-clamp-2">{video.description}</p>
+                    <p className="text-marble/40 text-xs font-medium line-clamp-2 leading-relaxed">{video.description}</p>
                   )}
                 </div>
               </Link>

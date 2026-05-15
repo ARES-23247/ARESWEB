@@ -147,97 +147,100 @@ export default function AdminUsers() {
 
   const columns = useMemo(() => [
     columnHelper.accessor("name", {
-      header: "User",
+      header: "OPERATIVE",
       cell: info => (
-        <a href={`/profile/${info.row.original.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <img src={info.row.original.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${info.row.original.id}`}
-            alt={`${info.row.original.nickname || info.row.original.name || "User"}'s avatar`} className="w-8 h-8 ares-cut-sm bg-obsidian" />
+        <a href={`/profile/${info.row.original.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 hover:opacity-80 transition-opacity group/user">
+          <div className="relative">
+            <img src={info.row.original.image || `https://api.dicebear.com/9.x/bottts/svg?seed=${info.row.original.id}`}
+              alt={`${info.row.original.nickname || info.row.original.name || "User"}'s avatar`} className="w-10 h-10 ares-cut-sm bg-obsidian border border-white/10 group-hover/user:border-ares-red/50 transition-all" />
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-ares-cyan rounded-full border-2 border-obsidian"></div>
+          </div>
           <div>
-            <span className="text-sm font-bold text-white block hover:text-ares-red">{info.row.original.nickname || info.getValue() || "ARES Member"}</span>
-            <span className="text-[10px] text-white/40 font-mono">{info.row.original.id.slice(0, 8)}</span>
+            <span className="text-sm font-black text-white block uppercase tracking-wider group-hover/user:text-ares-red transition-colors">{info.row.original.nickname || info.getValue() || "ARES_OPERATIVE"}</span>
+            <span className="text-[10px] text-marble/20 font-black uppercase tracking-widest">{info.row.original.id.slice(0, 8)} // NODE_ID</span>
           </div>
         </a>
       ),
     }),
     columnHelper.accessor("email", {
-      header: "Email",
-      cell: info => <span className="text-sm text-white/60">{info.getValue() || "—"}</span>,
+      header: "COMMS_CHANNEL",
+      cell: info => <span className="text-xs font-black uppercase tracking-widest text-marble/40">{info.getValue() || "—"}</span>,
     }),
     columnHelper.accessor("role", {
-      header: "Role",
+      header: "AUTHORITY_LEVEL",
       cell: info => (
         <div className="relative inline-block">
           <select
             value={info.getValue() || "user"}
             onChange={e => changeRole(info.row.original.id, e.target.value)}
             title="Change user role"
-            className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none ${
-              info.getValue() === "admin" ? "border-ares-red text-ares-red" :
-              info.getValue() === "author" ? "border-ares-gold text-ares-gold" :
-              "border-white/20 text-white/60"
+            className={`appearance-none bg-black/40 border ares-cut-sm px-4 py-1.5 pr-8 text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer focus:outline-none transition-all ${
+              info.getValue() === "admin" ? "border-ares-red text-ares-red bg-ares-red/5" :
+              info.getValue() === "author" ? "border-ares-gold text-ares-gold bg-ares-gold/5" :
+              "border-white/10 text-marble/40 hover:border-white/20"
             }`}
           >
-            {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+            {ROLES.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
           </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
         </div>
       ),
     }),
     columnHelper.accessor("memberType", {
-      header: "Type",
+      header: "UNIT_CLASSIFICATION",
       cell: info => (
         <div className="relative inline-block">
           <select
             value={info.getValue() || "student"}
             onChange={e => changeMemberType(info.row.original.id, e.target.value)}
             title="Change member type"
-            className={`appearance-none bg-transparent border ares-cut-sm px-3 py-1 pr-7 text-xs font-bold cursor-pointer focus:outline-none capitalize ${
-              info.getValue() === "alumni" ? "border-ares-gold/50 text-ares-gold" :
-              ["alumnus", "parent", "coach", "mentor", "sponsor"].includes(info.getValue() || "") ? "border-ares-gold/30 text-ares-gold/70" :
-              "border-white/20 text-white/60"
+            className={`appearance-none bg-black/40 border ares-cut-sm px-4 py-1.5 pr-8 text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer focus:outline-none transition-all ${
+              info.getValue() === "alumni" || info.getValue() === "alumnus" ? "border-ares-gold/50 text-ares-gold bg-ares-gold/5" :
+              ["parent", "coach", "mentor", "sponsor"].includes(info.getValue() || "") ? "border-ares-gold/20 text-ares-gold/60" :
+              "border-white/10 text-marble/40 hover:border-white/20"
             }`}
           >
-            {MEMBER_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
+            {MEMBER_TYPES.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
           </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" />
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" />
         </div>
       ),
     }),
     columnHelper.accessor("createdAt", {
-      header: "Joined",
-      cell: info => <span className="text-xs text-white/60">{info.getValue() ? new Date(info.getValue() as string | number | Date).toLocaleDateString() : "—"}</span>,
+      header: "COMMISSION_DATE",
+      cell: info => <span className="text-[10px] font-black uppercase tracking-widest text-marble/40">{info.getValue() ? new Date(info.getValue() as string | number | Date).toLocaleDateString() : "—"}</span>,
     }),
     columnHelper.display({
       id: "actions",
-      header: () => <div className="text-right">Actions</div>,
+      header: () => <div className="text-right">COMMAND_OVERRIDE</div>,
       cell: info => (
-        <div className="text-right">
+        <div className="flex items-center justify-end gap-2">
           {info.row.original.email && (
             <a href={`https://aresfirst.zulipchat.com/#narrow/pm-with/${info.row.original.email}`}
               target="_blank" rel="noopener noreferrer"
               title="Message on Zulip"
               aria-label={`Message ${info.row.original.name} on Zulip`}
-              className="inline-block p-2 mr-1 text-white/60 hover:text-ares-cyan transition-all ares-cut-sm hover:bg-ares-cyan/10">
-              <MessageSquare size={18} />
+              className="p-2.5 text-marble/20 hover:text-ares-cyan transition-all ares-cut-sm bg-white/5 hover:bg-ares-cyan/10 border border-white/5 hover:border-ares-cyan/20">
+              <MessageSquare size={16} />
             </a>
           )}
           <button onClick={() => setPointsUserId(info.row.original.id)}
             title="Manage points"
             aria-label={`Manage points for ${info.row.original.name}`}
-            className="p-2 mr-1 text-white/60 hover:text-ares-cyan transition-all ares-cut-sm hover:bg-ares-cyan/10">
-            <Zap size={18} />
+            className="p-2.5 text-marble/20 hover:text-ares-cyan transition-all ares-cut-sm bg-white/5 hover:bg-ares-cyan/10 border border-white/5 hover:border-ares-cyan/20">
+            <Zap size={16} />
           </button>
           <button onClick={() => setEditUserId(info.row.original.id)}
             title="Edit user profile"
             aria-label={`Edit profile for ${info.row.original.name}`}
-            className="p-2 mr-1 text-white/60 hover:text-ares-gold transition-all ares-cut-sm hover:bg-ares-gold/10">
-            <Edit3 size={18} />
+            className="p-2.5 text-marble/20 hover:text-ares-gold transition-all ares-cut-sm bg-white/5 hover:bg-ares-gold/10 border border-white/5 hover:border-ares-gold/20">
+            <Edit3 size={16} />
           </button>
           <button onClick={() => removeUser(info.row.original.id, info.row.original.nickname || info.row.original.name || "user")}
             title="Remove user"
             aria-label={`Remove user ${info.row.original.name}`}
-            className="p-2 text-white/60 hover:text-ares-red transition-all ares-cut-sm hover:bg-ares-red/10">
-            <Trash2 size={18} />
+            className="p-2.5 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 hover:bg-ares-red/10 border border-white/5 hover:border-ares-red/20">
+            <Trash2 size={16} />
           </button>
         </div>
       ),
@@ -295,88 +298,104 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
-          <Shield size={20} className="text-ares-red" /> User Management
-        </h2>
-        <div className="flex items-center gap-4">
-           <button
-             onClick={exportToCSV}
-             className="flex items-center gap-2 bg-obsidian hover:bg-white/10 text-white font-bold py-2 px-4 ares-cut-sm transition-colors border border-white/10 text-sm"
-             title="Export users to CSV"
-           >
-             <Download size={16} />
-             <span className="hidden sm:inline">Export CSV</span>
-           </button>
-           <button
-             onClick={() => auditMutation.mutate()}
-             disabled={auditMutation.isPending}
-             className="flex items-center gap-2 bg-ares-red hover:bg-ares-red/80 text-white font-bold py-2 px-4 ares-cut-sm transition-colors text-sm disabled:opacity-50"
-             title="Audit missing Zulip users"
-           >
-             {auditMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Users size={16} />}
-             <span className="hidden sm:inline">Audit Zulip</span>
-           </button>
+    <div className="space-y-10">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-black/40 border border-white/5 p-10 ares-cut-lg backdrop-blur-sm relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover:h-full transition-all duration-700"></div>
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none flex items-center gap-4">
+            <Shield size={32} className="text-ares-red" /> OPERATIVE_REGISTRY
+          </h2>
+          <p className="text-marble/20 text-[10px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+            <span className="w-6 h-px bg-white/10"></span>
+            MANAGE_UNIT_AUTHORITY_AND_MERIT_RECORDS
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4 relative z-10">
            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
               <input
                 type="text"
                 value={globalFilter}
                 onChange={e => setGlobalFilter(e.target.value)}
-                placeholder="Search users..."
-                className="bg-white/5 border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-sm text-white focus:border-ares-red outline-none transition-all w-64"
+                placeholder="FILTER_OPERATIVES..."
+                className="bg-black/40 border border-white/10 ares-cut-sm pl-12 pr-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white focus:border-ares-red outline-none transition-all w-full md:w-72 placeholder:text-white/5 shadow-inner"
               />
            </div>
-           <span className="text-white/60 text-sm font-bold whitespace-nowrap">{users.length} registered</span>
+           
+           <button
+             onClick={exportToCSV}
+             className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] py-3 px-6 ares-cut-sm transition-all border border-white/10 text-[10px] shadow-lg shadow-black/20"
+             title="Export users to CSV"
+           >
+             <Download size={16} />
+             <span className="hidden sm:inline">EXPORT_DATA</span>
+           </button>
+           
+           <button
+             onClick={() => auditMutation.mutate()}
+             disabled={auditMutation.isPending}
+             className="flex items-center gap-3 bg-ares-red/10 hover:bg-ares-red text-white font-black uppercase tracking-[0.2em] py-3 px-6 ares-cut-sm transition-all border border-ares-red/30 text-[10px] disabled:opacity-50 shadow-lg shadow-ares-red/5"
+             title="Audit missing Zulip users"
+           >
+             {auditMutation.isPending ? <RefreshCw size={16} className="animate-spin" /> : <Users size={16} />}
+             <span className="hidden sm:inline">AUDIT_COMMS</span>
+           </button>
+           
+           <div className="bg-ares-red/5 px-4 py-3 ares-cut-sm border border-ares-red/20 hidden lg:flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-ares-red animate-pulse"></div>
+             <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">{allUsers.length} REGISTERED_NODES</span>
+           </div>
         </div>
       </div>
 
       {isError && (
-        <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
-          TELEMETRY FAULT: Failed to synchronize user authority records.
+        <div className="bg-ares-red/10 border border-ares-red/30 p-6 ares-cut-lg text-ares-red text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-4 animate-pulse">
+          <RefreshCw className="animate-spin" size={20} />
+          TELEMETRY_FAULT: FAILED_TO_SYNCHRONIZE_USER_AUTHORITY_RECORDS
         </div>
       )}
 
-      <div className="overflow-x-auto bg-black/40 border border-white/5 ares-cut-lg">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 z-20 bg-ares-gray-deep/95 backdrop-blur-md shadow-sm">
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id} className="border-b border-white/10 bg-white/5">
-                {headerGroup.headers.map(header => (
-                  <th 
-                    key={header.id} 
-                    className="px-4 py-4 text-xs font-black uppercase tracking-widest text-white/40 cursor-pointer hover:text-white transition-colors"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <div className="flex items-center gap-2">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {{
-                        asc: <ChevronUp size={14} />,
-                        desc: <ChevronDown size={14} />,
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {rows.map(row => (
-              <tr 
-                key={row.id} 
-                className="hover:bg-white/[0.03] transition-colors group"
-              >
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-4 py-2">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden backdrop-blur-sm shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-black/60 border-b border-white/10">
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th 
+                      key={header.id} 
+                      className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-marble/40 cursor-pointer hover:text-white transition-colors relative"
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <div className="flex items-center gap-3">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{
+                          asc: <ChevronUp size={14} className="text-ares-red" />,
+                          desc: <ChevronDown size={14} className="text-ares-red" />,
+                        }[header.column.getIsSorted() as string] ?? null}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {rows.map(row => (
+                <tr 
+                  key={row.id} 
+                  className="hover:bg-white/[0.04] transition-all group"
+                >
+                  {row.getVisibleCells().map(cell => (
+                    <td key={cell.id} className="px-8 py-5">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       
       {nextCursor && (
@@ -418,45 +437,45 @@ export default function AdminUsers() {
       )}
 
       {pointsUserId && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
-          <div className="bg-obsidian border border-white/10 ares-cut w-full max-w-md shadow-2xl relative p-6">
-            <div className="flex justify-between items-start mb-4 pb-4 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 animate-in fade-in duration-300">
+          <div className="bg-obsidian border border-white/10 ares-cut-lg w-full max-w-md shadow-2xl relative p-10 group overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
+            <div className="flex justify-between items-start mb-8 pb-8 border-b border-white/5 relative z-10">
               <div>
-                <h3 className="text-xl font-black text-ares-cyan flex items-center gap-2">
-                  <Zap size={20} />
-                  Manage Points
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                  <Zap size={24} className="text-ares-cyan" /> MERIT_LOG
                 </h3>
-                <p className="text-white/60 text-sm mt-1">Award or deduct ARES points for this member.</p>
+                <p className="text-marble/20 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Award or deduct ARES points for this member.</p>
               </div>
               <button 
                 onClick={() => setPointsUserId(null)} 
                 title="Close"
-                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white"
+                className="p-3 bg-white/5 border border-white/10 ares-cut-sm text-marble/40 hover:text-white hover:bg-white/10 transition-all"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAwardPoints} className="space-y-4">
-              <div>
-                <label htmlFor="pointsDeltaInput" className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Points Delta (+ / -)</label>
+            <form onSubmit={handleAwardPoints} className="space-y-8 relative z-10">
+              <div className="space-y-2">
+                <label htmlFor="pointsDeltaInput" className="text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] block pl-1">QUANTUM_DELTA (+ / -)</label>
                 <input
                   type="number"
                   value={pointsDelta}
                   onChange={(e) => setPointsDelta(e.target.value)}
-                  placeholder="e.g. 50 or -10"
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-cyan transition-colors"
+                  placeholder="E.G. 50 OR -10"
+                  className="w-full bg-black/40 border border-white/10 ares-cut-sm px-5 py-4 text-xs font-black uppercase tracking-widest text-white placeholder:text-white/5 focus:outline-none focus:border-ares-cyan transition-all"
                   required
                 />
               </div>
-              <div>
-                <label htmlFor="pointsReasonInput" className="text-xs font-bold text-marble/90 uppercase tracking-wider mb-1.5 block">Reason</label>
+              <div className="space-y-2">
+                <label htmlFor="pointsReasonInput" className="text-[10px] font-black text-marble/40 uppercase tracking-[0.2em] block pl-1">AUTHORIZATION_REASON</label>
                 <input
                   type="text"
                   value={pointsReason}
                   onChange={(e) => setPointsReason(e.target.value)}
-                  placeholder="e.g. Outreach Event Attendance"
-                  className="w-full bg-white/5 border border-white/10 ares-cut-sm px-4 py-3 text-sm text-white placeholder-marble/40 focus:outline-none focus:border-ares-cyan transition-colors"
+                  placeholder="E.G. OUTREACH_EVENT_ATTENDANCE"
+                  className="w-full bg-black/40 border border-white/10 ares-cut-sm px-5 py-4 text-xs font-black uppercase tracking-widest text-white placeholder:text-white/5 focus:outline-none focus:border-ares-cyan transition-all"
                   required
                 />
               </div>
@@ -464,10 +483,10 @@ export default function AdminUsers() {
               <button
                 type="submit"
                 disabled={pointsMutation.isPending}
-                className="w-full mt-4 flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50"
+                className="w-full mt-6 flex items-center justify-center gap-3 py-4 font-black uppercase tracking-[0.3em] text-[10px] bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/30 hover:bg-ares-cyan hover:text-black ares-cut-sm transition-all duration-300 disabled:opacity-50 shadow-lg shadow-ares-cyan/5"
               >
                 {pointsMutation.isPending ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
-                {pointsMutation.isPending ? "Processing..." : "Submit Transaction"}
+                {pointsMutation.isPending ? "SYNCHRONIZING..." : "COMMIT_TRANSACTION"}
               </button>
             </form>
           </div>
@@ -475,33 +494,39 @@ export default function AdminUsers() {
       )}
 
       {showZulipAudit && auditResult && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
-          <div className="bg-obsidian border border-white/10 ares-cut w-full max-w-lg shadow-2xl relative p-6">
-            <div className="flex justify-between items-start mb-4 pb-4 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 animate-in fade-in duration-300">
+          <div className="bg-obsidian border border-white/10 ares-cut-lg w-full max-w-lg shadow-2xl relative p-10 group overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
+            <div className="flex justify-between items-start mb-8 pb-8 border-b border-white/5 relative z-10">
               <div>
-                <h3 className="text-xl font-black text-ares-cyan flex items-center gap-2">
-                  <Mail size={20} />
-                  Zulip User Audit
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                  <Mail size={24} className="text-ares-cyan" /> COMMS_AUDIT
                 </h3>
-                <p className="text-white/60 text-sm mt-1">Found {auditResult.length} ARESWEB users missing from Zulip.</p>
+                <p className="text-marble/20 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Found {auditResult.length} ARESWEB users missing from Zulip.</p>
               </div>
               <button 
                 onClick={() => { setShowZulipAudit(false); setAuditResult(null); }} 
                 title="Close"
-                className="p-2 bg-obsidian border border-white/10 ares-cut-sm text-white/60 hover:text-white"
+                className="p-3 bg-white/5 border border-white/10 ares-cut-sm text-marble/40 hover:text-white hover:bg-white/10 transition-all"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-white/5 border border-white/10 ares-cut-sm p-4 max-h-64 overflow-y-auto">
+            <div className="space-y-6 relative z-10">
+              <div className="bg-black/60 border border-white/10 ares-cut-sm p-6 max-h-64 overflow-y-auto shadow-inner">
                 {auditResult.length === 0 ? (
-                  <p className="text-sm text-white/60 italic text-center py-4">All ARESWEB users are already in Zulip!</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/40 italic text-center py-8">
+                    [ STATUS: ALL_SYSTEMS_NOMINAL ]<br/>
+                    ALL_ARESWEB_USERS_ARE_ALREADY_IN_ZULIP
+                  </p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {auditResult.map(email => (
-                      <li key={email} className="text-sm text-marble font-mono bg-black/40 px-3 py-2 border border-white/5">{email}</li>
+                      <li key={email} className="text-[10px] font-black uppercase tracking-widest text-marble bg-white/5 px-4 py-3 border border-white/5 flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-ares-cyan"></div>
+                        {email}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -511,10 +536,10 @@ export default function AdminUsers() {
                 <button
                   onClick={() => inviteMutation.mutate({ emails: auditResult })}
                   disabled={inviteMutation.isPending}
-                  className="w-full flex items-center justify-center gap-2 py-3 font-bold bg-ares-cyan hover:bg-ares-cyan/80 text-obsidian ares-cut-sm transition-all disabled:opacity-50 mt-4"
+                  className="w-full flex items-center justify-center gap-3 py-4 font-black uppercase tracking-[0.3em] text-[10px] bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/30 hover:bg-ares-cyan hover:text-black ares-cut-sm transition-all duration-300 disabled:opacity-50 shadow-lg shadow-ares-cyan/5"
                 >
                   {inviteMutation.isPending ? <RefreshCw className="animate-spin" size={18} /> : <Mail size={18} />}
-                  {inviteMutation.isPending ? "Sending Invites..." : `Send ${auditResult.length} Zulip Invites`}
+                  {inviteMutation.isPending ? "DISPATCHING_INVITES..." : `INITIALIZE_${auditResult.length}_INVITES`}
                 </button>
               )}
             </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus } from "lucide-react";
+import { Plus, ShoppingBag } from "lucide-react";
 import { Product } from "@shared/routes/store";
 import { useCartStore } from "../../store/useCartStore";
 
@@ -11,44 +11,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addItem } = useCartStore();
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-ares-gold/50 transition-colors group flex flex-col h-full">
-      <div className="aspect-square bg-slate-800 relative overflow-hidden">
+    <div className="bg-black/40 border border-white/5 ares-cut-lg overflow-hidden hover:border-ares-red/50 transition-all duration-500 group flex flex-col h-full backdrop-blur-sm shadow-2xl relative">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-ares-red/5 rounded-full blur-3xl group-hover:bg-ares-red/10 transition-colors"></div>
+      
+      <div className="aspect-square bg-white/5 relative overflow-hidden border-b border-white/5">
         {product.imageUrl ? (
           <img 
             src={product.imageUrl} 
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-600">
-            No Image
+          <div className="w-full h-full flex items-center justify-center text-marble/10">
+            <ShoppingBag size={48} strokeWidth={1} />
           </div>
         )}
+        <div className="absolute top-4 right-4 bg-ares-gold text-black px-3 py-1 ares-cut-sm font-black text-[10px] uppercase tracking-widest shadow-xl">
+           ${(product.priceCents / 100).toFixed(2)}
+        </div>
       </div>
       
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-heading font-bold text-xl text-white mb-2 leading-tight">
+      <div className="p-6 flex flex-col flex-1 relative z-10">
+        <h3 className="font-black text-xl text-white mb-2 leading-tight uppercase tracking-tight group-hover:text-ares-red transition-colors">
           {product.name}
         </h3>
         
         {product.description && (
-          <p className="text-slate-400 text-sm mb-4 line-clamp-2 flex-1">
+          <p className="text-marble/40 text-xs mb-6 line-clamp-2 flex-1 font-medium leading-relaxed">
             {product.description}
           </p>
         )}
         
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800">
-          <span className="font-mono font-bold text-ares-gold text-xl">
-            ${(product.priceCents / 100).toFixed(2)}
-          </span>
-          <button
-            onClick={() => addItem(product)}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-ares-gold text-white hover:text-black px-4 py-2 rounded-xl font-bold transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
-        </div>
+        <button
+          onClick={() => addItem(product)}
+          className="clipped-button w-full bg-white/5 hover:bg-ares-red text-marble/60 hover:text-white border border-white/10 hover:border-ares-red/50 transition-all"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Provision Item
+        </button>
       </div>
     </div>
   );

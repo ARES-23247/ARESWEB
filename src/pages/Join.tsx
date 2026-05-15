@@ -86,114 +86,111 @@ export default function Join() {
 			<FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
 			<EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
-			<section className="relative py-24 overflow-hidden border-b border-white/5">
-				<div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.15)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />
+      <section className="relative py-40 overflow-hidden border-b border-white/5 bg-obsidian">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
+           <div className="absolute right-[10%] top-[20%] w-[40%] h-[40%] opacity-[0.03] bg-contain bg-no-repeat bg-[url('/favicon.png')] rotate-12"></div>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center"
+          >
+            <div className="bg-ares-red/10 text-ares-red px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-10 border border-ares-red/20 shadow-[0_0_20px_rgba(192,0,0,0.1)]">
+               Active Enrollment // Cycle 2026
+            </div>
+            <h1 className="text-7xl md:text-[10rem] font-black text-white mb-10 uppercase tracking-tighter leading-[0.8]">
+              Join <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">The Ranks</span>
+            </h1>
+            <p className="text-marble/40 text-xl max-w-3xl mx-auto leading-relaxed font-medium">
+              We are actively looking for forward-thinking students and dedicated mentors to expand our operations. No prior experience is required—only the drive to learn and the grit to succeed.
+            </p>
+          </motion.div>
+        </div>
+      </section>
 
-				<div className="max-w-5xl mx-auto px-6 relative z-10 text-center">
-					<motion.div
-						initial={{ opacity: 0, y: 30 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6 }}
-						className="bg-obsidian p-8 ares-cut-lg border border-white/10 shadow-2xl inline-block"
-					>
-						<p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 ares-cut-sm uppercase tracking-[0.3em] font-bold text-xs mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
-						<p className="sr-only">Enrollment Open</p>
-						<h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter">
-							Join <span aria-hidden="true" className="bg-ares-red px-6 py-1 ares-cut shadow-xl inline-block text-white ml-2 before:content-['ARES.']"></span>
-							<span className="sr-only">ARES.</span>
-						</h1>
-						<p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
-							We are actively looking for forward-thinking students and dedicated mentors to expand our operations. No prior experience is required—only the drive to learn and the grit to succeed.
-						</p>
-					</motion.div>
-				</div>
-			</section>
+      <section className="py-32 bg-obsidian relative">
+        <GreekMeander variant="thin" opacity="opacity-10" className="absolute top-0 left-0" />
 
-			<section className="py-20 bg-obsidian relative">
-				<GreekMeander variant="thin" opacity="opacity-50" className="absolute top-0 left-0" />
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-24 items-start">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-5"
+          >
+            <div className="inline-block bg-ares-gold/10 text-ares-gold px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-ares-gold/20">
+              The ARES Edge
+            </div>
+            <h2 className="text-5xl md:text-7xl font-black text-white mb-12 uppercase tracking-tighter leading-none">
+              Strategic <br />
+              <span className="text-ares-gold italic">Advantage.</span>
+            </h2>
 
-				<div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16">
-					<motion.div
-						initial={{ opacity: 0, x: -30 }}
-						animate={{ opacity: 1, x: 0 }}
-						transition={{ duration: 0.6, delay: 0.2 }}
-						className="lg:col-span-4"
-					>
-						<h2 className="text-3xl font-black text-white mb-6 uppercase tracking-tight">The ARES <span className="bg-ares-red px-4 py-1 ares-cut shadow-xl inline-block text-white font-bold">Advantage</span></h2>
+            <div className="space-y-12">
+              {[
+                { icon: <Wrench size={32} />, title: "Industrial Tooling", body: "Operate advanced CNC mills, 3D printers, and CAD software used in top engineering firms.", accent: "ares-red" },
+                { icon: <Code size={32} />, title: "Autonomous Systems", body: "Learn Java, path planning, computer vision, and machine learning telemetry systems.", accent: "ares-cyan" },
+                { icon: <PenTool size={32} />, title: "Business & Logistics", body: "Develop championship-grade portfolios, execute marketing pipelines, and secure sponsorships.", accent: "ares-gold" }
+              ].map((item) => (
+                <div key={item.title} className="flex gap-10 group">
+                  <div className={`mt-1 flex-shrink-0 w-20 h-20 ares-cut-sm bg-black/40 flex items-center justify-center text-white border border-white/5 group-hover:border-${item.accent}/30 transition-all duration-500 shadow-xl group-hover:scale-110`}>
+                    <div className={`transition-colors duration-500 group-hover:text-${item.accent}`}>
+                      {item.icon}
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <h3 className="text-white font-black uppercase tracking-[0.3em] text-[10px] mb-4 group-hover:text-ares-gold transition-colors">{item.title}</h3>
+                    <p className="text-marble/40 text-lg leading-relaxed font-medium">{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-						<div className="space-y-6">
-							<div className="flex gap-4">
-								<div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-red/10 flex items-center justify-center text-ares-red border border-ares-red/20 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
-									<Wrench size={18} />
-								</div>
-								<div>
-									<h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Industrial Tooling</h3>
-									<p className="text-marble/90 text-sm leading-relaxed">Operate advanced CNC mills, 3D printers, and CAD software used in top engineering firms.</p>
-								</div>
-							</div>
-							<div className="flex gap-4">
-								<div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-cyan/10 flex items-center justify-center text-ares-cyan border border-ares-cyan/20">
-									<Code size={18} />
-								</div>
-								<div>
-									<h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Autonomous Systems</h3>
-									<p className="text-marble/90 text-sm leading-relaxed">Learn Java, path planning, computer vision, and machine learning telemetry systems.</p>
-								</div>
-							</div>
-							<div className="flex gap-4">
-								<div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-gold/10 flex items-center justify-center text-ares-gold border border-ares-gold/20">
-									<PenTool size={18} />
-								</div>
-								<div>
-									<h3 className="text-white font-bold uppercase tracking-wider text-sm mb-1">Business & Logistics</h3>
-									<p className="text-marble/90 text-sm leading-relaxed">Develop championship-grade portfolios, execute marketing pipelines, and secure sponsorships.</p>
-								</div>
-							</div>
-						</div>
-
-						<div className="mt-12 p-6 ares-cut bg-white/5 border border-white/10 backdrop-blur-sm">
-							<h3 className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2"><CheckCircle size={14} /> Eligibility</h3>
-							<ul className="text-sm text-marble space-y-2">
-								<li>• Students in grades 6-12</li>
-								<li>• Serving Monongalia, Harrison, and Preston Counties, SW PA, and anyone within driving distance of Morgantown</li>
-								<li>• No cost to join or compete</li>
-							</ul>
-						</div>
-					</motion.div>
-
-					<motion.div
+            <div className="mt-16 p-10 ares-cut-lg bg-black/40 border border-white/5 backdrop-blur-sm relative group overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                   <CheckCircle className="w-32 h-32 text-white" />
+                </div>
+              <h3 className="text-ares-gold font-black uppercase tracking-[0.3em] text-[10px] mb-6 flex items-center gap-4">
+                <span className="w-10 h-px bg-ares-gold"></span> Protocol // Eligibility
+              </h3>
+              <ul className="text-xs font-black uppercase tracking-widest text-marble/20 space-y-4">
+                <li className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-ares-gold ares-cut-sm"></div> Students in grades 6-12</li>
+                <li className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-ares-gold ares-cut-sm"></div> Tri-State Area Operations</li>
+                <li className="flex items-center gap-4"><div className="w-1.5 h-1.5 bg-ares-gold ares-cut-sm"></div> Zero Cost Participation</li>
+              </ul>
+            </div>
+          </motion.div>					<motion.div
 						initial={{ opacity: 0, scale: 0.95 }}
 						animate={{ opacity: 1, scale: 1 }}
 						transition={{ duration: 0.6, delay: 0.4 }}
-						className="lg:col-span-8"
+						className="lg:col-span-7"
 					>
-						<div className="bg-marble text-obsidian ares-cut-lg p-8 md:p-12 shadow-2xl relative overflow-hidden">
-							{/* Decorative elements */}
-							<div className="absolute top-0 right-0 w-64 h-64 bg-obsidian rounded-full blur-[100px] opacity-[0.03] -translate-y-1/2 translate-x-1/3"></div>
-
-							<div className="flex flex-wrap gap-4 mb-10 relative z-10">
+						<div className="bg-black/40 border border-white/5 ares-cut-lg p-10 md:p-16 shadow-2xl relative overflow-hidden backdrop-blur-sm">
+							<div className="flex flex-wrap gap-6 mb-12 relative z-10">
 								<button
 									onClick={() => { setRole("student"); form.reset(); }}
-									className={`flex-1 min-w-[200px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all ${role === "student" ? "bg-ares-red-dark text-white shadow-lg shadow-ares-red/20 scale-100" : "bg-obsidian/5 text-obsidian/80 hover:bg-obsidian/10 scale-95"}`}
+									className={`flex-1 min-w-[180px] flex items-center justify-center gap-4 px-8 py-5 ares-cut-sm font-black uppercase tracking-[0.2em] text-xs transition-all duration-500 ${role === "student" ? "bg-ares-red text-white shadow-[0_0_30px_rgba(192,0,0,0.3)] scale-100" : "bg-white/5 text-marble/20 hover:bg-white/10 hover:text-marble/40 scale-95 border border-white/5"}`}
 								>
-									<Rocket size={18} /> Student Application
+									<Rocket size={18} /> Student Unit
 								</button>
 								<button
 									onClick={() => { setRole("mentor"); form.reset(); }}
-									className={`flex-1 min-w-[200px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-bold uppercase tracking-widest text-sm transition-all ${role === "mentor" ? "bg-obsidian text-white shadow-lg scale-100" : "bg-obsidian/5 text-obsidian/80 hover:bg-obsidian/10 scale-95"}`}
+									className={`flex-1 min-w-[180px] flex items-center justify-center gap-4 px-8 py-5 ares-cut-sm font-black uppercase tracking-[0.2em] text-xs transition-all duration-500 ${role === "mentor" ? "bg-ares-gold text-black shadow-[0_0_30px_rgba(212,175,55,0.3)] scale-100" : "bg-white/5 text-marble/20 hover:bg-white/10 hover:text-marble/40 scale-95 border border-white/5"}`}
 								>
-									<GraduationCap size={18} /> Mentor Application
+									<GraduationCap size={18} /> Mentor Unit
 								</button>
 							</div>
 
 							{submitStatus === "success" && (
-								<div className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-sm font-bold">
-									<CheckCircle size={20} /> Application submitted successfully! We&apos;ll be in touch soon.
+								<div className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-8 ares-cut-sm mb-10 flex gap-4 text-sm font-black uppercase tracking-widest shadow-[0_0_30px_rgba(212,175,55,0.1)]">
+									<CheckCircle size={24} className="shrink-0" /> Application transmitted. Verify your comms.
 								</div>
 							)}
 							{submitStatus === "error" && (
-								<div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 ares-cut-sm mb-6 text-sm font-bold">
-									{errorMessage === "Failed" ? "Something went wrong. Please try again." : errorMessage}
+								<div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-8 ares-cut-sm mb-10 text-sm font-black uppercase tracking-widest shadow-[0_0_30px_rgba(192,0,0,0.1)]">
+									{errorMessage === "Failed" ? "Transmission Error. Retry sequence." : errorMessage}
 								</div>
 							)}
 
@@ -204,11 +201,11 @@ export default function Join() {
 										e.stopPropagation();
 										form.handleSubmit();
 									}}
-									className="space-y-6 relative z-10"
+									className="space-y-10 relative z-10"
 								>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 										<div>
-											<label htmlFor="join-name" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Full Name *</label>
+											<label htmlFor="join-name" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Identity // Full Name *</label>
 											<form.Field 
 												name="name"
 												validators={{
@@ -223,19 +220,19 @@ export default function Join() {
 															value={field.state.value}
 															onBlur={field.handleBlur}
 															onChange={(e) => field.handleChange(e.target.value)}
-															className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
-															placeholder="Jane Doe"
+															className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-red transition-all shadow-inner font-medium"
+															placeholder="JANE DOE"
 															required
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
+															<p className="text-[10px] text-ares-red mt-2 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
 											</form.Field>
 										</div>
 										<div>
-											<label htmlFor="join-email" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Email Address *</label>
+											<label htmlFor="join-email" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Comms // Email Address *</label>
 											<form.Field 
 												name="email"
 												validators={{
@@ -251,12 +248,12 @@ export default function Join() {
 															value={field.state.value}
 															onBlur={field.handleBlur}
 															onChange={(e) => field.handleChange(e.target.value)}
-															className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
-															placeholder="jane@example.com"
+															className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-red transition-all shadow-inner font-medium"
+															placeholder="JANE@EXAMPLE.COM"
 															required
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
+															<p className="text-[10px] text-ares-red mt-2 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
@@ -264,9 +261,9 @@ export default function Join() {
 										</div>
 									</div>
 
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 										<div className="md:col-span-2">
-											<label htmlFor="join-phone" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Phone Number (Optional)</label>
+											<label htmlFor="join-phone" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Comms // Phone (Optional)</label>
 											<form.Field name="phone">
 												{(field) => (
 													<input
@@ -276,7 +273,7 @@ export default function Join() {
 														value={field.state.value}
 														onBlur={field.handleBlur}
 														onChange={(e) => field.handleChange(e.target.value)}
-														className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+														className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-red transition-all shadow-inner font-medium"
 														placeholder="(304) 555-1234"
 													/>
 												)}
@@ -285,9 +282,9 @@ export default function Join() {
 									</div>
 
 									{role === "student" ? (
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 											<div>
-												<label htmlFor="join-school" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
+												<label htmlFor="join-school" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Origin // School *</label>
 												<form.Field 
 													name="school"
 													validators={{
@@ -307,19 +304,19 @@ export default function Join() {
 																value={field.state.value}
 																onBlur={field.handleBlur}
 																onChange={(e) => field.handleChange(e.target.value)}
-																className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
-																placeholder="High School Name"
+																className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-red transition-all shadow-inner font-medium"
+																placeholder="HIGH SCHOOL NAME"
 																required
 															/>
 															{field.state.meta.errors.length > 0 && (
-																<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
+																<p className="text-[10px] text-ares-red mt-2 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 															)}
 														</>
 													)}
 												</form.Field>
 											</div>
 											<div>
-												<label htmlFor="join-grade" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Grade *</label>
+												<label htmlFor="join-grade" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Status // Current Grade *</label>
 												<form.Field 
 													name="grade"
 													validators={{
@@ -338,16 +335,16 @@ export default function Join() {
 																onBlur={field.handleBlur}
 																// eslint-disable-next-line @typescript-eslint/no-explicit-any
 																onChange={(e) => field.handleChange(e.target.value as any)}
-																className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer"
+																className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white focus:outline-none focus:border-ares-red transition-all shadow-inner appearance-none cursor-pointer [color-scheme:dark]"
 																required
 															>
-																<option value="" disabled>Select Grade</option>
+																<option value="" disabled className="bg-obsidian">SELECT GRADE</option>
 																{GRADE_OPTIONS.map((grade) => (
-																	<option key={grade} value={grade}>{grade}th Grade</option>
+																	<option key={grade} value={grade} className="bg-obsidian">{grade}TH GRADE</option>
 																))}
 															</select>
 															{field.state.meta.errors.length > 0 && (
-																<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
+																<p className="text-[10px] text-ares-red mt-2 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 															)}
 														</>
 													)}
@@ -356,7 +353,7 @@ export default function Join() {
 										</div>
 									) : (
 										<div>
-											<label htmlFor="join-occupation" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Current Occupation / Company</label>
+											<label htmlFor="join-occupation" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Specialization // Occupation</label>
 											<form.Field 
 												name="occupation"
 												validators={{
@@ -374,11 +371,11 @@ export default function Join() {
 															value={field.state.value}
 															onBlur={field.handleBlur}
 															onChange={(e) => field.handleChange(e.target.value)}
-															className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
-															placeholder="Mechanical Engineer at NASA"
+															className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-gold transition-all shadow-inner font-medium"
+															placeholder="MECHANICAL ENGINEER"
 														/>
 														{field.state.meta.errors.length > 0 && (
-															<p className="text-xs text-ares-red mt-1 ml-1">{String(field.state.meta.errors[0])}</p>
+															<p className="text-[10px] text-ares-red mt-2 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 														)}
 													</>
 												)}
@@ -387,8 +384,7 @@ export default function Join() {
 									)}
 
 									<div>
-										<p id="join-interests-label" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Interests / Expertise *</p>
-										<p className="text-xs text-obsidian/80 mb-3 ml-1 leading-relaxed">What areas are you most interested in pursuing with ARES?</p>
+										<p id="join-interests-label" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Objectives // Interests *</p>
 										<form.Field 
 											name="interests"
 											validators={{
@@ -397,9 +393,9 @@ export default function Join() {
 										>
 											{(field) => (
 												<>
-													<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+													<div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
 														{INTEREST_OPTIONS.map((item) => (
-															<label key={item} className="flex items-center gap-3 p-3 border border-obsidian/10 ares-cut-sm cursor-pointer hover:bg-obsidian/5 transition-colors">
+															<label key={item} className={`flex flex-col items-center justify-center gap-6 p-8 border ares-cut-lg cursor-pointer transition-all duration-700 ${field.state.value.includes(item) ? "bg-white/5 border-white/20 text-white shadow-2xl scale-[1.02]" : "bg-black/40 border-white/5 text-marble/20 hover:border-white/10 hover:bg-white/[0.02]"}`}>
 																<input
 																	type="checkbox"
 																	name={field.name}
@@ -410,14 +406,17 @@ export default function Join() {
 																			: field.state.value.filter(i => i !== item);
 																		field.handleChange(newValue);
 																	}}
-																	className="accent-ares-red w-4 h-4 cursor-pointer"
+																	className="sr-only"
 																/>
-																<span className="text-sm font-medium text-obsidian/80">{item}</span>
+																<div className={`w-8 h-8 ares-cut-sm border-2 flex items-center justify-center transition-all duration-500 ${field.state.value.includes(item) ? "bg-ares-red border-ares-red shadow-[0_0_20px_rgba(192,0,0,0.5)]" : "bg-black/60 border-white/10"}`}>
+																	{field.state.value.includes(item) && <CheckCircle size={16} className="text-white" />}
+																</div>
+																<span className="text-[10px] font-black uppercase tracking-[0.3em] text-center">{item}</span>
 															</label>
 														))}
 													</div>
 													{field.state.meta.errors.length > 0 && (
-														<p className="text-xs text-ares-red mt-2 ml-1">{String(field.state.meta.errors[0])}</p>
+														<p className="text-[10px] text-ares-red mt-4 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 													)}
 												</>
 											)}
@@ -425,7 +424,7 @@ export default function Join() {
 									</div>
 
 									<div>
-										<label htmlFor="join-additional" className="block text-xs font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
+										<label htmlFor="join-additional" className="block text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] mb-4 ml-1">Payload // Additional Info</label>
 										<form.Field name="additional">
 											{(field) => (
 												<textarea
@@ -435,14 +434,14 @@ export default function Join() {
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 													rows={4}
-													className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-sm"
-													placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}
+													className="w-full bg-black/60 border border-white/10 ares-cut-sm px-6 py-4 text-white placeholder-white/10 focus:outline-none focus:border-ares-red transition-all resize-none shadow-inner font-medium"
+													placeholder={role === "student" ? "WHY DO YOU WANT TO JOIN ARES?" : "HOW WOULD YOU LIKE TO SUPPORT THE TEAM?"}
 												/>
 											)}
 										</form.Field>
 									</div>
 
-									<div className="pt-4">
+									<div className="pt-8">
 										<form.Field 
 											name="turnstileToken"
 											validators={{
@@ -451,9 +450,9 @@ export default function Join() {
 										>
 											{(field) => (
 												<>
-													<Turnstile onVerify={(token) => field.handleChange(token)} theme="light" className="mb-4" />
+													<Turnstile onVerify={(token) => field.handleChange(token)} theme="dark" className="mb-8" />
 													{field.state.meta.errors.length > 0 && (
-														<p className="text-xs text-ares-red mb-4 ml-1">{String(field.state.meta.errors[0])}</p>
+														<p className="text-[10px] text-ares-red mb-6 ml-1 font-black uppercase tracking-widest">{String(field.state.meta.errors[0])}</p>
 													)}
 												</>
 											)}
@@ -461,18 +460,19 @@ export default function Join() {
 										<button
 											type="submit"
 											disabled={submitMutation.isPending}
-											className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red-dark hover:shadow-[0_10px_30px_rgba(138,0,0,0.4)] hover:bg-ares-red" : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.3)]"}`}
+											className={`px-10 py-6 w-full text-white font-black uppercase tracking-[0.3em] text-xs ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all duration-500 shadow-2xl flex items-center justify-center gap-4 disabled:opacity-50 disabled:hover:translate-y-0 ${role === "student" ? "bg-ares-red shadow-[0_0_30px_rgba(192,0,0,0.3)]" : "bg-ares-gold text-black shadow-[0_0_30px_rgba(212,175,55,0.3)]"}`}
 										>
-											{submitMutation.isPending ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
+											{submitMutation.isPending ? "TRANSMITTING..." : `INITIATE ${role === "student" ? "STUDENT" : "MENTOR"} ENROLLMENT`}
 										</button>
-										<p className="text-center text-[11px] text-obsidian font-bold uppercase tracking-widest mt-4">
-											Your personal information is protected under the FIRST Youth Protection Program guidelines.
+										<p className="text-center text-[10px] text-marble/20 font-black uppercase tracking-[0.2em] mt-8 leading-relaxed">
+											Protocol // Your personal information is protected under the FIRST Youth Protection Program guidelines.
 										</p>
 									</div>
 								</form>
-							</>
+							<>
 						</div>
 					</motion.div>
+v>
 				</div>
 			</section>
 		</div>
