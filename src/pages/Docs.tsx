@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "../components/SEO";
 import { useSession } from "../utils/auth-client";
