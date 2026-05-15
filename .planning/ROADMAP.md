@@ -30,3 +30,13 @@
 
 ## Backlog
 *(Future phases or deferred items will be documented here)*
+
+### Phase 82: Tournaments and Robot Pages
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 81
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 82 to break down)

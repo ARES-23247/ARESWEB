@@ -9,11 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TournamentsRouteImport } from './routes/tournaments'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TechStackRouteImport } from './routes/tech-stack'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SimRunnerRouteImport } from './routes/sim-runner'
 import { Route as SeasonsRouteImport } from './routes/seasons'
+import { Route as RobotsRouteImport } from './routes/robots'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as LoginRouteImport } from './routes/login'
@@ -38,6 +40,8 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AlbumsIndexRouteImport } from './routes/albums/index'
 import { Route as AcademyIndexRouteImport } from './routes/academy/index'
 import { Route as VideosIdRouteImport } from './routes/videos/$id'
+import { Route as TournamentsIdRouteImport } from './routes/tournaments.$id'
+import { Route as RobotsIdRouteImport } from './routes/robots.$id'
 import { Route as ProfileUserIdRouteImport } from './routes/profile/$userId'
 import { Route as OnshapeBomHistoryRouteImport } from './routes/onshape/bom-history'
 import { Route as LocationsMorgantownRouteImport } from './routes/locations/morgantown'
@@ -47,6 +51,7 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DevelopersApiRouteImport } from './routes/developers/api'
 import { Route as DashboardYoutubeRouteImport } from './routes/dashboard/youtube'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
+import { Route as DashboardTournamentsRouteImport } from './routes/dashboard/tournaments'
 import { Route as DashboardStore_ordersRouteImport } from './routes/dashboard/store_orders'
 import { Route as DashboardSponsorsRouteImport } from './routes/dashboard/sponsors'
 import { Route as DashboardSponsor_tokensRouteImport } from './routes/dashboard/sponsor_tokens'
@@ -54,6 +59,7 @@ import { Route as DashboardSocialRouteImport } from './routes/dashboard/social'
 import { Route as DashboardSimulationsRouteImport } from './routes/dashboard/simulations'
 import { Route as DashboardSimsRouteImport } from './routes/dashboard/sims'
 import { Route as DashboardScoutingRouteImport } from './routes/dashboard/scouting'
+import { Route as DashboardRobotsRouteImport } from './routes/dashboard/robots'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardPhotosRouteImport } from './routes/dashboard/photos'
 import { Route as DashboardOutreachRouteImport } from './routes/dashboard/outreach'
@@ -95,6 +101,11 @@ import { Route as DashboardEventEditIdRouteImport } from './routes/dashboard/eve
 import { Route as DashboardDocsEditSlugRouteImport } from './routes/dashboard/docs/$editSlug'
 import { Route as DashboardBlogEditSlugRouteImport } from './routes/dashboard/blog/$editSlug'
 
+const TournamentsRoute = TournamentsRouteImport.update({
+  id: '/tournaments',
+  path: '/tournaments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -118,6 +129,11 @@ const SimRunnerRoute = SimRunnerRouteImport.update({
 const SeasonsRoute = SeasonsRouteImport.update({
   id: '/seasons',
   path: '/seasons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsRoute = RobotsRouteImport.update({
+  id: '/robots',
+  path: '/robots',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -240,6 +256,16 @@ const VideosIdRoute = VideosIdRouteImport.update({
   path: '/videos/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TournamentsIdRoute = TournamentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TournamentsRoute,
+} as any)
+const RobotsIdRoute = RobotsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => RobotsRoute,
+} as any)
 const ProfileUserIdRoute = ProfileUserIdRouteImport.update({
   id: '/profile/$userId',
   path: '/profile/$userId',
@@ -285,6 +311,11 @@ const DashboardUsersRoute = DashboardUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTournamentsRoute = DashboardTournamentsRouteImport.update({
+  id: '/tournaments',
+  path: '/tournaments',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardStore_ordersRoute = DashboardStore_ordersRouteImport.update({
   id: '/store_orders',
   path: '/store_orders',
@@ -318,6 +349,11 @@ const DashboardSimsRoute = DashboardSimsRouteImport.update({
 const DashboardScoutingRoute = DashboardScoutingRouteImport.update({
   id: '/scouting',
   path: '/scouting',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRobotsRoute = DashboardRobotsRouteImport.update({
+  id: '/robots',
+  path: '/robots',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardProfileRoute = DashboardProfileRouteImport.update({
@@ -536,11 +572,13 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/outreach': typeof OutreachRoute
   '/privacy': typeof PrivacyRoute
+  '/robots': typeof RobotsRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
   '/terms': typeof TermsRoute
+  '/tournaments': typeof TournamentsRouteWithChildren
   '/academy/$slug': typeof AcademySlugRoute
   '/albums/$id': typeof AlbumsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -568,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/robots': typeof DashboardRobotsRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
@@ -575,6 +614,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/sponsor_tokens': typeof DashboardSponsor_tokensRoute
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
+  '/dashboard/tournaments': typeof DashboardTournamentsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
@@ -584,6 +624,8 @@ export interface FileRoutesByFullPath {
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/robots/$id': typeof RobotsIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/albums/': typeof AlbumsIndexRoute
@@ -622,11 +664,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/outreach': typeof OutreachRoute
   '/privacy': typeof PrivacyRoute
+  '/robots': typeof RobotsRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
   '/terms': typeof TermsRoute
+  '/tournaments': typeof TournamentsRouteWithChildren
   '/academy/$slug': typeof AcademySlugRoute
   '/albums/$id': typeof AlbumsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -654,6 +698,7 @@ export interface FileRoutesByTo {
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/robots': typeof DashboardRobotsRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
@@ -661,6 +706,7 @@ export interface FileRoutesByTo {
   '/dashboard/sponsor_tokens': typeof DashboardSponsor_tokensRoute
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
+  '/dashboard/tournaments': typeof DashboardTournamentsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
@@ -670,6 +716,8 @@ export interface FileRoutesByTo {
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/robots/$id': typeof RobotsIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy': typeof AcademyIndexRoute
   '/albums': typeof AlbumsIndexRoute
@@ -710,11 +758,13 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/outreach': typeof OutreachRoute
   '/privacy': typeof PrivacyRoute
+  '/robots': typeof RobotsRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/sim-runner': typeof SimRunnerRoute
   '/store': typeof StoreRoute
   '/tech-stack': typeof TechStackRoute
   '/terms': typeof TermsRoute
+  '/tournaments': typeof TournamentsRouteWithChildren
   '/academy/$slug': typeof AcademySlugRoute
   '/albums/$id': typeof AlbumsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -742,6 +792,7 @@ export interface FileRoutesById {
   '/dashboard/outreach': typeof DashboardOutreachRoute
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/robots': typeof DashboardRobotsRoute
   '/dashboard/scouting': typeof DashboardScoutingRoute
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
@@ -749,6 +800,7 @@ export interface FileRoutesById {
   '/dashboard/sponsor_tokens': typeof DashboardSponsor_tokensRoute
   '/dashboard/sponsors': typeof DashboardSponsorsRoute
   '/dashboard/store_orders': typeof DashboardStore_ordersRoute
+  '/dashboard/tournaments': typeof DashboardTournamentsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/developers/api': typeof DevelopersApiRoute
@@ -758,6 +810,8 @@ export interface FileRoutesById {
   '/locations/morgantown': typeof LocationsMorgantownRoute
   '/onshape/bom-history': typeof OnshapeBomHistoryRoute
   '/profile/$userId': typeof ProfileUserIdRoute
+  '/robots/$id': typeof RobotsIdRoute
+  '/tournaments/$id': typeof TournamentsIdRoute
   '/videos/$id': typeof VideosIdRoute
   '/academy/': typeof AcademyIndexRoute
   '/albums/': typeof AlbumsIndexRoute
@@ -799,11 +853,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/outreach'
     | '/privacy'
+    | '/robots'
     | '/seasons'
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
     | '/terms'
+    | '/tournaments'
     | '/academy/$slug'
     | '/albums/$id'
     | '/blog/$slug'
@@ -831,6 +887,7 @@ export interface FileRouteTypes {
     | '/dashboard/outreach'
     | '/dashboard/photos'
     | '/dashboard/profile'
+    | '/dashboard/robots'
     | '/dashboard/scouting'
     | '/dashboard/sims'
     | '/dashboard/simulations'
@@ -838,6 +895,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsor_tokens'
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
+    | '/dashboard/tournaments'
     | '/dashboard/users'
     | '/dashboard/youtube'
     | '/developers/api'
@@ -847,6 +905,8 @@ export interface FileRouteTypes {
     | '/locations/morgantown'
     | '/onshape/bom-history'
     | '/profile/$userId'
+    | '/robots/$id'
+    | '/tournaments/$id'
     | '/videos/$id'
     | '/academy/'
     | '/albums/'
@@ -885,11 +945,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/outreach'
     | '/privacy'
+    | '/robots'
     | '/seasons'
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
     | '/terms'
+    | '/tournaments'
     | '/academy/$slug'
     | '/albums/$id'
     | '/blog/$slug'
@@ -917,6 +979,7 @@ export interface FileRouteTypes {
     | '/dashboard/outreach'
     | '/dashboard/photos'
     | '/dashboard/profile'
+    | '/dashboard/robots'
     | '/dashboard/scouting'
     | '/dashboard/sims'
     | '/dashboard/simulations'
@@ -924,6 +987,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsor_tokens'
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
+    | '/dashboard/tournaments'
     | '/dashboard/users'
     | '/dashboard/youtube'
     | '/developers/api'
@@ -933,6 +997,8 @@ export interface FileRouteTypes {
     | '/locations/morgantown'
     | '/onshape/bom-history'
     | '/profile/$userId'
+    | '/robots/$id'
+    | '/tournaments/$id'
     | '/videos/$id'
     | '/academy'
     | '/albums'
@@ -972,11 +1038,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/outreach'
     | '/privacy'
+    | '/robots'
     | '/seasons'
     | '/sim-runner'
     | '/store'
     | '/tech-stack'
     | '/terms'
+    | '/tournaments'
     | '/academy/$slug'
     | '/albums/$id'
     | '/blog/$slug'
@@ -1004,6 +1072,7 @@ export interface FileRouteTypes {
     | '/dashboard/outreach'
     | '/dashboard/photos'
     | '/dashboard/profile'
+    | '/dashboard/robots'
     | '/dashboard/scouting'
     | '/dashboard/sims'
     | '/dashboard/simulations'
@@ -1011,6 +1080,7 @@ export interface FileRouteTypes {
     | '/dashboard/sponsor_tokens'
     | '/dashboard/sponsors'
     | '/dashboard/store_orders'
+    | '/dashboard/tournaments'
     | '/dashboard/users'
     | '/dashboard/youtube'
     | '/developers/api'
@@ -1020,6 +1090,8 @@ export interface FileRouteTypes {
     | '/locations/morgantown'
     | '/onshape/bom-history'
     | '/profile/$userId'
+    | '/robots/$id'
+    | '/tournaments/$id'
     | '/videos/$id'
     | '/academy/'
     | '/albums/'
@@ -1060,11 +1132,13 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OutreachRoute: typeof OutreachRoute
   PrivacyRoute: typeof PrivacyRoute
+  RobotsRoute: typeof RobotsRouteWithChildren
   SeasonsRoute: typeof SeasonsRoute
   SimRunnerRoute: typeof SimRunnerRoute
   StoreRoute: typeof StoreRoute
   TechStackRoute: typeof TechStackRoute
   TermsRoute: typeof TermsRoute
+  TournamentsRoute: typeof TournamentsRouteWithChildren
   AcademySlugRoute: typeof AcademySlugRoute
   AlbumsIdRoute: typeof AlbumsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -1091,6 +1165,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tournaments': {
+      id: '/tournaments'
+      path: '/tournaments'
+      fullPath: '/tournaments'
+      preLoaderRoute: typeof TournamentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -1124,6 +1205,13 @@ declare module '@tanstack/react-router' {
       path: '/seasons'
       fullPath: '/seasons'
       preLoaderRoute: typeof SeasonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots': {
+      id: '/robots'
+      path: '/robots'
+      fullPath: '/robots'
+      preLoaderRoute: typeof RobotsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -1294,6 +1382,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tournaments/$id': {
+      id: '/tournaments/$id'
+      path: '/$id'
+      fullPath: '/tournaments/$id'
+      preLoaderRoute: typeof TournamentsIdRouteImport
+      parentRoute: typeof TournamentsRoute
+    }
+    '/robots/$id': {
+      id: '/robots/$id'
+      path: '/$id'
+      fullPath: '/robots/$id'
+      preLoaderRoute: typeof RobotsIdRouteImport
+      parentRoute: typeof RobotsRoute
+    }
     '/profile/$userId': {
       id: '/profile/$userId'
       path: '/profile/$userId'
@@ -1357,6 +1459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/tournaments': {
+      id: '/dashboard/tournaments'
+      path: '/tournaments'
+      fullPath: '/dashboard/tournaments'
+      preLoaderRoute: typeof DashboardTournamentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/store_orders': {
       id: '/dashboard/store_orders'
       path: '/store_orders'
@@ -1404,6 +1513,13 @@ declare module '@tanstack/react-router' {
       path: '/scouting'
       fullPath: '/dashboard/scouting'
       preLoaderRoute: typeof DashboardScoutingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/robots': {
+      id: '/dashboard/robots'
+      path: '/robots'
+      fullPath: '/dashboard/robots'
+      preLoaderRoute: typeof DashboardRobotsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/profile': {
@@ -1714,6 +1830,7 @@ interface DashboardRouteChildren {
   DashboardOutreachRoute: typeof DashboardOutreachRoute
   DashboardPhotosRoute: typeof DashboardPhotosRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardRobotsRoute: typeof DashboardRobotsRoute
   DashboardScoutingRoute: typeof DashboardScoutingRoute
   DashboardSimsRoute: typeof DashboardSimsRoute
   DashboardSimulationsRoute: typeof DashboardSimulationsRoute
@@ -1721,6 +1838,7 @@ interface DashboardRouteChildren {
   DashboardSponsor_tokensRoute: typeof DashboardSponsor_tokensRoute
   DashboardSponsorsRoute: typeof DashboardSponsorsRoute
   DashboardStore_ordersRoute: typeof DashboardStore_ordersRoute
+  DashboardTournamentsRoute: typeof DashboardTournamentsRoute
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardYoutubeRoute: typeof DashboardYoutubeRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -1763,6 +1881,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardOutreachRoute: DashboardOutreachRoute,
   DashboardPhotosRoute: DashboardPhotosRoute,
   DashboardProfileRoute: DashboardProfileRoute,
+  DashboardRobotsRoute: DashboardRobotsRoute,
   DashboardScoutingRoute: DashboardScoutingRoute,
   DashboardSimsRoute: DashboardSimsRoute,
   DashboardSimulationsRoute: DashboardSimulationsRoute,
@@ -1770,6 +1889,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSponsor_tokensRoute: DashboardSponsor_tokensRoute,
   DashboardSponsorsRoute: DashboardSponsorsRoute,
   DashboardStore_ordersRoute: DashboardStore_ordersRoute,
+  DashboardTournamentsRoute: DashboardTournamentsRoute,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardYoutubeRoute: DashboardYoutubeRoute,
   DashboardIndexRoute: DashboardIndexRoute,
@@ -1791,6 +1911,29 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
+interface RobotsRouteChildren {
+  RobotsIdRoute: typeof RobotsIdRoute
+}
+
+const RobotsRouteChildren: RobotsRouteChildren = {
+  RobotsIdRoute: RobotsIdRoute,
+}
+
+const RobotsRouteWithChildren =
+  RobotsRoute._addFileChildren(RobotsRouteChildren)
+
+interface TournamentsRouteChildren {
+  TournamentsIdRoute: typeof TournamentsIdRoute
+}
+
+const TournamentsRouteChildren: TournamentsRouteChildren = {
+  TournamentsIdRoute: TournamentsIdRoute,
+}
+
+const TournamentsRouteWithChildren = TournamentsRoute._addFileChildren(
+  TournamentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
@@ -1804,11 +1947,13 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OutreachRoute: OutreachRoute,
   PrivacyRoute: PrivacyRoute,
+  RobotsRoute: RobotsRouteWithChildren,
   SeasonsRoute: SeasonsRoute,
   SimRunnerRoute: SimRunnerRoute,
   StoreRoute: StoreRoute,
   TechStackRoute: TechStackRoute,
   TermsRoute: TermsRoute,
+  TournamentsRoute: TournamentsRouteWithChildren,
   AcademySlugRoute: AcademySlugRoute,
   AlbumsIdRoute: AlbumsIdRoute,
   BlogSlugRoute: BlogSlugRoute,

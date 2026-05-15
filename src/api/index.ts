@@ -91,6 +91,12 @@ export * from "./videos";
 // YouTube
 export * from "./youtube";
 
+// Robots
+export * from "./robots";
+
+// Tournaments
+export * from "./tournaments";
+
 // Re-export utilities and legacy client for backward compatibility
 export { uploadFile, fetchBlob, fetchJson } from "../utils/apiClient";
 

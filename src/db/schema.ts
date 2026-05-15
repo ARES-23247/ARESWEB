@@ -972,3 +972,68 @@ export const albumMedia = sqliteTable("album_media", {
 	index("idx_album_media_media").on(table.mediaId),
 ]);
 
+export const robots = sqliteTable("robots", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" }),
+	ast: text(),
+	albumId: text("album_id").references(() => albums.id, { onDelete: "set null" }),
+	onshapeUrl: text("onshape_url"),
+	cadViewerUrl: text("cad_viewer_url"),
+	revealVideoId: text("reveal_video_id"),
+	weightLbs: real("weight_lbs"),
+	drivetrainType: text("drivetrain_type"),
+	programmingLanguage: text("programming_language"),
+	primaryMechanism: text("primary_mechanism"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const tournaments = sqliteTable("tournaments", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" }),
+	robotId: text("robot_id").references(() => robots.id, { onDelete: "set null" }),
+	ftcEventCode: text("ftc_event_code"),
+	ast: text(),
+	albumId: text("album_id").references(() => albums.id, { onDelete: "set null" }),
+	startDate: text("start_date"),
+	endDate: text("end_date"),
+	location: text(),
+	rank: integer(),
+	allianceRole: text("alliance_role"),
+	eliminationStatus: text("elimination_status"),
+	opr: real(),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournaments_season").on(table.seasonId),
+	index("idx_tournaments_robot").on(table.robotId),
+]);
+
+export const tournamentMatches = sqliteTable("tournament_matches", {
+	id: text().primaryKey(),
+	tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+	matchNumber: integer("match_number").notNull(),
+	matchType: text("match_type").notNull(),
+	redScore: integer("red_score"),
+	blueScore: integer("blue_score"),
+	youtubeVideoId: text("youtube_video_id"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournament_matches_tournament").on(table.tournamentId),
+]);
+
+export const tournamentAwards = sqliteTable("tournament_awards", {
+	id: text().primaryKey(),
+	tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+	name: text().notNull(),
+	placement: text(),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournament_awards_tournament").on(table.tournamentId),
+]);
+

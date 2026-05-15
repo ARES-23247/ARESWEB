@@ -243,6 +243,8 @@ export default function DashboardSidebar({
                 <NavButton tab="manage_event" icon={Calendar} label="Calendar Events" currentPath={location.pathname} pendingCount={pendingEventsCount} />
                 <NavButton tab="manage_docs" icon={Book} label="ARESLib Docs" currentPath={location.pathname} pendingCount={pendingDocsCount} />
                 <NavButton tab="manage_seasons" icon={History} label="Seasonal Legacies" currentPath={location.pathname} />
+                <NavButton tab="robots" icon={AppWindow} label="Robots Archive" currentPath={location.pathname} />
+                <NavButton tab="tournaments" icon={Trophy} label="Tournaments & Events" currentPath={location.pathname} />
                 <div className="h-px bg-white/5 my-3 mx-4" />
                 <NavButton tab="assets" icon={Image} label="Media Gallery" currentPath={location.pathname} />
                 <NavButton tab="photos" icon={Image} label="Google Photos" sub={true} currentPath={location.pathname} />

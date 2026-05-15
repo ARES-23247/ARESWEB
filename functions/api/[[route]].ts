@@ -56,6 +56,8 @@ import { searchRoute, auditLogRoute } from "../../shared/routes/internal";
 import { driveRouter } from "./routes/google-drive";
 import { photosRouter } from "./routes/google-photos";
 import onshapeRouter from "./routes/onshape";
+import { robotsRouter } from "./routes/robots";
+import { tournamentsRouter } from "./routes/tournaments";
 
 import { logger } from "hono/logger";
 import { sentry } from "@hono/sentry";
@@ -234,7 +236,9 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/logistics", logisticsRouter)
   .route("/users", usersRouter)
   .route("/videos", videosRouter)
-  .route("/youtube", youtubeRouter);
+  .route("/youtube", youtubeRouter)
+  .route("/robots", robotsRouter)
+  .route("/tournaments", tournamentsRouter);
 
 export const group5 = new OpenAPIHono<AppEnv>()
   .route("/gmail", gmailRouter)

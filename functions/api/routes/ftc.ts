@@ -28,7 +28,7 @@ _ftcRouter.use("*", cache({
 /**
  * Fetch data from FIRST FTC Events API
  */
-async function getFtcData(path: string, c: HonoContext) {
+export async function getFtcData(path: string, c: HonoContext) {
   const db = getDb(c);
   const settingsRow = await db.select({ value: schema.settings.value })
     .from(schema.settings)
