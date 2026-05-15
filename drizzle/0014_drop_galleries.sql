@@ -15,4 +15,4 @@ PRAGMA foreign_keys=ON;--> statement-breakpoint
 DROP INDEX IF EXISTS `idx_galleries_created`;--> statement-breakpoint
 CREATE INDEX `idx_album_media_album` ON `album_media` (`album_id`);--> statement-breakpoint
 CREATE INDEX `idx_album_media_media` ON `album_media` (`media_id`);--> statement-breakpoint
-DROP TABLE `galleries`;
+DROP TABLE IF EXISTS `galleries`;
