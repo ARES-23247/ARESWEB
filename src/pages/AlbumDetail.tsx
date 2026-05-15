@@ -85,13 +85,13 @@ function MasonryLayout({ media }: { media: NonNullable<AlbumDetailType["media"]>
       {media.map((item) => (
         <div key={item.id} className="break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10">
           <img
-            src={`/api/proxy-image?key=${encodeURIComponent(item.photo.r2Key)}`}
-            alt={item.photo.filename || "Album photo"}
+            src={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`}
+            alt={item.photo?.filename || "Album photo"}
             className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-             <a href={`/api/proxy-image?key=${encodeURIComponent(item.photo.r2Key)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+             <a href={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                View Full
              </a>
           </div>
@@ -133,13 +133,13 @@ function MovingLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> 
           >
             <div className="relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3]">
               <img
-                src={`/api/proxy-image?key=${encodeURIComponent(item.photo.r2Key)}`}
-                alt={item.photo.filename || "Album photo"}
+                src={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`}
+                alt={item.photo?.filename || "Album photo"}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <a href={`/api/proxy-image?key=${encodeURIComponent(item.photo.r2Key)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                <a href={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                   View Full
                 </a>
               </div>
