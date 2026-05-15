@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Settings, Trophy } from "lucide-react";
 import SEO from "../components/SEO";
 import FAQSchema, { LOCAL_ROBOTICS_FAQS } from "../components/FAQSchema";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "../components/EducationalCredentialSchema";
@@ -52,56 +51,38 @@ export default function About() {
       <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
       {/* ─── HERO ─── */}
-      <section className="py-40 bg-obsidian text-marble relative overflow-hidden">
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
-           <div className="absolute left-[10%] top-[20%] w-[40%] h-[40%] opacity-[0.03] bg-contain bg-no-repeat bg-[url('/favicon.png')]"></div>
-        </div>
-        <GreekMeander variant="thin" opacity="opacity-10" className="absolute top-0 left-0" />
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-ares-gold/10 text-ares-gold px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-10 border border-ares-gold/20 shadow-[0_0_20px_rgba(212,175,55,0.1)]">
-               Project Genesis // Since 2023
-            </div>
-            <h1 className="text-7xl md:text-[10rem] font-black text-white mb-10 uppercase tracking-tighter leading-[0.8]">
-              About <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">ARES</span>
-            </h1>
-            <p className="text-marble/40 text-xl max-w-3xl mx-auto leading-relaxed font-medium">
-              We are the <span className="text-white font-black uppercase">Appalachian Robotics & Engineering Society</span>. 
-              More than a team, we are a training ground for the next generation of West Virginia&apos;s technical elite.
-            </p>
-          </div>
+      <section className="py-32 bg-obsidian text-marble relative overflow-hidden">
+        <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <p className="text-ares-bronze uppercase tracking-[0.4em] text-xs font-bold mb-6 font-heading">Our Community</p>
+          <h1 className="text-5xl md:text-8xl font-bold text-white mb-8 font-heading uppercase">About ARES</h1>
+          <p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-ares-bronze/20 pt-8 mt-8">
+            We are the <span className="text-white font-bold">Appalachian Robotics & Engineering Society</span>. 
+            More than a team, we are a training ground for the next generation of West Virginia&apos;s technical elite.
+          </p>
         </div>
       </section>
 
       {/* ─── THE MISSION ─── */}
-      <section className="py-32 bg-obsidian text-marble border-t border-white/5 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 items-start">
-            <div className="lg:col-span-5">
-              <div className="inline-block bg-ares-red/10 text-ares-red px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-ares-red/20">
-                Core Directives
-              </div>
-              <h2 className="text-5xl md:text-7xl font-black text-white mb-8 uppercase tracking-tighter leading-none">
+      <section className="py-24 bg-obsidian text-marble border-t border-white/5">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 items-start">
+            <div className="md:col-span-1">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 font-heading uppercase leading-tight">
                 Who Joins <br />
-                <span className="text-ares-red italic">The Ranks?</span>
+                <span className="bg-ares-red px-4 py-2 mt-2 inline-block ares-cut text-white font-bold">Our Community?</span>
               </h2>
-              <p className="text-marble/40 text-xl font-medium leading-relaxed mb-10">
+              <p className="text-marble/70 text-lg">
                 We recruit students from 6th–12th grade who possess grit, determination, and a hunger for innovation.
               </p>
-              <div className="h-1 w-24 bg-ares-red ares-cut-sm"></div>
             </div>
-            <div className="lg:col-span-7 space-y-10">
-              <p className="text-lg leading-relaxed text-marble/60 font-medium">
-                In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-all font-black uppercase tracking-widest text-sm border-b border-white/10 pb-1">FIRST® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
+            <div className="md:col-span-2 space-y-8 text-lg leading-relaxed text-marble">
+              <p>
+                In the <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Tech Challenge</a>, we don&apos;t just build robots; we build systems. Our members compete for awards recognized at the highest levels of global STEM competition, focusing on machine logic, creative engineering, and radical community impact.
               </p>
-              <div className="bg-black/40 border border-white/5 ares-cut-lg p-10 backdrop-blur-sm relative group overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-                   <Settings className="w-40 h-40 text-white animate-spin-slow" />
-                </div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-ares-red mb-10 flex items-center gap-4">
-                  <span className="w-10 h-px bg-ares-red"></span> Neural Interface // Skill Acquisition
-                </h3>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+              <div className="bg-white/5 border-l-4 border-ares-red hero-card p-8 backdrop-blur-sm group hover:border-ares-red">
+                <h3 className="bg-ares-red py-1 px-3 rounded inline-block font-bold text-xs tracking-widest uppercase mb-6 font-heading text-white">What You&apos;ll Learn</h3>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm font-bold uppercase tracking-wider text-marble/60">
                   {[
                     "Mechanical Systems", "Electrical Engineering", "Java Programming", 
                     { name: "CAD & 3D Design", link: "https://www.printables.com/@ARESFTC_3784306" }, 
@@ -112,15 +93,13 @@ export default function About() {
                     const isObj = typeof skill === "object";
                     const name = isObj ? skill.name : skill;
                     return (
-                      <li key={name} className="flex items-center gap-4">
-                        <div className="w-2 h-2 bg-ares-red ares-cut-sm shrink-0"></div>
+                      <li key={name} className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 bg-ares-bronze rotate-45"></span>
                         {isObj ? (
-                          <a href={skill.link} target="_blank" rel="noopener noreferrer" className="text-xs font-black uppercase tracking-widest text-white hover:text-ares-red transition-colors">
+                          <a href={skill.link} target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4">
                             {name}
                           </a>
-                        ) : (
-                          <span className="text-xs font-black uppercase tracking-widest text-marble/40">{skill}</span>
-                        )}
+                        ) : skill}
                       </li>
                     );
                   })}
@@ -132,24 +111,17 @@ export default function About() {
       </section>
 
       {/* ─── JOIN CTA ─── */}
-      <section className="py-40 bg-black border-y border-white/5 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-ares-red/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-        <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
-          <div className="bg-ares-red/10 text-ares-red px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-12 border border-ares-red/20 inline-block shadow-[0_0_20px_rgba(192,0,0,0.1)]">
-            Active Recruitment
-          </div>
-          <h2 className="text-6xl md:text-[10rem] font-black text-white mb-12 uppercase tracking-tighter leading-none">
-            Ready to <span className="text-ares-red">Deploy?</span>
-          </h2>
-          <p className="text-marble/40 text-2xl mb-16 max-w-3xl mx-auto font-medium leading-relaxed">
-            We welcome students from 6th–12th grade across the tri-state area. No experience needed — we provide the hardware, the logic, and the legacy.
+      <section className="py-16 bg-ares-red">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-heading uppercase">Ready to Join ARES?</h2>
+          <p className="text-white text-lg mb-8 max-w-2xl mx-auto">
+            We welcome students from 6th–12th grade across Monongalia, Harrison, and Preston counties, SW PA, and anyone within driving distance of Morgantown. No experience needed — just bring your curiosity.
           </p>
           <Link
             to="/join"
-            className="clipped-button bg-ares-red text-white hover:bg-white hover:text-ares-red transition-all shadow-[0_0_40px_rgba(192,0,0,0.3)] px-16 py-6 text-xs font-black uppercase tracking-[0.3em] group"
+            className="clipped-button bg-white text-ares-red hover:scale-105 hover:bg-marble transition-all shadow-[0_0_20px_rgba(192,0,0,0.4)] font-heading text-lg"
           >
-            Initiate Application <ArrowRight size={18} className="inline ml-4 group-hover:translate-x-2 transition-transform" />
+            Apply to Join Our Team
           </Link>
         </div>
       </section>
@@ -169,25 +141,20 @@ export default function About() {
       )}
 
       {!isLoading && grouped.length === 0 && (
-        <section className="py-32 bg-obsidian text-marble">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="flex flex-col items-center text-center mb-24">
-              <div className="bg-ares-red/10 text-ares-red px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-8 border border-ares-red/20">
-                System Architects // Founding
-              </div>
-              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 uppercase tracking-tighter">Command <span className="text-ares-red italic">Structure</span></h2>
+        <section className="py-24 bg-obsidian text-marble">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading uppercase">Our Mentors</h2>
+              <div className="w-24 h-1 bg-ares-red mx-auto"></div>
             </div>
-            <div className="bg-black/40 border border-white/5 ares-cut-lg p-16 text-center group hover:border-white/20 transition-all duration-700 shadow-2xl backdrop-blur-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.01] group-hover:opacity-[0.03] transition-opacity">
-                <Trophy className="w-64 h-64 text-white" />
-              </div>
-              <h3 className="text-4xl font-black text-white mb-10 uppercase tracking-tighter group-hover:text-ares-gold transition-colors leading-none">Dave Huss & Kelley Burd-Huss</h3>
-              <div className="space-y-8 text-xl text-marble/40 leading-relaxed max-w-3xl mx-auto italic font-medium">
+            <div className="bg-marble/5 border border-ares-bronze/20 hero-card p-12 text-center group hover:border-ares-red/50">
+              <h3 className="text-4xl font-bold text-ares-bronze mb-6 font-heading group-hover:text-white transition-colors">Dave Huss & Kelley Burd-Huss</h3>
+              <div className="space-y-6 text-lg text-marble/90 leading-relaxed max-w-2xl mx-auto italic">
                 <p>
-                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors font-black uppercase tracking-widest text-xs border-b border-white/10 pb-1">FIRST® ecosystem</a>, and robotics has since redefined their community impact.
+                  Founding mentors and architects of the ARES community. In 2022, the Huss family integrated into the <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>®</a> ecosystem, and robotics has since redefined their community impact.
                 </p>
                 <p>
-                  Active across <span className="text-white font-black uppercase tracking-widest text-xs">FIRST® LEGO League</span> and <span className="text-white font-black uppercase tracking-widest text-xs">FIRST® Robotics Competition</span>, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
+                  Active across <a href="https://www.firstinspires.org/robotics/fll" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® LEGO League</a> and <a href="https://www.firstinspires.org/robotics/frc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4"><em>FIRST</em>® Robotics Competition</a>, Dave and Kelley are dedicated to ensuring every student finds their place in the Mountaineer engineering legacy.
                 </p>
               </div>
             </div>
@@ -196,13 +163,11 @@ export default function About() {
       )}
 
       {/* ─── QUICK ANSWERS (FAQS) ─── */}
-      <section className="py-32 bg-obsidian border-t border-white/5">
+      <section className="py-24 bg-obsidian border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col items-center text-center mb-24">
-             <div className="bg-white/5 text-marble/40 px-6 py-2 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-8 border border-white/10">
-               Direct Support // FAQ
-            </div>
-            <h2 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight">System <span className="text-ares-gold">Briefing</span></h2>
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-4 font-heading uppercase">Quick Answers</h2>
+            <p className="text-white font-bold tracking-widest uppercase text-sm">Frequently Asked Questions</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -217,10 +182,9 @@ export default function About() {
               { q: "Where We Meet?", a: "Our main office is at Mountaineer Middle School in Morgantown." },
               { q: "Is it enjoyable?", a: "Having fun while working hard is a core part of being on ARES." },
             ].map((faq) => (
-              <div key={faq.q} className="bg-black/40 border border-white/5 ares-cut-lg p-12 group backdrop-blur-sm hover:border-white/20 transition-all duration-500 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-0 bg-ares-gold group-hover:h-full transition-all duration-700"></div>
-                <h3 className="text-white font-black text-[10px] mb-6 group-hover:text-ares-gold transition-colors uppercase tracking-[0.3em]">{faq.q}</h3>
-                <p className="text-marble/40 text-base leading-relaxed font-medium">{faq.a}</p>
+              <div key={faq.q} className="bg-white/5 border border-white/10 hero-card p-8 group backdrop-blur-sm hover:border-ares-red/30 transition-colors">
+                <h3 className="text-white font-bold text-lg mb-4 font-heading group-hover:text-ares-bronze transition-colors uppercase">{faq.q}</h3>
+                <p className="text-marble/70 text-base leading-relaxed">{faq.a}</p>
               </div>
             ))}
           </div>
@@ -229,3 +193,5 @@ export default function About() {
     </div>
   );
 }
+
+

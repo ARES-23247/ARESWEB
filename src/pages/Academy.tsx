@@ -49,7 +49,7 @@ export default function Academy() {
   } = useAcademy(slug);
 
   return (
-    <div className="min-h-screen bg-obsidian text-white flex flex-col">
+    <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col">
       <SEO title={currentDoc?.title ? `${currentDoc.title} — ARES Academy` : "ARES Academy"} description={currentDoc?.description || "ARES Academy lessons and interactive simulations."} />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
@@ -67,7 +67,7 @@ export default function Academy() {
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-black/80 border border-white/10 ares-cut-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-xl"
+              className="w-full max-w-2xl bg-ares-gray-dark border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -166,9 +166,9 @@ export default function Academy() {
                 )}
               </div>
 
-              <h1 className="text-4xl lg:text-6xl font-black font-heading mb-6 text-white uppercase tracking-tighter leading-none">{currentDoc.title}</h1>
+              <h1 className="text-3xl lg:text-4xl font-bold font-heading mb-4 text-white">{currentDoc.title}</h1>
               {currentDoc.description && (
-                <p className="text-xl text-marble/40 mb-12 border-b border-white/5 pb-12 leading-relaxed font-medium">{currentDoc.description}</p>
+                <p className="text-lg text-white/50 mb-8 border-b border-white/8 pb-8">{currentDoc.description}</p>
               )}
 
               <div className="ares-docs-content">
@@ -213,15 +213,15 @@ export default function Academy() {
                     return (
                       <>
                         {prevDoc ? (
-                          <Link to="/academy/$slug" params={{ slug: prevDoc.slug }} className="flex flex-col p-8 ares-cut-lg border border-white/5 hover:border-ares-red/30 bg-black/40 hover:bg-black/60 transition-all duration-500 group backdrop-blur-sm">
-                            <span className="text-marble/20 text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-3"><ArrowLeft size={12} className="group-hover:-translate-x-2 transition-transform" /> Previous Lesson</span>
-                            <span className="text-white font-black text-lg uppercase tracking-tight group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
+                          <Link to="/academy/$slug" params={{ slug: prevDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group">
+                            <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Previous</span>
+                            <span className="text-white font-bold group-hover:text-ares-red transition-colors">{prevDoc.title}</span>
                           </Link>
                         ) : <div />}
                         {nextDoc ? (
-                          <Link to="/academy/$slug" params={{ slug: nextDoc.slug }} className="flex flex-col p-8 ares-cut-lg border border-white/5 hover:border-ares-cyan/30 bg-black/40 hover:bg-black/60 transition-all duration-500 group text-right items-end backdrop-blur-sm">
-                            <span className="text-marble/20 text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-3">Next Lesson <ArrowRight size={12} className="group-hover:translate-x-2 transition-transform" /></span>
-                            <span className="text-white font-black text-lg uppercase tracking-tight group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
+                          <Link to="/academy/$slug" params={{ slug: nextDoc.slug }} className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end">
+                            <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /></span>
+                            <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">{nextDoc.title}</span>
                           </Link>
                         ) : <div />}
                       </>
@@ -264,18 +264,15 @@ export default function Academy() {
               )}
 
               {/* ── Documentation Feedback ───────────────────────────── */}
-              <div className="mt-20 p-12 ares-cut-lg bg-black/40 border border-white/5 relative overflow-hidden group/feedback mb-12 backdrop-blur-sm">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/feedback:opacity-10 transition-opacity">
-                  <BookOpen size={120} className="text-ares-gold rotate-12" />
+              <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
+                  <BookOpen size={64} className="text-ares-gold rotate-12" />
                 </div>
                 <div className="relative z-10">
-                  <div className="bg-ares-gold/10 text-ares-gold px-4 py-1 ares-cut-sm font-black uppercase tracking-[0.2em] text-[10px] mb-6 border border-ares-gold/20 inline-block">
-                    Peer Review // Documentation
-                  </div>
-                  <h4 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Was this <span className="text-ares-gold">helpful?</span></h4>
-                  <p className="text-marble/40 text-sm mb-10 max-w-md font-medium leading-relaxed">Your feedback helps our engineering team improve the documentation for the entire community.</p>
-                  <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-8" />
-                  <div className="flex flex-wrap gap-6">
+                  <h4 className="text-xl font-bold text-white mb-2">Was this helpful?</h4>
+                  <p className="text-white/50 text-sm mb-6 max-w-md">Your feedback helps our engineering team improve the documentation for the entire community.</p>
+                  <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-4" />
+                  <div className="flex flex-wrap gap-4">
                     <button
                       onClick={() => {
                         if (!slug) return;
@@ -286,9 +283,9 @@ export default function Academy() {
                         toast.success('Thanks for your feedback!');
                       }}
                       disabled={feedbackMutation.isPending}
-                      className="clipped-button flex items-center gap-3 px-8 py-4 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-black uppercase tracking-widest text-xs hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">👍</span> Affirmative
+                      <span className="text-lg">👍</span> Yes, it was
                     </button>
                     <button
                       onClick={async () => {
@@ -306,9 +303,9 @@ export default function Academy() {
                         }
                       }}
                       disabled={feedbackMutation.isPending}
-                      className="clipped-button flex items-center gap-3 px-8 py-4 bg-ares-red/10 border border-ares-red/30 text-ares-red font-black uppercase tracking-widest text-xs hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50"
                     >
-                      <span className="text-lg">👎</span> Negative
+                      <span className="text-lg">👎</span> No, it wasn&apos;t
                     </button>
                   </div>
                 </div>

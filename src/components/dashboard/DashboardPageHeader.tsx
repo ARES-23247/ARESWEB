@@ -18,7 +18,7 @@ export default function DashboardPageHeader({
       <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover:h-full transition-all duration-700"></div>
       <div className="relative z-10">
         <h2 className="text-3xl md:text-5xl font-black text-white flex items-center gap-6 uppercase tracking-tighter leading-none">
-          <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all">
+          <div className="p-3 bg-ares-red ares-cut-sm border border-ares-red/30 shadow-lg shadow-ares-red/20 group-hover:scale-110 transition-all duration-500">
             {icon}
           </div>
           {title}

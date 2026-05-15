@@ -48,15 +48,13 @@ export default function Gallery() {
     <main id="main-content" className="w-full min-h-screen bg-obsidian text-marble py-8">
       <SEO title="Team Gallery" description="Explore behind the scenes of ARES 23247. From raw CAD prototypes and machining directly to the qualification arenas." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
-      <div className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-10">
+      <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="bg-ares-gold/10 text-ares-gold px-6 py-2 ares-cut-sm font-black uppercase tracking-[0.4em] text-[10px] mb-8 border border-ares-gold/20 inline-block">
-             Visual Archive // Build Season
-          </div>
-          <h1 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-8">
-            Team <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">Gallery</span>
+          <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-2">Build Season &amp; Comps</h3>
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm">
+            Team <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">Gallery</span>
           </h1>
-          <p className="text-marble/40 text-xl max-w-2xl font-medium leading-relaxed">
+          <p className="text-white/60 mt-4 max-w-2xl text-balance">
             Explore behind the scenes of ARES 23247. From raw CAD prototypes and machining all the way to performing under the bright lights of our qualification arenas.
           </p>
         </div>
@@ -66,9 +64,9 @@ export default function Gallery() {
               href={String(photoDriveUrl)}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-black/40 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px] px-8 py-4 ares-cut-sm inline-flex items-center gap-3 transition-all duration-500 border border-white/5 hover:border-ares-gold group backdrop-blur-sm"
+              className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 ares-cut inline-flex items-center gap-2 transition-all duration-300 border border-white/20 hover:border-ares-gold"
             >
-              <svg className="w-4 h-4 text-ares-gold group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-5 h-5 text-ares-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               Community Photo Drive
@@ -101,27 +99,25 @@ export default function Gallery() {
                 key={photo.key}
                 onClick={() => openLightbox(imageUrl, altText)}
                 aria-label={`View ${altText} in full screen`}
-                className={`relative w-full overflow-hidden ares-cut-lg bg-black/40 border border-white/5 group cursor-pointer transition-all duration-700 hover:-translate-y-2 hover:border-ares-red/30 hover:shadow-[0_20px_40px_rgba(192,0,0,0.15)] ${assignedAspect} p-0 backdrop-blur-sm`}
+                className={`relative w-full overflow-hidden ares-cut glass-card group cursor-pointer transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(220,38,38,0.1)] ${assignedAspect} p-0 border-0 bg-transparent`}
               >
                 <ResponsiveImage
                    src={imageUrl}
                    alt={altText}
                    className="absolute inset-0 w-full h-full"
-                   imgClassName="transition-transform duration-1000 group-hover:scale-110"
+                   imgClassName="transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
-                  <p className="text-white font-black text-[10px] uppercase tracking-[0.2em] truncate w-full drop-shadow-2xl">
-                    {photo.key.split("-").slice(1).join("-").replace(/\.[^/.]+$/, "")}
-                  </p>
+                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                  <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{photo.key.split("-").slice(1).join("-")}</p>
                 </div>
-                <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="w-14 h-14 rounded-full bg-ares-red/20 backdrop-blur-md flex items-center justify-center border border-ares-red/30 scale-90 group-hover:scale-100 transition-transform duration-500">
+                <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v2m0-2h3m-3 0H7" />
                     </svg>
                   </div>
                 </div>
-              </button>
+                </button>
               );
             })}
         </div>

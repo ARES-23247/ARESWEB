@@ -250,9 +250,9 @@ describe("MemberCard Component", () => {
     expect(link).toHaveClass("group");
 
     // The hover classes are on the inner container div, not the link
-    const card = container.querySelector(".ares-cut-lg");
-    expect(card).toHaveClass("hover:border-ares-red/30");
-    expect(card).toHaveClass("hover:shadow-[0_0_30px_rgba(192,0,0,0.1)]");
+    const card = container.querySelector(".hero-card");
+    expect(card).toHaveClass("group-hover:border-ares-red/30");
+    expect(card).toHaveClass("group-hover:shadow-lg");
   });
 
   it("renders ares-cut styled avatar container", () => {

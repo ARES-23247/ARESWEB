@@ -101,18 +101,13 @@ export default function Events() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="relative z-10 max-w-4xl mx-auto space-y-12 bg-black/40 p-12 md:p-20 ares-cut-lg border border-white/5 shadow-2xl backdrop-blur-sm"
+          className="relative z-10 max-w-4xl mx-auto space-y-6 bg-obsidian p-8 ares-cut-lg border border-white/10 shadow-2xl"
         >
-          <div className="flex flex-col gap-4">
-            <div className="bg-ares-gold/10 text-ares-gold px-4 py-1 ares-cut-sm font-black uppercase tracking-[0.3em] text-[10px] border border-ares-gold/20 inline-block mx-auto mb-4">
-              Strategic Deployment Schedule
-            </div>
-            {/* ACC-F01: Fixed H1 for screen readers while maintaining visual style */}
-            <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none">
-              Team <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-marble/20">Events</span>
-            </h1>
-          </div>
-          <p className="text-xl md:text-2xl text-marble/60 font-medium max-w-2xl mx-auto leading-relaxed">
+          {/* ACC-F01: Fixed H1 for screen readers while maintaining visual style */}
+          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
+            Team <span className="text-ares-gold">Events</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-marble font-medium max-w-2xl mx-auto">
             Join us at our upcoming competitions, community outreach demos, and robotics workshops.
           </p>
         </motion.div>
@@ -247,11 +242,8 @@ export default function Events() {
 
             {/* Archival - Past Events */}
             {(pastOutreach.length > 0 || pastPractices.length > 0) && (
-              <div className="mt-24 bg-black/40 border border-white/5 ares-cut-lg p-12 md:p-16 backdrop-blur-sm relative overflow-hidden group/archive">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover/archive:opacity-[0.05] transition-opacity duration-1000">
-                  <CalendarIcon size={120} className="text-white rotate-12" />
-                </div>
-                <h2 className="text-5xl font-black text-white uppercase tracking-tighter mb-12">Event Archive //</h2>
+              <div className="mt-16 bg-white/5 border border-white/10 ares-cut p-8 backdrop-blur-sm">
+                <h2 className="text-4xl font-black text-white tracking-tight mb-8">Event Archive</h2>
                 
                 {pastOutreach.length > 0 && (
                   <div className="flex flex-col gap-6 mb-12">

@@ -74,7 +74,7 @@ export function TaskMetaSidebar({
       <div className="p-6 space-y-6 flex flex-col">
         {/* Status */}
         <div>
-          <span className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
             <div className="w-4 h-px bg-marble/10"></div>
             Status
           </span>
@@ -101,7 +101,7 @@ export function TaskMetaSidebar({
 
         {/* Priority */}
         <div>
-          <span className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
             <div className="w-4 h-px bg-marble/10"></div>
             Priority
           </span>
@@ -124,7 +124,7 @@ export function TaskMetaSidebar({
 
         {/* Labels */}
         <div className="relative" ref={labelDropdownRef}>
-          <span className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
             <div className="w-4 h-px bg-marble/10"></div>
             <Tag size={10} /> Labels
           </span>
@@ -184,7 +184,7 @@ export function TaskMetaSidebar({
 
         {/* Subteam */}
         <div>
-          <span className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+          <span className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
             <div className="w-4 h-px bg-marble/10"></div>
             Subteam
           </span>
@@ -202,7 +202,7 @@ export function TaskMetaSidebar({
 
         {/* Assignees */}
         <div className="relative" ref={dropdownRef}>
-          <label className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+          <label className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
             <div className="w-4 h-px bg-marble/10"></div>
             <User size={10} /> Assignees ({assigneeIds.length})
           </label>
@@ -255,7 +255,7 @@ export function TaskMetaSidebar({
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="modal-start-date" className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+            <label htmlFor="modal-start-date" className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
               <div className="w-4 h-px bg-marble/10"></div>
               <Calendar size={10} /> Start Date
             </label>
@@ -269,7 +269,7 @@ export function TaskMetaSidebar({
             />
           </div>
           <div>
-            <label htmlFor="modal-due-date" className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2">
+            <label htmlFor="modal-due-date" className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2">
               <div className="w-4 h-px bg-marble/10"></div>
               <Calendar size={10} /> Due Date
               {isOverdue && (
@@ -294,7 +294,7 @@ export function TaskMetaSidebar({
         {/* Time & Estimates */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="group/chrono">
-            <div className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/chrono:text-ares-gold transition-colors">
+            <div className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/chrono:text-ares-gold transition-colors">
               <div className="w-4 h-px bg-marble/10 group-hover/chrono:w-6 transition-all"></div>
               <Clock size={10} className="text-ares-gold" /> Time Logged
             </div>
@@ -328,7 +328,7 @@ export function TaskMetaSidebar({
             </div>
           </div>
           <div className="group/estimate">
-            <div className="text-[10px] font-bold text-marble/20 tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/estimate:text-ares-cyan transition-colors">
+            <div className="text-[10px] font-bold text-marble/70 tracking-[0.3em] mb-3 flex items-center gap-2 group-hover/estimate:text-ares-cyan transition-colors">
               <div className="w-4 h-px bg-marble/10 group-hover/estimate:w-6 transition-all"></div>
               <AlertTriangle size={10} className="text-marble/20 group-hover:text-ares-cyan" /> Estimated Time
             </div>
