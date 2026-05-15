@@ -19,6 +19,7 @@ const serializeAlbum = (a: typeof schema.albums.$inferSelect) => ({
   title: a.title,
   description: a.description ?? null,
   coverImageId: a.coverImageId ?? null,
+  displayMode: a.displayMode,
   isDeleted: a.isDeleted ?? 0,
   createdAt: a.createdAt ?? new Date().toISOString(),
   updatedAt: a.updatedAt ?? new Date().toISOString(),
@@ -84,6 +85,7 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
     title: body.title,
     description: body.description ?? null,
     coverImageId: body.coverImageId ?? null,
+    displayMode: body.displayMode ?? "masonry",
     createdBy: c.get("sessionUser")?.id ?? "unknown",
   }).execute();
 
@@ -99,6 +101,7 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
     title: body.title,
     description: body.description,
     coverImageId: body.coverImageId,
+    displayMode: body.displayMode,
     updatedAt: new Date().toISOString(),
   }).where(eq(schema.albums.id, id)).execute();
 

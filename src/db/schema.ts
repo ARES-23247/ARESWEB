@@ -967,6 +967,7 @@ export const albums = sqliteTable("albums", {
 	title: text().notNull(),
 	description: text(),
 	coverImageId: text("cover_image_id"),
+	displayMode: text("display_mode").default("masonry").notNull(),
 	isDeleted: integer("is_deleted").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),

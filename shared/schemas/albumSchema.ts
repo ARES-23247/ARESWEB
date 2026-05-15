@@ -5,6 +5,7 @@ export const albumSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().nullable().optional(),
   coverImageId: z.string().nullable().optional(),
+  displayMode: z.enum(["masonry", "moving"]).default("masonry"),
   isDeleted: z.number().default(0),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -15,6 +16,7 @@ export const albumPayloadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().nullable().optional(),
   coverImageId: z.string().nullable().optional(),
+  displayMode: z.enum(["masonry", "moving"]).default("masonry"),
 });
 
 export const albumMediaSchema = z.object({

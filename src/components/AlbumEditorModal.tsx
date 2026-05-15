@@ -21,6 +21,7 @@ export default function AlbumEditorModal({
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [displayMode, setDisplayMode] = useState<"masonry" | "moving">("masonry");
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -32,10 +33,12 @@ export default function AlbumEditorModal({
     if (albumToEdit) {
       setTitle(albumToEdit.title);
       setDescription(albumToEdit.description || "");
+      setDisplayMode(albumToEdit.displayMode as "masonry" | "moving" || "masonry");
       setHeroImageFile(null);
     } else {
       setTitle("");
       setDescription("");
+      setDisplayMode("masonry");
       setHeroImageFile(null);
     }
   }
@@ -44,6 +47,7 @@ export default function AlbumEditorModal({
     onSuccess: () => {
       setTitle("");
       setDescription("");
+      setDisplayMode("masonry");
       setHeroImageFile(null);
       toast.success("Album created successfully");
       onClose();
@@ -57,6 +61,7 @@ export default function AlbumEditorModal({
     onSuccess: () => {
       setTitle("");
       setDescription("");
+      setDisplayMode("masonry");
       setHeroImageFile(null);
       queryClient.invalidateQueries({ queryKey: ["albums"] });
       toast.success("Album updated successfully");
@@ -90,6 +95,7 @@ export default function AlbumEditorModal({
       title: title.trim(),
       description: description.trim() || undefined,
       coverImageId,
+      displayMode,
     };
 
     if (albumToEdit) {
@@ -103,6 +109,7 @@ export default function AlbumEditorModal({
     if (!open) {
       setTitle("");
       setDescription("");
+      setDisplayMode("masonry");
       setHeroImageFile(null);
       onClose();
     }
@@ -171,6 +178,24 @@ export default function AlbumEditorModal({
                   rows={3}
                   className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white placeholder-white/30 focus:border-ares-gold focus:outline-none focus:ring-1 focus:ring-ares-gold transition-all resize-none"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="displayMode" className="block text-xs font-bold text-ares-gold uppercase tracking-wider mb-2">
+                  Display Mode
+                </label>
+                <select
+                  id="displayMode"
+                  value={displayMode}
+                  onChange={(e) => setDisplayMode(e.target.value as "masonry" | "moving")}
+                  className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-gold focus:outline-none focus:ring-1 focus:ring-ares-gold transition-all appearance-none"
+                >
+                  <option value="masonry">Masonry (Grid)</option>
+                  <option value="moving">Moving Carousel</option>
+                </select>
+                <p className="text-white/40 text-xs mt-2">
+                  Controls how this album is displayed on the public gallery page.
+                </p>
               </div>
 
               <div>
