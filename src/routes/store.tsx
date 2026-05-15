@@ -2,8 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag } from 'lucide-react'
-import { useGetProducts } from '@/api/store'
+import { useGetProducts, type Product } from '@/api/store'
 import { ProductCard } from '@/components/store/ProductCard'
+interface UIProduct extends Product {
+  category?: string;
+}
+
 
 function StorePage() {
   const { data: productsData, isLoading } = useGetProducts();
@@ -19,11 +23,11 @@ function StorePage() {
   }
 
   const products = productsData || [];
-  const categories = ["All", ...new Set(products.map((p: any) => p.category || "Other"))];
+  const categories = ["All", ...new Set(products.map((p: UIProduct) => p.category || "Other"))];
   
   const filteredProducts = activeCategory === "All" 
     ? products 
-    : products.filter((p: any) => p.category === activeCategory);
+    : products.filter((p: UIProduct) => p.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-obsidian text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -66,7 +70,7 @@ function StorePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product: any) => (
+              {filteredProducts.map((product: UIProduct) => (
                 <motion.div
                   key={product.id}
                   layout
