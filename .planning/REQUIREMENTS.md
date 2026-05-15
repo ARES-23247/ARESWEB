@@ -5,7 +5,7 @@
 ### Album Core & Media
 - [ ] **ALBUM-01**: Author can create, rename, update descriptions, and delete custom Albums.
 - [ ] **ALBUM-02**: Author can link and unlink existing `media` records to an Album, defining a custom sort order.
-- [ ] **ALBUM-03**: Author can bulk ingest photos via the Google Photo Picker, automatically creating local `media` records and linking them to the target Album.
+- [ ] **ALBUM-03**: Author can bulk ingest photos via the Google Photo Picker, automatically creating local `media` records and linking them to the target Album, with strict deduplication to prevent redundant R2 storage.
 
 ### Dynamic Display Views
 - [ ] **DISP-01**: Author can configure an Album's default display layout as either `masonry` or `moving`.
@@ -23,9 +23,9 @@
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |---|---|---|---|---|
-| ALBUM-01 | | Author can create, rename, update descriptions, and delete custom Albums. | pending | |
-| ALBUM-02 | | Author can link and unlink existing media records to an Album. | pending | |
-| ALBUM-03 | | Author can bulk ingest photos via the Google Photo Picker. | pending | |
-| DISP-01 | | Author can configure an Album's default display layout. | pending | |
-| DISP-02 | | System renders the Masonry layout dynamically. | pending | |
-| DISP-03 | | System renders the Moving layout as a seamless marquee. | pending | |
+| ALBUM-01 | Phase 79 | Author can create, rename, update descriptions, and delete custom Albums. | pending | |
+| ALBUM-02 | Phase 80 | Author can link and unlink existing media records to an Album. | pending | |
+| ALBUM-03 | Phase 80 | Author can bulk ingest photos via the Google Photo Picker. | pending | |
+| DISP-01 | Phase 81 | Author can configure an Album's default display layout. | pending | |
+| DISP-02 | Phase 81 | System renders the Masonry layout dynamically. | pending | |
+| DISP-03 | Phase 81 | System renders the Moving layout as a seamless marquee. | pending | |
