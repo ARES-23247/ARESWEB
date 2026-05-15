@@ -1,11 +1,26 @@
 import SEO from "../components/SEO";
 import { useGetAlbum, type AlbumDetail as AlbumDetailType } from "../api/albums";
-import { ArrowLeft, Images } from "lucide-react";
+import { ArrowLeft, Images, Maximize2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import ImageLightbox from "../components/ImageLightbox";
+import { useState } from "react";
 
 export default function AlbumDetail({ id }: { id: string }) {
   const { data: albumResponse, isLoading } = useGetAlbum(id);
   const album = albumResponse?.album ?? null;
+
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+  const [lightboxImageAlt, setLightboxImageAlt] = useState<string>("");
+
+  const openLightbox = (imageUrl: string, altText: string) => {
+    setLightboxImageUrl(imageUrl);
+    setLightboxImageAlt(altText);
+  };
+
+  const closeLightbox = () => {
+    setLightboxImageUrl(null);
+    setLightboxImageAlt("");
+  };
 
   if (isLoading) {
     return (
@@ -67,42 +82,79 @@ export default function AlbumDetail({ id }: { id: string }) {
         ) : (
           <>
             {displayMode === "masonry" ? (
-              <MasonryLayout media={media} />
+              <MasonryLayout media={media} onOpenLightbox={openLightbox} />
             ) : (
-              <MovingLayout media={media} />
+              <MovingLayout media={media} onOpenLightbox={openLightbox} />
             )}
           </>
         )}
       </div>
+
+      {/* Lightbox for viewing images */}
+      {lightboxImageUrl && (
+        <ImageLightbox
+          isOpen={!!lightboxImageUrl}
+          onClose={closeLightbox}
+          imageUrl={lightboxImageUrl}
+          imageAlt={lightboxImageAlt}
+        />
+      )}
     </main>
   );
 }
 
 // Masonry Layout
-function MasonryLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> }) {
+function MasonryLayout({ 
+  media, 
+  onOpenLightbox 
+}: { 
+  media: NonNullable<AlbumDetailType["media"]>;
+  onOpenLightbox: (url: string, alt: string) => void;
+}) {
   return (
-    <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-      {media.map((item) => (
-        <div key={item.id} className="break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10">
-          <img
-            src={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`}
-            alt={item.photo?.filename || "Album photo"}
-            className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-             <a href={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-               View Full
-             </a>
-          </div>
-        </div>
-      ))}
+    <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+      {media.map((item) => {
+        const imageUrl = `/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`;
+        const altText = item.photo?.filename || "Album photo";
+        
+        return (
+          <button
+            type="button"
+            key={item.id}
+            onClick={() => onOpenLightbox(imageUrl, altText)}
+            className="w-full text-left break-inside-avoid relative group overflow-hidden ares-cut-sm border border-white/10 bg-black/40 mb-6 cursor-pointer"
+          >
+            <img
+              src={imageUrl}
+              alt={altText}
+              className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+            {/* Gradient Overlay for Text */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+              <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{altText}</p>
+            </div>
+            {/* Zoom Icon Overlay */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                <Maximize2 className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 // Moving Carousel Layout (GPU Accelerated)
-function MovingLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> }) {
+function MovingLayout({ 
+  media, 
+  onOpenLightbox 
+}: { 
+  media: NonNullable<AlbumDetailType["media"]>;
+  onOpenLightbox: (url: string, alt: string) => void;
+}) {
   // Duplicate media array to create seamless loop
   const carouselItems = [...media, ...media, ...media];
 
@@ -126,26 +178,40 @@ function MovingLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> 
       `}</style>
       
       <div className="flex w-max animate-scroll-infinite items-center">
-        {carouselItems.map((item, index) => (
-          <div 
-            key={`${item.id}-${index}`} 
-            className="px-4 w-[80vw] sm:w-[50vw] md:w-[35vw] lg:w-[25vw] flex-shrink-0 group"
-          >
-            <div className="relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3]">
-              <img
-                src={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`}
-                alt={item.photo?.filename || "Album photo"}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <a href={`/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`} target="_blank" rel="noopener noreferrer" className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                  View Full
-                </a>
-              </div>
+        {carouselItems.map((item, index) => {
+          const imageUrl = `/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`;
+          const altText = item.photo?.filename || "Album photo";
+          
+          return (
+            <div 
+              key={`${item.id}-${index}`} 
+              className="px-4 w-[80vw] sm:w-[50vw] md:w-[35vw] lg:w-[25vw] flex-shrink-0 group"
+            >
+              <button
+                type="button"
+                onClick={() => onOpenLightbox(imageUrl, altText)}
+                className="w-full text-left relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3] cursor-pointer"
+              >
+                <img
+                  src={imageUrl}
+                  alt={altText}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  loading="lazy"
+                />
+                {/* Gradient Overlay for Text */}
+                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                  <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{altText}</p>
+                </div>
+                {/* Zoom Icon Overlay */}
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                    <Maximize2 className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
