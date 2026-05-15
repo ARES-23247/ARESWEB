@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useGetTournaments } from '../api/tournaments';
-import { Trophy, ChevronRight, Calendar } from 'lucide-react';
+import { Trophy, Calendar } from 'lucide-react';
 
 export const Route = createFileRoute('/tournaments')({
   component: TournamentsPage,

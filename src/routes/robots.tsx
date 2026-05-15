@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useGetRobots } from '../api/robots';
 import { useGetSeasons } from '../api/seasons';
-import { Cpu, Scale, ChevronRight, Code } from 'lucide-react';
+import { Cpu, Scale, Code } from 'lucide-react';
 
 export const Route = createFileRoute('/robots')({
   component: RobotsPage,
@@ -45,7 +45,7 @@ function RobotsPage() {
               programmingLanguage?: string | null;
               revealVideoId?: string | null;
             }) => {
-              const season = seasons.find((s: any) => s.startYear === robot.seasonId);
+              const season = seasons.find((s: { startYear: number }) => s.startYear === robot.seasonId);
               
               return (
                 <Link

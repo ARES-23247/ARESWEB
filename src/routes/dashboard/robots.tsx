@@ -7,6 +7,6 @@ export const Route = createFileRoute('/dashboard/robots')({
 })
 
 function RouteComponent() {
-  const { session, permissions } = useDashboardSession()
+  const { session: _session, permissions: _permissions } = useDashboardSession()
   return <RobotsManager />
 }

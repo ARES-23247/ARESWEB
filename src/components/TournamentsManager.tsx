@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { 
   useGetTournaments, 
   useCreateTournament, 
-  useUpdateTournament, 
   useDeleteTournament,
   useSyncTournamentMatches,
   useGetTournament,
@@ -89,12 +88,11 @@ export default function TournamentsManager() {
   const { data: robotsData } = useGetRobots();
   
   const createTournament = useCreateTournament();
-  const updateTournament = useUpdateTournament("");
   const deleteTournament = useDeleteTournament();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [managingId, setManagingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Partial<Tournament>>({});
   const [isAlbumPickerOpen, setIsAlbumPickerOpen] = useState(false);
 
   if (isLoading) return <div className="p-8 text-white">Loading...</div>;
@@ -182,25 +180,25 @@ export default function TournamentsManager() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <div className="block text-sm font-medium mb-1">Name</div>
                 <input type="text" value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">FTC Event Code (for API sync)</label>
+                <div className="block text-sm font-medium mb-1">FTC Event Code (for API sync)</div>
                 <input type="text" value={formData.ftcEventCode || ""} onChange={e => setFormData({ ...formData, ftcEventCode: e.target.value })} placeholder="e.g. USMIPRO" className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Season</label>
+                <div className="block text-sm font-medium mb-1">Season</div>
                 <select value={formData.seasonId || ""} onChange={e => setFormData({ ...formData, seasonId: parseInt(e.target.value) })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2">
                   <option value="">Select Season</option>
                   {seasons.map((s: { startYear: number; challengeName: string }) => <option key={s.startYear} value={s.startYear}>{s.startYear} - {s.challengeName}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Robot</label>
+                <div className="block text-sm font-medium mb-1">Robot</div>
                 <select value={formData.robotId || ""} onChange={e => setFormData({ ...formData, robotId: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2">
                   <option value="">Select Robot</option>
                   {robots.map((r: { id: string; name: string }) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -210,33 +208,33 @@ export default function TournamentsManager() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Rank</label>
+                <div className="block text-sm font-medium mb-1">Rank</div>
                 <input type="number" value={formData.rank || ""} onChange={e => setFormData({ ...formData, rank: parseInt(e.target.value) })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">OPR</label>
+                <div className="block text-sm font-medium mb-1">OPR</div>
                 <input type="number" step="0.1" value={formData.opr || ""} onChange={e => setFormData({ ...formData, opr: parseFloat(e.target.value) })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Alliance Role</label>
+                <div className="block text-sm font-medium mb-1">Alliance Role</div>
                 <input type="text" value={formData.allianceRole || ""} onChange={e => setFormData({ ...formData, allianceRole: e.target.value })} placeholder="Captain, Pick 1, etc." className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Tournament Recap (Rich Text)</label>
+              <div className="block text-sm font-medium mb-2">Tournament Recap (Rich Text)</div>
               <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
                 <RichTextEditor
                   key={editingId}
                   content={formData.ast ? JSON.parse(formData.ast) : ""}
-                  onChange={(ast: any) => setFormData({ ...formData, ast: JSON.stringify(ast) })}
+                  onChange={(ast: Record<string, unknown>) => setFormData({ ...formData, ast: JSON.stringify(ast) })}
                   editable={true}
                 />
               </div>
             </div>
 
             <div className="mb-8">
-              <label className="block text-sm font-medium mb-2">Attached Album</label>
+              <div className="block text-sm font-medium mb-2">Attached Album</div>
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setIsAlbumPickerOpen(true)}

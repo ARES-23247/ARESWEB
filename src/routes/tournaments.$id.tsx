@@ -113,7 +113,7 @@ function TournamentDetailPage() {
 
           {/* Match Schedule Sidebar */}
           <div className="lg:col-span-1">
-            {(matches.length > 0 || Boolean((tournament as any)?.ftcEventKey)) && (
+            {(matches.length > 0 || Boolean((tournament as Record<string, unknown>)?.ftcEventKey)) && (
               <div className="bg-black border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden h-fit">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-ares-red/10 rounded-full blur-3xl" />
                 <h3 className="text-xl font-black text-white uppercase tracking-wider mb-6 flex items-center gap-3">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGetRobots, useCreateRobot, useUpdateRobot, useDeleteRobot, type Robot } from "../api/robots";
+import { useGetRobots, useCreateRobot, useDeleteRobot, type Robot } from "../api/robots";
 import { useGetSeasons } from "../api/seasons";
 import { Save, Trash2, Plus, Edit } from "lucide-react";
 import { RichTextEditor } from "./RichTextEditor";
@@ -9,11 +9,10 @@ export default function RobotsManager() {
   const { data: robotsData, isLoading } = useGetRobots();
   const { data: seasonsData } = useGetSeasons();
   const createRobot = useCreateRobot();
-  const updateRobot = useUpdateRobot("");
   const deleteRobot = useDeleteRobot();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Partial<Robot>>({});
   const [isAlbumPickerOpen, setIsAlbumPickerOpen] = useState(false);
 
   if (isLoading) return <div className="p-8 text-white">Loading...</div>;
@@ -35,19 +34,11 @@ export default function RobotsManager() {
     if (editingId === "new") {
       await createRobot.mutateAsync(formData);
     } else if (editingId) {
-      const updateFn = updateRobot;
-      (updateFn as any).mutateAsync = async (data: any) => {
-        const { useUpdateRobot } = await import("../api/robots");
-        // We'd use the specific hook for update, but we're reusing it here
-      };
-      // We will re-fetch or use a more specific update hook per ID later
-      // But for simplicity in this manager we will just call a fetch
       await fetch(`/api/robots/${editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      // trigger refetch
       window.location.reload();
     }
     setEditingId(null);
@@ -97,11 +88,11 @@ export default function RobotsManager() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <div className="block text-sm font-medium mb-1">Name</div>
                 <input type="text" value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Season</label>
+                <div className="block text-sm font-medium mb-1">Season</div>
                 <select value={formData.seasonId || ""} onChange={e => setFormData({ ...formData, seasonId: parseInt(e.target.value) })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2">
                   <option value="">Select Season</option>
                   {seasons.map((s: { startYear: number; challengeName: string }) => <option key={s.startYear} value={s.startYear}>{s.startYear} - {s.challengeName}</option>)}
@@ -111,49 +102,49 @@ export default function RobotsManager() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Weight (lbs)</label>
+                <div className="block text-sm font-medium mb-1">Weight (lbs)</div>
                 <input type="number" step="0.1" value={formData.weightLbs || ""} onChange={e => setFormData({ ...formData, weightLbs: parseFloat(e.target.value) })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Drivetrain</label>
+                <div className="block text-sm font-medium mb-1">Drivetrain</div>
                 <input type="text" value={formData.drivetrainType || ""} onChange={e => setFormData({ ...formData, drivetrainType: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Primary Mechanism</label>
+                <div className="block text-sm font-medium mb-1">Primary Mechanism</div>
                 <input type="text" value={formData.primaryMechanism || ""} onChange={e => setFormData({ ...formData, primaryMechanism: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Language</label>
+                <div className="block text-sm font-medium mb-1">Language</div>
                 <input type="text" value={formData.programmingLanguage || ""} onChange={e => setFormData({ ...formData, programmingLanguage: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Onshape URL / CAD Viewer URL</label>
+                <div className="block text-sm font-medium mb-1">Onshape URL / CAD Viewer URL</div>
                 <input type="text" value={formData.onshapeUrl || ""} onChange={e => setFormData({ ...formData, onshapeUrl: e.target.value })} placeholder="Onshape Share URL" className="w-full bg-slate-800 border-slate-700 rounded-md p-2 mb-2" />
                 <input type="text" value={formData.cadViewerUrl || ""} onChange={e => setFormData({ ...formData, cadViewerUrl: e.target.value })} placeholder="Embeddable Viewer URL" className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Reveal Video ID (YouTube)</label>
+                <div className="block text-sm font-medium mb-1">Reveal Video ID (YouTube)</div>
                 <input type="text" value={formData.revealVideoId || ""} onChange={e => setFormData({ ...formData, revealVideoId: e.target.value })} className="w-full bg-slate-800 border-slate-700 rounded-md p-2" />
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Robot Description (Rich Text)</label>
+              <div className="block text-sm font-medium mb-2">Robot Description (Rich Text)</div>
               <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
                 <RichTextEditor
                   key={editingId}
-                  content={formData.ast ? JSON.parse(formData.ast) : ""}
-                  onChange={(ast) => setFormData({ ...formData, ast: JSON.stringify(ast) })}
+                  content={formData.ast ? JSON.parse(formData.ast as string) : ""}
+                  onChange={(ast: Record<string, unknown>) => setFormData({ ...formData, ast: JSON.stringify(ast) })}
                   editable={true}
                 />
               </div>
             </div>
 
             <div className="mb-8">
-              <label className="block text-sm font-medium mb-2">Attached Album</label>
+              <div className="block text-sm font-medium mb-2">Attached Album</div>
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setIsAlbumPickerOpen(true)}

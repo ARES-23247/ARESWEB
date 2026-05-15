@@ -161,12 +161,13 @@ export const tournamentsRouter = _tournamentsRouter
   try {
     const data = await getFtcData(`/${tournament.seasonId}/matches/${tournament.ftcEventCode}`, c as unknown as HonoContext);
     
-    if (data && (data as any).matches && Array.isArray((data as any).matches)) {
-      for (const match of (data as any).matches) {
-        const matchNumber = match.matchNumber;
-        const matchType = match.description || "Match";
-        const redScore = match.scoreRedFinal;
-        const blueScore = match.scoreBlueFinal;
+    const ftcData = data as { matches?: Record<string, unknown>[] } | null;
+    if (ftcData && ftcData.matches && Array.isArray(ftcData.matches)) {
+      for (const match of ftcData.matches) {
+        const matchNumber = match.matchNumber as number;
+        const matchType = (match.description as string) || "Match";
+        const redScore = match.scoreRedFinal as number;
+        const blueScore = match.scoreBlueFinal as number;
 
         const existingMatches = await db.select({ id: schema.tournamentMatches.id })
           .from(schema.tournamentMatches)
@@ -196,8 +197,8 @@ export const tournamentsRouter = _tournamentsRouter
       }
     }
     return c.json({ success: true }, 200);
-  } catch (error: any) {
-    throw new ApiError(`Failed to sync matches: ${error.message}`, 500, "SYNC_FAILED");
+  } catch (error: unknown) {
+    throw new ApiError(`Failed to sync matches: ${error instanceof Error ? error.message : String(error)}`, 500, "SYNC_FAILED");
   }
 })
 .openapi(updateTournamentMatchVideoRoute, async (c) => {

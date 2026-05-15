@@ -6,7 +6,6 @@ import {
   tournamentPayloadSchema,
   tournamentMatchSchema,
   tournamentAwardSchema,
-  tournamentMatchPayloadSchema,
   tournamentAwardPayloadSchema
 } from "../schemas/tournamentSchema";
 
