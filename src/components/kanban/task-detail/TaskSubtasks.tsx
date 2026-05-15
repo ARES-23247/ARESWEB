@@ -37,7 +37,7 @@ export function TaskSubtasks({ task, onTaskClick }: TaskSubtasksProps) {
       <div className="flex items-center justify-between mb-2">
         <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] flex items-center gap-3">
           <div className="w-6 h-px bg-marble/10"></div>
-          <Layers size={12} className="text-ares-cyan" /> SUB_OBJECTIVES
+          <Layers size={12} className="text-ares-cyan" /> Subtasks
         </div>
       </div>
 
@@ -57,19 +57,19 @@ export function TaskSubtasks({ task, onTaskClick }: TaskSubtasksProps) {
                   <button 
                     onClick={(e) => toggleStatus(e, st)}
                     className="flex-shrink-0 text-marble/20 hover:text-ares-cyan transition-all"
-                    title={st.status === "done" ? "INIT_TODO" : "COMMIT_DONE"}
+                    title={st.status === "done" ? "Mark as Todo" : "Mark as Done"}
                   >
                     {st.status === "done" ? <CheckCircle2 size={18} className="text-ares-gold" /> : <Circle size={18} />}
                   </button>
                   <button
                     type="button"
                     onClick={() => onTaskClick?.(st)}
-                    className={`text-[11px] text-left flex-1 font-black uppercase tracking-widest group-hover:text-ares-cyan transition-all truncate cursor-pointer outline-none ${st.status === "done" ? "text-marble/20 line-through" : "text-white"}`}
+                    className={`text-[11px] text-left flex-1 font-bold uppercase tracking-widest group-hover:text-ares-cyan transition-all truncate cursor-pointer outline-none ${st.status === "done" ? "text-marble/20 line-through" : "text-white"}`}
                   >
                     {st.title}
                   </button>
                 </div>
-                <span className="text-[9px] font-black text-marble/20 uppercase tracking-[0.2em] ml-4 flex-shrink-0 border-l border-white/5 pl-4">{st.status}</span>
+                <span className="text-[9px] font-bold text-marble/20 uppercase tracking-[0.2em] ml-4 flex-shrink-0 border-l border-white/5 pl-4">{st.status}</span>
               </div>
             ))}
           </div>
@@ -100,14 +100,14 @@ export function TaskSubtasks({ task, onTaskClick }: TaskSubtasksProps) {
             type="text"
             name="subtaskTitle"
             id="new-subtask-input"
-            placeholder="DEPLOY_SUB_OBJECTIVE..."
-            className="flex-1 bg-black/60 border border-white/5 text-white text-[11px] font-black uppercase tracking-widest px-4 py-3.5 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner"
+            placeholder="Add a subtask..."
+            className="flex-1 bg-black/60 border border-white/5 text-white text-[11px] font-bold uppercase tracking-widest px-4 py-3.5 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-all shadow-inner"
           />
           <button
             type="submit"
-            className="bg-ares-cyan hover:bg-ares-cyan/90 text-black px-6 py-3.5 ares-cut-sm font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center transition-all disabled:opacity-30 shadow-lg shadow-ares-cyan/10 active:scale-95"
+            className="bg-ares-cyan hover:bg-ares-cyan/90 text-black px-6 py-3.5 ares-cut-sm font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center transition-all disabled:opacity-30 shadow-lg shadow-ares-cyan/10 active:scale-95"
             disabled={createSubtaskMutation.isPending}
-            title="Deploy Subtask"
+            title="Add Subtask"
           >
             <Plus size={18} />
           </button>

@@ -96,16 +96,16 @@ export default function TeamAvailability() {
       <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover:h-full transition-all duration-700"></div>
       <div className="flex items-center justify-between mb-10 relative z-10">
         <div>
-          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3">
+          <h3 className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-3">
             <Users size={16} className="text-ares-cyan" />
-            Operational // Team_Radar
+            Team Activity Radar
           </h3>
-          <div className="mt-2 text-marble/20 text-[8px] font-black uppercase tracking-[0.3em]">SECURE_TELEMETRY // SYNC_ACTIVE</div>
+          <div className="mt-2 text-marble/60 text-[8px] font-bold uppercase tracking-widest italic">Live Status Synchronization Active</div>
         </div>
         {presences && (
           <div className="flex items-center gap-4">
-            <span className="text-[9px] font-black text-ares-cyan uppercase tracking-[0.2em] px-3 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm animate-pulse">
-              {sortedMembers.filter(m => m.status === "active").length} ACTIVE_NODES
+            <span className="text-[9px] font-bold text-ares-cyan uppercase tracking-widest px-3 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm">
+              {sortedMembers.filter(m => m.status === "active").length} Active Members
             </span>
           </div>
         )}
@@ -115,18 +115,18 @@ export default function TeamAvailability() {
         {isLoading && !presences ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 opacity-50">
             <div className="w-12 h-12 border-2 border-ares-cyan/20 border-t-ares-cyan rounded-full animate-spin"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-marble/40">CALIBRATING_RADAR...</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-marble/60">Fetching Activity...</span>
           </div>
         ) : isError || error ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="px-4 py-2 bg-ares-red/10 border border-ares-red/30 text-ares-red text-[9px] font-black uppercase tracking-widest ares-cut-sm">
-              TELEMETRY_FAILURE: {error}
+            <div className="px-4 py-2 bg-ares-red/10 border border-ares-red/30 text-ares-red text-[9px] font-bold uppercase tracking-widest ares-cut-sm">
+              Connection Issue: {error}
             </div>
           </div>
         ) : sortedMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 opacity-50">
             <Users className="text-marble/20" size={32} />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-marble/40">NO_ACTIVE_TELEMETRY</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-marble/60">No Active Activity Found</span>
           </div>
         ) : (
           <AnimatePresence>
@@ -149,13 +149,13 @@ export default function TeamAvailability() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-white uppercase tracking-tighter truncate group-hover/member:text-ares-cyan transition-colors">
+                    <p className="text-[11px] font-bold text-white uppercase tracking-tight truncate group-hover/member:text-ares-cyan transition-colors">
                       {userNames[member.email] || member.email.split("@")[0]}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {getIcon(member.status)}
-                      <span className="text-[8px] uppercase tracking-[0.2em] font-black text-marble/20 group-hover/member:text-marble/40 transition-colors">
-                        {member.status}_SESSION
+                      <span className="text-[8px] uppercase tracking-widest font-bold text-marble/60 group-hover/member:text-marble/80 transition-colors">
+                        {member.status}
                       </span>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-﻿ 
+ 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import AdminInquiries from "./AdminInquiries";
@@ -70,11 +70,11 @@ describe("AdminInquiries component", () => {
     render(<AdminInquiries />, { wrapper });
 
     // Find the initial delete button and click it to reveal confirmation
-    const deleteBtn = screen.getByRole("button", { name: /DELETE/i });
+    const deleteBtn = screen.getByRole("button", { name: /Delete/i });
     fireEvent.click(deleteBtn);
 
     // Click the confirmation button
-    const confirmBtn = screen.getByRole("button", { name: /CONFIRM DELETE/i });
+    const confirmBtn = screen.getByRole("button", { name: /Confirm Delete/i });
     fireEvent.click(confirmBtn);
 
     // Verify the API is called with the correct id
@@ -88,7 +88,7 @@ describe("AdminInquiries component", () => {
     render(<AdminInquiries />, { wrapper });
 
     // Find the RESOLVE button
-    const resolveBtn = screen.getByRole("button", { name: /^RESOLVE$/i });
+    const resolveBtn = screen.getByRole("button", { name: /^Resolve$/i });
     fireEvent.click(resolveBtn);
 
     expect(mutate).toHaveBeenCalledWith({

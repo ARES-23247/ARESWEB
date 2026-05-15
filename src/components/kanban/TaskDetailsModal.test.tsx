@@ -182,7 +182,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText(/TACTICAL_ID: task/)).toBeInTheDocument();
+    expect(screen.getByText(/ID: task/)).toBeInTheDocument();
   });
 
   it("renders all status options", () => {
@@ -195,10 +195,10 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("PENDING_OPS")).toBeInTheDocument();
-    expect(screen.getByText("ACTIVE_MISSION")).toBeInTheDocument();
-    expect(screen.getByText("COMPLETE")).toBeInTheDocument();
-    expect(screen.getByText("HALTED")).toBeInTheDocument();
+    expect(screen.getByText("Backlog")).toBeInTheDocument();
+    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.getByText("Blocked")).toBeInTheDocument();
   });
 
   it("renders all priority options", () => {
@@ -211,10 +211,10 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("TRIVIAL")).toBeInTheDocument();
-    expect(screen.getByText("STANDARD")).toBeInTheDocument();
-    expect(screen.getByText("ELEVATED")).toBeInTheDocument();
-    expect(screen.getByText("CRITICAL")).toBeInTheDocument();
+    expect(screen.getByText("Low")).toBeInTheDocument();
+    expect(screen.getByText("Normal")).toBeInTheDocument();
+    expect(screen.getByText("High")).toBeInTheDocument();
+    expect(screen.getByText("Urgent")).toBeInTheDocument();
   });
 
   it("renders subteam selector", () => {
@@ -241,7 +241,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText(/OPERATIONAL_ASSETS/)).toBeInTheDocument();
+    expect(screen.getByText(/Assignees/)).toBeInTheDocument();
     expect(screen.getByText("User One")).toBeInTheDocument();
   });
 
@@ -255,7 +255,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const dateInput = screen.getByLabelText(/TERMINATION/);
+    const dateInput = screen.getByLabelText(/Due Date/);
     expect(dateInput).toBeInTheDocument();
     expect(dateInput).toHaveValue("2024-12-31");
   });
@@ -316,7 +316,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const closeButton = screen.getByTitle("Close interface");
+    const closeButton = screen.getByTitle("Close");
     fireEvent.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -362,7 +362,7 @@ describe("TaskDetailsModal Component", () => {
     const titleInput = screen.getByDisplayValue("Test Task Title");
     fireEvent.change(titleInput, { target: { value: "" } });
 
-    const saveButton = screen.getByText("COMMIT_CHANGES");
+    const saveButton = screen.getByText("Save Changes");
     expect(saveButton).toBeDisabled();
   });
 
@@ -376,9 +376,9 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("CLOSE_INTERFACE")).toBeInTheDocument();
-    expect(screen.getByText("COMMIT_CHANGES")).toBeInTheDocument();
-    expect(screen.getByText(/INIT:/)).toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
+    expect(screen.getByText("Save Changes")).toBeInTheDocument();
+    expect(screen.getByText(/Created:/)).toBeInTheDocument();
   });
 
   it("has proper ARIA attributes", () => {
@@ -422,8 +422,8 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText(/SUB_OBJECTIVES/)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("DEPLOY_SUB_OBJECTIVE...")).toBeInTheDocument();
+    expect(screen.getByText(/Subtasks/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Add a subtask...")).toBeInTheDocument();
   });
 
   it("allows adding new subtask via Enter key", () => {
@@ -436,7 +436,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const input = screen.getByPlaceholderText("DEPLOY_SUB_OBJECTIVE...");
+    const input = screen.getByPlaceholderText("Add a subtask...");
     fireEvent.change(input, { target: { value: "New subtask" } });
     fireEvent.submit(input.closest("form") as HTMLFormElement);
 

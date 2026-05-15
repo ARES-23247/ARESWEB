@@ -36,19 +36,19 @@ export function MemberCard({ member }: { member: TeamMember }) {
           </div>
         </div>
         
-        <h4 className="text-white font-black text-sm uppercase tracking-widest mb-1 group-hover:text-ares-red transition-colors">
-          {member.nickname || member.name || "ARES Member"}
+        <h4 className="text-white font-bold text-sm mb-1 group-hover:text-ares-red transition-colors">
+          {member.nickname || member.name || "Member"}
         </h4>
         
         {member.pronouns && (
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/20 mb-4">{member.pronouns}</p>
+          <p className="text-[10px] font-bold tracking-wider text-marble/60 mb-4 italic">{member.pronouns}</p>
         )}
         
         <div className="mt-auto pt-4 flex flex-col gap-3 w-full">
           {subteams.length > 0 && (
             <div className="flex flex-wrap gap-1.5 justify-center">
               {(subteams as string[]).slice(0, 3).map((team: string) => (
-                <span key={team} className="px-2 py-0.5 bg-ares-red/10 text-ares-red text-[8px] font-black ares-cut-sm uppercase tracking-widest border border-ares-red/20">
+                <span key={team} className="px-2 py-0.5 bg-ares-red/10 text-ares-red text-[8px] font-bold ares-cut-sm border border-ares-red/20">
                   {team}
                 </span>
               ))}

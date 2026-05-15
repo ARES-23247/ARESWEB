@@ -144,7 +144,7 @@ describe("DashboardStatCard Component", () => {
     );
 
     const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass("bg-black/40");
+    expect(card).toHaveClass("bg-black/20");
     expect(card).toHaveClass("border");
     expect(card).toHaveClass("ares-cut-lg");
   });
@@ -161,9 +161,9 @@ describe("DashboardStatCard Component", () => {
     const labelElement = screen.getByText("Label Text");
     // The label text is in a span, but the styling is on the parent div
     const parentElement = labelElement.parentElement;
-    expect(parentElement).toHaveClass("text-marble/20");
+    expect(parentElement).toHaveClass("text-marble/60");
     expect(labelElement).toHaveClass("uppercase");
-    expect(labelElement).toHaveClass("tracking-[0.3em]");
+    expect(labelElement).toHaveClass("tracking-widest");
   });
 
   it("has proper text styling for value", () => {
@@ -177,7 +177,7 @@ describe("DashboardStatCard Component", () => {
 
     const valueElement = screen.getByText("123");
     expect(valueElement).toHaveClass("text-white");
-    expect(valueElement).toHaveClass("font-black");
+    expect(valueElement).toHaveClass("font-bold");
   });
 
   it("renders icon and label in the same row", () => {

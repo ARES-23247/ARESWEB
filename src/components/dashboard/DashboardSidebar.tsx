@@ -130,8 +130,8 @@ export default function DashboardSidebar({
           <div className="w-8 h-8 ares-cut-sm bg-gradient-to-br from-ares-red to-red-900 border border-ares-danger/30 flex items-center justify-center">
             <AppWindow size={16} className="text-white" />
           </div>
-          <h1 className="text-lg font-black tracking-tighter text-white">
-            ARES<span className="text-marble/60 font-bold">Workspace</span>
+          <h1 className="text-lg font-bold tracking-tight text-white">
+            ARES<span className="text-marble/80 font-medium">Workspace</span>
           </h1>
         </div>
         <button
@@ -161,7 +161,7 @@ export default function DashboardSidebar({
         {/* Profile Header */}
         <div className="p-6 border-b border-white/5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-white/5">
-            <span className="text-xs font-black text-marble/60 uppercase tracking-widest">Navigation Menu</span>
+            <span className="text-xs font-bold text-marble/80 uppercase tracking-widest">Navigation Menu</span>
             <button className="text-marble/50 p-1 bg-white/5 ares-cut-sm hover:text-white" onClick={toggleDashboard} aria-label="Close sidebar">
               <X size={16} />
             </button>
@@ -189,7 +189,7 @@ export default function DashboardSidebar({
                   : ((session?.user?.name as string) || "ARES Member")}
               </span>
               <div className="flex flex-col gap-1">
-                <span className="text-ares-gold text-xs font-black uppercase tracking-widest truncate">
+                <span className="text-ares-gold text-xs font-bold uppercase tracking-widest truncate">
                   {role} • {memberType}
                 </span>
                 {permissions.isUnverified && (
@@ -205,7 +205,7 @@ export default function DashboardSidebar({
         {/* Scrollable Navigation */}
         <div className="flex-1 overflow-y-auto py-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           <div>
-            <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Navigation</h4>
+            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold/80 mb-2 px-6">Navigation</h4>
             <div className="space-y-1 px-3">
               <NavButton tab="" icon={LayoutDashboard} label="Dashboard Home" currentPath={location.pathname} />
               <NavButton tab="profile" icon={User} label="My Profile" currentPath={location.pathname} />
@@ -222,7 +222,7 @@ export default function DashboardSidebar({
 
           {canSeeTasks && (
             <div>
-              <h4 className="text-xs uppercase font-black tracking-widest text-ares-cyan mb-2 px-6">Team Workspace</h4>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-cyan/80 mb-2 px-6">Team Workspace</h4>
               <div className="space-y-1 px-3">
                 <NavButton tab="tasks" icon={LayoutDashboard} label="Kanban Tasks" currentPath={location.pathname} />
                 <NavButton tab="drive-docs" icon={FileText} label="Google Drive Docs" currentPath={location.pathname} />
@@ -237,7 +237,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Content Hub</h4>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-marble/80 mb-2 px-6">Content Hub</h4>
               <div className="space-y-1 px-3">
                 <NavButton tab="manage_blog" icon={PenTool} label="Blogs & News" currentPath={location.pathname} pendingCount={pendingPostsCount} />
                 <NavButton tab="manage_event" icon={Calendar} label="Calendar Events" currentPath={location.pathname} pendingCount={pendingEventsCount} />
@@ -257,7 +257,7 @@ export default function DashboardSidebar({
 
           {isAuthorized && (
             <div>
-              <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Operations</h4>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-marble/80 mb-2 px-6">Operations</h4>
               <div className="space-y-1 px-3">
                 {canSeeInquiries && <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={location.pathname} pendingCount={pendingInquiriesCount} />}
                 {isAuthorized && <NavButton tab="gmail" icon={Inbox} label="Team Inbox" currentPath={location.pathname} />}
@@ -274,7 +274,7 @@ export default function DashboardSidebar({
 
           {(isAdmin || canSeeLogistics) && (
             <div>
-              <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Administration</h4>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold/80 mb-2 px-6">Administration</h4>
               <div className="space-y-1 px-3">
                 {isAdmin && <NavButton tab="command_center" icon={Radio} label="Command Center" currentPath={location.pathname} />}
                 {isAdmin && <NavButton tab="db_studio" icon={Database} label="Database Studio" currentPath={location.pathname} />}
@@ -289,7 +289,7 @@ export default function DashboardSidebar({
           )}
 
           <div>
-            <h4 className="text-xs uppercase font-black tracking-widest text-marble/60 mb-2 px-6">Resources</h4>
+            <h4 className="text-xs uppercase font-bold tracking-widest text-marble/80 mb-2 px-6">Resources</h4>
             <div className="space-y-1 px-3">
               <Link
                 to="/developers/api"
@@ -319,7 +319,7 @@ export default function DashboardSidebar({
                 window.location.href = '/api/auth/emergency-clear';
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-bold uppercase tracking-wider"
           >
             <LogOut size={16} /> Sign Out
           </button>

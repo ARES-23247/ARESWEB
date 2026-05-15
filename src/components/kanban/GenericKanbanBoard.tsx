@@ -280,13 +280,13 @@ export function GenericKanbanBoard<T>({
                       <div className={`p-1.5 ares-cut-sm border ${config.border} bg-black/40 shadow-inner`}>
                         <StatusIcon size={14} className={config.text} />
                       </div>
-                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${config.text}`}>
+                      <span className={`text-[10px] font-bold tracking-[0.2em] ${config.text}`}>
                         {config.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-1 w-1 rounded-full bg-ares-cyan/30 animate-pulse"></div>
-                      <span className="text-[10px] font-mono font-black text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm border border-white/5 shadow-lg">
+                      <span className="text-[10px] font-mono font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm border border-white/5 shadow-lg">
                         {String(colItems.length).padStart(2, '0')}
                       </span>
                     </div>
@@ -300,7 +300,7 @@ export function GenericKanbanBoard<T>({
                       {colItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 opacity-20">
                           <StatusIcon size={24} className="mb-3" />
-                          <p className="text-ares-gray text-[9px] font-black uppercase tracking-[0.3em] italic">{emptyStateText}</p>
+                          <p className="text-ares-gray text-[9px] font-bold tracking-[0.3em] italic">{emptyStateText}</p>
                         </div>
                       ) : (
                         colItems.map((lItem) => renderItem(lItem.item))

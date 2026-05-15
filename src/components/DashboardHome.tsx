@@ -68,22 +68,22 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-black/40 border border-white/5 p-10 ares-cut-lg shadow-2xl backdrop-blur-sm relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-1 h-0 bg-ares-red group-hover:h-full transition-all duration-700"></div>
         <div className="relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black text-white flex items-center gap-6 uppercase tracking-tighter leading-none">
+          <h2 className="text-3xl md:text-5xl font-bold text-white flex items-center gap-6 tracking-tight leading-none">
             <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all">
               <Activity className="text-ares-red" size={32} />
             </div>
             Welcome back, <span className="text-ares-red">{firstName}</span>
           </h2>
-          <p className="text-marble/40 text-[10px] mt-4 uppercase tracking-[0.4em] font-black flex items-center gap-2">
-            <span className="w-8 h-px bg-white/10"></span>
-            Operational Command Center // System Active
+          <p className="text-marble/60 text-[10px] mt-4 uppercase tracking-widest font-bold flex items-center gap-2">
+            <span className="w-8 h-px bg-white/20"></span>
+            ARES Web Workspace Dashboard
           </p>
         </div>
         <button 
           onClick={startTour}
-          className="mt-8 md:mt-0 flex items-center gap-3 px-6 py-3 font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 hover:border-white/30 transition-all relative z-10"
+          className="mt-8 md:mt-0 flex items-center gap-3 px-6 py-3 font-bold text-[10px] uppercase tracking-widest ares-cut-sm bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 hover:border-white/30 transition-all relative z-10"
         >
-          <HelpCircle size={16} /> INITIALIZE_GUIDE
+          <HelpCircle size={16} /> Tutorial Guide
         </button>
       </div>
 
@@ -94,9 +94,9 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
           
           <div className="bg-black/40 border border-white/5 p-8 ares-cut-lg shadow-xl backdrop-blur-sm relative overflow-hidden group/actions" id="quick-actions">
             <div className="absolute top-0 left-0 w-1 h-0 bg-ares-cyan group-hover/actions:h-full transition-all duration-500"></div>
-            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-widest mb-8 flex items-center gap-3">
               <Activity size={16} className="text-ares-cyan" />
-              Strategic // Deployments
+              Quick Actions
             </h3>
             <div className="grid grid-cols-2 gap-4 relative z-10">
               {[
@@ -110,10 +110,10 @@ export default function DashboardHome({ stats: prefetchedStats }: { stats?: unkn
                   to={link.to} 
                   className="flex flex-col items-center justify-center p-6 bg-white/5 hover:bg-white/10 ares-cut-sm transition-all border border-white/5 group/link hover:scale-105 active:scale-95 shadow-lg"
                 >
-                  <div className={`text-marble/40 ${link.color} transition-colors mb-3 group-hover/link:scale-110 duration-300`}>
+                  <div className={`text-marble/60 ${link.color} transition-colors mb-3 group-hover/link:scale-110 duration-300`}>
                     {link.icon}
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 group-hover/link:text-white transition-colors">{link.label}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/80 group-hover/link:text-white transition-colors">{link.label}</span>
                 </Link>
               ))}
             </div>

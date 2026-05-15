@@ -100,7 +100,12 @@
       "Bash(cat \"c:/Users/david/AppData/Roaming/npm/gsd-sdk\" | head -100)",
       "Read(//c/Users/david/AppData/Roaming/npm/**)",
       "Skill(gsd-health)",
-      "Skill(gsd-health:*)"
+      "Skill(gsd-health:*)",
+      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --project=chromium admin-users.spec.ts)",
+      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test \"admin-users\")",
+      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --project=dashboard admin-users)",
+      "Bash(pnpm exec *)",
+      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --config=playwright.config.ts \"admin-users\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

@@ -38,17 +38,17 @@ interface ProjectBoardKanbanProps {
 export const COLUMNS = ["todo", "in_progress", "done", "blocked"] as const;
 
 export const statusConfig: Record<string, { bg: string; text: string; border: string; icon: React.ElementType<{ size?: number; className?: string }>; label: string }> = {
-  todo:        { bg: "bg-white/[0.03]",   text: "text-marble/40", border: "border-white/5", icon: Circle,        label: "BACKLOG_PENDING" },
-  in_progress: { bg: "bg-ares-cyan/5",        text: "text-ares-cyan", border: "border-ares-cyan/20", icon: Clock,         label: "ACTIVE_EXECUTION" },
-  done:        { bg: "bg-ares-gold/5",        text: "text-ares-gold", border: "border-ares-gold/20", icon: CheckCircle2,  label: "MISSION_COMPLETE" },
-  blocked:     { bg: "bg-ares-red/5",         text: "text-ares-red",  border: "border-ares-red/20",  icon: AlertTriangle, label: "CRITICAL_HALT" },
+  todo:        { bg: "bg-white/[0.03]",   text: "text-marble/60", border: "border-white/5", icon: Circle,        label: "Backlog" },
+  in_progress: { bg: "bg-ares-cyan/5",        text: "text-ares-cyan", border: "border-ares-cyan/20", icon: Clock,         label: "In Progress" },
+  done:        { bg: "bg-ares-gold/5",        text: "text-ares-gold", border: "border-ares-gold/20", icon: CheckCircle2,  label: "Done" },
+  blocked:     { bg: "bg-ares-red/5",         text: "text-ares-red",  border: "border-ares-red/20",  icon: AlertTriangle, label: "Blocked" },
 };
 
 export const priorityBadge: Record<string, string> = {
   urgent: "bg-ares-red text-white border-ares-red shadow-[0_0_8px_rgba(233,75,60,0.3)]",
   high: "bg-ares-gold/10 text-ares-gold border-ares-gold/30",
-  normal: "bg-white/5 text-marble/40 border-white/10",
-  low: "bg-white/[0.02] text-marble/20 border-white/5",
+  normal: "bg-white/5 text-marble/60 border-white/10",
+  low: "bg-white/[0.02] text-marble/40 border-white/5",
 };
 
 // ── Drag Overlay Card ────────────────────────────────────────────────
@@ -78,19 +78,19 @@ export default function ProjectBoardKanban({
 
   const headerContent = (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full p-4 bg-black/40 border-b border-white/5">
-      <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+      <h3 className="font-bold text-white text-xs flex items-center gap-3">
         <Layers size={14} className="text-ares-cyan" />
-        SECTOR_OPERATIONS_BOARD
+        Task Board
       </h3>
       <div className="flex items-center gap-4 mt-4 sm:mt-0 ml-auto">
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          title="Initialize new tactical task"
-          aria-label="Initialize new tactical task"
-          className={`flex items-center gap-2 px-4 py-2 font-black uppercase tracking-[0.2em] text-[10px] ares-cut-sm transition-all duration-300 ${showCreateForm ? 'bg-white/10 text-white' : 'bg-ares-cyan text-black hover:bg-ares-cyan/80'}`}
+          title="Add new task"
+          aria-label="Add new task"
+          className={`flex items-center gap-2 px-4 py-2 font-bold text-xs ares-cut-sm transition-all duration-300 ${showCreateForm ? 'bg-white/10 text-white' : 'bg-ares-cyan text-black hover:bg-ares-cyan/80'}`}
         >
           {showCreateForm ? <RefreshCw size={14} className="rotate-45" /> : <Plus size={14} />}
-          {showCreateForm ? "ABORT_INIT" : "INIT_TASK"}
+          {showCreateForm ? "Cancel" : "Add Task"}
         </button>
       </div>
     </div>
@@ -112,15 +112,15 @@ export default function ProjectBoardKanban({
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                placeholder="ENTER_TASK_OBJECTIVE..."
-                className="flex-1 bg-white/5 ares-cut-sm border border-white/5 px-4 py-3 text-white text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-marble/10 focus:border-ares-cyan/50 transition-all"
+                placeholder="Enter task title..."
+                className="flex-1 bg-white/5 ares-cut-sm border border-white/5 px-4 py-3 text-white text-xs font-bold outline-none placeholder:text-marble/10 focus:border-ares-cyan/50 transition-all"
               />
               <button
                 onClick={handleCreate}
                 disabled={isCreating || !newTaskTitle.trim()}
-                className="px-8 py-3 bg-ares-cyan text-black font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm transition-all disabled:opacity-30 active:scale-95 shadow-lg shadow-ares-cyan/20"
+                className="px-8 py-3 bg-ares-cyan text-black font-bold text-xs ares-cut-sm transition-all disabled:opacity-30 active:scale-95 shadow-lg shadow-ares-cyan/20"
               >
-                {isCreating ? <RefreshCw size={14} className="animate-spin" /> : "DEPLOY_TASK"}
+                {isCreating ? <RefreshCw size={14} className="animate-spin" /> : "Add Task"}
               </button>
             </div>
           </motion.div>

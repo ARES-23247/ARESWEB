@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
-  X, Save, Trash2, Layout,
+  X, Save, Trash2, Layout, FileText, RefreshCw,
 } from "lucide-react";
 import { useSetTaskLabels, useGetTasks } from "../../api";
 import { type Task as TaskItem } from "../../api";
@@ -236,15 +236,15 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-transparent border-none text-3xl font-black text-white px-0 focus:outline-none focus:ring-0 min-w-[400px] uppercase tracking-tighter placeholder:text-marble/10"
-                placeholder="OBJECTIVE_NOMENCLATURE..."
+                className="bg-transparent border-none text-2xl font-bold text-white px-0 focus:outline-none focus:ring-0 min-w-[400px] placeholder:text-marble/10"
+                placeholder="Enter task title..."
               />
             </div>
             <div className="flex items-center gap-6">
-              <div className="text-[10px] text-marble/20 font-black tracking-[0.4em] uppercase hidden sm:block border-l border-white/5 pl-6">
-                TACTICAL_ID: {task.id.split("-")[0]}
+              <div className="text-[10px] text-marble/20 font-bold tracking-widest uppercase hidden sm:block border-l border-white/5 pl-6">
+                ID: {task.id.split("-")[0]}
               </div>
-              <button onClick={onClose} className="p-2 text-marble/20 hover:text-ares-red transition-all hover:rotate-90" title="Close interface">
+              <button onClick={onClose} className="p-2 text-marble/20 hover:text-ares-red transition-all hover:rotate-90" title="Close">
                 <X size={24} />
               </button>
             </div>
@@ -256,10 +256,10 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
           {/* Left Column: Editor & Main Info */}
           <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar border-r border-white/5">
             <div className="flex flex-col flex-1 gap-4">
-              <div className="text-[10px] font-black text-marble/20 uppercase tracking-[0.3em] flex items-center gap-3">
-                <div className="w-6 h-px bg-marble/10"></div>
-                MISSION_DESCRIPTION
-              </div>
+              <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                <FileText size={14} className="text-ares-cyan" />
+                Description
+              </h3>
               <CollaborativeEditorRoom roomId={`task-${task.id}`}>
                 <TaskEditorInner
                   initialContent={task.description || ""}
@@ -288,54 +288,62 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
           />
         </div>
 
-        {/* Footer */}
         <div className="flex-shrink-0 flex items-center justify-between p-6 border-t border-white/5 bg-black/60 backdrop-blur-xl">
-          <div className="flex items-center gap-6 text-[9px] font-black text-marble/20 uppercase tracking-[0.2em]">
-            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-cyan/30 rounded-full"></div> INIT: {new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
-            {freshTask.creatorName && <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-gold/30 rounded-full"></div> ASSET: {freshTask.creatorName}</span>}
-            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ares-cyan/30 rounded-full"></div> SYNC: {new Date(freshTask.updatedAt || 0).toLocaleDateString()}</span>
+          <div className="flex items-center gap-6 text-[9px] font-bold text-marble/40 uppercase tracking-widest">
+            <div className="flex items-center">
+                <span className="text-white/20 font-bold mr-1">Created:</span>
+                <span className="text-white/60 font-mono">{new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-white/20 font-bold mr-1">Creator:</span>
+                <span className="text-white/60 font-mono truncate max-w-[80px]">{freshTask.creatorName || "Unknown"}</span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-white/20 font-bold mr-1">Updated:</span>
+                <span className="text-white/60 font-mono">{new Date(freshTask.updatedAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
           </div>
           <div className="flex items-center gap-4">
             {confirmDelete ? (
               <div className="flex items-center gap-4 mr-6 bg-ares-red/5 px-4 py-2 ares-cut-sm border border-ares-red/20 shadow-lg shadow-ares-red/5">
-                <span className="text-[10px] text-ares-red font-black uppercase tracking-[0.2em]">CONFIRM_TERMINATION?</span>
+                <span className="text-[10px] text-ares-red font-bold uppercase tracking-wider">Confirm Delete?</span>
                 <button
                   onClick={() => { onDelete(freshTask.id); onClose(); }}
-                  className="px-5 py-2 bg-ares-red text-white text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm shadow-lg shadow-ares-red/20 hover:scale-105 active:scale-95 transition-all"
+                  className="px-5 py-2 bg-ares-red text-white text-[10px] font-bold uppercase tracking-wider ares-cut-sm shadow-lg shadow-ares-red/20 hover:scale-105 active:scale-95 transition-all"
                 >
-                  TERMINATE_TASK
+                  Delete
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-5 py-2 bg-white/5 hover:bg-white/10 text-marble/40 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all"
+                  className="px-5 py-2 bg-white/5 hover:bg-white/10 text-marble/40 text-[10px] font-bold uppercase tracking-wider ares-cut-sm border border-white/10 transition-all"
                 >
-                  ABORT
+                  Cancel
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
                 className="p-3 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/30 shadow-xl"
-                title="Initialize deletion sequence"
+                title="Delete Task"
               >
                 <Trash2 size={20} />
               </button>
             )}
 
             <button
-              onClick={onClose}
-              className="px-6 py-3 bg-white/5 hover:bg-white/10 text-marble/60 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all shadow-xl"
-            >
-              CLOSE_INTERFACE
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !title.trim()}
-              className="px-8 py-3 bg-ares-cyan text-black hover:bg-ares-cyan/90 text-[10px] font-black uppercase tracking-[0.3em] ares-cut-sm flex items-center gap-3 disabled:opacity-30 transition-all shadow-lg shadow-ares-cyan/20 active:scale-95"
-            >
-              <Save size={16} />
-              {isSaving ? "TRANSMITTING..." : "COMMIT_CHANGES"}
-            </button>
+            onClick={onClose}
+            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-wider ares-cut-sm border border-white/5 transition-all"
+          >
+            Close
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !title.trim()}
+            className="px-6 py-2 bg-ares-cyan text-black font-bold text-[10px] uppercase tracking-wider ares-cut-sm hover:bg-ares-cyan/80 transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+            Save Changes
+          </button>
           </div>
         </div>
       </motion.div>

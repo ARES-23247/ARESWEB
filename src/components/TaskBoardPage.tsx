@@ -269,15 +269,15 @@ export default function TaskBoardPage() {
       {/* Header */}
       <div className={`flex items-center justify-between ${isFullscreen ? "p-6 pb-2 shrink-0 border-b border-white/5 bg-obsidian" : "mb-2"}`}>
         <div>
-          <h2 className="text-4xl font-black text-white flex items-center gap-6 uppercase tracking-tighter leading-none">
+          <h2 className="text-3xl font-bold text-white flex items-center gap-6 leading-none">
             <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all shadow-inner">
-              <Layout className="text-ares-cyan" size={32} />
+              <Layout className="text-ares-cyan" size={28} />
             </div>
-            TASK_COMMAND_BOARD
+            Task Board
           </h2>
-          <p className="text-marble/40 text-[10px] mt-4 uppercase tracking-[0.4em] font-black flex items-center gap-2">
-            <span className="w-8 h-px bg-white/10"></span>
-            NATIVE_D1_POWERED_PROJECT_MANAGEMENT_TELEMETRY
+          <p className="text-marble/60 text-xs mt-3 font-bold flex items-center gap-2">
+            <span className="w-8 h-px bg-white/20"></span>
+            Cloudflare D1 Management Telemetry
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -301,9 +301,9 @@ export default function TaskBoardPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm text-[10px] font-black bg-ares-cyan/5 text-ares-cyan border border-ares-cyan/20 uppercase tracking-[0.2em]">
+              <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm text-[10px] font-bold bg-ares-cyan/5 text-ares-cyan border border-ares-cyan/20 uppercase tracking-[0.1em]">
                 <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]"></div> 
-                SYSTEM_LIVE
+                System Live
               </div>
             </div>
           )}
@@ -311,29 +311,29 @@ export default function TaskBoardPage() {
           <div className="flex bg-black/40 ares-cut-sm border border-white/5 p-1.5 shadow-inner backdrop-blur-md">
             <button
               onClick={() => setViewMode("kanban")}
-              className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all ares-cut-sm ${viewMode === "kanban" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
+              className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all ares-cut-sm ${viewMode === "kanban" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
             >
-              KANBAN_VIEW
+              Kanban
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all ares-cut-sm ${viewMode === "table" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
+              className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all ares-cut-sm ${viewMode === "table" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
             >
-              TABLE_VIEW
+              Table
             </button>
           </div>
           <button
             onClick={() => setFullscreen(!isFullscreen)}
             className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all shadow-xl active:scale-95"
           >
-            {isFullscreen ? "ABORT_FULLSCREEN" : "ENGAGE_FULLSCREEN"}
+            {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           </button>
         </div>
       </div>
 
       {/* Sub Boards Filter */}
       <div className={`flex flex-wrap items-center gap-3 ${isFullscreen ? "px-6 py-4 shrink-0 bg-obsidian/80 border-b border-white/5" : "mb-8 bg-black/20 p-4 ares-cut-lg border border-white/5"}`}>
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-marble/20 mr-2">SUBTEAM_FILTER:</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-marble/60 mr-2">Filter:</span>
         <button
           onClick={() => setSubteamFilter(null)}
           className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm transition-all border ${
@@ -342,7 +342,7 @@ export default function TaskBoardPage() {
               : "bg-white/5 text-marble/40 border-white/5 hover:text-white hover:bg-white/10"
           }`}
         >
-          ALL_SECTORS
+          All Subteams
         </button>
         {subteams.map(st => (
           <button
