@@ -249,7 +249,7 @@ describe("MemberCard Component", () => {
     const link = container.querySelector("a");
     expect(link).toHaveClass("group");
 
-    // The hover classes are on the inner container div, not the link
+    // The hover classes are on the inner hero-card div, not the link
     const card = container.querySelector(".hero-card");
     expect(card).toHaveClass("group-hover:border-ares-red/30");
     expect(card).toHaveClass("group-hover:shadow-lg");

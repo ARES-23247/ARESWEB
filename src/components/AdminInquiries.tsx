@@ -54,7 +54,7 @@ function DebouncedNotesArea({
         className="w-full bg-ares-gray-dark/50 border border-white/5 text-marble/80 text-xs px-3 py-2 ares-cut-sm outline-none focus:border-ares-cyan/30 transition-colors resize-none placeholder-marble/30"
       />
       {isTyping && (
-        <span className="absolute bottom-2 right-2 text-[10px] text-ares-gold animate-pulse uppercase font-bold italic">
+        <span className="absolute bottom-2 right-2 text-[10px] text-ares-gold animate-pulse uppercase font-black">
           Saving...
         </span>
       )}
@@ -152,7 +152,7 @@ export default function AdminInquiries() {
       {isError && (
         <div className="bg-ares-red/10 border border-ares-red/30 p-4 ares-cut-sm text-ares-red text-xs font-bold mb-6 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-ares-red animate-pulse" />
-          Data Sync Error: Failed to synchronize inquiry data.
+          TELEMETRY FAULT: Failed to synchronize inquiry data.
         </div>
       )}
 
@@ -173,22 +173,22 @@ export default function AdminInquiries() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`text-[11px] font-medium px-4 py-2 ares-cut-sm transition-colors ${
+              className={`text-[10px] font-black uppercase tracking-widest px-3 py-2 ares-cut-sm transition-colors ${
                 statusFilter === s
                   ? "bg-ares-gold text-black"
                   : "bg-white/5 text-marble/60 hover:bg-white/10 hover:text-white"
               }`}
             >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {s}
             </button>
           ))}
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="text-[10px] text-marble/60 px-1 flex justify-between items-center font-medium italic border-b border-white/5 pb-1">
-        <span>Displaying {statusFilter} inquiries | Total: {inquiries.length} | Matches: {filtered.length}</span>
-        {isError && <span className="text-ares-red font-bold animate-pulse">Connection Lost</span>}
+      <div className="text-xs text-marble/20 px-1 flex justify-between items-center font-mono uppercase tracking-widest border-b border-white/5 pb-1">
+        <span>VIEW: {statusFilter} | RAW: {inquiries.length} | FILTERED: {filtered.length}</span>
+        {isError && <span className="text-ares-red font-bold animate-pulse">API ERROR!</span>}
       </div>
 
       {/* Content */}
@@ -214,11 +214,11 @@ export default function AdminInquiries() {
                 {/* Top Row: Type badge + Name/Email + Date + Status */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className={`px-2 py-0.5 ares-cut-xs text-[10px] font-bold ${TYPE_COLORS[inquiry.type] || "bg-white/10 text-white"}`}>
-                      {inquiry.type.toUpperCase()}
+                    <span className={`px-2 py-0.5 ares-cut-xs text-[10px] font-black uppercase shrink-0 ${TYPE_COLORS[inquiry.type] || "bg-white/10 text-white"}`}>
+                      {inquiry.type}
                     </span>
                     <div className="min-w-0">
-                      <div className="font-medium text-marble/90 truncate">{inquiry.name}</div>
+                      <div className="font-bold text-marble/90 truncate">{inquiry.name}</div>
                       <div className="text-xs text-marble/60 flex items-center gap-1 truncate">
                         <Mail size={10} /> {inquiry.email}
                       </div>
@@ -228,8 +228,8 @@ export default function AdminInquiries() {
                     <span className="text-xs text-marble/30 font-mono">
                       {format(new Date(inquiry.createdAt), "MMM d, yyyy")}
                     </span>
-                    <span className={`px-3 py-1 ares-cut-xs text-[10px] font-bold border ${STATUS_COLORS[inquiry.status] || "bg-white/10 text-white border-white/20"}`}>
-                      {inquiry.status.toUpperCase()}
+                    <span className={`px-3 py-1 ares-cut-xs text-[10px] font-bold uppercase tracking-widest border ${STATUS_COLORS[inquiry.status] || "bg-white/10 text-white border-white/20"}`}>
+                      {inquiry.status}
                     </span>
                   </div>
                 </div>
@@ -239,7 +239,7 @@ export default function AdminInquiries() {
                   <div className="flex flex-wrap gap-2 text-[11px] text-marble/50">
                     {Object.entries(meta).map(([k, v]) => (
                       <span key={k} className="bg-white/5 border border-white/10 px-2 py-0.5 ares-cut-xs">
-                        <span className="text-marble/30 mr-1">{k}:</span>
+                        <span className="text-marble/30 uppercase mr-1">{k}:</span>
                         <span className="text-marble/70">{String(v)}</span>
                       </span>
                     ))}
@@ -247,8 +247,8 @@ export default function AdminInquiries() {
                 )}
 
                 <div className="mt-1">
-                  <label htmlFor={`notes-${inquiry.id}`} className="text-[10px] font-medium text-ares-gold mb-1.5 flex items-center gap-1">
-                    Internal Notes
+                  <label htmlFor={`notes-${inquiry.id}`} className="text-[10px] font-black text-ares-gray uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                    Notes
                   </label>
                   <DebouncedNotesArea 
                     id={inquiry.id}
@@ -262,45 +262,46 @@ export default function AdminInquiries() {
                 {/* Action Bar */}
                 <div className="flex flex-wrap items-center justify-between pt-2 border-t border-white/10 gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    {inquiry.status === "pending" ? (
-                      <button
-                        onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "resolved" })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all"
-                      >
-                        <CheckSquare size={12} /> Resolve
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "pending" })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 hover:bg-ares-gold/30 text-ares-gold text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all"
-                      >
-                        <Clock size={12} /> Reopen
-                      </button>
-                    )}
+                  {inquiry.status === "pending" ? (
+                    <button
+                      onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "resolved" })}
+                      disabled={updateStatusMutation.isPending}
+                      className="text-xs font-bold text-marble/60 hover:text-ares-cyan bg-white/5 hover:bg-ares-cyan/10 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <CheckSquare size={12} /> RESOLVE
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => updateStatusMutation.mutate({ id: inquiry.id, status: "pending" })}
+                      disabled={updateStatusMutation.isPending}
+                      className="text-xs font-bold text-marble/60 hover:text-ares-gold bg-white/5 hover:bg-ares-gold/10 px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Clock size={12} /> REOPEN
+                    </button>
+                  )}
 
                   {/* Delete with confirmation */}
                   {isConfirming ? (
                     <>
                       <button
-                        onClick={() => deleteInquiryMutation.mutate(inquiry.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-red/20 hover:bg-ares-red/30 text-ares-red text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all"
+                        onClick={() => { deleteInquiryMutation.mutate(inquiry.id); setConfirmId(null); }}
+                        className="text-xs font-bold text-white bg-ares-red hover:bg-ares-red/80 px-3 py-1 ares-cut-sm shadow-[0_0_20px_rgba(204,0,0,0.4)] transition-all animate-pulse"
                       >
-                        Confirm Delete
+                        CONFIRM DELETE
                       </button>
                       <button
                         onClick={() => setConfirmId(null)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-marble/60 text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all"
+                        className="text-xs font-bold text-marble/60 bg-white/5 px-3 py-1 ares-cut-sm hover:bg-white/10 transition-colors"
                       >
-                        Cancel
+                        CANCEL
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={() => setConfirmId(inquiry.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-red/10 hover:bg-ares-red/20 text-ares-red/60 hover:text-ares-red text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all border border-ares-red/10"
-                      title="Purge Entry"
+                      className="text-xs font-bold text-marble/60 hover:text-white bg-white/5 hover:bg-ares-red px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5"
                     >
-                      <Trash2 size={12} /> Delete
+                      <Trash2 size={12} /> DELETE
                     </button>
                   )}
                   </div>
@@ -308,13 +309,13 @@ export default function AdminInquiries() {
                   {/* Right side: Zulip button */}
                   {inquiry.zulipMessageId && (
                     <a
-                      href={`https://zulip.ares-robotics.org/#narrow/stream/inquiries/topic/${inquiry.id}`}
+                      href={`https://aresfirst.zulipchat.com/#narrow/id/${inquiry.zulipMessageId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest ares-cut-sm transition-all"
+                      className="text-[10px] font-black text-white hover:text-white bg-social-zulip/80 hover:bg-social-zulip px-3 py-1 ares-cut-sm transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(94,130,166,0.2)]"
                     >
                       <MessageSquare size={12} />
-                      Discuss on Zulip
+                      DISCUSS ON ZULIP
                     </a>
                   )}
                 </div>

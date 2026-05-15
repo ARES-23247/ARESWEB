@@ -81,10 +81,10 @@ describe("TaskBoardPage Component", () => {
 
     // Check if the header is present
     expect(screen.getAllByText("Task Board").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Cloudflare D1 Management Telemetry/i)).toBeInTheDocument();
+    expect(screen.getByText(/Native D1-powered project management kanban/i)).toBeInTheDocument();
 
     // Check if empty columns from the Kanban board are rendered
-    expect(screen.getAllByText("Backlog").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Todo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("In Progress").length).toBeGreaterThan(0);
   });
 });

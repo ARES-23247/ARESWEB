@@ -38,17 +38,17 @@ interface ProjectBoardKanbanProps {
 export const COLUMNS = ["todo", "in_progress", "done", "blocked"] as const;
 
 export const statusConfig: Record<string, { bg: string; text: string; border: string; icon: React.ElementType<{ size?: number; className?: string }>; label: string }> = {
-  todo:        { bg: "bg-white/[0.03]",   text: "text-marble/60", border: "border-white/5", icon: Circle,        label: "Backlog" },
-  in_progress: { bg: "bg-ares-cyan/5",        text: "text-ares-cyan", border: "border-ares-cyan/20", icon: Clock,         label: "In Progress" },
-  done:        { bg: "bg-ares-gold/5",        text: "text-ares-gold", border: "border-ares-gold/20", icon: CheckCircle2,  label: "Done" },
-  blocked:     { bg: "bg-ares-red/5",         text: "text-ares-red",  border: "border-ares-red/20",  icon: AlertTriangle, label: "Blocked" },
+  todo:        { bg: "bg-ares-gray-dark/60",   text: "text-white/60", border: "border-ares-gray/30", icon: Circle,        label: "Todo" },
+  in_progress: { bg: "bg-ares-cyan/10",        text: "text-ares-cyan", border: "border-ares-cyan/30", icon: Clock,         label: "In Progress" },
+  done:        { bg: "bg-ares-gold/10",        text: "text-ares-gold", border: "border-ares-gold/30", icon: CheckCircle2,  label: "Done" },
+  blocked:     { bg: "bg-ares-red/10",         text: "text-ares-red",  border: "border-ares-red/30",  icon: AlertTriangle, label: "Parked" },
 };
 
 export const priorityBadge: Record<string, string> = {
-  urgent: "bg-ares-red text-white border-ares-red shadow-[0_0_8px_rgba(233,75,60,0.3)]",
-  high: "bg-ares-gold/10 text-ares-gold border-ares-gold/30",
-  normal: "bg-white/5 text-marble/60 border-white/10",
-  low: "bg-white/[0.02] text-marble/40 border-white/5",
+  urgent: "bg-ares-red text-white",
+  high: "bg-ares-bronze/30 text-ares-bronze",
+  normal: "bg-white/5 text-ares-gray",
+  low: "bg-white/5 text-ares-gray/50",
 };
 
 // ── Drag Overlay Card ────────────────────────────────────────────────
@@ -77,20 +77,19 @@ export default function ProjectBoardKanban({
   };
 
   const headerContent = (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full p-4 bg-black/40 border-b border-white/5">
-      <h3 className="font-bold text-white text-xs flex items-center gap-3">
-        <Layers size={14} className="text-ares-cyan" />
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full">
+      <h3 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
+        <Layers size={16} className="text-ares-cyan" />
         Task Board
       </h3>
-      <div className="flex items-center gap-4 mt-4 sm:mt-0 ml-auto">
+      <div className="flex items-center gap-2 mt-4 sm:mt-0 ml-auto">
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          title="Add new task"
-          aria-label="Add new task"
-          className={`flex items-center gap-2 px-4 py-2 font-bold text-xs ares-cut-sm transition-all duration-300 ${showCreateForm ? 'bg-white/10 text-white' : 'bg-ares-cyan text-black hover:bg-ares-cyan/80'}`}
+          title="Create new task"
+          aria-label="Create new task"
+          className="p-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan ares-cut-sm transition-all"
         >
-          {showCreateForm ? <RefreshCw size={14} className="rotate-45" /> : <Plus size={14} />}
-          {showCreateForm ? "Cancel" : "Add Task"}
+          <Plus size={16} />
         </button>
       </div>
     </div>
@@ -104,23 +103,23 @@ export default function ProjectBoardKanban({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden mb-6"
+            className="overflow-hidden mb-4"
           >
-            <div className="flex gap-4 p-5 bg-black/60 ares-cut-sm border border-ares-cyan/20 backdrop-blur-md shadow-2xl">
+            <div className="flex gap-2 p-3 bg-ares-gray-dark/50 ares-cut-sm border border-white/5">
               <input
                 type="text"
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                placeholder="Enter task title..."
-                className="flex-1 bg-white/5 ares-cut-sm border border-white/5 px-4 py-3 text-white text-xs font-bold outline-none placeholder:text-marble/10 focus:border-ares-cyan/50 transition-all"
+                placeholder="New task title..."
+                className="flex-1 bg-transparent text-white text-sm outline-none placeholder-ares-gray font-medium"
               />
               <button
                 onClick={handleCreate}
                 disabled={isCreating || !newTaskTitle.trim()}
-                className="px-8 py-3 bg-ares-cyan text-black font-bold text-xs ares-cut-sm transition-all disabled:opacity-30 active:scale-95 shadow-lg shadow-ares-cyan/20"
+                className="px-4 py-2 bg-ares-cyan/20 hover:bg-ares-cyan/30 text-ares-cyan font-bold text-xs ares-cut-sm border border-ares-cyan/30 transition-all disabled:opacity-30"
               >
-                {isCreating ? <RefreshCw size={14} className="animate-spin" /> : "Add Task"}
+                {isCreating ? <RefreshCw size={14} className="animate-spin" /> : "Create"}
               </button>
             </div>
           </motion.div>

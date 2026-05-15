@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
-  X, Save, Trash2, Layout, FileText, RefreshCw,
+  X, Save, Trash2, Flag, Layout,
 } from "lucide-react";
 import { useSetTaskLabels, useGetTasks } from "../../api";
 import { type Task as TaskItem } from "../../api";
@@ -30,22 +30,23 @@ import DrivePickerModal from "../DrivePickerModal";
 // Compact toolbar for the task modal – only essential formatting buttons
 function CompactEditorToolbar({ editor, onInsertDriveEmbed }: { editor: Editor, onInsertDriveEmbed?: () => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-1 bg-black/80 border-b border-white/5 p-2 w-full backdrop-blur-md shadow-inner">
-      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2.5 py-1 text-[10px] font-black ares-cut-sm transition-all border ${editor.isActive("bold") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>B</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2.5 py-1 text-[10px] italic ares-cut-sm transition-all border ${editor.isActive("italic") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>I</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2.5 py-1 text-[10px] line-through ares-cut-sm transition-all border ${editor.isActive("strike") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>S</button>
-      <div className="w-px h-4 bg-white/5 mx-1" />
-      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("heading", { level: 2 }) ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>H2</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("bulletList") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>• LIST</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("taskList") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>☑ CHECKLIST</button>
-      <div className="w-px h-4 bg-white/5 mx-1" />
-      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2.5 py-1 text-[10px] font-mono ares-cut-sm transition-all border ${editor.isActive("codeBlock") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>{"<>"}</button>
-      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2.5 py-1 text-[10px] font-black uppercase ares-cut-sm transition-all border ${editor.isActive("blockquote") ? "bg-white/10 text-white border-white/20 shadow-lg" : "text-marble/30 border-transparent hover:bg-white/5 hover:text-white"}`}>&quot; QUOTE</button>
+    <div className="flex flex-wrap items-center gap-0.5 bg-obsidian/95 border-b border-white/10 p-1.5 w-full">
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("bold") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>B</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2 py-1 text-xs italic ares-cut-sm transition-all ${editor.isActive("italic") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>I</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={`px-2 py-1 text-xs line-through ares-cut-sm transition-all ${editor.isActive("strike") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>S</button>
+      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 text-xs font-bold ares-cut-sm transition-all ${editor.isActive("heading", { level: 2 }) ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>H2</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("bulletList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>• List</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("taskList") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>☑️</button>
+      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`px-2 py-1 text-xs font-mono ares-cut-sm transition-all ${editor.isActive("codeBlock") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>{"<>"}</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`px-2 py-1 text-xs ares-cut-sm transition-all ${editor.isActive("blockquote") ? "bg-ares-gray-dark text-white" : "text-marble/60 hover:bg-ares-gray-dark hover:text-white"}`}>&quot;</button>
+      <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="px-2 py-1 text-xs ares-cut-sm transition-all text-marble/60 hover:bg-ares-gray-dark hover:text-white">―</button>
       {onInsertDriveEmbed && (
         <>
-          <div className="w-px h-4 bg-white/5 mx-1" />
-          <button type="button" onClick={onInsertDriveEmbed} className="px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm transition-all text-ares-cyan border border-ares-cyan/20 hover:bg-ares-cyan hover:text-black flex items-center gap-2 shadow-lg shadow-ares-cyan/5">
-            <HardDrive size={12} /> DRIVE_ASSET
+          <div className="w-px h-4 bg-white/10 mx-0.5" />
+          <button type="button" onClick={onInsertDriveEmbed} className="px-2 py-1 text-xs font-bold uppercase tracking-widest ares-cut-sm transition-all text-ares-cyan hover:bg-ares-cyan hover:text-black flex items-center gap-1.5 border border-ares-cyan/30">
+            <HardDrive size={12} /> Drive
           </button>
         </>
       )}
@@ -217,35 +218,35 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         className="relative w-full max-w-6xl max-h-full bg-obsidian border border-white/10 ares-cut-md shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex flex-col p-6 border-b border-white/5 bg-black/40 backdrop-blur-xl">
+        <div className="flex-shrink-0 flex flex-col p-4 border-b border-white/5 bg-white/5">
           {parentTask && (
             <button
               onClick={() => onTaskClick?.(parentTask)}
-              className="text-[10px] font-black text-ares-cyan hover:text-white flex items-center gap-2 mb-4 self-start transition-all uppercase tracking-[0.3em] px-4 py-2 bg-ares-cyan/5 border border-ares-cyan/20 ares-cut-sm shadow-lg shadow-ares-cyan/5 group"
+              className="text-[10px] font-bold text-ares-cyan hover:text-white flex items-center gap-1 mb-3 self-start transition-colors uppercase tracking-widest px-2 py-1 bg-ares-cyan/10 border border-ares-cyan/20 ares-cut-sm"
             >
-              <Layout size={12} className="group-hover:scale-110 transition-transform" />
-              BACK_TO_PARENT_COMMAND: {parentTask.title}
+              <Layout size={10} />
+              ← Back to Parent Task: {parentTask.title}
             </button>
           )}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-5">
-              <div className="p-3 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/30 shadow-lg shadow-ares-cyan/10">
-                <Layout size={24} className="text-ares-cyan" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-ares-cyan/10 ares-cut-sm border border-ares-cyan/20">
+                <Layout size={18} className="text-ares-cyan" />
               </div>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-transparent border-none text-2xl font-bold text-white px-0 focus:outline-none focus:ring-0 min-w-[400px] placeholder:text-marble/10"
-                placeholder="Enter task title..."
+                className="bg-transparent border-none text-white text-xl font-bold px-0 focus:outline-none focus:ring-0 min-w-[300px]"
+                placeholder="Task title..."
               />
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-[10px] text-marble/20 font-bold tracking-widest uppercase hidden sm:block border-l border-white/5 pl-6">
+            <div className="flex items-center gap-4">
+              <div className="text-[10px] text-ares-gray font-mono tracking-wider uppercase hidden sm:block">
                 ID: {task.id.split("-")[0]}
               </div>
-              <button onClick={onClose} className="p-2 text-marble/20 hover:text-ares-red transition-all hover:rotate-90" title="Close">
-                <X size={24} />
+              <button onClick={onClose} className="p-2 text-ares-gray hover:text-white transition-colors" title="Close modal">
+                <X size={20} />
               </button>
             </div>
           </div>
@@ -255,11 +256,10 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-[600px]">
           {/* Left Column: Editor & Main Info */}
           <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar border-r border-white/5">
-            <div className="flex flex-col flex-1 gap-4">
-              <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={14} className="text-ares-cyan" />
-                Description
-              </h3>
+            <div className="flex flex-col flex-1 gap-2">
+              <div className="text-xs font-bold text-ares-gray uppercase tracking-widest flex items-center gap-2">
+                <Flag size={14} /> Description
+              </div>
               <CollaborativeEditorRoom roomId={`task-${task.id}`}>
                 <TaskEditorInner
                   initialContent={task.description || ""}
@@ -288,34 +288,26 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
           />
         </div>
 
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-t border-white/5 bg-black/60 backdrop-blur-xl">
-          <div className="flex items-center gap-6 text-[9px] font-bold text-marble/40 uppercase tracking-widest">
-            <div className="flex items-center">
-                <span className="text-white/20 font-bold mr-1">Created:</span>
-                <span className="text-white/60 font-mono">{new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center">
-                <span className="text-white/20 font-bold mr-1">Creator:</span>
-                <span className="text-white/60 font-mono truncate max-w-[80px]">{freshTask.creatorName || "Unknown"}</span>
-              </div>
-              <div className="flex items-center">
-                <span className="text-white/20 font-bold mr-1">Updated:</span>
-                <span className="text-white/60 font-mono">{new Date(freshTask.updatedAt || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
+        {/* Footer */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-t border-white/5 bg-white/5">
+          <div className="flex items-center gap-4 text-[10px] text-ares-gray font-mono">
+            <span>Created {new Date(freshTask.createdAt || 0).toLocaleDateString()}</span>
+            {freshTask.creatorName && <span>by {freshTask.creatorName}</span>}
+            <span>Updated {new Date(freshTask.updatedAt || 0).toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {confirmDelete ? (
-              <div className="flex items-center gap-4 mr-6 bg-ares-red/5 px-4 py-2 ares-cut-sm border border-ares-red/20 shadow-lg shadow-ares-red/5">
-                <span className="text-[10px] text-ares-red font-bold uppercase tracking-wider">Confirm Delete?</span>
+              <div className="flex items-center gap-2 mr-4">
+                <span className="text-xs text-ares-red font-bold">Confirm?</span>
                 <button
                   onClick={() => { onDelete(freshTask.id); onClose(); }}
-                  className="px-5 py-2 bg-ares-red text-white text-[10px] font-bold uppercase tracking-wider ares-cut-sm shadow-lg shadow-ares-red/20 hover:scale-105 active:scale-95 transition-all"
+                  className="px-3 py-1.5 bg-ares-red/20 hover:bg-ares-red/30 text-ares-red text-xs font-bold ares-cut-sm border border-ares-red/30"
                 >
-                  Delete
+                  Delete Task
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-5 py-2 bg-white/5 hover:bg-white/10 text-marble/40 text-[10px] font-bold uppercase tracking-wider ares-cut-sm border border-white/10 transition-all"
+                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-ares-gray text-xs font-bold ares-cut-sm border border-white/5"
                 >
                   Cancel
                 </button>
@@ -323,27 +315,27 @@ export default function TaskDetailsModal({ task, onClose, onSave, onDelete, onTa
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="p-3 text-marble/20 hover:text-ares-red transition-all ares-cut-sm bg-white/5 border border-white/5 hover:border-ares-red/30 shadow-xl"
-                title="Delete Task"
+                className="p-2 text-ares-gray hover:text-ares-red transition-colors mr-2"
+                title="Delete task"
               >
-                <Trash2 size={20} />
+                <Trash2 size={16} />
               </button>
             )}
 
             <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-wider ares-cut-sm border border-white/5 transition-all"
-          >
-            Close
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !title.trim()}
-            className="px-6 py-2 bg-ares-cyan text-black font-bold text-[10px] uppercase tracking-wider ares-cut-sm hover:bg-ares-cyan/80 transition-all disabled:opacity-50 flex items-center gap-2"
-          >
-            {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-            Save Changes
-          </button>
+              onClick={onClose}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-marble text-sm font-bold ares-cut-sm border border-white/5"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !title.trim()}
+              className="px-6 py-2 bg-ares-cyan text-black hover:bg-ares-cyan/80 text-sm font-bold ares-cut-sm flex items-center gap-2 disabled:opacity-50 transition-all"
+            >
+              <Save size={16} />
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
           </div>
         </div>
       </motion.div>

@@ -269,62 +269,60 @@ export default function TaskBoardPage() {
       {/* Header */}
       <div className={`flex items-center justify-between ${isFullscreen ? "p-6 pb-2 shrink-0 border-b border-white/5 bg-obsidian" : "mb-2"}`}>
         <div>
-          <h2 className="text-3xl font-bold text-white flex items-center gap-6 leading-none">
-            <div className="p-3 bg-white/5 ares-cut-sm border border-white/10 group-hover:border-white/20 transition-all shadow-inner">
-              <Layout className="text-ares-cyan" size={28} />
+          <h2 className="text-2xl font-black text-white flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-ares-cyan/20 to-ares-gold/20 ares-cut-sm border border-white/10">
+              <Layout className="text-ares-cyan" size={24} />
             </div>
             Task Board
           </h2>
-          <p className="text-marble/60 text-xs mt-3 font-bold flex items-center gap-2">
-            <span className="w-8 h-px bg-white/20"></span>
-            Cloudflare D1 Management Telemetry
+          <p className="text-marble/60 text-sm mt-1">
+            Native D1-powered project management kanban
           </p>
         </div>
         <div className="flex items-center gap-4">
 
           {/* Real-time Presence Avatars */}
           {host && (
-            <div className="flex items-center bg-black/40 px-4 py-2 ares-cut-sm border border-white/5 shadow-inner backdrop-blur-md">
-              <div className="flex -space-x-3 mr-4">
+            <div className="flex items-center">
+              <div className="flex -space-x-2 mr-2">
                 {activeUserList.slice(0, 5).map((user, i) => (
-                  <div key={i} className="w-9 h-9 ares-cut-sm border border-ares-cyan/40 bg-ares-gray-dark overflow-hidden flex items-center justify-center relative shadow-lg" title={user.name}>
+                  <div key={i} className="w-8 h-8 rounded-full border border-ares-cyan/40 bg-ares-gray-dark overflow-hidden flex items-center justify-center relative" title={user.name}>
                     {user.image ? (
                       <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[10px] font-black text-ares-cyan uppercase">{user.name.charAt(0)}</span>
+                      <span className="text-xs font-bold text-ares-cyan">{user.name.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                 ))}
                 {activeUserList.length > 5 && (
-                  <div className="w-9 h-9 ares-cut-sm border border-ares-cyan/40 bg-ares-cyan/10 text-ares-cyan font-black text-[10px] flex items-center justify-center z-10 shadow-lg">
+                  <div className="w-8 h-8 rounded-full border border-ares-cyan/40 bg-ares-cyan/20 text-ares-cyan font-bold text-xs flex items-center justify-center z-10">
                     +{activeUserList.length - 5}
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm text-[10px] font-bold bg-ares-cyan/5 text-ares-cyan border border-ares-cyan/20 uppercase tracking-[0.1em]">
-                <div className="w-2 h-2 rounded-full bg-ares-cyan animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]"></div> 
-                System Live
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium bg-ares-cyan/10 text-ares-cyan border border-ares-cyan/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-ares-cyan animate-pulse"></div> Live
               </div>
             </div>
           )}
 
-          <div className="flex bg-black/40 ares-cut-sm border border-white/5 p-1.5 shadow-inner backdrop-blur-md">
+          <div className="flex bg-black/40 ares-cut-sm border border-white/10 p-1">
             <button
               onClick={() => setViewMode("kanban")}
-              className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all ares-cut-sm ${viewMode === "kanban" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
+              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${viewMode === "kanban" ? "bg-ares-cyan/20 text-ares-cyan" : "text-ares-gray hover:text-white"}`}
             >
               Kanban
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all ares-cut-sm ${viewMode === "table" ? "bg-ares-cyan/10 text-ares-cyan shadow-lg shadow-ares-cyan/10" : "text-marble/30 hover:text-white hover:bg-white/5"}`}
+              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${viewMode === "table" ? "bg-ares-cyan/20 text-ares-cyan" : "text-ares-gray hover:text-white"}`}
             >
               Table
             </button>
           </div>
           <button
             onClick={() => setFullscreen(!isFullscreen)}
-            className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-[0.2em] ares-cut-sm border border-white/10 transition-all shadow-xl active:scale-95"
+            className="px-4 py-2 bg-ares-gray-dark/50 hover:bg-white/10 text-white font-bold text-sm ares-cut-sm border border-white/10 transition-colors"
           >
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           </button>
@@ -332,29 +330,24 @@ export default function TaskBoardPage() {
       </div>
 
       {/* Sub Boards Filter */}
-      <div className={`flex flex-wrap items-center gap-3 ${isFullscreen ? "px-6 py-4 shrink-0 bg-obsidian/80 border-b border-white/5" : "mb-8 bg-black/20 p-4 ares-cut-lg border border-white/5"}`}>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-marble/60 mr-2">Filter:</span>
+      <div className={`flex flex-wrap gap-2 ${isFullscreen ? "px-6 py-2 shrink-0 bg-obsidian/50" : "mb-6"}`}>
         <button
           onClick={() => setSubteamFilter(null)}
-          className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm transition-all border ${
-            !subteamFilter 
-              ? "bg-ares-cyan text-black border-ares-cyan shadow-lg shadow-ares-cyan/20" 
-              : "bg-white/5 text-marble/40 border-white/5 hover:text-white hover:bg-white/10"
+          className={`px-3 py-1.5 text-xs font-bold ares-cut-sm transition-all ${
+            !subteamFilter ? "bg-ares-cyan text-black" : "bg-ares-gray-dark/50 text-ares-gray hover:text-white"
           }`}
         >
-          All Subteams
+          All Boards
         </button>
         {subteams.map(st => (
           <button
             key={st}
             onClick={() => setSubteamFilter(st)}
-            className={`px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] ares-cut-sm transition-all border ${
-              subteamFilter === st 
-                ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/40 shadow-lg shadow-ares-cyan/10" 
-                : "bg-white/[0.03] text-marble/30 border-white/5 hover:text-white hover:bg-white/5"
+            className={`px-3 py-1.5 text-xs font-bold ares-cut-sm transition-all ${
+              subteamFilter === st ? "bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30" : "bg-ares-gray-dark/50 text-ares-gray border border-white/5 hover:text-white"
             }`}
           >
-            {st.toUpperCase()}
+            {st}
           </button>
         ))}
       </div>

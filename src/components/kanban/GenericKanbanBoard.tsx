@@ -273,35 +273,26 @@ export function GenericKanbanBoard<T>({
               const StatusIcon = config.icon;
 
               return (
-                <div key={status} className={`ares-cut-sm border ${config.border} ${config.bg} overflow-hidden flex flex-col backdrop-blur-md shadow-2xl relative group/col`}>
-                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                  <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-1.5 ares-cut-sm border ${config.border} bg-black/40 shadow-inner`}>
-                        <StatusIcon size={14} className={config.text} />
-                      </div>
-                      <span className={`text-[10px] font-bold tracking-[0.2em] ${config.text}`}>
+                <div key={status} className={`ares-cut-sm border ${config.border} ${config.bg} overflow-hidden flex flex-col`}>
+                  <div className="p-3 border-b border-white/5 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                      <StatusIcon size={14} className={config.text} />
+                      <span className={`text-xs font-black uppercase tracking-wider ${config.text}`}>
                         {config.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1 w-1 rounded-full bg-ares-cyan/30 animate-pulse"></div>
-                      <span className="text-[10px] font-mono font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm border border-white/5 shadow-lg">
-                        {String(colItems.length).padStart(2, '0')}
-                      </span>
-                    </div>
+                    <span className="text-xs font-bold text-ares-gray bg-ares-gray-dark/80 px-2 py-0.5 ares-cut-sm">
+                      {colItems.length}
+                    </span>
                   </div>
                   <SortableContext
                     items={colItems.map(i => i.id)}
                     strategy={verticalListSortingStrategy}
                     id={status}
                   >
-                    <DroppableColumn id={status} className="p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 min-h-[250px] flex-1 bg-black/10">
+                    <DroppableColumn id={status} className="p-2 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 min-h-[150px] flex-1">
                       {colItems.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 opacity-20">
-                          <StatusIcon size={24} className="mb-3" />
-                          <p className="text-ares-gray text-[9px] font-bold tracking-[0.3em] italic">{emptyStateText}</p>
-                        </div>
+                        <p className="text-ares-gray text-xs text-center py-6 italic">{emptyStateText}</p>
                       ) : (
                         colItems.map((lItem) => renderItem(lItem.item))
                       )}

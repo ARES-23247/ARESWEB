@@ -195,10 +195,10 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("Backlog")).toBeInTheDocument();
+    expect(screen.getByText("Todo")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
     expect(screen.getByText("Done")).toBeInTheDocument();
-    expect(screen.getByText("Blocked")).toBeInTheDocument();
+    expect(screen.getByText("Parked")).toBeInTheDocument();
   });
 
   it("renders all priority options", () => {
@@ -227,7 +227,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const selectElement = screen.getByDisplayValue("MECHANICAL");
+    const selectElement = screen.getByDisplayValue("Mechanical");
     expect(selectElement).toBeInTheDocument();
   });
 
@@ -276,7 +276,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("! OVERDUE")).toBeInTheDocument();
+    expect(screen.getByText("Overdue")).toBeInTheDocument();
   });
 
   it("renders time logged inputs", () => {
@@ -316,7 +316,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const closeButton = screen.getByTitle("Close");
+    const closeButton = screen.getByTitle("Close modal");
     fireEvent.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -376,9 +376,9 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    expect(screen.getByText("Close")).toBeInTheDocument();
-    expect(screen.getByText("Save Changes")).toBeInTheDocument();
-    expect(screen.getByText(/Created:/)).toBeInTheDocument();
+    expect(screen.getByText(/Created/)).toBeInTheDocument();
+    expect(screen.getByText(/by Test Creator/)).toBeInTheDocument();
+    expect(screen.getByText(/Updated/)).toBeInTheDocument();
   });
 
   it("has proper ARIA attributes", () => {
@@ -423,7 +423,7 @@ describe("TaskDetailsModal Component", () => {
     );
 
     expect(screen.getByText(/Subtasks/)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Add a subtask...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Add a new subtask...")).toBeInTheDocument();
   });
 
   it("allows adding new subtask via Enter key", () => {
@@ -436,7 +436,7 @@ describe("TaskDetailsModal Component", () => {
       />
     );
 
-    const input = screen.getByPlaceholderText("Add a subtask...");
+    const input = screen.getByPlaceholderText("Add a new subtask...");
     fireEvent.change(input, { target: { value: "New subtask" } });
     fireEvent.submit(input.closest("form") as HTMLFormElement);
 
