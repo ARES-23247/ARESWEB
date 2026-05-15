@@ -1,96 +1,80 @@
 ---
 gsd_state_version: 1.0
 milestone: v8.2
-milestone_name: Native Photo Albums
-status: planning
-last_updated: "2026-05-15T00:10:00.175Z"
+milestone_name: Native Photo Albums & Tournaments
+status: executing
+last_updated: "2026-05-15T14:55:00.000Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
+  percent: 100
 ---
 
 # System State
 
-**Current Milestone**: v8.1 Google Workspace Integrations
+**Current Milestone**: v8.2 Native Photo Albums & Tournaments
 **Status**: COMPLETE ✅ — All phases implemented, build stabilized
-**Last activity**: 2026-05-13
+**Last activity**: 2026-05-15
 
 ## Recent Completions
 
-- **Build Stabilization** (2026-05-13) — Resolved 113 TypeScript compilation errors across 24 files. Suppressed TS2590 union complexity errors with `@ts-expect-error`, fixed `KVNamespace` import, corrected schema field alignment, and resolved ESLint violations. `tsc --noEmit` now passes with 0 errors.
-- **Phase 78: Onshape CAD Integration** (2026-05-13) — OAuth2 authentication, document browsing, STL/STEP export, and BOM synchronization for Onshape CAD models.
-- **Phase 77: File Manager** (2026-05-13) — File upload, management, and blog editor integration with R2 storage.
-- **Phase 76: Image Import Pipeline** (2026-05-13) — Photo import from Google Photos to R2 with magic byte validation (JPG/PNG/WEBP), album metadata sync, audit logging, sequential processing, multi-select UI with checkboxes, import mutation with error handling and retry buttons.
-- **Phase 75: Google Photos Browser** (2026-05-13) — Google Photos media listing and album browsing API with server-side video filtering, pagination, photo grid UI, and upload functionality.
-- **Phase 74: Google Drive Document Browser** (2026-05-13) — Google Drive file listing API with Google Workspace MIME type filtering (Docs, Sheets, Slides, Drawings), name search, pagination, and dashboard UI for browsing documents.
-- **Phase 73: Service Account Authentication** (2026-05-12) — OAuth 2.0 service account authentication for Google Photos Library API and Google Drive API with JWT-based token generation, D1 token caching, lazy refresh (5-minute buffer), and retry logic.
+- **Phase 82: Tournaments and Robot Pages** (2026-05-15) — Full CRUD for robots and tournaments with Tiptap editors, album attachment, FTC Events API match sync, YouTube match video linking, awards management, and branded public gallery/detail pages. Centralized `ensureAdmin` middleware. All ESLint and TypeScript violations resolved.
+- **Phase 81: Dynamic Display Layouts** (2026-05-15) — Album carousel and masonry display modes with CSS-only rendering. Album detail page with dual rendering modes. Carousel speed tuning.
+- **Phase 80: Media Association & Ingestion** (2026-05-15) — Album ↔ Media bridging layer, Google Photo Picker album ingestion, sort order management, deduplication.
+- **Phase 79: Album Database & API** (2026-05-14) — D1 schema for albums, Hono OpenAPI CRUD handlers, Zod schemas.
+- **Build Stabilization** (2026-05-13) — Resolved 113 TypeScript compilation errors across 24 files. `tsc --noEmit` now passes with 0 errors.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: All v8.2 phases complete
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-15 — Milestone v8.2 started
+Status: Milestone v8.2 complete — ready for audit
+Last activity: 2026-05-15 — Phase 82 deployed and ESLint hardened
 
 ## Project Reference
 
 See: .planning/PROJECT.md
 
 **Core value:** Championship-grade FIRST Robotics team management platform
-**Current focus:** Milestone v8.1 complete. Build architecture fully stabilized.
+**Current focus:** Milestone v8.2 complete. Tournaments and Robot fleet management deployed.
 
-## Milestone v8.1 Google Workspace Integrations
+## Milestone v8.2 Native Photo Albums & Tournaments
 
-**Goal:** Integrate Google Drive API to browse Google Workspace documents, import images to R2 storage, manage files, and connect Onshape CAD models.
+**Goal:** Build a native photo album system with multiple display layouts, and implement tournament/robot management with FTC Events API integration.
 
-**Total Requirements:** 48
+**Total Phases:** 4
 
-- Authentication: 5 requirements ✅
-- Document Browsing: 6 requirements ✅
-- Photo Browser: 7 requirements ✅
-- Image Import: 10 requirements ✅
-- File Manager: 8 requirements ✅
-- Onshape CAD: 12 requirements ✅
+- Album Database & API: Phase 79 ✅
+- Media Association & Ingestion: Phase 80 ✅
+- Dynamic Display Layouts: Phase 81 ✅
+- Tournaments and Robot Pages: Phase 82 ✅
 
-**Coverage:** 48/48 requirements complete ✅
+**Coverage:** 4/4 phases complete ✅
 
 ### Phase Structure
 
-| Phase | Name | Requirements | Status |
-|-------|------|--------------|--------|
-| 73 | Service Account Authentication | 5 | Complete ✅ |
-| 74 | Google Drive Document Browser | 6 | Complete ✅ |
-| 75 | Google Photos Browser | 7 | Complete ✅ |
-| 76 | Image Import Pipeline | 10 | Complete ✅ |
-| 77 | File Manager | 8 | Complete ✅ |
-| 78 | Onshape CAD Integration | 12 | Complete ✅ |
+| Phase | Name | Status |
+|-------|------|--------|
+| 79 | Album Database & API | Complete ✅ |
+| 80 | Media Association & Ingestion | Complete ✅ |
+| 81 | Dynamic Display Layouts | Complete ✅ |
+| 82 | Tournaments and Robot Pages | Complete ✅ |
 
 ### Key Decisions
 
-- Use service account authentication for Google Photos and Drive APIs ✅
-- Store OAuth tokens and media metadata in D1 ✅
-- Implement automatic token refresh with alerting on failures ✅
-- Support browsing Google Drive folders and Google Photos albums ✅
-- Import photos from Google Photos (not Drive) to R2 ✅
-- Upload photos to Google Photos through the website ✅
-- Preserve Google Photos album structure as R2 folders ✅
-- Use `@ts-expect-error` for TS2590 suppression instead of router restructuring ✅
-
-### Technical Approach
-
-- Service account OAuth 2.0 for API authentication
-- D1 for token storage and media metadata caching
-- R2 for imported image storage
-- Google Photos Library API and Drive API v3
-- File validation using magic bytes (JPG/PNG/WEBP)
-- Audit trail for all imports
+- Centralized `ensureAdmin` middleware at router level instead of per-route manual calls ✅
+- FTC Events API integration via existing proxy pattern for match sync ✅
+- Robot spec cards with Pokémon-card style layout ✅
+- CSS-only masonry layout (no JS library) ✅
+- Carousel speed tuned (25% slower) ✅
+- Album embed defaults to carousel, click-through opens masonry ✅
+- Partial payload schemas with explicit defaults for Drizzle NOT NULL constraints ✅
 
 ### Performance Metrics
 
 **TypeScript:** 0 errors ✅ (`tsc --noEmit` exit code 0)
-**ESLint:** 0 errors, 13 warnings ✅
+**ESLint:** 0 errors on all tournament/robot files ✅
 **Build requirement:** `NODE_OPTIONS="--max-old-space-size=8192"`
