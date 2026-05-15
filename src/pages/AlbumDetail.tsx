@@ -79,7 +79,7 @@ export default function AlbumDetail({ id }: { id: string }) {
 }
 
 // Masonry Layout
-function MasonryLayout({ media }: { media: AlbumDetailType["media"] }) {
+function MasonryLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> }) {
   return (
     <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
       {media.map((item) => (
@@ -102,7 +102,7 @@ function MasonryLayout({ media }: { media: AlbumDetailType["media"] }) {
 }
 
 // Moving Carousel Layout (GPU Accelerated)
-function MovingLayout({ media }: { media: AlbumDetailType["media"] }) {
+function MovingLayout({ media }: { media: NonNullable<AlbumDetailType["media"]> }) {
   // Duplicate media array to create seamless loop
   const carouselItems = [...media, ...media, ...media];
 

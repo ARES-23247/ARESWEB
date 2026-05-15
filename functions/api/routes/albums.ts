@@ -19,7 +19,7 @@ const serializeAlbum = (a: typeof schema.albums.$inferSelect) => ({
   title: a.title,
   description: a.description ?? null,
   coverImageId: a.coverImageId ?? null,
-  displayMode: a.displayMode,
+  displayMode: (a.displayMode as "masonry" | "moving") ?? "masonry",
   isDeleted: a.isDeleted ?? 0,
   createdAt: a.createdAt ?? new Date().toISOString(),
   updatedAt: a.updatedAt ?? new Date().toISOString(),
@@ -50,7 +50,7 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
       photo: schema.importedPhotos,
     })
     .from(schema.albumMedia)
-    .innerJoin(schema.importedPhotos, eq(schema.albumMedia.mediaId, schema.importedPhotos.id))
+    .leftJoin(schema.importedPhotos, eq(schema.albumMedia.mediaId, schema.importedPhotos.r2Key))
     .where(eq(schema.albumMedia.albumId, id))
     .orderBy(schema.albumMedia.sortOrder)
     .execute();
@@ -62,11 +62,11 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
         id: m.id,
         sortOrder: m.sortOrder ?? 0,
         photo: {
-          id: m.photo.id,
-          r2Key: m.photo.r2Key,
-          filename: m.photo.originalFilename ?? null,
-          mimeType: m.photo.mimeType,
-          createdAt: m.photo.importedAt ?? new Date().toISOString()
+          id: m.photo?.id ?? m.id,
+          r2Key: m.id,
+          filename: m.photo?.originalFilename ?? m.id.split('/').pop() ?? null,
+          mimeType: m.photo?.mimeType ?? "image/jpeg",
+          createdAt: m.photo?.importedAt ?? new Date().toISOString()
         }
       })),
     }

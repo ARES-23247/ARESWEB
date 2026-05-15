@@ -79,6 +79,19 @@ export default function GooglePhotoPickerModal({
   }, [isPickerOpen]);
 
   const handleOpenPicker = useCallback(async () => {
+    const popup = window.open(
+      "about:blank",
+      "google-photos-picker",
+      "width=1200,height=800,scrollbars=yes,resizable=yes"
+    );
+    popupRef.current = popup;
+
+    if (!popup) {
+      toast.error("Popup blocked — please allow popups for this site");
+      setIsPickerOpen(false);
+      return;
+    }
+
     try {
       const session = await createSession.mutateAsync();
       setActiveSessionId(session.id);
@@ -93,19 +106,12 @@ export default function GooglePhotoPickerModal({
         finalUri = `${finalUri}/autoclose`;
       }
 
-      const popup = window.open(
-        finalUri,
-        "google-photos-picker",
-        "width=1200,height=800,scrollbars=yes,resizable=yes"
-      );
-      popupRef.current = popup;
-
-      if (!popup) {
-        toast.error("Popup blocked — please allow popups for this site");
-        setIsPickerOpen(false);
-      }
+      popup.location.href = finalUri;
     } catch {
       toast.error("Failed to create picker session");
+      if (popupRef.current) popupRef.current.close();
+      popupRef.current = null;
+      setIsPickerOpen(false);
     }
   }, [createSession]);
 

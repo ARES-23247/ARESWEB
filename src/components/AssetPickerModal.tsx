@@ -8,7 +8,7 @@ interface MediaAsset {
 import { useState, useRef } from "react";
 import { X, ImagePlus, Plus, UploadCloud, Loader2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useGetAdminMedia, useGetGalleries } from "../api";
+import { useGetAdminMedia, useGetAlbums } from "../api";
 import { uploadFile } from "../utils/apiClient";
 import { toast } from "sonner";
 import { toastApiError } from "../api/honoClient";
@@ -40,15 +40,15 @@ export default function AssetPickerModal({
     enabled: isOpen,
   });
 
-  const { data: galleriesResponse, isLoading: isLoadingGalleries } = useGetGalleries({
+  const { data: albumsResponse, isLoading: isLoadingAlbums } = useGetAlbums({
     enabled: isOpen,
   });
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const galleries = (galleriesResponse as unknown as { galleries: any[] })?.galleries ?? [];
-  const galleryMap = new Map(galleries.map(g => [g.id, g.title]));
+  const albums = (albumsResponse as unknown as { albums: any[] })?.albums ?? [];
+  const galleryMap = new Map(albums.map(g => [g.id, g.title]));
 
-  const isLoading = isLoadingMedia || isLoadingGalleries;
+  const isLoading = isLoadingMedia || isLoadingAlbums;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

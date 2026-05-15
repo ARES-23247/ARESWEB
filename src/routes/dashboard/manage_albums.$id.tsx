@@ -55,8 +55,8 @@ function SortableMediaItem({ asset, onRemove }: { asset: any, onRemove: (id: str
       className={`group relative aspect-square bg-black border border-white/10 ares-cut-sm overflow-hidden ${isDragging ? 'opacity-50 ring-2 ring-ares-gold' : ''}`}
     >
       <img
-        src={asset.url}
-        alt="Album media"
+        src={`/api/proxy-image?key=${encodeURIComponent(asset.photo?.r2Key ?? asset.id)}`}
+        alt={asset.photo?.filename || "Album media"}
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         loading="lazy"
       />
@@ -70,7 +70,7 @@ function SortableMediaItem({ asset, onRemove }: { asset: any, onRemove: (id: str
           <GripVertical size={18} />
         </button>
         <a
-          href={asset.url}
+          href={`/api/proxy-image?key=${encodeURIComponent(asset.photo?.r2Key ?? asset.id)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-ares-cyan hover:text-black text-white transition-colors"

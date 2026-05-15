@@ -805,19 +805,6 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
 	timestamp: text().notNull(),
 });
 
-export const galleries = sqliteTable("galleries", {
-	id: text().primaryKey(),
-	title: text().notNull(),
-	description: text(),
-	googlePhotosUrl: text("google_photos_url"),
-	heroImageKey: text("hero_image_key"),
-	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
-	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
-},
-(table) => [
-	index("idx_galleries_created").on(table.createdAt),
-]);
-
 export const videos = sqliteTable("videos", {
 	id: text().primaryKey(),
 	title: text().notNull(),
@@ -976,7 +963,7 @@ export const albums = sqliteTable("albums", {
 
 export const albumMedia = sqliteTable("album_media", {
 	albumId: text("album_id").notNull().references(() => albums.id, { onDelete: "cascade" }),
-	mediaId: text("media_id").notNull().references(() => importedPhotos.id, { onDelete: "cascade" }),
+	mediaId: text("media_id").notNull(),
 	sortOrder: integer("sort_order").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [

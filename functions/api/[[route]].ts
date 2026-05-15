@@ -47,7 +47,6 @@ import pointsRouter from "./routes/points";
 import { aiRouter } from "./routes/ai/index";
 import socialQueueRouter from "./routes/socialQueue";
 import scoutingRouter from "./routes/scouting/index";
-import galleriesRouter from "./routes/galleries/index";
 import videosRouter from "./routes/videos/index";
 import youtubeRouter from "./routes/youtube/index";
 import { albumsRouter } from "./routes/albums";
@@ -116,7 +115,6 @@ apiRouter.doc('/openapi.json', {
     }
   ],
   tags: [
-    { name: 'galleries', description: 'Photo gallery management' },
     { name: 'videos', description: 'Video library management' },
     { name: 'posts', description: 'Blog posts and news' },
     { name: 'events', description: 'Calendar events' },
@@ -235,7 +233,6 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/profile", profilesRouter)
   .route("/logistics", logisticsRouter)
   .route("/users", usersRouter)
-  .route("/galleries", galleriesRouter)
   .route("/videos", videosRouter)
   .route("/youtube", youtubeRouter);
 

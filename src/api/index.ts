@@ -82,8 +82,8 @@ export * from "./github";
 // Communications
 export * from "./communications";
 
-// Galleries
-export * from "./galleries";
+// Albums
+export * from "./albums";
 
 // Videos
 export * from "./videos";

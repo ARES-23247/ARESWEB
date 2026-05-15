@@ -4,7 +4,7 @@ import { ChevronDown, Eye, Images, Link as LinkIcon } from "lucide-react";
 import { CodeBlock } from "./docs/CodeBlock";
 import ErrorBoundary from "./ErrorBoundary";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
-import { useGetGallery, useGetVideo } from "../api";
+import { useGetAlbum, useGetVideo } from "../api";
 import { Link } from "@tanstack/react-router";
 
 /* ---------- Lazy Loaded Simulators & Tools ---------- */
@@ -321,17 +321,17 @@ function VideoEmbedRenderer({ videoId: rawVideoId, platform: rawPlatform, title,
   return <VideoEmbedIframe src={validatedSrc} title={title} />;
 }
 
-// Gallery Embed Renderer Component
+// Gallery Embed Renderer Component (Legacy support mapped to Albums)
 function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?: string }) {
-  const { data: galleryResponse, isLoading, isError } = useGetGallery(galleryId);
-  const gallery = (galleryResponse as unknown as { gallery: { id: string; title: string; thumbnail?: string } | null } | null)?.gallery ?? null;
+  const { data: albumResponse, isLoading, isError } = useGetAlbum(galleryId);
+  const gallery = (albumResponse as unknown as { album: { id: string; title: string; coverImageId?: string } | null } | null)?.album ?? null;
 
   if (isLoading) {
     return (
       <div className="my-8 ares-cut-sm border border-white/10 bg-black/40 p-8 text-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <Images className="w-12 h-12 text-ares-gold/60" />
-          <div className="text-white/60">Loading gallery...</div>
+          <div className="text-white/60">Loading album...</div>
         </div>
       </div>
     );
@@ -344,29 +344,29 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
 
   return (
     <Link
-      to="/galleries/$id"
+      to="/albums/$id"
       params={{ id: galleryId }}
       className="block my-8 group"
     >
       <div className="ares-cut-sm border border-ares-gold/30 hover:border-ares-gold overflow-hidden glass-card transition-all duration-300">
         <div className="relative aspect-video overflow-hidden">
           <img
-            src={gallery.thumbnail || "/api/media/1776551060548-favicon.webp"}
-            alt={gallery.title || title || "Gallery"}
+            src={gallery.coverImageId ? `/api/media/${gallery.coverImageId}` : "/api/media/1776551060548-favicon.webp"}
+            alt={gallery.title || title || "Album"}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4">
             <div className="flex items-center gap-2 text-ares-gold mb-2">
               <Images size={16} />
-              <span className="text-xs font-bold uppercase tracking-wider">Photo Gallery</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Photo Album</span>
             </div>
-            <h3 className="text-white font-bold text-lg">{gallery.title || title || "Gallery"}</h3>
+            <h3 className="text-white font-bold text-lg">{gallery.title || title || "Album"}</h3>
           </div>
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="bg-ares-gold text-black px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-2">
               <LinkIcon size={14} />
-              View Gallery
+              View Album
             </div>
           </div>
         </div>
