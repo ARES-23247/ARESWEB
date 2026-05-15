@@ -20,7 +20,7 @@ export const albumDetailSchema = albumSchema.extend({
   media: z.array(z.object({
     id: z.string(),
     sortOrder: z.number(),
-    photo: importedPhotoSchema,
+    photo: importedPhotoSchema.nullable().optional(),
   })).optional(),
 });
 
