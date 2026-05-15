@@ -86,7 +86,6 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
     title: body.title,
     description: body.description ?? null,
     coverImageId: body.coverImageId ?? null,
-    displayMode: body.displayMode ?? "masonry",
     createdBy: c.get("sessionUser")?.id ?? "unknown",
   }).execute();
 
@@ -102,7 +101,6 @@ export const albumsRouter = new OpenAPIHono<AppEnv>()
     title: body.title,
     description: body.description,
     coverImageId: body.coverImageId,
-    displayMode: body.displayMode,
     updatedAt: new Date().toISOString(),
   }).where(eq(schema.albums.id, id)).execute();
 

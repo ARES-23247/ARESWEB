@@ -9,6 +9,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import { toast } from "sonner";
 import mammoth from "mammoth";
 import { compressImage as _compressImage } from "../../utils/imageProcessor";
@@ -389,6 +390,49 @@ export default function RichEditorToolbar({ editor, documentTitle }: RichEditorT
       {/* ===== EDITOR CONTENT AREA WITH CHAT SIDEBAR ===== */}
       <div className={`flex w-full ${isFullscreen ? "flex-1 min-h-0" : ""}`}>
         <div className="flex-1 bg-ares-black border-x border-b border-white/10 rounded-b-xl overflow-y-auto shadow-inner min-w-0 min-h-[400px] relative">
+          {editor && (
+            <BubbleMenu
+              editor={editor}
+              shouldShow={({ editor }: { editor: Editor }) => editor.isActive("image") || editor.isActive("imageResize")}
+              className="bg-obsidian border border-white/20 ares-cut-sm flex items-center p-1 shadow-2xl shadow-black/80 backdrop-blur-md"
+            >
+              <button
+                type="button"
+                onClick={async () => {
+                  const currentAlt = editor.getAttributes("image").alt || editor.getAttributes("imageResize").alt || "";
+                  const newAlt = await modal.prompt({
+                    title: "Edit Alt Text",
+                    description: "Provide descriptive alt text for accessibility:",
+                    defaultValue: currentAlt
+                  });
+                  if (newAlt !== null) {
+                    editor.chain().focus().updateAttributes(editor.isActive("imageResize") ? "imageResize" : "image", { alt: newAlt }).run();
+                  }
+                }}
+                className="text-white hover:bg-white/10 hover:text-ares-gold font-bold text-xs px-3 py-1.5 transition-colors rounded-sm"
+              >
+                Alt Text
+              </button>
+              <div className="w-px h-4 bg-white/10 mx-1" />
+              <button
+                type="button"
+                onClick={async () => {
+                  const currentTitle = editor.getAttributes("image").title || editor.getAttributes("imageResize").title || "";
+                  const newTitle = await modal.prompt({
+                    title: "Edit Image Caption",
+                    description: "This will be displayed below the image:",
+                    defaultValue: currentTitle
+                  });
+                  if (newTitle !== null) {
+                    editor.chain().focus().updateAttributes(editor.isActive("imageResize") ? "imageResize" : "image", { title: newTitle }).run();
+                  }
+                }}
+                className="text-white hover:bg-white/10 hover:text-ares-cyan font-bold text-xs px-3 py-1.5 transition-colors rounded-sm"
+              >
+                Caption
+              </button>
+            </BubbleMenu>
+          )}
           <EditorContent
             editor={editor}
             className="h-full p-4 md:p-6 pb-12"

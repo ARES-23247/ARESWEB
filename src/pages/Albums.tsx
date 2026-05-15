@@ -53,11 +53,6 @@ export default function Albums() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
                       <h2 className="text-white font-bold text-xl drop-shadow-md">{album.title}</h2>
-                      {album.displayMode === "moving" && (
-                        <span className="text-xs font-bold text-ares-gold uppercase tracking-wider bg-black/50 px-2 py-1 ares-cut-sm backdrop-blur-sm">
-                          Carousel
-                        </span>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -65,11 +60,6 @@ export default function Albums() {
                     <Images className="text-ares-gold/30 w-16 h-16" />
                     <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
                       <h2 className="text-white font-bold text-xl drop-shadow-md">{album.title}</h2>
-                      {album.displayMode === "moving" && (
-                        <span className="text-xs font-bold text-ares-gold uppercase tracking-wider bg-black/50 px-2 py-1 ares-cut-sm backdrop-blur-sm">
-                          Carousel
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}

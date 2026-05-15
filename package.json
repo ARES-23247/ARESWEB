@@ -79,6 +79,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "@tanstack/zod-form-adapter": "^0.42.1",
     "@tiptap/core": "^3.22.5",
+    "@tiptap/extension-bubble-menu": "^3.23.4",
     "@tiptap/extension-character-count": "^3.22.5",
     "@tiptap/extension-code-block-lowlight": "^3.22.5",
     "@tiptap/extension-collaboration": "^3.22.5",

@@ -343,8 +343,8 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
     return null;
   }
 
-  // If the album is set to 'moving' display mode and has media, render an inline carousel
-  if (gallery.displayMode === "moving" && gallery.media && gallery.media.length > 0) {
+  // Render embedded albums as a moving carousel by default, if media exists
+  if (gallery.media && gallery.media.length > 0) {
     const carouselItems = [...gallery.media, ...gallery.media, ...gallery.media];
     
     return (
@@ -361,7 +361,7 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
             100% { transform: translate3d(-33.333333%, 0, 0); }
           }
           .animate-scroll-infinite-embed {
-            animation: scroll-infinite-embed 45s linear infinite;
+            animation: scroll-infinite-embed 60s linear infinite;
           }
           .animate-scroll-infinite-embed:hover {
             animation-play-state: paused;

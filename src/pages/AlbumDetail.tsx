@@ -48,7 +48,6 @@ export default function AlbumDetail({ id }: { id: string }) {
   }
 
   const media = album.media || [];
-  const displayMode = album.displayMode || "masonry";
 
   return (
     <main id="main-content" className="w-full min-h-screen bg-obsidian text-marble py-8 overflow-hidden">
@@ -80,13 +79,7 @@ export default function AlbumDetail({ id }: { id: string }) {
             <p className="font-mono">This album has no photos yet.</p>
           </div>
         ) : (
-          <>
-            {displayMode === "masonry" ? (
-              <MasonryLayout media={media} onOpenLightbox={openLightbox} />
-            ) : (
-              <MovingLayout media={media} onOpenLightbox={openLightbox} />
-            )}
-          </>
+          <MasonryLayout media={media} onOpenLightbox={openLightbox} />
         )}
       </div>
 
@@ -143,76 +136,6 @@ function MasonryLayout({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-// Moving Carousel Layout (GPU Accelerated)
-function MovingLayout({ 
-  media, 
-  onOpenLightbox 
-}: { 
-  media: NonNullable<AlbumDetailType["media"]>;
-  onOpenLightbox: (url: string, alt: string) => void;
-}) {
-  // Duplicate media array to create seamless loop
-  const carouselItems = [...media, ...media, ...media];
-
-  return (
-    <div className="relative w-[100vw] left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] bg-black py-16 border-y border-white/10 overflow-hidden">
-      {/* 
-        Tailwind doesn't have a built-in infinite scroll animation by default without extending theme, 
-        so we inject a small style block here just for this layout to ensure smooth GPU translation.
-      */}
-      <style>{`
-        @keyframes scroll-infinite {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-33.333333%, 0, 0); }
-        }
-        .animate-scroll-infinite {
-          animation: scroll-infinite 60s linear infinite;
-        }
-        .animate-scroll-infinite:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-      
-      <div className="flex w-max animate-scroll-infinite items-center">
-        {carouselItems.map((item, index) => {
-          const imageUrl = `/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`;
-          const altText = item.photo?.filename || "Album photo";
-          
-          return (
-            <div 
-              key={`${item.id}-${index}`} 
-              className="px-4 w-[80vw] sm:w-[50vw] md:w-[35vw] lg:w-[25vw] flex-shrink-0 group"
-            >
-              <button
-                type="button"
-                onClick={() => onOpenLightbox(imageUrl, altText)}
-                className="w-full text-left relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3] cursor-pointer"
-              >
-                <img
-                  src={imageUrl}
-                  alt={altText}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  loading="lazy"
-                />
-                {/* Gradient Overlay for Text */}
-                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                  <p className="text-white font-medium text-sm drop-shadow-md truncate w-full">{altText}</p>
-                </div>
-                {/* Zoom Icon Overlay */}
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20 transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                    <Maximize2 className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-              </button>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
