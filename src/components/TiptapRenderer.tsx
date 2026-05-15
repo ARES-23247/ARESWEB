@@ -324,7 +324,8 @@ function VideoEmbedRenderer({ videoId: rawVideoId, platform: rawPlatform, title,
 // Gallery Embed Renderer Component (Legacy support mapped to Albums)
 function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?: string }) {
   const { data: albumResponse, isLoading, isError } = useGetAlbum(galleryId);
-  const gallery = (albumResponse as unknown as { album: { id: string; title: string; coverImageId?: string } | null } | null)?.album ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gallery = (albumResponse as any)?.album ?? null;
 
   if (isLoading) {
     return (
@@ -342,6 +343,58 @@ function GalleryEmbedRenderer({ galleryId, title }: { galleryId: string; title?:
     return null;
   }
 
+  // If the album is set to 'moving' display mode and has media, render an inline carousel
+  if (gallery.displayMode === "moving" && gallery.media && gallery.media.length > 0) {
+    const carouselItems = [...gallery.media, ...gallery.media, ...gallery.media];
+    
+    return (
+      <div className="relative w-full my-8 bg-black py-8 border-y border-white/10 overflow-hidden ares-cut-sm shadow-xl">
+        <div className="absolute top-4 left-4 z-30 pointer-events-none">
+          <div className="bg-black/80 backdrop-blur-md text-ares-gold px-3 py-1.5 text-xs font-bold uppercase tracking-widest border border-white/10 ares-cut-sm shadow-lg flex items-center gap-2">
+            <Images size={14} />
+            {gallery.title || title || "Photo Album"}
+          </div>
+        </div>
+        <style>{`
+          @keyframes scroll-infinite-embed {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-33.333333%, 0, 0); }
+          }
+          .animate-scroll-infinite-embed {
+            animation: scroll-infinite-embed 45s linear infinite;
+          }
+          .animate-scroll-infinite-embed:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
+        <div className="flex w-max animate-scroll-infinite-embed items-center">
+          {carouselItems.map((item: any, index: number) => {
+            const imageUrl = `/api/media/${encodeURIComponent(item.photo?.r2Key ?? item.id)}`;
+            return (
+              <div key={`${item.id}-${index}`} className="px-2 w-[70vw] sm:w-[45vw] md:w-[35vw] lg:w-[25vw] flex-shrink-0 group">
+                <Link to="/albums/$id" params={{ id: galleryId }} className="block relative overflow-hidden ares-cut-sm border border-white/10 aspect-[4/3] cursor-pointer">
+                  <img
+                    src={imageUrl}
+                    alt="Album photo"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-ares-gold text-black font-bold uppercase tracking-widest text-xs px-4 py-2 ares-cut-sm transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-2">
+                      <LinkIcon size={14} />
+                      View Album
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Default fallback: Render the cover card
   return (
     <Link
       to="/albums/$id"
