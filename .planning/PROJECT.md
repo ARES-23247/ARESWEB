@@ -1,7 +1,7 @@
 # ARESWEB
 
 ## What This Is
-The official dashboard, team portal, and website for ARES 23247 FIRST Robotics team. It provides authenticated management of team operations including tasks, posts, finance, robotics resources, and outreach.
+The official dashboard, team portal, and website for ARES 23247 FIRST Robotics team. It provides authenticated management of team operations including tasks, posts, finance, robotics resources, outreach, native photo albums, tournament archives, and robot fleet documentation.
 
 ## Core Value
 Providing a highly accessible, fast, and feature-rich unified portal for students, mentors, and administrators.
@@ -56,20 +56,31 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.7 (TypeScript Any Elimination)** — Created shared type infrastructure, migrated all route handlers to contract inference, typed test mocks, and eliminated explicit any violations.
 - ✓ **Milestone 6.9 (Type Safety Debt Elimination)** — Achieved 100% compile-time type safety by creating `typedHandler` wrappers, unifying frontend API types, and eliminating all `as any` and `eslint-disable` bypasses.
 
+- ✓ **Milestone v8.2 (Native Photo Albums & Tournaments)** — Built native photo album system with dual display layouts (masonry/carousel), Google Photos bulk ingestion, tournament management with FTC Events API match sync, and robot fleet documentation with spec cards.
+
 ### Active
-- **Milestone v8.2 (Native Photo Albums)** — Build a native album object that holds and displays photos, integrating with the new Google Photos picker, and supporting dynamic masonry and moving gallery layouts.
+- *(No active milestone — ready for next planning cycle)*
 
 ### Recently Shipped
+- **v8.2 Native Photo Albums & Tournaments** (May 2026): Native album CRUD, dual-mode display, drag-and-drop media management, tournament/robot pages with FTC Events API integration.
 - **v8.1 Google Workspace Integrations** (May 2026): Integrated Google Drive API for browsing documents and importing images to R2.
-- **v8.0 End-to-End Hono RPC Type Safety** (May 2026): Achieved full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
-- **v7.3 Full Codebase ESLint Sanitization** (May 2026): Accepted frontend suppressions, addressed backend unused code.
-- **v7.2 TypeScript Safety & ESLint Compliance** (May 2026): Achieved complete strict TypeScript type safety across the entire codebase.
-- **v7.1 Drizzle ORM Migration** (May 2026): Converted all remaining raw D1 queries to Drizzle ORM and Zod schemas.
 
-### Current Milestone: v8.2 Native Photo Albums (Active)
-**Goal:** Build a native album object that holds and displays photos, integrating with the new Google Photos picker, and supporting dynamic masonry and moving gallery layouts.
+### Current State: Post v8.2
+**Last shipped:** v8.2 Native Photo Albums & Tournaments (2026-05-15)
+**Tech stack:** Cloudflare Pages, D1, R2, Hono, React, TanStack Router, Drizzle ORM, Tiptap, @dnd-kit
+**Build:** `tsc --noEmit` 0 errors, ESLint 0 errors (requires `NODE_OPTIONS="--max-old-space-size=8192"`)
 
 ## Current State
+
+<details>
+<summary>v8.2 Shipped Features</summary>
+
+- Native photo album system with D1 schema, Drizzle ORM CRUD, and dual display modes (Masonry CSS columns + GPU-accelerated infinite carousel).
+- Drag-and-drop media association with `@dnd-kit/sortable` and Google Photos bulk ingestion with deduplication.
+- Tournament management with FTC Events API match sync, YouTube video linking, and awards tracking.
+- Robot fleet documentation with spec cards, Tiptap bodies, Onshape CAD iframe viewer, and reveal video embeds.
+- Public gallery pages at `/robots`, `/robots/:id`, `/tournaments`, `/tournaments/:id`.
+</details>
 
 <details>
 <summary>v8.1 Shipped Features</summary>
@@ -338,15 +349,22 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 </details>
 
 ## Next Milestone Goals
-- Migrate API contract layer from ts-rest to @hono/zod-openapi for native Zod v4 type inference.
+- Tournament awards cross-referencing with existing awards database
+- Robot version tracking (e.g., "Phobos 1.0", "Phobos 1.1")
+- YouTube match video search/discovery UI
+- Per-ID mutation hooks to replace fetch() + reload() pattern in admin managers
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Cloudflare D1 + Hono | Low latency, edge native, zero-config deployment. | Validated |
-| 100% Test Coverage | Ensures no regressions in the API logic. | Validated |
-| Local Calendar > Google Embeds | Guarantees ARES brand aesthetic, prevents event duplication, and allows linking events to tasks/zulip. | Active |
+| Cloudflare D1 + Hono | Low latency, edge native, zero-config deployment. | ✓ Validated |
+| 100% Test Coverage | Ensures no regressions in the API logic. | ✓ Validated |
+| Local Calendar > Google Embeds | Guarantees ARES brand aesthetic, prevents event duplication. | ✓ Validated |
+| CSS-only Masonry | No JS layout library needed, zero layout shift. | ✓ Validated |
+| Centralized ensureAdmin middleware | Router-level auth reduces boilerplate and prevents oversight. | ✓ Validated |
+| FTC Events API via proxy | Reuses existing proxy for API key management and caching. | ✓ Validated |
+| Partial payload schemas | Supports both POST (with defaults) and PATCH operations cleanly. | ✓ Validated |
 
 ## Evolution
 
@@ -366,4 +384,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-06 after v6.8 milestone start*
+*Last updated: 2026-05-15 after v8.2 milestone*

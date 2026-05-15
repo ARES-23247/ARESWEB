@@ -1,5 +1,20 @@
 # Milestones
 
+## v8.2 Native Photo Albums & Tournaments (Shipped: 2026-05-15)
+
+**Phases completed:** 4 phases (79-82)
+
+**Key accomplishments:**
+
+- Native photo album system with D1 schema, Drizzle ORM, and OpenAPI CRUD
+- Drag-and-drop media association with Google Photos bulk ingestion and deduplication
+- Dual-mode album display — CSS-only Masonry and GPU-accelerated infinite carousel
+- Tournament and robot fleet management with FTC Events API match sync
+- Public gallery pages with Pokémon-style robot spec cards and match schedules
+- Full ESLint + TypeScript compliance across all new modules (0 errors)
+
+---
+
 ## v7.2 TypeScript Safety & ESLint Compliance (Shipped: 2026-05-08)
 
 **Phases completed:** 6 phases, 32 plans
@@ -37,6 +52,7 @@
 
 | Version | Status | Date | Summary |
 |---------|--------|------|---------|
+| [v8.2](milestones/v8.2-ROADMAP.md) | ✅ SHIPPED | 2026-05-15 | Native Photo Albums & Tournaments |
 | [v8.1](milestones/v8.1-ROADMAP.md) | ✅ SHIPPED | 2026-05-13 | Type Safety & Integration Improvements |
 | [v8.0](milestones/v8.0-ROADMAP.md) | 📋 PLANNED | — | End-to-End Hono RPC Type Safety |
 | [v7.3](milestones/v7.3-ROADMAP.md) | ✅ SHIPPED | 2026-05-11 | Full Codebase ESLint Sanitization |
