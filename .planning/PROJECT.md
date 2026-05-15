@@ -57,18 +57,28 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone 6.9 (Type Safety Debt Elimination)** — Achieved 100% compile-time type safety by creating `typedHandler` wrappers, unifying frontend API types, and eliminating all `as any` and `eslint-disable` bypasses.
 
 ### Active
-- **Milestone v8.1 (Google Workspace Integrations)** — Integrate Google Drive API for browsing documents and importing images to R2.
+- **Milestone v8.2 (Native Photo Albums)** — Build a native album object that holds and displays photos, integrating with the new Google Photos picker, and supporting dynamic masonry and moving gallery layouts.
 
 ### Recently Shipped
+- **v8.1 Google Workspace Integrations** (May 2026): Integrated Google Drive API for browsing documents and importing images to R2.
 - **v8.0 End-to-End Hono RPC Type Safety** (May 2026): Achieved full end-to-end type inference from server handlers through `hc<AppType>()` to frontend calls.
 - **v7.3 Full Codebase ESLint Sanitization** (May 2026): Accepted frontend suppressions, addressed backend unused code.
 - **v7.2 TypeScript Safety & ESLint Compliance** (May 2026): Achieved complete strict TypeScript type safety across the entire codebase.
 - **v7.1 Drizzle ORM Migration** (May 2026): Converted all remaining raw D1 queries to Drizzle ORM and Zod schemas.
 
-### Current Milestone: v8.1 Google Workspace Integrations (Active)
-**Goal:** Integrate Google Drive API to browse Google Workspace documents and import images to R2 storage.
+### Current Milestone: v8.2 Native Photo Albums (Active)
+**Goal:** Build a native album object that holds and displays photos, integrating with the new Google Photos picker, and supporting dynamic masonry and moving gallery layouts.
 
 ## Current State
+
+<details>
+<summary>v8.1 Shipped Features</summary>
+
+- Native Photo Picker modal leveraging backend-proxied Google Photos API integration.
+- Service Account authentication architecture for Google APIs.
+- Upload abstraction mapping Google Drive and Photos media into R2 buckets.
+- File manager UI improvements.
+</details>
 
 <details>
 <summary>v7.0 Shipped Features</summary>
