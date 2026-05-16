@@ -161,9 +161,9 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # All non-E2E tests run in parallel
-  static-checks:
-    name: Lint & Typecheck
+  # Fast checks run in parallel using concurrently to save setup time
+  fast-checks:
+    name: Fast Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -199,64 +199,10 @@ jobs:
           restore-keys: |
             eslint-${{ runner.os }}-
 
-      - name: TypeScript Type Check
+      - name: Run Fast Checks in Parallel
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run typecheck
-
-      - name: Accessibility & Lint Audit
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run lint
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Automated Vulnerability & SAST Check
-        run: pnpm run audit:security
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Component Tests (Vitest)
-        run: pnpm run test
+        run: npx concurrently "pnpm run typecheck" "pnpm run lint" "pnpm run test" "pnpm run audit:security"
 
   # Full E2E test suite - informational only
   e2e-playwright:
@@ -346,7 +292,7 @@ jobs:
   test-gate:
     name: Test Gate
     runs-on: ubuntu-latest
-    needs: [static-checks, unit-tests, deploy-preview, smoke-test]
+    needs: [fast-checks, deploy-preview, smoke-test]
     # Always run so we can check the status of dependent jobs
     if: always()
     outputs:
@@ -356,19 +302,16 @@ jobs:
         id: check
         run: |
           # Critical tests must pass for production deploy
-          # - static-checks: lint and typecheck
-          # - unit-tests: component tests
+          # - fast-checks: lint, typecheck, tests, security
           # - deploy-preview: deploy preview
           # - smoke-test: smoke tests
           # Other E2E tests (playwright shards) are informational
-          if [ "${{ needs.static-checks.result }}" == "success" ] && \
-             [ "${{ needs.unit-tests.result }}" == "success" ] && \
+          if [ "${{ needs.fast-checks.result }}" == "success" ] && \
              [ "${{ needs.deploy-preview.result }}" == "success" ] && \
              [ "${{ needs.smoke-test.result }}" == "success" ]; then
             echo "all-passed=true" >> $GITHUB_OUTPUT
             echo "✅ Critical tests passed!"
-            echo "  static-checks: ${{ needs.static-checks.result }}"
-            echo "  unit-tests: ${{ needs.unit-tests.result }}"
+            echo "  fast-checks: ${{ needs.fast-checks.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test: ${{ needs.smoke-test.result }}"
             echo ""
@@ -377,8 +320,7 @@ jobs:
           else
             echo "all-passed=false" >> $GITHUB_OUTPUT
             echo "❌ Critical tests failed:"
-            echo "  static-checks: ${{ needs.static-checks.result }}"
-            echo "  unit-tests: ${{ needs.unit-tests.result }}"
+            echo "  fast-checks: ${{ needs.fast-checks.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test: ${{ needs.smoke-test.result }}"
             exit 1

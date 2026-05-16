@@ -105,7 +105,8 @@
       "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test \"admin-users\")",
       "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --project=dashboard admin-users)",
       "Bash(pnpm exec *)",
-      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --config=playwright.config.ts \"admin-users\")"
+      "Bash(PREVIEW_URL=https://25e8d606.aresweb.pages.dev pnpm exec playwright test --config=playwright.config.ts \"admin-users\")",
+      "Bash(node -e \"try { require\\('./package.json'\\); console.log\\('package.json is valid'\\); } catch\\(e\\) { console.error\\(e.message\\); }\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\david\\.claude\\cache",

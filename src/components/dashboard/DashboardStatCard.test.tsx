@@ -192,8 +192,10 @@ describe("DashboardStatCard Component", () => {
     const icon = screen.getByTestId("row-icon");
     const label = screen.getByText("Label");
 
-    // Both should be in the container
-    expect(icon.parentElement).toContainElement(label);
+    // Both should be in the same flex container (icon's grandparent)
+    const container = icon.parentElement?.parentElement;
+    expect(container).toContainElement(icon);
+    expect(container).toContainElement(label);
   });
 
   it("handles negative numbers", () => {
