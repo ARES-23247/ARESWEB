@@ -37,8 +37,9 @@ export function SortableTaskCard({
       ref={setNodeRef}
       {...({ style } as React.HTMLAttributes<HTMLDivElement>)}
       data-testid="task-card"
-      className="p-2.5 bg-obsidian/60 hover:bg-ares-gray-dark/60 ares-cut-sm border border-white/5 hover:border-white/10 transition-all group relative flex gap-2"
+      className="p-2.5 bg-obsidian/60 hover:bg-white/5 ares-cut-sm border border-white/5 hover:border-white/10 transition-all duration-300 group relative flex gap-2 hover:shadow-xl hover:-translate-y-0.5 overflow-hidden"
     >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <button 
         {...attributes}
         {...listeners}

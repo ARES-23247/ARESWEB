@@ -36,8 +36,9 @@ export function SortablePipelineCard({ item, onDelete, onEdit }: SortablePipelin
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(item); } }}
       role="button"
       tabIndex={0}
-      className="bg-black/60 p-3 ares-cut-sm border border-white/5 group hover:border-white/20 transition-all cursor-pointer relative"
+      className="bg-black/60 p-3 ares-cut-sm border border-white/5 group hover:bg-white/5 hover:border-white/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer relative overflow-hidden"
     >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className="flex justify-between items-start mb-1 gap-2">
         <div className="flex items-start gap-2 flex-1 overflow-hidden">
           <div
