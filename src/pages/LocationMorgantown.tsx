@@ -33,7 +33,7 @@ export default function LocationMorgantown() {
             <span className="text-ares-red font-bold text-sm uppercase tracking-wider">Morgantown, West Virginia</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 font-heading uppercase tracking-tighter">
-            Robotics in <span className="text-ares-red">Morgantown</span>
+            Robotics in <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Morgantown</span>
           </h1>
           <p className="text-marble text-xl max-w-3xl mx-auto leading-relaxed">
             ARES 23247 brings world-class robotics education and competition to North Central West Virginia.

@@ -99,8 +99,7 @@ export default function Join() {
 						<p aria-hidden="true" className="bg-ares-red text-white inline-block px-4 py-1 ares-cut-sm uppercase tracking-[0.3em] font-bold text-xs mb-6 shadow-lg shadow-ares-red/20 before:content-['Enrollment_Open']"></p>
 						<p className="sr-only">Enrollment Open</p>
 						<h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter">
-							Join <span aria-hidden="true" className="bg-ares-red px-6 py-1 ares-cut shadow-xl inline-block text-white ml-2 before:content-['ARES.']"></span>
-							<span className="sr-only">ARES.</span>
+							Join <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">ARES</span>
 						</h1>
 						<p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-8">
 							We are actively looking for forward-thinking students and dedicated mentors to expand our operations. No prior experience is required—only the drive to learn and the grit to succeed.

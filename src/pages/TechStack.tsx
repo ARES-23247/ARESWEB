@@ -30,7 +30,9 @@ export default function TechStack() {
 
         {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-16 px-4">
-          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold font-heading mb-6 tracking-tight text-white">Built for the Future.</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold font-heading mb-6 tracking-tight text-white uppercase">
+            Built for the <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Future</span>
+          </h1>
           <p className="text-lg md:text-xl text-marble leading-relaxed">
             ARES 23247&apos;s digital portal isn&apos;t just a website; it&apos;s a statement on <strong>Sustainability</strong>. 
             By leveraging entirely free, serverless Edge architecture, we&apos;ve brought our operating costs down to <strong>$0.00</strong>.

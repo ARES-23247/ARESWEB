@@ -104,8 +104,8 @@ export default function Events() {
           className="relative z-10 max-w-4xl mx-auto space-y-6 bg-obsidian p-8 ares-cut-lg border border-white/10 shadow-2xl"
         >
           {/* ACC-F01: Fixed H1 for screen readers while maintaining visual style */}
-          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
-            Team <span className="text-ares-gold">Events</span>
+          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight font-heading uppercase">
+            Team <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Events</span>
           </h1>
           <p className="text-xl md:text-2xl text-marble font-medium max-w-2xl mx-auto">
             Join us at our upcoming competitions, community outreach demos, and robotics workshops.

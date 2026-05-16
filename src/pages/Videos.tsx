@@ -34,8 +34,8 @@ export default function Videos() {
           <h3 className="text-ares-danger-soft font-bold uppercase tracking-widest text-sm mb-2">
             Moving Pictures
           </h3>
-          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm">
-            Team <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">Videos</span>
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm uppercase font-heading">
+            Team <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Videos</span>
           </h1>
           <p className="text-white/60 mt-4 max-w-2xl text-balance">
             Watch robot reveals, match footage, and behind-the-scenes content from our journey through FIRST Tech Challenge.

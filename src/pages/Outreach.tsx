@@ -110,7 +110,7 @@ export default function Outreach() {
             Active Impact Reporting
           </div>
           <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-tighter">
-            Engineering <br/> <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white font-bold">Change</span>.
+            Engineering <br/> <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Change</span>.
           </h1>
           <p className="text-marble text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
             ARES 23247 isn&apos;t just about building robots. We&apos;re building a community that values curiosity, innovation, and service.

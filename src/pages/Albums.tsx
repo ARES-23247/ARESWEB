@@ -18,8 +18,8 @@ export default function Albums() {
           <h3 className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-2">
             Visual Archives
           </h3>
-          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm">
-            Photo <span className="bg-ares-gold text-black px-2 py-0.5 ares-cut-sm shadow-inner font-bold">Albums</span>
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter shadow-sm uppercase font-heading">
+            Photo <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Albums</span>
           </h1>
           <p className="text-white/60 mt-4 max-w-2xl text-balance">
             Explore our native photo albums showcasing team events, build seasons, competitions, and community outreach.

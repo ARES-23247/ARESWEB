@@ -55,7 +55,9 @@ export default function About() {
         <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <p className="text-ares-bronze uppercase tracking-[0.4em] text-xs font-bold mb-6 font-heading">Our Community</p>
-          <h1 className="text-5xl md:text-8xl font-bold text-white mb-8 font-heading uppercase">About ARES</h1>
+          <h1 className="text-5xl md:text-8xl font-bold text-white mb-8 font-heading uppercase">
+            About <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold">ARES</span>
+          </h1>
           <p className="text-marble text-xl max-w-2xl mx-auto leading-relaxed border-t border-ares-bronze/20 pt-8 mt-8">
             We are the <span className="text-white font-bold">Appalachian Robotics & Engineering Society</span>. 
             More than a team, we are a training ground for the next generation of West Virginia&apos;s technical elite.

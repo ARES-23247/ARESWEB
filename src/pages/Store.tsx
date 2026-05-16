@@ -30,7 +30,7 @@ export const Store: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-2xl">
             <h1 className="text-4xl md:text-5xl font-heading font-black text-white mb-4 uppercase tracking-tight">
-              ARES <span className="text-ares-gold">Store</span>
+              ARES <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Store</span>
             </h1>
             <p className="text-lg text-slate-400">
               Support Team 23247 by grabbing our official team apparel and merchandise.

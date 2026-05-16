@@ -18,8 +18,8 @@ export default function Privacy() {
       />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
         <div className="mb-16">
-          <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight">
-            Privacy Policy
+          <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight uppercase">
+            Privacy <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Policy</span>
           </h1>
           <p className="text-xl text-marble border-l-2 border-ares-cyan/30 pl-6">
             ARES 23247 is committed to engineering privacy. We employ <strong>Cookie-Free Analytics</strong> to protect our students and global visitors.
