@@ -9,7 +9,7 @@ import { getDb } from "../../middleware";
 
 import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { eq, and, isNull, inArray, isNotNull, gte } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 
@@ -83,6 +83,38 @@ export const syncHandlers = {
 
                 if (toInsert.length > 0) {
                     await db.insert(schema.events).values(toInsert).run();
+                }
+            }
+
+            // --- Deletion Pass ---
+            // Remove any local events (synced from GCal) from the last 2 years that are NO LONGER in the active events list.
+            const activeGcalIds = events.map(e => e.gcalEventId).filter(Boolean) as string[];
+            
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+            const timeMinStr = twoYearsAgo.toISOString().substring(0, 10); // 'YYYY-MM-DD'
+
+            const localGcalEvents = await db.select({ id: schema.events.id, gcalEventId: schema.events.gcalEventId })
+                .from(schema.events)
+                .where(
+                    and(
+                        isNotNull(schema.events.gcalEventId),
+                        gte(schema.events.dateStart, timeMinStr)
+                    )
+                )
+                .all();
+
+            const activeSet = new Set(activeGcalIds);
+            const toDeleteIds = localGcalEvents
+                .filter(e => e.gcalEventId && !activeSet.has(e.gcalEventId))
+                .map(e => e.id);
+
+            if (toDeleteIds.length > 0) {
+                for (let i = 0; i < toDeleteIds.length; i += 50) {
+                    const chunk = toDeleteIds.slice(i, i + 50);
+                    await db.delete(schema.events)
+                        .where(inArray(schema.events.id, chunk))
+                        .run();
                 }
             }
 
