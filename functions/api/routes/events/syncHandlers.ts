@@ -9,7 +9,7 @@ import { getDb } from "../../middleware";
 
 import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 
@@ -52,20 +52,38 @@ export const syncHandlers = {
                     category: 'internal' as const,
                 }));
 
-                await db.insert(schema.events)
-                    .values(chunk)
-                    .onConflictDoUpdate({
-                        target: schema.events.gcalEventId,
-                        set: {
-                            title: sql`excluded.title`,
-                            dateStart: sql`excluded.date_start`,
-                            dateEnd: sql`excluded.date_end`,
-                            location: sql`excluded.location`,
-                            description: sql`excluded.description`,
-                            category: sql`excluded.category`,
-                        }
-                    })
-                    .run();
+                const gcalIds = chunk.map(c => c.gcalEventId).filter(Boolean) as string[];
+                const existingEvents = gcalIds.length > 0
+                    ? await db.select({ gcalEventId: schema.events.gcalEventId })
+                        .from(schema.events)
+                        .where(inArray(schema.events.gcalEventId, gcalIds))
+                        .all()
+                    : [];
+
+                const existingGcalIds = new Set(existingEvents.map(e => e.gcalEventId));
+                const toInsert = [];
+
+                for (const ev of chunk) {
+                    if (ev.gcalEventId && existingGcalIds.has(ev.gcalEventId)) {
+                        await db.update(schema.events)
+                            .set({
+                                title: ev.title,
+                                dateStart: ev.dateStart,
+                                dateEnd: ev.dateEnd,
+                                location: ev.location,
+                                description: ev.description,
+                                category: ev.category,
+                            })
+                            .where(eq(schema.events.gcalEventId, ev.gcalEventId))
+                            .run();
+                    } else {
+                        toInsert.push(ev);
+                    }
+                }
+
+                if (toInsert.length > 0) {
+                    await db.insert(schema.events).values(toInsert).run();
+                }
             }
 
             total = events.length;
