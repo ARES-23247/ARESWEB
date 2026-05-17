@@ -40,7 +40,7 @@ export async function createShadowRevision(
   }
 ) {
   const db = c.get("db");
-  const suffix = Math.random().toString(36).substring(2, 6);
+  const suffix = crypto.randomUUID().split('-')[0].substring(0, 4);
   const revSlug = `${originalSlug}-rev-${suffix}`;
   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" });
 

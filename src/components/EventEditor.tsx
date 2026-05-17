@@ -709,7 +709,7 @@ function EventEditorImpl({ editId, userRole }: { editId?: string, userRole?: str
 export default function EventEditor({ userRole }: { userRole?: string }) {
   const { editId } = useParams({ strict: false });
 
-  const [draftId] = useState(() => `draft_event_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
+  const [draftId] = useState(() => `draft_event_${crypto.randomUUID()}`);
   const roomId = editId ? `event_${editId}` : draftId;
 
   return (

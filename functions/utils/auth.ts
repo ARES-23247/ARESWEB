@@ -200,7 +200,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                                     const values = admins
                                         .filter((admin) => admin.id !== null)
                                         .map((admin) => ({
-                                            id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
+                                            id: crypto.randomUUID(),
                                             userId: admin.id as string,
                                             title: "New User Registration",
                                             message: `A new user (${user.name || user.email}) has registered and is pending verification.`,

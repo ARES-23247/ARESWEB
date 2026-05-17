@@ -467,7 +467,7 @@ export const postHandlers = {
             .limit(1)
             .get();
         if (existing) {
-            const suffix = Math.random().toString(36).substring(2, 6);
+            const suffix = crypto.randomUUID().split('-')[0].substring(0, 4);
             slug = `${slug}-${suffix}`;
         }
         const astStr = JSON.stringify(body.ast);

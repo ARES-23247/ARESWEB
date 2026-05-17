@@ -368,7 +368,7 @@ function BlogEditorImpl({ editSlug, userRole, roomId }: { editSlug?: string, use
 export default function BlogEditor({ userRole }: { userRole?: string | unknown }) {
   const { editSlug } = useParams({ strict: false }) as Record<string, string>;
 
-  const [draftId] = useState(() => `draft_blog_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
+  const [draftId] = useState(() => `draft_blog_${crypto.randomUUID()}`);
   const roomId = editSlug ? `blog_${editSlug}` : draftId;
 
   return (

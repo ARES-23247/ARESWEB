@@ -61,7 +61,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       errorMessage.includes("cross-origin") ||
       errorMessage.includes("Blocked a frame");
 
-    const correlationId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const correlationId = crypto.randomUUID().split('-')[0].toUpperCase();
 
     // Extract status code with proper type guards
     const getStatusCode = (err: unknown): number | undefined => {

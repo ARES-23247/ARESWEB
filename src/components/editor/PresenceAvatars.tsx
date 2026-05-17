@@ -30,7 +30,7 @@ export default function PresenceAvatars() {
       // Filter out ourselves if we want, or just show all connected users
       const allOthers = states.filter((state) => state.user);
       setOthers(allOthers.map((s) => ({
-        connectionId: s.user!.id || Math.random().toString(),
+        connectionId: s.user!.id || crypto.randomUUID(),
         info: {
           name: s.user!.name,
           avatar: s.user!.avatar,

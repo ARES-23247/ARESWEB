@@ -511,7 +511,7 @@ function DocsEditorImpl({ editSlug, userRole, roomId }: { editSlug?: string, use
 export default function DocsEditor({ userRole }: { userRole?: string | unknown }) {
   const { editSlug } = useParams({ strict: false }) as Record<string, string>;
 
-  const [draftId] = useState(() => `draft_doc_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`);
+  const [draftId] = useState(() => `draft_doc_${crypto.randomUUID()}`);
   const roomId = editSlug ? `doc_${editSlug}` : draftId;
 
   return (

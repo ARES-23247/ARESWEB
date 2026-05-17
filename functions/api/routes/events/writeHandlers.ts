@@ -207,7 +207,7 @@ export const writeHandlers = {
             const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
             if (user?.role !== "admin") {
-                const revId = `${id}-rev-${Math.random().toString(36).substring(2, 6)}`;
+                const revId = `${id}-rev-${crypto.randomUUID().split('-')[0].substring(0, 4)}`;
                 await db.insert(schema.events)
                     .values({
                         id: revId, title: title || "", category: cat, dateStart: dateStart, dateEnd: dateEnd || null,

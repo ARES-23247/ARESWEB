@@ -355,7 +355,7 @@ const adminApp = _adminRouter.openapi(createVideoRoute, async (c) => {
             fetchedVideoIds.add(videoId);
 
             if (!existingIds.has(videoId)) {
-                const id = `vid_${crypto.randomUUID?.() || Math.random().toString(36).substring(2)}`;
+                const id = `vid_${crypto.randomUUID()}`;
                 
                 const titleStr = (snippet.title || "").toLowerCase();
                 const descStr = (snippet.description || "").toLowerCase();

@@ -123,7 +123,7 @@ export async function notifyByRole(
       const values = chunk
         .filter((row: { id: string | null }) => row.id !== null)
         .map((row: { id: string | null }) => ({
-          id: (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : `notif-${Math.random()}`,
+          id: crypto.randomUUID(),
           userId: row.id as string,
           title: payload.title,
           message: payload.message,
