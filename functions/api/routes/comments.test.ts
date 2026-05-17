@@ -108,7 +108,7 @@ describe('Comments Routes', () => {
       expectedPatterns.forEach(pattern => {
         const hasMatchingRoute = paths.some((path: string) => {
           // Convert parameterized patterns to match Hono's format
-          const normalizedPattern = pattern.replace('{', ':').replace('}', '');
+          const normalizedPattern = pattern.replace(/{/g, ':').replace(/}/g, '');
           return path.includes(normalizedPattern.split(':')[0]);
         });
         expect(hasMatchingRoute).toBe(true);

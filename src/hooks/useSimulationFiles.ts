@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { GITHUB_REPO } from '../utils/constants';
 
@@ -99,7 +99,7 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
 
   const handleLoadGithubSim = useCallback(async (sim: GithubSim, setFiles: (files: Record<string, string>) => void, setActiveFile: (file: string) => void) => {
     try {
-      const folder = sim.path.replace('./', '');
+      const folder = sim.path.replace(/^\.\//, '');
       const filename = `${folder}/index.tsx`;
       const res = await fetch(`${GITHUB_REPO.rawUrl}/src/sims/${filename}`);
       if (!res.ok) throw new Error('Not found');
