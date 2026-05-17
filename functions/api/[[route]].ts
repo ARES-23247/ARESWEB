@@ -179,7 +179,12 @@ apiRouter.use("*", async (c, next) => {
       if (!origin) return true;
       const trusted = ["http://localhost:5173", "http://localhost:8788", "https://aresfirst.org"];
       if (trusted.includes(origin)) return true;
-      return origin.endsWith(".pages.dev") || origin.endsWith(".aresfirst.org");
+      try {
+        const url = new URL(origin);
+        return url.hostname === "aresfirst.org" || url.hostname.endsWith(".aresfirst.org") || url.hostname.endsWith(".pages.dev");
+      } catch (e) {
+        return false;
+      }
     }
   })(c, next);
 });

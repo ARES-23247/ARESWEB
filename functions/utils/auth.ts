@@ -65,7 +65,15 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
             const s = env.BETTER_AUTH_SECRET as string | undefined;
             if (s) return s;
             // SEC-01: Allow a dev-only fallback ONLY on localhost
-            const isLocal = requestUrl && (requestUrl.includes("localhost") || requestUrl.includes("127.0.0.1"));
+            let isLocal = false;
+            if (requestUrl) {
+                try {
+                    const urlObj = new URL(requestUrl);
+                    isLocal = urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1";
+                } catch (e) {
+                    isLocal = false;
+                }
+            }
             if (isLocal) {
                 console.warn("[AUTH] BETTER_AUTH_SECRET not set — using dev-only fallback. DO NOT deploy like this.");
                 return "ares-local-dev-secret-do-not-use-in-production";
