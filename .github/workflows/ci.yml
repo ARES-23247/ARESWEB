@@ -362,13 +362,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
+          cache: "pnpm"
 
-      - name: Install Wrangler
-        run: npm install -g wrangler
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -381,8 +387,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          wrangler d1 migrations apply DB --remote
-          wrangler pages deploy dist --project-name aresweb
+          npx wrangler d1 migrations apply DB --remote
+          npx wrangler pages deploy dist --project-name aresweb
 
       - name: Post Deploy Status
         run: |
