@@ -157,8 +157,9 @@ describe('security utility - validateIdParam', () => {
     expect(validateIdParam('test--slug')).toBeNull();
   });
 
-  it('should reject uppercase in slugs', () => {
-    expect(validateIdParam('Test-Slug')).toBeNull();
+  it('should accept uppercase and mixed case in slugs/IDs', () => {
+    expect(validateIdParam('Test-Slug')).toBe('Test-Slug');
+    expect(validateIdParam('T498TNu5BZoOJhgWsgGg82wNGBEK1wRK')).toBe('T498TNu5BZoOJhgWsgGg82wNGBEK1wRK');
   });
 
   it('should reject undefined', () => {
