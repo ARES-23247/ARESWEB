@@ -199,10 +199,14 @@ jobs:
           restore-keys: |
             eslint-${{ runner.os }}-
 
-      - name: Run Fast Checks in Parallel
+      - name: Run Fast Checks sequentially (prevents CPU/memory swapping on 2-core GHA)
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-        run: npx concurrently "pnpm run typecheck" "pnpm run lint" "pnpm run test" "pnpm run audit:security"
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: |
+          pnpm run audit:security
+          pnpm run test
+          pnpm run lint
+          pnpm run typecheck
 
   # Full E2E test suite - informational only
   e2e-playwright:
