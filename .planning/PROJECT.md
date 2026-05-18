@@ -59,7 +59,13 @@ ARESWEB is a brownfield project built heavily on Cloudflare Pages and D1 using H
 - ✓ **Milestone v8.2 (Native Photo Albums & Tournaments)** — Built native photo album system with dual display layouts (masonry/carousel), Google Photos bulk ingestion, tournament management with FTC Events API match sync, and robot fleet documentation with spec cards.
 
 ### Active
-- *(No active milestone — ready for next planning cycle)*
+- **Milestone v8.3: Tournament Awards & Robot Version Tracking** (In Progress)
+  - Goal: Deliver structured tournament awards integration, seasonal robot version tracking, YouTube match video discovery, and fine-grained React Query mutation hook refactoring.
+  - Target features:
+    - Cross-reference tournament awards with the team awards database.
+    - Track robot version increments (e.g. "Phobos 1.0", "Phobos 1.1") with specs diffing.
+    - Integrate YouTube match video linking and inline visual search/discovery player.
+    - Refactor form state management to use React Query mutations.
 
 ### Recently Shipped
 - **v8.2 Native Photo Albums & Tournaments** (May 2026): Native album CRUD, dual-mode display, drag-and-drop media management, tournament/robot pages with FTC Events API integration.
