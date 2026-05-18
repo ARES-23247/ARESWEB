@@ -182,7 +182,7 @@ apiRouter.use("*", async (c, next) => {
       try {
         const url = new URL(origin);
         return url.hostname === "aresfirst.org" || url.hostname.endsWith(".aresfirst.org") || url.hostname.endsWith(".pages.dev");
-      } catch (e) {
+      } catch {
         return false;
       }
     }

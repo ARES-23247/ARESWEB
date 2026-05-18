@@ -70,7 +70,7 @@ export const getAuth = (db: D1Database, env: Record<string, unknown>, requestUrl
                 try {
                     const urlObj = new URL(requestUrl);
                     isLocal = urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1";
-                } catch (e) {
+                } catch {
                     isLocal = false;
                 }
             }

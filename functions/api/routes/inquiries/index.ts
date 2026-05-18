@@ -1,4 +1,4 @@
-import { eq, desc, inArray, and, sql, gt } from "drizzle-orm";
+import { eq, desc, inArray, and, sql, gt, or } from "drizzle-orm";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
 
@@ -142,7 +142,10 @@ export const finalInquiriesRouter = inquiriesRouter.openapi(submitInquiryRoute, 
         const { id } = c.req.valid("param");
         const db = getDb(c);
 
-        await db.delete(schema.inquiries).where(eq(schema.inquiries.id, id)).run();
+        await db.update(schema.inquiries)
+            .set({ isDeleted: 1 })
+            .where(eq(schema.inquiries.id, id))
+            .run();
         c.executionCtx.waitUntil(logAuditAction(c, "inquiry_deleted", "inquiries", id, "Inquiry deleted"));
 
         return c.json({ success: true }, 200);
@@ -174,6 +177,7 @@ function shouldMaskData(user: { role: string; memberType?: string | null }) {
  * Fetches inquiries from the database with optional filtering.
  */
 async function fetchInquiries(db: DrizzleDB, limit: number, offset: number, filterOutreach: boolean) {
+    const baseCondition = eq(schema.inquiries.isDeleted, 0);
     const dbQuery = db.select({
         id: schema.inquiries.id,
         type: schema.inquiries.type,
@@ -186,13 +190,14 @@ async function fetchInquiries(db: DrizzleDB, limit: number, offset: number, filt
         notes: schema.inquiries.notes
     })
         .from(schema.inquiries)
+        .where(
+            filterOutreach
+                ? and(baseCondition, inArray(schema.inquiries.type, ["outreach", "support"]))
+                : baseCondition
+        )
         .orderBy(desc(schema.inquiries.createdAt))
         .limit(limit)
         .offset(offset);
-
-    if (filterOutreach) {
-        dbQuery.where(inArray(schema.inquiries.type, ["outreach", "support"]));
-    }
 
     return dbQuery.all();
 }
@@ -270,7 +275,8 @@ async function ensureNotDuplicateSubmission(
         .from(schema.inquiries)
         .where(and(
             eq(schema.inquiries.type, type),
-            gt(schema.inquiries.createdAt, sixtySecondsAgo)
+            gt(schema.inquiries.createdAt, sixtySecondsAgo),
+            eq(schema.inquiries.isDeleted, 0)
         ))
         .all();
 
@@ -404,7 +410,10 @@ export async function purgeOldInquiries(db: DrizzleDB, days: number) {
     const subquery = db.select({ id: schema.inquiries.id })
         .from(schema.inquiries)
         .where(and(
-            inArray(schema.inquiries.status, ['resolved', 'rejected']),
+            or(
+                inArray(schema.inquiries.status, ['resolved', 'rejected']),
+                eq(schema.inquiries.isDeleted, 1)
+            ),
             sql`${schema.inquiries.createdAt} < ${cutoffDate}`
         ))
         .limit(QUERY_LIMITS.MAX_PAGE);
