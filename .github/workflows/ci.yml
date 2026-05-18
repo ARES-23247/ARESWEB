@@ -180,9 +180,71 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Fast checks run in parallel using concurrently to save setup time
-  fast-checks:
-    name: Fast Checks
+  # 1. Run unit/integration tests with Vitest
+  fast-test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Vitest
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: pnpm run test
+
+  # 2. Run ESLint code checks
+  fast-lint:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('**/*.{ts,tsx}') }}
+          restore-keys: |
+            eslint-${{ runner.os }}-
+
+      - name: Run ESLint
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: pnpm run lint
+
+  # 3. Run TypeScript compiler typechecks
+  fast-typecheck:
+    name: Type Checking
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -210,22 +272,35 @@ jobs:
           restore-keys: |
             tsbuildinfo-${{ runner.os }}-
 
-      - name: Cache ESLint
-        uses: actions/cache@v4
-        with:
-          path: .eslintcache
-          key: eslint-${{ runner.os }}-${{ hashFiles('**/*.{ts,tsx}') }}
-          restore-keys: |
-            eslint-${{ runner.os }}-
-
-      - name: Run Fast Checks sequentially (prevents CPU/memory swapping on 2-core GHA)
+      - name: Run Type Checking
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: |
-          pnpm run audit:security
-          pnpm run test
-          pnpm run lint
-          pnpm run typecheck
+        run: pnpm run typecheck
+
+  # 4. Run security audit
+  fast-security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Security Audit
+        run: pnpm run audit:security
 
   # Full E2E test suite - informational only
   e2e-playwright:
@@ -315,7 +390,7 @@ jobs:
   test-gate:
     name: Test Gate
     runs-on: ubuntu-latest
-    needs: [fast-checks, deploy-preview, smoke-test]
+    needs: [fast-test, fast-lint, fast-typecheck, fast-security, deploy-preview, smoke-test]
     # Always run so we can check the status of dependent jobs
     if: always()
     outputs:
@@ -325,16 +400,25 @@ jobs:
         id: check
         run: |
           # Critical tests must pass for production deploy
-          # - fast-checks: lint, typecheck, tests, security
+          # - fast-test: unit/integration tests
+          # - fast-lint: code quality checks
+          # - fast-typecheck: compiler type safety
+          # - fast-security: package vulnerability checks
           # - deploy-preview: deploy preview
           # - smoke-test: smoke tests
           # Other E2E tests (playwright shards) are informational
-          if [ "${{ needs.fast-checks.result }}" == "success" ] && \
+          if [ "${{ needs.fast-test.result }}" == "success" ] && \
+             [ "${{ needs.fast-lint.result }}" == "success" ] && \
+             [ "${{ needs.fast-typecheck.result }}" == "success" ] && \
+             [ "${{ needs.fast-security.result }}" == "success" ] && \
              [ "${{ needs.deploy-preview.result }}" == "success" ] && \
              [ "${{ needs.smoke-test.result }}" == "success" ]; then
             echo "all-passed=true" >> $GITHUB_OUTPUT
             echo "✅ Critical tests passed!"
-            echo "  fast-checks: ${{ needs.fast-checks.result }}"
+            echo "  fast-test: ${{ needs.fast-test.result }}"
+            echo "  fast-lint: ${{ needs.fast-lint.result }}"
+            echo "  fast-typecheck: ${{ needs.fast-typecheck.result }}"
+            echo "  fast-security: ${{ needs.fast-security.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test: ${{ needs.smoke-test.result }}"
             echo ""
@@ -343,7 +427,10 @@ jobs:
           else
             echo "all-passed=false" >> $GITHUB_OUTPUT
             echo "❌ Critical tests failed:"
-            echo "  fast-checks: ${{ needs.fast-checks.result }}"
+            echo "  fast-test: ${{ needs.fast-test.result }}"
+            echo "  fast-lint: ${{ needs.fast-lint.result }}"
+            echo "  fast-typecheck: ${{ needs.fast-typecheck.result }}"
+            echo "  fast-security: ${{ needs.fast-security.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             echo "  smoke-test: ${{ needs.smoke-test.result }}"
             exit 1
