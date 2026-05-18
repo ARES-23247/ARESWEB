@@ -84,7 +84,26 @@ jobs:
         run: |
           npx wrangler d1 migrations apply DB --env preview --remote
           npx wrangler d1 execute DB --env preview --remote --file=scripts/seed-test-data.sql
-          DEPLOYMENT_URL=$(npx wrangler pages deploy dist --project-name aresweb --branch="${{ github.head_ref || format('master-ci-{0}', github.sha) }}" | grep -oP 'https://.*?\.pages\.dev' | head -1)
+          
+          # Try to deploy with wrangler up to 3 times in case of transient Cloudflare Edge failures
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt of 3 to deploy to Cloudflare Pages..."
+            OUTPUT=$(npx wrangler pages deploy dist --project-name aresweb --branch="${{ github.head_ref || format('master-ci-{0}', github.sha) }}" 2>&1)
+            DEPLOYMENT_URL=$(echo "$OUTPUT" | grep -oP 'https://.*?\.pages\.dev' | head -1)
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "✓ Successfully deployed to: $DEPLOYMENT_URL"
+              break
+            fi
+            echo "❌ Deployment attempt failed with output:"
+            echo "$OUTPUT"
+            if [ $attempt -lt 3 ]; then
+              echo "Waiting 10 seconds before next attempt..."
+              sleep 10
+            else
+              echo "Failed to deploy after 3 attempts."
+              exit 1
+            fi
+          done
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "Deployed to: $DEPLOYMENT_URL"
 
@@ -201,7 +220,7 @@ jobs:
 
       - name: Run Fast Checks sequentially (prevents CPU/memory swapping on 2-core GHA)
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: |
           pnpm run audit:security
           pnpm run test
