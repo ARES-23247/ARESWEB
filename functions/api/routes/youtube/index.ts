@@ -90,7 +90,7 @@ const routes = adminApp
     const frontendUrl = new URL(c.req.url).origin;
     const dashboardPath = "/dashboard/youtube";
 
-    console.log("[OAuth Callback] Starting callback handler", { hasCode: !!code, hasError: !!error });
+    console.debug("[OAuth Callback] Starting callback handler", { hasCode: !!code, hasError: !!error });
 
     if (error) {
       console.error("[OAuth Callback] Google returned error:", error);
@@ -103,7 +103,7 @@ const routes = adminApp
     }
 
     const redirectUri = `${new URL(c.req.url).origin}/api/youtube/callback`;
-    console.log("[OAuth Callback] Exchanging code for tokens", { redirectUri, hasClientId: !!env.YOUTUBE_CLIENT_ID, hasClientSecret: !!env.YOUTUBE_CLIENT_SECRET });
+    console.debug("[OAuth Callback] Exchanging code for tokens", { redirectUri, hasClientId: !!env.YOUTUBE_CLIENT_ID, hasClientSecret: !!env.YOUTUBE_CLIENT_SECRET });
 
     let tokenResponse: Response;
     try {
@@ -134,7 +134,7 @@ const routes = adminApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tokenData: any = await tokenResponse.json();
     const grantedScope = tokenData.scope || "";
-    console.log("[OAuth Callback] Token exchange successful", {
+    console.debug("[OAuth Callback] Token exchange successful", {
       hasAccessToken: !!tokenData.access_token,
       hasRefreshToken: !!tokenData.refresh_token,
       expiresIn: tokenData.expires_in,
@@ -163,7 +163,7 @@ const routes = adminApp
       
       const userInfo = await userInfoRes.json() as { email?: string };
       const authorizedEmail = env.AUTHORIZED_GOOGLE_ACCOUNT || "ares23247wv@gmail.com";
-      console.log("[OAuth Callback] Email verification", { receivedEmail: userInfo.email, expectedEmail: authorizedEmail, match: userInfo.email === authorizedEmail });
+      console.debug("[OAuth Callback] Email verification", { receivedEmail: userInfo.email, expectedEmail: authorizedEmail, match: userInfo.email === authorizedEmail });
       
       if (userInfo.email !== authorizedEmail) {
         console.warn(`[OAuth Callback] BLOCKED: Unauthorized account ${userInfo.email}. Expected ${authorizedEmail}.`);
@@ -177,7 +177,7 @@ const routes = adminApp
     const db = getDb(c);
 
     if (tokenData.refresh_token) {
-      console.log("[OAuth Callback] Storing refresh token in D1...");
+      console.debug("[OAuth Callback] Storing refresh token in D1...");
       // Upsert the refresh token in the settings table
       await db
         .insert(settings)
@@ -194,7 +194,7 @@ const routes = adminApp
           },
         })
         .execute();
-      console.log("[OAuth Callback] Refresh token stored successfully");
+      console.debug("[OAuth Callback] Refresh token stored successfully");
 
       if (c.executionCtx) {
          c.executionCtx.waitUntil(logAuditAction(c, "youtube_auth", "settings", "youtube_refresh_token", "Authorized YouTube Resumable Uploads"));
@@ -207,7 +207,7 @@ const routes = adminApp
     if (tokenData.access_token) {
       const expiresInSec = tokenData.expires_in || 3600;
       const expiresAt = new Date(Date.now() + expiresInSec * 1000).toISOString();
-      console.log("[OAuth Callback] Caching access token", { expiresAt });
+      console.debug("[OAuth Callback] Caching access token", { expiresAt });
       
       await db
         .insert(settings)
@@ -222,7 +222,7 @@ const routes = adminApp
         .execute();
     }
 
-    console.log("[OAuth Callback] Complete — redirecting to dashboard with success");
+    console.debug("[OAuth Callback] Complete — redirecting to dashboard with success");
     return c.redirect(`${frontendUrl}${dashboardPath}?youtube=connected`);
   })
   .openapi(getResumableUrlRoute, async (c) => {

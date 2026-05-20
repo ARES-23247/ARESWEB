@@ -42,7 +42,7 @@ export default class YjsServer implements Party.Server {
         // See: https://docs.partykit.io/reference/y-partykit-api/#persistence
         persist: { mode: "snapshot" },
       });
-      console.log(`[YjsServer] successfully connected and persisted room: ${roomId}`);
+      console.debug(`[YjsServer] successfully connected and persisted room: ${roomId}`);
     } catch (e) {
       console.error(`[YjsServer] Error during onConnect for room ${roomId}:`, e);
       throw e;
@@ -53,13 +53,13 @@ export default class YjsServer implements Party.Server {
   async onMessage(message: string | ArrayBuffer, _connection: Party.Connection) {
     const objMessage = message as unknown as Record<string, unknown>;
     const constructorName = objMessage && objMessage.constructor ? (objMessage.constructor as { name: string }).name : 'null';
-    console.log(`[PartyKit-onMessage] message type: ${typeof message}, proto: ${Object.prototype.toString.call(message)}, constructor: ${constructorName}`);
+    console.debug(`[PartyKit-onMessage] message type: ${typeof message}, proto: ${Object.prototype.toString.call(message)}, constructor: ${constructorName}`);
     if (message instanceof ArrayBuffer) {
-      console.log(`[PartyKit-onMessage] ArrayBuffer byteLength:`, message.byteLength);
+      console.debug(`[PartyKit-onMessage] ArrayBuffer byteLength:`, message.byteLength);
     } else if (message instanceof Uint8Array) {
-      console.log(`[PartyKit-onMessage] Uint8Array length:`, message.length);
+      console.debug(`[PartyKit-onMessage] Uint8Array length:`, message.length);
     } else if (typeof message === "object" && message !== null) {
-      console.log(`[PartyKit-onMessage] Keys:`, Object.keys(message));
+      console.debug(`[PartyKit-onMessage] Keys:`, Object.keys(message));
     }
   }
 }

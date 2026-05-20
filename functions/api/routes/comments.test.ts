@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+import { createMockDb, createTestEnv, createTestDbMiddleware, mockExecutionContext } from '../../test/test-env';
 // Extend globalThis for test mocks
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
@@ -18,10 +18,7 @@ import * as authUtils from '../middleware/auth';
 // Import commentsRouter
 import commentsRouter from './comments';
 
-const mockExecutionContext = {
-  waitUntil: vi.fn(),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Comments Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];

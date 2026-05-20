@@ -8,17 +8,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import authRouter from './auth';
-import { createMockDb, createTestEnv, mockSingleResult, createTestDbMiddleware } from '../../test/test-env';
+import { createMockDb, createTestEnv, mockSingleResult, createTestDbMiddleware, mockExecutionContext } from '../../test/test-env';
 import { AppEnv } from '../middleware';
 import { globalErrorHandler } from '../middleware/errorHandler';
 import type { SessionUser } from '../middleware/utils';
 import * as authUtils from '../middleware/auth';
 
-// Create a mock execution context for tests
-const mockExecutionContext = {
-  waitUntil: vi.fn(),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Auth Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];

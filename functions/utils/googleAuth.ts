@@ -44,7 +44,7 @@ function sleep(ms: number): Promise<void> {
 export async function clearCachedOAuthToken(db: DrizzleDB): Promise<void> {
   await db.delete(settings).where(eq(settings.key, "oauth_access_token")).execute();
   await db.delete(settings).where(eq(settings.key, "oauth_token_expires_at")).execute();
-  console.log("[googleAuth] Cleared cached OAuth token (forced refresh on next call)");
+  console.debug("[googleAuth] Cleared cached OAuth token (forced refresh on next call)");
 }
 
 export async function getUnifiedOAuthToken(
@@ -98,7 +98,7 @@ export async function getUnifiedOAuthToken(
       }
     }
   } else {
-    console.log("[googleAuth] Force refresh requested — skipping cache");
+    console.debug("[googleAuth] Force refresh requested — skipping cache");
   }
 
   // Step 3: Fetch refresh token from D1

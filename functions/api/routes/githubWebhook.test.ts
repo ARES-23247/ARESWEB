@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import { createTestEnv } from '../../test/test-env';
+import { createTestEnv, mockExecutionContext } from '../../test/test-env';
 import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
@@ -28,11 +28,7 @@ vi.mock('../../utils/zulipSync', () => ({
 import githubWebhookRouter from './githubWebhook';
 import { sendZulipMessage } from '../../utils/zulipSync';
 
-// Mock execution context for tests
-const mockExecutionContext = {
-  waitUntil: vi.fn().mockResolvedValue(undefined),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('GitHub Webhook Routes', () => {
   const testWebhookSecret = 'test-webhook-secret';

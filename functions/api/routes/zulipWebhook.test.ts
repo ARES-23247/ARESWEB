@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import { createTestEnv } from '../../test/test-env';
+import { createTestEnv, mockExecutionContext } from '../../test/test-env';
 import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
@@ -65,11 +65,7 @@ import zulipWebhookRouter from './zulipWebhook';
 import { sendZulipMessage } from '../../utils/zulipSync';
 import * as middleware from '../middleware';
 
-// Mock execution context for tests
-const mockExecutionContext = {
-  waitUntil: vi.fn().mockResolvedValue(undefined),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Zulip Webhook Routes', () => {
   const testWebhookToken = 'test-zulip-webhook-token';

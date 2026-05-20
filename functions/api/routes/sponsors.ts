@@ -108,7 +108,7 @@ export const sponsorsRouter = _sponsorsRouter
           .where(eq(schema.sponsors.id, sponsorId))
           .get();
 
-        if (!sponsorRow) {
+        if (!sponsorRow || sponsorRow.isActive !== 1) {
           throw new ApiError("Sponsor not found", 403);
         }
 
@@ -212,10 +212,14 @@ export const sponsorsRouter = _sponsorsRouter
         const db = getDb(c);
 
         try {
-          await db.delete(schema.sponsors).where(eq(schema.sponsors.id, params.id)).run();
+          await db
+            .update(schema.sponsors)
+            .set({ isActive: 0 })
+            .where(eq(schema.sponsors.id, params.id))
+            .run();
         } catch (err) {
           console.error("FAILED_SPONSOR_DELETE:", err);
-          throw new ApiError("Failed to permanently remove sponsor.", 500, "SPONSOR_DELETE_FAILED");
+          throw new ApiError("Failed to remove sponsor.", 500, "SPONSOR_DELETE_FAILED");
         }
         c.executionCtx.waitUntil(logAuditAction(c, "delete_sponsor", "sponsors", params.id));
 

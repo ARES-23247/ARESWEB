@@ -14,10 +14,12 @@ export const Route = createFileRoute("/onshape/")({
 	component: OnshapePage,
 });
 
+import { logger } from "../../utils/logger";
+
 function OnshapePage() {
 	const handleDocumentClick = (documentId: string) => {
 		// Navigate to document detail view (future enhancement)
-		console.log("View document:", documentId);
+		logger.debug("View document:", documentId);
 	};
 
 	return (

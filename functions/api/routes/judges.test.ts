@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tests for judges route handlers
  *
  * Tests judge access endpoints including auth, admin checks,
@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono, Context, Next } from 'hono';
-import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+import { createMockDb, createTestEnv, createTestDbMiddleware, mockExecutionContext } from '../../test/test-env';
 import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
@@ -60,10 +60,7 @@ vi.mock('../middleware/auth', async () => {
 // Import judgesRouter after mocking
 import judgesRouter from './judges';
 
-const mockExecutionContext = {
-  waitUntil: vi.fn(),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Judges Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
@@ -329,7 +326,7 @@ describe('Judges Routes', () => {
 
       // Mock valid judge code
       const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
-      mockAll.mockResolvedValue({
+      mockAll.mockResolvedValueOnce({
         results: [{ code: 'JUDGE123' }],
         meta: { duration: 1, last_row_id: null, changes: 0, served_by: 'test' }
       } as unknown as D1Result);

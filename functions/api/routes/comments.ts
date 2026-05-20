@@ -13,18 +13,32 @@ import { ApiError } from "../middleware/errorHandler";
 
 const _commentsRouter = new OpenAPIHono<AppEnv>();
 
-_commentsRouter.use("/{targetType}/{targetId}", ensureAuth);
+_commentsRouter.use("/:targetType/:targetId", async (c, next) => {
+    if (c.req.method === "POST") return ensureAuth(c, next);
+    return next();
+});
 
-_commentsRouter.use("/{id}", async (c, next) => {
+_commentsRouter.use("/:id", async (c, next) => {
     if (c.req.method === "PATCH" || c.req.method === "DELETE") return ensureAuth(c, next);
     return next();
 });
 
 // WR-11: Add origin integrity check to prevent CSRF attacks on state-changing operations
-_commentsRouter.use("/submit/*", originIntegrityMiddleware());
-_commentsRouter.use("/submit/*", persistentRateLimitMiddleware(10, 60));
+_commentsRouter.use("/:targetType/:targetId", (c, next) => {
+    if (c.req.method === "POST") {
+        return originIntegrityMiddleware()(c, next);
+    }
+    return next();
+});
 
-_commentsRouter.use("/{id}", (c, next) => {
+_commentsRouter.use("/:targetType/:targetId", (c, next) => {
+    if (c.req.method === "POST") {
+        return persistentRateLimitMiddleware(10, 60)(c, next);
+    }
+    return next();
+});
+
+_commentsRouter.use("/:id", (c, next) => {
     if (c.req.method === "POST" || c.req.method === "PUT" || c.req.method === "DELETE") {
         return persistentRateLimitMiddleware(10, 60)(c, next);
     }
@@ -32,7 +46,7 @@ _commentsRouter.use("/{id}", (c, next) => {
 });
 
 // Also apply origin integrity to update and delete operations
-_commentsRouter.use("/{id}", (c, next) => {
+_commentsRouter.use("/:id", (c, next) => {
     if (c.req.method === "PATCH" || c.req.method === "DELETE" || c.req.method === "PUT") {
         return originIntegrityMiddleware()(c, next);
     }

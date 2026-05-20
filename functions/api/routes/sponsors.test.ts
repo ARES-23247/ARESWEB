@@ -8,7 +8,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono, Context, Next } from 'hono';
-import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+import { createMockDb, createTestEnv, createTestDbMiddleware, mockExecutionContext, mockMultiResult } from '../../test/test-env';
+import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
   var __mockSessionUser: import('../middleware').SessionUser | null;
@@ -56,10 +57,7 @@ vi.mock('../middleware/auth', async () => {
 // Import sponsorsRouter after mocking
 import sponsorsRouter from './sponsors';
 
-const mockExecutionContext = {
-  waitUntil: vi.fn(),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Sponsors Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
@@ -96,7 +94,8 @@ describe('Sponsors Routes', () => {
   });
 
   const createTestApp = () => {
-    const app = new Hono<AppEnv>()
+    const app = new Hono<AppEnv>();
+    app.onError(globalErrorHandler);
     app.use('*', createTestDbMiddleware());
     app.route('/api/sponsors', sponsorsRouter);
     return app;
@@ -135,21 +134,81 @@ describe('Sponsors Routes', () => {
       expect(_res.status).not.toBe(401);
     });
 
-    it('should allow access to ROI dashboard with valid token', async () => {
+    it('should allow access to ROI dashboard with valid token for an active sponsor', async () => {
       globalThis.__mockSessionUser = null;
       const app = createTestApp();
+
+      // 1. First Drizzle query (D1 .all()): Fetch token from sponsorTokens
+      const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
+      mockAll.mockResolvedValueOnce(mockMultiResult([{ sponsorId: 'sponsor-123' }]));
+
+      // 2. Second Drizzle query (D1 .all() under the hood for .get()): Fetch active sponsor details
+      mockAll.mockResolvedValueOnce(mockMultiResult([{
+        id: 'sponsor-123',
+        name: 'Active Sponsor',
+        tier: 'Titanium',
+        logo_url: 'logo.png',
+        website_url: 'https://sponsor.com',
+        is_active: 1,
+        created_at: '2026-05-19T00:00:00.000Z',
+      }]));
+
+      // 3. Third Drizzle query (D1 .all()): Fetch metrics
+      mockAll.mockResolvedValueOnce(mockMultiResult([]));
 
       const testEnv = createTestEnv({
         DB: mockDb as AppEnv['Bindings']['DB'],
         DEV_BYPASS: 'false',
       });
 
-      const req = new Request('http://localhost/api/sponsors/roi/test-token-123');
-
+      const req = new Request('http://localhost/api/sponsors/roi/active-token-123', {
+        headers: {
+          'x-test-bypass-auth': 'true'
+        }
+      });
       const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
 
-      // Token-based auth - might fail for invalid token but not 401
-      expect(_res.status).not.toBe(401);
+      expect(_res.status).toBe(200);
+      const json = await _res.json() as { sponsor: { name: string }; metrics: unknown[] };
+      expect(json.sponsor.name).toBe('Active Sponsor');
+      expect(json.metrics).toEqual([]);
+    });
+
+    it('should reject access to ROI dashboard for a soft-deleted sponsor even with valid token', async () => {
+      globalThis.__mockSessionUser = null;
+      const app = createTestApp();
+
+      // 1. First Drizzle query (D1 .all()): Fetch token from sponsorTokens
+      const mockAll = vi.mocked((mockDb as { _mockAll: ReturnType<typeof vi.fn> })._mockAll);
+      mockAll.mockResolvedValueOnce(mockMultiResult([{ sponsorId: 'sponsor-123' }]));
+
+      // 2. Second Drizzle query (D1 .all() under the hood for .get()): Fetch inactive sponsor details (isActive = 0)
+      mockAll.mockResolvedValueOnce(mockMultiResult([{
+        id: 'sponsor-123',
+        name: 'Inactive Sponsor',
+        tier: 'Gold',
+        logo_url: null,
+        website_url: null,
+        is_active: 0, // soft-deleted!
+        created_at: '2026-05-19T00:00:00.000Z',
+      }]));
+
+      const testEnv = createTestEnv({
+        DB: mockDb as AppEnv['Bindings']['DB'],
+        DEV_BYPASS: 'false',
+      });
+
+      const req = new Request('http://localhost/api/sponsors/roi/deleted-token-123', {
+        headers: {
+          'x-test-bypass-auth': 'true'
+        }
+      });
+      const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
+
+      // Throws Sponsor not found with 403 status code
+      expect(_res.status).toBe(403);
+      const json = await _res.json() as { error: string };
+      expect(json.error).toBe('Sponsor not found');
     });
   });
 

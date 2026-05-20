@@ -14,6 +14,9 @@ interface AresSelectProps {
 }
 
 export function AresSelect({ field, label, options, required }: AresSelectProps) {
+  const hasError = !!(field.state.meta.errors && field.state.meta.errors.length > 0);
+  const errorId = `${field.name}-error`;
+
   return (
     <div className="w-full">
       <label htmlFor={field.name} className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
@@ -25,6 +28,8 @@ export function AresSelect({ field, label, options, required }: AresSelectProps)
         value={field.state.value as string}
         onBlur={field.handleBlur}
         onChange={(e) => field.handleChange(e.target.value)}
+        aria-invalid={hasError ? "true" : "false"}
+        aria-describedby={hasError ? errorId : undefined}
         className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-white focus:border-ares-red focus:outline-none focus:ring-1 focus:ring-ares-red transition-all appearance-none"
       >
         <option value="" disabled>Select an option</option>
@@ -34,8 +39,8 @@ export function AresSelect({ field, label, options, required }: AresSelectProps)
           </option>
         ))}
       </select>
-      {field.state.meta.errors && field.state.meta.errors.length > 0 && (
-        <div className="mt-2 text-xs font-medium text-ares-red">
+      {hasError && (
+        <div id={errorId} role="alert" className="mt-2 text-xs font-medium text-ares-red">
           {field.state.meta.errors.join(", ")}
         </div>
       )}

@@ -1,0 +1,1039 @@
+import { sqliteTable, index, uniqueIndex, text, integer, real, blob, primaryKey } from "drizzle-orm/sqlite-core"
+  import { sql } from "drizzle-orm"
+
+export const user = sqliteTable("user", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	email: text().notNull(),
+	emailVerified: integer({ mode: "boolean" }).notNull(),
+	image: text(),
+	createdAt: integer({ mode: "timestamp_ms" }).notNull(),
+	updatedAt: integer({ mode: "timestamp_ms" }).notNull(),
+	role: text().default("user"),
+	twoFactorEnabled: integer({ mode: "boolean" }).default(false),
+	twoFactorSecret: text(),
+	twoFactorBackupCodes: text(),
+},
+(table) => [
+	index("idx_user_role").on(table.role),
+	index("idx_user_email").on(table.email),
+]);
+
+export const session = sqliteTable("session", {
+	id: text().primaryKey(),
+	expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+	token: text().notNull(),
+	createdAt: integer({ mode: "timestamp_ms" }).notNull(),
+	updatedAt: integer({ mode: "timestamp_ms" }).notNull(),
+	ipAddress: text(),
+	userAgent: text(),
+	userId: text().notNull().references(() => user.id, { onDelete: "cascade" } ),
+},
+(table) => [
+	index("idx_session_userId").on(table.userId),
+]);
+
+export const account = sqliteTable("account", {
+	id: text().primaryKey(),
+	accountId: text().notNull(),
+	providerId: text().notNull(),
+	userId: text().notNull().references(() => user.id, { onDelete: "cascade" } ),
+	accessToken: text(),
+	refreshToken: text(),
+	idToken: text(),
+	accessTokenExpiresAt: integer({ mode: "timestamp_ms" }),
+	refreshTokenExpiresAt: integer({ mode: "timestamp_ms" }),
+	scope: text(),
+	password: text(),
+	createdAt: integer({ mode: "timestamp_ms" }).notNull(),
+	updatedAt: integer({ mode: "timestamp_ms" }).notNull(),
+},
+(table) => [
+	index("idx_account_userId").on(table.userId),
+]);
+
+export const verification = sqliteTable("verification", {
+	id: text().primaryKey(),
+	identifier: text().notNull(),
+	value: text().notNull(),
+	expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+	createdAt: integer({ mode: "timestamp_ms" }),
+	updatedAt: integer({ mode: "timestamp_ms" }),
+});
+
+export const posts = sqliteTable("posts", {
+	slug: text().primaryKey(),
+	title: text().notNull(),
+	date: text(),
+	snippet: text(),
+	thumbnail: text(),
+	author: text(),
+	cfEmail: text("cf_email"),
+	ast: text().notNull(),
+	contentDraft: text("content_draft"),
+	isDeleted: integer("is_deleted").default(0),
+	status: text().default("published"),
+	revisionOf: text("revision_of"),
+	publishedAt: text("published_at"),
+	isPortfolio: integer("is_portfolio").default(0),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
+	authorAvatar: text("author_avatar"),
+},
+(table) => [
+	index("idx_posts_publishedAt").on(table.publishedAt, table.status, table.isDeleted),
+	index("idx_posts_cf_email").on(table.cfEmail),
+	index("idx_posts_author").on(table.author),
+	index("idx_posts_status").on(table.status, table.isDeleted),
+	index("idx_posts_date").on(table.date),
+	index("idx_posts_season").on(table.seasonId),
+]);
+
+export const postsHistory = sqliteTable("posts_history", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	slug: text().notNull().references(() => posts.slug, { onDelete: "cascade" }),
+	title: text().notNull(),
+	author: text(),
+	thumbnail: text(),
+	snippet: text(),
+	ast: text().notNull(),
+	authorEmail: text("author_email"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+},
+(table) => [
+	index("idx_posts_history_season").on(table.seasonId),
+	index("idx_posts_history_slug").on(table.slug),
+]);
+
+export const events = sqliteTable("events", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	dateStart: text("date_start").notNull(),
+	dateEnd: text("date_end"),
+	location: text(),
+	description: text(),
+	contentDraft: text("content_draft"),
+	coverImage: text("cover_image"),
+	gcalEventId: text("gcal_event_id"),
+	tbaEventKey: text("tba_event_key"),
+	isDeleted: integer("is_deleted").default(0),
+	status: text().default("published"),
+	category: text().default("internal"),
+	isPotluck: integer("is_potluck").default(0),
+	isVolunteer: integer("is_volunteer").default(0),
+	revisionOf: text("revision_of"),
+	publishedAt: text("published_at"),
+	meetingNotes: text("meeting_notes"),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	recurringGroupId: text("recurring_group_id"),
+	rrule: text("rrule"),
+	recurringException: integer("recurring_exception").default(0),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
+	updatedAt: text("updated_at"),
+},
+(table) => [
+	index("idx_events_category").on(table.category),
+	index("idx_events_visibility").on(table.isDeleted, table.status, table.publishedAt, table.dateStart),
+	index("idx_events_date").on(table.dateStart),
+	index("idx_events_status").on(table.status, table.isDeleted),
+	index("idx_events_season").on(table.seasonId),
+]);
+
+export const seasons = sqliteTable("seasons", {
+	startYear: integer("start_year").primaryKey(),
+	endYear: integer("end_year"),
+	challengeName: text("challenge_name").notNull(),
+	robotName: text("robot_name"),
+	robotImage: text("robot_image"),
+	robotDescription: text("robot_description"),
+	robotCadUrl: text("robot_cad_url"),
+	summary: text(),
+	albumUrl: text("album_url"),
+	albumCover: text("album_cover"),
+	status: text().default("published"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const eventSignups = sqliteTable("event_signups", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	bringing: text(),
+	notes: text(),
+	prepHours: real("prep_hours"),
+	attended: integer().default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_signups_user").on(table.userId),
+	index("idx_signups_event").on(table.eventId),
+	uniqueIndex("unique_event_user_signup").on(table.eventId, table.userId),
+]);
+
+export const docs = sqliteTable("docs", {
+	slug: text().primaryKey(),
+	title: text().notNull(),
+	category: text().notNull(),
+	sortOrder: integer("sort_order").default(0),
+	description: text(),
+	content: text().notNull(),
+	contentDraft: text("content_draft"),
+	cfEmail: text("cf_email"),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+	isDeleted: integer("is_deleted").default(0),
+	status: text().default("published"),
+	isPortfolio: integer("is_portfolio").default(0),
+	isExecutiveSummary: integer("is_executive_summary").default(0),
+	displayInAreslib: integer("display_in_areslib").default(0),
+	displayInMathCorner: integer("display_in_math_corner").default(0),
+	displayInScienceCorner: integer("display_in_science_corner").default(0),
+	revisionOf: text("revision_of"),
+	zulipStream: text("zulip_stream"),
+	zulipTopic: text("zulip_topic"),
+},
+(table) => [
+	index("idx_docs_category_sort").on(table.category, table.sortOrder),
+	index("idx_docs_status_deleted").on(table.status, table.isDeleted),
+	index("idx_docs_category").on(table.category),
+]);
+
+export const docsHistory = sqliteTable("docs_history", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	slug: text().notNull().references(() => docs.slug, { onDelete: "cascade" }),
+	title: text(),
+	category: text(),
+	description: text(),
+	content: text(),
+	authorEmail: text("author_email"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_docs_history_slug_created").on(table.slug, table.createdAt),
+	index("idx_docs_history_author").on(table.authorEmail),
+	index("idx_docs_history_slug").on(table.slug),
+]);
+
+export const documentHistory = sqliteTable("document_history", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	roomId: text("room_id").notNull(),
+	content: text().notNull(),
+	createdBy: text("created_by"),
+	createdAt: real("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+},
+(table) => [
+	index("idx_document_history_room").on(table.roomId),
+]);
+
+export const documentContributors = sqliteTable("document_contributors", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	roomId: text("room_id").notNull(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	userName: text("user_name").notNull(),
+	userAvatar: text("user_avatar"),
+	lastContributedAt: real("last_contributed_at").default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+export const docsFeedback = sqliteTable("docs_feedback", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	slug: text().notNull().references(() => docs.slug, { onDelete: "cascade" } ),
+	isHelpful: integer("is_helpful"),
+	comment: text(),
+	isResolved: integer("is_resolved").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_docs_feedback_slug").on(table.slug),
+]);
+
+export const userProfiles = sqliteTable("user_profiles", {
+	userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" } ),
+	firstName: text("first_name"),
+	lastName: text("last_name"),
+	nickname: text(),
+	phone: text(),
+	contactEmail: text("contact_email"),
+	showEmail: integer("show_email").default(0),
+	showPhone: integer("show_phone").default(0),
+	pronouns: text(),
+	gradeYear: text("grade_year"),
+	subteams: text().default("[]"),
+	memberType: text("member_type").default("student"),
+	bio: text(),
+	favoriteFood: text("favorite_food"),
+	dietaryRestrictions: text("dietary_restrictions"),
+	favoriteFirstThing: text("favorite_first_thing"),
+	funFact: text("fun_fact"),
+	colleges: text().default("[]"),
+	employers: text().default("[]"),
+	showOnAbout: integer("show_on_about").default(1),
+	hours: integer("hours").notNull().default(0),
+	favoriteRobotMechanism: text("favorite_robot_mechanism"),
+	preMatchSuperstition: text("pre_match_superstition"),
+	leadershipRole: text("leadership_role"),
+	rookieYear: text("rookie_year"),
+	tshirtSize: text("tshirt_size"),
+	emergencyContactName: text("emergency_contact_name"),
+	emergencyContactPhone: text("emergency_contact_phone"),
+	parentsName: text("parents_name"),
+	parentsEmail: text("parents_email"),
+	studentsName: text("students_name"),
+	studentsEmail: text("students_email"),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_user_profiles_showOnAbout").on(table.showOnAbout),
+	index("idx_user_profiles_memberType").on(table.memberType),
+]);
+
+export const badges = sqliteTable("badges", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	description: text(),
+	icon: text().default("Award"),
+	colorTheme: text("color_theme").default("ares-gold"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const userBadges = sqliteTable("user_badges", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	badgeId: text("badge_id").notNull().references(() => badges.id, { onDelete: "cascade" } ),
+	awardedBy: text("awarded_by"),
+	awardedAt: text("awarded_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_user_badges_badge").on(table.badgeId),
+	index("idx_user_badges_user").on(table.userId),
+]);
+
+export const sponsors = sqliteTable("sponsors", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	tier: text().notNull(),
+	logoUrl: text("logo_url"),
+	websiteUrl: text("website_url"),
+	isActive: integer("is_active").default(1),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const sponsorMetrics = sqliteTable("sponsor_metrics", {
+	id: text().primaryKey(),
+	sponsorId: text("sponsor_id").notNull().references(() => sponsors.id, { onDelete: "cascade" } ),
+	yearMonth: text("year_month").notNull(),
+	impressions: integer().default(0),
+	clicks: integer().default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_sponsor_metrics_sponsor").on(table.sponsorId),
+	uniqueIndex("unique_sponsor_month").on(table.sponsorId, table.yearMonth),
+]);
+
+export const sponsorTokens = sqliteTable("sponsor_tokens", {
+	token: text().primaryKey(),
+	sponsorId: text("sponsor_id").notNull().references(() => sponsors.id, { onDelete: "cascade" } ),
+	createdBy: text("created_by"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_sponsor_tokens_sponsor").on(table.sponsorId),
+]);
+
+export const inquiries = sqliteTable("inquiries", {
+	id: text().primaryKey(),
+	type: text().notNull(),
+	name: text().notNull(),
+	email: text().notNull(),
+	metadata: text(),
+	status: text().default("pending"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	zulipMessageId: text("zulip_message_id"),
+	notes: text(),
+},
+(table) => [
+	index("idx_inquiries_type").on(table.type),
+	index("idx_inquiries_created").on(table.createdAt),
+	index("idx_inquiries_status").on(table.status),
+]);
+
+export const locations = sqliteTable("locations", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	address: text(),
+	mapsUrl: text("maps_url"),
+	isDeleted: integer("is_deleted").default(0),
+});
+
+export const awards = sqliteTable("awards", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	title: text().notNull(),
+	eventName: text("event_name").notNull(),
+	date: text().notNull(),
+	description: text(),
+	iconType: text("icon_type").default("trophy"),
+	isDeleted: integer("is_deleted").default(0),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_awards_date").on(table.date),
+	index("idx_awards_season").on(table.seasonId),
+]);
+
+export const outreachLogs = sqliteTable("outreach_logs", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	title: text().notNull(),
+	date: text().notNull(),
+	location: text(),
+	hours: real(),
+	peopleReached: integer("people_reached"),
+	studentsCount: integer("students_count").default(0),
+	impactSummary: text("impact_summary"),
+	cfEmail: text("cf_email"),
+	isMentoring: integer("is_mentoring").default(0),
+	mentoredTeamNumber: text("mentored_team_number"),
+	metadata: text(),
+	isDeleted: integer("is_deleted").default(0),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	eventId: text("event_id"),
+	mentorCount: integer("mentor_count").default(0),
+	mentorHours: real("mentor_hours").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_outreach_date_desc").on(table.date),
+	index("idx_outreach_date").on(table.date),
+	index("idx_outreach_season").on(table.seasonId),
+]);
+
+export const comments = sqliteTable("comments", {
+	id: text().primaryKey(),
+	targetType: text("target_type").notNull(),
+	targetId: text("target_id").notNull(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	content: text().notNull(),
+	zulipMessageId: text("zulip_message_id"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_comments_isDeleted").on(table.isDeleted),
+	index("idx_comments_created").on(table.createdAt),
+	index("idx_comments_user").on(table.userId),
+	index("idx_comments_target").on(table.targetType, table.targetId),
+]);
+
+export const notifications = sqliteTable("notifications", {
+	id: text().primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	title: text().notNull(),
+	message: text().notNull(),
+	link: text(),
+	priority: text().default("low"),
+	isRead: integer("is_read").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_notifications_user_id").on(table.userId),
+]);
+
+export const pageAnalytics = sqliteTable("page_analytics", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	path: text().notNull(),
+	category: text().default("system"),
+	referrer: text(),
+	userAgent: text("user_agent"),
+	timestamp: text().default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_analytics_path_time").on(table.path, table.timestamp),
+	index("idx_page_analytics_timestamp").on(table.timestamp),
+	index("idx_page_analytics_path").on(table.path),
+]);
+
+export const mediaTags = sqliteTable("media_tags", {
+	key: text().primaryKey(),
+	folder: text().default("Library"),
+	tags: text(),
+});
+
+export const judgeAccessCodes = sqliteTable("judge_access_codes", {
+	id: text().primaryKey(),
+	code: text().notNull(),
+	label: text().default("Judge Access"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	expiresAt: text("expires_at"),
+},
+(table) => [
+	index("idx_judge_codes_code").on(table.code),
+]);
+
+export const settings = sqliteTable("settings", {
+	key: text().primaryKey(),
+	value: text().notNull(),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_settings_key").on(table.key),
+]);
+
+export const tasks = sqliteTable("tasks", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	status: text().default("todo"),
+	priority: text().default("normal"),
+	subteam: text(),
+	sortOrder: integer("sort_order").default(0),
+	assignedTo: text("assigned_to"),
+	parentId: text("parent_id"),
+	timeSpentSeconds: integer("time_spent_seconds").default(0),
+	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	dueDate: text("due_date"),
+	startDate: text("start_date"),
+	estimatedMinutes: integer("estimated_minutes"),
+	coverImage: text("cover_image"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_tasks_sort").on(table.status, table.sortOrder),
+	index("idx_tasks_status").on(table.status),
+]);
+
+export const taskAssignments = sqliteTable("task_assignments", {
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+},
+(table) => [
+	index("idx_task_assignments_user").on(table.userId),
+	primaryKey({ columns: [table.taskId, table.userId], name: "task_assignments_task_id_user_id_pk"})
+]);
+
+export const labels = sqliteTable("labels", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	colorTheme: text("color_theme"),
+});
+
+export const taskLabels = sqliteTable("task_labels", {
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	labelId: text("label_id").notNull().references(() => labels.id, { onDelete: "cascade" } ),
+},
+(table) => [
+	index("idx_task_labels_task").on(table.taskId),
+	index("idx_task_labels_label").on(table.labelId),
+	primaryKey({ columns: [table.taskId, table.labelId], name: "task_labels_task_id_label_id_pk"})
+]);
+
+export const taskChecklists = sqliteTable("task_checklists", {
+	id: text().primaryKey(),
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	content: text().notNull(),
+	isCompleted: integer("is_completed").default(0),
+	sortOrder: integer("sort_order").default(0),
+},
+(table) => [
+	index("idx_task_checklists_task").on(table.taskId),
+]);
+
+export const taskAttachments = sqliteTable("task_attachments", {
+	id: text().primaryKey(),
+	taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" } ),
+	url: text().notNull(),
+	title: text().notNull(),
+	type: text().notNull(),
+	thumbnailUrl: text("thumbnail_url"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_task_attachments_task").on(table.taskId),
+]);
+
+export const auditLog = sqliteTable("audit_log", {
+	id: text().primaryKey(),
+	actor: text().notNull(),
+	action: text().notNull(),
+	resourceType: text("resource_type").notNull(),
+	resourceId: text("resource_id"),
+	details: text(),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_audit_log_createdAt").on(table.createdAt),
+	index("idx_audit_log_action").on(table.action),
+	index("idx_audit_log_actor").on(table.actor),
+]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const products = sqliteTable("products", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	description: text(),
+	priceCents: integer("price_cents").notNull(),
+	imageUrl: text("image_url"),
+	active: integer().default(1),
+	stockCount: integer("stock_count"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const orders = sqliteTable("orders", {
+	id: text().primaryKey(),
+	stripeSessionId: text("stripe_session_id"),
+	customerEmail: text("customer_email"),
+	shippingName: text("shipping_name"),
+	shippingAddressLine1: text("shipping_address_line1"),
+	shippingAddressLine2: text("shipping_address_line2"),
+	shippingCity: text("shipping_city"),
+	shippingState: text("shipping_state"),
+	shippingPostalCode: text("shipping_postal_code"),
+	shippingCountry: text("shipping_country"),
+	totalCents: integer("total_cents").notNull(),
+	status: text().default("processing"),
+	fulfillmentStatus: text("fulfillment_status").default("unfulfilled"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_orders_email").on(table.customerEmail),
+	index("idx_orders_status").on(table.status, table.fulfillmentStatus),
+]);
+
+export const rateLimits = sqliteTable("rate_limits", {
+	ip: text().primaryKey(),
+	count: integer().notNull(),
+	expiresAt: integer("expires_at").notNull(),
+});
+
+export const usageMetrics = sqliteTable("usage_metrics", {
+	id: text().primaryKey(),
+	timestamp: text().default(sql`CURRENT_TIMESTAMP`),
+	endpoint: text().notNull(),
+	method: text().notNull(),
+	statusCode: integer("status_code").notNull(),
+	latencyMs: integer("latency_ms").notNull(),
+	userId: text("user_id"),
+	cfRay: text("cf_ray"),
+	cfIp: text("cf_ip"),
+},
+(table) => [
+	index("idx_usage_metrics_timestamp").on(table.timestamp),
+	index("idx_usage_metrics_endpoint").on(table.endpoint),
+]);
+
+export const socialQueue = sqliteTable("social_queue", {
+	id: text().primaryKey(),
+	content: text().notNull(),
+	mediaUrls: text("media_urls"),
+	scheduledFor: text("scheduled_for").notNull(),
+	platforms: text().notNull(),
+	status: text().notNull().default("pending"),
+	createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	sentAt: text("sent_at"),
+	errorMessage: text("error_message"),
+	createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+	linkedType: text("linked_type"),
+	linkedId: text("linked_id"),
+	analytics: text(),
+});
+
+export const chatSessions = sqliteTable("chat_sessions", {
+	id: text().primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	history: text().notNull(),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_chat_sessions_updatedAt").on(table.updatedAt),
+	index("idx_chat_sessions_user_id").on(table.userId),
+]);
+
+export const entityLinks = sqliteTable("entity_links", {
+	id: text().primaryKey(),
+	sourceType: text("source_type").notNull(),
+	sourceId: text("source_id").notNull(),
+	targetType: text("target_type").notNull(),
+	targetId: text("target_id").notNull(),
+	linkType: text("link_type"),
+},
+(table) => [
+	index("idx_entity_links_target").on(table.targetType, table.targetId),
+	index("idx_entity_links_source").on(table.sourceType, table.sourceId),
+]);
+
+export const financeTransactions = sqliteTable("finance_transactions", {
+	id: text().primaryKey(),
+	amount: real().notNull(),
+	type: text().notNull(),
+	category: text().notNull(),
+	date: text().notNull(),
+	description: text(),
+	receiptUrl: text("receipt_url"),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	loggedBy: text("logged_by"),
+},
+(table) => [
+	index("idx_finance_tx_season").on(table.seasonId),
+]);
+
+export const sponsorshipPipeline = sqliteTable("sponsorship_pipeline", {
+	id: text().primaryKey(),
+	companyName: text("company_name").notNull(),
+	contactPerson: text("contact_person"),
+	status: text().notNull(),
+	estimatedValue: real("estimated_value"),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" } ),
+	notes: text(),
+	zulipMessageId: text("zulip_message_id"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_sponsorship_season").on(table.seasonId),
+]);
+
+export const sponsorshipAssignments = sqliteTable("sponsorship_assignments", {
+	sponsorshipId: text("sponsorship_id").notNull().references(() => sponsorshipPipeline.id, { onDelete: "cascade" } ),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+},
+(table) => [
+	primaryKey({ columns: [table.sponsorshipId, table.userId], name: "sponsorship_assignments_sponsorship_id_user_id_pk"})
+]);
+
+export const documentSnapshots = sqliteTable("document_snapshots", {
+	roomId: text("room_id").primaryKey(),
+	state: blob().notNull(),
+	updatedAt: real("updated_at").default(sql`(CURRENT_TIMESTAMP)`),
+},
+(table) => [
+	index("idx_document_snapshots_updated").on(table.updatedAt),
+]);
+
+export const simulations = sqliteTable("simulations", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	description: text(),
+	files: text().notNull(),
+	authorId: text("author_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	isPublic: integer("is_public").default(0).notNull(),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => [
+	index("idx_simulations_public").on(table.isPublic),
+	index("idx_simulations_author").on(table.authorId),
+]);
+
+export const pointsLedger = sqliteTable("points_ledger", {
+	id: text().primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	pointsDelta: integer("points_delta").notNull(),
+	reason: text().notNull(),
+	createdBy: text("created_by").references(() => user.id, { onDelete: "set null" } ),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_points_ledger_user").on(table.userId),
+]);
+
+export const scoutingAnalyses = sqliteTable("scouting_analyses", {
+	id: text().primaryKey(),
+	seasonKey: text("season_key").notNull(),
+	eventKey: text("event_key"),
+	teamNumber: integer("team_number"),
+	mode: text().notNull(),
+	model: text().notNull(),
+	markdown: text().notNull(),
+	tokensUsed: integer("tokens_used"),
+	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "set null" }),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_scouting_analyses_team").on(table.teamNumber),
+	index("idx_scouting_analyses_event").on(table.eventKey),
+]);
+
+export const externalKnowledgeSources = sqliteTable("external_knowledge_sources", {
+	id: text().primaryKey(),
+	type: text().notNull(),
+	url: text().notNull(),
+	branch: text(),
+	status: text().default("active"),
+	lastIndexedSha: text("last_indexed_sha"),
+	lastIndexedAt: text("last_indexed_at"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const performanceMetrics = sqliteTable("performance_metrics", {
+	id: text().primaryKey(),
+	metricName: text("metric_name").notNull(),
+	value: real().notNull(),
+	rating: text().notNull(),
+	page: text().notNull(),
+	timestamp: text().notNull(),
+});
+
+export const videos = sqliteTable("videos", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	platform: text().notNull(),
+	videoId: text("video_id").notNull(),
+	thumbnailKey: text("thumbnail_key"),
+	type: text().default("video"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_videos_created").on(table.createdAt),
+	index("idx_videos_platform").on(table.platform),
+	index("idx_videos_type").on(table.type),
+]);
+
+// Photo albums for Google Photos import (Phase 76)
+// Per D-15: Album metadata for R2 folder mapping
+export const photoAlbums = sqliteTable("photo_albums", {
+	id: text().primaryKey(),
+	googleAlbumId: text("google_album_id").notNull().unique(),
+	name: text().notNull(),
+	r2Folder: text("r2_folder").notNull(),
+	syncedAt: text("synced_at").notNull(),
+	mediaItemsCount: text("media_items_count"),
+},
+(table) => [
+	index("idx_photo_albums_google_id").on(table.googleAlbumId),
+]);
+
+// Imported photos from Google Photos to R2 (Phase 76)
+// Per D-14: Track successfully imported photos
+export const importedPhotos = sqliteTable("imported_photos", {
+	id: text().primaryKey(),
+	r2Key: text("r2_key").notNull(),
+	originalFilename: text("original_filename").notNull(),
+	googleMediaItemId: text("google_media_item_id").notNull().unique(),
+	albumId: text("album_id").references(() => photoAlbums.id),
+	importedBy: text("imported_by").notNull(),
+	importedAt: text("imported_at").notNull(),
+	mimeType: text("mime_type").notNull(),
+	fileSize: text("file_size").notNull(),
+},
+(table) => [
+	index("idx_imported_photos_google_id").on(table.googleMediaItemId),
+	index("idx_imported_photos_album").on(table.albumId),
+]);
+
+// Import audit log for all photo import attempts (Phase 76)
+// Per D-16/D-17: Audit trail for import actions
+export const importAuditLog = sqliteTable("import_audit_log", {
+	id: text().primaryKey(),
+	mediaItemId: text("media_item_id").notNull(),
+	filename: text().notNull(),
+	status: text().notNull(),
+	error: text(),
+	r2Key: text("r2_key"),
+	importedBy: text("imported_by").notNull(),
+	importedAt: text("imported_at").notNull(),
+},
+(table) => [
+	index("idx_import_audit_imported_at").on(table.importedAt),
+]);
+
+// Uploaded files for document management (Phase 77)
+// Per FILES-04: Track uploaded documents with R2 storage keys
+export const uploadedFiles = sqliteTable("uploaded_files", {
+	id: text().primaryKey(),
+	r2Key: text("r2_key").notNull(),
+	filename: text().notNull(),
+	mimeType: text("mime_type").notNull(),
+	size: integer().notNull(),
+	title: text(),
+	description: text(),
+	uploadedBy: text("uploaded_by").notNull(),
+	uploadedAt: text("uploaded_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+	source: text().default("manual"),
+},
+(table) => [
+	index("idx_uploaded_files_at").on(table.uploadedAt),
+	index("idx_uploaded_files_by").on(table.uploadedBy),
+	index("idx_uploaded_files_r2").on(table.r2Key),
+]);
+
+// File usage tracking for blog post references (Phase 77)
+// Per FILES-08/D-20: Track which posts use which files
+export const fileUsage = sqliteTable("file_usage", {
+	id: text().primaryKey(),
+	fileId: text("file_id").notNull().references(() => uploadedFiles.id, { onDelete: "cascade" }),
+	postId: text("post_id").notNull().references(() => posts.slug, { onDelete: "cascade" }),
+	postTitle: text("post_title").notNull(),
+	linkedAt: text("linked_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_file_usage_file").on(table.fileId),
+	index("idx_file_usage_post").on(table.postId),
+	index("idx_file_usage_linked").on(table.linkedAt),
+]);
+
+// Onshape OAuth credentials per user (Phase 78)
+// Per D-03: Store OAuth tokens with expiry tracking
+export const onshapeCredentials = sqliteTable("onshape_credentials", {
+	userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+	accessToken: text("access_token").notNull(),
+	refreshToken: text("refresh_token").notNull(),
+	expiresAt: integer("expires_at").notNull(), // Unix timestamp
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	lastUsedAt: text("last_used_at"),
+},
+(table) => [
+	index("idx_onshape_credentials_last_used").on(table.lastUsedAt),
+]);
+
+// Cached Onshape document metadata (Phase 78)
+// Per D-04/D-05: Public documents cached, private fetched real-time
+export const onshapeDocuments = sqliteTable("onshape_documents", {
+	documentId: text("document_id").primaryKey(),
+	name: text().notNull(),
+	description: text(),
+	thumbnailUrl: text("thumbnail_url"),
+	ownerName: text("owner_name"),
+	isPublic: integer("is_public").default(0).notNull(),
+	lastSyncedAt: text("last_synced_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_onshape_documents_public").on(table.isPublic),
+]);
+
+// BOM sync history audit trail (Phase 78)
+// Per D-14: Track BOM synchronization with sync history
+export const onshapeBomHistory = sqliteTable("onshape_bom_history", {
+	id: integer().primaryKey({ autoIncrement: true }),
+	documentId: text("document_id").notNull(),
+	elementId: text("element_id").notNull(),
+	partCount: integer("part_count").notNull(),
+	syncedBy: text("synced_by").notNull().references(() => user.id, { onDelete: "set null" }),
+	syncedAt: text("synced_at").default(sql`CURRENT_TIMESTAMP`),
+},
+(table) => [
+	index("idx_onshape_bom_history_document").on(table.documentId),
+	index("idx_onshape_bom_history_synced_at").on(table.syncedAt),
+]);
+
+export const albums = sqliteTable("albums", {
+	id: text().primaryKey(),
+	title: text().notNull(),
+	description: text(),
+	coverImageId: text("cover_image_id"),
+	displayMode: text("display_mode").default("masonry").notNull(),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+	createdBy: text("created_by").notNull().references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const albumMedia = sqliteTable("album_media", {
+	albumId: text("album_id").notNull().references(() => albums.id, { onDelete: "cascade" }),
+	mediaId: text("media_id").notNull(),
+	sortOrder: integer("sort_order").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	primaryKey({ columns: [table.albumId, table.mediaId], name: "album_media_album_id_media_id_pk"}),
+	index("idx_album_media_album").on(table.albumId),
+	index("idx_album_media_media").on(table.mediaId),
+]);
+
+export const robots = sqliteTable("robots", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" }),
+	ast: text(),
+	albumId: text("album_id").references(() => albums.id, { onDelete: "set null" }),
+	onshapeUrl: text("onshape_url"),
+	cadViewerUrl: text("cad_viewer_url"),
+	revealVideoId: text("reveal_video_id"),
+	weightLbs: real("weight_lbs"),
+	drivetrainType: text("drivetrain_type"),
+	programmingLanguage: text("programming_language"),
+	primaryMechanism: text("primary_mechanism"),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const tournaments = sqliteTable("tournaments", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	seasonId: integer("season_id").references(() => seasons.startYear, { onDelete: "set null" }),
+	robotId: text("robot_id").references(() => robots.id, { onDelete: "set null" }),
+	ftcEventCode: text("ftc_event_code"),
+	ast: text(),
+	albumId: text("album_id").references(() => albums.id, { onDelete: "set null" }),
+	startDate: text("start_date"),
+	endDate: text("end_date"),
+	location: text(),
+	rank: integer(),
+	allianceRole: text("alliance_role"),
+	eliminationStatus: text("elimination_status"),
+	opr: real(),
+	isDeleted: integer("is_deleted").default(0),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournaments_season").on(table.seasonId),
+	index("idx_tournaments_robot").on(table.robotId),
+]);
+
+export const tournamentMatches = sqliteTable("tournament_matches", {
+	id: text().primaryKey(),
+	tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+	matchNumber: integer("match_number").notNull(),
+	matchType: text("match_type").notNull(),
+	redScore: integer("red_score"),
+	blueScore: integer("blue_score"),
+	youtubeVideoId: text("youtube_video_id"),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournament_matches_tournament").on(table.tournamentId),
+]);
+
+export const tournamentAwards = sqliteTable("tournament_awards", {
+	id: text().primaryKey(),
+	tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+	name: text().notNull(),
+	placement: text(),
+	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+	index("idx_tournament_awards_tournament").on(table.tournamentId),
+]);
+

@@ -97,6 +97,18 @@ export function createMockDb() {
   const firstMock = vi.fn(() => Promise.resolve(null));
   const allMock = vi.fn(() => Promise.resolve({ results: [] }));
   const runMock = vi.fn(() => Promise.resolve(mockMutationResult(0)));
+  const rawMock = vi.fn(async () => {
+    const allResult = await allMock();
+    const rows = allResult && typeof allResult === 'object' && 'results' in allResult
+      ? (allResult.results as unknown[])
+      : (Array.isArray(allResult) ? allResult : []);
+    return rows.map((row) => {
+      if (row && typeof row === 'object') {
+        return Object.values(row);
+      }
+      return Array.isArray(row) ? row : [row];
+    });
+  });
 
   // Setup mock data helper
   const setMockData = (table: string, id: string, data: unknown) => {
@@ -116,12 +128,13 @@ export function createMockDb() {
       bind: vi.fn((..._params: unknown[]) => {
         // Return the same statement interface with the same mocks
         return {
-          raw: vi.fn(() => ({ raw: true })),
+          raw: rawMock,
           first: firstMock,
           all: allMock,
           run: runMock,
         };
       }),
+      raw: rawMock,
       first: firstMock,
       all: allMock,
       run: runMock,
@@ -323,4 +336,13 @@ export function createTestAppBase(mockDrizzleDb?: DrizzleDB, mockD1Db?: D1Databa
   app.use('*', createTestDbMiddleware(mockDrizzleDb, mockD1Db));
   return app;
 }
+
+/**
+ * Shared mock ExecutionContext for Cloudflare Hono request testing
+ */
+export const mockExecutionContext = {
+  waitUntil: vi.fn(),
+  passThroughOnException: vi.fn(),
+} as unknown as ExecutionContext;
+
 

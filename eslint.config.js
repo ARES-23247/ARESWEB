@@ -13,6 +13,7 @@ export default ts.config(
   {
     ignores: [
       ".claude/**",
+      "archive",
       ".agents/**", // Ignore AI agent skills and configs
       "dist",
       "coverage",

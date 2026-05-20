@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { vi, afterAll, afterEach } from "vitest";
 import { server } from "./mocks/server";
 
 // Mock drizzle-orm sql BEFORE any schema imports
@@ -59,7 +59,14 @@ vi.mock("drizzle-orm", () => {
 server.listen({ onUnhandledRequest: "warn" });
 
 // Reset handlers after each test to ensure test isolation
-// Note: Test isolation handled by individual test suites
+afterEach(() => {
+  server.resetHandlers();
+});
+
+// Close MSW server after all tests are finished
+afterAll(() => {
+  server.close();
+});
 
 export { server };
 

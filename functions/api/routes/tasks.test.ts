@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono, Context, Next } from 'hono';
-import { createMockDb, createTestEnv, createTestDbMiddleware } from '../../test/test-env';
+import { createMockDb, createTestEnv, createTestDbMiddleware, mockExecutionContext } from '../../test/test-env';
 import { globalErrorHandler } from '../middleware/errorHandler';
 // Extend globalThis for test mocks
 declare global {
@@ -69,10 +69,7 @@ vi.mock('../middleware/auth', async () => {
 // Import tasksRouter after mocking
 import tasksRouter from './tasks';
 
-const mockExecutionContext = {
-  waitUntil: vi.fn(),
-  passThroughOnException: vi.fn(),
-} as unknown as ExecutionContext;
+
 
 describe('Tasks Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];

@@ -168,7 +168,7 @@ export const syncHandlers = {
                 if (gcalId) {
                     await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, event.id)).run();
                     pushed++;
-                    console.log(`[repairCalendar] Successfully pushed "${event.title}" to GCal (ID: ${gcalId})`);
+                    console.debug(`[repairCalendar] Successfully pushed "${event.title}" to GCal (ID: ${gcalId})`);
                 } else {
                     const msg = `Google Calendar did not return an event ID`;
                     errors.push(`${event.title}: ${msg}`);
