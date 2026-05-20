@@ -5,8 +5,12 @@ import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { get, set, del } from "idb-keyval";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/router-devtools";
+const ReactQueryDevtools = import.meta.env.DEV
+  ? React.lazy(() => import("@tanstack/react-query-devtools").then(m => ({ default: m.ReactQueryDevtools })))
+  : null;
+const TanStackRouterDevtoolsPanel = import.meta.env.DEV
+  ? React.lazy(() => import("@tanstack/router-devtools").then(m => ({ default: m.TanStackRouterDevtoolsPanel })))
+  : null;
 import { HelmetProvider } from "react-helmet-async";
 import { ModalProvider } from "./contexts/ModalContext";
 import "./index.css";
@@ -91,30 +95,28 @@ declare module '@tanstack/react-router' {
   }
 }
 
-import { motion } from "framer-motion";
+
 
 
 
 function DevTools() {
+  if (!import.meta.env.DEV) return null;
   const { data } = useSession();
   const [isRouterDevToolsOpen, setIsRouterDevToolsOpen] = React.useState(false);
   
   if ((data?.user as unknown as { role?: string })?.role !== "admin") return null;
 
   return (
-    <>
+    <React.Suspense fallback={null}>
       {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
       
-      {/* Draggable Toggle Button */}
-      <motion.div 
-        drag 
-        dragMomentum={false}
+      {/* Toggle Button */}
+      <div 
         className="fixed bottom-4 right-[100px] z-[9999]"
-        style={{ touchAction: 'none' }}
       >
         <button
           onClick={() => setIsRouterDevToolsOpen(!isRouterDevToolsOpen)}
-          className="flex items-center justify-center w-10 h-10 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl cursor-grab active:cursor-grabbing hover:bg-[#1e293b] transition-colors"
+          className="flex items-center justify-center w-10 h-10 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl cursor-pointer hover:bg-[#1e293b] transition-colors"
           title="Toggle TanStack Router DevTools"
         >
           <div className="flex flex-col items-center leading-none">
@@ -122,21 +124,19 @@ function DevTools() {
             <span className="text-[10px] font-bold text-[#00e599]">STACK</span>
           </div>
         </button>
-      </motion.div>
+      </div>
 
-      {/* The Panel - rendered at the viewport level to ensure correct formatting */}
-      {isRouterDevToolsOpen && (
+      {/* The Panel */}
+      {isRouterDevToolsOpen && TanStackRouterDevtoolsPanel && (
         <div className="fixed bottom-0 left-0 right-0 h-[400px] z-[9998] shadow-2xl">
-          {TanStackRouterDevtoolsPanel && (
-            <TanStackRouterDevtoolsPanel 
-              router={router} 
-              isOpen={isRouterDevToolsOpen}
-              setIsOpen={setIsRouterDevToolsOpen}
-            />
-          )}
+          <TanStackRouterDevtoolsPanel 
+            router={router} 
+            isOpen={isRouterDevToolsOpen}
+            setIsOpen={setIsRouterDevToolsOpen}
+          />
         </div>
       )}
-    </>
+    </React.Suspense>
   );
 }
 

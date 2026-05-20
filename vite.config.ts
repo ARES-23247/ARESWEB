@@ -52,11 +52,7 @@ export default defineConfig({
         statements: 85
       }
     },
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+
     server: {
       deps: {
         external: [
@@ -88,7 +84,7 @@ export default defineConfig({
         quality: '85',
       }),
     }),
-    visualizer({ emitFile: true, filename: "stats.html" }),
+    ...(process.env.ANALYZE ? [visualizer({ emitFile: true, filename: "stats.html" })] : []),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -235,7 +231,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     outDir: "dist",
-    sourcemap: 'hidden',
+    sourcemap: process.env.CI ? false : 'hidden',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {

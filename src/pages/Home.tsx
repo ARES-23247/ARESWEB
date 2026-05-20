@@ -21,7 +21,7 @@ export default function Home() {
         {/* Motif Background Isolated Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
-            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.png')]"
+            className="absolute right-[-10%] top-[10%] w-[80%] h-[80%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.webp')]"
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
         </div>

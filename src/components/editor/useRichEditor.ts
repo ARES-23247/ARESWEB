@@ -8,6 +8,7 @@ import { common, createLowlight } from 'lowlight';
 import { getEditorExtensions } from "./core/extensions";
 import * as Y from "yjs";
 import 'katex/dist/katex.min.css';
+import 'highlight.js/styles/github-dark.css';
 
 export interface UseRichEditorOptions {
   /** Placeholder HTML shown when the editor is empty. */

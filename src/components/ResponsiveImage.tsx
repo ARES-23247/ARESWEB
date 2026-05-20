@@ -6,11 +6,13 @@ interface ResponsiveImageProps {
   alt: string;
   className?: string;
   imgClassName?: string;
+  width?: number | string;   // Intrinsic width to prevent CLS
+  height?: number | string;  // Intrinsic height to prevent CLS
   fetchPriority?: "high" | "low" | "auto";  // W4C-IMG-01: fetch priority hint
   decoding?: "sync" | "async" | "auto";     // W4C-IMG-01: decoding hint
 }
 
-export default function ResponsiveImage({ src, alt, className = "", imgClassName = "", fetchPriority = "auto", decoding = "async" }: ResponsiveImageProps) {
+export default function ResponsiveImage({ src, alt, className = "", imgClassName = "", width, height, fetchPriority = "auto", decoding = "async" }: ResponsiveImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -40,6 +42,8 @@ export default function ResponsiveImage({ src, alt, className = "", imgClassName
         <motion.img
           src={isError ? fallbackSrc : src}
           alt={alt}
+          width={width}
+          height={height}
           initial={{ opacity: 0, filter: "blur(10px)", scale: 1.05 }}
           animate={{ opacity: (isLoaded || isError) ? 1 : 0, filter: (isLoaded || isError) ? "blur(0px)" : "blur(10px)", scale: (isLoaded || isError) ? 1 : 1.05 }}
           transition={{ duration: 0.8, ease: "easeOut" }}

@@ -61,8 +61,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   // Use single worker locally to avoid route pollution between tests
-  // Some tests mock API routes that can interfere with parallel execution
-  workers: 1,
+  // In CI with sharding, each shard can safely use 2 workers
+  workers: process.env.CI ? 2 : 1,
   reporter: 'html',
   timeout: 60000,
   maxFailures: 10,

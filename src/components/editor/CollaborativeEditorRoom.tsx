@@ -342,7 +342,6 @@ export function CollaborativeEditorRoom({
   const [ydoc] = useState<Y.Doc>(() => new Y.Doc());
   const host = useMemo(() => {
     if (typeof window !== 'undefined') {
-      console.warn("[CollaborativeEditorRoom debug] window.__TEST_PARTYKIT_HOST__:", window.__TEST_PARTYKIT_HOST__, "window.__PLAYWRIGHT_TEST__:", window.__PLAYWRIGHT_TEST__);
       if (window.__TEST_PARTYKIT_HOST__) {
         return window.__TEST_PARTYKIT_HOST__;
       }

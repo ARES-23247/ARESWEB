@@ -14,8 +14,8 @@ export const Route = createFileRoute("/onshape/")({
 function OnshapePage() {
   const [activeTab, setActiveTab] = useState<"explorer" | "gallery">("explorer");
 
-  const handleDocumentClick = (documentId: string) => {
-    console.log("Viewing document:", documentId);
+  const handleDocumentClick = (_documentId: string) => {
+    // Document click handled by ModelGallery component
   };
 
   return (

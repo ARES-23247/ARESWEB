@@ -60,7 +60,7 @@ export default function MassEmailComposer() {
   return (
     <div className="flex flex-col h-full bg-obsidian text-white font-sans animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto">
       <div className="p-4 sm:p-6 md:p-8 shrink-0 border-b border-white/5 bg-gradient-to-r from-obsidian to-black relative">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('/textures/cubes.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-ares-red/10 border border-ares-red/20 flex items-center justify-center ares-cut-sm shrink-0">
