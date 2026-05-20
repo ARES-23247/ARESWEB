@@ -149,49 +149,49 @@ export default function ElevatorPidSim() {
   }, []);
 
   return (
-    <div style={{ backgroundColor: 'var(--obsidian)', border: '1px solid #2a2a2a', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', color: 'var(--marble)' }}>
-      <div style={{ padding: '15px', borderBottom: '1px solid #2a2a2a', display: 'flex', gap: '20px', background: 'var(--obsidian)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-gray)', marginBottom: '5px' }}>
+    <div className="bg-obsidian border border-white/10 rounded-lg overflow-hidden flex flex-col text-marble">
+      <div className="p-[15px] border-b border-white/10 flex gap-[20px] bg-obsidian flex-wrap items-end">
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kP (Proportional)</span><span>{kp.toFixed(2)}</span>
             </div>
-            <input aria-label="Proportional gain" type="range" min="0" max="25" step="0.01" value={kp} onChange={e => setKp(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Proportional gain" type="range" min="0" max="25" step="0.01" value={kp} onChange={e => setKp(parseFloat(e.target.value))} className="w-full" />
         </div>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-gray)', marginBottom: '5px' }}>
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kI (Integral)</span><span>{ki.toFixed(2)}</span>
             </div>
-            <input aria-label="Integral gain" type="range" min="0" max="25" step="0.01" value={ki} onChange={e => setKi(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Integral gain" type="range" min="0" max="25" step="0.01" value={ki} onChange={e => setKi(parseFloat(e.target.value))} className="w-full" />
         </div>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-gray)', marginBottom: '5px' }}>
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kD (Derivative)</span><span>{kd.toFixed(2)}</span>
             </div>
-            <input aria-label="Derivative gain" type="range" min="0" max="25" step="0.01" value={kd} onChange={e => setKd(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Derivative gain" type="range" min="0" max="25" step="0.01" value={kd} onChange={e => setKd(parseFloat(e.target.value))} className="w-full" />
         </div>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-gray)', marginBottom: '5px' }}>
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kG (Gravity FF)</span><span>{kg.toFixed(1)}</span>
             </div>
-            <input aria-label="Gravity feedforward" type="range" min="0" max="10" step="0.1" value={kg} onChange={e => setKg(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Gravity feedforward" type="range" min="0" max="10" step="0.1" value={kg} onChange={e => setKg(parseFloat(e.target.value))} className="w-full" />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="flex items-center">
             <button 
                 onClick={() => setSetpoint(setpoint > 0.5 ? 0.2 : 0.8)} 
-                style={{ background: 'var(--ares-cyan)', color: '#000', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', fontFamily: '"Orbitron", sans-serif', fontWeight: 'bold' }}>
+                className="bg-ares-cyan text-black border-none px-[15px] py-[8px] rounded-[4px] cursor-pointer font-bold uppercase text-[12px] tracking-widest font-sans hover:bg-white transition-colors duration-200">
                 FLIP SETPOINT
             </button>
         </div>
       </div>
-      <div style={{ display: 'flex', padding: '20px', gap: '20px' }}>
+      <div className="flex p-[20px] gap-[20px] flex-col sm:flex-row">
         <div>
-          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={eCanvasRef} width="80" height="260" style={{ background: 'var(--obsidian)', borderRadius: '4px' }} />
+          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={eCanvasRef} width="80" height="260" className="bg-black/20 rounded-[4px] border border-white/5" />
         </div>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={gCanvasRef} width="100" height="260" style={{ display: 'block', width: '100%', background: 'var(--obsidian)', borderRadius: '4px' }} />
-          <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', fontFamily: '"Orbitron", sans-serif', fontSize: '12px' }}>
-            <span style={{ color: 'var(--ares-cyan)' }}>■ Setpoint</span>
-            <span style={{ color: 'var(--ares-red)' }}>■ Actual</span>
+        <div className="flex-1 relative">
+          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={gCanvasRef} width="100" height="260" className="display-block w-full bg-black/20 rounded-[4px] border border-white/5" />
+          <div className="absolute top-[10px] right-[10px] flex gap-[15px] font-sans text-[12px] font-bold tracking-wider">
+            <span className="text-ares-cyan">■ Setpoint</span>
+            <span className="text-ares-red">■ Actual</span>
           </div>
         </div>
       </div>

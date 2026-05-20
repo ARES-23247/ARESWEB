@@ -104,39 +104,39 @@ export default function ArmKgSim() {
   }, []);
 
   return (
-    <div style={{ backgroundColor: 'var(--obsidian)', border: '1px solid var(--ares-gray-dark)', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', color: 'var(--ares-offwhite)', marginTop: '20px' }}>
-      <div style={{ padding: '15px', borderBottom: '1px solid var(--ares-gray-dark)', display: 'flex', gap: '20px', background: 'var(--ares-gray-deep)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-muted)', marginBottom: '5px' }}>
+    <div className="bg-obsidian border border-white/10 rounded-lg overflow-hidden flex flex-col text-marble mt-6">
+      <div className="p-[15px] border-b border-white/10 flex gap-[20px] bg-obsidian flex-wrap items-end">
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>Target Angle &deg;</span><span>{armSet}&deg;</span>
             </div>
-            <input aria-label="Arm target angle in degrees" type="range" min="-90" max="90" step="1" value={armSet} onChange={e => setArmSet(parseInt(e.target.value, 10))} style={{ width: '100%' }} />
+            <input aria-label="Arm target angle in degrees" type="range" min="-90" max="90" step="1" value={armSet} onChange={e => setArmSet(parseInt(e.target.value, 10))} className="w-full" />
         </div>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-muted)', marginBottom: '5px' }}>
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kG (Gravity Max)</span><span>{armKg.toFixed(2)}</span>
             </div>
-            <input aria-label="Gravity feedforward gain" type="range" min="0" max="2.0" step="0.1" value={armKg} onChange={e => setArmKg(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Gravity feedforward gain" type="range" min="0" max="2.0" step="0.1" value={armKg} onChange={e => setArmKg(parseFloat(e.target.value))} className="w-full" />
         </div>
-        <div style={{ flex: 1, minWidth: '150px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ares-muted)', marginBottom: '5px' }}>
+        <div className="flex-1 min-w-[150px]">
+            <div className="flex justify-between font-mono text-[12px] text-marble/60 mb-[5px]">
                 <span>kP (Proportional)</span><span>{armKp.toFixed(2)}</span>
             </div>
-            <input aria-label="Proportional gain" type="range" min="0" max="0.2" step="0.01" value={armKp} onChange={e => setArmKp(parseFloat(e.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Proportional gain" type="range" min="0" max="0.2" step="0.01" value={armKp} onChange={e => setArmKp(parseFloat(e.target.value))} className="w-full" />
         </div>
       </div>
-      <div style={{ display: 'flex', padding: '20px', gap: '40px', alignItems: 'center' }}>
+      <div className="flex p-[20px] gap-[40px] items-center flex-col sm:flex-row">
         <div>
-          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={aCanvasRef} width="200" height="200" style={{ background: 'var(--obsidian)', borderRadius: '4px' }} />
+          <canvas role="img" aria-label="Interactive Physics Simulation Environment" ref={aCanvasRef} width="200" height="200" className="bg-black/20 rounded-[4px] border border-white/5" />
         </div>
-        <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.8' }}>
-          <p style={{ margin: '5px 0' }}>Current Angle: <strong style={{ color: 'var(--ares-cyan)' }}>{currentAngle.toFixed(2)}&deg;</strong></p>
-          <p style={{ margin: '5px 0' }}>cos({currentAngle.toFixed(1)}&deg;) = <strong>{cosThetaDisplay.toFixed(3)}</strong></p>
-          <p style={{ margin: '5px 0' }}>FF Voltage = kG * cos(&theta;) = <strong style={{ color: 'var(--ares-red)' }}>{ffVoltageDisplay.toFixed(2)}v</strong></p>
-          <div style={{ width: '100%', height: '8px', background: 'var(--ares-gray-dark)', borderRadius: '4px', margin: '15px 0', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.abs(cosThetaDisplay) * 100}%`, height: '100%', background: 'var(--ares-red)', transition: 'width 0.1s linear' }} />
+        <div className="flex-1 font-mono text-sm leading-relaxed">
+          <p className="my-1">Current Angle: <strong className="text-ares-cyan">{currentAngle.toFixed(2)}&deg;</strong></p>
+          <p className="my-1">cos({currentAngle.toFixed(1)}&deg;) = <strong className="text-white">{cosThetaDisplay.toFixed(3)}</strong></p>
+          <p className="my-1">FF Voltage = kG * cos(&theta;) = <strong className="text-ares-red">{ffVoltageDisplay.toFixed(2)}v</strong></p>
+          <div className="w-full h-2 bg-white/10 rounded-full my-[15px] overflow-hidden">
+            <div style={{ width: `${Math.abs(cosThetaDisplay) * 100}%` }} className="h-full bg-ares-red transition-[width] duration-100 ease-linear" />
           </div>
-          <p style={{ margin: 0, fontSize: '12px', color: 'var(--ares-muted)' }}>Gravity Counter-Force Vector</p>
+          <p className="m-0 text-xs text-marble/60 font-bold uppercase tracking-wider">Gravity Counter-Force Vector</p>
         </div>
       </div>
     </div>

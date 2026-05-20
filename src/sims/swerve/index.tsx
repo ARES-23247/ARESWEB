@@ -149,7 +149,7 @@ export default function SwerveSim() {
         ctx.fillStyle = 'var(--ares-cyan)'; // ares-cyan
         ctx.fillRect(-mR, -2, mR * 2, 4);
         if (mSpeed > 0.1) {
-           ctx.strokeStyle = '#FFD700'; // ares-gold
+           ctx.strokeStyle = 'var(--ares-gold)'; // ares-gold
            ctx.lineWidth = 2;
            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(mSpeed * 30, 0); ctx.stroke();
         }
