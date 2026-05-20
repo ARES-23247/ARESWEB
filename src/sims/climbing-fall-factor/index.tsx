@@ -113,16 +113,15 @@ export default function ClimbingFallFactorSim() {
           // Damping factor to bring the climber to rest
           const c = 2.0 * Math.sqrt(k * climberWeight) * 0.18; // underdamped spring
           
-          force = k * stretchDist + c * vel;
+          force = k * stretchDist - c * vel;
           if (force < 0) force = 0; // ropes only pull, never push
         }
 
         // F = m * a  ==> a = (F - mg) / m
         const accel = (force / climberWeight) - GRAVITY;
         
-        // Invert velocity because positive direction is down in our relative variable
         vel += accel * subDt;
-        yPos -= vel * subDt;
+        yPos += vel * subDt;
 
         const gVal = Math.max(1.0, Math.abs(accel / GRAVITY));
         if (gVal > maxG) {
@@ -141,7 +140,7 @@ export default function ClimbingFallFactorSim() {
         // Apply scale factors for visuals: Bolt is at SVG Y = 180.
         // Climber starts above/below bolt. 
         // 1 meter = 24 pixels.
-        const climberVisualY = 180 + (fallDistance - yPos) * 24;
+        const climberVisualY = 180 - yPos * 24;
         
         setClimberYState(climberVisualY);
         setRopeStretch(Math.max(0, stretchDist));
