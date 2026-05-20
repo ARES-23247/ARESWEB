@@ -10,7 +10,8 @@ const ACADEMY_SIDEBAR_ORDER = [
   "Reinforcement Learning",
   "Generative AI",
   "Physics",
-  "Mathematics"
+  "Mathematics",
+  "Science of Climbing"
 ];
 
 export interface SearchResult {

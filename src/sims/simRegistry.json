@@ -25,6 +25,36 @@
       "requiresContext": false
     },
     {
+      "id": "climbingAnchorAngles",
+      "name": "Anchor Vector Angles",
+      "path": "./climbing-anchor-angles",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingCapstanFriction",
+      "name": "Capstan Friction & Belay Dynamics",
+      "path": "./climbing-capstan-friction",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingCenterOfMass",
+      "name": "Center of Mass & Friction Vectors",
+      "path": "./climbing-center-of-mass",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingFallFactor",
+      "name": "Fall Factor & Impact Force",
+      "path": "./climbing-fall-factor",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingFingerBiomechanics",
+      "name": "Finger Biomechanics & Pulley Strain",
+      "path": "./climbing-finger-biomechanics",
+      "requiresContext": false
+    },
+    {
       "id": "elevatorpid",
       "name": "Elevator PID Tuning",
       "path": "./elevatorpid",
@@ -187,5 +217,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-20T02:10:43.054Z"
+  "_generated": "2026-05-20T20:36:09.891Z"
 }
