@@ -3,7 +3,7 @@ import { eq, desc, and, gte, lte, count } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { AppEnv, originIntegrityMiddleware, getDb, ensureAuth } from "../middleware";
+import { AppEnv, originIntegrityMiddleware, getDb, ensureAuth, getSocialConfig } from "../middleware";
 import {
     listSocialQueueRoute,
     calendarSocialQueueRoute,
@@ -228,19 +228,7 @@ export const socialQueueRouter = _socialQueueRouter
         }
 
         const post = toSocialQueuePost(row);
-        const env = c.env as unknown;
-        const config = {
-            TWITTER_API_KEY: env.TWITTER_API_KEY,
-            TWITTER_API_SECRET: env.TWITTER_API_SECRET,
-            TWITTER_ACCESS_TOKEN: env.TWITTER_ACCESS_TOKEN,
-            TWITTER_ACCESS_SECRET: env.TWITTER_ACCESS_SECRET,
-            BLUESKY_HANDLE: env.BLUESKY_HANDLE || env.BLUESKY_IDENTIFIER,
-            BLUESKY_APP_PASSWORD: env.BLUESKY_APP_PASSWORD || env.BLUESKY_PASSWORD,
-            FACEBOOK_PAGE_ID: env.FACEBOOK_PAGE_ID,
-            FACEBOOK_ACCESS_TOKEN: env.FACEBOOK_ACCESS_TOKEN,
-            INSTAGRAM_ACCOUNT_ID: env.INSTAGRAM_ACCOUNT_ID,
-            INSTAGRAM_ACCESS_TOKEN: env.INSTAGRAM_ACCESS_TOKEN,
-        } as Parameters<typeof dispatchQueuePost>[2];
+        const config = await getSocialConfig(c);
 
         await dispatchQueuePost(db, post, config);
 

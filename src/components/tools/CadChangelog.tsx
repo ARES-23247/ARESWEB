@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import {  Wrench, Shield, Compass, Cpu, TrendingUp, CheckCircle } from "lucide-react";
+import { type LucideIcon, Wrench, Shield, Compass, Cpu, TrendingUp, CheckCircle } from "lucide-react";
 
 interface TimelineEvent {
   version: string;
@@ -8,7 +8,7 @@ interface TimelineEvent {
   description: string;
   author: string;
   impact: string;
-  icon: unknown;
+  icon: LucideIcon;
   color: string;
   details: string[];
 }

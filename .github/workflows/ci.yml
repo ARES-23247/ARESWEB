@@ -350,11 +350,11 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Playwright Tests (Shard ${{ matrix.shard }}/5)
+      - name: Playwright Tests (Shard ${{ matrix.shard }}/10)
         if: steps.check_e2e.outputs.run_e2e == 'true'
         env:
           PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: pnpm exec playwright test --shard=${{ matrix.shard }}/5
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/10
 
       - name: Upload Playwright Report (on failure)
         if: failure() && steps.check_e2e.outputs.run_e2e == 'true'
