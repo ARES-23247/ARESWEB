@@ -216,6 +216,26 @@ const renderInteractiveComponent = (node: ASTNode) => {
       </ErrorBoundary>
     );
   }
+
+  // Self-healing check: If a component is missing, it may be due to a stale Service Worker cache
+  if (typeof window !== "undefined") {
+    const reloadKey = `ares-stale-component-reload-${componentName}`;
+    const lastReload = sessionStorage.getItem(reloadKey);
+    const now = Date.now();
+    // Prevent infinite reload loops (limit to 1 attempt per minute)
+    if (!lastReload || now - Number(lastReload) > 60_000) {
+      sessionStorage.setItem(reloadKey, String(now));
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          if (registrations.length > 0) {
+            registrations.forEach((r) => r.unregister());
+            window.location.reload();
+          }
+        });
+      }
+    }
+  }
+
   return (
     <div className="p-4 border border-ares-red/50 bg-ares-red/10 text-white font-bold rounded my-8 font-mono text-sm shadow-lg shadow-ares-red/20">
       Unknown interactive component: {componentName}
