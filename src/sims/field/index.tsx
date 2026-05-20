@@ -9,6 +9,22 @@ import {
   type RobotPosition,
 } from './FieldData';
 
+function resolveBrandColor(colorStr: string): string {
+  if (colorStr.startsWith('var(')) {
+    const varName = colorStr.slice(4, -1).trim();
+    switch (varName) {
+      case '--ares-red': return '#C00000';
+      case '--ares-bronze': return '#CD7F32';
+      case '--ares-gold': return '#FFB81C';
+      case '--ares-cyan': return '#00E5FF';
+      case '--obsidian': return '#1A1A1A';
+      case '--marble': return '#F9F9F9';
+      default: return '#ffffff';
+    }
+  }
+  return colorStr;
+}
+
 interface FieldVisualizerProps {
   field?: keyof typeof FIELDS;
   robotPosition?: RobotPosition;
@@ -55,7 +71,7 @@ export default function FieldVisualizer({
     // Robot bumper
     const bumperGeometry = new THREE.BoxGeometry(0.9, 0.25, 0.9);
     const bumperMaterial = new THREE.MeshStandardMaterial({
-      color: 0xC00000,
+      color: new THREE.Color(resolveBrandColor('var(--ares-red)')),
       roughness: 0.7,
     });
     const bumper = new THREE.Mesh(bumperGeometry, bumperMaterial);
@@ -85,7 +101,7 @@ export default function FieldVisualizer({
 
     // Direction indicator
     const arrowGeometry = new THREE.ConeGeometry(0.05, 0.2, 3);
-    const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0xC00000 });
+    const arrowMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(resolveBrandColor('var(--ares-red)')) });
     const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
     arrow.position.set(0, 0.4, 0.35);
     arrow.rotation.x = Math.PI / 2;
@@ -127,7 +143,7 @@ export default function FieldVisualizer({
 
     const boundaryGeometry = new THREE.ShapeGeometry(boundaryShape);
     const boundaryMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00E5FF,
+      color: new THREE.Color(resolveBrandColor('var(--ares-cyan)')),
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.3,
@@ -229,7 +245,7 @@ export default function FieldVisualizer({
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
+    scene.background = new THREE.Color(resolveBrandColor('var(--obsidian)'));
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(

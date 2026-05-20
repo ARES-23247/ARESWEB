@@ -52,9 +52,27 @@ export default defineConfig({
         statements: 85
       }
     },
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     server: {
       deps: {
-        external: [/parse5/]
+        external: [
+          /parse5/,
+          /node_modules\/three/,
+          /node_modules\/monaco-editor/,
+          /node_modules\/lucide-react/,
+          /node_modules\/@tremor\/react/,
+          /node_modules\/framer-motion/,
+          /node_modules\/@tiptap/,
+          /node_modules\/prosemirror-/,
+          /node_modules\/highlight.js/,
+          /node_modules\/lowlight/,
+          /node_modules\/react-syntax-highlighter/,
+          /node_modules\/heic2any/
+        ]
       }
     }
   },

@@ -3,13 +3,24 @@ import { Link } from "@tanstack/react-router";
 import { useGetPlatformAnalytics } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { BarList, Card, Title, Text, DonutChart, Flex, LineChart } from "@tremor/react";
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import DashboardPageHeader from "./dashboard/DashboardPageHeader";
 
 export default function AnalyticsDashboard() {
   const { data: analyticsData, isLoading, isError } = useGetPlatformAnalytics();
+  const parentRef = useRef<HTMLDivElement>(null);
 
   const data = analyticsData || null;
+  const recentViews = data?.recentViews || [];
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const rowVirtualizer = useVirtualizer({
+    count: recentViews.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 58,
+  });
 
   if (isLoading) {
     return (
@@ -156,26 +167,52 @@ export default function AnalyticsDashboard() {
             <Clock size={20} className="text-ares-cyan" />
             Real-time Feed
           </h3>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(data?.recentViews || []).map((view: any, idx: number) => (
-              <div key={idx} className="flex flex-col gap-1 border-l border-white/5 pl-4 py-1 relative">
-                <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-ares-red shadow-[0_0_8px_rgba(192,0,0,0.5)]" />
-                <div className="flex justify-between items-start">
-                  <span className="text-xs text-marble font-medium truncate max-w-[200px]">{view.path}</span>
-                  <span className="text-xs text-marble/60 font-mono">
-                    {new Date(view.timestamp || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-[9px] text-marble/60 uppercase font-bold tracking-widest">
-                  <span className={view.category === 'doc' ? 'text-ares-cyan' : view.category === 'blog' ? 'text-ares-gold' : 'text-marble/50'}>
-                    {view.category}
-                  </span>
-                  <span>&middot;</span>
-                  <span className="truncate max-w-[120px]">Ref: {view.referrer.replace(/https?:\/\/[^/]+/, '') || 'direct'}</span>
-                </div>
-              </div>
-            ))}
+          <div 
+            ref={parentRef}
+            className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar relative"
+          >
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                const view = recentViews[virtualItem.index];
+                if (!view) return null;
+                return (
+                  <div
+                    key={virtualItem.key}
+                    data-index={virtualItem.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                    className="flex flex-col gap-1 border-l border-white/5 pl-4 py-1 relative"
+                  >
+                    <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-ares-red shadow-[0_0_8px_rgba(192,0,0,0.5)]" />
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs text-marble font-medium truncate max-w-[200px]">{view.path}</span>
+                      <span className="text-xs text-marble/60 font-mono">
+                        {new Date(view.timestamp || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[9px] text-marble/60 uppercase font-bold tracking-widest">
+                      <span className={view.category === 'doc' ? 'text-ares-cyan' : view.category === 'blog' ? 'text-ares-gold' : 'text-marble/50'}>
+                        {view.category}
+                      </span>
+                      <span>&middot;</span>
+                      <span className="truncate max-w-[120px]">Ref: {view.referrer?.replace(/https?:\/\/[^/]+/, '') || 'direct'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
 

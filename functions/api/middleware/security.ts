@@ -64,13 +64,28 @@ export interface RateLimitCheckResult {
  * - When circuit is open, fail CLOSED (deny requests) for security
  * - This prevents bypass by triggering DB errors
  */
-export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
+/**
+ * SEC-RL-02a: Enhanced Persistent Rate Limit Check returning full metadata details
+ */
+export async function checkPersistentRateLimitDetails(db: DrizzleDb, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<RateLimitCheckResult> {
   const now = Math.floor(Date.now() / 1000);
+  const defaultMetadata = {
+    limit,
+    remaining: limit,
+    reset: now + windowSeconds
+  };
 
   // Check if circuit breaker is open
   if (circuitBreakerOpenUntil > now) {
     console.warn(`[RateLimit] Circuit breaker OPEN until ${circuitBreakerOpenUntil} (denying request for security)`);
-    return false; // Fail closed when circuit is open
+    return {
+      allowed: false,
+      metadata: {
+        limit,
+        remaining: 0,
+        reset: circuitBreakerOpenUntil
+      }
+    }; // Fail closed when circuit is open
   }
 
   // Reset circuit breaker if window has passed
@@ -85,10 +100,20 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     const isProd = getProcessEnv()?.ENVIRONMENT === "production" || getProcessEnv()?.NODE_ENV === "production";
     if (!isProd) {
       console.warn("[RateLimit] No database attached, allowing in non-production");
-      return true;
+      return {
+        allowed: true,
+        metadata: defaultMetadata
+      };
     }
     console.error("[RateLimit] No database in production - failing closed for security");
-    return false;
+    return {
+      allowed: false,
+      metadata: {
+        limit,
+        remaining: 0,
+        reset: now + windowSeconds
+      }
+    };
   }
 
   // Composite key for D1 storage
@@ -126,6 +151,7 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     const count = result[0]?.count ?? 0;
     const expires = result[0]?.expiresAt ?? 0;
     const allowed = count <= limit;
+    const remaining = Math.max(0, limit - count);
 
     // Success - reset failure counter
     rateLimitFailureCount = 0;
@@ -133,7 +159,14 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     // Log rate limit checks for debugging
     console.debug(`[RateLimit] ${path || "unknown"} IP=${ip} count=${count}/${limit} allowed=${allowed} expires_at=${expires} now=${now}`);
 
-    return allowed;
+    return {
+      allowed,
+      metadata: {
+        limit,
+        remaining,
+        reset: expires
+      }
+    };
   } catch (err) {
     rateLimitFailureCount++;
     console.error(`[RateLimit] Persistent check failed (${rateLimitFailureCount}/${CIRCUIT_BREAKER_THRESHOLD}):`, err);
@@ -148,12 +181,30 @@ export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAg
     const isProd = getProcessEnv()?.ENVIRONMENT === "production" || getProcessEnv()?.NODE_ENV === "production";
     if (!isProd) {
       console.warn("[RateLimit] DB error in non-production, allowing request");
-      return true;
+      return {
+        allowed: true,
+        metadata: defaultMetadata
+      };
     }
 
     console.error("[RateLimit] DB error in production - failing closed for security");
-    return false;
+    return {
+      allowed: false,
+      metadata: {
+        limit,
+        remaining: 0,
+        reset: now + windowSeconds
+      }
+    };
   }
+}
+
+/**
+ * SEC-RL-02: Backward-compatible Persistent Rate Limit Check
+ */
+export async function checkPersistentRateLimit(db: DrizzleDb, ip: string, userAgent: string, limit: number, windowSeconds: number, path: string = ""): Promise<boolean> {
+  const result = await checkPersistentRateLimitDetails(db, ip, userAgent, limit, windowSeconds, path);
+  return result.allowed;
 }
 
 // ── SEC-DoW: Cloudflare Turnstile Verification ──────────────────────
@@ -235,8 +286,15 @@ export const persistentRateLimitMiddleware = (limit = 15, windowSeconds = 60) =>
     const ip = c.req.header("CF-Connecting-IP") || "unknown";
     const ua = c.req.header("User-Agent") || "unknown";
     const db = c.get("db") as DrizzleDb;
-    const allowed = await checkPersistentRateLimit(db, ip, ua, limit, windowSeconds, c.req.path);
-    if (!allowed) {
+    
+    const result = await checkPersistentRateLimitDetails(db, ip, ua, limit, windowSeconds, c.req.path);
+    
+    // Inject standardized rate limiting headers on the Hono context response
+    c.header("X-RateLimit-Limit", String(result.metadata.limit));
+    c.header("X-RateLimit-Remaining", String(result.metadata.remaining));
+    c.header("X-RateLimit-Reset", String(result.metadata.reset));
+    
+    if (!result.allowed) {
       if (db) {
         c.executionCtx.waitUntil(
           db.insert(schema.auditLog).values({

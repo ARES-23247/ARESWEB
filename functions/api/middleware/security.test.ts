@@ -218,6 +218,9 @@ describe('security middleware', () => {
       await middleware(mockContext, next);
 
       expect(next).toHaveBeenCalled();
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Limit', '10');
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Remaining', '9');
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Reset', expect.any(String));
     });
 
     it('blocks requests over the rate limit', async () => {
@@ -269,6 +272,9 @@ describe('security middleware', () => {
         429
       );
       expect(next).not.toHaveBeenCalled();
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Limit', '10');
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Remaining', '0');
+      expect(mockContext.header).toHaveBeenCalledWith('X-RateLimit-Reset', expect.any(String));
     });
   });
 
