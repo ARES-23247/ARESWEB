@@ -228,17 +228,18 @@ export const socialQueueRouter = _socialQueueRouter
         }
 
         const post = toSocialQueuePost(row);
+        const env = c.env as any;
         const config = {
-            TWITTER_API_KEY: c.env.TWITTER_API_KEY,
-            TWITTER_API_SECRET: c.env.TWITTER_API_SECRET,
-            TWITTER_ACCESS_TOKEN: c.env.TWITTER_ACCESS_TOKEN,
-            TWITTER_ACCESS_SECRET: c.env.TWITTER_ACCESS_SECRET,
-            BLUESKY_HANDLE: c.env.BLUESKY_HANDLE || c.env.BLUESKY_IDENTIFIER,
-            BLUESKY_APP_PASSWORD: c.env.BLUESKY_APP_PASSWORD || c.env.BLUESKY_PASSWORD,
-            FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID,
-            FACEBOOK_ACCESS_TOKEN: c.env.FACEBOOK_ACCESS_TOKEN,
-            INSTAGRAM_ACCOUNT_ID: c.env.INSTAGRAM_ACCOUNT_ID,
-            INSTAGRAM_ACCESS_TOKEN: c.env.INSTAGRAM_ACCESS_TOKEN,
+            TWITTER_API_KEY: env.TWITTER_API_KEY,
+            TWITTER_API_SECRET: env.TWITTER_API_SECRET,
+            TWITTER_ACCESS_TOKEN: env.TWITTER_ACCESS_TOKEN,
+            TWITTER_ACCESS_SECRET: env.TWITTER_ACCESS_SECRET,
+            BLUESKY_HANDLE: env.BLUESKY_HANDLE || env.BLUESKY_IDENTIFIER,
+            BLUESKY_APP_PASSWORD: env.BLUESKY_APP_PASSWORD || env.BLUESKY_PASSWORD,
+            FACEBOOK_PAGE_ID: env.FACEBOOK_PAGE_ID,
+            FACEBOOK_ACCESS_TOKEN: env.FACEBOOK_ACCESS_TOKEN,
+            INSTAGRAM_ACCOUNT_ID: env.INSTAGRAM_ACCOUNT_ID,
+            INSTAGRAM_ACCESS_TOKEN: env.INSTAGRAM_ACCESS_TOKEN,
         } as Parameters<typeof dispatchQueuePost>[2];
 
         await dispatchQueuePost(db, post, config);

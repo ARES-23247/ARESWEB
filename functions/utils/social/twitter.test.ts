@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
-import { dispatchTwitterPhoto } from './twitter';
+import { dispatchTwitterPhoto, dispatchTwitter } from './twitter';
 import type { SocialConfig } from '../socialSync';
 
 // Mock global fetch
@@ -410,6 +410,66 @@ describe('Twitter (X) Social Integration', () => {
       calls.forEach((call) => {
         expect(call[1]?.signal).toBeDefined();
       });
+    });
+  });
+
+  describe('dispatchTwitter()', () => {
+    const payload = {
+      title: 'Exciting Update!',
+      url: 'https://aresfirst.org/blog/update',
+      snippet: 'We built a new subsystem!'
+    };
+
+    it('returns early if config is incomplete', async () => {
+      const config: SocialConfig = {
+        TWITTER_API_KEY: 'key',
+        TWITTER_API_SECRET: 'secret',
+      };
+      await dispatchTwitter(payload, config);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('sends tweet to Twitter API v2 endpoint', async () => {
+      const mockTweetResponse = { ok: true };
+      vi.mocked(fetch).mockResolvedValueOnce(mockTweetResponse as any);
+
+      await dispatchTwitter(payload, fullConfig);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.twitter.com/2/tweets',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: expect.stringMatching(/^OAuth /),
+            'Content-Type': 'application/json'
+          }),
+          body: expect.any(String),
+        })
+      );
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1]?.body as string);
+      expect(body.text).toContain('🚀 New Update: Exciting Update!');
+      expect(body.text).toContain('We built a new subsystem!');
+      expect(body.text).toContain('Read more: https://aresfirst.org/blog/update');
+    });
+
+    it('truncates tweet if it exceeds 280 characters', async () => {
+      const mockTweetResponse = { ok: true };
+      vi.mocked(fetch).mockResolvedValueOnce(mockTweetResponse as any);
+
+      const longPayload = {
+        title: 'Super Long Title That Goes On and On and On',
+        url: 'https://aresfirst.org/blog/update',
+        snippet: 'A very detailed explanation of our subsystem that has an incredibly long description with lots of verbose details to make sure it exceeds the 280 character limit of the Twitter API.'
+      };
+
+      await dispatchTwitter(longPayload, fullConfig);
+
+      const call = mockFetch.mock.calls[0];
+      const body = JSON.parse(call[1]?.body as string);
+      expect(body.text.length).toBeLessThanOrEqual(280);
+      expect(body.text).toMatch(/\.\.\.$/);
     });
   });
 });

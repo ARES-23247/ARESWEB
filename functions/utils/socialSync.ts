@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sendZulipMessage } from './zulipSync';
 import { dispatchBluesky } from './social/bluesky';
-import { dispatchTwitterPhoto } from './social/twitter';
+import { dispatchTwitterPhoto, dispatchTwitter } from './social/twitter';
 import { dispatchFacebook, dispatchMetaPhoto } from './social/meta';
 import { logSystemError, DrizzleDB } from '../api/middleware';
 import pRetry from 'p-retry';
@@ -86,6 +86,7 @@ export async function dispatchSocials(
   // Social Platforms
   if (isEnabled('facebook')) promises.push(wrapRetry(() => dispatchFacebook(payload, config), 'Facebook'));
   if (isEnabled('bluesky')) promises.push(wrapRetry(() => dispatchBluesky(payload, config), 'Bluesky'));
+  if (isEnabled('twitter') || isEnabled('x')) promises.push(wrapRetry(() => dispatchTwitter(payload, config), 'Twitter'));
 
   const results = await Promise.allSettled(promises);
   const failures: string[] = [];

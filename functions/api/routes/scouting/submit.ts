@@ -10,7 +10,7 @@ const ScoutingSubmitSchema = z.object({
   teamNumber: z.number(),
   eventKey: z.string().optional().default(""),
   seasonKey: z.string().optional().default("25-26"),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
 });
 
 const submitScoutingRoute = createRoute({

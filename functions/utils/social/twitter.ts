@@ -1,4 +1,4 @@
-import { SocialConfig } from "../socialSync";
+import { PostPayload, SocialConfig } from "../socialSync";
 
 /**
  * V8 Edge Crypto implementation of OAuth 1.0A HMAC-SHA1 to natively sign requests for Twitter API.
@@ -73,6 +73,41 @@ export async function dispatchTwitterPhoto(imageUrl: string, caption: string, co
     }
   } catch (err) { 
     console.error("X (Twitter) Native Push failed:", err); 
+    throw err;
+  }
+}
+
+export async function dispatchTwitter(payload: PostPayload, config: SocialConfig) {
+  if (!config.TWITTER_API_KEY || !config.TWITTER_API_SECRET || !config.TWITTER_ACCESS_TOKEN || !config.TWITTER_ACCESS_SECRET) return;
+
+  try {
+    const tweetUrl = "https://api.twitter.com/2/tweets";
+    const tweetAuthHeader = await generateOAuth1Signature(tweetUrl, "POST", config);
+    const text = `🚀 New Update: ${payload.title}\n\n${payload.snippet || ""}\n\nRead more: ${payload.url}`;
+    
+    // X limit is 280 characters, let's keep it safe
+    const truncatedText = text.length > 280 ? text.substring(0, 277) + "..." : text;
+
+    const tweetPayload = {
+      text: truncatedText
+    };
+
+    const res = await fetch(tweetUrl, {
+      signal: AbortSignal.timeout(5000),
+      method: "POST",
+      headers: {
+        "Authorization": tweetAuthHeader,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(tweetPayload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`X API Rejected: ${errText}`);
+    }
+  } catch (err) {
+    console.error("X (Twitter) Syndication failed:", err);
     throw err;
   }
 }

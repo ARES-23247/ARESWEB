@@ -47,8 +47,12 @@ export default function ContentManager({
     setIsSyncing(true);
     const toastId = toast.loading("Connecting to GITHUB and running Cloudflare AI translation on raw commits...");
     try {
-      const res = await client.internal["git-to-blog"].$post({
-        json: { sinceDays: 7 }
+      const res = await fetch("/api/internal/git-to-blog", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sinceDays: 7 }),
       });
       if (res.ok) {
         const data = await res.json() as { success: boolean, title: string, slug: string };

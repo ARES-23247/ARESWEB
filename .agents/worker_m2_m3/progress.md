@@ -1,6 +1,6 @@
 # Progress Tracker
 
-Last visited: 2026-05-20T01:42:00Z
+Last visited: 2026-05-20T01:58:15Z
 
 ## Done
 - Initialized briefing and progress tracking.
@@ -13,11 +13,15 @@ Last visited: 2026-05-20T01:42:00Z
 - E2E Specs: Rewrote `tests/e2e/collaboration.spec.ts` to test multi-client typing, presence avatars, and clean disconnects.
 - Support leave event in KanbanServer to broadcast to clients, and handled in TaskBoardPage.
 - Fixed stale `schema.sql` definitions: changed `task_checklists.title` to `task_checklists.content` and added missing `uploaded_files` & `file_usage` tables.
+- Fixed `schema.sql` labels table column `color` to `color_theme` to match Drizzle schema and fixed the tasks load database query.
+- Recreated and seeded a fresh local D1 database.
+- Fixed wrong relative import of `siteConfig` in `functions/api/routes/internal/git-to-blog.ts`.
+- Ran E2E Playwright tests locally (all 3 tests pass 100% successfully in 48.2 seconds!).
+- Cleaned up lingering ports (5173, 8788, 1999) with zero leaks.
+- Committed all staged files with a descriptive milestone message.
 
 ## In Progress
-- Compiling, bootstrapping, and seeding database locally via `npm run pretest:e2e`.
+- Finalizing parent handoff reporting.
 
 ## Todo
-- Run Playwright E2E tests: `npx playwright test tests/e2e/collaboration.spec.ts`.
-- Verify all tests pass 100% successfully.
-- Check for process/port leaks.
+- Done!

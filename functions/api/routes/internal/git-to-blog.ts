@@ -64,7 +64,7 @@ gitToBlogRouter.openapi(gitToBlogRoute, async (c) => {
     throw new ApiError("Unauthorized. Admin privileges required.", 401);
   }
 
-  const body = c.req.valid("json") || {};
+  const body = (c.req.valid("json") || {}) as { sinceDays?: number };
   const sinceDays = body.sinceDays ?? 7;
   const db = getDb(c);
 

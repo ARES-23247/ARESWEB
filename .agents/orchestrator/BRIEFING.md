@@ -51,12 +51,15 @@ Plan, delegate, and oversee the implementation of E2E Playwright tests verifying
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | explorer_m1 | teamwork_preview_explorer | Milestone 1: Exploration & Diagnosis | completed | 0cf5ad90-c349-4762-8c76-5f912a7c5226 |
-| worker_m2_m3 | teamwork_preview_worker | Milestones 2 & 3: Infrastructure & E2E Specs | in-progress | df6a0e93-18c0-4a49-af2e-a228cfbc469f |
+| worker_m2_m3 | teamwork_preview_worker | Milestones 2 & 3: Infrastructure & E2E Specs | completed | df6a0e93-18c0-4a49-af2e-a228cfbc469f |
+| reviewer_1_m4 | teamwork_preview_reviewer | Code Integrity Review | in-progress | 3a379973-d3cc-4bbf-84c0-e4b6b6191db4 |
+| reviewer_2_m4 | teamwork_preview_reviewer | Brand & Robustness Review | in-progress | da90ece4-06a7-4240-bcfa-e01b52ae87e4 |
+| auditor_m4 | teamwork_preview_auditor | Forensic Integrity Audit | failed | f33eb121-5faa-452c-8346-553f6e3eb803 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: [df6a0e93-18c0-4a49-af2e-a228cfbc469f]
+- Spawn count: 7 / 16
+- Pending subagents: [3a379973-d3cc-4bbf-84c0-e4b6b6191db4, da90ece4-06a7-4240-bcfa-e01b52ae87e4]
 - Predecessor: none
 - Successor: not yet spawned
 
