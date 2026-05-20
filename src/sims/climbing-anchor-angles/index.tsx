@@ -94,7 +94,7 @@ export default function ClimbingAnchorAnglesSim() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Panel: Configuration Controls */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
             <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
               Parameters
@@ -166,8 +166,8 @@ export default function ClimbingAnchorAnglesSim() {
         </div>
 
         {/* Center Panel: SVG Vector Diagram */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center">
-          <div className="w-full max-w-[280px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="w-full max-w-[320px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
             
             {/* SVG Visualizing the Equalized Anchor */}
             <svg
@@ -298,73 +298,85 @@ export default function ClimbingAnchorAnglesSim() {
           </div>
         </div>
 
-        {/* Right Panel: Telemetry Dashboard */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
-            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
-              Telemetry Dashboard
-            </h4>
-
-            {/* Metric: Left Anchor load */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Anchor Point A load</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className={`text-2xl font-heading font-black ${
-                  anchorData.pctLeft > 100 ? 'text-ares-red' : anchorData.pctLeft > 70 ? 'text-ares-gold' : 'text-marble'
-                }`}>
-                  {anchorData.pctLeft}%
-                </span>
-                <span className="text-xs text-marble/50">of weight</span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                Force: <strong className="text-white">{anchorData.forceLeftKn} kN</strong> ({ (anchorData.forceLeftKn * 224.8).toFixed(0) } lbs)
-              </span>
+        {/* Bottom Panel: Telemetry Dashboard */}
+        <div className="lg:col-span-12 w-full mt-4">
+          <div className="bg-white/5 border border-white/5 rounded-lg p-6 flex flex-col gap-6">
+            <div>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
+                Mechanical Metrics & Safety Telemetry
+              </h4>
             </div>
 
-            {/* Metric: Right Anchor load */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Anchor Point B load</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className={`text-2xl font-heading font-black ${
-                  anchorData.pctRight > 100 ? 'text-ares-red' : anchorData.pctRight > 70 ? 'text-ares-gold' : 'text-marble'
-                }`}>
-                  {anchorData.pctRight}%
-                </span>
-                <span className="text-xs text-marble/50">of weight</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {/* Stat Card 1: Anchor Point A load */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Anchor Point A load</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className={`text-2xl font-heading font-black ${
+                      anchorData.pctLeft > 100 ? 'text-ares-red' : anchorData.pctLeft > 70 ? 'text-ares-gold' : 'text-marble'
+                    }`}>
+                      {anchorData.pctLeft}%
+                    </span>
+                    <span className="text-xs text-marble/50">of weight</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1">
+                    Force: <strong className="text-white">{anchorData.forceLeftKn} kN</strong> ({ (anchorData.forceLeftKn * 224.8).toFixed(0) } lbs)
+                  </span>
+                </div>
               </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                Force: <strong className="text-white">{anchorData.forceRightKn} kN</strong> ({ (anchorData.forceRightKn * 224.8).toFixed(0) } lbs)
-              </span>
-            </div>
 
-            {/* Safety Indicator Banner */}
-            <div className={`p-3 rounded border text-xs leading-relaxed transition-all ${safety.bg} ${safety.border} ${safety.color}`}>
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                {safety.state === 'critical' || safety.state === 'warning' ? (
-                  <ShieldAlert className="w-4 h-4" />
-                ) : (
-                  <ShieldCheck className="w-4 h-4" />
-                )}
-                <span>{safety.text}</span>
+              {/* Stat Card 2: Anchor Point B load */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Anchor Point B load</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className={`text-2xl font-heading font-black ${
+                      anchorData.pctRight > 100 ? 'text-ares-red' : anchorData.pctRight > 70 ? 'text-ares-gold' : 'text-marble'
+                    }`}>
+                      {anchorData.pctRight}%
+                    </span>
+                    <span className="text-xs text-marble/50">of weight</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1">
+                    Force: <strong className="text-white">{anchorData.forceRightKn} kN</strong> ({ (anchorData.forceRightKn * 224.8).toFixed(0) } lbs)
+                  </span>
+                </div>
               </div>
-              <p className="text-[10px] opacity-80 leading-normal font-sans">
-                {safety.state === 'optimal' 
-                  ? 'Angles under 60° distribute forces safely and keep vector multiplier forces to a minimum.'
-                  : safety.state === 'safe'
-                  ? 'Standard and robust equalized configuration. Vector forces remain low and well within structural limit.'
-                  : safety.state === 'warning'
-                  ? 'Anchor angles between 90° and 120° multiply forces. At 120°, each bolt feels 100% of your weight. Avoid!'
-                  : 'CRITICAL WARNING! Angles above 120° amplify forces exponentially. A dynamic load will pull anchors out!'}
-              </p>
-            </div>
 
-            {/* Analogies and Educational Breakdown */}
-            <div className="p-3 bg-white/5 border border-white/5 rounded text-[10px] leading-relaxed text-marble/50">
-              <div className="flex items-center gap-1 text-ares-gold font-bold mb-1">
-                <Info className="w-3.5 h-3.5" />
-                <span>IN OTHER WORDS</span>
+              {/* Stat Card 3: Safety Indicator Banner */}
+              <div className={`p-4 rounded-lg border text-xs leading-relaxed transition-all flex flex-col justify-between ${safety.bg} ${safety.border} ${safety.color}`}>
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                    {safety.state === 'critical' || safety.state === 'warning' ? (
+                      <ShieldAlert className="w-4 h-4" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4" />
+                    )}
+                    <span>{safety.text}</span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-normal font-sans">
+                    {safety.state === 'optimal' 
+                      ? 'Angles under 60° distribute forces safely and keep vector multiplier forces to a minimum.'
+                      : safety.state === 'safe'
+                      ? 'Standard and robust equalized configuration. Vector forces remain low and well within structural limit.'
+                      : safety.state === 'warning'
+                      ? 'Anchor angles between 90° and 120° multiply forces. At 120°, each bolt feels 100% of your weight. Avoid!'
+                      : 'CRITICAL WARNING! Angles above 120° amplify forces exponentially. A dynamic load will pull anchors out!'}
+                  </p>
+                </div>
               </div>
-              Imagine standing with your legs spread extremely wide in a split. The wider your feet, the harder your muscles have to push outwards to keep you from sliding flat on the floor! Keep the legs close for structural strength.
+
+              {/* Stat Card 4: Cognitive Breakdown */}
+              <div className="bg-white/5 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-3 text-[10px] leading-relaxed text-marble/50">
+                <div>
+                  <div className="flex items-center gap-1 text-ares-gold font-bold mb-1.5">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>IN OTHER WORDS</span>
+                  </div>
+                  Imagine standing with your legs spread extremely wide in a split. The wider your feet, the harder your muscles have to push outwards to keep you from sliding flat on the floor! Keep the legs close for structural strength.
+                </div>
+              </div>
             </div>
           </div>
         </div>

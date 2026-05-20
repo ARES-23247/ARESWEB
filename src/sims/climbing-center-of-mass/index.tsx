@@ -107,7 +107,7 @@ export default function ClimbingCenterOfMassSim() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Panel: Simulation Controls */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
             <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
               Configuration
@@ -193,8 +193,8 @@ export default function ClimbingCenterOfMassSim() {
         </div>
 
         {/* Center Panel: Vector Diagram SVG */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center">
-          <div className="w-full max-w-[280px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="w-full max-w-[320px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
             
             {/* SVG Vector Drawing */}
             <svg
@@ -312,73 +312,85 @@ export default function ClimbingCenterOfMassSim() {
           </div>
         </div>
 
-        {/* Right Panel: Telemetry Dashboard */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
-            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
-              Mechanical Metrics
-            </h4>
-
-            {/* Metric: Finger Pull */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Finger Holding Tension</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className={`text-3xl font-heading font-black transition-colors ${
-                  physics.fingerPullPercentage > 75 ? 'text-ares-red' : physics.fingerPullPercentage > 50 ? 'text-ares-gold' : 'text-marble'
-                }`}>
-                  {physics.fingerPullPercentage}%
-                </span>
-                <span className="text-xs text-marble/50">of weight</span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                Equal to <strong className="text-white">{physics.effectiveFingerPull.toFixed(0)} N</strong> of force.
-              </span>
+        {/* Bottom Panel: Telemetry Dashboard */}
+        <div className="lg:col-span-12 w-full mt-4">
+          <div className="bg-white/5 border border-white/5 rounded-lg p-6 flex flex-col gap-6">
+            <div>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
+                Mechanical Metrics & Safety Telemetry
+              </h4>
             </div>
 
-            {/* Metric: Foot Status Gauge */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Friction Limit Gauge</span>
-              <div className="flex justify-between text-xs font-mono text-marble/60">
-                <span>Shear Friction / Available</span>
-                <span>{physics.feetCut ? 'N/A' : `${physics.requiredMu.toFixed(2)} / ${frictionCoef.toFixed(2)}`}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {/* Stat Card 1: Finger Holding Tension */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Finger Holding Tension</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className={`text-3xl font-heading font-black transition-colors ${
+                      physics.fingerPullPercentage > 75 ? 'text-ares-red' : physics.fingerPullPercentage > 50 ? 'text-ares-gold' : 'text-marble'
+                    }`}>
+                      {physics.fingerPullPercentage}%
+                    </span>
+                    <span className="text-xs text-marble/50">of weight</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1">
+                    Equal to <strong className="text-white">{physics.effectiveFingerPull.toFixed(0)} N</strong> of force.
+                  </span>
+                </div>
               </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${physics.feetCut ? 100 : Math.min(100, (physics.requiredMu / frictionCoef) * 100)}%` }}
-                  className={`h-full transition-all duration-300 ${
-                    physics.feetCut ? 'bg-ares-red' : physics.feetSlipping ? 'bg-ares-gold' : 'bg-ares-cyan'
-                  }`}
-                />
-              </div>
-            </div>
 
-            {/* Static EQ Safety Banner */}
-            <div className={`p-3 rounded border text-xs leading-relaxed transition-all ${status.bg} ${status.border} ${status.color}`}>
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                {status.state === 'danger' || status.state === 'warning' ? (
-                  <ShieldAlert className="w-4 h-4" />
-                ) : (
-                  <Compass className="w-4 h-4" />
-                )}
-                <span>{status.text}</span>
+              {/* Stat Card 2: Friction Limit Gauge */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Friction Limit Gauge</span>
+                  <div className="flex justify-between text-xs font-mono text-marble/60 mt-1">
+                    <span>Shear Friction / Available</span>
+                    <span>{physics.feetCut ? 'N/A' : `${physics.requiredMu.toFixed(2)} / ${frictionCoef.toFixed(2)}`}</span>
+                  </div>
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div
+                      style={{ width: `${physics.feetCut ? 100 : Math.min(100, (physics.requiredMu / frictionCoef) * 100)}%` }}
+                      className={`h-full transition-all duration-300 ${
+                        physics.feetCut ? 'bg-ares-red' : physics.feetSlipping ? 'bg-ares-gold' : 'bg-ares-cyan'
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] opacity-80 leading-normal font-sans">
-                {physics.feetCut 
-                  ? 'Severe overhanging and hip displacement completely unloaded your feet. Forearms are draining fast!'
-                  : physics.feetSlipping 
-                  ? 'The foot friction requirement exceeds available rubber grip. Shift your hips closer to restore normal force!'
-                  : 'Center of gravity aligns optimally with available holds. Good static footing allows indefinitely sustained locks.'}
-              </p>
-            </div>
 
-            {/* Pro Tips */}
-            <div className="p-3 bg-white/5 border border-white/5 rounded text-[10px] leading-relaxed text-marble/50">
-              <div className="flex items-center gap-1 text-ares-gold font-bold mb-1">
-                <Award className="w-3.5 h-3.5" />
-                <span>COGNITIVE BREAKDOWN</span>
+              {/* Stat Card 3: Static EQ Safety Banner */}
+              <div className={`p-4 rounded-lg border text-xs leading-relaxed transition-all flex flex-col justify-between ${status.bg} ${status.border} ${status.color}`}>
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                    {status.state === 'danger' || status.state === 'warning' ? (
+                      <ShieldAlert className="w-4 h-4" />
+                    ) : (
+                      <Compass className="w-4 h-4" />
+                    )}
+                    <span>{status.text}</span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-normal font-sans">
+                    {physics.feetCut 
+                      ? 'Severe overhanging and hip displacement completely unloaded your feet. Forearms are draining fast!'
+                      : physics.feetSlipping 
+                      ? 'The foot friction requirement exceeds available rubber grip. Shift your hips closer to restore normal force!'
+                      : 'Center of gravity aligns optimally with available holds. Good static footing allows indefinitely sustained locks.'}
+                  </p>
+                </div>
               </div>
-              <span className="block font-bold text-white mb-0.5">&quot;In Other Words&quot;</span>
-              Imagine holding a heavy bucket of water. If you hold it close to your chest (Center of Mass near the wall), it feels light. If you hold it far out in front of you (hips sagged out), your fingers get tired in seconds! Keep your hips tucked.
+
+              {/* Stat Card 4: Cognitive Breakdown */}
+              <div className="bg-white/5 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-3 text-[10px] leading-relaxed text-marble/50">
+                <div>
+                  <div className="flex items-center gap-1 text-ares-gold font-bold mb-1.5">
+                    <Award className="w-3.5 h-3.5" />
+                    <span>COGNITIVE BREAKDOWN</span>
+                  </div>
+                  <span className="block font-bold text-white mb-0.5">&quot;In Other Words&quot;</span>
+                  Imagine holding a heavy bucket of water. If you hold it close to your chest (Center of Mass near the wall), it feels light. If you hold it far out in front of you (hips sagged out), your fingers get tired in seconds! Keep your hips tucked.
+                </div>
+              </div>
             </div>
           </div>
         </div>

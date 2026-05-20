@@ -139,8 +139,8 @@ export default function ClimbingCapstanFrictionSim() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Panel: Inputs */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Left Panel: Parameters */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
             <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
               Parameters
@@ -237,8 +237,8 @@ export default function ClimbingCapstanFrictionSim() {
         </div>
 
         {/* Center Panel: SVG cylinder wraps */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center">
-          <div className="w-full max-w-[280px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="w-full max-w-[320px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
             
             {/* SVG Visualizing the Capstan Cylindrical Wrap */}
             <svg
@@ -358,80 +358,94 @@ export default function ClimbingCapstanFrictionSim() {
           </div>
         </div>
 
-        {/* Right Panel: Telemetry Dashboard */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
-            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
-              Telemetry & Output
-            </h4>
-
-            {/* Stat: Friction Multiplier */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Friction Multiplier (e^&mu;&theta;)</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-3xl font-heading font-black text-white">
-                  {capstanData.multiplier.toFixed(1)}&times;
-                </span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                Holding force is reduced by this factor!
-              </span>
+        {/* Bottom Panel: Telemetry Dashboard */}
+        <div className="lg:col-span-12 w-full mt-4">
+          <div className="bg-white/5 border border-white/5 rounded-lg p-6 flex flex-col gap-6">
+            <div>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
+                Mechanical Metrics & Safety Telemetry
+              </h4>
             </div>
 
-            {/* Stat: Brake force required */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Brake Hand Force Required</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-3xl font-heading font-black text-ares-cyan">
-                  {capstanData.holdingForceLbs.toFixed(1)}
-                </span>
-                <span className="text-xs text-marble/50">lbs</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-stretch">
+              {/* Stat Card 1: Friction Multiplier */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Friction Multiplier (e^&mu;&theta;)</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-white">
+                      {capstanData.multiplier.toFixed(1)}&times;
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1">
+                    Holding force is reduced by this factor!
+                  </span>
+                </div>
               </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                Standard Load: <strong className="text-white">{capstanData.climberForceLbs.toFixed(1)} lbs</strong>
-              </span>
-            </div>
 
-            {/* Thermal Sensor */}
-            <div className="flex flex-col gap-2 bg-black/30 p-3 rounded border border-white/5">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-marble/60 flex items-center gap-1">
-                  <Thermometer className="w-4 h-4 text-ares-red" />
-                  Thermal Sensor
-                </span>
-                <span className={`font-bold ${deviceTemp > 50 ? 'text-ares-red' : 'text-ares-cyan'}`}>
-                  {deviceTemp.toFixed(1)} &deg;C
-                </span>
+              {/* Stat Card 2: Brake force required */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Brake Hand Force Required</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-ares-cyan">
+                      {capstanData.holdingForceLbs.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-marble/50">lbs</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1">
+                    Standard Load: <strong className="text-white">{capstanData.climberForceLbs.toFixed(1)} lbs</strong>
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-marble/40 mt-1">
-                <Flame className="w-3.5 h-3.5" />
-                <span>Heat Energy: {totalHeatJoules.toFixed(0)} Joules</span>
-              </div>
-            </div>
 
-            {/* Heat safety callout */}
-            <div className={`p-3 rounded border text-xs leading-relaxed transition-all ${tempWarning.bg} ${tempWarning.border} ${tempWarning.color}`}>
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                <ShieldAlert className="w-4 h-4" />
-                <span>{tempWarning.text}</span>
+              {/* Stat Card 3: Thermal Sensor */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-marble/60 flex items-center gap-1">
+                      <Thermometer className="w-4 h-4 text-ares-red" />
+                      Thermal Sensor
+                    </span>
+                    <span className={`font-bold ${deviceTemp > 50 ? 'text-ares-red' : 'text-ares-cyan'}`}>
+                      {deviceTemp.toFixed(1)} &deg;C
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-marble/40 mt-1">
+                    <Flame className="w-3.5 h-3.5" />
+                    <span>Heat Energy: {totalHeatJoules.toFixed(0)} J</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] opacity-80 leading-normal font-sans">
-                {deviceTemp > 80
-                  ? 'Friction heat has built up significantly! Touching the carabiner immediately after a fast lower can cause severe burns!'
-                  : deviceTemp > 40
-                  ? 'Lowering friction is dissipating as thermal energy. Ambient cooling is actively normalizing temperatures.'
-                  : 'Friction surfaces remain in stable thermal equilibrium.'}
-              </p>
-            </div>
 
-            {/* In Other Words breakdown */}
-            <div className="p-3 bg-white/5 border border-white/5 rounded text-[10px] leading-relaxed text-marble/50">
-              <div className="flex items-center gap-1 text-ares-gold font-bold mb-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>COGNITIVE BREAKDOWN</span>
+              {/* Stat Card 4: Heat safety callout */}
+              <div className={`p-4 rounded-lg border text-xs leading-relaxed transition-all flex flex-col justify-between ${tempWarning.bg} ${tempWarning.border} ${tempWarning.color}`}>
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>{tempWarning.text}</span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-normal font-sans">
+                    {deviceTemp > 80
+                      ? 'Friction heat has built up significantly! Touching the carabiner immediately after a fast lower can cause severe burns!'
+                      : deviceTemp > 40
+                      ? 'Lowering friction is dissipating as thermal energy. Ambient cooling is actively normalizing temperatures.'
+                      : 'Friction surfaces remain in stable thermal equilibrium.'}
+                  </p>
+                </div>
               </div>
-              <span className="block font-bold text-white mb-0.5">&quot;In Other Words&quot;</span>
-              Wrapping a rope around a post lets friction do the heavy lifting. A single wrap multiplies your grip so much that holding a full-grown adult takes less effort than holding a bag of groceries!
+
+              {/* Stat Card 5: Cognitive Breakdown */}
+              <div className="bg-white/5 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-3 text-[10px] leading-relaxed text-marble/50">
+                <div>
+                  <div className="flex items-center gap-1 text-ares-gold font-bold mb-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>COGNITIVE BREAKDOWN</span>
+                  </div>
+                  <span className="block font-bold text-white mb-0.5">&quot;In Other Words&quot;</span>
+                  Wrapping a rope around a post lets friction do the heavy lifting. A single wrap multiplies your grip so much that holding a full-grown adult takes less effort than holding a bag of groceries!
+                </div>
+              </div>
             </div>
           </div>
         </div>

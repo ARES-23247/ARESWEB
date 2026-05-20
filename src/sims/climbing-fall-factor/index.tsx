@@ -183,8 +183,8 @@ export default function ClimbingFallFactorSim() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Panel: Inputs & Live Telemetry */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Left Panel: Inputs */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
             <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
               Parameters
@@ -305,8 +305,8 @@ export default function ClimbingFallFactorSim() {
         </div>
 
         {/* Center Panel: SVG Physics Canvas */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center">
-          <div className="w-full max-w-[280px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="w-full max-w-[320px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
             
             {/* SVG Visual Environment */}
             <svg
@@ -352,7 +352,6 @@ export default function ClimbingFallFactorSim() {
               />
 
               {/* Rope segment 2: Anchor to Climber */}
-              {/* Dynamic spline drawing based on state */}
               {isFalling && fallStatus === 'freefall' ? (
                 // Freefall means the rope loops in a U-shape because of slack!
                 <path
@@ -407,84 +406,112 @@ export default function ClimbingFallFactorSim() {
           </div>
         </div>
 
-        {/* Right Panel: Physics Equations & Live Meters */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
-            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
-              Telemetry & Physics
-            </h4>
-
-            {/* Stat: Fall Factor */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Fall Factor (FF)</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-3xl font-heading font-black text-white">{fallFactor}</span>
-                <span className="text-xs text-marble/50">/ 2.0</span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1 leading-relaxed">
-                Formula: <span className="font-mono bg-black/30 px-1 py-0.5 rounded text-ares-gold">H_fall / L_rope</span>
-              </span>
+        {/* Bottom Panel: Telemetry Dashboard */}
+        <div className="lg:col-span-12 w-full mt-4">
+          <div className="bg-white/5 border border-white/5 rounded-lg p-6 flex flex-col gap-6">
+            <div>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
+                Telemetry & Physics Dashboard
+              </h4>
             </div>
 
-            {/* Stat: Peak G-Force */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Peak Deceleration Force</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className={`text-3xl font-heading font-black transition-colors duration-100 ${
-                  isFalling ? 'text-ares-red' : peakGForce > 9 ? 'text-ares-red' : 'text-marble'
-                }`}>
-                  {isFalling ? peakGForce.toFixed(1) : theoreticalGForce}
-                </span>
-                <span className="text-xs text-marble/50">G-Force</span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1">
-                {theoreticalGForce < 7 ? 'Safe catch standard.' : theoreticalGForce < 10 ? 'Strenuous catch.' : 'Severe whiplash force!'}
-              </span>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {/* Stat Card 1: Forces & G-Force */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Fall Factor (FF)</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-white">{fallFactor}</span>
+                    <span className="text-xs text-marble/50">/ 2.0</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1 leading-relaxed">
+                    Formula: <span className="font-mono bg-black/30 px-1 py-0.5 rounded text-ares-gold">H_fall / L_rope</span>
+                  </span>
+                </div>
 
-            {/* Meter 1: Impact Force */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-marble/50">Peak Force on Climber</span>
-                <span className="text-ares-cyan font-bold">{isFalling ? (maxTension / 1000).toFixed(2) : theoreticalForceKn} kN</span>
+                <div className="flex flex-col border-t border-white/5 pt-3">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Peak Deceleration</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className={`text-2xl font-heading font-black transition-colors duration-100 ${
+                      isFalling ? 'text-ares-red' : peakGForce > 9 ? 'text-ares-red' : 'text-marble'
+                    }`}>
+                      {isFalling ? peakGForce.toFixed(1) : theoreticalGForce}
+                    </span>
+                    <span className="text-xs text-marble/50">G-Force</span>
+                  </div>
+                </div>
               </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${Math.min(100, ((isFalling ? maxTension / 1000 : theoreticalForceKn) / 15) * 100)}%` }}
-                  className="h-full bg-ares-cyan transition-[width] duration-300 ease-out"
-                />
-              </div>
-              <span className="text-[9px] text-marble/30 font-mono">Maximum legal limit for climbing ropes is 12 kN.</span>
-            </div>
 
-            {/* Meter 2: Force on the Anchor */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-marble/50">Multiplier Force on Anchor</span>
-                <span className="text-ares-gold font-bold">
-                  {isFalling ? ((maxTension * 1.6) / 1000).toFixed(2) : theoreticalAnchorForceKn} kN
-                </span>
-              </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${Math.min(100, ((isFalling ? (maxTension * 1.6) / 1000 : theoreticalAnchorForceKn) / 22) * 100)}%` }}
-                  className="h-full bg-ares-gold transition-[width] duration-300 ease-out"
-                />
-              </div>
-              <span className="text-[9px] text-marble/30 font-mono">1.6&times; multiplication due to friction pulley effect.</span>
-            </div>
+              {/* Stat Card 2: Peak Force on Climber */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Peak Force on Climber</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-ares-cyan">
+                      {isFalling ? (maxTension / 1000).toFixed(2) : theoreticalForceKn}
+                    </span>
+                    <span className="text-xs text-ares-cyan font-bold">kN</span>
+                  </div>
+                  <span className="text-[9px] text-marble/30 font-mono mt-1">
+                    Theoretical: {theoreticalForceKn} kN ({ (theoreticalForceKn * 224.8).toFixed(0) } lbs)
+                  </span>
+                </div>
 
-            {/* Warning callout panel */}
-            <div className={`p-3 rounded border text-xs leading-relaxed transition-all ${safety.bg} ${safety.border} ${safety.color}`}>
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                {fallFactor > 1.0 ? <AlertTriangle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                <span>{safety.rating}: {safety.text}</span>
+                <div className="flex flex-col gap-1 border-t border-white/5 pt-3">
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, ((isFalling ? maxTension / 1000 : theoreticalForceKn) / 12) * 100)}%` }}
+                      className="h-full bg-ares-cyan transition-[width] duration-300 ease-out"
+                    />
+                  </div>
+                  <span className="text-[9px] text-marble/40 font-mono">Maximum safe industry standard limit is 12 kN.</span>
+                </div>
               </div>
-              <p className="text-[10px] opacity-80 leading-normal font-sans">
-                {fallFactor > 1.2 
-                  ? 'High fall factors exert extreme force. Dynamic ropes are mandatory to prevent gear blowout.'
-                  : 'Rope elasticity stretches safely, keeping decelerations inside physiological boundaries.'}
-              </p>
+
+              {/* Stat Card 3: Multiplier Force on Anchor */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Force on Anchor (Bolt)</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-ares-gold">
+                      {isFalling ? ((maxTension * 1.6) / 1000).toFixed(2) : theoreticalAnchorForceKn}
+                    </span>
+                    <span className="text-xs text-ares-gold font-bold">kN</span>
+                  </div>
+                  <span className="text-[9px] text-marble/30 font-mono mt-1">
+                    Pulley Effect: 1.6&times; of climber load due to friction.
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 border-t border-white/5 pt-3">
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, ((isFalling ? (maxTension * 1.6) / 1000 : theoreticalAnchorForceKn) / 18) * 100)}%` }}
+                      className="h-full bg-ares-gold transition-[width] duration-300 ease-out"
+                    />
+                  </div>
+                  <span className="text-[9px] text-marble/40 font-mono">Carabiner system pulley effect creates double-loading.</span>
+                </div>
+              </div>
+
+              {/* Stat Card 4: Safety Warning Panel */}
+              <div className={`p-4 rounded-lg border text-xs leading-relaxed transition-all flex flex-col justify-between ${safety.bg} ${safety.border} ${safety.color}`}>
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                    {fallFactor > 1.0 ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                    <span>{safety.rating}: {safety.text}</span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-normal font-sans">
+                    {fallFactor > 1.2 
+                      ? 'High fall factors exert extreme force on bolts and spines. Dynamic climbing ropes are mandatory to prevent system failure.'
+                      : 'Rope elasticity stretches safely, keeping deceleration impact forces inside safe physiological boundaries.'}
+                  </p>
+                </div>
+                
+                <div className="text-[9px] opacity-60 border-t border-white/10 pt-2 mt-2 font-mono">
+                  Safety Rating: {safety.rating}
+                </div>
+              </div>
             </div>
           </div>
         </div>

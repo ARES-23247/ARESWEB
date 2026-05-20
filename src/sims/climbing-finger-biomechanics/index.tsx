@@ -159,7 +159,7 @@ export default function ClimbingFingerBiomechanicsSim() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Control Panel */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
             <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
               Parameters & Controls
@@ -235,7 +235,7 @@ export default function ClimbingFingerBiomechanicsSim() {
         </div>
 
         {/* Center Panel - SVG Anatomy Canvas */}
-        <div className="lg:col-span-4 flex flex-col items-center justify-center">
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
           <div className="w-full max-w-[280px] bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
             
             <svg viewBox="0 0 240 320" className="w-full h-[320px]" role="img" aria-label="Anatomical cross section of finger showing bones and flexor tendons under load">
@@ -331,75 +331,91 @@ export default function ClimbingFingerBiomechanicsSim() {
           </div>
         </div>
 
-        {/* Right Panel - Stats & Meters */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-lg p-5 flex flex-col gap-5">
-            <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
-              Telemetry & Stress
-            </h4>
-
-            {/* Stat: Tendon Tension */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Tendon Tension (F_fdp)</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-3xl font-heading font-black text-white">{tendonTension}</span>
-                <span className="text-xs text-marble/50">N</span>
-              </div>
-              <span className="text-[10px] text-marble/50 mt-1 leading-relaxed">
-                Lever multiplier: <span className="font-mono bg-black/30 px-1 py-0.5 rounded text-ares-gold">{params.mechanicalDisadvantage}x</span>
-              </span>
+        {/* Bottom Panel - Telemetry Dashboard */}
+        <div className="lg:col-span-12 w-full mt-4">
+          <div className="bg-white/5 border border-white/5 rounded-lg p-6 flex flex-col gap-6">
+            <div>
+              <h4 className="text-xs uppercase font-bold tracking-widest text-ares-gold border-b border-white/5 pb-2">
+                Biomechanics Telemetry & Stress Dashboard
+              </h4>
             </div>
 
-            {/* Stat: Pulley Outward Force */}
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Outward Pulley Stress</span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className={`text-3xl font-heading font-black transition-colors duration-100 ${
-                  pulleyForce > maxSafePulleyForce ? 'text-ares-red' : 'text-marble'
-                }`}>
-                  {pulleyForce}
-                </span>
-                <span className="text-xs text-marble/50">N</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {/* Stat Card 1: Tendon Tension */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Tendon Tension (F_fdp)</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-3xl font-heading font-black text-white">{tendonTension}</span>
+                    <span className="text-xs text-marble/50">N</span>
+                  </div>
+                  <span className="text-[10px] text-marble/50 mt-1 leading-relaxed">
+                    Lever multiplier: <span className="font-mono bg-black/30 px-1 py-0.5 rounded text-ares-gold">{params.mechanicalDisadvantage}x</span>
+                  </span>
+                </div>
               </div>
-              <span className="text-[9px] text-marble/40 font-mono mt-1">
-                Formula: 2 &times; F_fdp &times; sin(&theta;_pip/2)
-              </span>
-            </div>
 
-            {/* Stress Meter */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-marble/50">Ligament Load Factor</span>
-                <span className={`font-bold ${stress.color}`}>{Math.round(stressRatio * 100)}%</span>
+              {/* Stat Card 2: Outward Pulley Stress */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-marble/40">Outward Pulley Stress</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className={`text-3xl font-heading font-black transition-colors duration-100 ${
+                      pulleyForce > maxSafePulleyForce ? 'text-ares-red' : 'text-marble'
+                    }`}>
+                      {pulleyForce}
+                    </span>
+                    <span className="text-xs text-marble/50">N</span>
+                  </div>
+                  <span className="text-[9px] text-marble/40 font-mono mt-1">
+                    Formula: 2 &times; F_fdp &times; sin(&theta;_pip/2)
+                  </span>
+                </div>
               </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${Math.min(100, stressRatio * 100)}%` }}
-                  className={`h-full transition-[width] duration-300 ease-out ${
-                    stressRatio < 0.5
-                      ? 'bg-ares-cyan'
-                      : stressRatio < 0.9
-                      ? 'bg-ares-gold'
-                      : 'bg-ares-red'
-                  }`}
-                />
-              </div>
-              <span className="text-[9px] text-marble/30 font-mono">Max physiological limit ~450 N.</span>
-            </div>
 
-            {/* Warning Callout */}
-            <div className={`p-3 rounded border text-xs leading-relaxed transition-all ${stress.bg} ${stress.border} ${stress.color}`}>
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                {stressRatio > 0.9 ? <AlertTriangle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                <span>{stress.status}: {stress.text}</span>
+              {/* Stat Card 3: Stress Meter */}
+              <div className="bg-black/20 border border-white/5 rounded-lg p-4 flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-1.5 justify-between h-full">
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-marble/50">Ligament Load Factor</span>
+                    <span className={`font-bold ${stress.color}`}>{Math.round(stressRatio * 100)}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div
+                      style={{ width: `${Math.min(100, stressRatio * 100)}%` }}
+                      className={`h-full transition-[width] duration-300 ease-out ${
+                        stressRatio < 0.5
+                          ? 'bg-ares-cyan'
+                          : stressRatio < 0.9
+                          ? 'bg-ares-gold'
+                          : 'bg-ares-red'
+                      }`}
+                    />
+                  </div>
+                  <span className="text-[9px] text-marble/30 font-mono mt-1 block">Max physiological limit ~450 N.</span>
+                </div>
               </div>
-              <p className="text-[10px] opacity-80 leading-normal font-sans">
-                {stressRatio > 1.2
-                  ? 'Extreme stress! Continuous crimping at this force risk structural pulley ruptures. Rest immediately!'
-                  : stressRatio > 0.9
-                  ? 'High tendon load. Tendon sheath friction is high. Focus on open-hand positions to build endurance.'
-                  : 'Friction angle and rope path are optimal. Pulley load is safely inside structural bounds.'}
-              </p>
+
+              {/* Stat Card 4: Warning Callout */}
+              <div className={`p-4 rounded-lg border text-xs leading-relaxed transition-all flex flex-col justify-between ${stress.bg} ${stress.border} ${stress.color}`}>
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                    {stressRatio > 0.9 ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                    <span>{stress.status}: {stress.text}</span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-normal font-sans">
+                    {stressRatio > 1.2
+                      ? 'Extreme stress! Continuous crimping at this force risks structural pulley ruptures. Rest immediately!'
+                      : stressRatio > 0.9
+                      ? 'High tendon load. Tendon sheath friction is high. Focus on open-hand positions to build endurance.'
+                      : 'Friction angle and rope path are optimal. Pulley load is safely inside structural bounds.'}
+                  </p>
+                </div>
+                
+                <div className="text-[9px] opacity-60 border-t border-white/10 pt-2 mt-2 font-mono">
+                  Safety Status: {stress.status}
+                </div>
+              </div>
             </div>
           </div>
         </div>
