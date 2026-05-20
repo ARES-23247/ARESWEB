@@ -11,8 +11,6 @@ import {
     deleteSimulationRoute,
     createGistRoute,
     getGistRoute,
-    generateSimRegistryRoute,
-    listSimFoldersRoute
 } from "../../../shared/routes/simulations";
 import { requireAuth } from "../middleware/auth";
 
@@ -343,12 +341,6 @@ export const simulationsRouter = _simulationsRouter
                 updatedAt: String(gist.updated_at)
             }
         }, 200);
-    })
-    .openapi(generateSimRegistryRoute, async (c) => {
-        return c.json({ success: false, error: "Not Implemented in Cloudflare Workers" }, 200);
-    })
-    .openapi(listSimFoldersRoute, async (c) => {
-        return c.json({ folders: [], registeredPaths: [] }, 200);
     });
 // Get a single simulation file by id from GitHub
 // Save simulation to GitHub

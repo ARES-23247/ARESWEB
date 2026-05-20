@@ -100,7 +100,6 @@ declare module '@tanstack/react-router' {
 
 
 function DevTools() {
-  if (!import.meta.env.DEV) return null;
   const { data } = useSession();
   const [isRouterDevToolsOpen, setIsRouterDevToolsOpen] = React.useState(false);
   
@@ -161,7 +160,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ModalProvider>
           <RouterProvider router={router} />
         </ModalProvider>
-        <DevTools />
+        {import.meta.env.DEV && <DevTools />}
       </PersistQueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>

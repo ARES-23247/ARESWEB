@@ -72,16 +72,6 @@ import { logAuditAction } from '../middleware/utils';
 describe('Simulations Routes', () => {
   let mockDb: ReturnType<typeof createMockDb>['mockDb'];
 
-  const mockAdminUser: SessionUser = {
-    id: 'admin-user',
-    email: 'admin@ares.org',
-    name: 'Admin User',
-    nickname: 'Admin',
-    role: 'admin',
-    memberType: 'mentor',
-    image: null,
-  };
-
   const mockAuthUser: SessionUser = {
     id: 'auth-user',
     email: 'user@ares.org',
@@ -671,121 +661,8 @@ describe('Simulations Routes', () => {
       expect(_res.status).toBe(404);
     });
   });
+  
 
-  describe('Admin routes', () => {
-    describe('POST /api/simulations/admin/generate-registry', () => {
-      it('should return 401 when not authenticated', async () => {
-        globalThis.__mockSessionUser = null;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/generate-registry', {
-          method: 'POST',
-        });
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        expect(_res.status).toBe(401);
-      });
-
-      it('should return 403 when non-admin tries to generate registry', async () => {
-        globalThis.__mockSessionUser = mockAuthUser;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/generate-registry', {
-          method: 'POST',
-        });
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        expect(_res.status).toBe(403);
-      });
-
-      it('should return 200 indicating successful endpoint connection despite shell limitations', async () => {
-        globalThis.__mockSessionUser = mockAdminUser;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/generate-registry', {
-          method: 'POST',
-        });
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        // Should return 200
-        expect(_res.status).toBe(200);
-      });
-    });
-
-    describe('GET /api/simulations/admin/list-folders', () => {
-      it('should return 401 when not authenticated', async () => {
-        globalThis.__mockSessionUser = null;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/list-folders');
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        expect(_res.status).toBe(401);
-      });
-
-      it('should return 403 when non-admin tries to list folders', async () => {
-        globalThis.__mockSessionUser = mockAuthUser;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/list-folders');
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        expect(_res.status).toBe(403);
-      });
-
-      it('should allow admins to list folders (returns empty due to filesystem limitation)', async () => {
-        globalThis.__mockSessionUser = mockAdminUser;
-        const app = createTestApp();
-
-        const testEnv = createTestEnv({
-          DB: mockDb as AppEnv['Bindings']['DB'],
-          DEV_BYPASS: 'false',
-        });
-
-        const req = new Request('http://localhost/api/simulations/admin/list-folders');
-
-        const _res = await app.request(req, undefined, testEnv, mockExecutionContext);
-
-        // Should not be 401 or 403 - admin has access
-        expect(_res.status).not.toBe(401);
-        expect(_res.status).not.toBe(403);
-
-        const body = await _res.json();
-        expect(body).toHaveProperty('folders');
-        expect(body).toHaveProperty('registeredPaths');
-      });
-    });
-  });
 
   describe('Route existence verification', () => {
     // OpenAPIHono stores routes differently - we verify the OpenAPI schema is set up correctly
@@ -928,11 +805,6 @@ describe('Simulations Routes', () => {
       expect(postDeleteRoutes.length).toBeGreaterThan(0);
     });
 
-    it('should apply ensureAdmin to /admin/* routes', () => {
-      const routes = simulationsRouter.routes;
-      const adminRoutes = routes.filter((r) => r.path?.includes('/admin'));
-      expect(adminRoutes.length).toBeGreaterThan(0);
-    });
   });
 });
 

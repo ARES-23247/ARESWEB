@@ -2,6 +2,9 @@ import "@testing-library/jest-dom";
 import { vi, afterAll, afterEach } from "vitest";
 import { server } from "./mocks/server";
 
+// Mock CSS imports for highlight.js to avoid "Unknown file extension" errors in Vitest
+vi.mock("highlight.js/styles/github-dark.css", () => ({}));
+
 // Mock drizzle-orm sql BEFORE any schema imports
 // This must be hoisted to avoid "sql is not a function" errors when schema.ts is imported
 // The mock needs to support both sql.raw() and sql`template` syntax
