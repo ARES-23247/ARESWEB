@@ -11,6 +11,7 @@ vi.mock("./social/bluesky", () => ({
 }));
 
 vi.mock("./social/twitter", () => ({
+  dispatchTwitter: vi.fn().mockResolvedValue(undefined),
   dispatchTwitterPhoto: vi.fn().mockResolvedValue(undefined),
 }));
 
