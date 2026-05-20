@@ -12,7 +12,7 @@
     "preview": "npx wrangler pages dev dist",
     "deploy": "npx wrangler pages deploy dist --project-name aresweb",
     "deploy:preview": "npx wrangler pages deploy dist --project-name aresweb --branch=$(git rev-parse --short HEAD)",
-    "lint": "npx eslint . --cache --report-unused-disable-directives --max-warnings 0",
+    "lint": "cross-env NODE_OPTIONS=--max-old-space-size=8192 eslint . --cache --report-unused-disable-directives --max-warnings 0",
     "typecheck": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit",
     "test": "npx vitest run",
     "test:coverage": "npx vitest run --coverage",

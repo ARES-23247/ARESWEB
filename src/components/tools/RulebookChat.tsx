@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, RefreshCw, BookOpen, Sparkles, MessageSquare, AlertTriangle, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Send, Bot, RefreshCw, BookOpen, Sparkles,  AlertTriangle, ArrowRight } from "lucide-react";
+
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { simPlaygroundRequest, type ChatMessage } from "../../api/ai";

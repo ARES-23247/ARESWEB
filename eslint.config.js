@@ -71,7 +71,7 @@ export default ts.config(
     files: ["src/**/*.{ts,tsx}", "functions/**/*.{ts,tsx}", "shared/**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
-        project: true,
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },

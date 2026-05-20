@@ -52,7 +52,7 @@ submitRouter.openapi(submitScoutingRoute, async (c) => {
   const id = crypto.randomUUID();
 
   // Generate a beautiful, readable markdown summary from the form data
-  let markdown = "";
+  let markdown: string;
   if (type === "pit") {
     markdown = `# Pit Scouting Report: Team ${teamNumber}
 

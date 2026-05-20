@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Compass, Calendar, Trophy, Sparkles } from "lucide-react";
+import { Compass, Calendar, Trophy } from "lucide-react";
 import SEO from "../../components/SEO";
 import CadExplorer from "../../components/tools/CadExplorer";
 import { ModelGallery } from "../../components/onshape/ModelGallery";

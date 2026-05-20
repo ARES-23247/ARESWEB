@@ -1,6 +1,5 @@
 import { ApiError } from "../../middleware/errorHandler";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq, and } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import { AppEnv, getDb, getSocialConfig, getSessionUser } from "../../middleware";
 import { gitToBlogRoute } from "../../../../shared/routes/internal";
@@ -142,7 +141,7 @@ gitToBlogRouter.openapi(gitToBlogRoute, async (c) => {
   const commitLogString = commits.map(c => `[${c.repo}] ${c.author}: ${c.message} (${c.date.substring(0, 10)})`).join("\n");
 
   let blogMarkdown = "";
-  let blogTitle = `Weekly Engineering Update - ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+  const blogTitle = `Weekly Engineering Update - ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
 
   if (c.env.AI) {
     try {

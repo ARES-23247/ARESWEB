@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, AlertCircle, Calendar, RefreshCw, GitBranch, ShieldAlert } from "lucide-react";
+import { Clock,  Calendar, RefreshCw, GitBranch, ShieldAlert } from "lucide-react";
 import SEO from "../../components/SEO";
 import CadChangelog from "../../components/tools/CadChangelog";
 

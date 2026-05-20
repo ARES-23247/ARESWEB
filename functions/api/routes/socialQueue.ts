@@ -228,7 +228,7 @@ export const socialQueueRouter = _socialQueueRouter
         }
 
         const post = toSocialQueuePost(row);
-        const env = c.env as any;
+        const env = c.env as unknown;
         const config = {
             TWITTER_API_KEY: env.TWITTER_API_KEY,
             TWITTER_API_SECRET: env.TWITTER_API_SECRET,

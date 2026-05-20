@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, Link } from "@tanstack/react-router";
 import { PenTool, Calendar, Book, History, GitBranch } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { client, toastApiError } from "../api/honoClient";
+import {  toastApiError } from "../api/honoClient";
 import { toast } from "sonner";
 import BroadcastModal from "./BroadcastModal";
 import { ViewType } from "./ContentManager/shared";

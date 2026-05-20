@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { GitCommit, Wrench, Shield, Compass, Cpu, TrendingUp, CheckCircle } from "lucide-react";
+import {  Wrench, Shield, Compass, Cpu, TrendingUp, CheckCircle } from "lucide-react";
 
 interface TimelineEvent {
   version: string;
@@ -8,7 +8,7 @@ interface TimelineEvent {
   description: string;
   author: string;
   impact: string;
-  icon: any;
+  icon: unknown;
   color: string;
   details: string[];
 }

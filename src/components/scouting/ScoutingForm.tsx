@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { 
   Wifi, 
   WifiOff, 
-  Send, 
+   
   Save, 
   RefreshCw, 
-  Activity, 
+   
   ClipboardList, 
-  Sliders, 
+   
   Layers, 
   Zap, 
   MessageSquare,
@@ -22,7 +22,7 @@ interface ScoutingLog {
   teamNumber: number;
   eventKey: string;
   seasonKey: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp: number;
 }
 
@@ -31,8 +31,19 @@ export default function ScoutingForm() {
   const [scoutingType, setScoutingType] = useState<"pit" | "match">("match");
   const [teamNumber, setTeamNumber] = useState("");
   const [eventKey, setEventKey] = useState("2026wvmor");
-  const [seasonKey, setSeasonKey] = useState("25-26");
-  const [pendingLogs, setPendingLogs] = useState<ScoutingLog[]>([]);
+  const [seasonKey] = useState("25-26");
+  const [pendingLogs, setPendingLogs] = useState<ScoutingLog[]>(() => {
+    if (typeof window === "undefined") return [];
+    const cached = localStorage.getItem("ares_pending_scout_logs");
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error("Failed to parse cached scouting logs:", e);
+      }
+    }
+    return [];
+  });
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Form Fields - Pit Scouting
@@ -68,25 +79,11 @@ export default function ScoutingForm() {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // Load initial logs
-    loadLocalLogs();
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
-
-  const loadLocalLogs = () => {
-    const cached = localStorage.getItem("ares_pending_scout_logs");
-    if (cached) {
-      try {
-        setPendingLogs(JSON.parse(cached));
-      } catch (e) {
-        console.error("Failed to parse cached scouting logs:", e);
-      }
-    }
-  };
 
   const saveLocalLogs = (logs: ScoutingLog[]) => {
     localStorage.setItem("ares_pending_scout_logs", JSON.stringify(logs));
@@ -293,8 +290,8 @@ export default function ScoutingForm() {
             {/* Common Info Section */}
             <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-6">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Team Number</label>
-                <input 
+                <label htmlFor="teamNumber" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Team Number</label>
+                <input id="teamNumber" 
                   type="number" 
                   required
                   placeholder="e.g. 23247"
@@ -305,8 +302,8 @@ export default function ScoutingForm() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Event Key</label>
-                <input 
+                <label htmlFor="eventKey" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Event Key</label>
+                <input id="eventKey" 
                   type="text" 
                   required
                   value={eventKey}
@@ -321,8 +318,8 @@ export default function ScoutingForm() {
               <div className="space-y-4">
                 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Drivetrain Type</label>
-                  <select 
+                  <label htmlFor="drivetrain" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Drivetrain Type</label>
+                  <select id="drivetrain" 
                     value={drivetrain}
                     onChange={(e) => setDrivetrain(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 px-4 py-2.5 text-xs text-white font-bold ares-cut-sm focus:border-ares-red focus:outline-none transition-colors"
@@ -335,8 +332,8 @@ export default function ScoutingForm() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Motors & Actuators</label>
-                  <input 
+                  <label htmlFor="motors" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Motors & Actuators</label>
+                  <input id="motors" 
                     type="text"
                     value={motors}
                     onChange={(e) => setMotors(e.target.value)}
@@ -345,8 +342,8 @@ export default function ScoutingForm() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Intake Type</label>
-                  <input 
+                  <label htmlFor="intake" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Intake Type</label>
+                  <input id="intake" 
                     type="text"
                     value={intake}
                     onChange={(e) => setIntake(e.target.value)}
@@ -355,8 +352,8 @@ export default function ScoutingForm() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Outtake Capabilities</label>
-                  <input 
+                  <label htmlFor="outtake" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Outtake Capabilities</label>
+                  <input id="outtake" 
                     type="text"
                     value={outtake}
                     onChange={(e) => setOuttake(e.target.value)}
@@ -365,8 +362,8 @@ export default function ScoutingForm() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Pit Scout Notes</label>
-                  <textarea 
+                  <label htmlFor="pitNotes" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Pit Scout Notes</label>
+                  <textarea id="pitNotes" 
                     rows={4}
                     value={pitNotes}
                     onChange={(e) => setPitNotes(e.target.value)}
@@ -385,8 +382,8 @@ export default function ScoutingForm() {
                 {/* Match Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Match Number</label>
-                    <input 
+                    <label htmlFor="matchNumber" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Match Number</label>
+                    <input id="matchNumber" 
                       type="number" 
                       required
                       placeholder="e.g. 14"
@@ -397,7 +394,7 @@ export default function ScoutingForm() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Alliance</label>
+                    <div className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Alliance</div>
                     <div className="flex bg-black/40 p-1 ares-cut-sm border border-white/5">
                       <button 
                         type="button"
@@ -433,8 +430,8 @@ export default function ScoutingForm() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Auto Samples Scored</label>
-                      <input 
+                      <label htmlFor="autoSamples" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Auto Samples Scored</label>
+                      <input id="autoSamples" 
                         type="number"
                         value={autoSamples}
                         onChange={(e) => setAutoSamples(e.target.value)}
@@ -442,8 +439,8 @@ export default function ScoutingForm() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Auto Specimens Scored</label>
-                      <input 
+                      <label htmlFor="autoSpecimens" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Auto Specimens Scored</label>
+                      <input id="autoSpecimens" 
                         type="number"
                         value={autoSpecimens}
                         onChange={(e) => setAutoSpecimens(e.target.value)}
@@ -474,8 +471,8 @@ export default function ScoutingForm() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Basket Samples</label>
-                      <input 
+                      <label htmlFor="teleSamples" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Basket Samples</label>
+                      <input id="teleSamples" 
                         type="number"
                         value={teleSamples}
                         onChange={(e) => setTeleSamples(e.target.value)}
@@ -483,8 +480,8 @@ export default function ScoutingForm() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Chamber Specimens</label>
-                      <input 
+                      <label htmlFor="teleSpecimens" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Chamber Specimens</label>
+                      <input id="teleSpecimens" 
                         type="number"
                         value={teleSpecimens}
                         onChange={(e) => setTeleSpecimens(e.target.value)}
@@ -502,8 +499,8 @@ export default function ScoutingForm() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Ascent Level</label>
-                      <select 
+                      <label htmlFor="endgameAscent" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 mb-2">Ascent Level</label>
+                      <select id="endgameAscent" 
                         value={endgameAscent}
                         onChange={(e) => setEndgameAscent(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 px-4 py-2.5 text-xs text-white font-bold ares-cut-sm focus:border-ares-red"
@@ -532,10 +529,10 @@ export default function ScoutingForm() {
 
                 {/* Match Notes */}
                 <div className="space-y-2 border-t border-white/5 pt-4">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-marble/50 flex items-center gap-1.5">
+                  <label htmlFor="matchNotes" className="block text-[10px] font-black uppercase tracking-widest text-marble/50 flex items-center gap-1.5">
                     <MessageSquare size={14} /> Match Observations & Deficiencies
                   </label>
-                  <textarea 
+                  <textarea id="matchNotes" 
                     rows={4}
                     value={matchNotes}
                     onChange={(e) => setMatchNotes(e.target.value)}
