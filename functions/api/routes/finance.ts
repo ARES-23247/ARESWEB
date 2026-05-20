@@ -9,8 +9,14 @@ import * as financeRoutes from "../../../shared/routes/finance";
 
 const _financeRouter = new OpenAPIHono<AppEnv>();
 
-// CR-06 FIX: Apply authentication and rate limiting to all finance routes
-_financeRouter.use("*", ensureAdmin);
+// CR-06 FIX: Apply authentication to sensitive write routes and sponsorship pipeline, while keeping ledger public
+_financeRouter.use("/sponsorship*", ensureAdmin);
+_financeRouter.use("/transactions*", (c, next) => {
+    if (c.req.method === "GET") {
+        return next();
+    }
+    return ensureAdmin(c, next);
+});
 _financeRouter.use("*", rateLimitMiddleware(30, 60));
 
 // Database query result types

@@ -833,24 +833,25 @@ CREATE INDEX IF NOT EXISTS idx_usage_metrics_endpoint ON usage_metrics(endpoint)
 CREATE TABLE IF NOT EXISTS labels (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    color TEXT NOT NULL,
+    color_theme TEXT,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS task_attachments (
     id TEXT PRIMARY KEY,
     task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    file_name TEXT NOT NULL,
-    file_url TEXT NOT NULL,
-    uploaded_by TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
-    created_at TEXT DEFAULT (datetime('now'))
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL,
+    thumbnail_url TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_task_attachments_task ON task_attachments(task_id);
 
 CREATE TABLE IF NOT EXISTS task_checklists (
     id TEXT PRIMARY KEY,
     task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
+    content TEXT NOT NULL,
     is_completed INTEGER DEFAULT 0,
     sort_order INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
@@ -896,4 +897,33 @@ CREATE TABLE IF NOT EXISTS videos (
 CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_videos_platform ON videos(platform);
 CREATE INDEX IF NOT EXISTS idx_videos_type ON videos(type);
+
+-- ─── Document Management Uploaded Files (Phase 77) ───────────────────────────
+
+CREATE TABLE IF NOT EXISTS uploaded_files (
+    id TEXT PRIMARY KEY,
+    r2_key TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    title TEXT,
+    description TEXT,
+    uploaded_by TEXT NOT NULL,
+    uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    source TEXT DEFAULT 'manual'
+);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_at ON uploaded_files(uploaded_at);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_by ON uploaded_files(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_r2 ON uploaded_files(r2_key);
+
+CREATE TABLE IF NOT EXISTS file_usage (
+    id TEXT PRIMARY KEY,
+    file_id TEXT NOT NULL REFERENCES uploaded_files(id) ON DELETE CASCADE,
+    post_id TEXT NOT NULL REFERENCES posts(slug) ON DELETE CASCADE,
+    post_title TEXT NOT NULL,
+    linked_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_file_usage_file ON file_usage(file_id);
+CREATE INDEX IF NOT EXISTS idx_file_usage_post ON file_usage(post_id);
+CREATE INDEX IF NOT EXISTS idx_file_usage_linked ON file_usage(linked_at);
 

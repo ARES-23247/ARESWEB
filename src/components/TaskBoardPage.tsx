@@ -82,9 +82,11 @@ export default function TaskBoardPage() {
   const lastCursorSend = React.useRef(0);
   const boardRef = React.useRef<HTMLDivElement>(null);
 
-  const host = (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__)
-    ? "dummy-host-for-playwright"
-    : (import.meta.env.VITE_PARTYKIT_HOST || "");
+  const host = (typeof window !== 'undefined' && window.__TEST_PARTYKIT_HOST__)
+    ? window.__TEST_PARTYKIT_HOST__
+    : ((typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__)
+      ? "dummy-host-for-playwright"
+      : (import.meta.env.VITE_PARTYKIT_HOST || ""));
   const socket = usePartySocket({
     host: host || "dummy",
     room: "kanban-global",
@@ -124,6 +126,8 @@ export default function TaskBoardPage() {
             name: msg.name,
             image: msg.image
           });
+        } else if (msg.type === "leave") {
+          kanbanActions.removeUser(msg.userId);
         } else if (msg.type === "cursor") {
           kanbanActions.updateUser(msg.userId, {
             x: msg.x,

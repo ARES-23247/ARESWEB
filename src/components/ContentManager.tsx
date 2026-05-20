@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useLocation, Link } from "@tanstack/react-router";
-import { PenTool, Calendar, Book, History } from "lucide-react";
+import { PenTool, Calendar, Book, History, GitBranch } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { client, toastApiError } from "../api/honoClient";
+import { toast } from "sonner";
 import BroadcastModal from "./BroadcastModal";
 import { ViewType } from "./ContentManager/shared";
 import EventManagerTab from "./ContentManager/EventManagerTab";
@@ -37,6 +40,35 @@ export default function ContentManager({
     title: ""
   });
 
+  const queryClient = useQueryClient();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleGitToBlog = async () => {
+    setIsSyncing(true);
+    const toastId = toast.loading("Connecting to GITHUB and running Cloudflare AI translation on raw commits...");
+    try {
+      const res = await client.internal["git-to-blog"].$post({
+        json: { sinceDays: 7 }
+      });
+      if (res.ok) {
+        const data = await res.json() as { success: boolean, title: string, slug: string };
+        toast.success(`Generated weekly blog draft from Git commits: "${data.title}"`, { id: toastId });
+        queryClient.invalidateQueries({ queryKey: ["admin_posts"] });
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        setView("pending"); // Automatically direct to PENDING view to review the AI draft
+      } else {
+        const errText = await res.text();
+        throw new Error(errText || "AI Sync failed");
+      }
+    } catch (err) {
+      console.error("Git-to-Blog AI Sync Failed:", err);
+      toastApiError(err, "Git-to-Blog sync failed");
+      toast.dismiss(toastId);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const sharedProps = {
     view,
     confirmId,
@@ -54,9 +86,19 @@ export default function ContentManager({
             <p className="text-marble/60 text-sm mt-1">Review and manage the lifecycle of Platform resources.</p>
           </div>
           {mode === "blog" && (
-            <Link to="/dashboard/blog" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">
-              <PenTool size={16} /> New Blog Post
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-auto mt-2 sm:mt-0">
+              <Link to="/dashboard/blog" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)]">
+                <PenTool size={16} /> New Blog Post
+              </Link>
+              <button
+                onClick={handleGitToBlog}
+                disabled={isSyncing}
+                className="flex items-center gap-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-cyan/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(6,182,212,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <GitBranch size={16} className={isSyncing ? "animate-spin text-ares-cyan" : "text-ares-cyan"} />
+                {isSyncing ? "Syncing..." : "Git-to-Blog"}
+              </button>
+            </div>
           )}
           {mode === "event" && (
             <Link to="/dashboard/event" className="flex items-center gap-2 bg-ares-red/10 hover:bg-ares-red/20 text-white px-3 py-1.5 ares-cut-sm border border-ares-red/30 transition-all text-sm font-bold shadow-[0_0_10px_rgba(192,0,0,0.1)] self-start sm:self-auto mt-2 sm:mt-0">

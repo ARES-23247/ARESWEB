@@ -24,7 +24,7 @@
     "db:generate": "npx drizzle-kit generate",
     "db:push": "npx drizzle-kit push",
     "db:introspect": "npx drizzle-kit introspect",
-    "pretest:e2e": "npx kill-port 5173 8788 || true && npm run build && npm run db:setup:local && npm run db:seed:local",
+    "pretest:e2e": "npx kill-port 5173 8788 1999 && npm run build && npm run db:setup:local && npm run db:seed:local",
     "test:e2e": "npx playwright test",
     "test:e2e:remote": "npx playwright test --config=playwright.remote.config.ts",
     "test:e2e:debug": "npx playwright test --debug",

@@ -42,6 +42,7 @@ import tasksRouter from "./routes/tasks";
 import financeRouter from "./routes/finance";
 import entitiesRouter from "./routes/entities";
 import gcRouter from "./routes/internal/gc";
+import { gitToBlogRouter } from "./routes/internal/git-to-blog";
 import storeHandler from "./routes/store";
 import pointsRouter from "./routes/points";
 import { aiRouter } from "./routes/ai/index";
@@ -259,6 +260,7 @@ export const group3 = new OpenAPIHono<AppEnv>()
   .route("/github", githubRouter)
   .route("/zulip", zulipRouter)
   .route("/internal/gc", gcRouter)
+  .route("/internal", gitToBlogRouter)
   .route("/tasks", tasksRouter)
   .route("/store", storeHandler)
   .route("/ai-tools", aiToolsRouter);

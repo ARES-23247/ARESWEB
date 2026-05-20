@@ -3,6 +3,7 @@
 
 interface Window {
   __PLAYWRIGHT_TEST__?: boolean;
+  __TEST_PARTYKIT_HOST__?: string;
 }
 
 interface ImportMetaEnv {

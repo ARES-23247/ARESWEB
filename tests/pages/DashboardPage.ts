@@ -72,7 +72,7 @@ export class DashboardPage {
    * Uses the implementation-tied selector as this is tied to current UI.
    */
   async isLiveBadgeVisible(): Promise<boolean> {
-    const badge = this.page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first();
+    const badge = this.page.locator('.bg-ares-cyan\\/10').filter({ hasText: 'Live' }).first();
     const isVisible = await badge.isVisible().catch(() => false);
     return isVisible;
   }
@@ -81,7 +81,7 @@ export class DashboardPage {
    * Wait for live badge to be visible.
    */
   async waitForLiveBadge(): Promise<void> {
-    const badge = this.page.locator('.bg-emerald-500\\/10').filter({ hasText: 'Live' }).first();
+    const badge = this.page.locator('.bg-ares-cyan\\/10').filter({ hasText: 'Live' }).first();
     await badge.waitFor({ state: 'visible', timeout: TEST_TIMEOUTS.SLOW_PAGE });
   }
 

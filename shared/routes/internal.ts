@@ -157,3 +157,41 @@ export const auditLogRoute = createRoute({
     },
   },
 });
+
+export const gitToBlogResponseSchema = z.object({
+  success: z.boolean().openapi({ example: true }),
+  postId: z.string().openapi({ example: "git-weekly-update-2026-05-20" }),
+  slug: z.string().openapi({ example: "git-weekly-update-2026-05-20" }),
+  title: z.string().openapi({ example: "Weekly Git-to-Blog Engineering Log" }),
+}).openapi({ title: "Git to Blog Response" });
+
+export const gitToBlogRoute = createRoute({
+  method: "post",
+  path: "/git-to-blog",
+  tags: ["internal"],
+  summary: "AI Git-to-Blog Draft Generator",
+  description: "Fetches recent organization commits, summarizes them into a weekly engineering log using Cloudflare AI, and saves a draft post.",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            sinceDays: z.number().optional().default(7).openapi({ example: 7 }),
+          }).optional(),
+        },
+      },
+    },
+  },
+  responses: {
+    ...standardErrors,
+    200: {
+      content: {
+        "application/json": {
+          schema: gitToBlogResponseSchema,
+        },
+      },
+      description: "AI Draft post created successfully",
+    },
+  },
+});
+

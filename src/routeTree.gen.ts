@@ -22,6 +22,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BugReportRouteImport } from './routes/bug-report'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
@@ -94,8 +95,11 @@ import { Route as DashboardEventIndexRouteImport } from './routes/dashboard/even
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardBlogIndexRouteImport } from './routes/dashboard/blog/index'
 import { Route as SponsorsRoiTokenIdRouteImport } from './routes/sponsors/roi/$tokenId'
+import { Route as SponsorsPortalTokenIdRouteImport } from './routes/sponsors/portal.$tokenId'
 import { Route as DashboardTasksTaskIdRouteImport } from './routes/dashboard/tasks/$taskId'
 import { Route as DashboardSeasonsEditIdRouteImport } from './routes/dashboard/seasons/$editId'
+import { Route as DashboardScoutingRulebookRouteImport } from './routes/dashboard/scouting/rulebook'
+import { Route as DashboardScoutingFormRouteImport } from './routes/dashboard/scouting/form'
 import { Route as DashboardManage_albumsIdRouteImport } from './routes/dashboard/manage_albums.$id'
 import { Route as DashboardEventEditIdRouteImport } from './routes/dashboard/event/$editId'
 import { Route as DashboardDocsEditSlugRouteImport } from './routes/dashboard/docs/$editSlug'
@@ -164,6 +168,11 @@ const JoinRoute = JoinRouteImport.update({
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceRoute = FinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -527,6 +536,11 @@ const SponsorsRoiTokenIdRoute = SponsorsRoiTokenIdRouteImport.update({
   path: '/sponsors/roi/$tokenId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SponsorsPortalTokenIdRoute = SponsorsPortalTokenIdRouteImport.update({
+  id: '/sponsors/portal/$tokenId',
+  path: '/sponsors/portal/$tokenId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardTasksTaskIdRoute = DashboardTasksTaskIdRouteImport.update({
   id: '/tasks/$taskId',
   path: '/tasks/$taskId',
@@ -536,6 +550,17 @@ const DashboardSeasonsEditIdRoute = DashboardSeasonsEditIdRouteImport.update({
   id: '/seasons/$editId',
   path: '/seasons/$editId',
   getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardScoutingRulebookRoute =
+  DashboardScoutingRulebookRouteImport.update({
+    id: '/rulebook',
+    path: '/rulebook',
+    getParentRoute: () => DashboardScoutingRoute,
+  } as any)
+const DashboardScoutingFormRoute = DashboardScoutingFormRouteImport.update({
+  id: '/form',
+  path: '/form',
+  getParentRoute: () => DashboardScoutingRoute,
 } as any)
 const DashboardManage_albumsIdRoute =
   DashboardManage_albumsIdRouteImport.update({
@@ -566,6 +591,7 @@ export interface FileRoutesByFullPath {
   '/accessibility': typeof AccessibilityRoute
   '/bug-report': typeof BugReportRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/finance': typeof FinanceRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -607,7 +633,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/robots': typeof DashboardRobotsRoute
-  '/dashboard/scouting': typeof DashboardScoutingRoute
+  '/dashboard/scouting': typeof DashboardScoutingRouteWithChildren
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
   '/dashboard/social': typeof DashboardSocialRoute
@@ -642,8 +668,11 @@ export interface FileRoutesByFullPath {
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
   '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
+  '/dashboard/scouting/form': typeof DashboardScoutingFormRoute
+  '/dashboard/scouting/rulebook': typeof DashboardScoutingRulebookRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
+  '/sponsors/portal/$tokenId': typeof SponsorsPortalTokenIdRoute
   '/sponsors/roi/$tokenId': typeof SponsorsRoiTokenIdRoute
   '/dashboard/blog/': typeof DashboardBlogIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
@@ -658,6 +687,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/accessibility': typeof AccessibilityRoute
   '/bug-report': typeof BugReportRoute
+  '/finance': typeof FinanceRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -699,7 +729,7 @@ export interface FileRoutesByTo {
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/robots': typeof DashboardRobotsRoute
-  '/dashboard/scouting': typeof DashboardScoutingRoute
+  '/dashboard/scouting': typeof DashboardScoutingRouteWithChildren
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
   '/dashboard/social': typeof DashboardSocialRoute
@@ -734,8 +764,11 @@ export interface FileRoutesByTo {
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
   '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
+  '/dashboard/scouting/form': typeof DashboardScoutingFormRoute
+  '/dashboard/scouting/rulebook': typeof DashboardScoutingRulebookRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
+  '/sponsors/portal/$tokenId': typeof SponsorsPortalTokenIdRoute
   '/sponsors/roi/$tokenId': typeof SponsorsRoiTokenIdRoute
   '/dashboard/blog': typeof DashboardBlogIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
@@ -752,6 +785,7 @@ export interface FileRoutesById {
   '/accessibility': typeof AccessibilityRoute
   '/bug-report': typeof BugReportRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/finance': typeof FinanceRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -793,7 +827,7 @@ export interface FileRoutesById {
   '/dashboard/photos': typeof DashboardPhotosRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/robots': typeof DashboardRobotsRoute
-  '/dashboard/scouting': typeof DashboardScoutingRoute
+  '/dashboard/scouting': typeof DashboardScoutingRouteWithChildren
   '/dashboard/sims': typeof DashboardSimsRoute
   '/dashboard/simulations': typeof DashboardSimulationsRoute
   '/dashboard/social': typeof DashboardSocialRoute
@@ -828,8 +862,11 @@ export interface FileRoutesById {
   '/dashboard/docs/$editSlug': typeof DashboardDocsEditSlugRoute
   '/dashboard/event/$editId': typeof DashboardEventEditIdRoute
   '/dashboard/manage_albums/$id': typeof DashboardManage_albumsIdRoute
+  '/dashboard/scouting/form': typeof DashboardScoutingFormRoute
+  '/dashboard/scouting/rulebook': typeof DashboardScoutingRulebookRoute
   '/dashboard/seasons/$editId': typeof DashboardSeasonsEditIdRoute
   '/dashboard/tasks/$taskId': typeof DashboardTasksTaskIdRoute
+  '/sponsors/portal/$tokenId': typeof SponsorsPortalTokenIdRoute
   '/sponsors/roi/$tokenId': typeof SponsorsRoiTokenIdRoute
   '/dashboard/blog/': typeof DashboardBlogIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
@@ -847,6 +884,7 @@ export interface FileRouteTypes {
     | '/accessibility'
     | '/bug-report'
     | '/dashboard'
+    | '/finance'
     | '/gallery'
     | '/join'
     | '/leaderboard'
@@ -923,8 +961,11 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
     | '/dashboard/manage_albums/$id'
+    | '/dashboard/scouting/form'
+    | '/dashboard/scouting/rulebook'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
+    | '/sponsors/portal/$tokenId'
     | '/sponsors/roi/$tokenId'
     | '/dashboard/blog/'
     | '/dashboard/docs/'
@@ -939,6 +980,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/accessibility'
     | '/bug-report'
+    | '/finance'
     | '/gallery'
     | '/join'
     | '/leaderboard'
@@ -1015,8 +1057,11 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
     | '/dashboard/manage_albums/$id'
+    | '/dashboard/scouting/form'
+    | '/dashboard/scouting/rulebook'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
+    | '/sponsors/portal/$tokenId'
     | '/sponsors/roi/$tokenId'
     | '/dashboard/blog'
     | '/dashboard/docs'
@@ -1032,6 +1077,7 @@ export interface FileRouteTypes {
     | '/accessibility'
     | '/bug-report'
     | '/dashboard'
+    | '/finance'
     | '/gallery'
     | '/join'
     | '/leaderboard'
@@ -1108,8 +1154,11 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$editSlug'
     | '/dashboard/event/$editId'
     | '/dashboard/manage_albums/$id'
+    | '/dashboard/scouting/form'
+    | '/dashboard/scouting/rulebook'
     | '/dashboard/seasons/$editId'
     | '/dashboard/tasks/$taskId'
+    | '/sponsors/portal/$tokenId'
     | '/sponsors/roi/$tokenId'
     | '/dashboard/blog/'
     | '/dashboard/docs/'
@@ -1126,6 +1175,7 @@ export interface RootRouteChildren {
   AccessibilityRoute: typeof AccessibilityRoute
   BugReportRoute: typeof BugReportRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  FinanceRoute: typeof FinanceRoute
   GalleryRoute: typeof GalleryRoute
   JoinRoute: typeof JoinRoute
   LeaderboardRoute: typeof LeaderboardRoute
@@ -1160,6 +1210,7 @@ export interface RootRouteChildren {
   OnshapeIndexRoute: typeof OnshapeIndexRoute
   SponsorsIndexRoute: typeof SponsorsIndexRoute
   VideosIndexRoute: typeof VideosIndexRoute
+  SponsorsPortalTokenIdRoute: typeof SponsorsPortalTokenIdRoute
   SponsorsRoiTokenIdRoute: typeof SponsorsRoiTokenIdRoute
 }
 
@@ -1254,6 +1305,13 @@ declare module '@tanstack/react-router' {
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finance': {
+      id: '/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof FinanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -1760,6 +1818,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SponsorsRoiTokenIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sponsors/portal/$tokenId': {
+      id: '/sponsors/portal/$tokenId'
+      path: '/sponsors/portal/$tokenId'
+      fullPath: '/sponsors/portal/$tokenId'
+      preLoaderRoute: typeof SponsorsPortalTokenIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/tasks/$taskId': {
       id: '/dashboard/tasks/$taskId'
       path: '/tasks/$taskId'
@@ -1773,6 +1838,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/seasons/$editId'
       preLoaderRoute: typeof DashboardSeasonsEditIdRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/scouting/rulebook': {
+      id: '/dashboard/scouting/rulebook'
+      path: '/rulebook'
+      fullPath: '/dashboard/scouting/rulebook'
+      preLoaderRoute: typeof DashboardScoutingRulebookRouteImport
+      parentRoute: typeof DashboardScoutingRoute
+    }
+    '/dashboard/scouting/form': {
+      id: '/dashboard/scouting/form'
+      path: '/form'
+      fullPath: '/dashboard/scouting/form'
+      preLoaderRoute: typeof DashboardScoutingFormRouteImport
+      parentRoute: typeof DashboardScoutingRoute
     }
     '/dashboard/manage_albums/$id': {
       id: '/dashboard/manage_albums/$id'
@@ -1805,6 +1884,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardScoutingRouteChildren {
+  DashboardScoutingFormRoute: typeof DashboardScoutingFormRoute
+  DashboardScoutingRulebookRoute: typeof DashboardScoutingRulebookRoute
+}
+
+const DashboardScoutingRouteChildren: DashboardScoutingRouteChildren = {
+  DashboardScoutingFormRoute: DashboardScoutingFormRoute,
+  DashboardScoutingRulebookRoute: DashboardScoutingRulebookRoute,
+}
+
+const DashboardScoutingRouteWithChildren =
+  DashboardScoutingRoute._addFileChildren(DashboardScoutingRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardAssetsRoute: typeof DashboardAssetsRoute
@@ -1831,7 +1923,7 @@ interface DashboardRouteChildren {
   DashboardPhotosRoute: typeof DashboardPhotosRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardRobotsRoute: typeof DashboardRobotsRoute
-  DashboardScoutingRoute: typeof DashboardScoutingRoute
+  DashboardScoutingRoute: typeof DashboardScoutingRouteWithChildren
   DashboardSimsRoute: typeof DashboardSimsRoute
   DashboardSimulationsRoute: typeof DashboardSimulationsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
@@ -1882,7 +1974,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardPhotosRoute: DashboardPhotosRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardRobotsRoute: DashboardRobotsRoute,
-  DashboardScoutingRoute: DashboardScoutingRoute,
+  DashboardScoutingRoute: DashboardScoutingRouteWithChildren,
   DashboardSimsRoute: DashboardSimsRoute,
   DashboardSimulationsRoute: DashboardSimulationsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
@@ -1941,6 +2033,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccessibilityRoute: AccessibilityRoute,
   BugReportRoute: BugReportRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  FinanceRoute: FinanceRoute,
   GalleryRoute: GalleryRoute,
   JoinRoute: JoinRoute,
   LeaderboardRoute: LeaderboardRoute,
@@ -1975,6 +2068,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnshapeIndexRoute: OnshapeIndexRoute,
   SponsorsIndexRoute: SponsorsIndexRoute,
   VideosIndexRoute: VideosIndexRoute,
+  SponsorsPortalTokenIdRoute: SponsorsPortalTokenIdRoute,
   SponsorsRoiTokenIdRoute: SponsorsRoiTokenIdRoute,
 }
 export const routeTree = rootRouteImport

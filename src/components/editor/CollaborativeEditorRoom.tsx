@@ -167,8 +167,8 @@ function ConnectedEditorRoom({
       console.error(`[CollaborativeEditor] Connection error for room "${roomId}":`, err);
     });
 
-    // Bypass sync wait in Playwright tests
-    if (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__) {
+    // Bypass sync wait in Playwright tests unless window.__TEST_PARTYKIT_HOST__ is set
+    if (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__ && !window.__TEST_PARTYKIT_HOST__) {
       queueMicrotask(() => {
         setIsSynced(true);
         setTimedOut(false);
@@ -341,9 +341,14 @@ export function CollaborativeEditorRoom({
 }) {
   const [ydoc] = useState<Y.Doc>(() => new Y.Doc());
   const host = useMemo(() => {
-    // In Playwright tests, force standalone mode by returning empty string
-    if (typeof window !== 'undefined' && window.__PLAYWRIGHT_TEST__) {
-      return "";
+    if (typeof window !== 'undefined') {
+      console.warn("[CollaborativeEditorRoom debug] window.__TEST_PARTYKIT_HOST__:", window.__TEST_PARTYKIT_HOST__, "window.__PLAYWRIGHT_TEST__:", window.__PLAYWRIGHT_TEST__);
+      if (window.__TEST_PARTYKIT_HOST__) {
+        return window.__TEST_PARTYKIT_HOST__;
+      }
+      if (window.__PLAYWRIGHT_TEST__) {
+        return "";
+      }
     }
     return import.meta.env.VITE_PARTYKIT_HOST || "";
   }, []);

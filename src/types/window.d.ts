@@ -11,5 +11,6 @@ declare global {
      * @defaultValue undefined (not set in production)
      */
     readonly __PLAYWRIGHT_TEST__?: true;
+    __TEST_PARTYKIT_HOST__?: string;
   }
 }

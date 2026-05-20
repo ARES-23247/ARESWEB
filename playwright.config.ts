@@ -199,11 +199,19 @@ export default defineConfig({
       },
     },
   ],
-  // Skip webServer when using deployed preview URL (PR testing)
-  webServer: previewUrl ? undefined : {
-    command: WRANGLER_COMMAND,
-    url: 'http://127.0.0.1:8788',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  webServer: previewUrl ? undefined : [
+    {
+      command: WRANGLER_COMMAND,
+      url: 'http://127.0.0.1:8788',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    {
+      command: 'npx partykit dev --port 1999',
+      cwd: './partykit',
+      url: 'http://127.0.0.1:1999/parties/main/room/test-health-check',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30 * 1000,
+    }
+  ],
 });
