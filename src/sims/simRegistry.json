@@ -55,6 +55,12 @@
       "requiresContext": false
     },
     {
+      "id": "cyclingGearRatios",
+      "name": "Cycling Gear Ratios & Cadence",
+      "path": "./cycling-gear-ratios",
+      "requiresContext": false
+    },
+    {
       "id": "elevatorpid",
       "name": "Elevator PID Tuning",
       "path": "./elevatorpid",
@@ -82,6 +88,18 @@
       "id": "greatbee",
       "name": "Greatbee",
       "path": "./greatbee",
+      "requiresContext": false
+    },
+    {
+      "id": "hikingGradeEnergy",
+      "name": "Hiking Grade Energy Cost",
+      "path": "./hiking-grade-energy",
+      "requiresContext": false
+    },
+    {
+      "id": "kayakingHydrodynamics",
+      "name": "Kayaking Hydrodynamics",
+      "path": "./kayaking-hydrodynamics",
       "requiresContext": false
     },
     {
@@ -169,6 +187,12 @@
       "requiresContext": false
     },
     {
+      "id": "skiingCarvingForces",
+      "name": "Skiing Carving Forces",
+      "path": "./skiing-carving-forces",
+      "requiresContext": false
+    },
+    {
       "id": "sotm",
       "name": "Shoot-on-the-Move Analytics",
       "path": "./sotm",
@@ -217,5 +241,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-20T20:36:09.891Z"
+  "_generated": "2026-05-20T21:31:07.179Z"
 }

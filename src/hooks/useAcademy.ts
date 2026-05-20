@@ -11,7 +11,8 @@ const ACADEMY_SIDEBAR_ORDER = [
   "Generative AI",
   "Physics",
   "Mathematics",
-  "Science of Climbing"
+  "Science of Climbing",
+  "Science of Outdoor Sports"
 ];
 
 export interface SearchResult {
