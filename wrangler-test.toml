@@ -1,8 +1,0 @@
-name = "test-insert"
-main = "test-insert.ts"
-compatibility_date = "2024-04-05"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "ares-db"
-database_id = "24d5e2b3-5ad5-4e17-9c73-76b9a0030d16"
