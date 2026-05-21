@@ -72,7 +72,6 @@ export const writeHandlers = {
         const cat = category || 'internal';
         const genId = crypto.randomUUID();
 
-        const calendarId = "primary";
         const user = await requireAuth(c);
         const status = isDraft ? "pending" : (user?.role === "admin" ? "published" : "pending");
 
@@ -138,16 +137,25 @@ export const writeHandlers = {
         }
 
         c.executionCtx.waitUntil((async () => {
-            if (calendarId) {
+            if (status === "published") {
                 try {
-                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
-                    const gcalId = await pushEventToGcal(
-                        { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: rrule || undefined },
-                        calendarId,
-                        oauthToken
-                    );
-                    if (gcalId) {
-                        await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
+                    const dbSettings = await getDbSettings(c);
+                    const calendarId = (
+                        cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                        cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                        cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                    ) || dbSettings["CALENDAR_ID"] || "primary";
+
+                    if (calendarId) {
+                        const oauthToken = await getUnifiedOAuthToken(c.env, db);
+                        const gcalId = await pushEventToGcal(
+                            { id: genId, title: title || "", dateStart: dateStart, dateEnd: dateEnd || undefined, location: location || undefined, description: description || undefined, coverImage: coverImage || undefined, meetingNotes: meetingNotes || undefined, recurrenceRule: rrule || undefined },
+                            calendarId,
+                            oauthToken
+                        );
+                        if (gcalId) {
+                            await db.update(schema.events).set({ gcalEventId: gcalId }).where(eq(schema.events.id, genId)).run();
+                        }
                     }
                 } catch (e) { console.error("GCAL_SAVE_FAIL", e); }
             }
@@ -249,7 +257,12 @@ export const writeHandlers = {
         c.executionCtx.waitUntil((async () => {
             if (status === "published") {
                 const dbSettings = await getDbSettings(c);
-                const calendarId = dbSettings["CALENDAR_ID"];
+                const calendarId = (
+                    cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                    cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                    cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                ) || dbSettings["CALENDAR_ID"] || "primary";
+
                 if (calendarId) {
                     try {
                         const oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -302,7 +315,13 @@ export const writeHandlers = {
             c.executionCtx.waitUntil((async () => {
                 if (existing.gcalEventId) {
                     const dbSettings = await getDbSettings(c);
-                    const calendarId = dbSettings["CALENDAR_ID"];
+                    const cat = existing.category || "internal";
+                    const calendarId = (
+                        cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                        cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                        cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                    ) || dbSettings["CALENDAR_ID"] || "primary";
+
                     if (calendarId) {
                         try {
                             const oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -352,7 +371,13 @@ export const writeHandlers = {
             if (!targetRow) return;
 
             const dbSettings = await getDbSettings(c);
-            const calendarId = dbSettings["CALENDAR_ID"];
+            const cat = targetRow.category || "internal";
+            const calendarId = (
+                cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+            ) || dbSettings["CALENDAR_ID"] || "primary";
+
             if (calendarId) {
                 try {
                     const oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -400,7 +425,13 @@ export const writeHandlers = {
             if (!targetRow || targetRow.status !== "published") return;
 
             const dbSettings = await getDbSettings(c);
-            const calendarId = dbSettings["CALENDAR_ID"];
+            const cat = targetRow.category || "internal";
+            const calendarId = (
+                cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+            ) || dbSettings["CALENDAR_ID"] || "primary";
+
             if (calendarId) {
                 try {
                     const oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -430,7 +461,13 @@ export const writeHandlers = {
         c.executionCtx.waitUntil((async () => {
             if (row && row.gcalEventId) {
                 const dbSettings = await getDbSettings(c);
-                const calendarId = dbSettings["CALENDAR_ID"];
+                const cat = row.category || "internal";
+                const calendarId = (
+                    cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                    cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                    cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                ) || dbSettings["CALENDAR_ID"] || "primary";
+
                 if (calendarId) {
                     try {
                         const oauthToken = await getUnifiedOAuthToken(c.env, db);
@@ -476,7 +513,13 @@ export const writeHandlers = {
         // Also sync to GCal if published
         if (event.status === "published") {
             const dbSettings = await getDbSettings(c);
-            const calendarId = dbSettings["CALENDAR_ID"];
+            const cat = event.category || "internal";
+            const calendarId = (
+                cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+            ) || dbSettings["CALENDAR_ID"] || "primary";
+
             if (calendarId) {
                 try {
                     const oauthToken = await getUnifiedOAuthToken(c.env, db);

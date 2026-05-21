@@ -149,6 +149,11 @@ export async function pushEventToGcal(event: ARES_Event, calendarId: string, tok
 
   const data = (await res.json()) as Record<string, unknown>;
   if (!res.ok) {
+    if (method === "PUT" && (res.status === 404 || res.status === 410)) {
+      console.warn(`Event ${event.gcalEventId} not found on calendar ${calendarId} (status ${res.status}). Re-creating as new event (POST).`);
+      return pushEventToGcal({ ...event, gcalEventId: undefined }, calendarId, token);
+    }
+
     console.error("Failed to push to GCal:", data);
     // Extract detailed error message from Google API response
     const gcalError = data.error as Record<string, unknown> | undefined;

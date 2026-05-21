@@ -5,7 +5,7 @@
  * Common utilities, types, and constants shared across all event handler modules.
  */
 
-import { getSocialConfig, getDbSettings } from "../../middleware";
+import { getDbSettings } from "../../middleware";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
 import { z } from "zod";
 import { eventResponseSchema } from "../../../../shared/routes/events";
@@ -132,16 +132,6 @@ export function mapToEventResponse(e: Record<string, unknown>, locationMap: Reco
         revisionOf: (e.revisionOf as string) ?? null,
         publishedAt: (e.publishedAt as string) ?? null,
     };
-}
-
-/**
- * Helper to get the calendar ID for a given event category.
- */
-export async function getCalendarId(c: AresContext, category: string): Promise<{ calId: string | undefined; socialConfig: Awaited<ReturnType<typeof getSocialConfig>> }> {
-    const socialConfig = await getSocialConfig(c);
-    const calKey = `CALENDAR_ID_${category.toUpperCase()}` as string;
-    const calId = (socialConfig as Record<string, string | undefined>)[calKey] || (socialConfig as Record<string, string | undefined>).CALENDAR_ID;
-    return { calId, socialConfig };
 }
 
 /**
