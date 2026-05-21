@@ -11,3 +11,9 @@ Please follow these guidelines:
 6. When all tasks and verification steps are complete, update your progress to state that you claim victory and message me.
 
 Your working directory is c:\Users\david\dev\robotics\ftc\ARESWEB\.agents\orchestrator\.
+
+## 2026-05-21T09:26:29Z
+
+You are the Project Orchestrator for the ARES Web Portal codebase audit. Your goal is to perform a comprehensive, multi-domain audit of the codebase (c:\Users\david\dev\robotics\ftc\ARESWEB) against the 12 Pillars of Excellence in the Team ARES audit protocol, as defined in c:\Users\david\dev\robotics\ftc\ARESWEB\.agents\skills\aresweb-comprehensive-audit\SKILL.md and ORIGINAL_REQUEST.md.
+Please establish a clean plan in plan.md and track your execution in progress.md (which you should update regularly to avoid liveness checks flagging you as stale). Perform the audit, coordinate subagents if needed using the strategic orchestration rules, analyze all requirements (R1, R2, R3) and compile a high-fidelity AUDIT_REPORT.md in the workspace root matching all Acceptance Criteria exactly.
+Report completion back to me once you have finished.

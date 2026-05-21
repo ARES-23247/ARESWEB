@@ -25,6 +25,7 @@ import {
     type AresContext,
     mapToEventResponse,
     sanitizeFtsQuery,
+    getCalendarSettingsFromDb,
 } from "./eventHelpers";
 
 export const readHandlers = {
@@ -70,13 +71,14 @@ export const readHandlers = {
         return { status: 200 as const, body: { events } };
     },
 
-    getCalendarSettings: async (_input: HandlerInput, _c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
+    getCalendarSettings: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof getCalendarSettingsRoute>> => {
+        const settings = await getCalendarSettingsFromDb(c);
         return {
             status: 200 as const,
             body: {
-                calendarIdInternal: "primary",
-                calendarIdOutreach: "primary",
-                calendarIdExternal: "primary",
+                calendarIdInternal: settings.CALENDAR_ID_INTERNAL || "primary",
+                calendarIdOutreach: settings.CALENDAR_ID_OUTREACH || "primary",
+                calendarIdExternal: settings.CALENDAR_ID_EXTERNAL || "primary",
             }
         };
     },

@@ -5,10 +5,8 @@
  * Common utilities, types, and constants shared across all event handler modules.
  */
 
-import { getSocialConfig, getDb } from "../../middleware";
+import { getSocialConfig, getDbSettings } from "../../middleware";
 import { EventCategoryEnum } from "../../../../shared/schemas/eventSchema";
-import { eq } from "drizzle-orm";
-import * as schema from "../../../../src/db/schema";
 import { z } from "zod";
 import { eventResponseSchema } from "../../../../shared/routes/events";
 import type { HonoContext } from "@shared/types/api";
@@ -150,19 +148,12 @@ export async function getCalendarId(c: AresContext, category: string): Promise<{
  * Helper to get calendar settings from DB.
  */
 export async function getCalendarSettingsFromDb(c: AresContext) {
-    const db = getDb(c);
-    const result = await db.select({
-        value: schema.settings.value,
-    })
-        .from(schema.settings)
-        .where(eq(schema.settings.key, "CALENDAR_ID"))
-        .get();
-
-    const calendarId = result?.value || "";
+    const settings = await getDbSettings(c);
+    const calendarId = settings["CALENDAR_ID"] || "";
     return {
         CALENDAR_ID: calendarId,
-        CALENDAR_ID_INTERNAL: calendarId,
-        CALENDAR_ID_OUTREACH: calendarId,
-        CALENDAR_ID_EXTERNAL: calendarId,
+        CALENDAR_ID_INTERNAL: settings["CALENDAR_ID_INTERNAL"] || calendarId,
+        CALENDAR_ID_OUTREACH: settings["CALENDAR_ID_OUTREACH"] || calendarId,
+        CALENDAR_ID_EXTERNAL: settings["CALENDAR_ID_EXTERNAL"] || calendarId,
     };
 }

@@ -6,6 +6,7 @@ import { SocialCard } from "./integrations/SocialCard";
 import { DataBackupCard } from "./integrations/DataBackupCard";
 import { ResendCard } from "./integrations/ResendCard";
 import { YoutubeCard } from "./integrations/YoutubeCard";
+import { CalendarCard } from "./integrations/CalendarCard";
 import { useGetSettings, useUpdateSettings } from "../api/settings";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
@@ -119,6 +120,7 @@ export default function IntegrationsManager() {
               <GithubCard localSettings={values as Record<string, string>} handleChange={handleChange} />
               <SocialCard localSettings={values as Record<string, string>} handleChange={handleChange} />
               <ResendCard localSettings={values as Record<string, string>} handleChange={handleChange} />
+              <CalendarCard localSettings={values as Record<string, string>} handleChange={handleChange} />
               <YoutubeCard />
               <DataBackupCard />
             </div>
