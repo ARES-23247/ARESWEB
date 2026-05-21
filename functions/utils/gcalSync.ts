@@ -19,9 +19,20 @@ export interface ARES_Event {
  * Prepare ARES Event format for Google Calendar payload
  */
 function prepareGcalPayload(event: ARES_Event) {
+  let dateStart = event.dateStart;
+  let dateEnd = event.dateEnd;
+
+  // Strip trailing Z or millisecond suffix (e.g. .000Z) to ensure local Eastern wall-clock naive time
+  if (dateStart) {
+    dateStart = dateStart.replace(/\.\d+Z?$/, "").replace(/Z$/, "");
+  }
+  if (dateEnd) {
+    dateEnd = dateEnd.replace(/\.\d+Z?$/, "").replace(/Z$/, "");
+  }
+
   // If there's no end date, make it a 1 hour event from start, or all day.
-  const hasTime = event.dateStart.includes("T");
-  const baseStart = hasTime ? event.dateStart : `${event.dateStart.split("T")[0]}T00:00:00Z`;
+  const hasTime = dateStart.includes("T");
+  const baseStart = hasTime ? dateStart : `${dateStart.split("T")[0]}T00:00:00`;
 
   const getNyOffset = (dateStr: string) => {
     const d = new Date(dateStr.includes("T") ? dateStr + (dateStr.endsWith("Z") ? "" : "Z") : dateStr + "T12:00:00Z");
@@ -68,11 +79,11 @@ function prepareGcalPayload(event: ARES_Event) {
     : { date: baseStart.split("T")[0] };
 
   let endObj;
-  if (event.dateEnd) {
-    const endHasTime = event.dateEnd.includes("T");
+  if (dateEnd) {
+    const endHasTime = dateEnd.includes("T");
     endObj = endHasTime
-      ? { dateTime: formatFloatingDateTime(event.dateEnd), timeZone: "America/New_York" }
-      : { date: event.dateEnd.split("T")[0] };
+      ? { dateTime: formatFloatingDateTime(dateEnd), timeZone: "America/New_York" }
+      : { date: dateEnd.split("T")[0] };
   } else {
     if (hasTime) {
       const d = new Date(baseStart + "Z"); 
@@ -246,8 +257,7 @@ export async function pullEventsFromGcal(calendarId: string, token: string): Pro
   do {
     const params = new URLSearchParams({
       maxResults: "250",
-      orderBy: "startTime",
-      singleEvents: "true",
+      singleEvents: "false",
       timeMin: timeMin.toISOString(),
     });
     if (pageToken) params.set("pageToken", pageToken);

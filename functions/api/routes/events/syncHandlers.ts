@@ -7,9 +7,9 @@
 import { ApiError } from "../../middleware/errorHandler";
 import { getDb, getDbSettings } from "../../middleware";
 
-import { pushEventToGcal, pullEventsFromGcal, type ARES_Event } from "../../../utils/gcalSync";
+import { pushEventToGcal, pullEventsFromGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
-import { eq, and, inArray, isNotNull, gte } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import * as schema from "../../../../src/db/schema";
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 
@@ -33,7 +33,6 @@ export const syncHandlers = {
             throw new ApiError("Google OAuth not connected. Please connect your Google account in Settings.", 500);
         }
 
-        let total: number;
         try {
             const dbSettings = await getDbSettings(c);
             const internalId = dbSettings["CALENDAR_ID_INTERNAL"] || dbSettings["CALENDAR_ID"] || "primary";
@@ -41,168 +40,93 @@ export const syncHandlers = {
             const externalId = dbSettings["CALENDAR_ID_EXTERNAL"] || dbSettings["CALENDAR_ID"] || "primary";
 
             const uniqueCalendars = Array.from(new Set([internalId, outreachId, externalId]));
-            const allFetchedEvents: { ev: ARES_Event; category: "internal" | "outreach" | "external" }[] = [];
 
-            for (const calId of uniqueCalendars) {
-                let cat: "internal" | "outreach" | "external" = "internal";
-                if (calId === outreachId) {
-                    cat = "outreach";
-                } else if (calId === externalId) {
-                    cat = "external";
-                } else if (calId === internalId) {
-                    cat = "internal";
-                }
-
-                try {
-                    const gcalEvents = await pullEventsFromGcal(calId, oauthToken);
-                    for (const ev of gcalEvents) {
-                        allFetchedEvents.push({ ev, category: cat });
-                    }
-                } catch (calErr) {
-                    console.error(`SYNC_EVENTS: Failed to pull from calendar "${calId}":`, calErr);
-                    if (calId === "primary" || uniqueCalendars.length === 1) {
-                        throw calErr;
-                    }
-                }
-            }
-
-            const CHUNK_SIZE = 20;
-            for (let i = 0; i < allFetchedEvents.length; i += CHUNK_SIZE) {
-                const chunk = allFetchedEvents.slice(i, i + CHUNK_SIZE).map(({ ev, category }) => ({
-                    id: crypto.randomUUID(),
-                    title: ev.title,
-                    dateStart: ev.dateStart,
-                    dateEnd: ev.dateEnd || null,
-                    location: ev.location,
-                    description: ev.description,
-                    gcalEventId: ev.gcalEventId,
-                    status: 'published' as const,
-                    category: category,
-                }));
-
-                const gcalIds = chunk.map(c => c.gcalEventId).filter(Boolean) as string[];
-                const existingEvents = gcalIds.length > 0
-                    ? await db.select({ gcalEventId: schema.events.gcalEventId })
-                        .from(schema.events)
-                        .where(inArray(schema.events.gcalEventId, gcalIds))
-                        .all()
-                    : [];
-
-                const existingGcalIds = new Set(existingEvents.map(e => e.gcalEventId));
-                const toInsert = [];
-
-                for (const ev of chunk) {
-                    if (ev.gcalEventId && existingGcalIds.has(ev.gcalEventId)) {
-                        await db.update(schema.events)
-                            .set({
-                                title: ev.title,
-                                dateStart: ev.dateStart,
-                                dateEnd: ev.dateEnd,
-                                location: ev.location,
-                                description: ev.description,
-                                category: ev.category,
-                            })
-                            .where(eq(schema.events.gcalEventId, ev.gcalEventId))
-                            .run();
-                    } else {
-                        toInsert.push(ev);
-                    }
-                }
-
-                if (toInsert.length > 0) {
-                    await db.insert(schema.events).values(toInsert).run();
-                }
-            }
-
-            // --- Deletion Pass ---
-            // Remove any local events (synced from GCal) from the last 2 years that are NO LONGER in the active events list.
-            const activeGcalIds = allFetchedEvents.map(({ ev }) => ev.gcalEventId).filter(Boolean) as string[];
-            
-            const twoYearsAgo = new Date();
-            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-            const timeMinStr = twoYearsAgo.toISOString().substring(0, 10); // 'YYYY-MM-DD'
-
-            const localGcalEvents = await db.select({
-                id: schema.events.id,
-                gcalEventId: schema.events.gcalEventId,
-                category: schema.events.category
-            })
+            // Fetch all local active (published, non-deleted) events
+            const activeEvents = await db.select()
                 .from(schema.events)
-                .where(
-                    and(
-                        isNotNull(schema.events.gcalEventId),
-                        gte(schema.events.dateStart, timeMinStr)
-                    )
-                )
+                .where(and(
+                    eq(schema.events.isDeleted, 0),
+                    eq(schema.events.status, "published")
+                ))
                 .all();
 
-            const activeSet = new Set(activeGcalIds);
-            const toDeleteIds: string[] = [];
+            // 1. Push all active local events to Google Calendar (reconciling/updating existing ones)
+            const activeGcalIds = new Set<string>();
 
-            const lastSyncedInternal = dbSettings["LAST_SYNCED_CALENDAR_ID_INTERNAL"];
-            const lastSyncedOutreach = dbSettings["LAST_SYNCED_CALENDAR_ID_OUTREACH"];
-            const lastSyncedExternal = dbSettings["LAST_SYNCED_CALENDAR_ID_EXTERNAL"];
+            for (const event of activeEvents) {
+                try {
+                    const cat = event.category || "internal";
+                    const calendarId = (
+                        cat === "internal" ? internalId :
+                        cat === "outreach" ? outreachId :
+                        cat === "external" ? externalId : null
+                    ) || dbSettings["CALENDAR_ID"] || "primary";
 
-            const allowDeleteInternal = lastSyncedInternal === internalId;
-            const allowDeleteOutreach = lastSyncedOutreach === outreachId;
-            const allowDeleteExternal = lastSyncedExternal === externalId;
+                    const gcalId = await pushEventToGcal(
+                        {
+                            id: event.id,
+                            title: event.title,
+                            dateStart: event.dateStart,
+                            dateEnd: event.dateEnd || undefined,
+                            location: event.location || undefined,
+                            description: event.description || undefined,
+                            coverImage: event.coverImage || undefined,
+                            gcalEventId: event.gcalEventId || undefined,
+                            meetingNotes: event.meetingNotes || undefined,
+                            recurrenceRule: event.rrule || undefined,
+                        },
+                        calendarId,
+                        oauthToken
+                    );
 
-            // Only run deletion checks if we actually fetched events (sync/configuration safety gate)
-            if (activeGcalIds.length > 0) {
-                for (const e of localGcalEvents) {
-                    if (!e.gcalEventId) continue;
-                    const cat = e.category || "internal";
-
-                    // If a calendar configuration has migrated/changed, do NOT delete old events of that category!
-                    // Repair Calendar will heal their IDs later.
-                    if (cat === "internal" && !allowDeleteInternal) continue;
-                    if (cat === "outreach" && !allowDeleteOutreach) continue;
-                    if (cat === "external" && !allowDeleteExternal) continue;
-
-                    if (!activeSet.has(e.gcalEventId)) {
-                        toDeleteIds.push(e.id);
+                    if (gcalId) {
+                        activeGcalIds.add(gcalId);
+                        if (gcalId !== event.gcalEventId) {
+                            await db.update(schema.events)
+                                .set({ gcalEventId: gcalId })
+                                .where(eq(schema.events.id, event.id))
+                                .run();
+                            console.debug(`[syncEvents] Recreated event "${event.title}" on GCal (ID: ${gcalId})`);
+                        } else {
+                            console.debug(`[syncEvents] Updated event "${event.title}" on GCal (ID: ${gcalId})`);
+                        }
                     }
+                } catch (pushErr) {
+                    const msg = pushErr instanceof Error ? pushErr.message : String(pushErr);
+                    console.error(`[syncEvents] Failed to push/sync "${event.title}":`, msg);
                 }
             }
 
-            if (toDeleteIds.length > 0) {
-                for (let i = 0; i < toDeleteIds.length; i += 50) {
-                    const chunk = toDeleteIds.slice(i, i + 50);
-                    await db.delete(schema.events)
-                        .where(inArray(schema.events.id, chunk))
-                        .run();
+            // 2. Identify all extraneous events on Google Calendar and delete them
+            for (const calId of uniqueCalendars) {
+                try {
+                    const gcalEvents = await pullEventsFromGcal(calId, oauthToken);
+                    for (const gcalEv of gcalEvents) {
+                        if (gcalEv.gcalEventId && !activeGcalIds.has(gcalEv.gcalEventId) && !gcalEv.parentGcalId) {
+                            console.warn(`[syncEvents] Extraneous event "${gcalEv.title}" (GCal ID: ${gcalEv.gcalEventId}) found on GCal. Deleting...`);
+                            await deleteEventFromGcal(gcalEv.gcalEventId, calId, oauthToken);
+                        }
+                    }
+                } catch (pullErr) {
+                    console.error(`[syncEvents] Failed to reconcile/clean calendar "${calId}":`, pullErr);
                 }
             }
 
-            // Update the last synced calendar settings so deletions can occur normally in subsequent syncs
-            if (!allowDeleteInternal) {
-                await db.insert(schema.settings)
-                    .values({ key: "LAST_SYNCED_CALENDAR_ID_INTERNAL", value: internalId })
-                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: internalId } })
-                    .run();
-            }
-            if (!allowDeleteOutreach) {
-                await db.insert(schema.settings)
-                    .values({ key: "LAST_SYNCED_CALENDAR_ID_OUTREACH", value: outreachId })
-                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: outreachId } })
-                    .run();
-            }
-            if (!allowDeleteExternal) {
-                await db.insert(schema.settings)
-                    .values({ key: "LAST_SYNCED_CALENDAR_ID_EXTERNAL", value: externalId })
-                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: externalId } })
-                    .run();
-            }
+            // Save the last calendar sync timestamp
+            const nowIso = new Date().toISOString();
+            await db.insert(schema.settings)
+                .values({ key: "LAST_CALENDAR_SYNC", value: nowIso })
+                .onConflictDoUpdate({ target: schema.settings.key, set: { value: nowIso } })
+                .run();
 
-            total = allFetchedEvents.length;
-        } catch (calErr) {
-            const msg = calErr instanceof Error ? calErr.message : String(calErr);
+            invalidateEventsCache(c);
+            return { status: 200 as const, body: { success: true, count: activeEvents.length } };
+
+        } catch (syncErr) {
+            const msg = syncErr instanceof Error ? syncErr.message : String(syncErr);
             console.error(`SYNC_EVENTS: Calendar sync failed:`, msg);
             throw new ApiError(`Calendar sync failed: ${msg}`, 500);
         }
-
-        invalidateEventsCache(c);
-        return { status: 200 as const, body: { success: true, count: total } };
     },
 
     repairCalendar: async (_input: HandlerInput, c: AresContext): Promise<ApiResponse<typeof repairCalendarRoute>> => {
