@@ -39,7 +39,8 @@
     "audit:security": "pnpm audit --audit-level=high || true",
     "generate:sims": "npx tsx scripts/generate-sim-registry.ts",
     "generate:openapi": "node scripts/generate-openapi.mjs",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "prepare": "husky"
   },
   "pnpm": {
     "overrides": {
@@ -105,7 +106,6 @@
     "@tiptap/suggestion": "^3.22.5",
     "@tiptap/y-tiptap": "^3.0.3",
     "@tremor/react": "^3.18.7",
-
     "@xyflow/react": "^12.10.2",
     "better-auth": "^1.6.9",
     "canvas-confetti": "^1.9.4",
@@ -135,7 +135,6 @@
     "nuqs": "^2.8.9",
     "p-retry": "^8.0.0",
     "partysocket": "^1.1.18",
-
     "qrcode.react": "^4.2.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -207,6 +206,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "glob": "^13.0.6",
     "globals": "^17.6.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "knip": "^6.11.0",
     "msw": "^2.14.3",
