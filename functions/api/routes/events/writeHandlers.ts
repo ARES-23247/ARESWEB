@@ -12,12 +12,13 @@ import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
 import { eq, and, ne, inArray, sql } from "drizzle-orm";
-import rrulePkg from 'rrule';
+import * as rrulePkg from 'rrule';
 const rrulestr = (
-    typeof rrulePkg === 'function'
-        ? rrulePkg
-        : (rrulePkg as unknown as { rrulestr: typeof import('rrule').rrulestr }).rrulestr
-);
+    typeof rrulePkg.rrulestr === 'function'
+        ? rrulePkg.rrulestr
+        : (rrulePkg as unknown as { default?: { rrulestr: typeof import('rrule').rrulestr } }).default?.rrulestr ||
+          (rrulePkg as unknown as { default?: typeof import('rrule').rrulestr }).default
+) as typeof import('rrule').rrulestr;
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 import * as schema from "../../../../src/db/schema";
 import { requireAuth } from "../../middleware/auth";
