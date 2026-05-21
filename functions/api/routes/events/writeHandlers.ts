@@ -11,8 +11,13 @@ import { pushEventToGcal, deleteEventFromGcal } from "../../../utils/gcalSync";
 import { getUnifiedOAuthToken } from "../../../utils/googleAuth";
 import { dispatchSocials } from "../../../utils/socialSync";
 import { sendZulipMessage } from "../../../utils/zulipSync";
-import { eq, and } from "drizzle-orm";
-import { rrulestr } from 'rrule';
+import { eq, and, ne, inArray, sql } from "drizzle-orm";
+import rrulePkg from 'rrule';
+const rrulestr = (
+    typeof rrulePkg === 'function'
+        ? rrulePkg
+        : (rrulePkg as unknown as { rrulestr: typeof import('rrule').rrulestr }).rrulestr
+);
 import type { HandlerInput, ApiResponse } from "@shared/types/api";
 import * as schema from "../../../../src/db/schema";
 import { requireAuth } from "../../middleware/auth";
@@ -102,6 +107,9 @@ export const writeHandlers = {
                         gcalEventId: null, status,
                         isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0, tbaEventKey: tbaEventKey || null,
                         publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null,
+                        recurringGroupId: genId,
+                        rrule: rrule || null,
+                        recurringException: 0,
                     };
                 });
             } catch (e) {
@@ -204,7 +212,7 @@ export const writeHandlers = {
     updateEvent: async (input: HandlerInput<Partial<EventSaveBody>>, c: AresContext): Promise<ApiResponse<typeof updateEventRoute>> => {
         const { params, body } = input;
         const { id } = params;
-        const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes } = body;
+        const { title, category, dateStart, dateEnd, location, description, coverImage, tbaEventKey, isPotluck, isVolunteer, isDraft, publishedAt, seasonId, meetingNotes, rrule, updateMode } = body;
         const db = getDb(c);
 
         try {
@@ -231,16 +239,164 @@ export const writeHandlers = {
         const existing = await db.select().from(schema.events).where(eq(schema.events.id, id)).get();
         if (!existing) throw new ApiError("Event not found", 404);
 
-        await db.update(schema.events)
-            .set({
-                title: title || existing.title, category: cat, dateStart: dateStart, dateEnd: dateEnd || null,
-                location: location || "", description: description || "", coverImage: coverImage || "",
-                tbaEventKey: tbaEventKey || null, status, contentDraft: null,
-                isPotluck: isPotluck ? 1 : 0, isVolunteer: isVolunteer ? 1 : 0,
-                publishedAt: publishedAt || null, seasonId: seasonId || null, meetingNotes: meetingNotes || null
+        const finalRrule = rrule !== undefined ? rrule : existing.rrule;
+        const finalUpdateMode = updateMode || "single";
+
+        // Series update or transition from single to repeating
+        if (finalUpdateMode === "following" || (finalRrule && !existing.rrule)) {
+            const groupId = existing.recurringGroupId || existing.id;
+
+            // 1. Fetch all future instances starting from the current instance's original date
+            const futureInstances = await db.select({
+                id: schema.events.id,
+                gcalEventId: schema.events.gcalEventId,
             })
-            .where(eq(schema.events.id, id))
-            .run();
+            .from(schema.events)
+            .where(and(
+                eq(schema.events.recurringGroupId, groupId),
+                ne(schema.events.id, id),
+                sql`${schema.events.dateStart} >= ${existing.dateStart}`
+            ))
+            .all();
+
+            // 2. Delete them from Google Calendar (async wait)
+            if (futureInstances.length > 0) {
+                c.executionCtx.waitUntil((async () => {
+                    const dbSettings = await getDbSettings(c);
+                    const oauthToken = await getUnifiedOAuthToken(c.env, db);
+                    const calendarId = (
+                        cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                        cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                        cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                    ) || dbSettings["CALENDAR_ID"] || "primary";
+
+                    for (const inst of futureInstances) {
+                        if (inst.gcalEventId) {
+                            try {
+                                await deleteEventFromGcal(inst.gcalEventId, calendarId, oauthToken);
+                            } catch (gcalErr) {
+                                console.error(`[updateEvent] Failed to delete instance ${inst.id} from GCal:`, gcalErr);
+                            }
+                        }
+                    }
+                })());
+
+                // 3. Delete future instances from D1 database
+                const futureIds = futureInstances.map(x => x.id);
+                const CHUNK_SIZE = 20;
+                for (let i = 0; i < futureIds.length; i += CHUNK_SIZE) {
+                    const chunk = futureIds.slice(i, i + CHUNK_SIZE);
+                    await db.delete(schema.events).where(inArray(schema.events.id, chunk)).run();
+                }
+            }
+
+            // 4. Generate new instances from the new dateStart
+            let instances: (typeof schema.events.$inferInsert)[] = [];
+            if (finalRrule) {
+                try {
+                    const rule = rrulestr(finalRrule, { dtstart: new Date(dateStart) });
+                    const dates = rule.all((d: Date, i: number) => i < 52);
+                    const duration = dateEnd ? new Date(dateEnd).getTime() - new Date(dateStart).getTime() : 0;
+
+                    const formatLocal = (d: Date) => {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const hours = String(d.getHours()).padStart(2, '0');
+                        const minutes = String(d.getMinutes()).padStart(2, '0');
+                        return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+                    };
+
+                    instances = dates.slice(1).map((d: Date) => {
+                        const instStart = formatLocal(d);
+                        const instEnd = dateEnd ? formatLocal(new Date(d.getTime() + duration)) : null;
+                        return {
+                            id: crypto.randomUUID(),
+                            title: title || existing.title,
+                            category: cat,
+                            dateStart: instStart,
+                            dateEnd: instEnd,
+                            location: location || "",
+                            description: description || "",
+                            coverImage: coverImage || "",
+                            gcalEventId: null,
+                            status,
+                            isPotluck: isPotluck ? 1 : 0,
+                            isVolunteer: isVolunteer ? 1 : 0,
+                            tbaEventKey: tbaEventKey || null,
+                            publishedAt: publishedAt || null,
+                            seasonId: seasonId || null,
+                            meetingNotes: meetingNotes || null,
+                            recurringGroupId: groupId,
+                            rrule: finalRrule,
+                            recurringException: 0,
+                        };
+                    });
+                } catch (e) {
+                    console.error("Invalid rrule on update", e);
+                }
+            }
+
+            // 5. Insert new instances into D1 database
+            if (instances.length > 0) {
+                const CHUNK_SIZE = 5;
+                for (let i = 0; i < instances.length; i += CHUNK_SIZE) {
+                    await db.insert(schema.events).values(instances.slice(i, i + CHUNK_SIZE)).run();
+                }
+            }
+
+            // 6. Update the parent event itself
+            await db.update(schema.events)
+                .set({
+                    title: title || existing.title,
+                    category: cat,
+                    dateStart,
+                    dateEnd: dateEnd || null,
+                    location: location || "",
+                    description: description || "",
+                    coverImage: coverImage || "",
+                    tbaEventKey: tbaEventKey || null,
+                    status,
+                    contentDraft: null,
+                    isPotluck: isPotluck ? 1 : 0,
+                    isVolunteer: isVolunteer ? 1 : 0,
+                    publishedAt: publishedAt || null,
+                    seasonId: seasonId || null,
+                    meetingNotes: meetingNotes || null,
+                    rrule: finalRrule || null,
+                    recurringGroupId: finalRrule ? groupId : null,
+                    recurringException: 0,
+                })
+                .where(eq(schema.events.id, id))
+                .run();
+
+        } else {
+            // Single instance update
+            const isException = existing.recurringGroupId ? 1 : 0;
+            await db.update(schema.events)
+                .set({
+                    title: title || existing.title,
+                    category: cat,
+                    dateStart,
+                    dateEnd: dateEnd || null,
+                    location: location || "",
+                    description: description || "",
+                    coverImage: coverImage || "",
+                    tbaEventKey: tbaEventKey || null,
+                    status,
+                    contentDraft: null,
+                    isPotluck: isPotluck ? 1 : 0,
+                    isVolunteer: isVolunteer ? 1 : 0,
+                    publishedAt: publishedAt || null,
+                    seasonId: seasonId || null,
+                    meetingNotes: meetingNotes || null,
+                    rrule: finalRrule || null,
+                    recurringGroupId: finalRrule ? (existing.recurringGroupId || id) : null,
+                    recurringException: isException,
+                })
+                .where(eq(schema.events.id, id))
+                .run();
+        }
 
         if (description) {
             c.executionCtx.waitUntil(
@@ -305,15 +461,48 @@ export const writeHandlers = {
         try {
             const existing = await db.select({
                 gcalEventId: schema.events.gcalEventId,
-                category: schema.events.category
+                category: schema.events.category,
+                recurringGroupId: schema.events.recurringGroupId,
+                dateStart: schema.events.dateStart
             }).from(schema.events).where(eq(schema.events.id, id)).get();
 
             if (!existing) throw new ApiError("Event not found", 404);
 
-            await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
+            let deleteMode: "single" | "following" = "single";
+            try {
+                const body = await c.req.json() as { deleteMode?: "single" | "following" };
+                if (body && body.deleteMode) {
+                    deleteMode = body.deleteMode;
+                }
+            } catch (_) {
+                // Ignore JSON parse errors for GET or empty DELETE requests
+            }
 
-            c.executionCtx.waitUntil((async () => {
-                if (existing.gcalEventId) {
+            if (deleteMode === "following" && existing.recurringGroupId) {
+                const followingEvents = await db.select({
+                    id: schema.events.id,
+                    gcalEventId: schema.events.gcalEventId
+                })
+                .from(schema.events)
+                .where(and(
+                    eq(schema.events.recurringGroupId, existing.recurringGroupId),
+                    sql`${schema.events.dateStart} >= ${existing.dateStart}`
+                ))
+                .all();
+
+                const followingIds = followingEvents.map(x => x.id);
+                if (followingIds.length > 0) {
+                    const CHUNK_SIZE = 20;
+                    for (let i = 0; i < followingIds.length; i += CHUNK_SIZE) {
+                        const chunk = followingIds.slice(i, i + CHUNK_SIZE);
+                        await db.update(schema.events)
+                            .set({ isDeleted: 1 })
+                            .where(inArray(schema.events.id, chunk))
+                            .run();
+                    }
+                }
+
+                c.executionCtx.waitUntil((async () => {
                     const dbSettings = await getDbSettings(c);
                     const cat = existing.category || "internal";
                     const calendarId = (
@@ -325,13 +514,45 @@ export const writeHandlers = {
                     if (calendarId) {
                         try {
                             const oauthToken = await getUnifiedOAuthToken(c.env, db);
-                            await deleteEventFromGcal(existing.gcalEventId, calendarId, oauthToken);
+                            for (const ev of followingEvents) {
+                                if (ev.gcalEventId) {
+                                    try {
+                                        await deleteEventFromGcal(ev.gcalEventId, calendarId, oauthToken);
+                                    } catch (err) {
+                                        console.error("[Events:Delete] GCal delete failed for event:", ev.gcalEventId, err);
+                                    }
+                                }
+                            }
                         } catch (err) {
-                            console.error("[Events:Delete] GCal delete failed for event:", existing.gcalEventId, err);
+                            console.error("[Events:Delete] Failed to get OAuth token or run cascading GCal delete:", err);
                         }
                     }
-                }
-            })());
+                })());
+
+            } else {
+                await db.update(schema.events).set({ isDeleted: 1 }).where(eq(schema.events.id, id)).run();
+
+                c.executionCtx.waitUntil((async () => {
+                    if (existing.gcalEventId) {
+                        const dbSettings = await getDbSettings(c);
+                        const cat = existing.category || "internal";
+                        const calendarId = (
+                            cat === "internal" ? dbSettings["CALENDAR_ID_INTERNAL"] :
+                            cat === "outreach" ? dbSettings["CALENDAR_ID_OUTREACH"] :
+                            cat === "external" ? dbSettings["CALENDAR_ID_EXTERNAL"] : null
+                        ) || dbSettings["CALENDAR_ID"] || "primary";
+
+                        if (calendarId) {
+                            try {
+                                const oauthToken = await getUnifiedOAuthToken(c.env, db);
+                                await deleteEventFromGcal(existing.gcalEventId, calendarId, oauthToken);
+                            } catch (err) {
+                                console.error("[Events:Delete] GCal delete failed for event:", existing.gcalEventId, err);
+                            }
+                        }
+                    }
+                })());
+            }
 
             triggerBackgroundReindex(c.executionCtx, getDb(c), c.env.AI, c.env.VECTORIZE_DB);
             invalidateEventsCache(c);
