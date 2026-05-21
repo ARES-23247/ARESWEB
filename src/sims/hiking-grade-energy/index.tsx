@@ -1,6 +1,7 @@
 /** @sim {"name": "Hiking Grade Energy Cost", "requiresContext": false} */
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Activity, Heart } from 'lucide-react';
+import { useMinettiCost } from '../../hooks/useMinettiCost';
 
 export default function HikingGradeEnergySim() {
   const [gradePct, setGradePct] = useState(5); // -30% to +35%
@@ -8,50 +9,7 @@ export default function HikingGradeEnergySim() {
   const [hikeDistance, setHikeDistance] = useState(5); // 1 to 15 km
   const [hikingSpeed, setHikingSpeed] = useState(4.0); // 2.0 to 6.0 km/h
 
-  // Minetti Mathematical Model
-  // Cm(i) = 280*i^5 + 58*i^4 - 23*i^3 - 5.8*i^2 + 15*i + 4.3
-  // where i is fractional slope (gradePct / 100)
-  const minettiData = useMemo(() => {
-    const i = gradePct / 100;
-    
-    // Calculate Minetti cost in J/(kg*m)
-    const cost = parseFloat((
-      280 * Math.pow(i, 5) +
-      58 * Math.pow(i, 4) -
-      23 * Math.pow(i, 3) -
-      5.8 * Math.pow(i, 2) +
-      15 * i +
-      4.3
-    ).toFixed(2));
-
-    // Total Energy Expended (Joules) = Cost * Weight * Distance in meters
-    const totalJoules = cost * hikerWeight * (hikeDistance * 1000);
-    
-    // Convert Joules to kcal (Calories) -> 1 kcal = 4184 Joules
-    const totalCalories = parseFloat((totalJoules / 4184).toFixed(0));
-
-    // Duration of hike (hours)
-    const durationHours = hikeDistance / hikingSpeed;
-
-    // Burn rate in Calories per hour
-    const burnRateKcalHr = parseFloat((totalCalories / durationHours).toFixed(0));
-
-    // Calculate curve points for visual plotting (-30% to +35%)
-    const curvePoints: { x: number; y: number }[] = [];
-    for (let g = -30; g <= 35; g += 2) {
-      const frac = g / 100;
-      const c = 280 * Math.pow(frac, 5) + 58 * Math.pow(frac, 4) - 23 * Math.pow(frac, 3) - 5.8 * Math.pow(frac, 2) + 15 * frac + 4.3;
-      curvePoints.push({ x: g, y: c });
-    }
-
-    return {
-      cost,
-      totalCalories,
-      durationHours,
-      burnRateKcalHr,
-      curvePoints
-    };
-  }, [gradePct, hikerWeight, hikeDistance, hikingSpeed]);
+  const minettiData = useMinettiCost(gradePct, hikerWeight, hikeDistance, hikingSpeed);
 
   const getInclineZone = () => {
     if (gradePct < -15) {
