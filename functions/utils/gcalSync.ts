@@ -114,9 +114,15 @@ function prepareGcalPayload(event: ARES_Event) {
     end: endObj,
   };
 
+  // We explicitly do not send recurrence rules to Google Calendar.
+  // Because ARESWEB already expands and manages recurring occurrences as individual rows
+  // in the local D1 database, sending RRULEs would cause Google Calendar to generate
+  // duplicate recurring instances on top of our individual occurrence syncs.
+  /*
   if (event.recurrenceRule) {
     result.recurrence = [`RRULE:${event.recurrenceRule}`];
   }
+  */
   
   if (event.parentGcalId) {
     result.recurringEventId = event.parentGcalId;
