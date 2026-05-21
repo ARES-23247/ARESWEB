@@ -122,7 +122,11 @@ export const syncHandlers = {
             twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
             const timeMinStr = twoYearsAgo.toISOString().substring(0, 10); // 'YYYY-MM-DD'
 
-            const localGcalEvents = await db.select({ id: schema.events.id, gcalEventId: schema.events.gcalEventId })
+            const localGcalEvents = await db.select({
+                id: schema.events.id,
+                gcalEventId: schema.events.gcalEventId,
+                category: schema.events.category
+            })
                 .from(schema.events)
                 .where(
                     and(
@@ -133,9 +137,33 @@ export const syncHandlers = {
                 .all();
 
             const activeSet = new Set(activeGcalIds);
-            const toDeleteIds = localGcalEvents
-                .filter(e => e.gcalEventId && !activeSet.has(e.gcalEventId))
-                .map(e => e.id);
+            const toDeleteIds: string[] = [];
+
+            const lastSyncedInternal = dbSettings["LAST_SYNCED_CALENDAR_ID_INTERNAL"];
+            const lastSyncedOutreach = dbSettings["LAST_SYNCED_CALENDAR_ID_OUTREACH"];
+            const lastSyncedExternal = dbSettings["LAST_SYNCED_CALENDAR_ID_EXTERNAL"];
+
+            const allowDeleteInternal = lastSyncedInternal === internalId;
+            const allowDeleteOutreach = lastSyncedOutreach === outreachId;
+            const allowDeleteExternal = lastSyncedExternal === externalId;
+
+            // Only run deletion checks if we actually fetched events (sync/configuration safety gate)
+            if (activeGcalIds.length > 0) {
+                for (const e of localGcalEvents) {
+                    if (!e.gcalEventId) continue;
+                    const cat = e.category || "internal";
+
+                    // If a calendar configuration has migrated/changed, do NOT delete old events of that category!
+                    // Repair Calendar will heal their IDs later.
+                    if (cat === "internal" && !allowDeleteInternal) continue;
+                    if (cat === "outreach" && !allowDeleteOutreach) continue;
+                    if (cat === "external" && !allowDeleteExternal) continue;
+
+                    if (!activeSet.has(e.gcalEventId)) {
+                        toDeleteIds.push(e.id);
+                    }
+                }
+            }
 
             if (toDeleteIds.length > 0) {
                 for (let i = 0; i < toDeleteIds.length; i += 50) {
@@ -144,6 +172,26 @@ export const syncHandlers = {
                         .where(inArray(schema.events.id, chunk))
                         .run();
                 }
+            }
+
+            // Update the last synced calendar settings so deletions can occur normally in subsequent syncs
+            if (!allowDeleteInternal) {
+                await db.insert(schema.settings)
+                    .values({ key: "LAST_SYNCED_CALENDAR_ID_INTERNAL", value: internalId })
+                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: internalId } })
+                    .run();
+            }
+            if (!allowDeleteOutreach) {
+                await db.insert(schema.settings)
+                    .values({ key: "LAST_SYNCED_CALENDAR_ID_OUTREACH", value: outreachId })
+                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: outreachId } })
+                    .run();
+            }
+            if (!allowDeleteExternal) {
+                await db.insert(schema.settings)
+                    .values({ key: "LAST_SYNCED_CALENDAR_ID_EXTERNAL", value: externalId })
+                    .onConflictDoUpdate({ target: schema.settings.key, set: { value: externalId } })
+                    .run();
             }
 
             total = allFetchedEvents.length;
