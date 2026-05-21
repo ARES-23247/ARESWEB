@@ -192,7 +192,7 @@ async function fetchInquiries(db: DrizzleDB, limit: number, offset: number, filt
         .from(schema.inquiries)
         .where(
             filterOutreach
-                ? and(baseCondition, inArray(schema.inquiries.type, ["outreach", "support"]))
+                ? and(baseCondition, inArray(schema.inquiries.type, ["outreach", "support", "bug"]))
                 : baseCondition
         )
         .orderBy(desc(schema.inquiries.createdAt))
@@ -333,9 +333,10 @@ async function processInquiryInBackground(
     name: string,
     email: string,
     id: string,
-    _metadata: unknown
+    metadata: unknown
 ) {
     const baseUrl = new URL(c.req.url).origin;
+    const meta = metadata as Record<string, unknown> | undefined;
 
     safeWaitUntil(c.executionCtx, (async () => {
         const social = await getSocialConfig(c);
@@ -351,8 +352,17 @@ async function processInquiryInBackground(
         }
 
         // Zulip message
-        const topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
-        const zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
+        let topic = `${type.charAt(0).toUpperCase() + type.slice(1)} Inquiry: ${name}`;
+        let zulipContent = `**New ${type} inquiry received**\n\n**Name:** ${name}\n**Email:** ${email}\n**ID:** ${id.slice(0, 8)}\n\n[Review Inquiry](${baseUrl}/dashboard/inquiries)`;
+
+        if (type === "bug") {
+            const bugTitle = meta?.title ? String(meta.title) : "Unnamed Bug";
+            const bugRepo = meta?.repo ? String(meta.repo) : "Unknown Repo";
+            const bugDesc = meta?.description ? String(meta.description) : "No description provided.";
+            topic = `Bug Report: ${bugTitle}`;
+            zulipContent = `**New bug report received** 🐛\n\n**Reporter:** ${name} (${email})\n**Target Repository:** ${bugRepo}\n**Summary:** ${bugTitle}\n\n**Details:**\n${bugDesc}\n\n**ID:** ${id.slice(0, 8)}\n\n[Review & Resolve Bug](${baseUrl}/dashboard/inquiries)`;
+        }
+
         const messageId = await sendZulipMessage(social, "contacts", topic, zulipContent).catch((err) => {
             console.error("Failed to send Zulip message:", err);
             return null;
@@ -364,15 +374,15 @@ async function processInquiryInBackground(
         }
 
         // In-app notifications
-        const audiences: NotifyAudience[] = (type === "outreach" || type === "support")
+        const audiences: NotifyAudience[] = (type === "outreach" || type === "support" || type === "bug")
             ? ["admin", "coach", "mentor", "student"]
             : ["admin", "coach", "mentor"];
 
         await notifyByRole(c, audiences, {
-            title: `New ${type.toUpperCase()} Inquiry`,
-            message: `${name} submitted a new inquiry.`,
+            title: type === "bug" ? "New Bug Report" : `New ${type.toUpperCase()} Inquiry`,
+            message: type === "bug" ? `${name} reported a bug: ${meta?.title || "No summary"}` : `${name} submitted a new inquiry.`,
             link: "/dashboard/inquiries",
-            priority: type === "sponsor" ? "high" : "medium"
+            priority: type === "bug" ? "high" : (type === "sponsor" ? "high" : "medium")
         }).catch((err) => console.error("Failed to notify by role:", err));
 
         // GitHub project item for sponsor/student inquiries
@@ -384,9 +394,11 @@ async function processInquiryInBackground(
             }
         }
 
-        // Email receipt for join/support inquiries
-        if (type === "student" || type === "mentor" || type === "support") {
-            const subject = `Inquiry Received: ${type.charAt(0).toUpperCase() + type.slice(1)} - ARES 23247`;
+        // Email receipt for join/support/bug inquiries
+        if (type === "student" || type === "mentor" || type === "support" || type === "bug") {
+            const subject = type === "bug" 
+                ? `Bug Report Received: ${meta?.title || "ARES 23247"}`
+                : `Inquiry Received: ${type.charAt(0).toUpperCase() + type.slice(1)} - ARES 23247`;
             const html = (await InquiryReceipt({ name, type, id })).toString();
 
             await sendEmail(c, {

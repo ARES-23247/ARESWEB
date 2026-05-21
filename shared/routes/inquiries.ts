@@ -48,7 +48,7 @@ export const inquirySchema = createResponseSchema(
  * Uses camelCase and includes Turnstile token for bot protection.
  */
 export const inquiryInputSchema = z.object({
-  type: z.enum(["sponsor", "student", "mentor", "outreach", "support"]).openapi({
+  type: z.enum(["sponsor", "student", "mentor", "outreach", "support", "bug"]).openapi({
     description: "Type of inquiry",
     example: "sponsor",
   }),

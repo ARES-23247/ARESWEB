@@ -82,6 +82,7 @@ const TYPE_COLORS: Record<string, string> = {
   sponsor: "bg-ares-cyan text-black",
   outreach: "bg-ares-bronze text-white",
   support: "bg-white/10 text-white",
+  bug: "bg-ares-red text-white border border-ares-red/30 shadow-[0_0_15px_rgba(220,38,38,0.2)]",
 };
 
 const STATUS_COLORS: Record<string, string> = {
