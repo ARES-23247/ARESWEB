@@ -94,6 +94,21 @@ VALUES (
   email = excluded.email,
   role = excluded.role;
 
+-- Anonymous user (required to satisfy foreign key constraints for guest chat sessions)
+INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt, role)
+VALUES (
+  'anonymous',
+  'Anonymous User',
+  'anonymous@aresfirst.org',
+  1,
+  1704067200000,
+  1704067200000,
+  'user'
+) ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  email = excluded.email,
+  role = excluded.role;
+
 -- Admin user profile
 INSERT INTO user_profiles (
   user_id, first_name, last_name, nickname, member_type,
