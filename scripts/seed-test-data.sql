@@ -699,6 +699,153 @@ A **system** consists of two or more inequalities.
     'published',
     0,
     1
+  ),
+  (
+    'sat-exponential',
+    'SAT Prep: Exponential Growth & Decay',
+    'Mathematics',
+    12,
+    'Master exponential functions, analyze growth and decay factors, examine robotics cooling curves, and practice high-yield dSAT questions.',
+    '# SAT Prep: Exponential Growth & Decay
+
+Exponential growth and decay functions are major, high-yield topics on the dSAT. Unlike linear models that change by a constant *amount* each interval, exponential models change by a constant *percentage multiplier* each interval.
+
+### Interactive Exponential Explorer
+
+Toggle between standard growth, standard decay, motor thermal cooling, and robotics league expansion. Use the sliders to adjust the initial value $a$ and growth/decay factor $b$ in real-time!
+
+<satexponential />
+
+---
+
+## 1. The General Exponential Form
+
+An exponential function is standardly represented as:
+$$y = a(b)^x$$
+
+- **Initial Value ($a$)**: The value of $y$ when $x = 0$ (the y-intercept).
+- **Growth/Decay Factor ($b$)**: The multiplier for each step of $x$.
+  - **If $b > 1$**: It is **exponential growth**. The rate $r$ is positive, where $b = 1 + r$.
+  - **If $0 < b < 1$**: It is **exponential decay**. The rate $r$ is positive, where $b = 1 - r$.
+
+> [!IMPORTANT]
+> A common SAT trap is interpreting a decay multiplier. For example, if a signal is $y = 80(0.85)^t$, the signal retains $85\%$ of its strength, meaning it **decreases by $15\%$** ($1 - 0.85 = 0.15$) per unit distance.
+
+---
+
+## 2. Real-World Applications
+
+On the dSAT, exponential models are frequently tied to real-world phenomena:
+
+### Motor Thermal Cooling (Newton''s Law of Cooling)
+When a high-performance robotics motor runs, it heats up. Once powered down, it cools exponentially toward room temperature:
+$$T(t) = a(b)^t + T_{\text{room}}$$
+Here, $a$ is the temperature excess above room temp, and $b$ is the cooling decay coefficient.
+
+### Regional League Growth
+A compounding regional FIRST® Robotics league signup rate grows exponentially. If a league grows by $40\%$ annually from an initial 120 teams:
+$$N(t) = 1.2(1.4)^t \text{ (in hundreds of teams)}$$
+Here, $1.2$ represents the initial 120 teams, and $1.4 = 1 + 0.40$ represents the $40\%$ growth multiplier.',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-systems',
+    'SAT Prep: Systems of Equations',
+    'Mathematics',
+    13,
+    'Solve linear systems of equations, analyze one/no/infinite solution criteria, map robotics path collisions, and practice high-yield dSAT questions.',
+    '# SAT Prep: Systems of Equations
+
+Systems of linear equations make up a huge percentage of the **Heart of Algebra** questions on the dSAT. You will be asked to find intersection coordinates, solve variables using substitution or elimination, and evaluate the specific criteria for when a system has one, zero, or infinitely many solutions.
+
+### Interactive System Explorer
+
+Use the simulator below to explore intersecting, parallel, and identical lines. Observe how changing the slope ($m$) and y-intercept ($b$) affects the system''s intersection point!
+
+<satsystems />
+
+---
+
+## 1. The Three Systems Criteria
+
+A system of two linear equations in the standard coordinate plane can have:
+
+### 1. Exactly One Solution
+- **Visual**: The lines intersect at exactly one coordinate point $(x, y)$.
+- **Criterion**: The slopes of the lines are **different** ($m_1 \neq m_2$).
+
+### 2. No Solution (Zero Solutions)
+- **Visual**: The lines are parallel and never cross.
+- **Criterion**: The slopes are **equal**, but the y-intercepts are **different** ($m_1 = m_2$ and $b_1 \neq b_2$).
+
+### 3. Infinitely Many Solutions
+- **Visual**: The lines are identical (overlap completely).
+- **Criterion**: The slopes are **equal**, and the y-intercepts are **equal** ($m_1 = m_2$ and $b_1 = b_2$).
+
+---
+
+## 2. Robotics Trajectory Collisions
+
+Autonomous robots traveling in 2D coordinate space rely on systems of equations to detect path intersections and potential collisions. If Robot A''s trajectory is modeled by $y = -1.5x + 4$ and Robot B''s trajectory is modeled by $y = 0.5x - 4$, the intersection point gives the exact space coordinates where they could collide. We solve by setting them equal:
+$$-1.5x + 4 = 0.5x - 4 \implies 2x = 8 \implies x = 4$$
+Substituting back gives $y = 0.5(4) - 4 = -2$. The collision point is at $(4, -2)$.',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-tables',
+    'SAT Prep: Two-Way Tables & Probability',
+    'Mathematics',
+    14,
+    'Master two-way contingency tables, compute conditional probabilities, analyze robotics computer vision confusion matrices, and practice high-yield dSAT questions.',
+    '# SAT Prep: Two-Way Tables & Probability
+
+Two-way contingency tables organize categorical data representing two separate variables. On the dSAT, these tables are a high-yield source of probability and data interpretation questions, particularly conditional probabilities.
+
+### Interactive Table & Confusion Matrix
+
+Use the interactive grid below to select categories, adjust values with sliders, and see how the mathematical fraction formulas update in real-time. Switch to the Vision Confusion Matrix to analyze precision and recall!
+
+<sattables />
+
+---
+
+## 1. Reading Two-Way Tables
+
+A two-way table is composed of rows representing categories for one variable, columns representing categories for another, and marginal totals.
+- **Joint Relative Frequency**: Cells in the inner grid represent the overlap of both categories (e.g. Defective items manufactured on Line A).
+- **Marginal Frequency**: The margins represent the total sums for each category (e.g. Total defective items regardless of the line, or total items manufactured on Line A).
+
+---
+
+## 2. Conditional Probability ("Given That")
+
+The most common dSAT table question asks for a conditional probability. This is easily identified by phrases like **&quot;given that&quot;** or **&quot;what is the probability that a component selected at random from [Subset]...&quot;**.
+
+The golden rule for conditional probability is:
+$$\text{Probability} = \frac{\text{Selected Joint Value (Numerator)}}{\text{Target Subset Total (Denominator)}}$$
+
+### Example
+Suppose we have the following table:
+- **Line A**: 15 Defective, 135 Functional (Total = 150)
+- **Line B**: 25 Defective, 225 Functional (Total = 250)
+- **Totals**: 40 Defective, 360 Functional (Grand Total = 400)
+
+If a component is selected at random from **Line A**, what is the probability it is **defective**?
+- Our denominator is restricted to the **Line A Total** ($150$).
+- Our numerator is the **Line A Defective** cell ($15$).
+- **Answer**: $\frac{15}{150} = \frac{1}{10} = 10\%$.
+
+If a **defective** component is chosen at random, what is the probability it is from **Line A**?
+- Our denominator is restricted to the **Total Defective** ($40$).
+- Our numerator is the **Line A Defective** cell ($15$).
+- **Answer**: $\frac{15}{40} = \frac{3}{8} = 37.5\%$.',
+    'published',
+    0,
+    1
   )
 
 ON CONFLICT(slug) DO UPDATE SET

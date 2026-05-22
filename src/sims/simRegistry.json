@@ -199,6 +199,12 @@
       "requiresContext": false
     },
     {
+      "id": "satexponential",
+      "name": "SAT Prep: Exponential Functions",
+      "path": "./satexponential",
+      "requiresContext": false
+    },
+    {
       "id": "satgraphs",
       "name": "SAT Prep: Scatterplots & Line of Best Fit",
       "path": "./satgraphs",
@@ -220,6 +226,18 @@
       "id": "satstats",
       "name": "SAT Prep: Statistics & Distributions",
       "path": "./satstats",
+      "requiresContext": false
+    },
+    {
+      "id": "satsystems",
+      "name": "SAT Prep: Systems of Linear Equations",
+      "path": "./satsystems",
+      "requiresContext": false
+    },
+    {
+      "id": "sattables",
+      "name": "SAT Prep: Two-Way Tables & Probability",
+      "path": "./sattables",
       "requiresContext": false
     },
     {
@@ -301,5 +319,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-22T13:28:14.600Z"
+  "_generated": "2026-05-22T14:29:54.418Z"
 }
