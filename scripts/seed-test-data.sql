@@ -287,6 +287,138 @@ Perfect when you know a single coordinate the line passes through and its steepn
     'published',
     0,
     1
+  ),
+  (
+    'trig-basics',
+    'Trigonometry Basics: The Unit Circle',
+    'Mathematics',
+    3,
+    'Explore the basics of Sine, Cosine, and Tangent on an interactive unit circle, and learn how we convert between Degrees and Radians.',
+    '# Trigonometry Basics: The Unit Circle
+
+Trigonometry is the study of how angles relate to side lengths in triangles. In robotics and graphics, we visualize this using a **Unit Circle**—a circle with a radius of exactly 1 centered at the origin (0, 0).
+
+### Interactive Exploration
+
+Drag the glowing coordinate handle around the circle perimeter. Observe how Sine (vertical height), Cosine (horizontal width), and Tangent (tangent intersection slope) change in real time!
+
+<trigbasics />
+
+## 1. Degrees vs. Radians
+
+How do we measure rotation?
+- **Degrees (°)**: A full circle is divided into **360 parts**. Why 360? Historical reasons! Ancient astronomers used it because 360 is divisible by many numbers.
+- **Radians (rad)**: A natural mathematical unit of angle. One radian is the angle formed when we wrap the circle''s radius along its outer edge (arc). A full circle has a circumference of $2\pi R$, which means a full rotation is exactly **$2\pi$ radians**!
+
+### Conversion Formulas:
+- $\text{Radians} = \text{Degrees} \times \frac{\pi}{180}$
+- $\text{Degrees} = \text{Radians} \times \frac{180}{\pi}$
+
+---
+
+## 2. The Core Ratios
+
+When the radius of our circle is $R = 1$, the coordinates of the terminal point on the circle edge are defined by:
+- **Cosine ($\cos\theta$)**: The horizontal X-coordinate. It measures the adjacent width of the triangle.
+- **Sine ($\sin\theta$)**: The vertical Y-coordinate. It measures the opposite height of the triangle.
+- **Tangent ($\tan\theta$)**: The slope of the terminal line. It is calculated as $\frac{\sin\theta}{\cos\theta} = \frac{y}{x}$. Tangent is undefined when the line is perfectly vertical ($90^\circ$ and $270^\circ$).',
+    'published',
+    0,
+    1
+  ),
+  (
+    'trig-inverse',
+    'Inverse Trigonometry: Ratios to Angles',
+    'Mathematics',
+    4,
+    'Learn about arcsin, arccos, and arctan, and understand the mathematical domain and range restrictions that keep inverse trig functions valid.',
+    '# Inverse Trigonometry: Ratios to Angles
+
+Standard trigonometric functions take an **Angle** and return a **Ratio** (like height or width). Inverse trigonometric functions do the exact opposite: they take a **Ratio** and find the original **Angle**.
+
+### Interactive Exploration
+
+Select a function and drag the ratio slider or the grid handle. See what output angle is solved in real time!
+
+<triginverse />
+
+## 1. The Inverse Notations
+
+Inverse trigonometric operations can be written in two ways:
+- **$\sin^{-1}(y)$**, **$\cos^{-1}(x)$**, **$\tan^{-1}(t)$** (read as "sine-inverse", "cosine-inverse", "tangent-inverse"). Note: The $-1$ exponent represents the inverse function, NOT a reciprocal ($1/\sin$)!
+- **$\arcsin(y)$**, **$\arccos(x)$**, **$\arctan(t)$** (read as "arc-sine", "arc-cosine", "arc-tangent"). The prefix "arc" refers to the arc length along the unit circle.
+
+---
+
+## 2. The Restricted Range Rule
+
+If we ask a calculator to solve $\sin^{-1}(0.5)$, it will output $30^\circ$ (or $\pi/6$ rad). However, on a full unit circle, multiple angles share the exact same sine ratio! For example, $\sin(150^\circ) = 0.5$ and $\sin(390^\circ) = 0.5$.
+
+In mathematics, a **function** is only valid if each unique input gives exactly **one** output. To make inverse trig functions mathematically valid, mathematicians restrict their allowed outputs to standard **Principal Ranges**:
+
+- **$\arcsin(y)$**: Restricted to the right half of the circle ($[-90^\circ, 90^\circ]$ or $[-\pi/2, \pi/2]$).
+- **$\arccos(x)$**: Restricted to the top half of the circle ($[0^\circ, 180^\circ]$ or $[0, \pi]$).
+- **$\arctan(t)$**: Restricted to the right half of the circle (excluding vertical bounds, $( -90^\circ, 90^\circ )$ or $( - \pi/2, \pi/2 )$).',
+    'published',
+    0,
+    1
+  ),
+  (
+    'trig-robotics',
+    'Trigonometry in Robotics: Planar Kinematics',
+    'Mathematics',
+    5,
+    'See how robotics teams use sin, cos, atan2, and the Law of Cosines to solve Forward and Inverse Kinematics for a 2-joint robotic arm.',
+    '# Trigonometry in Robotics: Planar Kinematics
+
+How do robotic arms move? Whether it''s a heavy manufacturing crane or a FIRST® Tech Challenge (FTC) team lifting an intake claw, robots rely heavily on trigonometry to navigate 2D and 3D coordinate space.
+
+We represent a standard two-joint robotic arm operating in a flat plane as a **2-DOF (Degree of Freedom) Planar Arm**.
+
+### Interactive Kinematics Simulator
+
+Toggle between **Inverse Kinematics** and **Forward Kinematics** modes. Drag the red target coordinate handle or adjust length/angle sliders to solve the mechanical joints in real time!
+
+<trigrobotics />
+
+## 1. Forward Kinematics (FK)
+
+**Forward Kinematics** means calculating the spatial coordinate $(x,y)$ of the hand (end-effector) from known motor joint angles ($\theta_1$ and $\theta_2$).
+
+By using basic right-triangle trigonometry, we find the coordinate offsets of each link:
+- Link 1 (length $L_1$) ends at coordinate:
+  $$x_1 = L_1 \cos(\theta_1)$$
+  $$y_1 = L_1 \sin(\theta_1)$$
+- Link 2 (length $L_2$) is angled at $(\theta_1 + \theta_2)$ relative to the base, ending at:
+  $$x_2 = x_1 + L_2 \cos(\theta_1 + \theta_2)$$
+  $$y_2 = y_1 + L_2 \sin(\theta_1 + \theta_2)$$
+
+Combined, we get the complete Forward Kinematics formulas:
+- **$x = L_1 \cos(\theta_1) + L_2 \cos(\theta_1 + \theta_2)$**
+- **$y = L_1 \sin(\theta_1) + L_2 \sin(\theta_1 + \theta_2)$**
+
+---
+
+## 2. Inverse Kinematics (IK)
+
+**Inverse Kinematics** is the opposite, and is much more useful in real-world robotics! It means starting with a target coordinate $(x,y)$ where we want the claw to grab, and calculating the necessary motor angles ($\theta_1$ and $\theta_2$) to reach it.
+
+To solve this, robotics libraries (like **ARESLib**) use a combination of Pythagoras, the double-argument **$\text{atan2}(y, x)$** function, and the **Law of Cosines**:
+
+1. **Solve the Elbow Angle ($\theta_2$)**:
+   Using the Law of Cosines on the triangle formed by $L_1$, $L_2$, and the target distance $D = \sqrt{x^2+y^2}$, we solve for $\theta_2$:
+   $$\cos(\theta_2) = \frac{x^2 + y^2 - L_1^2 - L_2^2}{2 L_1 L_2}$$
+   $$\theta_2 = \arccos\left(\cos(\theta_2)\right)$$
+
+2. **Solve the Base/Shoulder Angle ($\theta_1$)**:
+   We find the overall angle to the target coordinate $\alpha = \text{atan2}(y, x)$ and subtract the interior triangle angle $\beta$:
+   $$\theta_1 = \text{atan2}(y, x) - \arccos\left(\frac{x^2 + y^2 + L_1^2 - L_2^2}{2 L_1 \sqrt{x^2 + y^2}}\right)$$
+
+### Singularities & Dead Zones
+What happens if you try to reach a coordinate that is too far away ($x^2 + y^2 > (L_1+L_2)^2$)? The arm cannot stretch any further. This is a **reach singularity**. Real robot controllers must detect these states and safely clamp the target coordinates to avoid driving motors into invalid math ranges.',
+    'published',
+    0,
+    1
   )
 ON CONFLICT(slug) DO UPDATE SET
   title = excluded.title,

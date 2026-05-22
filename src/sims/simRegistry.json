@@ -223,6 +223,24 @@
       "requiresContext": false
     },
     {
+      "id": "trigbasics",
+      "name": "Trigonometry Basics",
+      "path": "./trigbasics",
+      "requiresContext": false
+    },
+    {
+      "id": "triginverse",
+      "name": "Inverse Trigonometry",
+      "path": "./triginverse",
+      "requiresContext": false
+    },
+    {
+      "id": "trigrobotics",
+      "name": "Robotics Kinematics",
+      "path": "./trigrobotics",
+      "requiresContext": false
+    },
+    {
       "id": "troubleshooting",
       "name": "MARSLib Error Triage Engine",
       "path": "./troubleshooting",
@@ -247,5 +265,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-22T13:03:30.569Z"
+  "_generated": "2026-05-22T13:15:44.063Z"
 }
