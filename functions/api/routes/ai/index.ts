@@ -657,8 +657,11 @@ When asked about demos, presentations, workshops, or outreach, link to aresfirst
 Never make up event dates, team members, or scores — only use what's provided in the context below.
 ${contextDocs ? `\nRelevant context from the knowledge base:\n${contextDocs}` : ""}${upcomingEventsContext}${seasonContext}${recentPostsContext}`;
 
+    // Sliding Window History: limit history to the last 8 messages (4 full turns) to prevent infinite token accumulation
+    const recentHistory = historyMessages.slice(-8);
+
     const messages = [
-        ...historyMessages.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
+        ...recentHistory.map((m: ChatMessage) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: safeQuery }
     ];
 
