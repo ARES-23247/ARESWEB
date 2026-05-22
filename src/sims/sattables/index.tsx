@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Two-Way Tables & Probability", "requiresContext": false} */
+/** @sim {"name": "Two-Way Tables & Probability", "requiresContext": false} */
 import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, ChevronRight, Sparkles, Percent } from 'lucide-react';
 
@@ -21,7 +21,7 @@ interface TableData {
   cell22: number; // Row 2, Col 2
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A quality control engineer inspects robotics structural parts manufactured on two separate assembly lines. Based on the current values in the table, if a component is selected at random from Line A, what is the probability that the component is defective?",
@@ -70,7 +70,7 @@ interface Preset {
 const PRESETS: Record<string, Preset> = {
   quality_control: {
     name: "Component QC",
-    desc: "Analyzes component defects across two robotics production lines. Perfect for practice on standard SAT conditional probability questions.",
+    desc: "Analyzes component defects across two robotics production lines. Perfect for practice on standard conditional probability questions.",
     rowHeader: "Production Line",
     colHeader: "Defect Status",
     rowNames: ["Line A", "Line B"],
@@ -99,7 +99,7 @@ const PRESETS: Record<string, Preset> = {
 };
 
 const generateQuizOptions = (qIdx: number, currentData: TableData) => {
-  const q = SAT_QUESTIONS[qIdx];
+  const q = QUIZ_QUESTIONS[qIdx];
   const n = q.numeratorSelector(currentData);
   const d = q.denominatorSelector(currentData);
 
@@ -148,7 +148,7 @@ const generateQuizOptions = (qIdx: number, currentData: TableData) => {
   };
 };
 
-export default function SatTablesSim() {
+export default function TwoWayTablesSim() {
   const [selectedPreset, setSelectedPreset] = useState<string>('quality_control');
   
   // Custom Table Data state
@@ -158,7 +158,7 @@ export default function SatTablesSim() {
   const [numCell, setNumCell] = useState<string>('cell11');
   const [denCell, setDenCell] = useState<string>('row1_total');
 
-  // SAT practice quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -184,7 +184,7 @@ export default function SatTablesSim() {
     setData(p.initialData);
     
     // Sync matching quiz
-    const quizIdx = SAT_QUESTIONS.findIndex(q => q.presetKey === presetKey);
+    const quizIdx = QUIZ_QUESTIONS.findIndex(q => q.presetKey === presetKey);
     const targetQIdx = quizIdx !== -1 ? quizIdx : 0;
     setCurrentQIdx(targetQIdx);
     setQuizOptions(generateQuizOptions(targetQIdx, p.initialData));
@@ -213,8 +213,8 @@ export default function SatTablesSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
-    const q = SAT_QUESTIONS[nextIdx];
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
+    const q = QUIZ_QUESTIONS[nextIdx];
     setSelectedPreset(q.presetKey);
     const p = PRESETS[q.presetKey];
     setData(p.initialData);
@@ -622,21 +622,21 @@ export default function SatTablesSim() {
       <div className="w-full bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg text-xs leading-relaxed">
         <span className="text-ares-gold text-[10px] uppercase font-bold tracking-wider mb-1 block flex items-center gap-1">
           <Sparkles size={12} />
-          dSAT Strategy: Conditional Probability
+          Concept Strategy: Conditional Probability
         </span>
         <p className="text-marble/85">
-          Conditional probability questions on the SAT often contain the phrase **&quot;given that&quot;** or **&quot;of the [subset]&quot;**. 
+          Conditional probability questions often contain the phrase **&quot;given that&quot;** or **&quot;of the [subset]&quot;**. 
           This restricts your denominator to a specific row total or column total instead of the grand total. 
           Use the dropdown selector above to see how changing the &quot;given condition&quot; highlights different subsets of the table and changes the fraction denominator!
         </p>
       </div>
 
-      {/* SAT Practice Quiz */}
+      {/* Practice Quiz */}
       {currentQIdx >= 0 && quizOptions.shuffledOptions.length > 0 && (
         <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-xl mt-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-ares-gold uppercase tracking-wider">
-              SAT practice: Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+              Practice Quiz: Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
             </span>
             <button
               onClick={handleNextQuestion}
@@ -647,11 +647,11 @@ export default function SatTablesSim() {
           </div>
 
           <div className="bg-obsidian-darker border border-white/5 px-3 py-1.5 rounded text-[10px] text-ares-cyan font-bold uppercase self-start">
-            Topic: {SAT_QUESTIONS[currentQIdx].prompt}
+            Topic: {QUIZ_QUESTIONS[currentQIdx].prompt}
           </div>
 
           <p className="text-sm font-semibold text-white leading-relaxed">
-            {SAT_QUESTIONS[currentQIdx].text}
+            {QUIZ_QUESTIONS[currentQIdx].text}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -692,7 +692,7 @@ export default function SatTablesSim() {
                 <span>STEP-BY-STEP EXPLANATION</span>
               </div>
               <p className="text-marble/95 leading-relaxed">
-                {SAT_QUESTIONS[currentQIdx].explanation}
+                {QUIZ_QUESTIONS[currentQIdx].explanation}
               </p>
               <div className="mt-3 flex justify-end">
                 <button

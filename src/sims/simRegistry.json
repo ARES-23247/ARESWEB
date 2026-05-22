@@ -194,55 +194,55 @@
     },
     {
       "id": "satcircles",
-      "name": "SAT Prep: Coordinate Circles & Sectors",
+      "name": "Coordinate Circles & Sectors",
       "path": "./satcircles",
       "requiresContext": false
     },
     {
       "id": "satexponential",
-      "name": "SAT Prep: Exponential Functions",
+      "name": "Exponential Functions",
       "path": "./satexponential",
       "requiresContext": false
     },
     {
       "id": "satgraphs",
-      "name": "SAT Prep: Scatterplots & Line of Best Fit",
+      "name": "Scatterplots & Line of Best Fit",
       "path": "./satgraphs",
       "requiresContext": false
     },
     {
       "id": "satinequalities",
-      "name": "SAT Prep: Systems of Inequalities",
+      "name": "Systems of Inequalities",
       "path": "./satinequalities",
       "requiresContext": false
     },
     {
       "id": "satquadratic",
-      "name": "SAT Prep: Parabolas & Quadratics",
+      "name": "Quadratics & Parabolas",
       "path": "./satquadratic",
       "requiresContext": false
     },
     {
       "id": "satstats",
-      "name": "SAT Prep: Statistics & Distributions",
+      "name": "Statistics & Data Distributions",
       "path": "./satstats",
       "requiresContext": false
     },
     {
       "id": "satsystems",
-      "name": "SAT Prep: Systems of Linear Equations",
+      "name": "Systems of Linear Equations",
       "path": "./satsystems",
       "requiresContext": false
     },
     {
       "id": "sattables",
-      "name": "SAT Prep: Two-Way Tables & Probability",
+      "name": "Two-Way Tables & Probability",
       "path": "./sattables",
       "requiresContext": false
     },
     {
       "id": "sattriangles",
-      "name": "SAT Prep: Solving Right Triangles",
+      "name": "Solving Right Triangles",
       "path": "./sattriangles",
       "requiresContext": false
     },
@@ -319,5 +319,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-22T14:29:54.418Z"
+  "_generated": "2026-05-22T14:39:41.401Z"
 }

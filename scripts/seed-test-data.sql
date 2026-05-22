@@ -422,13 +422,13 @@ What happens if you try to reach a coordinate that is too far away ($x^2 + y^2 >
   ),
   (
     'sat-triangles',
-    'SAT Prep: Solving Right Triangles',
+    'Solving Right Triangles',
     'Mathematics',
     6,
-    'Master SOH-CAH-TOA, special right triangles (30-60-90 & 45-45-90), and practice interactive SAT-style trigonometry questions.',
-    '# SAT Prep: Solving Right Triangles
+    'Master SOH-CAH-TOA, special right triangles (30-60-90 & 45-45-90), and practice interactive trigonometry questions.',
+    '# Solving Right Triangles
 
-Right triangles are the absolute cornerstone of SAT geometry and trigonometry! The SAT heavily tests how you calculate unknown side lengths and angles using standard ratios and special mathematical constants.
+Right triangles are the absolute cornerstone of geometry and trigonometry! Many practical applications, including robotics and structural engineering, heavily rely on calculating unknown side lengths and angles using standard ratios and special mathematical constants.
 
 ### Interactive Trigonometry Solver
 
@@ -456,7 +456,7 @@ This allows you to quickly find a third side if you are given any two side lengt
 
 ## 2. Special Right Triangles
 
-The SAT expects you to have two special right triangles completely memorized. These allow you to find side lengths  without using a calculator!
+It is highly recommended to have two special right triangles completely memorized. These allow you to find side lengths quickly without using a calculator!
 
 ### The 30°-60°-90° Triangle
 - **Ratios**: The side lengths are always in the ratio **$x : x\sqrt{3} : 2x$**.
@@ -474,13 +474,13 @@ The SAT expects you to have two special right triangles completely memorized. Th
   ),
   (
     'sat-quadratics',
-    'SAT Prep: Parabolas & Quadratic Forms',
+    'Quadratics & Parabolas',
     'Mathematics',
     7,
     'Learn how to translate parabolas in vertex form, find roots in factored form, compute standard form discriminants, and solve quadratic formula equations.',
-    '# SAT Prep: Parabolas & Quadratic Forms
+    '# Quadratics & Parabolas
 
-Parabolas and quadratic functions make up a huge portion of the **Passport to Advanced Math** section of the SAT. To score high, you must fluidly move between different algebraic representations of a parabola and understand how its parameters change its graph.
+Parabolas and quadratic functions are fundamental algebraic objects. To master advanced math topics, you must fluidly move between different algebraic representations of a parabola and understand how its parameters change its graph.
 
 ### Interactive Parabola Explorer
 
@@ -492,7 +492,7 @@ Toggle between Vertex Form, Factored Form, and Standard Form. Adjust parameters 
 
 ## 1. The Three Parabolic Forms
 
-Depending on the question, the SAT will present quadratics in one of three standard forms:
+Depending on the application or problem, quadratics are presented in one of three standard forms:
 
 1. **Vertex Form: $y = a(x - h)^2 + k$**
    - Direct visibility of the **vertex $(h, k)$**.
@@ -523,13 +523,13 @@ $$\Delta = b^2 - 4ac$$
   ),
   (
     'sat-circles',
-    'SAT Prep: Circles & Arc Geometry',
+    'Coordinate Circles & Sectors',
     'Mathematics',
     8,
     'Master the standard circle equation standard form, practice completing the square, and solve central angles, arc lengths, and sector areas.',
-    '# SAT Prep: Circles & Arc Geometry
+    '# Coordinate Circles & Sectors
 
-Coordinate circles and sector geometry are frequently tested under the **Additional Topics in Math** section of the SAT. You will be asked to find standard circle equations, translate centers, and solve proportional arcs and sectors.
+Coordinate circles and sector geometry are core mathematical concepts. You will often need to find standard circle equations, translate centers, and solve proportional arcs and sectors.
 
 ### Interactive Circle Geometry Solver
 
@@ -548,7 +548,7 @@ $$(x - h)^2 + (y - k)^2 = r^2$$
 > Pay close attention to the signs! A circle with equation $(x - 3)^2 + (y + 4)^2 = 25$ has a center at $(3, -4)$ and a radius of $\sqrt{25} = 5$.
 
 ### Completing the Square
-Often, the SAT will give you a circle equation in a expanded general form, such as:
+Often, problems will present a circle equation in an expanded general form, such as:
 $$x^2 + y^2 - 6x + 8y = 11$$
 
 To find the center and radius, you must **complete the square**:
@@ -577,17 +577,17 @@ If the angle is in radians, the equations become even simpler:
   ),
   (
     'sat-stats',
-    'SAT Prep: Statistics & Distributions',
+    'Statistics & Data Distributions',
     'Mathematics',
     9,
     'Learn how to construct dot plots, compute mean, median, mode, range, and standard deviation, and master data distribution shapes and outlier impacts.',
-    '# SAT Prep: Statistics & Distributions
+    '# Statistics & Data Distributions
 
-Data analysis and statistics make up the core of the **Problem Solving and Data Analysis** section on the SAT. You will be tested on your ability to compute measures of center (mean, median), measures of spread (range, standard deviation), and identify skewness and the effects of outliers on data.
+Data analysis and statistics are crucial for interpreting experimental results and trends. You will need the ability to compute measures of center (mean, median), measures of spread (range, standard deviation), and identify skewness and the effects of outliers on data.
 
 ### Interactive Dot Plot & Statistics Solver
 
-Design your own dot plot in Sandbox Mode or test your skills in the SAT Quiz! Observe how adding or removing outliers impacts the mean and median in real-time.
+Design your own dot plot in Sandbox Mode or test your skills in the Practice Quiz! Observe how adding or removing outliers impacts the mean and median in real-time.
 
 <satstats />
 
@@ -595,7 +595,7 @@ Design your own dot plot in Sandbox Mode or test your skills in the SAT Quiz! Ob
 
 ## 1. Measures of Center
 
-The SAT focuses heavily on how data points cluster around the middle. There are two primary measures of center:
+Statistical analysis focuses heavily on how data points cluster around the middle. There are two primary measures of center:
 
 - **Mean ($\bar{x}$)**: The arithmetic average. Sum of all data values divided by the total count $N$.
   $$\bar{x} = \frac{\sum x_i}{N}$$
@@ -621,13 +621,13 @@ The SAT focuses heavily on how data points cluster around the middle. There are 
   ),
   (
     'sat-graphs',
-    'SAT Prep: Scatterplots & Line of Best Fit',
+    'Scatterplots & Best Fit',
     'Mathematics',
     10,
     'Master how to read scatterplots, estimate regression equations, interpret slope rates of change, and understand correlation coefficients.',
-    '# SAT Prep: Scatterplots & Line of Best Fit
+    '# Scatterplots & Best Fit
 
-Scatterplots and regression are high-yield graphing topics in the **Problem Solving and Data Analysis** portion of the SAT. You will be asked to identify trends, estimate the line of best fit, predict values, and interpret the real-world meaning of slopes and intercepts.
+Scatterplots and regression are high-yield graphing and data-analysis topics. You will often be asked to identify trends, estimate the line of best fit, predict values, and interpret the real-world meaning of slopes and intercepts.
 
 ### Interactive Scatterplot Solver
 
@@ -663,13 +663,13 @@ In the regression equation $y = mx + b$:
   ),
   (
     'sat-inequalities',
-    'SAT Prep: Systems of Inequalities',
+    'Systems of Inequalities',
     'Mathematics',
     11,
     'Learn how to shade single linear inequalities, locate overlapping solution sets, and test coordinates inside intersection regions.',
-    '# SAT Prep: Systems of Inequalities
+    '# Systems of Inequalities
 
-Systems of inequalities represent a major part of the **Heart of Algebra** section on the SAT. You must understand how single inequalities shade the coordinate plane, how solid vs. dashed boundaries behave, and how to verify if coordinates satisfy a system.
+Systems of inequalities represent a core algebraic concept. You must understand how single inequalities shade the coordinate plane, how solid vs. dashed boundaries behave, and how to verify if coordinates satisfy a system.
 
 ### Interactive System Solver
 
@@ -702,13 +702,13 @@ A **system** consists of two or more inequalities.
   ),
   (
     'sat-exponential',
-    'SAT Prep: Exponential Growth & Decay',
+    'Exponential Functions',
     'Mathematics',
     12,
-    'Master exponential functions, analyze growth and decay factors, examine robotics cooling curves, and practice high-yield dSAT questions.',
-    '# SAT Prep: Exponential Growth & Decay
+    'Master exponential functions, analyze growth and decay factors, examine robotics cooling curves, and practice concept-focused questions.',
+    '# Exponential Functions
 
-Exponential growth and decay functions are major, high-yield topics on the dSAT. Unlike linear models that change by a constant *amount* each interval, exponential models change by a constant *percentage multiplier* each interval.
+Exponential growth and decay functions are major, high-yield mathematical concepts. Unlike linear models that change by a constant *amount* each interval, exponential models change by a constant *percentage multiplier* each interval.
 
 ### Interactive Exponential Explorer
 
@@ -729,13 +729,13 @@ $$y = a(b)^x$$
   - **If $0 < b < 1$**: It is **exponential decay**. The rate $r$ is positive, where $b = 1 - r$.
 
 > [!IMPORTANT]
-> A common SAT trap is interpreting a decay multiplier. For example, if a signal is $y = 80(0.85)^t$, the signal retains $85\%$ of its strength, meaning it **decreases by $15\%$** ($1 - 0.85 = 0.15$) per unit distance.
+> A common trap is interpreting a decay multiplier. For example, if a signal is $y = 80(0.85)^t$, the signal retains $85\%$ of its strength, meaning it **decreases by $15\%$** ($1 - 0.85 = 0.15$) per unit distance.
 
 ---
 
 ## 2. Real-World Applications
 
-On the dSAT, exponential models are frequently tied to real-world phenomena:
+Exponential models are frequently tied to real-world phenomena:
 
 ### Motor Thermal Cooling (Newton''s Law of Cooling)
 When a high-performance robotics motor runs, it heats up. Once powered down, it cools exponentially toward room temperature:
@@ -752,13 +752,13 @@ Here, $1.2$ represents the initial 120 teams, and $1.4 = 1 + 0.40$ represents th
   ),
   (
     'sat-systems',
-    'SAT Prep: Systems of Equations',
+    'Systems of Linear Equations',
     'Mathematics',
     13,
-    'Solve linear systems of equations, analyze one/no/infinite solution criteria, map robotics path collisions, and practice high-yield dSAT questions.',
-    '# SAT Prep: Systems of Equations
+    'Solve linear systems of equations, analyze one/no/infinite solution criteria, map robotics path collisions, and practice concept-focused questions.',
+    '# Systems of Linear Equations
 
-Systems of linear equations make up a huge percentage of the **Heart of Algebra** questions on the dSAT. You will be asked to find intersection coordinates, solve variables using substitution or elimination, and evaluate the specific criteria for when a system has one, zero, or infinitely many solutions.
+Systems of linear equations make up a huge percentage of core algebraic systems. You will often need to find intersection coordinates, solve variables using substitution or elimination, and evaluate the specific criteria for when a system has one, zero, or infinitely many solutions.
 
 ### Interactive System Explorer
 
@@ -797,13 +797,13 @@ Substituting back gives $y = 0.5(4) - 4 = -2$. The collision point is at $(4, -2
   ),
   (
     'sat-tables',
-    'SAT Prep: Two-Way Tables & Probability',
+    'Two-Way Tables & Probability',
     'Mathematics',
     14,
-    'Master two-way contingency tables, compute conditional probabilities, analyze robotics computer vision confusion matrices, and practice high-yield dSAT questions.',
-    '# SAT Prep: Two-Way Tables & Probability
+    'Master two-way contingency tables, compute conditional probabilities, analyze robotics computer vision confusion matrices, and practice concept-focused questions.',
+    '# Two-Way Tables & Probability
 
-Two-way contingency tables organize categorical data representing two separate variables. On the dSAT, these tables are a high-yield source of probability and data interpretation questions, particularly conditional probabilities.
+Two-way contingency tables organize categorical data representing two separate variables. These tables are a high-yield source of probability and data interpretation questions, particularly conditional probabilities.
 
 ### Interactive Table & Confusion Matrix
 
@@ -823,7 +823,7 @@ A two-way table is composed of rows representing categories for one variable, co
 
 ## 2. Conditional Probability ("Given That")
 
-The most common dSAT table question asks for a conditional probability. This is easily identified by phrases like **&quot;given that&quot;** or **&quot;what is the probability that a component selected at random from [Subset]...&quot;**.
+A very common table question asks for a conditional probability. This is easily identified by phrases like **&quot;given that&quot;** or **&quot;what is the probability that a component selected at random from [Subset]...&quot;**.
 
 The golden rule for conditional probability is:
 $$\text{Probability} = \frac{\text{Selected Joint Value (Numerator)}}{\text{Target Subset Total (Denominator)}}$$

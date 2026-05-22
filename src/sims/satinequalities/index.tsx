@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Systems of Inequalities", "requiresContext": false} */
+/** @sim {"name": "Systems of Inequalities", "requiresContext": false} */
 import React, { useState, useRef } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, ChevronRight, Sparkles } from 'lucide-react';
 
@@ -34,8 +34,8 @@ interface PresetSystem {
 
 const PRESET_SYSTEMS: Record<string, PresetSystem> = {
   sat_standard: {
-    name: 'Standard SAT System',
-    desc: 'A classic SAT-style system: y ≥ -x + 2 and y < 2x - 3. Explore where their shaded halves intersect.',
+    name: 'Standard System',
+    desc: 'A classic system: y ≥ -x + 2 and y < 2x - 3. Explore where their shaded halves intersect.',
     line1: { m: -1, b: 2, op: '>=' },
     line2: { m: 2, b: -3, op: '<' },
     tester: { x: 4.0, y: 1.0 }
@@ -49,7 +49,7 @@ const PRESET_SYSTEMS: Record<string, PresetSystem> = {
   }
 };
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Which of the following coordinate points is a solution to the system of inequalities graphed: y ≥ -x + 2 and y < 2x - 3?",
@@ -103,7 +103,7 @@ const SAT_QUESTIONS: Question[] = [
   }
 ];
 
-export default function SatInequalitiesSim() {
+export default function InequalitiesSim() {
   const [selectedPreset, setSelectedPreset] = useState<string>('sat_standard');
 
   // Inequality parameters
@@ -128,7 +128,7 @@ export default function SatInequalitiesSim() {
   const [isDraggingTester, setIsDraggingTester] = useState<boolean>(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // SAT quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -168,7 +168,7 @@ export default function SatInequalitiesSim() {
     setIsAnswered(false);
 
     // Sync quiz question
-    const qIdx = SAT_QUESTIONS.findIndex(q => q.setup.line1.m === data.line1.m && q.setup.line2.m === data.line2.m);
+    const qIdx = QUIZ_QUESTIONS.findIndex(q => q.setup.line1.m === data.line1.m && q.setup.line2.m === data.line2.m);
     if (qIdx !== -1) {
       setCurrentQIdx(qIdx);
     }
@@ -258,11 +258,11 @@ export default function SatInequalitiesSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextQIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextQIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextQIdx);
     
     // Apply question state preset
-    const qData = SAT_QUESTIONS[nextQIdx];
+    const qData = QUIZ_QUESTIONS[nextQIdx];
     setLine1(prev => ({ ...prev, m: qData.setup.line1.m, b: qData.setup.line1.b, op: qData.setup.line1.op }));
     setLine2(prev => ({ ...prev, m: qData.setup.line2.m, b: qData.setup.line2.b, op: qData.setup.line2.op }));
     setTester({ ...qData.setup.tester });
@@ -638,12 +638,12 @@ export default function SatInequalitiesSim() {
         </p>
       </div>
 
-      {/* SAT Practice Quiz module */}
+      {/* Practice Quiz module */}
       {currentQIdx >= 0 && (
         <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-xl mt-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-ares-gold uppercase tracking-wider">
-              SAT Heart of Algebra: Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+              Algebra Practice: Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
             </span>
             <button
               onClick={handleNextQuestion}
@@ -655,14 +655,14 @@ export default function SatInequalitiesSim() {
 
           {/* Question Text */}
           <p className="text-sm font-semibold text-white leading-relaxed">
-            {SAT_QUESTIONS[currentQIdx].text}
+            {QUIZ_QUESTIONS[currentQIdx].text}
           </p>
 
           {/* Options */}
           <div className="grid grid-cols-1 gap-2">
-            {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+            {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
               const isSelected = selectedOpt === idx;
-              const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+              const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
@@ -698,7 +698,7 @@ export default function SatInequalitiesSim() {
                 <span>STEP-BY-STEP EXPLANATION</span>
               </div>
               <p className="text-marble/95 leading-relaxed">
-                {SAT_QUESTIONS[currentQIdx].explanation}
+                {QUIZ_QUESTIONS[currentQIdx].explanation}
               </p>
               <div className="mt-3 flex justify-end">
                 <button

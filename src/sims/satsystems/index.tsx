@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Systems of Linear Equations", "requiresContext": false} */
+/** @sim {"name": "Systems of Linear Equations", "requiresContext": false} */
 import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, ChevronRight, Sparkles, Sliders, Crosshair } from 'lucide-react';
 
@@ -15,7 +15,7 @@ interface Question {
   presetKey: string;
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A system of two linear equations is given by y = 0.75x + 3 and y = kx - 5. For which value of the constant k will the system of equations have no solution?",
@@ -123,7 +123,7 @@ const PRESETS: Record<string, Preset> = {
   }
 };
 
-export default function SatSystemsSim() {
+export default function SystemsSim() {
   const [selectedPreset, setSelectedPreset] = useState<string>('one_solution');
   
   // Line 1 parameters: y = m1 * x + b1
@@ -137,7 +137,7 @@ export default function SatSystemsSim() {
   // Custom coordinate readout
   const [hoverX, setHoverX] = useState<number>(2.0);
 
-  // SAT practice quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -176,7 +176,7 @@ export default function SatSystemsSim() {
     setIsAnswered(false);
 
     // Sync quiz if appropriate
-    const quizIdx = SAT_QUESTIONS.findIndex(q => q.presetKey === presetKey);
+    const quizIdx = QUIZ_QUESTIONS.findIndex(q => q.presetKey === presetKey);
     if (quizIdx !== -1) {
       setCurrentQIdx(quizIdx);
     }
@@ -242,9 +242,9 @@ export default function SatSystemsSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextIdx);
-    const q = SAT_QUESTIONS[nextIdx];
+    const q = QUIZ_QUESTIONS[nextIdx];
     setM1(q.m1);
     setB1(q.b1);
     setM2(q.m2);
@@ -626,22 +626,22 @@ export default function SatSystemsSim() {
       <div className="w-full bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg text-xs leading-relaxed">
         <span className="text-ares-gold text-[10px] uppercase font-bold tracking-wider mb-1 block flex items-center gap-1">
           <Sparkles size={12} />
-          dSAT Strategy & Robotics Connection
+          Concept Strategy & Robotics Connection
         </span>
         <p className="text-marble/85">
-          In FIRST® Robotics, linear systems determine paths of sensor readings or path collisions. For the dSAT, remember: 
+          In FIRST® Robotics, linear systems determine paths of sensor readings or path collisions. Remember: 
           1) **One Solution** means slopes are different ($m_1 \neq m_2$).
           2) **No Solution** means parallel lines ($m_1 = m_2$, $b_1 \neq b_2$).
           3) **Infinite Solutions** means identical lines ($m_1 = m_2$, $b_1 = b_2$).
         </p>
       </div>
 
-      {/* SAT Practice Quiz */}
+      {/* Practice Quiz */}
       {currentQIdx >= 0 && (
         <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-xl mt-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-ares-gold uppercase tracking-wider">
-              SAT practice: Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+              Practice: Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
             </span>
             <button
               onClick={handleNextQuestion}
@@ -652,13 +652,13 @@ export default function SatSystemsSim() {
           </div>
 
           <p className="text-sm font-semibold text-white leading-relaxed">
-            {SAT_QUESTIONS[currentQIdx].text}
+            {QUIZ_QUESTIONS[currentQIdx].text}
           </p>
 
           <div className="grid grid-cols-1 gap-2">
-            {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+            {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
               const isSelected = selectedOpt === idx;
-              const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+              const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
@@ -693,7 +693,7 @@ export default function SatSystemsSim() {
                 <span>STEP-BY-STEP EXPLANATION</span>
               </div>
               <p className="text-marble/95 leading-relaxed">
-                {SAT_QUESTIONS[currentQIdx].explanation}
+                {QUIZ_QUESTIONS[currentQIdx].explanation}
               </p>
               <div className="mt-3 flex justify-end">
                 <button

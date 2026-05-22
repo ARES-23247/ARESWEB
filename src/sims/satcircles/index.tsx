@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Coordinate Circles & Sectors", "requiresContext": false} */
+/** @sim {"name": "Coordinate Circles & Sectors", "requiresContext": false} */
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, Info, ChevronRight } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Question {
   setupCircle: { h: number; k: number; r: number; theta?: number };
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A circle in the xy-plane has equation x² + 8x + y² - 6y = 11. What is the length of the radius of this circle?",
@@ -38,8 +38,8 @@ const SAT_QUESTIONS: Question[] = [
   }
 ];
 
-export default function SatCirclesSim() {
-  const [activeTab, setActiveTab] = useState<'equations' | 'sectors' | 'satprep'>('equations');
+export default function CirclesSim() {
+  const [activeTab, setActiveTab] = useState<'equations' | 'sectors' | 'practice'>('equations');
 
   // Circle properties
   const [vH, setVH] = useState<number>(1); // Center H
@@ -50,7 +50,7 @@ export default function SatCirclesSim() {
   // Dragging states
   const [activeDrag, setActiveDrag] = useState<'center' | 'circumference' | null>(null);
 
-  // SAT practice quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -116,13 +116,13 @@ export default function SatCirclesSim() {
     setIsAnswered(false);
   };
 
-  const handleTabChange = (tab: 'equations' | 'sectors' | 'satprep') => {
+  const handleTabChange = (tab: 'equations' | 'sectors' | 'practice') => {
     setActiveTab(tab);
     setSelectedOpt(null);
     setIsAnswered(false);
 
-    if (tab === 'satprep') {
-      applyQuestionSetup(SAT_QUESTIONS[currentQIdx]);
+    if (tab === 'practice') {
+      applyQuestionSetup(QUIZ_QUESTIONS[currentQIdx]);
     } else {
       setVH(1);
       setVK(2);
@@ -147,9 +147,9 @@ export default function SatCirclesSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextIdx);
-    applyQuestionSetup(SAT_QUESTIONS[nextIdx]);
+    applyQuestionSetup(QUIZ_QUESTIONS[nextIdx]);
   };
 
   // Sector SVG Arc path drawing
@@ -211,14 +211,14 @@ export default function SatCirclesSim() {
             Arc & Sectors
           </button>
           <button
-            onClick={() => handleTabChange('satprep')}
+            onClick={() => handleTabChange('practice')}
             className={`flex-1 sm:flex-none text-xs font-bold px-3 py-1.5 rounded transition-all ${
-              activeTab === 'satprep'
+              activeTab === 'practice'
                 ? 'bg-ares-red text-white'
                 : 'text-ares-muted hover:text-white hover:bg-white/5'
             }`}
           >
-            SAT Prep Quiz
+            Practice Quiz
           </button>
         </div>
       </div>
@@ -231,8 +231,8 @@ export default function SatCirclesSim() {
             <span>
               {activeTab === 'sectors'
                 ? 'Adjust the central angle slider to see arc fractions'
-                : activeTab === 'satprep'
-                ? 'Seeded SAT circle problems and square completion guide'
+                : activeTab === 'practice'
+                ? 'Seeded circle problems and square completion guide'
                 : 'Drag the center handle to translate, and side handle to resize'}
             </span>
           </div>
@@ -309,7 +309,7 @@ export default function SatCirclesSim() {
             />
 
             {/* Draggable Circle Center handle */}
-            {activeTab !== 'satprep' && (
+            {activeTab !== 'practice' && (
               <>
                 <circle
                   cx={toCanvasX(vH)}
@@ -335,7 +335,7 @@ export default function SatCirclesSim() {
             )}
 
             {/* Center Label (When Quiz active) */}
-            {activeTab === 'satprep' && (
+            {activeTab === 'practice' && (
               <circle cx={toCanvasX(vH)} cy={toCanvasY(vK)} r="3" fill="#ffffff" />
             )}
 
@@ -446,78 +446,80 @@ export default function SatCirclesSim() {
             </div>
           )}
 
-          {/* SAT PRACTICE QUIZ CARD */}
-          <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-lg">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-ares-gold uppercase tracking-wider">
-                SAT Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
-              </span>
-              <button
-                onClick={handleNextQuestion}
-                className="text-ares-red font-bold flex items-center gap-1 hover:text-white"
-              >
-                Skip Question <ChevronRight size={14} />
-              </button>
-            </div>
-
-            {/* Question Text */}
-            <p className="text-sm font-semibold text-white leading-relaxed">
-              {SAT_QUESTIONS[currentQIdx].text}
-            </p>
-
-            {/* Options list */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
-                const isSelected = selectedOpt === idx;
-                const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
-
-                let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
-                if (isAnswered) {
-                  if (isCorrect) {
-                    optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
-                  } else if (isSelected) {
-                    optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
-                  }
-                } else if (isSelected) {
-                  optClass = 'border-ares-gold bg-ares-gold/10 text-white';
-                }
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleAnswerSubmit(idx)}
-                    disabled={isAnswered}
-                    className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
-                  >
-                    <span>{opt}</span>
-                    {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400" />}
-                    {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Explanation box */}
-            {isAnswered && (
-              <div className="bg-obsidian-darker border border-white/10 p-3.5 rounded-lg text-xs leading-relaxed">
-                <div className="flex items-center gap-1.5 font-bold text-ares-gold mb-1">
-                  <CheckCircle2 size={12} />
-                  <span>STEP-BY-STEP EXPLANATION</span>
-                </div>
-                <p className="text-marble/95 leading-relaxed">
-                  {SAT_QUESTIONS[currentQIdx].explanation}
-                </p>
-                <div className="mt-3 flex justify-end">
-                  <button
-                    onClick={handleNextQuestion}
-                    className="bg-ares-red/20 border border-ares-red/40 hover:bg-ares-red hover:text-white text-ares-red text-xs font-bold px-3 py-1.5 rounded transition-all flex items-center gap-1"
-                  >
-                    Next Question <ChevronRight size={12} />
-                  </button>
-                </div>
+          {/* PRACTICE QUIZ CARD */}
+          {activeTab === 'practice' && (
+            <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-lg">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-ares-gold uppercase tracking-wider">
+                  Practice Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
+                </span>
+                <button
+                  onClick={handleNextQuestion}
+                  className="text-ares-red font-bold flex items-center gap-1 hover:text-white"
+                >
+                  Skip Question <ChevronRight size={14} />
+                </button>
               </div>
-            )}
-          </div>
+
+              {/* Question Text */}
+              <p className="text-sm font-semibold text-white leading-relaxed">
+                {QUIZ_QUESTIONS[currentQIdx].text}
+              </p>
+
+              {/* Options list */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+                  const isSelected = selectedOpt === idx;
+                  const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
+
+                  let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
+                  if (isAnswered) {
+                    if (isCorrect) {
+                      optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
+                    } else if (isSelected) {
+                      optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
+                    }
+                  } else if (isSelected) {
+                    optClass = 'border-ares-gold bg-ares-gold/10 text-white';
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswerSubmit(idx)}
+                      disabled={isAnswered}
+                      className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
+                    >
+                      <span>{opt}</span>
+                      {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400" />}
+                      {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Explanation box */}
+              {isAnswered && (
+                <div className="bg-obsidian-darker border border-white/10 p-3.5 rounded-lg text-xs leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-bold text-ares-gold mb-1">
+                    <CheckCircle2 size={12} />
+                    <span>STEP-BY-STEP EXPLANATION</span>
+                  </div>
+                  <p className="text-marble/95 leading-relaxed">
+                    {QUIZ_QUESTIONS[currentQIdx].explanation}
+                  </p>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={handleNextQuestion}
+                      className="bg-ares-red/20 border border-ares-red/40 hover:bg-ares-red hover:text-white text-ares-red text-xs font-bold px-3 py-1.5 rounded transition-all flex items-center gap-1"
+                    >
+                      Next Question <ChevronRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       </div>

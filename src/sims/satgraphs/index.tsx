@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Scatterplots & Line of Best Fit", "requiresContext": false} */
+/** @sim {"name": "Scatterplots & Line of Best Fit", "requiresContext": false} */
 import React, { useState, useRef } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, Info, ChevronRight, TrendingUp, Sparkles } from 'lucide-react';
 
@@ -67,7 +67,7 @@ const PRESET_DATASETS: Record<string, { name: string; desc: string; points: Poin
   }
 };
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A robotics student uses the 'Motor Voltage vs. Speed' dataset to model drive performance. Based on the calculated line of best fit, what is the predicted speed of the motor (in hundreds of RPM) when the input voltage is 8.0 volts?",
@@ -113,7 +113,7 @@ const SAT_QUESTIONS: Question[] = [
   }
 ];
 
-export default function SatGraphsSim() {
+export default function ScatterplotsSim() {
   const [selectedPreset, setSelectedPreset] = useState<string>('robotics_voltage');
   const [points, setPoints] = useState<Point[]>([...PRESET_DATASETS.robotics_voltage.points]);
   
@@ -121,7 +121,7 @@ export default function SatGraphsSim() {
   const [activeDragId, setActiveDragId] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // SAT quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -163,7 +163,7 @@ export default function SatGraphsSim() {
     setIsAnswered(false);
 
     // Auto align quiz if available
-    const quizIdx = SAT_QUESTIONS.findIndex(q => q.preset === presetKey);
+    const quizIdx = QUIZ_QUESTIONS.findIndex(q => q.preset === presetKey);
     if (quizIdx !== -1) {
       setCurrentQIdx(quizIdx);
     }
@@ -263,9 +263,9 @@ export default function SatGraphsSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextQIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextQIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextQIdx);
-    const targetPreset = SAT_QUESTIONS[nextQIdx].preset;
+    const targetPreset = QUIZ_QUESTIONS[nextQIdx].preset;
     setSelectedPreset(targetPreset);
     setPoints([...PRESET_DATASETS[targetPreset].points]);
     setSelectedOpt(null);
@@ -426,11 +426,11 @@ export default function SatGraphsSim() {
             })()}
 
             {/* Quiz visual helpers */}
-            {isAnswered && SAT_QUESTIONS[currentQIdx].highlightX !== undefined && (
+            {isAnswered && QUIZ_QUESTIONS[currentQIdx].highlightX !== undefined && (
               <g>
                 {(() => {
-                  const hX = SAT_QUESTIONS[currentQIdx].highlightX as number;
-                  const hY = SAT_QUESTIONS[currentQIdx].highlightY as number;
+                  const hX = QUIZ_QUESTIONS[currentQIdx].highlightX as number;
+                  const hY = QUIZ_QUESTIONS[currentQIdx].highlightY as number;
                   return (
                     <>
                       {/* Vertical projection line from x axis to fit line */}
@@ -595,19 +595,19 @@ export default function SatGraphsSim() {
       <div className="w-full bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg text-xs leading-relaxed">
         <span className="text-ares-gold text-[10px] uppercase font-bold tracking-wider mb-1 block flex items-center gap-1">
           <Sparkles size={12} />
-          SAT Tip: Graph Reading & Leveraging
+          Concept Tip: Graph Reading & Leveraging
         </span>
         <p className="text-marble/85">
-          Drag coordinates around the grid! Note how points far to the right or left (high leverage) pull the red line of best fit up or down significantly when moved. The SAT tests your qualitative understanding of how &quot;outliers&quot; distort the slope of the regression line.
+          Drag coordinates around the grid! Note how points far to the right or left (high leverage) pull the red line of best fit up or down significantly when moved. Understanding how &quot;outliers&quot; distort the slope of the regression line is extremely useful.
         </p>
       </div>
 
-      {/* SAT Practice Quiz Module */}
+      {/* Practice Quiz Module */}
       {currentQIdx >= 0 && (
         <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-xl mt-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-ares-gold uppercase tracking-wider">
-              SAT Graphing Practice: Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+              Graphing Practice: Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
             </span>
             <button
               onClick={handleNextQuestion}
@@ -619,14 +619,14 @@ export default function SatGraphsSim() {
 
           {/* Question Text */}
           <p className="text-sm font-semibold text-white leading-relaxed">
-            {SAT_QUESTIONS[currentQIdx].text}
+            {QUIZ_QUESTIONS[currentQIdx].text}
           </p>
 
           {/* Options */}
           <div className="grid grid-cols-1 gap-2">
-            {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+            {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
               const isSelected = selectedOpt === idx;
-              const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+              const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
@@ -662,7 +662,7 @@ export default function SatGraphsSim() {
                 <span>STEP-BY-STEP EXPLANATION</span>
               </div>
               <p className="text-marble/95 leading-relaxed">
-                {SAT_QUESTIONS[currentQIdx].explanation}
+                {QUIZ_QUESTIONS[currentQIdx].explanation}
               </p>
               <div className="mt-3 flex justify-end">
                 <button

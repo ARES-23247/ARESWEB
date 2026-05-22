@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Statistics & Distributions", "requiresContext": false} */
+/** @sim {"name": "Statistics & Data Distributions", "requiresContext": false} */
 import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, ChevronRight, Plus, Minus } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Question {
   setupData: number[]; // counts for columns 1-10
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A teacher records the test scores of a class. The distribution of scores has a median of 82 and a mean of 76. Which of the following best describes the shape of the score distribution?",
@@ -43,12 +43,12 @@ const SAT_QUESTIONS: Question[] = [
   }
 ];
 
-export default function SatStatsSim() {
+export default function StatsSim() {
   // Counts of dots in columns 1 to 10 (index 0 maps to value 1, index 9 to value 10)
   const [dataCounts, setDataCounts] = useState<number[]>([1, 2, 4, 3, 2, 1, 0, 0, 0, 0]);
   const [editMode, setEditMode] = useState<'add' | 'remove'>('add');
 
-  // SAT practice quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -140,9 +140,9 @@ export default function SatStatsSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextIdx);
-    applyQuestionSetup(SAT_QUESTIONS[nextIdx]);
+    applyQuestionSetup(QUIZ_QUESTIONS[nextIdx]);
   };
 
   // Determine skewness
@@ -210,7 +210,7 @@ export default function SatStatsSim() {
           <button
             onClick={() => {
               setCurrentQIdx(0);
-              applyQuestionSetup(SAT_QUESTIONS[0]);
+              applyQuestionSetup(QUIZ_QUESTIONS[0]);
             }}
             className={`text-xs font-bold px-3 py-1.5 rounded transition-all border ${
               currentQIdx >= 0
@@ -218,7 +218,7 @@ export default function SatStatsSim() {
                 : 'text-ares-muted border-white/5 hover:text-white hover:bg-white/5'
             }`}
           >
-            SAT Quiz
+            Practice Quiz
           </button>
         </div>
       </div>
@@ -438,12 +438,12 @@ export default function SatStatsSim() {
           </p>
         </div>
 
-        {/* SAT PREP QUIZ CARD */}
+        {/* PRACTICE QUIZ CARD */}
         {currentQIdx >= 0 && (
           <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-lg">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-ares-gold uppercase tracking-wider">
-                SAT Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+                Practice Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
               </span>
               <button
                 onClick={handleNextQuestion}
@@ -455,14 +455,14 @@ export default function SatStatsSim() {
 
             {/* Question Text */}
             <p className="text-sm font-semibold text-white leading-relaxed">
-              {SAT_QUESTIONS[currentQIdx].text}
+              {QUIZ_QUESTIONS[currentQIdx].text}
             </p>
 
             {/* Options list */}
             <div className="grid grid-cols-1 gap-2">
-              {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+              {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
                 const isSelected = selectedOpt === idx;
-                const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+                const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
                 let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
                 if (isAnswered) {
@@ -498,7 +498,7 @@ export default function SatStatsSim() {
                   <span>STEP-BY-STEP EXPLANATION</span>
                 </div>
                 <p className="text-marble/95 leading-relaxed">
-                  {SAT_QUESTIONS[currentQIdx].explanation}
+                  {QUIZ_QUESTIONS[currentQIdx].explanation}
                 </p>
                 <div className="mt-3 flex justify-end">
                   <button

@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Solving Right Triangles", "requiresContext": false} */
+/** @sim {"name": "Solving Right Triangles", "requiresContext": false} */
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, Info, ChevronRight } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Question {
   setupTriangle: { a: number; b: number; hideA?: boolean; hideB?: boolean; hideC?: boolean; angleLabel?: string };
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "In right triangle ABC, angle C is 90° and sin(A) = 0.6. If the hypotenuse AB has a length of 15, what is the length of side BC (opposite to angle A)?",
@@ -38,8 +38,8 @@ const SAT_QUESTIONS: Question[] = [
   }
 ];
 
-export default function SatTrianglesSim() {
-  const [activeTab, setActiveTab] = useState<'sohcahtoa' | 'special' | 'satprep'>('sohcahtoa');
+export default function TrianglesSim() {
+  const [activeTab, setActiveTab] = useState<'sohcahtoa' | 'special' | 'practice'>('sohcahtoa');
   const [sideA, setSideA] = useState<number>(80); // Height BC
   const [sideB, setSideB] = useState<number>(120); // Base AC
   
@@ -49,7 +49,7 @@ export default function SatTrianglesSim() {
   // Special triangles states
   const [specialType, setSpecialType] = useState<'30-60-90' | '45-45-90'>('30-60-90');
 
-  // SAT Prep Quiz states
+  // Practice Quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -81,22 +81,22 @@ export default function SatTrianglesSim() {
   };
 
   // Switch tabs
-  const handleTabChange = (tab: 'sohcahtoa' | 'special' | 'satprep') => {
+  const handleTabChange = (tab: 'sohcahtoa' | 'special' | 'practice') => {
     setActiveTab(tab);
     setSelectedOpt(null);
     setIsAnswered(false);
 
     if (tab === 'special') {
       applySpecialTriangle('30-60-90');
-    } else if (tab === 'satprep') {
-      applyQuestionSetup(SAT_QUESTIONS[currentQIdx]);
+    } else if (tab === 'practice') {
+      applyQuestionSetup(QUIZ_QUESTIONS[currentQIdx]);
     } else {
       setSideA(80);
       setSideB(120);
     }
   };
 
-  // Set up triangle for specific SAT questions
+  // Set up triangle for specific practice questions
   const applyQuestionSetup = (q: Question) => {
     // scale to nice display values
     setSideA(q.setupTriangle.a);
@@ -158,9 +158,9 @@ export default function SatTrianglesSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextIdx);
-    applyQuestionSetup(SAT_QUESTIONS[nextIdx]);
+    applyQuestionSetup(QUIZ_QUESTIONS[nextIdx]);
   };
 
   // Angle sector arc drawing helper
@@ -217,14 +217,14 @@ export default function SatTrianglesSim() {
             Special Triangles
           </button>
           <button
-            onClick={() => handleTabChange('satprep')}
+            onClick={() => handleTabChange('practice')}
             className={`flex-1 sm:flex-none text-xs font-bold px-3 py-1.5 rounded transition-all ${
-              activeTab === 'satprep'
+              activeTab === 'practice'
                 ? 'bg-ares-red text-white'
                 : 'text-ares-muted hover:text-white hover:bg-white/5'
             }`}
           >
-            SAT Prep Quiz
+            Practice Quiz
           </button>
         </div>
       </div>
@@ -237,8 +237,8 @@ export default function SatTrianglesSim() {
             <span>
               {activeTab === 'special'
                 ? 'Special Right Triangle formulas and ratio overlays'
-                : activeTab === 'satprep'
-                ? 'Interactive SAT practice environment'
+                : activeTab === 'practice'
+                ? 'Interactive practice environment'
                 : 'Drag handles A or B to adjust base and height'}
             </span>
           </div>
@@ -311,7 +311,7 @@ export default function SatTrianglesSim() {
               fontFamily="monospace"
               alignmentBaseline="middle"
             >
-              {activeTab === 'satprep' && SAT_QUESTIONS[currentQIdx].setupTriangle.hideA
+              {activeTab === 'practice' && QUIZ_QUESTIONS[currentQIdx].setupTriangle.hideA
                 ? 'a = ?'
                 : `a = ${(sideA / 10).toFixed(1)}`}
             </text>
@@ -326,7 +326,7 @@ export default function SatTrianglesSim() {
               fontFamily="monospace"
               textAnchor="middle"
             >
-              {activeTab === 'satprep' && SAT_QUESTIONS[currentQIdx].setupTriangle.hideB
+              {activeTab === 'practice' && QUIZ_QUESTIONS[currentQIdx].setupTriangle.hideB
                 ? 'b = ?'
                 : `b = ${(sideB / 10).toFixed(1)}`}
             </text>
@@ -341,7 +341,7 @@ export default function SatTrianglesSim() {
               fontFamily="monospace"
               textAnchor="end"
             >
-              {activeTab === 'satprep' && SAT_QUESTIONS[currentQIdx].setupTriangle.hideC
+              {activeTab === 'practice' && QUIZ_QUESTIONS[currentQIdx].setupTriangle.hideC
                 ? 'c = ?'
                 : `c = ${(hypotenuse / 10).toFixed(1)}`}
             </text>
@@ -379,7 +379,7 @@ export default function SatTrianglesSim() {
             )}
 
             {/* Draggable Point Handles */}
-            {activeTab !== 'special' && activeTab !== 'satprep' && (
+            {activeTab !== 'special' && activeTab !== 'practice' && (
               <>
                 {/* Vertex A handle (Drags horizontally) */}
                 <circle
@@ -502,12 +502,12 @@ export default function SatTrianglesSim() {
           </div>
         )}
 
-        {/* SAT PREP QUIZ CARD */}
-        {activeTab === 'satprep' && (
+        {/* PRACTICE QUIZ CARD */}
+        {activeTab === 'practice' && (
           <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-lg">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-ares-gold uppercase tracking-wider">
-                Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+                Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
               </span>
               <button
                 onClick={handleNextQuestion}
@@ -519,14 +519,14 @@ export default function SatTrianglesSim() {
 
             {/* Question Text */}
             <p className="text-sm font-semibold text-white leading-relaxed">
-              {SAT_QUESTIONS[currentQIdx].text}
+              {QUIZ_QUESTIONS[currentQIdx].text}
             </p>
 
             {/* Options list */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+              {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
                 const isSelected = selectedOpt === idx;
-                const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+                const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
                 let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
                 if (isAnswered) {
@@ -562,7 +562,7 @@ export default function SatTrianglesSim() {
                   <span>STEP-BY-STEP EXPLANATION</span>
                 </div>
                 <p className="text-marble/95 leading-relaxed">
-                  {SAT_QUESTIONS[currentQIdx].explanation}
+                  {QUIZ_QUESTIONS[currentQIdx].explanation}
                 </p>
                 <div className="mt-3 flex justify-end">
                   <button

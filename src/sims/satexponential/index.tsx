@@ -1,4 +1,4 @@
-/** @sim {"name": "SAT Prep: Exponential Functions", "requiresContext": false} */
+/** @sim {"name": "Exponential Functions", "requiresContext": false} */
 import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, XCircle, ChevronRight, Sparkles, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -14,7 +14,7 @@ interface Question {
   highlightX?: number;
 }
 
-const SAT_QUESTIONS: Question[] = [
+const QUIZ_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "A robotics startup designs a tracking sensor whose signal power, in milliwatts, is modeled by the function P(t) = 8.0(0.75)^t, where t is the distance in meters from the receiver. Which of the following is the best interpretation of the value 8.0 in this context?",
@@ -114,7 +114,7 @@ const PRESET_SYSTEMS: Record<string, Preset> = {
   }
 };
 
-export default function SatExponentialSim() {
+export default function ExponentialSim() {
   const [selectedPreset, setSelectedPreset] = useState<string>('standard_growth');
   
   // Exponential parameters: y = a * b^x
@@ -125,7 +125,7 @@ export default function SatExponentialSim() {
   // Interactive tester pointer X coordinate
   const [hoverX, setHoverX] = useState<number>(2.0);
 
-  // SAT practice quiz states
+  // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -163,7 +163,7 @@ export default function SatExponentialSim() {
     setIsAnswered(false);
 
     // Sync quiz if appropriate
-    const quizIdx = SAT_QUESTIONS.findIndex(q => q.a === p.a && q.b === p.b);
+    const quizIdx = QUIZ_QUESTIONS.findIndex(q => q.a === p.a && q.b === p.b);
     if (quizIdx !== -1) {
       setCurrentQIdx(quizIdx);
     }
@@ -228,9 +228,9 @@ export default function SatExponentialSim() {
   };
 
   const handleNextQuestion = () => {
-    const nextIdx = (currentQIdx + 1) % SAT_QUESTIONS.length;
+    const nextIdx = (currentQIdx + 1) % QUIZ_QUESTIONS.length;
     setCurrentQIdx(nextIdx);
-    const q = SAT_QUESTIONS[nextIdx];
+    const q = QUIZ_QUESTIONS[nextIdx];
     setCoeffA(q.a);
     setCoeffB(q.b);
     setMode(q.mode);
@@ -494,19 +494,19 @@ export default function SatExponentialSim() {
       <div className="w-full bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg text-xs leading-relaxed">
         <span className="text-ares-gold text-[10px] uppercase font-bold tracking-wider mb-1 block flex items-center gap-1">
           <Sparkles size={12} />
-          dSAT Strategy: Linear vs. Exponential
+          Concept Strategy: Linear vs. Exponential
         </span>
         <p className="text-marble/85">
           Linear models grow/decay by a **constant amount** per unit time (represented by the dashed bronze line). Exponential models grow/decay by a **constant percentage multiplier** per unit time. Look for terms like &quot;increases by 5% every hour&quot; (exponential) vs &quot;increases by 5 teams every hour&quot; (linear).
         </p>
       </div>
 
-      {/* SAT Practice Quiz */}
+      {/* Practice Quiz */}
       {currentQIdx >= 0 && (
         <div className="w-full flex flex-col gap-4 bg-obsidian-surface/60 border border-white/5 p-4 rounded-xl mt-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-ares-gold uppercase tracking-wider">
-              SAT practice: Question {currentQIdx + 1} of {SAT_QUESTIONS.length}
+              Practice: Question {currentQIdx + 1} of {QUIZ_QUESTIONS.length}
             </span>
             <button
               onClick={handleNextQuestion}
@@ -517,13 +517,13 @@ export default function SatExponentialSim() {
           </div>
 
           <p className="text-sm font-semibold text-white leading-relaxed">
-            {SAT_QUESTIONS[currentQIdx].text}
+            {QUIZ_QUESTIONS[currentQIdx].text}
           </p>
 
           <div className="grid grid-cols-1 gap-2">
-            {SAT_QUESTIONS[currentQIdx].options.map((opt, idx) => {
+            {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
               const isSelected = selectedOpt === idx;
-              const isCorrect = idx === SAT_QUESTIONS[currentQIdx].correctIdx;
+              const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
@@ -558,7 +558,7 @@ export default function SatExponentialSim() {
                 <span>STEP-BY-STEP EXPLANATION</span>
               </div>
               <p className="text-marble/95 leading-relaxed">
-                {SAT_QUESTIONS[currentQIdx].explanation}
+                {QUIZ_QUESTIONS[currentQIdx].explanation}
               </p>
               <div className="mt-3 flex justify-end">
                 <button
