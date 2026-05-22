@@ -247,12 +247,51 @@ ON CONFLICT(id) DO UPDATE SET
 -- Documentation
 -- ──────────────────────────────────────────
 
-INSERT INTO docs (slug, title, category, sort_order, description, content, status, is_deleted)
+INSERT INTO docs (slug, title, category, sort_order, description, content, status, is_deleted, display_in_math_corner)
 VALUES
-  ('test-doc', 'Test Documentation', 'General', 0, 'A test document for E2E testing.', '# Test Documentation\n\nThis is a test document.', 'published', 0),
-  ('getting-started', 'Getting Started', 'General', 1, 'Getting started with ARES.', '# Getting Started\n\nWelcome to the team!', 'published', 0)
+  ('test-doc', 'Test Documentation', 'General', 0, 'A test document for E2E testing.', '# Test Documentation\n\nThis is a test document.', 'published', 0, 0),
+  ('getting-started', 'Getting Started', 'General', 1, 'Getting started with ARES.', '# Getting Started\n\nWelcome to the team!', 'published', 0, 0),
+  (
+    'linear-equations',
+    'Understanding Linear Equations',
+    'Mathematics',
+    2,
+    'Learn how to represent lines mathematically using three core algebraic forms with an interactive, live coordinate system graph.',
+    '# Linear Equations in 2D Space
+
+Linear equations describe straight lines in a 2D coordinate grid. Mathematicians and roboticists use three fundamental representations depending on the given parameters.
+
+### Interactive Exploration
+
+Use the simulator below to drag points and sliders in real-time. Notice how adjusting parameters in one form instantly transforms the equations in the other two formats!
+
+<linearequations />
+
+## 1. Slope-Intercept Form: y = mx + b
+
+Ideal when you know how steep the line is and where it crosses the vertical axis.
+- **m (Slope)**: The rate of change ("rise over run").
+- **b (Y-intercept)**: The point (0, b) where the line intersects the Y-axis.
+
+## 2. Standard Form: Ax + By = C
+
+Useful for finding both X and Y intercepts easily and representing vertical lines (B = 0).
+- **A, B, C**: Must be integers.
+- **Intercepts**: X-intercept is (C/A, 0) and Y-intercept is (0, C/B).
+
+## 3. Point-Slope Form: y - y1 = m(x - x1)
+
+Perfect when you know a single coordinate the line passes through and its steepness.
+- **m**: The slope.
+- **(x1, y1)**: A known anchor point on the line.',
+    'published',
+    0,
+    1
+  )
 ON CONFLICT(slug) DO UPDATE SET
   title = excluded.title,
+  content = excluded.content,
+  display_in_math_corner = excluded.display_in_math_corner,
   status = excluded.status;
 
 -- ────────────────────────────────────────
