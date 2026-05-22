@@ -344,11 +344,11 @@ export default function SimComponent() {
   return (
     <div
       ref={containerRef}
-      className="sim-container flex flex-col xl:flex-row gap-6 p-6 overflow-auto text-ares-offwhite bg-ares-gray-deep/40 rounded-xl border border-white/5"
+      className="sim-container flex flex-col gap-6 p-4 sm:p-6 text-ares-offwhite bg-ares-gray-deep/40 rounded-xl border border-white/5 max-w-2xl mx-auto w-full"
       style={{ minHeight: '620px' }}
     >
-      {/* Left side: Interactive Canvas */}
-      <div className="flex-1 flex flex-col items-center gap-4 bg-obsidian/40 p-4 rounded-xl border border-white/5 relative">
+      {/* Interactive Canvas */}
+      <div className="w-full flex flex-col items-center gap-4 bg-obsidian/40 p-4 rounded-xl border border-white/5 relative">
         <div className="w-full flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
             <span className="font-heading font-black text-ares-gold uppercase tracking-wider text-sm sm:text-base">
@@ -378,7 +378,7 @@ export default function SimComponent() {
             height="440"
             viewBox="0 0 440 440"
             onPointerMove={handlePointerMove}
-            className="select-none touch-none"
+            className="w-full max-w-[440px] h-auto select-none touch-none"
           >
             <defs>
               <clipPath id="grid-clip">
@@ -493,13 +493,13 @@ export default function SimComponent() {
                 <circle
                   cx="220"
                   cy={yPx(b)}
-                  r="7"
+                  r="8"
                   fill="#FFB81C"
                   stroke="#fff"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   cursor="ns-resize"
                   onPointerDown={(e) => startDrag(e, 'yIntercept')}
-                  className="hover:scale-125 transition-transform"
+                  className="hover:fill-white hover:stroke-[#FFB81C] transition-colors duration-150"
                 />
                 <text
                   x="232"
@@ -521,13 +521,13 @@ export default function SimComponent() {
                 <circle
                   cx={xPx(x1)}
                   cy={yPx(y1)}
-                  r="7"
+                  r="8"
                   fill="#CD7F32"
                   stroke="#fff"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   cursor="move"
                   onPointerDown={(e) => startDrag(e, 'referencePoint')}
-                  className="hover:scale-125 transition-transform"
+                  className="hover:fill-white hover:stroke-[#CD7F32] transition-colors duration-150"
                 />
                 <text
                   x={xPx(x1) + 10}
@@ -571,8 +571,8 @@ export default function SimComponent() {
         </p>
       </div>
 
-      {/* Right side: Control Module & Step-by-Step Math */}
-      <div className="flex-1 flex flex-col gap-5">
+      {/* Control Module & Step-by-Step Math */}
+      <div className="w-full flex flex-col gap-5">
         {/* Navigation Mode Tabs */}
         <div className="grid grid-cols-3 bg-obsidian-darker p-1 rounded-lg border border-white/5 shadow">
           {(['slopeIntercept', 'standard', 'pointSlope'] as const).map((mType) => {
