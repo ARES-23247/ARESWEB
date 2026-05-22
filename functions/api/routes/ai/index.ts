@@ -265,7 +265,9 @@ aiRouter.openapi(liveblocksCopilotRoute, async (c) => {
 // ──── Simulator Playground AI Route ──────────────────────────────────────
 aiRouter.openapi(simPlaygroundRoute, async (c) => {
     const body = c.req.valid("json");
-    const { messages, systemPrompt: customSystemPrompt } = body;
+    const { messages: rawMessages, systemPrompt: customSystemPrompt } = body;
+    // Sliding Window History: limit history to the last 8 messages (4 full turns) to prevent token accumulation and optimize caching
+    const messages = (rawMessages || []).slice(-8);
     const hasZai = !!c.env.Z_AI_API_KEY;
 
     if (!hasZai && !c.env.AI) {
@@ -378,7 +380,9 @@ Provide helpful, technical advice. Be concise.`;
 // ──── Documentation Editor Chat Route ───────────────────────────────────
 aiRouter.openapi(editorChatRoute, async (c) => {
     const body = c.req.valid("json");
-    const { messages, systemPrompt: customSystemPrompt, editorContent } = body;
+    const { messages: rawMessages, systemPrompt: customSystemPrompt, editorContent } = body;
+    // Sliding Window History: limit history to the last 8 messages (4 full turns) to prevent token accumulation and optimize caching
+    const messages = (rawMessages || []).slice(-8);
     const hasZai = !!c.env.Z_AI_API_KEY;
 
     if (!hasZai && !c.env.AI) {
