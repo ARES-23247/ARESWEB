@@ -193,6 +193,42 @@
       "requiresContext": false
     },
     {
+      "id": "satcircles",
+      "name": "SAT Prep: Coordinate Circles & Sectors",
+      "path": "./satcircles",
+      "requiresContext": false
+    },
+    {
+      "id": "satgraphs",
+      "name": "SAT Prep: Scatterplots & Line of Best Fit",
+      "path": "./satgraphs",
+      "requiresContext": false
+    },
+    {
+      "id": "satinequalities",
+      "name": "SAT Prep: Systems of Inequalities",
+      "path": "./satinequalities",
+      "requiresContext": false
+    },
+    {
+      "id": "satquadratic",
+      "name": "SAT Prep: Parabolas & Quadratics",
+      "path": "./satquadratic",
+      "requiresContext": false
+    },
+    {
+      "id": "satstats",
+      "name": "SAT Prep: Statistics & Distributions",
+      "path": "./satstats",
+      "requiresContext": false
+    },
+    {
+      "id": "sattriangles",
+      "name": "SAT Prep: Solving Right Triangles",
+      "path": "./sattriangles",
+      "requiresContext": false
+    },
+    {
       "id": "skiingCarvingForces",
       "name": "Skiing Carving Forces",
       "path": "./skiing-carving-forces",
@@ -265,5 +301,5 @@
       "requiresContext": true
     }
   ],
-  "_generated": "2026-05-22T13:15:44.063Z"
+  "_generated": "2026-05-22T13:28:14.600Z"
 }

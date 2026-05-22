@@ -419,7 +419,288 @@ What happens if you try to reach a coordinate that is too far away ($x^2 + y^2 >
     'published',
     0,
     1
+  ),
+  (
+    'sat-triangles',
+    'SAT Prep: Solving Right Triangles',
+    'Mathematics',
+    6,
+    'Master SOH-CAH-TOA, special right triangles (30-60-90 & 45-45-90), and practice interactive SAT-style trigonometry questions.',
+    '# SAT Prep: Solving Right Triangles
+
+Right triangles are the absolute cornerstone of SAT geometry and trigonometry! The SAT heavily tests how you calculate unknown side lengths and angles using standard ratios and special mathematical constants.
+
+### Interactive Trigonometry Solver
+
+Use the simulator below to explore SOH-CAH-TOA ratios, special right triangles, and test your skills with a real-time question generator!
+
+<sattriangles />
+
+---
+
+## 1. SOH-CAH-TOA Ratios
+
+In any right triangle, the three main trigonometric functions are defined by the ratios of the triangle''s sides relative to a reference angle $\theta$:
+
+- **Sine ($\sin\theta$)**: $\frac{\text{Opposite}}{\text{Hypotenuse}}$ ("SOH")
+- **Cosine ($\cos\theta$)**: $\frac{\text{Adjacent}}{\text{Hypotenuse}}$ ("CAH")
+- **Tangent ($\tan\theta$)**: $\frac{\text{Opposite}}{\text{Adjacent}}$ ("TOA")
+
+### The Pythagorean Connection
+Never forget the Pythagorean Theorem! In any right triangle with legs $a$ and $b$ and hypotenuse $c$:
+$$a^2 + b^2 = c^2$$
+
+This allows you to quickly find a third side if you are given any two side lengths.
+
+---
+
+## 2. Special Right Triangles
+
+The SAT expects you to have two special right triangles completely memorized. These allow you to find side lengths  without using a calculator!
+
+### The 30°-60°-90° Triangle
+- **Ratios**: The side lengths are always in the ratio **$x : x\sqrt{3} : 2x$**.
+- **Short Leg ($x$)**: Opposite the $30^\circ$ angle.
+- **Long Leg ($x\sqrt{3}$)**: Opposite the $60^\circ$ angle.
+- **Hypotenuse ($2x$)**: Opposite the $90^\circ$ angle.
+
+### The 45°-45°-90° Triangle (Isosceles Right)
+- **Ratios**: The side lengths are always in the ratio **$x : x : x\sqrt{2}$**.
+- **Legs ($x$)**: The two perpendicular legs are identical in length.
+- **Hypotenuse ($x\sqrt{2}$)**: Opposite the $90^\circ$ angle.',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-quadratics',
+    'SAT Prep: Parabolas & Quadratic Forms',
+    'Mathematics',
+    7,
+    'Learn how to translate parabolas in vertex form, find roots in factored form, compute standard form discriminants, and solve quadratic formula equations.',
+    '# SAT Prep: Parabolas & Quadratic Forms
+
+Parabolas and quadratic functions make up a huge portion of the **Passport to Advanced Math** section of the SAT. To score high, you must fluidly move between different algebraic representations of a parabola and understand how its parameters change its graph.
+
+### Interactive Parabola Explorer
+
+Toggle between Vertex Form, Factored Form, and Standard Form. Adjust parameters and drag handles to see roots, vertex translations, and axis of symmetry update in real-time!
+
+<satquadratic />
+
+---
+
+## 1. The Three Parabolic Forms
+
+Depending on the question, the SAT will present quadratics in one of three standard forms:
+
+1. **Vertex Form: $y = a(x - h)^2 + k$**
+   - Direct visibility of the **vertex $(h, k)$**.
+   - If $a > 0$, the parabola opens upward (minimum value at $y = k$). If $a < 0$, it opens downward (maximum value at $y = k$).
+   - The line **$x = h$** is the vertical axis of symmetry.
+
+2. **Factored Form: $y = a(x - r_1)(x - r_2)$**
+   - Directly reveals the **roots (x-intercepts) at $(r_1, 0)$ and $(r_2, 0)$**.
+   - The axis of symmetry always lies at the exact midpoint: $h = \frac{r_1 + r_2}{2}$.
+
+3. **Standard Form: $y = ax^2 + bx + c$**
+   - Directly reveals the **y-intercept at $(0, c)$**.
+   - The X-coordinate of the vertex (axis of symmetry) is calculated as **$h = -\frac{b}{2a}$**.
+
+---
+
+## 2. Roots & The Discriminant Rule
+
+How many times does the parabola cross the X-axis? Instead of graphing, you can calculate the **Discriminant** ($\Delta$) from the standard form coefficients:
+$$\Delta = b^2 - 4ac$$
+
+- **$\Delta > 0$**: The parabola has **two distinct real roots** (crosses the X-axis twice).
+- **$\Delta = 0$**: The parabola has **exactly one real root** (the vertex rests directly on the X-axis).
+- **$\Delta < 0$**: The parabola has **zero real roots** (it floats completely above or below the X-axis, yielding complex solutions).',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-circles',
+    'SAT Prep: Circles & Arc Geometry',
+    'Mathematics',
+    8,
+    'Master the standard circle equation standard form, practice completing the square, and solve central angles, arc lengths, and sector areas.',
+    '# SAT Prep: Circles & Arc Geometry
+
+Coordinate circles and sector geometry are frequently tested under the **Additional Topics in Math** section of the SAT. You will be asked to find standard circle equations, translate centers, and solve proportional arcs and sectors.
+
+### Interactive Circle Geometry Solver
+
+Drag the center handle and circumference boundary to translate or resize standard equations. Switch to Sector Mode to observe proportional arc lengths and areas in real-time!
+
+<satcircles />
+
+---
+
+## 1. The Coordinate Circle Equation
+
+The standard form equation of a circle centered at coordinate $(h, k)$ with a radius of $r$ is:
+$$(x - h)^2 + (y - k)^2 = r^2$$
+
+> [!WARNING]
+> Pay close attention to the signs! A circle with equation $(x - 3)^2 + (y + 4)^2 = 25$ has a center at $(3, -4)$ and a radius of $\sqrt{25} = 5$.
+
+### Completing the Square
+Often, the SAT will give you a circle equation in a expanded general form, such as:
+$$x^2 + y^2 - 6x + 8y = 11$$
+
+To find the center and radius, you must **complete the square**:
+1. Group like terms: $(x^2 - 6x) + (y^2 + 8y) = 11$
+2. Take half of the linear coefficients ($-6/2 = -3$ and $8/2 = 4$), square them ($9$ and $16$), and add them to **both** sides of the equation:
+   $$(x^2 - 6x + 9) + (y^2 + 8y + 16) = 11 + 9 + 16$$
+3. Rewrite as perfect squares:
+   $$(x - 3)^2 + (y + 4)^2 = 36$$
+This yields center $(3, -4)$ and radius $r = 6$.
+
+---
+
+## 2. Arcs & Sector Proportions
+
+A sector is a "slice" of a circle, and an arc is the "crust" of that slice. In both degrees and radians, the arc length and sector area are always **directly proportional** to the fraction of the circle subtended by the central angle $\theta$:
+
+- **Arc Length Fraction**: $\text{Arc Length } s = 2\pi r \times \frac{\theta^\circ}{360^\circ}$
+- **Sector Area Fraction**: $\text{Sector Area } A = \pi r^2 \times \frac{\theta^\circ}{360^\circ}$
+
+If the angle is in radians, the equations become even simpler:
+- $\text{Arc Length } s = r\theta$
+- $\text{Sector Area } A = \frac{1}{2}r^2\theta$',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-stats',
+    'SAT Prep: Statistics & Distributions',
+    'Mathematics',
+    9,
+    'Learn how to construct dot plots, compute mean, median, mode, range, and standard deviation, and master data distribution shapes and outlier impacts.',
+    '# SAT Prep: Statistics & Distributions
+
+Data analysis and statistics make up the core of the **Problem Solving and Data Analysis** section on the SAT. You will be tested on your ability to compute measures of center (mean, median), measures of spread (range, standard deviation), and identify skewness and the effects of outliers on data.
+
+### Interactive Dot Plot & Statistics Solver
+
+Design your own dot plot in Sandbox Mode or test your skills in the SAT Quiz! Observe how adding or removing outliers impacts the mean and median in real-time.
+
+<satstats />
+
+---
+
+## 1. Measures of Center
+
+The SAT focuses heavily on how data points cluster around the middle. There are two primary measures of center:
+
+- **Mean ($\bar{x}$)**: The arithmetic average. Sum of all data values divided by the total count $N$.
+  $$\bar{x} = \frac{\sum x_i}{N}$$
+- **Median**: The middle value when all data points are arranged in ascending order. If $N$ is even, the median is the average of the two middle values.
+
+> [!IMPORTANT]
+> **The Outlier Rule**: Outliers (extremely large or small values) have a massive impact on the **mean**, pulling it in their direction. However, the **median** is highly resistant (robust) to outliers and barely shifts.
+
+---
+
+## 2. Measures of Spread & Shape
+
+- **Range**: The difference between the maximum and minimum values in the dataset:
+  $$\text{Range} = \text{Maximum} - \text{Minimum}$$
+- **Standard Deviation ($\sigma$)**: A measure of how spread out the numbers are from the mean. A low standard deviation means data points are clustered closely to the mean; a high standard deviation means they are widely spread out.
+- **Skewness**:
+  - **Symmetric**: The mean and median are nearly equal.
+  - **Right-Skewed**: A long tail extends to the right (pulled by high outliers), making the **mean > median**.
+  - **Left-Skewed**: A long tail extends to the left (pulled by low outliers), making the **mean < median**.',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-graphs',
+    'SAT Prep: Scatterplots & Line of Best Fit',
+    'Mathematics',
+    10,
+    'Master how to read scatterplots, estimate regression equations, interpret slope rates of change, and understand correlation coefficients.',
+    '# SAT Prep: Scatterplots & Line of Best Fit
+
+Scatterplots and regression are high-yield graphing topics in the **Problem Solving and Data Analysis** portion of the SAT. You will be asked to identify trends, estimate the line of best fit, predict values, and interpret the real-world meaning of slopes and intercepts.
+
+### Interactive Scatterplot Solver
+
+Drag the coordinate dots on the grid to see the **Ordinary Least Squares (OLS) Line of Best Fit** and **Pearson''s Correlation Coefficient ($r$)** recalculate in real-time. Switch between robotics-themed motor and battery datasets to analyze real trends!
+
+<satgraphs />
+
+---
+
+## 1. Reading Scatterplots & Predictions
+
+A scatterplot maps individual paired data points $(x, y)$. A **Line of Best Fit** (or regression line) is a mathematically calculated straight line that best approximates the linear trend of these points.
+
+- **Making Predictions**: To predict a value, locate a given input $x$ on the horizontal axis, move vertically to the line of best fit, and read the corresponding $y$-value on the vertical axis.
+- **Residuals**: The vertical distance between an actual data point and the predicted line of best fit:
+  $$\text{Residual} = y_{\text{actual}} - y_{\text{predicted}}$$
+
+---
+
+## 2. Interpreting Slope & Correlation
+
+In the regression equation $y = mx + b$:
+- **The Slope ($m$)**: Represents the **rate of change**. Specifically, the average predicted change in the dependent variable $y$ for every 1 unit increase in the independent variable $x$.
+  - *Example (Robotics)*: A slope of $0.9$ in Motor Speed vs. Voltage means that for each additional 1 Volt increase, the motor speed increases by approximately 90 RPM.
+- **The Y-Intercept ($b$)**: Represents the predicted value of $y$ when the independent variable $x = 0$.
+- **Pearson''s Correlation Coefficient ($r$)**: Measures the strength and direction of the linear relationship between two variables:
+  - **$r \approx 1$**: Strong positive correlation (as $x$ increases, $y$ increases).
+  - **$r \approx -1$**: Strong negative correlation (as $x$ increases, $y$ decreases).
+  - **$r \approx 0$**: No linear correlation (data points are scattered randomly).',
+    'published',
+    0,
+    1
+  ),
+  (
+    'sat-inequalities',
+    'SAT Prep: Systems of Inequalities',
+    'Mathematics',
+    11,
+    'Learn how to shade single linear inequalities, locate overlapping solution sets, and test coordinates inside intersection regions.',
+    '# SAT Prep: Systems of Inequalities
+
+Systems of inequalities represent a major part of the **Heart of Algebra** section on the SAT. You must understand how single inequalities shade the coordinate plane, how solid vs. dashed boundaries behave, and how to verify if coordinates satisfy a system.
+
+### Interactive System Solver
+
+Adjust slopes, intercepts, and inequality operators. Drag the glowing tester point around the grid—it will turn **green** with a checkmark when it satisfies both inequalities (representing a solution to the system) and **red** when it does not!
+
+<satinequalities />
+
+---
+
+## 1. Single Inequalities & Boundary Lines
+
+A linear inequality describes a region of the coordinate plane bounded by a straight line.
+- **Boundary Line Styles**:
+  - **Solid Line ($\le, \ge$)**: The boundary is included in the solution set. Points lying directly on the line *are* solutions.
+  - **Dashed Line ($<, >$)**: The boundary is excluded. Points lying directly on the line *are not* solutions.
+- **Shading Direction**:
+  - **Above ($>, \ge$)**: Shade the region above the boundary line (greater Y-values).
+  - **Below ($<, \le$)**: Shade the region below the boundary line (lesser Y-values).
+
+---
+
+## 2. Systems of Inequalities
+
+A **system** consists of two or more inequalities.
+- **The Solution Set**: The intersection (overlapping area) where the shaded regions of all inequalities in the system merge. Only points residing in this blended region satisfy all equations.
+- **Verifying Solutions**: To check if a coordinate $(x_0, y_0)$ is a solution to the system, plug the values into *both* inequalities. If *either* statement evaluates to false, the point is not a solution.',
+    'published',
+    0,
+    1
   )
+
 ON CONFLICT(slug) DO UPDATE SET
   title = excluded.title,
   content = excluded.content,
