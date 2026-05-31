@@ -63,7 +63,7 @@ export default function Navbar() {
           ARES <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">23247</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-widest">
+        <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
           {/* Main Links */}
           <Link href="/blog" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
             Blog
@@ -75,6 +75,14 @@ export default function Navbar() {
 
           <Link href="/tasks" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
             Tasks
+          </Link>
+
+          <Link href="/robots" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+            Fleet
+          </Link>
+
+          <Link href="/simulators" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+            Sims
           </Link>
 
           <Link href="/store" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
@@ -162,6 +170,12 @@ export default function Navbar() {
           </Link>
           <Link href="/tasks" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
             Tasks
+          </Link>
+          <Link href="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
+            Fleet
+          </Link>
+          <Link href="/simulators" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
+            Simulators
           </Link>
           <Link href="/store" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
             Store
