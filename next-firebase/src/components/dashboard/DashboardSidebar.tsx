@@ -88,6 +88,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           <div className="space-y-1">
             <NavButton tab="" icon={LayoutDashboard} label="Command Center" currentPath={pathname} />
             <NavButton tab="tasks" icon={ClipboardList} label="Kanban Tasks" currentPath={pathname} />
+            <NavButton tab="scope" icon={Cpu} label="ARES-Scope" currentPath={pathname} />
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             

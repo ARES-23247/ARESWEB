@@ -242,7 +242,7 @@ export default function DashboardHome() {
           </div>
 
           {/* Quick Shortcuts */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link 
               href="/dashboard/tasks" 
               className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
@@ -253,7 +253,23 @@ export default function DashboardHome() {
                 </div>
                 <div>
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">Kanban Tasks</h4>
-                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Drag-and-drop subteam board</p>
+                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Drag-and-drop board</p>
+                </div>
+              </div>
+              <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
+            </Link>
+
+            <Link 
+              href="/dashboard/scope" 
+              className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-ares-cyan/10 border border-ares-cyan/30 flex items-center justify-center text-ares-cyan group-hover:scale-105 transition-transform shrink-0">
+                  <Terminal size={18} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">ARES-Scope</h4>
+                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Telemetry Log Replay</p>
                 </div>
               </div>
               <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
@@ -271,7 +287,7 @@ export default function DashboardHome() {
                 </div>
                 <div>
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">FTC Scout</h4>
-                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Scouting & match analytics</p>
+                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Scouting & Analytics</p>
                 </div>
               </div>
               <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
