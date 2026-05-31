@@ -56,7 +56,7 @@ Ensure that all team and organizational references follow the ARES branding guid
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-pro",
+      model: process.env.GEMINI_MODEL_PRO || "gemini-2.0-pro",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
       ]
