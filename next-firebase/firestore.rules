@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get the user's email
+    function getUserEmail() {
+      return request.auth.token.email;
+    }
+    
+    // Helper function to check if the user exists in the authorized_users collection
+    function isAuthorized() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/authorized_users/$(getUserEmail()));
+    }
+    
+    // Helper function to check if the user has a specific role (e.g. 'admin')
+    function hasRole(role) {
+      return isAuthorized() && get(/databases/$(database)/documents/authorized_users/$(getUserEmail())).data.role == role;
+    }
+
+    // Rules for the authorized_users collection
+    match /authorized_users/{email} {
+      // Users can read their own registration doc; admins can read everything
+      allow read: if isAuthenticated() && (getUserEmail() == email || hasRole('admin'));
+      // Only admins can invite or edit roles
+      allow write: if hasRole('admin');
+    }
+
+    // Public collections (blogs, calendar, knowledge base docs)
+    match /posts/{postSlug} {
+      allow read: if true; // Publicly readable
+      allow write: if isAuthorized(); // Only team members can create or edit
+    }
+
+    match /events/{eventId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAuthorized(); // Only team members can create or edit
+    }
+
+    match /docs/{docSlug} {
+      allow read: if true; // Publicly readable
+      allow write: if isAuthorized(); // Only team members can create or edit
+    }
+
+    // Secure team collections (Kanban tasks, AI chat sessions, telemetry runs)
+    match /tasks/{taskId} {
+      allow read, write: if isAuthorized();
+    }
+
+    match /chat_sessions/{sessionId} {
+      // Allow read/write for authorized team members, or guests under standard "anonymous" sessions
+      allow read, write: if isAuthorized() || (isAuthenticated() && get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data.userId == 'anonymous');
+    }
+
+    match /telemetry_runs/{runId} {
+      allow read, write: if isAuthorized();
+    }
+  }
+}

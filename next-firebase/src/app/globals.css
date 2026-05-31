@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f9f9f9; /* Marble White */
+  --foreground: #1a1a1a; /* Obsidian Black */
+  --ares-red: #c00000;
+  --ares-red-light: #FF4D4D;
+  --ares-red-dark: #8A0000;
+  --ares-bronze: #cd7f32;
+  --ares-bronze-light: #E69B4D;
+  --ares-bronze-dark: #A66324;
+  --ares-gold: #FFB81C;
+  --ares-cyan: #00E5FF;
+  --obsidian: #1A1A1A;
+  --marble: #F9F9F9;
+  --ares-gray: #4a4a4a;
+  --ares-gray-dark: #2A2A2A;
+  --ares-gray-deep: #0B0B0B;
+  --ares-offwhite: #e6edf3;
+  --ares-muted: #c9d1d9;
+  --ares-danger: #EF4444;
+  --ares-danger-soft: #F87171;
+  --ares-success: #22C55E;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-spartan), sans-serif;
+
+  /* Authorized ARES Palette Mappings */
+  --color-ares-red: var(--ares-red);
+  --color-ares-red-light: var(--ares-red-light);
+  --color-ares-red-dark: var(--ares-red-dark);
+  --color-ares-danger: var(--ares-danger);
+  --color-ares-danger-soft: var(--ares-danger-soft);
+  --color-ares-bronze: var(--ares-bronze);
+  --color-ares-bronze-light: var(--ares-bronze-light);
+  --color-ares-bronze-dark: var(--ares-bronze-dark);
+  --color-ares-gold: var(--ares-gold);
+  --color-ares-cyan: var(--ares-cyan);
+  --color-obsidian: var(--obsidian);
+  --color-marble: var(--marble);
+  --color-ares-gray: var(--ares-gray);
+  --color-ares-gray-dark: var(--ares-gray-dark);
+  --color-ares-gray-deep: var(--ares-gray-deep);
+  --color-ares-offwhite: var(--ares-offwhite);
+  --color-ares-muted: var(--ares-muted);
+  --color-ares-black: #050505;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
+}
+
+::selection {
+  background: var(--ares-red);
+  color: #ffffff;
+}
+
+/* ARES 23247 Geometric Utilities */
+.meander-border {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 0h6v2H2v4h4v2H0V0zm8 0h6v2h-4v4h4v2H8V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0zm8 0h6v2h-4v4h4v2h-6V0z' fill='%23cd7f32'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: top;
+}
+
+.clipped-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 32px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  border-radius: 24px 4px; /* ares-cut */
+  background: var(--ares-red);
+  color: white;
+  border: 1px solid var(--ares-bronze);
+  cursor: pointer;
+}
+
+.clipped-button:hover {
+  background: var(--ares-red-dark);
+  border-color: var(--ares-red);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
+}
+
+.clipped-button-sm {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  border-radius: 16px 4px; /* ares-cut-sm */
+  background: var(--ares-red);
+  color: white;
+  border: 1px solid var(--ares-bronze);
+  cursor: pointer;
+}
+
+.clipped-button-sm:hover {
+  background: var(--ares-red-dark);
+  border-color: var(--ares-red);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
+}
+
+.marble-card {
+  background: var(--marble);
+  border: 1px solid rgba(205, 127, 50, 0.2);
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--ares-bronze);
+}
+
+.marble-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.obsidian-section {
+  background: var(--obsidian);
+  color: var(--marble);
+}
+
+.hero-card {
+  border-radius: 40px 12px; /* ares-cut-lg */
+  border: 1px solid rgba(205, 127, 50, 0.2);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.hero-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(192, 0, 0, 0.5);
+  box-shadow: 0 20px 40px rgba(192, 0, 0, 0.12);
+}
+
+/* GREEK GEOMETRIC CUTS */
+.ares-cut-sm {
+  border-radius: 8px 2px;
+}
+
+.ares-cut {
+  border-radius: 24px 4px;
+}
+
+.ares-cut-lg {
+  border-radius: 40px 12px;
+}
+
+.spartan-plate {
+  border-radius: 48px 8px;
+}
+
+.ares-badge-red {
+  background: var(--ares-red);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px 2px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.2);
+}
+
+.meander-divider {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='12' viewBox='0 0 60 12'%3E%3Cpath d='M0 0h9v3H3v6h6v3H0V0zm12 0h9v3H15v6h6v3H12V0zm12 0h9v3H27v6h6v3H24V0zm12 0h9v3H39v6h6v3H36V0zm12 0h9v3H51v6h6v3H48V0z' fill='%23cd7f32'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: center;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ares-cyan);
+  outline-offset: 2px;
+}
+
+input, textarea, select {
+  color-scheme: dark;
+}
+
+select option {
+  background: var(--obsidian);
+  color: white;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
