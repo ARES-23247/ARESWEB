@@ -63,43 +63,8 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
   },
 };
 
-const DEFAULT_SPONSORS: Sponsor[] = [
-  {
-    id: "nasa_ivv",
-    name: "NASA IV&V Facility",
-    tier: "Titanium",
-    logoUrl: "https://raw.githubusercontent.com/ARES-23247/ARESWEB/master/public/assets/sponsors/nasa.png",
-    websiteUrl: "https://www.nasa.gov/centers/ivv/home/index.html",
-    isActive: true
-  },
-  {
-    id: "wvu_statler",
-    name: "WVU Statler College",
-    tier: "Titanium",
-    logoUrl: "https://raw.githubusercontent.com/ARES-23247/ARESWEB/master/public/assets/sponsors/wvu.png",
-    websiteUrl: "https://www.statler.wvu.edu",
-    isActive: true
-  },
-  {
-    id: "mon_schools",
-    name: "Monongalia County Schools",
-    tier: "Gold",
-    logoUrl: "https://raw.githubusercontent.com/ARES-23247/ARESWEB/master/public/assets/sponsors/mon_schools.png",
-    websiteUrl: "https://www.boe.mono.k12.wv.us",
-    isActive: true
-  },
-  {
-    id: "fcx",
-    name: "FCX Performance",
-    tier: "Gold",
-    logoUrl: "https://raw.githubusercontent.com/ARES-23247/ARESWEB/master/public/assets/sponsors/fcx.png",
-    websiteUrl: "https://www.fcxperformance.com",
-    isActive: true
-  }
-];
-
 export default function SponsorsPage() {
-  const [sponsors, setSponsors] = useState<Sponsor[]>(DEFAULT_SPONSORS);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -128,16 +93,16 @@ export default function SponsorsPage() {
           });
           setSponsors(list);
         } else {
-          setSponsors(DEFAULT_SPONSORS);
+          setSponsors([]);
         }
       }, (err) => {
-        console.warn("Firestore error reading sponsors, loaded WV defaults.", err.message);
-        setSponsors(DEFAULT_SPONSORS);
+        console.warn("Firestore error reading sponsors.", err.message);
+        setSponsors([]);
       });
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Firestore offline, loading WV default partners.", e);
-      setSponsors(DEFAULT_SPONSORS);
+      console.warn("Firestore offline.", e);
+      setSponsors([]);
     }
   }, []);
 
@@ -244,67 +209,87 @@ export default function SponsorsPage() {
           </p>
         </header>
 
-        {/* Sponsor Grid Sections */}
-        <div className="space-y-24">
-          {tiersOrdered.map((tier) => (
-            groupedSponsors[tier] && (
-              <section key={tier} className="flex flex-col">
-                <div className="flex items-center gap-4 mb-10 select-none">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
-                  <div className="flex items-center gap-3">
-                    {TIER_STYLING[tier].icon}
-                    <h2 className={`text-2xl md:text-3xl font-black uppercase tracking-tighter font-heading ${TIER_STYLING[tier].text}`}>
-                      {tier} Partners
-                    </h2>
+        {/* Sponsor Showcase empty state vs grid */}
+        {sponsors.length === 0 ? (
+          <div className="glass-card hero-card max-w-xl mx-auto p-10 border border-white/10 text-center space-y-6 shadow-2xl">
+            <Gem className="text-ares-gold w-12 h-12 mx-auto animate-pulse" />
+            <h3 className="text-xl font-extrabold text-white uppercase tracking-tight font-heading">
+              Partnership List Updating
+            </h3>
+            <p className="text-marble/70 text-xs leading-relaxed max-w-sm mx-auto font-semibold">
+              Our partner directories and corporate sponsors list is currently being updated for the active season. Want to help team ARES build the future of STEM?
+            </p>
+            <button
+              onClick={() => {
+                document.getElementById("sponsor-form-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="clipped-button bg-ares-red hover:bg-ares-red-dark text-white text-xs font-black uppercase tracking-wider py-2.5 px-6 transition-all cursor-pointer shadow-lg active:scale-95"
+            >
+              Become a Sponsor
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-24">
+            {tiersOrdered.map((tier) => (
+              groupedSponsors[tier] && (
+                <section key={tier} className="flex flex-col">
+                  <div className="flex items-center gap-4 mb-10 select-none">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
+                    <div className="flex items-center gap-3">
+                      {TIER_STYLING[tier].icon}
+                      <h2 className={`text-2xl md:text-3xl font-black uppercase tracking-tighter font-heading ${TIER_STYLING[tier].text}`}>
+                        {tier} Partners
+                      </h2>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
                   </div>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
-                </div>
 
-                <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                  {groupedSponsors[tier].map((s) => (
-                    <a
-                      key={s.id}
-                      href={s.websiteUrl || "#"}
-                      target={s.websiteUrl ? "_blank" : undefined}
-                      rel="noopener noreferrer"
-                      className={`
-                        ${TIER_STYLING[tier].glass} ${TIER_STYLING[tier].border} ${TIER_STYLING[tier].glow}
-                        p-8 ares-cut-lg border flex flex-col items-center justify-center text-center group transition-all duration-300
-                        min-h-[200px] hover:bg-white/[0.07] cursor-pointer
-                      `}
-                    >
-                      {s.logoUrl ? (
-                        <img 
-                          src={s.logoUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')} 
-                          alt={s.name} 
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement?.querySelector('.fallback-text')?.classList.remove('hidden');
-                          }}
-                          className="max-w-full max-h-20 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" 
-                        />
-                      ) : null}
-                      
-                      <div className={`fallback-text text-2xl font-black text-white/60 mb-2 font-heading ${s.logoUrl ? 'hidden' : ''}`}>
-                        {s.name}
-                      </div>
-                      
-                      {s.websiteUrl && (
-                        <div className="flex items-center gap-1.5 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white">Visit Website</span>
-                          <ExternalLink size={10} className="text-ares-gold" />
+                  <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
+                    {groupedSponsors[tier].map((s) => (
+                      <a
+                        key={s.id}
+                        href={s.websiteUrl || "#"}
+                        target={s.websiteUrl ? "_blank" : undefined}
+                        rel="noopener noreferrer"
+                        className={`
+                          ${TIER_STYLING[tier].glass} ${TIER_STYLING[tier].border} ${TIER_STYLING[tier].glow}
+                          p-8 ares-cut-lg border flex flex-col items-center justify-center text-center group transition-all duration-300
+                          min-h-[200px] hover:bg-white/[0.07] cursor-pointer
+                        `}
+                      >
+                        {s.logoUrl ? (
+                          <img 
+                            src={s.logoUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')} 
+                            alt={s.name} 
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.querySelector('.fallback-text')?.classList.remove('hidden');
+                            }}
+                            className="max-w-full max-h-20 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" 
+                          />
+                        ) : null}
+                        
+                        <div className={`fallback-text text-2xl font-black text-white/60 mb-2 font-heading ${s.logoUrl ? 'hidden' : ''}`}>
+                          {s.name}
                         </div>
-                      )}
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )
-          ))}
-        </div>
+                        
+                        {s.websiteUrl && (
+                          <div className="flex items-center gap-1.5 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Visit Website</span>
+                            <ExternalLink size={10} className="text-ares-gold" />
+                          </div>
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )
+            ))}
+          </div>
+        )}
 
         {/* Form Footer */}
-        <footer className="mt-32 p-6 md:p-12 ares-cut-lg bg-obsidian border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative shadow-2xl">
+        <footer id="sponsor-form-section" className="mt-32 p-6 md:p-12 ares-cut-lg bg-obsidian border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative shadow-2xl">
           
           <div className="flex-1 relative z-10 flex flex-col justify-between bg-obsidian p-6 ares-cut border border-white/5">
             <div>
