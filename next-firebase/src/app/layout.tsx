@@ -3,6 +3,7 @@ import { Inter, League_Spartan } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
+import Script from "next/script";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,8 +35,13 @@ export default function RootLayout({
           <LayoutWrapper>
             {children}
           </LayoutWrapper>
+          <Script
+            src="https://www.google.com/recaptcha/api.js?render=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+            strategy="lazyOnload"
+          />
         </AuthProvider>
       </body>
     </html>
   );
 }
+

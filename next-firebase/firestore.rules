@@ -59,5 +59,17 @@ service cloud.firestore {
     match /telemetry_runs/{runId} {
       allow read, write: if isAuthorized();
     }
+
+    // Public partners / sponsors
+    match /sponsors/{sponsorId} {
+      allow read: if true;
+      allow write: if hasRole('admin');
+    }
+
+    // inquiries (securely gated to adminDb server writes only!)
+    match /inquiries/{inquiryId} {
+      allow read, write: if isAuthorized();
+    }
   }
 }
+
