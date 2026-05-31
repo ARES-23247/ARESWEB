@@ -23,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  loginWithMockUser: (email: string, role: string, name?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,13 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthorizedUser(null);
         }
       } else {
-        setAuthorizedUser(null);
+        // Only reset authorizedUser if user is actually null (not when using mock user)
+        if (!user || user.uid !== "mock_user_123") {
+          setAuthorizedUser(null);
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const loginWithGoogle = async () => {
     setLoading(true);
@@ -76,9 +80,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithMockUser = (email: string, role: string, name?: string) => {
+    setLoading(true);
+    const mockEmail = email.trim().toLowerCase();
+    setUser({
+      uid: "mock_user_123",
+      email: mockEmail,
+      displayName: name || "ARES Lead",
+      photoURL: `https://api.dicebear.com/9.x/bottts/svg?seed=${mockEmail}`,
+      emailVerified: true,
+    } as any);
+    setAuthorizedUser({
+      email: mockEmail,
+      role: role,
+      name: name || "ARES Lead",
+    });
+    setLoading(false);
+  };
+
   const logout = async () => {
     setLoading(true);
     try {
+      if (user && user.uid === "mock_user_123") {
+        setUser(null);
+        setAuthorizedUser(null);
+        setLoading(false);
+        return;
+      }
       await signOut(auth);
     } catch (error) {
       console.error("Logout error:", error);
@@ -88,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, authorizedUser, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, authorizedUser, loading, loginWithGoogle, loginWithMockUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

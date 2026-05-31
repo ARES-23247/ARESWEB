@@ -7,8 +7,18 @@ import { LogIn, Menu, X, KeyRound } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, loginWithGoogle } = useAuth();
+  const { user, loading, loginWithGoogle, loginWithMockUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLocal, setIsLocal] = useState(false);
+
+  React.useEffect(() => {
+    setIsLocal(
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+       window.location.hostname === "127.0.0.1" ||
+       process.env.NODE_ENV === "development")
+    );
+  }, []);
 
   // 1. Loading State
   if (loading) {
@@ -79,6 +89,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <LogIn size={16} /> Sign In with Google
             </button>
+
+            {isLocal && (
+              <div className="w-full mt-4 pt-4 border-t border-white/5 space-y-2.5">
+                <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center animate-pulse">
+                  ⚡ Developer Bypass Active
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => loginWithMockUser("coach.david@gmail.com", "admin", "Coach David")}
+                    className="w-full py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    David (Admin)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loginWithMockUser("lead.programmer@gmail.com", "programmer", "Programmer Lead")}
+                    className="w-full py-2 bg-ares-cyan/15 hover:bg-ares-cyan/25 border border-ares-cyan/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Programmer
+                  </button>
+                </div>
+              </div>
+            )}
             
             <div className="mt-8 pt-6 border-t border-white/5 w-full flex items-center justify-center gap-4 text-[10px] uppercase font-bold text-marble/45 tracking-widest">
               <span>Secure Shell</span>
