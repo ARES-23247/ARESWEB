@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -32,9 +32,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authorizedUser, setAuthorizedUser] = useState<AuthorizedUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const isMockRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (isMockRef.current) {
+        setLoading(false);
+        return;
+      }
       setUser(currentUser);
       
       if (currentUser && currentUser.email) {
@@ -81,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithMockUser = (email: string, role: string, name?: string) => {
+    isMockRef.current = true;
     setLoading(true);
     const mockEmail = email.trim().toLowerCase();
     setUser({
@@ -101,7 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setLoading(true);
     try {
-      if (user && user.uid === "mock_user_123") {
+      if ((user && user.uid === "mock_user_123") || isMockRef.current) {
+        isMockRef.current = false;
         setUser(null);
         setAuthorizedUser(null);
         setLoading(false);
