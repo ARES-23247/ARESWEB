@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Inter, League_Spartan } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import LayoutWrapper from "@/components/layout/LayoutWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -32,11 +31,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans bg-obsidian text-marble">
         <AuthProvider>
-          <Navbar />
-          <main id="main-content" role="main" className="flex-grow pt-24">
+          <LayoutWrapper>
             {children}
-          </main>
-          <Footer />
+          </LayoutWrapper>
         </AuthProvider>
       </body>
     </html>

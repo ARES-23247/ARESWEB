@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Search, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap, Sparkles, LogOut, Check } from "lucide-react";
+import { Search, LogIn, ShoppingBag, Calendar as CalendarIcon, GraduationCap, Sparkles, LogOut, Check, LayoutDashboard } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
 
@@ -73,7 +73,7 @@ export default function Navbar() {
             <CalendarIcon size={14} /> Calendar
           </Link>
 
-          <Link href="/tasks" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+          <Link href="/dashboard/tasks" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
             Tasks
           </Link>
 
@@ -127,6 +127,12 @@ export default function Navbar() {
                     <p className="text-xs text-marble/60">Logged in as</p>
                     <p className="text-xs font-bold text-white truncate">{user.email}</p>
                   </div>
+                  <Link
+                    href="/dashboard"
+                    className="w-full text-left block mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
+                  >
+                    <LayoutDashboard size={12} /> Command Center
+                  </Link>
                   <button
                     onClick={logout}
                     className="w-full text-left mt-1 px-3 py-2 text-xs text-ares-danger hover:bg-ares-red/10 rounded transition-colors flex items-center gap-2 font-bold uppercase tracking-wider"
@@ -168,7 +174,7 @@ export default function Navbar() {
           <Link href="/calendar" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
             Calendar
           </Link>
-          <Link href="/tasks" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
+          <Link href="/dashboard/tasks" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
             Tasks
           </Link>
           <Link href="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-sm">
@@ -204,12 +210,19 @@ export default function Navbar() {
                   <p className="text-xs text-ares-gold font-semibold uppercase tracking-wider">{userRole}</p>
                 </div>
               </div>
+              <Link
+                href="/dashboard"
+                onClick={() => setOpen(false)}
+                className="w-full mt-2 text-center py-2 text-xs text-white bg-white/5 hover:bg-white/10 rounded transition-colors font-bold uppercase tracking-wider border border-white/10 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LayoutDashboard size={12} className="text-ares-gold" /> Command Center
+              </Link>
               <button
                 onClick={() => {
                   logout();
                   setOpen(false);
                 }}
-                className="w-full mt-2 text-center py-2 text-xs text-white bg-ares-red/20 hover:bg-ares-red text-ares-danger hover:text-white rounded transition-colors font-bold uppercase tracking-wider border border-ares-red/30"
+                className="w-full mt-2 text-center py-2 text-xs text-white bg-ares-red/20 hover:bg-ares-red text-ares-danger hover:text-white rounded transition-colors font-bold uppercase tracking-wider border border-ares-red/30 cursor-pointer"
               >
                 Sign Out
               </button>

@@ -67,7 +67,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex gap-4">
-                  <Link href="/tasks" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
+                  <Link href="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
                     Go to Portal
                   </Link>
                   <button
@@ -155,7 +155,7 @@ export default function Home() {
             </Link>
 
             {/* Card C: Kanban Tasks */}
-            <Link href="/tasks" className="group flex flex-col h-full">
+            <Link href="/dashboard/tasks" className="group flex flex-col h-full">
               <div className="bg-white/5 border border-white/10 hero-card p-10 flex flex-col h-full backdrop-blur-sm hover:border-ares-red/30 transition-colors">
                 <div>
                   <div className="w-12 h-12 bg-ares-cyan/10 rounded-lg flex items-center justify-center mb-6 border border-ares-cyan/30 group-hover:scale-110 transition-transform">
