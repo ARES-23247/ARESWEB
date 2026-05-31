@@ -91,7 +91,7 @@ Endgame Period:
         });
 
         const response = await ai.models.generateContent({
-          model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+          model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
           contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
         });
 
