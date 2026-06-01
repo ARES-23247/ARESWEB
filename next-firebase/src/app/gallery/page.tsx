@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
@@ -73,12 +73,70 @@ const MOCK_PHOTOS: GalleryPhoto[] = [
 ];
 
 export default function GalleryPage() {
+  const [photos, setPhotos] = useState<GalleryPhoto[]>(MOCK_PHOTOS);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPhotos() {
+      try {
+        const res = await fetch("/api/photos");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.photos && data.photos.length > 0) {
+            const mapped: GalleryPhoto[] = data.photos.map((p: any, idx: number) => {
+              const gradients = [
+                "from-ares-red/30 to-black/80 border-ares-red/20",
+                "from-ares-bronze/30 to-black/80 border-ares-bronze/20",
+                "from-ares-gold/20 to-black/80 border-ares-gold/25",
+                "from-ares-red/45 to-black/90 border-ares-red/30"
+              ];
+              const colorClass = gradients[idx % gradients.length];
+
+              // Clean up Google file uuid prefix for cleaner titles
+              let titleClean = p.originalFilename || "ARES Archive";
+              if (titleClean.includes("-")) {
+                const parts = titleClean.split("-");
+                if (parts[0].length > 20) {
+                  titleClean = parts.slice(1).join("-");
+                }
+              }
+              titleClean = titleClean.replace(/\.[^/.]+$/, "");
+
+              // Standard category mapping
+              let category: GalleryPhoto["category"] = "Robot Specs";
+              if (p.albumId === "robot-specs" || p.albumId === "Robot Specs") category = "Robot Specs";
+              else if (p.albumId === "outreach" || p.albumId === "Outreach") category = "Outreach";
+              else if (p.albumId === "competition" || p.albumId === "Competition") category = "Competition";
+              else if (p.albumId === "cad-design" || p.albumId === "CAD Design") category = "CAD Design";
+
+              return {
+                id: p.id,
+                title: titleClean,
+                category,
+                date: p.importedAt ? p.importedAt.split("T")[0] : new Date().toISOString().split("T")[0],
+                location: "MARS Laboratory",
+                desc: p.description || "Google Photos synced engineering archive log.",
+                colorClass,
+                imageUrl: p.publicUrl,
+              };
+            });
+            setPhotos([...mapped, ...MOCK_PHOTOS]);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load synced photos from API:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadPhotos();
+  }, []);
 
   const filteredPhotos = activeCategory === "all"
-    ? MOCK_PHOTOS
-    : MOCK_PHOTOS.filter(p => p.category === activeCategory);
+    ? photos
+    : photos.filter(p => p.category === activeCategory);
 
   const handleNextPhoto = () => {
     if (!selectedPhoto) return;
@@ -158,10 +216,18 @@ export default function GalleryPage() {
                   onClick={() => setSelectedPhoto(photo)}
                   className={`w-full overflow-hidden ares-cut border relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(192,0,0,0.15)] bg-gradient-to-br ${photo.colorClass} ${assignedAspect} flex flex-col justify-end p-6`}
                 >
-                  {/* Subtle backdrop overlay */}
-                  <div className="absolute inset-0 bg-black/45 group-hover:bg-black/20 transition-colors duration-500 z-0"></div>
+                  {/* Real Image Render with subtle zoom */}
+                  {photo.imageUrl ? (
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-85 group-hover:scale-105 transition-all duration-500 z-0"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-black/45 group-hover:bg-black/20 transition-colors duration-500 z-0"></div>
+                  )}
 
-                  <div className="relative z-10 space-y-2 text-left">
+                  <div className="relative z-10 space-y-2 text-left bg-black/60 p-3 rounded-lg border border-white/5 backdrop-blur-[2px] w-full">
                     <span className="px-2 py-0.5 bg-ares-red text-white text-[7px] font-black uppercase tracking-wider rounded-md">
                       {photo.category}
                     </span>
@@ -180,7 +246,7 @@ export default function GalleryPage() {
                   </div>
 
                   {/* Absolute Zoom Indicator Overlay */}
-                  <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                     <Eye size={12} className="text-white" />
                   </div>
                 </div>
@@ -220,16 +286,26 @@ export default function GalleryPage() {
             </div>
 
             {/* Central Graphic Container */}
-            <div className={`w-full max-w-lg aspect-video bg-gradient-to-br ${selectedPhoto.colorClass} border border-white/5 rounded-2xl flex flex-col justify-center items-center p-8 text-center relative overflow-hidden my-4 shadow-inner`}>
-              <div className="absolute inset-0 bg-black/60 z-0"></div>
-              <div className="relative z-10 space-y-4">
-                <span className="text-ares-gold/20 block font-heading text-7xl font-bold uppercase tracking-tight select-none">
-                  ARES
-                </span>
-                <h3 className="text-2xl font-black text-white uppercase font-heading tracking-tight max-w-sm mx-auto leading-tight">
-                  {selectedPhoto.title}
-                </h3>
-              </div>
+            <div className="w-full max-w-xl aspect-video bg-black border border-white/5 rounded-2xl relative overflow-hidden my-4 shadow-inner flex items-center justify-center">
+              {selectedPhoto.imageUrl ? (
+                <img
+                  src={selectedPhoto.imageUrl}
+                  alt={selectedPhoto.title}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${selectedPhoto.colorClass} flex flex-col justify-center items-center p-8 text-center`}>
+                  <div className="absolute inset-0 bg-black/60 z-0"></div>
+                  <div className="relative z-10 space-y-4">
+                    <span className="text-ares-gold/20 block font-heading text-7xl font-bold uppercase tracking-tight select-none">
+                      ARES
+                    </span>
+                    <h3 className="text-2xl font-black text-white uppercase font-heading tracking-tight max-w-sm mx-auto leading-tight">
+                      {selectedPhoto.title}
+                    </h3>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Details and Navigation */}
