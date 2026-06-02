@@ -101,3 +101,8 @@ archive/audits/
 # Wrangler
 wrangler*.log
 *.timestamp-*.mjs
+
+# Next-Firebase Build Cache
+next-firebase/.firebase/
+next-firebase/.next/
+
