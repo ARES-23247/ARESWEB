@@ -35,7 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
+    // Safety timeout: if Auth takes more than 1.5 seconds to initialize (e.g., emulators are offline/refused),
+    // automatically force loading to false so the developer bypass lockscreen is visible.
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      clearTimeout(safetyTimeout);
       if (isMockRef.current) {
         setLoading(false);
         return;
@@ -70,7 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubscribe();
+    };
   }, [user]);
 
   const loginWithGoogle = async () => {
