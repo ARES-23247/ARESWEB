@@ -125,7 +125,14 @@ export default function SponsorsPage() {
 
     try {
       const isDev = process.env.NODE_ENV === "development";
-      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      const isLocal = typeof window !== "undefined" && (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname.startsWith("192.168.") ||
+        window.location.hostname.startsWith("10.") ||
+        window.location.hostname.endsWith(".local") ||
+        window.location.protocol === "http:"
+      );
       const hasBypass = typeof window !== "undefined" && window.ARES_E2E_BYPASS;
 
       // Handle local E2E test or dev bypass directly if grecaptcha is not loaded

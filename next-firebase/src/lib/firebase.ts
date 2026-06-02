@@ -16,12 +16,22 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Connect client SDKs to local emulators if running in localhost environment
-if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+// Connect client SDKs to local emulators if running in local or development environment
+if (
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+   window.location.hostname === "127.0.0.1" ||
+   window.location.hostname.startsWith("192.168.") ||
+   window.location.hostname.startsWith("10.") ||
+   window.location.hostname.endsWith(".local") ||
+   window.location.protocol === "http:")
+) {
   try {
-    connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
-    connectFirestoreEmulator(db, "localhost", 8080);
-    console.log("⚡ Connected client SDK to local Firebase Emulators (Auth: 9099, Firestore: 8080)");
+    const host = window.location.hostname;
+    const emulatorHost = (host === "localhost" || host === "127.0.0.1" || !host) ? "localhost" : host;
+    connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+    connectFirestoreEmulator(db, emulatorHost, 8080);
+    console.log(`⚡ Connected client SDK to local Firebase Emulators at ${emulatorHost} (Auth: 9099, Firestore: 8080)`);
   } catch (err) {
     console.warn("Firebase Emulators already connected or connection failed:", err);
   }
