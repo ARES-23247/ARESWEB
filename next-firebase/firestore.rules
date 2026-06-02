@@ -70,6 +70,12 @@ service cloud.firestore {
     match /inquiries/{inquiryId} {
       allow read, write: if isAuthorized();
     }
+
+    // user_profiles
+    match /user_profiles/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
+    }
   }
 }
 

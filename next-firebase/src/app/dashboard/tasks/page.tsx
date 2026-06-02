@@ -4,7 +4,15 @@ import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Shield, Activity } from "lucide-react";
+import { Plus, Trash2, Shield, Activity, MessageSquare } from "lucide-react";
+
+interface TaskComment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: string;
+  source: "web" | "zulip";
+}
 
 interface SubTask {
   id: string;
@@ -22,6 +30,7 @@ interface TaskItem {
   assignees: string[];
   subtasks: SubTask[];
   createdAt: string;
+  comments?: TaskComment[];
 }
 
 const MOCK_TASKS: TaskItem[] = [
@@ -78,9 +87,120 @@ const MOCK_TASKS: TaskItem[] = [
     subtasks: [
       { id: "sub_7", title: "Read Hono webhook router files", done: true }
     ],
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    comments: [
+      {
+        id: "mock_comment_1",
+        author: "David Huss",
+        content: "We should map the incoming webhooks using a timing-safe secret check.",
+        createdAt: new Date().toISOString(),
+        source: "zulip"
+      }
+    ]
   }
 ];
+
+function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit: boolean; user: any }) {
+  const [expanded, setExpanded] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || submitting || !canEdit) return;
+
+    setSubmitting(true);
+    const commentPayload = {
+      id: `comment_${Date.now()}`,
+      author: user?.displayName || user?.email || "Web User",
+      content: newComment.trim(),
+      createdAt: new Date().toISOString(),
+      source: "web" as const,
+    };
+
+    try {
+      const taskRef = doc(db, "tasks", task.id);
+      const updatedComments = [...(task.comments || []), commentPayload];
+      await updateDoc(taskRef, { comments: updatedComments });
+      setNewComment("");
+
+      // Forward to Zulip stream
+      await fetch("/api/tasks/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: task.id,
+          title: task.title,
+          author: commentPayload.author,
+          content: commentPayload.content,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to add comment:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const commentsCount = task.comments?.length || 0;
+
+  return (
+    <div className="mt-3 border-t border-white/5 pt-3">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-marble/55 hover:text-white transition-colors cursor-pointer"
+      >
+        <MessageSquare size={12} className="text-ares-gold" />
+        <span>Discussion ({commentsCount})</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-3">
+          {commentsCount > 0 && (
+            <div className="max-h-36 overflow-y-auto space-y-2 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+              {task.comments?.map((comment) => (
+                <div key={comment.id} className="text-[10px] bg-black/45 p-2 rounded border border-white/5">
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="font-extrabold text-white">{comment.author}</span>
+                    <span className="text-marble/30 text-[8px] flex items-center gap-1">
+                      {comment.source === "zulip" && (
+                        <span className="text-ares-gold font-bold tracking-wider">[ZULIP]</span>
+                      )}
+                      {new Date(comment.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <p className="text-marble/75 leading-relaxed break-words">{comment.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {canEdit && (
+            <form onSubmit={handlePostComment} className="flex gap-1.5 mt-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Post reply to Zulip..."
+                className="flex-grow bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/30"
+                required
+                disabled={submitting}
+              />
+              <button
+                type="submit"
+                disabled={submitting || !newComment.trim()}
+                className="bg-ares-red hover:bg-ares-red-dark text-white px-2.5 py-1.5 rounded transition-all text-[10px] font-bold cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                Send
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
@@ -117,7 +237,8 @@ export default function KanbanPage() {
               subteam: data.subteam || "software",
               assignees: data.assignees || [],
               subtasks: data.subtasks || [],
-              createdAt: data.createdAt || new Date().toISOString()
+              createdAt: data.createdAt || new Date().toISOString(),
+              comments: data.comments || []
             } as TaskItem;
           });
           setTasks(list);
@@ -160,6 +281,20 @@ export default function KanbanPage() {
       await setDoc(doc(db, "tasks", taskId), newTask);
       setNewTaskTitle("");
       setNewTaskDesc("");
+
+      // Trigger Zulip notification
+      fetch("/api/tasks/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId,
+          action: "create",
+          title: newTask.title,
+          description: newTask.description,
+          priority: newTask.priority,
+          subteam: newTask.subteam,
+        }),
+      }).catch((err) => console.error("Zulip notification failed:", err));
     } catch (err) {
       console.warn("Unable to save task online, updating local UI array.", err);
       setTasks([newTask, ...tasks]);
@@ -169,9 +304,24 @@ export default function KanbanPage() {
   // 3. Action: Update Card Status (Mobile & Desktop Friendly Selects)
   const handleMoveStatus = async (taskId: string, newStatus: TaskItem["status"]) => {
     if (!canEdit) return;
+    const task = tasks.find((t) => t.id === taskId);
     try {
       const taskRef = doc(db, "tasks", taskId);
       await updateDoc(taskRef, { status: newStatus });
+
+      // Trigger Zulip notification
+      if (task) {
+        fetch("/api/tasks/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId,
+            action: "move",
+            title: task.title,
+            status: newStatus,
+          }),
+        }).catch((err) => console.error("Zulip notification failed:", err));
+      }
     } catch (err) {
       console.warn("Firestore offline, moving card locally.", err);
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
@@ -429,6 +579,9 @@ export default function KanbanPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Task Comments (Zulip discussion) */}
+                        <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
                       </div>
 
                       {/* Controls */}

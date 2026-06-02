@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { sendZulipAlert } from "@/lib/zulip";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,20 @@ export async function POST(request: NextRequest) {
     };
 
     await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
+
+    // Non-blocking trigger of Zulip notification to stream
+    try {
+      const messageBody = `**Name:** ${name.trim()}
+**Email:** ${email.trim()}
+**Type:** ${type}
+**Message:** ${metadata?.message || "(no message payload)"}
+[Open Command Center](https://aresfirst.org/dashboard)`;
+
+      sendZulipAlert("Applicant", `New ${type} Submission`, messageBody)
+        .catch(err => console.error("[Zulip Inquiries Alert] background error:", err));
+    } catch (e) {
+      console.error("[Zulip Inquiries Alert] error:", e);
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,98 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface TeamMember {
   userId: string;
   nickname: string;
   pronouns?: string;
   subteams: string[];
-  memberType: "student" | "alumni" | "mentor" | "coach";
+  memberType: "student" | "alumni" | "mentor" | "coach" | "parent";
   avatar: string;
   bio?: string;
   funFact?: string;
   colleges?: string[];
 }
-
-const MOCK_ROSTER: TeamMember[] = [
-  {
-    userId: "mem_dave",
-    nickname: "Coach Dave",
-    pronouns: "he/him",
-    subteams: ["Strategic Planning", "Safety Officer"],
-    memberType: "coach",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=dave",
-    bio: "Founding coach and operations lead. Specialises in team sustainability, corporate sponsorships, and logistics."
-  },
-  {
-    userId: "mem_kelley",
-    nickname: "Coach Kelley",
-    pronouns: "she/her",
-    subteams: ["Community Outreach", "Media"],
-    memberType: "coach",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=kelley",
-    bio: "Founding coach and outreach coordinator. Champions youth engagement and ensures ARES serves as an ambassador for FIRST."
-  },
-  {
-    userId: "mem_andrew",
-    nickname: "Mentor Andrew",
-    pronouns: "he/him",
-    subteams: ["Software Development", "Control Systems"],
-    memberType: "mentor",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=andrew",
-    bio: "MARS 2614 Alumnus. Guides students through strict Java OOP, sensors integration, and EKF odometry calibration."
-  },
-  {
-    userId: "mem_sina",
-    nickname: "Sina",
-    pronouns: "she/her",
-    subteams: ["Software Lead", "Drive Team"],
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=sina",
-    bio: "Writes the core drivetrain code and pathing algorithms. Hardens EKF filter states for high-frequency precision."
-  },
-  {
-    userId: "mem_gavin",
-    nickname: "Gavin",
-    pronouns: "he/him",
-    subteams: ["Mechanical Lead", "CAD Design"],
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=gavin",
-    bio: "Designs all structural robot sub-components in Onshape and manages 3D print operations in carbon fiber."
-  },
-  {
-    userId: "mem_elena",
-    nickname: "Elena",
-    pronouns: "she/her",
-    subteams: ["Manufacturing", "Intake Systems"],
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=elena",
-    bio: "Leads the intake mechanical team, machining precision polycarbonate parts and testing flywheel tolerances."
-  },
-  {
-    userId: "mem_brooke",
-    nickname: "Brooke",
-    pronouns: "she/her",
-    subteams: ["Alumni - 2024"],
-    memberType: "alumni",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=brooke",
-    colleges: ["stanford.edu"],
-    bio: "Former software co-lead. Currently pursuing a Computer Science degree at Stanford University."
-  },
-  {
-    userId: "mem_alex",
-    nickname: "Alex",
-    pronouns: "he/him",
-    subteams: ["Alumni - 2025"],
-    memberType: "alumni",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=alex",
-    colleges: ["wvu.edu"],
-    bio: "Former mechanical design lead. Currently studying Mechanical & Aerospace Engineering at West Virginia University."
-  }
-];
 
 const FILTER_SECTIONS = [
   { type: "all", label: "All Members", icon: <Users size={12} /> },
@@ -102,12 +27,62 @@ const FILTER_SECTIONS = [
   { type: "alumni", label: "Alumni", icon: <GraduationCap size={12} /> }
 ];
 
+const MEMBER_TYPE_ORDER: Record<string, number> = {
+  coach: 0,
+  mentor: 1,
+  student: 2,
+  alumni: 3
+};
+
 export default function AboutPage() {
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [roster, setRoster] = useState<TeamMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRoster = async () => {
+      try {
+        const querySnapshot = await getDocs(
+          query(collection(db, "user_profiles"), where("showOnAbout", "==", true))
+        );
+        const membersList = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            userId: doc.id,
+            nickname: data.nickname || "ARES Member",
+            pronouns: data.pronouns || "",
+            subteams: data.subteams || [],
+            memberType: data.memberType || "student",
+            avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`,
+            bio: data.bio || "",
+            colleges: data.colleges || []
+          } as TeamMember;
+        });
+
+        // Filter out parents
+        const visibleMembers = membersList.filter(m => m.memberType !== "parent");
+
+        // Sort by role order, then nickname
+        visibleMembers.sort((a, b) => {
+          const orderA = MEMBER_TYPE_ORDER[a.memberType] ?? 99;
+          const orderB = MEMBER_TYPE_ORDER[b.memberType] ?? 99;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.nickname.localeCompare(b.nickname);
+        });
+
+        setRoster(visibleMembers);
+      } catch (err) {
+        console.error("Error fetching roster:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRoster();
+  }, []);
 
   const filteredMembers = activeFilter === "all" 
-    ? MOCK_ROSTER 
-    : MOCK_ROSTER.filter(m => m.memberType === activeFilter);
+    ? roster 
+    : roster.filter(m => m.memberType === activeFilter);
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
@@ -206,13 +181,22 @@ export default function AboutPage() {
           </div>
 
           {/* Members Card Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
-            {filteredMembers.map(member => (
-              <div
-                key={member.userId}
-                className="bg-white/5 border border-white/10 hero-card p-6 flex flex-col justify-between hover:border-ares-red/30 transition-all duration-300 group backdrop-blur-sm shadow-md"
-              >
-                <div className="flex flex-col items-center text-center">
+          {isLoading ? (
+            <div className="col-span-full py-20 text-center">
+              <div className="animate-spin w-8 h-8 border-2 border-ares-red border-t-transparent rounded-full mx-auto" />
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="col-span-full text-center text-marble/35 p-20 glass-card ares-cut border border-white/10">
+              No team members found for this filter.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
+              {filteredMembers.map(member => (
+                <div
+                  key={member.userId}
+                  className="bg-white/5 border border-white/10 hero-card p-6 flex flex-col justify-between hover:border-ares-red/30 transition-all duration-300 group backdrop-blur-sm shadow-md"
+                >
+                  <div className="flex flex-col items-center text-center">
                   {/* PII Nickname compliance & avatar stack */}
                   <div className="w-16 h-16 rounded-2xl bg-black/45 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform flex items-center justify-center relative shrink-0 shadow-inner">
                     <img
@@ -255,8 +239,9 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        )}
+      </div>
+    </section>
 
       {/* ─── QUICK FAQS SECTION ─── */}
       <section className="py-24 bg-black/10 border-t border-white/5">
