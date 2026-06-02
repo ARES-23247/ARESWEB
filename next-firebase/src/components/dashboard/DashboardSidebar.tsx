@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface NavButtonProps {
@@ -89,6 +89,13 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="" icon={LayoutDashboard} label="Command Center" currentPath={pathname} />
             <NavButton tab="tasks" icon={ClipboardList} label="Kanban Tasks" currentPath={pathname} />
             <NavButton tab="scope" icon={Cpu} label="ARES-Scope" currentPath={pathname} />
+            
+            <div className="h-px bg-white/5 mx-2 my-2" />
+            
+            <NavButton tab="blog" icon={PenTool} label="Manage Blogs" currentPath={pathname} />
+            <NavButton tab="events" icon={Calendar} label="Manage Events" currentPath={pathname} />
+            <NavButton tab="documents" icon={BookOpen} label="Manage Docs" currentPath={pathname} />
+            <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             
