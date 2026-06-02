@@ -16,7 +16,8 @@ export default function Home() {
         {/* Motif Background Isolated Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
-            className="absolute right-[-10%] top-[10%] w-[85%] h-[85%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.ico')]"
+            className="absolute right-[-10%] top-[10%] w-[85%] h-[85%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
+            style={{ backgroundImage: "url('/favicon.ico')" }}
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
         </div>

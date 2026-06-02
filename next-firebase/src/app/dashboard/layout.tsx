@@ -59,7 +59,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Beautiful background patterns */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20" aria-hidden="true">
-          <div className="absolute right-[-10%] top-[10%] w-[70%] h-[70%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12 bg-[url('/favicon.ico')]"></div>
+          <div 
+            className="absolute right-[-10%] top-[10%] w-[70%] h-[70%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
+            style={{ backgroundImage: "url('/favicon.ico')" }}
+          ></div>
           <div className="absolute inset-0 bg-gradient-to-tr from-obsidian via-obsidian/95 to-ares-red/10"></div>
         </div>
         

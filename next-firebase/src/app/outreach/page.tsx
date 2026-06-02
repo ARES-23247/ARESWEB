@@ -77,9 +77,10 @@ export default function OutreachPage() {
       
       {/* Hero */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03]">
-          <div className="absolute right-[-5%] top-[10%] w-[60%] h-[60%] bg-contain bg-center bg-no-repeat bg-[url('/favicon.ico')]"></div>
-        </div>
+        <div 
+          className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03] bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/favicon.ico')" }}
+        ></div>
         
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <div className="inline-flex items-center gap-1.5 px-4 py-1.5 ares-cut-sm bg-ares-red/10 border border-ares-red/20 text-ares-red text-[10px] font-black uppercase tracking-widest mb-6">
