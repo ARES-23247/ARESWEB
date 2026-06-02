@@ -11,7 +11,9 @@ import {
   ChevronRight, 
   Clock,
   Sparkles,
-  Award
+  Award,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
@@ -227,6 +229,25 @@ export default function CalendarPage() {
 
   const selectedDayEvents = getEventsForDay(selectedDate);
 
+  const localToday = new Date(2026, 5, 2); // Reference operational date June 2, 2026
+
+  // Group events into upcoming and past relative to June 2, 2026
+  const upcomingEvents = filteredEvents
+    .filter((event) => {
+      if (!event.dateStart) return false;
+      const eventDate = new Date(event.dateStart);
+      return eventDate >= localToday;
+    })
+    .sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
+
+  const pastEvents = filteredEvents
+    .filter((event) => {
+      if (!event.dateStart) return false;
+      const eventDate = new Date(event.dateStart);
+      return eventDate < localToday;
+    })
+    .sort((a, b) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime());
+
   const formatEventTime = (isoString: string) => {
     if (!isoString) return "TBD";
     const d = new Date(isoString);
@@ -290,8 +311,8 @@ export default function CalendarPage() {
           </div>
         </header>
 
-        {/* ─── DUAL PANEL GRID & LIST ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* ─── INTERACTIVE MONTH-GRID CALENDAR (Top Dashboard Section) ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
           
           {/* LEFT: MONTH VIEW CALENDAR GRID (8 Columns) */}
           <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
@@ -459,6 +480,133 @@ export default function CalendarPage() {
               </div>
             </div>
 
+          </div>
+
+        </div>
+
+        {/* Elegant Section Divider */}
+        <div className="relative py-12 flex items-center">
+          <div className="flex-grow border-t border-white/10"></div>
+          <span className="flex-shrink mx-4 text-ares-bronze uppercase tracking-[0.3em] text-[9px] font-black font-heading flex items-center gap-2">
+            <Sparkles size={10} className="text-ares-gold" /> Detailed Timelines & Archive
+          </span>
+          <div className="flex-grow border-t border-white/10"></div>
+        </div>
+
+        {/* ─── CHRONOLOGICAL EVENT LOGS & ARCHIVE (Bottom Timeline Section) ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* LEFT COLUMN: UPCOMING EVENTS (8 Columns) */}
+          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+            <h2 className="text-xl font-black text-white font-heading uppercase tracking-widest flex items-center gap-2 mb-4">
+              <CalendarIcon size={16} className="text-ares-red" />
+              Upcoming Schedule
+            </h2>
+            
+            {upcomingEvents.length === 0 ? (
+              <div className="bg-black/20 border border-white/10 ares-cut-lg p-12 text-center text-marble/50 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                <Info size={16} className="text-ares-bronze" /> No upcoming events scheduled.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {upcomingEvents.map((event) => (
+                  <div 
+                    key={event.id} 
+                    className={`bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/20 p-6 ares-cut-lg ${
+                      event.category === "outreach"
+                        ? "border-ares-gold/20"
+                        : "border-ares-red/20"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                          event.category === "outreach" ? "bg-ares-gold text-black" : "bg-ares-red text-white"
+                        }`}>
+                          {event.category}
+                        </span>
+                        <span className="text-[10px] font-mono text-ares-bronze font-bold flex items-center gap-1">
+                          <CalendarIcon size={10} />
+                          {new Date(event.dateStart).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          })}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-marble/60 flex items-center gap-1.5 bg-black/30 px-3 py-1 rounded border border-white/5">
+                        <Clock size={10} className="text-ares-red" />
+                        {formatEventTime(event.dateStart)}
+                        {event.dateEnd && ` - ${formatEventTime(event.dateEnd)}`}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-black text-white leading-tight uppercase font-heading relative z-10 group-hover:text-ares-gold transition-colors">{event.title}</h3>
+                    <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">{event.description}</p>
+                    
+                    {event.location && (
+                      <div className="flex items-center gap-1.5 mt-4 text-[10px] font-bold text-ares-bronze bg-white/5 w-fit px-3 py-1 rounded border border-white/5 relative z-10">
+                        <MapPin size={10} className="text-ares-red" />
+                        {event.location}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: PAST ARCHIVE (4 Columns) */}
+          <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+            <h2 className="text-xl font-black text-white font-heading uppercase tracking-widest flex items-center gap-2 mb-4">
+              <Award size={16} className="text-ares-gold" />
+              Past Milestones & History
+            </h2>
+
+            <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-2xl space-y-6">
+              {pastEvents.length === 0 ? (
+                <div className="p-8 text-center text-marble/30 text-xs font-bold uppercase tracking-wider border border-dashed border-white/5 rounded">
+                  No past events recorded.
+                </div>
+              ) : (
+                <div className="relative border-l border-white/10 pl-4 ml-1 space-y-6">
+                  {pastEvents.map((event) => (
+                    <div key={event.id} className="relative group animate-fadeIn">
+                      {/* Timeline Dot */}
+                      <div className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
+                        event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
+                      }`} />
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-mono text-marble/40">
+                            {new Date(event.dateStart).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric"
+                            })}
+                          </span>
+                          <span className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
+                            event.category === "outreach" ? "bg-ares-gold/20 text-ares-gold" : "bg-ares-red/20 text-white"
+                          }`}>
+                            {event.category}
+                          </span>
+                        </div>
+                        
+                        <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">{event.title}</h4>
+                        <p className="text-[10px] text-marble/55 leading-relaxed">{event.description}</p>
+                        
+                        {event.location && (
+                          <p className="text-[8px] text-ares-bronze flex items-center gap-1 mt-1">
+                            <MapPin size={8} className="text-ares-red" /> {event.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
