@@ -99,18 +99,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center animate-pulse">
                   ⚡ Developer Bypass Active
                 </p>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => loginWithMockUser("coach.david@gmail.com", "admin", "Coach David")}
-                    className="w-full py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center truncate"
+                    title="Coach David"
                   >
                     David (Admin)
                   </button>
                   <button
                     type="button"
+                    onClick={() => loginWithMockUser("ares23247wv@gmail.com", "admin", "ARES Team")}
+                    className="w-full py-2 bg-ares-red/15 hover:bg-ares-red/25 border border-ares-red/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center truncate"
+                    title="ARES Team Gmail"
+                  >
+                    ARES Team
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => loginWithMockUser("lead.programmer@gmail.com", "programmer", "Programmer Lead")}
-                    className="w-full py-2 bg-ares-cyan/15 hover:bg-ares-cyan/25 border border-ares-cyan/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full py-2 bg-ares-cyan/15 hover:bg-ares-cyan/25 border border-ares-cyan/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center truncate"
+                    title="Lead Programmer"
                   >
                     Programmer
                   </button>

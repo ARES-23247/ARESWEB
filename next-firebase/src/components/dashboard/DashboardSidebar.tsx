@@ -96,6 +96,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="events" icon={Calendar} label="Manage Events" currentPath={pathname} />
             <NavButton tab="documents" icon={BookOpen} label="Manage Docs" currentPath={pathname} />
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
+            <NavButton tab="photos" icon={Settings} label="Google Sync" currentPath={pathname} />
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             
