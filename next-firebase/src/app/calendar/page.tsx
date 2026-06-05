@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { 
@@ -435,12 +436,13 @@ export default function CalendarPage() {
                   </div>
                 ) : (
                   selectedDayEvents.map((event) => (
-                    <div 
+                    <Link 
+                      href={`/events/${event.id}`}
                       key={event.id}
-                      className={`p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden ${
+                      className={`block p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
                         event.category === "outreach"
-                          ? "bg-ares-gold/5 border-ares-gold/20"
-                          : "bg-ares-red/5 border-ares-red/20"
+                          ? "bg-ares-gold/5 border-ares-gold/20 hover:bg-ares-gold/10"
+                          : "bg-ares-red/5 border-ares-red/20 hover:bg-ares-red/10"
                       }`}
                     >
                       <div className="flex justify-between items-center">
@@ -461,7 +463,7 @@ export default function CalendarPage() {
                           <MapPin size={8} className="text-ares-red" /> {event.location}
                         </p>
                       )}
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>
@@ -510,12 +512,13 @@ export default function CalendarPage() {
             ) : (
               <div className="space-y-6">
                 {upcomingEvents.map((event) => (
-                  <div 
+                  <Link 
+                    href={`/events/${event.id}`}
                     key={event.id} 
-                    className={`bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/20 p-6 ares-cut-lg ${
+                    className={`block bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/40 hover:-translate-y-0.5 p-6 ares-cut-lg ${
                       event.category === "outreach"
-                        ? "border-ares-gold/20"
-                        : "border-ares-red/20"
+                        ? "border-ares-gold/20 hover:shadow-[0_15px_30px_rgba(212,175,55,0.08)]"
+                        : "border-ares-red/20 hover:shadow-[0_15px_30px_rgba(192,0,0,0.08)]"
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
@@ -550,7 +553,7 @@ export default function CalendarPage() {
                         {event.location}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -577,7 +580,7 @@ export default function CalendarPage() {
                         event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
                       }`} />
                       
-                      <div className="space-y-1">
+                      <Link href={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
                         <div className="flex items-center gap-2">
                           <span className="text-[9px] font-mono text-marble/40">
                             {new Date(event.dateStart).toLocaleDateString("en-US", {
@@ -601,7 +604,7 @@ export default function CalendarPage() {
                             <MapPin size={8} className="text-ares-red" /> {event.location}
                           </p>
                         )}
-                      </div>
+                      </Link>
                     </div>
                   ))}
                 </div>

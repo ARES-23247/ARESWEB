@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Shield, Activity, MessageSquare } from "lucide-react";
+import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
 
 interface TaskComment {
   id: string;
@@ -31,6 +31,12 @@ interface TaskItem {
   subtasks: SubTask[];
   createdAt: string;
   comments?: TaskComment[];
+}
+
+interface MemberProfile {
+  email: string;
+  nickname: string;
+  avatar: string;
 }
 
 const MOCK_TASKS: TaskItem[] = [
@@ -75,33 +81,11 @@ const MOCK_TASKS: TaskItem[] = [
       { id: "sub_6", title: "Review pamphlet layouts with advisors", done: false }
     ],
     createdAt: new Date().toISOString()
-  },
-  {
-    id: "task_4",
-    title: "Zulip Two-Way Comment Sync",
-    description: "Implement webhook triggers in next-firebase to write back Zulip stream replies directly to task cards.",
-    status: "todo",
-    priority: "high",
-    subteam: "software",
-    assignees: ["lead.programmer@gmail.com"],
-    subtasks: [
-      { id: "sub_7", title: "Read Hono webhook router files", done: true }
-    ],
-    createdAt: new Date().toISOString(),
-    comments: [
-      {
-        id: "mock_comment_1",
-        author: "David Huss",
-        content: "We should map the incoming webhooks using a timing-safe secret check.",
-        createdAt: new Date().toISOString(),
-        source: "zulip"
-      }
-    ]
   }
 ];
 
 function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit: boolean; user: any }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -145,25 +129,25 @@ function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit:
   const commentsCount = task.comments?.length || 0;
 
   return (
-    <div className="mt-3 border-t border-white/5 pt-3">
+    <div className="mt-4 border-t border-white/5 pt-4">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-marble/55 hover:text-white transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-marble/55 hover:text-white transition-colors cursor-pointer"
       >
-        <MessageSquare size={12} className="text-ares-gold" />
+        <MessageSquare size={14} className="text-ares-gold" />
         <span>Discussion ({commentsCount})</span>
       </button>
 
       {expanded && (
         <div className="mt-3 space-y-3">
           {commentsCount > 0 && (
-            <div className="max-h-36 overflow-y-auto space-y-2 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
               {task.comments?.map((comment) => (
-                <div key={comment.id} className="text-[10px] bg-black/45 p-2 rounded border border-white/5">
+                <div key={comment.id} className="text-[11px] bg-black/45 p-2.5 rounded-lg border border-white/5">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="font-extrabold text-white">{comment.author}</span>
-                    <span className="text-marble/30 text-[8px] flex items-center gap-1">
+                    <span className="text-marble/30 text-[9px] flex items-center gap-1">
                       {comment.source === "zulip" && (
                         <span className="text-ares-gold font-bold tracking-wider">[ZULIP]</span>
                       )}
@@ -183,14 +167,14 @@ function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit:
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Post reply to Zulip..."
-                className="flex-grow bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/30"
+                className="flex-grow bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/30"
                 required
                 disabled={submitting}
               />
               <button
                 type="submit"
                 disabled={submitting || !newComment.trim()}
-                className="bg-ares-red hover:bg-ares-red-dark text-white px-2.5 py-1.5 rounded transition-all text-[10px] font-bold cursor-pointer disabled:opacity-50 shrink-0"
+                className="bg-ares-red hover:bg-ares-red-dark text-white px-3 py-1.5 rounded transition-all text-xs font-bold cursor-pointer disabled:opacity-50 shrink-0"
               >
                 Send
               </button>
@@ -202,9 +186,299 @@ function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit:
   );
 }
 
+function TaskDetailsModal({
+  taskId,
+  tasks,
+  teamProfiles,
+  canEdit,
+  user,
+  onClose,
+  onToggleSubtask,
+  onDeleteSubtask,
+  onAddSubtask,
+  onDeleteTask
+}: {
+  taskId: string;
+  tasks: TaskItem[];
+  teamProfiles: MemberProfile[];
+  canEdit: boolean;
+  user: any;
+  onClose: () => void;
+  onToggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  onAddSubtask: (taskId: string, title: string) => Promise<void>;
+  onDeleteTask: (taskId: string) => Promise<void>;
+}) {
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return null;
+
+  const [modalTitle, setModalTitle] = useState(task.title);
+  const [modalDesc, setModalDesc] = useState(task.description);
+  const [modalPriority, setModalPriority] = useState(task.priority);
+  const [modalSubteam, setModalSubteam] = useState(task.subteam);
+  const [modalStatus, setModalStatus] = useState(task.status);
+  const [modalAssignees, setModalAssignees] = useState<string[]>(task.assignees || []);
+  const [submitting, setSubmitting] = useState(false);
+  const [newSubTitle, setNewSubTitle] = useState("");
+
+  useEffect(() => {
+    setModalTitle(task.title);
+    setModalDesc(task.description);
+    setModalPriority(task.priority);
+    setModalSubteam(task.subteam);
+    setModalStatus(task.status);
+    setModalAssignees(task.assignees || []);
+  }, [task.id, task.title, task.description, task.priority, task.subteam, task.status, task.assignees]);
+
+  const handleSave = async () => {
+    if (!canEdit || submitting) return;
+    setSubmitting(true);
+    try {
+      const taskRef = doc(db, "tasks", task.id);
+      await updateDoc(taskRef, {
+        title: modalTitle.trim(),
+        description: modalDesc.trim(),
+        priority: modalPriority,
+        subteam: modalSubteam,
+        status: modalStatus,
+        assignees: modalAssignees
+      });
+
+      fetch("/api/tasks/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: task.id,
+          action: "update",
+          title: modalTitle.trim(),
+          priority: modalPriority,
+          subteam: modalSubteam,
+          status: modalStatus
+        }),
+      }).catch((err) => console.error("Zulip notification failed:", err));
+
+      onClose();
+    } catch (e) {
+      console.error("Failed to update task", e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddSub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubTitle.trim() || !canEdit) return;
+    await onAddSubtask(task.id, newSubTitle.trim());
+    setNewSubTitle("");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/20">
+          <div>
+            <span className="text-[9px] font-mono text-marble/40 uppercase tracking-widest block mb-0.5">Task ID: {task.id}</span>
+            <input
+              type="text"
+              value={modalTitle}
+              onChange={(e) => setModalTitle(e.target.value)}
+              className="bg-transparent border-none text-white text-lg font-bold p-0 focus:outline-none focus:ring-0 max-w-lg w-full placeholder:text-marble/30"
+              placeholder="Task Title"
+              disabled={!canEdit}
+            />
+          </div>
+          <button onClick={onClose} className="text-marble/40 hover:text-white transition-colors cursor-pointer text-xl p-1">
+            &times;
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+          <div className="lg:col-span-2 space-y-6">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+                Description
+              </label>
+              <textarea
+                value={modalDesc}
+                onChange={(e) => setModalDesc(e.target.value)}
+                placeholder="Detail technical requirements, subsystem specs, etc..."
+                className="w-full bg-black/60 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-ares-red h-32 transition-colors placeholder:text-marble/30"
+                disabled={!canEdit}
+              />
+            </div>
+
+            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
+              <h4 className="text-xs font-bold text-ares-gold uppercase tracking-wider">
+                Subtasks Checklist
+              </h4>
+
+              {task.subtasks?.length > 0 ? (
+                <div className="space-y-2">
+                  {task.subtasks.map((sub) => (
+                    <div key={sub.id} className="flex justify-between items-center group/sub">
+                      <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={sub.done}
+                          disabled={!canEdit}
+                          onChange={() => onToggleSubtask(task.id, sub.id)}
+                          className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                        />
+                        <span className={sub.done ? "line-through text-marble/40" : ""}>
+                          {sub.title}
+                        </span>
+                      </label>
+                      {canEdit && (
+                        <button
+                          onClick={() => onDeleteSubtask(task.id, sub.id)}
+                          className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
+                          title="Delete subtask"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
+              )}
+
+              {canEdit && (
+                <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
+                  <input
+                    type="text"
+                    value={newSubTitle}
+                    onChange={(e) => setNewSubTitle(e.target.value)}
+                    placeholder="New subtask..."
+                    className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newSubTitle.trim()}
+                    className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    Add
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
+          </div>
+
+          <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Status</label>
+              <select
+                value={modalStatus}
+                onChange={(e) => setModalStatus(e.target.value as any)}
+                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+                disabled={!canEdit}
+              >
+                <option value="todo">📋 To Do</option>
+                <option value="in_progress">⚙️ In Progress</option>
+                <option value="review">👀 In Review</option>
+                <option value="completed">✅ Completed</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
+              <select
+                value={modalSubteam}
+                onChange={(e) => setModalSubteam(e.target.value as any)}
+                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+                disabled={!canEdit}
+              >
+                <option value="software">Software</option>
+                <option value="hardware">Hardware</option>
+                <option value="business">Business</option>
+                <option value="outreach">Outreach</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
+              <select
+                value={modalPriority}
+                onChange={(e) => setModalPriority(e.target.value as any)}
+                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+                disabled={!canEdit}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+                Assignees ({modalAssignees.length})
+              </label>
+              <div className="bg-black/40 border border-white/10 rounded p-2.5 max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                {teamProfiles.map((member) => {
+                  const isAssigned = modalAssignees.includes(member.email);
+                  return (
+                    <label
+                      key={member.email}
+                      className="flex items-center gap-2 text-xs text-marble/80 cursor-pointer select-none hover:text-white"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAssigned}
+                        disabled={!canEdit}
+                        onChange={() => {
+                          if (isAssigned) {
+                            setModalAssignees(modalAssignees.filter((email) => email !== member.email));
+                          } else {
+                            setModalAssignees([...modalAssignees, member.email]);
+                          }
+                        }}
+                        className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                      />
+                      <img src={member.avatar} alt={member.nickname} className="w-4 h-4 rounded-full object-contain shrink-0 bg-black/50" />
+                      <span className="truncate">{member.nickname}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {canEdit && (
+              <div className="pt-3 border-t border-white/5 space-y-2">
+                <button
+                  onClick={handleSave}
+                  className="w-full bg-ares-red hover:bg-ares-red-dark text-white text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this task card?")) {
+                      onDeleteTask(task.id);
+                      onClose();
+                    }
+                  }}
+                  className="w-full bg-black/40 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/35 text-marble/60 hover:text-ares-red text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 size={12} /> Delete Card
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
   const [tasks, setTasks] = useState<TaskItem[]>(MOCK_TASKS);
+  const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
@@ -212,9 +486,12 @@ export default function KanbanPage() {
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [isLive, setIsLive] = useState(false);
 
+  const [draggedOverCol, setDraggedOverCol] = useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
-  // 1. Listen for real-time task updates
   useEffect(() => {
     try {
       const tasksRef = collection(db, "tasks");
@@ -258,7 +535,26 @@ export default function KanbanPage() {
     }
   }, []);
 
-  // 2. Action: Create a new Task
+  useEffect(() => {
+    try {
+      const profilesRef = collection(db, "user_profiles");
+      const unsubscribe = onSnapshot(profilesRef, (snapshot) => {
+        const list = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            email: doc.id,
+            nickname: data.nickname || data.firstName || doc.id,
+            avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`
+          };
+        });
+        setTeamProfiles(list);
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Failed to listen to user_profiles collection:", e);
+    }
+  }, []);
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
@@ -282,7 +578,6 @@ export default function KanbanPage() {
       setNewTaskTitle("");
       setNewTaskDesc("");
 
-      // Trigger Zulip notification
       fetch("/api/tasks/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -301,7 +596,6 @@ export default function KanbanPage() {
     }
   };
 
-  // 3. Action: Update Card Status (Mobile & Desktop Friendly Selects)
   const handleMoveStatus = async (taskId: string, newStatus: TaskItem["status"]) => {
     if (!canEdit) return;
     const task = tasks.find((t) => t.id === taskId);
@@ -309,7 +603,6 @@ export default function KanbanPage() {
       const taskRef = doc(db, "tasks", taskId);
       await updateDoc(taskRef, { status: newStatus });
 
-      // Trigger Zulip notification
       if (task) {
         fetch("/api/tasks/notify", {
           method: "POST",
@@ -324,17 +617,16 @@ export default function KanbanPage() {
       }
     } catch (err) {
       console.warn("Firestore offline, moving card locally.", err);
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
     }
   };
 
-  // 4. Action: Toggle Subtask Status
   const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
     if (!canEdit) return;
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const updatedSubtasks = task.subtasks.map(sub => 
+    const updatedSubtasks = task.subtasks.map((sub) =>
       sub.id === subtaskId ? { ...sub, done: !sub.done } : sub
     );
 
@@ -343,24 +635,76 @@ export default function KanbanPage() {
       await updateDoc(taskRef, { subtasks: updatedSubtasks });
     } catch (err) {
       console.warn("Firestore offline, toggling subtask locally.", err);
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t));
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
     }
   };
 
-  // 5. Action: Delete a Card
+  const handleDeleteSubtask = async (taskId: string, subtaskId: string) => {
+    if (!canEdit) return;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const updatedSubtasks = task.subtasks.filter((sub) => sub.id !== subtaskId);
+
+    try {
+      const taskRef = doc(db, "tasks", taskId);
+      await updateDoc(taskRef, { subtasks: updatedSubtasks });
+    } catch (err) {
+      console.warn("Firestore offline, deleting subtask locally.", err);
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
+    }
+  };
+
+  const handleAddSubtaskDirect = async (taskId: string, title: string) => {
+    if (!title.trim() || !canEdit) return;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const newSub: SubTask = {
+      id: `sub_${Date.now()}`,
+      title: title.trim(),
+      done: false
+    };
+    const updatedSubtasks = [...(task.subtasks || []), newSub];
+
+    try {
+      const taskRef = doc(db, "tasks", taskId);
+      await updateDoc(taskRef, { subtasks: updatedSubtasks });
+    } catch (err) {
+      console.warn("Firestore offline, adding subtask locally.", err);
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
+    }
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this task card?")) return;
-
     try {
       await deleteDoc(doc(db, "tasks", taskId));
     } catch (err) {
       console.warn("Firestore offline, deleting card locally.", err);
-      setTasks(tasks.filter(t => t.id !== taskId));
+      setTasks(tasks.filter((t) => t.id !== taskId));
     }
   };
 
-  // 6. Filter tasks by subteam
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData("text/plain", taskId);
+    setDraggingTaskId(taskId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTaskId(null);
+    setDraggedOverCol(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStatus: TaskItem["status"]) => {
+    e.preventDefault();
+    setDraggedOverCol(null);
+    setDraggingTaskId(null);
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (!taskId) return;
+    await handleMoveStatus(taskId, newStatus);
+  };
+
   const filteredTasks = tasks.filter(
     (t) => filterSubteam === "all" || t.subteam === filterSubteam
   );
@@ -374,7 +718,6 @@ export default function KanbanPage() {
 
   return (
     <div className="space-y-10 w-full">
-      
       {/* Header */}
       <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
@@ -495,7 +838,7 @@ export default function KanbanPage() {
           return (
             <div
               key={col.id}
-              className="glass-card p-5 border border-white/10 min-h-[550px] flex flex-col rounded-2xl"
+              className="glass-card p-5 border border-white/10 min-h-[550px] flex flex-col rounded-2xl bg-black/10"
             >
               <h3 className="font-extrabold text-base text-white border-b border-white/5 pb-4 mb-4 flex items-center justify-between font-heading uppercase tracking-tight">
                 <span className="flex items-center gap-2">
@@ -506,18 +849,45 @@ export default function KanbanPage() {
                 </span>
               </h3>
 
-              <div className="space-y-4 flex-1">
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(e, col.id)}
+                onDragEnter={() => setDraggedOverCol(col.id)}
+                onDragLeave={() => setDraggedOverCol(null)}
+                className={`space-y-4 flex-1 transition-all duration-300 ${
+                  draggedOverCol === col.id ? "bg-white/5 border border-dashed border-ares-red/20 rounded-xl p-2" : ""
+                }`}
+              >
                 {colTasks.map((task) => {
-                  const totalSub = task.subtasks.length;
-                  const doneSub = task.subtasks.filter((s) => s.done).length;
+                  const totalSub = task.subtasks?.length || 0;
+                  const doneSub = task.subtasks?.filter((s) => s.done).length || 0;
                   const progressPercent = totalSub > 0 ? (doneSub / totalSub) * 100 : 0;
+                  const commentsCount = task.comments?.length || 0;
 
                   return (
                     <div
                       key={task.id}
-                      className="bg-black/35 border border-white/5 rounded-xl p-4.5 transition-all duration-200 hover:border-ares-red hover:-translate-y-0.5 shadow-sm flex flex-col justify-between gap-4"
+                      draggable={canEdit}
+                      onDragStart={(e) => handleDragStart(e, task.id)}
+                      onDragEnd={handleDragEnd}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (
+                          target.closest("button") ||
+                          target.closest("select") ||
+                          target.closest("input") ||
+                          target.closest("a") ||
+                          target.closest("form")
+                        ) {
+                          return;
+                        }
+                        setEditingTaskId(task.id);
+                      }}
+                      className={`bg-black/35 border border-white/5 rounded-xl p-4.5 transition-all duration-200 hover:border-ares-red hover:-translate-y-0.5 shadow-sm flex flex-col justify-between gap-4 cursor-grab active:cursor-grabbing ${
+                        draggingTaskId === task.id ? "opacity-30 border-dashed border-white/20" : ""
+                      }`}
                     >
-                      <div>
+                      <div className={draggingTaskId ? "pointer-events-none" : ""}>
                         {/* Card tags */}
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-[9px] bg-white/5 border border-white/10 px-2 py-0.5 rounded font-black uppercase tracking-wider text-marble/80">
@@ -536,79 +906,63 @@ export default function KanbanPage() {
                           </span>
                         </div>
 
-                        <h4 className="font-bold text-white leading-snug mb-2 font-heading text-sm">
+                        <h4 className="font-bold text-white leading-snug mb-2 font-heading text-sm hover:text-ares-gold transition-colors">
                           {task.title}
                         </h4>
-                        <p className="text-marble/60 text-[11px] leading-relaxed mb-4">{task.description}</p>
+                        <p className="text-marble/60 text-[11px] leading-relaxed mb-4 line-clamp-3">
+                          {task.description || "No description provided."}
+                        </p>
 
-                        {/* Subtasks checklists */}
+                        {/* Subtasks Progress stats */}
                         {totalSub > 0 && (
-                          <div className="mb-2 bg-black/45 p-3 rounded-lg border border-white/5">
-                            <div className="flex justify-between items-center text-[9px] font-bold text-marble/55 mb-2 uppercase tracking-wider">
-                              <span>Subtasks Progress</span>
+                          <div className="mb-2 bg-black/45 p-3 rounded-lg border border-white/5 space-y-2">
+                            <div className="flex justify-between items-center text-[9px] font-bold text-marble/55 uppercase tracking-wider">
+                              <span className="flex items-center gap-1">
+                                <CheckSquare size={10} className="text-ares-gold" /> Subtasks
+                              </span>
                               <span>
                                 {doneSub}/{totalSub}
                               </span>
                             </div>
-                            {/* Progress bar */}
-                            <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden mb-3 border border-white/5">
+                            <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
                               <div
                                 className="bg-ares-red h-full rounded-full transition-all duration-300"
                                 style={{ width: `${progressPercent}%` }}
                               />
                             </div>
-                            {/* Subtask list */}
-                            <div className="space-y-2">
-                              {task.subtasks.map((sub) => (
-                                <label
-                                  key={sub.id}
-                                  className="flex items-center gap-2 text-[11px] text-marble/80 cursor-pointer select-none hover:text-white"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={sub.done}
-                                    disabled={!canEdit}
-                                    onChange={() => handleToggleSubtask(task.id, sub.id)}
-                                    className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                                  />
-                                  <span className={sub.done ? "line-through text-marble/40" : ""}>
-                                    {sub.title}
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
                           </div>
                         )}
-
-                        {/* Task Comments (Zulip discussion) */}
-                        <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
                       </div>
 
-                      {/* Controls */}
-                      <div className="border-t border-white/5 pt-3 flex justify-between items-center gap-2 mt-auto">
-                        {canEdit ? (
-                          <>
-                            <select
-                              value={task.status}
-                              onChange={(e) => handleMoveStatus(task.id, e.target.value as any)}
-                              className="bg-black/60 border border-white/10 text-marble/95 text-[10px] font-black uppercase rounded px-2.5 py-1.5 focus:outline-none focus:border-ares-red cursor-pointer"
-                            >
-                              <option value="todo">📋 To Do</option>
-                              <option value="in_progress">⚙️ In Progress</option>
-                              <option value="review">👀 In Review</option>
-                              <option value="completed">✅ Completed</option>
-                            </select>
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="text-marble/40 hover:text-ares-red transition-colors p-1 cursor-pointer"
-                              title="Delete task card"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[9px] text-marble/45 italic flex items-center gap-1 font-semibold uppercase tracking-wider">
-                            🔒 Read-only
+                      {/* Card Footer Details */}
+                      <div className="border-t border-white/5 pt-3 flex justify-between items-center gap-2 mt-auto text-[10px]">
+                        {/* Assignees visual stack */}
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                          {task.assignees?.slice(0, 4).map((email) => {
+                            const profile = teamProfiles.find((p) => p.email === email);
+                            const avatar = profile?.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${email}`;
+                            const name = profile?.nickname || email;
+                            return (
+                              <img
+                                key={email}
+                                className="inline-block h-5 w-5 rounded-full ring-1 ring-black bg-black object-contain shrink-0"
+                                src={avatar}
+                                alt={name}
+                                title={name}
+                              />
+                            );
+                          })}
+                          {task.assignees && task.assignees.length > 4 && (
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/5 border border-white/10 text-white font-bold text-[8px] z-10">
+                              +{task.assignees.length - 4}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Comments count indicator */}
+                        {commentsCount > 0 && (
+                          <span className="flex items-center gap-1.5 text-[10px] font-black text-marble/45 uppercase tracking-wider">
+                            <MessageSquare size={11} className="text-ares-gold" /> {commentsCount}
                           </span>
                         )}
                       </div>
@@ -620,6 +974,22 @@ export default function KanbanPage() {
           );
         })}
       </div>
+
+      {/* Details Modal */}
+      {editingTaskId && (
+        <TaskDetailsModal
+          taskId={editingTaskId}
+          tasks={tasks}
+          teamProfiles={teamProfiles}
+          canEdit={canEdit}
+          user={user}
+          onClose={() => setEditingTaskId(null)}
+          onToggleSubtask={handleToggleSubtask}
+          onDeleteSubtask={handleDeleteSubtask}
+          onAddSubtask={handleAddSubtaskDirect}
+          onDeleteTask={handleDeleteTask}
+        />
+      )}
     </div>
   );
 }
