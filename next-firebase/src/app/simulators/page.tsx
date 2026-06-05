@@ -51,6 +51,11 @@ export default function TrigRoboticsSimPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   
+  // EKF config overrides states
+  const [visionStdDevX, setVisionStdDevX] = useState(0.05);
+  const [visionStdDevY, setVisionStdDevY] = useState(0.05);
+  const [visionStdDevTheta, setVisionStdDevTheta] = useState(0.1);
+  
   const wsRef = useRef<WebSocket | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -119,9 +124,16 @@ export default function TrigRoboticsSimPage() {
 
   const startSimulator = () => {
     if (!wsRef.current || daemonStatus !== 'connected') return;
-    setLogs((prev) => [...prev, '[System] Requesting simulator launch...']);
+    setLogs((prev) => [...prev, '[System] Requesting simulator launch with EKF config overrides...']);
     setSimState('building');
-    wsRef.current.send(JSON.stringify({ type: "start" }));
+    wsRef.current.send(JSON.stringify({
+      type: "start",
+      params: {
+        visionStdDevX,
+        visionStdDevY,
+        visionStdDevTheta
+      }
+    }));
   };
 
   const stopSimulator = () => {
@@ -884,6 +896,60 @@ export default function TrigRoboticsSimPage() {
                   }`}>
                     {simState}
                   </span>
+                </div>
+              </div>
+
+              {/* EKF Config Overrides Card */}
+              <div className="glass-card p-6 border border-white/10 bg-neutral-950/65 flex flex-col gap-4 shadow-xl">
+                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
+                  <Sliders size={14} /> EKF Std Dev Overrides
+                </h3>
+                <div className="flex flex-col gap-4 font-mono text-[10px]">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="text-marble/55">Vision Std Dev X:</span>
+                      <span className="text-white font-bold">{visionStdDevX.toFixed(3)}m</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.01"
+                      max="1.0"
+                      step="0.01"
+                      value={visionStdDevX}
+                      onChange={(e) => setVisionStdDevX(parseFloat(e.target.value))}
+                      className="w-full accent-ares-gold bg-black/40 h-1.5 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="text-marble/55">Vision Std Dev Y:</span>
+                      <span className="text-white font-bold">{visionStdDevY.toFixed(3)}m</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.01"
+                      max="1.0"
+                      step="0.01"
+                      value={visionStdDevY}
+                      onChange={(e) => setVisionStdDevY(parseFloat(e.target.value))}
+                      className="w-full accent-ares-gold bg-black/40 h-1.5 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="text-marble/55">Vision Std Dev Theta:</span>
+                      <span className="text-white font-bold">{(visionStdDevTheta * 180 / Math.PI).toFixed(1)}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.01"
+                      max="0.5"
+                      step="0.01"
+                      value={visionStdDevTheta}
+                      onChange={(e) => setVisionStdDevTheta(parseFloat(e.target.value))}
+                      className="w-full accent-ares-gold bg-black/40 h-1.5 rounded cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
 

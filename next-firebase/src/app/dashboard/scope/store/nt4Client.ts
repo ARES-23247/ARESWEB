@@ -117,7 +117,8 @@ export class NT4Client {
     if (!name) return;
 
     // Standard double array prefix or pose coordinates
-    if (name === "AdvantageScope/RobotPose" || name === "AdvantageScope/RawOdomPose" || name === "AdvantageScope/VisionPose") {
+    const isPoseTopic = name.includes("Pose") || name.endsWith("EstimatedPose") || name.endsWith("TargetPose");
+    if (isPoseTopic) {
       const arrayLength = (buffer.byteLength - 16) / 8;
       const values: number[] = [];
       for (let i = 0; i < arrayLength; i++) {
@@ -162,14 +163,38 @@ export class NT4Client {
       return fallback;
     };
 
-    const x = getVal(["Drive/Pose_X", "Drive/Odom_X", "Drive/PoseX", "PoseX", "x"], 0.0);
-    const y = getVal(["Drive/Pose_Y", "Drive/Odom_Y", "Drive/PoseY", "PoseY", "y"], 0.0);
+    let x = getVal(["Drive/Pose_X", "Drive/Odom_X", "Drive/PoseX", "PoseX", "x"], 0.0);
+    let y = getVal(["Drive/Pose_Y", "Drive/Odom_Y", "Drive/PoseY", "PoseY", "y"], 0.0);
     let heading = getVal(["Drive/Drive_Heading", "Drive/Pose_Heading", "Drive/Odom_Heading", "PoseHeading", "heading"], 0.0);
+
+    // Look for pose array overrides
+    const poseArrayKeys = [
+      "AdvantageKit/RealOutputs/ARES/EstimatedPose",
+      "AdvantageKit/RealOutputs/ARES/TargetPose",
+      "AdvantageScope/RobotPose",
+      "AdvantageScope/RawOdomPose",
+      "AdvantageScope/VisionPose",
+      "estimatedPose",
+      "targetPose",
+      "RealOutputs/ARES/EstimatedPose",
+      "RealOutputs/ARES/TargetPose",
+      "ARES/EstimatedPose",
+      "ARES/TargetPose"
+    ];
+    for (const key of poseArrayKeys) {
+      const arr = this.currentFrameData[key];
+      if (Array.isArray(arr) && arr.length >= 3) {
+        x = Number(arr[0]) || 0;
+        y = Number(arr[1]) || 0;
+        heading = Number(arr[2]) || 0;
+        break;
+      }
+    }
 
     // Scale coordinate metrics if raw meters are detected to match web visualization space
     let scaledX = x;
     let scaledY = y;
-    if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0) {
+    if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0 && (x !== 0 || y !== 0)) {
       // Metric EKF meters -> visual inches, shifted to bottom-left arena space
       scaledX = -y * 39.3701 + 72;
       scaledY = x * 39.3701 + 72;

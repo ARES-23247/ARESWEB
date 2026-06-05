@@ -50,8 +50,13 @@ export default function ScopeDashboard() {
   const [ipAddress, setIpAddress] = useState("192.168.43.1");
   const [showLiveModal, setShowLiveModal] = useState(false);
   
+  // Video Sync States
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pathInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const ntClientRef = useRef<NT4Client | null>(null);
 
   // High-performance 60 FPS animation/playback loop
@@ -74,6 +79,35 @@ export default function ScopeDashboard() {
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData, isStreaming]);
+
+  // Sync video playback speed to master playbackSpeed
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, videoUrl]);
+
+  // Sync play/pause states of video to master isPlaying
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isPlaying) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isPlaying, videoUrl]);
+
+  // Sync video current time to master currentTimeMs
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const timeSec = currentTimeMs / 1000;
+    // Only update if difference is > 0.15 seconds to avoid sync fighting / jitter
+    if (Math.abs(video.currentTime - timeSec) > 0.15) {
+      video.currentTime = timeSec;
+    }
+  }, [currentTimeMs, videoUrl]);
 
   // Securely close any active live connections on unmount
   useEffect(() => {
@@ -208,9 +242,9 @@ export default function ScopeDashboard() {
           );
         };
 
-        const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x"]);
-        const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y"]);
-        const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading"]);
+        const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x", "estimatedpose[0]", "robotpose[0]"]);
+        const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y", "estimatedpose[1]", "robotpose[1]"]);
+        const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading", "estimatedpose[2]", "robotpose[2]"]);
         const timeIdx = findColIndex(["timestampms", "timestamp", "time", "ms"]);
 
         // Process line rows
@@ -470,6 +504,26 @@ export default function ScopeDashboard() {
             ref={pathInputRef}
             onChange={handlePathInput}
             accept=".path,.json"
+            className="hidden"
+          />
+
+          {/* Match Video Upload */}
+          <button
+            onClick={() => videoInputRef.current?.click()}
+            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md"
+          >
+            <Eye size={12} /> Match Video
+          </button>
+          <input
+            type="file"
+            ref={videoInputRef}
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                const url = URL.createObjectURL(e.target.files[0]);
+                setVideoUrl(url);
+              }
+            }}
+            accept="video/*"
             className="hidden"
           />
         </div>
