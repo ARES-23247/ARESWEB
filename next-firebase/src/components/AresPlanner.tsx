@@ -110,6 +110,22 @@ export default function AresPlanner({
   const [customBgImage, setCustomBgImage] = useState<HTMLImageElement | null>(null);
   const [customBgName, setCustomBgName] = useState<string>("");
 
+  // Pre-loaded DECODE background images
+  const [decodeDarkImage, setDecodeDarkImage] = useState<HTMLImageElement | null>(null);
+  const [decodeLightImage, setDecodeLightImage] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const darkImg = new Image();
+      darkImg.onload = () => setDecodeDarkImage(darkImg);
+      darkImg.src = "/fields/decode.webp";
+
+      const lightImg = new Image();
+      lightImg.onload = () => setDecodeLightImage(lightImg);
+      lightImg.src = "/fields/decode-light.webp";
+    }
+  }, []);
+
   // Robot Upload configs
   const [robotIp, setRobotIp] = useState("192.168.43.1");
   const [syncStatus, setSyncStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -349,8 +365,13 @@ export default function AresPlanner({
       ctx.clearRect(0, 0, w, h);
 
       // Draw custom background or season draw routines
+      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+      const decodeBg = isDark ? decodeDarkImage : decodeLightImage;
+
       if (season === "custom" && customBgImage) {
         ctx.drawImage(customBgImage, 0, 0, w, h);
+      } else if (season === "decode" && decodeBg) {
+        ctx.drawImage(decodeBg, 0, 0, w, h);
       } else {
         // Draw standard tiles (6x6 grid of 24" squares)
         ctx.fillStyle = "#161618";
@@ -733,7 +754,7 @@ export default function AresPlanner({
     return () => {
       cancelAnimationFrame(animFrameId);
     };
-  }, [canvasDim, season, customBgImage, selectedWaypointIdx, selectedMarkerId]);
+  }, [canvasDim, season, customBgImage, selectedWaypointIdx, selectedMarkerId, decodeDarkImage, decodeLightImage]);
 
   // Handle waypoint deletions
   const handleDeleteWaypoint = (idx: number) => {
