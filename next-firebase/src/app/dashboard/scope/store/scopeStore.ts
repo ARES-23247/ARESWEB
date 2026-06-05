@@ -59,6 +59,11 @@ interface ScopeState {
   plannedPath: PlannedPathPoint[] | null;
   selectedKeys: string[];
   
+  // Streaming States
+  isStreaming: boolean;
+  streamSource: "local" | "cloud" | null;
+  connectionStatus: "disconnected" | "connecting" | "connected";
+  
   // Actions
   setPlaying: (isPlaying: boolean) => void;
   setCurrentTimeMs: (time: number) => void;
@@ -67,6 +72,12 @@ interface ScopeState {
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
+  
+  setStreaming: (isStreaming: boolean) => void;
+  setStreamSource: (source: "local" | "cloud" | null) => void;
+  setConnectionStatus: (status: "disconnected" | "connecting" | "connected") => void;
+  addLiveFrame: (frame: TelemetryFrame) => void;
+
   getCurrentFrame: () => TelemetryFrame | null;
 }
 
@@ -77,6 +88,10 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   telemetryData: null,
   plannedPath: null,
   selectedKeys: ["battery", "loopTime"],
+  
+  isStreaming: false,
+  streamSource: null,
+  connectionStatus: "disconnected",
 
   setPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTimeMs: (currentTimeMs) => {
@@ -103,6 +118,78 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
       ? state.selectedKeys.filter((k) => k !== key)
       : [...state.selectedKeys, key];
     return { selectedKeys: nextKeys };
+  }),
+  
+  setStreaming: (isStreaming) => set({ isStreaming }),
+  setStreamSource: (streamSource) => set({ streamSource }),
+  setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+  addLiveFrame: (frame) => set((state) => {
+    const currentData = state.telemetryData || {
+      runId: "live",
+      opModeName: "Live Stream",
+      timestamps: [],
+      coords: [],
+      battery: [],
+      loopTime: [],
+      motors: { lf: [], rf: [], lr: [], rr: [] },
+      slides: { height: [], current: [] },
+      intake: { current: [] },
+      maxTimeMs: 0
+    };
+
+    const maxBufferSize = 300; // ~6 seconds rolling buffer at 50Hz
+    
+    const nextTimestamps = [...currentData.timestamps, frame.timestamp];
+    const nextCoords = [...currentData.coords, { x: frame.x, y: frame.y, heading: frame.heading }];
+    const nextBattery = [...currentData.battery, frame.battery];
+    const nextLoopTime = [...currentData.loopTime, frame.loopTime];
+    
+    const nextMotors = {
+      lf: [...currentData.motors.lf, frame.motors.lf],
+      rf: [...currentData.motors.rf, frame.motors.rf],
+      lr: [...currentData.motors.lr, frame.motors.lr],
+      rr: [...currentData.motors.rr, frame.motors.rr],
+    };
+
+    const nextSlides = {
+      height: [...currentData.slides.height, frame.slides.height],
+      current: [...currentData.slides.current, frame.slides.current],
+    };
+
+    const nextIntake = {
+      current: [...currentData.intake.current, frame.intake.current],
+    };
+
+    if (nextTimestamps.length > maxBufferSize) {
+      nextTimestamps.shift();
+      nextCoords.shift();
+      nextBattery.shift();
+      nextLoopTime.shift();
+      nextMotors.lf.shift();
+      nextMotors.rf.shift();
+      nextMotors.lr.shift();
+      nextMotors.rr.shift();
+      nextSlides.height.shift();
+      nextSlides.current.shift();
+      nextIntake.current.shift();
+    }
+
+    const updatedData = {
+      ...currentData,
+      timestamps: nextTimestamps,
+      coords: nextCoords,
+      battery: nextBattery,
+      loopTime: nextLoopTime,
+      motors: nextMotors,
+      slides: nextSlides,
+      intake: nextIntake,
+      maxTimeMs: nextTimestamps[nextTimestamps.length - 1] - nextTimestamps[0]
+    };
+
+    return {
+      telemetryData: updatedData,
+      currentTimeMs: updatedData.maxTimeMs
+    };
   }),
   
   getCurrentFrame: () => {

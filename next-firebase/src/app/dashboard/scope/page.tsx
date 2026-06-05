@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useScopeStore, TelemetryData } from "./store/scopeStore";
+import { NT4Client } from "./store/nt4Client";
 import WebGLReplayCanvas from "./components/WebGLReplayCanvas";
 import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
@@ -17,7 +18,10 @@ import {
   Sparkles,
   RefreshCw,
   Cpu,
-  Compass
+  Compass,
+  Wifi,
+  WifiOff,
+  X
 } from "lucide-react";
 
 export default function ScopeDashboard() {
@@ -26,22 +30,33 @@ export default function ScopeDashboard() {
     currentTimeMs, 
     playbackSpeed, 
     telemetryData, 
+    isStreaming,
+    streamSource,
+    connectionStatus,
     setPlaying, 
     setCurrentTimeMs, 
     setPlaybackSpeed, 
     setTelemetryData,
-    setPlannedPath
+    setPlannedPath,
+    setStreaming,
+    setStreamSource,
+    setConnectionStatus,
+    addLiveFrame
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [ipAddress, setIpAddress] = useState("192.168.43.1");
+  const [showLiveModal, setShowLiveModal] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pathInputRef = useRef<HTMLInputElement | null>(null);
+  const ntClientRef = useRef<NT4Client | null>(null);
 
   // High-performance 60 FPS animation/playback loop
   useEffect(() => {
-    if (!isPlaying || !telemetryData) return;
+    if (!isPlaying || !telemetryData || isStreaming) return;
 
     let lastTime = performance.now();
     let animationFrameId: number;
@@ -58,7 +73,54 @@ export default function ScopeDashboard() {
 
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData]);
+  }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData, isStreaming]);
+
+  // Securely close any active live connections on unmount
+  useEffect(() => {
+    return () => {
+      if (ntClientRef.current) {
+        ntClientRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleConnectLive = () => {
+    if (ntClientRef.current) {
+      ntClientRef.current.disconnect();
+    }
+
+    setStreaming(true);
+    setStreamSource("local");
+    setTelemetryData(null); // Clear static log logs
+    setPlaying(false);
+
+    const client = new NT4Client(
+      ipAddress,
+      (frame) => {
+        addLiveFrame(frame);
+      },
+      (status) => {
+        setConnectionStatus(status);
+        if (status === "disconnected") {
+          setStreaming(false);
+        }
+      }
+    );
+
+    ntClientRef.current = client;
+    client.connect();
+    setShowLiveModal(false);
+  };
+
+  const handleDisconnectLive = () => {
+    if (ntClientRef.current) {
+      ntClientRef.current.disconnect();
+      ntClientRef.current = null;
+    }
+    setStreaming(false);
+    setStreamSource(null);
+    setConnectionStatus("disconnected");
+  };
 
   // Fetch telemetry log (BigQuery / Local Fallback)
   const fetchTelemetryRun = async (runId: string) => {
@@ -77,8 +139,10 @@ export default function ScopeDashboard() {
   };
 
   useEffect(() => {
-    fetchTelemetryRun(selectedRunId);
-  }, [selectedRunId]);
+    if (!isStreaming) {
+      fetchTelemetryRun(selectedRunId);
+    }
+  }, [selectedRunId, isStreaming]);
 
   // Format time (ms -> "M:SS.S")
   const formatTime = (ms: number) => {
@@ -117,6 +181,7 @@ export default function ScopeDashboard() {
 
   // Local log parsing engine (Zero UI block)
   const parseLocalLogFile = (file: File) => {
+    handleDisconnectLive();
     setLoading(true);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -310,6 +375,56 @@ export default function ScopeDashboard() {
 
         {/* Database & File Controls */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Connection Status Badge */}
+          {isStreaming && (
+            <div className={`flex items-center gap-2 border px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider ${
+              connectionStatus === "connected"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : connectionStatus === "connecting"
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                : "bg-white/5 text-marble/50 border-white/5"
+            }`}>
+              {connectionStatus === "connected" && (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>Connected</span>
+                </>
+              )}
+              {connectionStatus === "connecting" && (
+                <>
+                  <RefreshCw size={12} className="animate-spin text-amber-400" />
+                  <span>Connecting</span>
+                </>
+              )}
+              {connectionStatus === "disconnected" && (
+                <>
+                  <WifiOff size={12} className="text-marble/40" />
+                  <span>Disconnected</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Live Stream Button */}
+          {isStreaming ? (
+            <button
+              onClick={handleDisconnectLive}
+              className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/20 hover:border-red-500/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
+            >
+              <WifiOff size={12} /> Disconnect
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowLiveModal(true)}
+              className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
+            >
+              <Wifi size={12} /> Go Live
+            </button>
+          )}
+
           {/* Active Run Selector */}
           <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">
             <Database size={14} className="text-ares-gold" />
@@ -468,6 +583,63 @@ export default function ScopeDashboard() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {showLiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300">
+          <div className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative">
+            <button
+              onClick={() => setShowLiveModal(false)}
+              className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
+            >
+              <X size={16} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center text-ares-gold">
+                <Wifi size={20} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
+                  Connect Live Stream
+                </h3>
+                <p className="text-marble/55 text-[10px] font-bold uppercase tracking-wider">
+                  NetworkTables v4 WebSocket
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+                Robot IP Address / Host
+              </label>
+              <input
+                type="text"
+                value={ipAddress}
+                onChange={(e) => setIpAddress(e.target.value)}
+                placeholder="192.168.43.1"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-ares-gold transition-colors"
+              />
+              <p className="text-[10px] text-marble/40 mt-1 leading-normal">
+                Default for FTC Wi-Fi Direct: <code className="text-ares-gold">192.168.43.1</code>. Control Hub / ADB: <code className="text-ares-gold">localhost</code> or <code className="text-ares-gold">192.168.43.1</code>.
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => setShowLiveModal(false)}
+                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConnectLive}
+                className="flex-1 py-3 bg-ares-gold text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
+              >
+                <Wifi size={12} className="stroke-[3]" /> Connect
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
