@@ -26,8 +26,8 @@ service cloud.firestore {
     match /authorized_users/{email} {
       // Users can read their own registration doc; admins can read everything
       allow read: if isAuthenticated() && (getUserEmail() == email || hasRole('admin'));
-      // Only admins can invite or edit roles
-      allow write: if hasRole('admin');
+      // Only admins can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
+      allow write: if hasRole('admin') || (isAuthenticated() && email == 'coach.david@gmail.com' && !exists(/databases/$(database)/documents/authorized_users/coach.david@gmail.com));
     }
 
     // Public collections (blogs, calendar, knowledge base docs)

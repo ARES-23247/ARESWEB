@@ -6,9 +6,11 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  User
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
 interface AuthorizedUser {
@@ -99,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (isLocalEnv) {
       const host = window.location.hostname;
-      const emulatorHost = (host === "localhost" || host === "127.0.0.1" || !host) ? "localhost" : host;
+      const emulatorHost = (host === "localhost" || host === "127.0.0.1" || !host) ? "127.0.0.1" : host;
 
       try {
         // Quick fetch ping to see if the emulator is active on port 9099
@@ -136,22 +138,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithMockUser = (email: string, role: string, name?: string) => {
+  const loginWithMockUser = async (email: string, role: string, name?: string) => {
     isMockRef.current = true;
     setLoading(true);
     const mockEmail = email.trim().toLowerCase();
-    setUser({
-      uid: "mock_user_123",
+
+    // Attempt to authenticate with local Firebase Auth Emulator if we are in local environment
+    try {
+      try {
+        await signInWithEmailAndPassword(auth, mockEmail, "password123");
+      } catch (authErr) {
+        // Create the user in the Auth Emulator if they don't exist yet
+        await createUserWithEmailAndPassword(auth, mockEmail, "password123");
+      }
+      console.log("⚡ Mock user authenticated with Firebase Auth Emulator:", mockEmail);
+    } catch (err) {
+      console.warn("Mock user client-only fallback (Auth Emulator offline/refused):", err);
+    }
+
+    const mockUser = {
+      uid: auth.currentUser?.uid || "mock_user_123",
       email: mockEmail,
       displayName: name || "ARES Lead",
       photoURL: `https://api.dicebear.com/9.x/bottts/svg?seed=${mockEmail}`,
       emailVerified: true,
-    } as any);
+    } as any;
+
+    setUser(mockUser);
     setAuthorizedUser({
       email: mockEmail,
       role: role,
       name: name || "ARES Lead",
     });
+
+    // Attempt to bootstrap the authorized_users record in the Firestore Emulator
+    try {
+      const userRef = doc(db, "authorized_users", mockEmail);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
+        await setDoc(userRef, {
+          email: mockEmail,
+          role: role,
+          name: name || "ARES Lead"
+        });
+      }
+    } catch (dbErr) {
+      console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);
+    }
+
     setLoading(false);
   };
 

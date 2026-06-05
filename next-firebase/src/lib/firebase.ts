@@ -30,7 +30,7 @@ if (
 ) {
   try {
     const host = window.location.hostname;
-    const emulatorHost = (host === "localhost" || host === "127.0.0.1" || !host) ? "localhost" : host;
+    const emulatorHost = (host === "localhost" || host === "127.0.0.1" || !host) ? "127.0.0.1" : host;
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, emulatorHost, 8080);
     connectStorageEmulator(storage, emulatorHost, 9199);
