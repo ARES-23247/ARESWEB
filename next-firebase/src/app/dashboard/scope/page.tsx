@@ -21,7 +21,8 @@ import {
   Compass,
   Wifi,
   WifiOff,
-  X
+  X,
+  Eye
 } from "lucide-react";
 
 export default function ScopeDashboard() {
@@ -544,9 +545,36 @@ export default function ScopeDashboard() {
           
           {/* Main Visualizer split: 3D map left, state tree / health checks right */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-            {/* Left Column: Top-down Field view */}
-            <div className="lg:col-span-1 h-full">
+            {/* Left Column: Top-down Field view & Match Video */}
+            <div className="lg:col-span-1 flex flex-col gap-6 h-full">
               <WebGLReplayCanvas />
+              {videoUrl && (
+                <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 relative">
+                  <button
+                    onClick={() => setVideoUrl(null)}
+                    className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
+                    title="Close video player"
+                  >
+                    <X size={16} />
+                  </button>
+                  <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
+                    🎥 Synchronized Match Video
+                  </h3>
+                  <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/5 shadow-inner">
+                    <video
+                      ref={videoRef}
+                      src={videoUrl}
+                      className="w-full h-full object-contain"
+                      controls={false}
+                      muted
+                      playsInline
+                    />
+                  </div>
+                  <div className="text-[9px] font-mono text-marble/35 text-center leading-relaxed">
+                    Video playback rate and playhead synchronized to telemetry timeline.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column: Dynamic diagnostics / alerts */}
