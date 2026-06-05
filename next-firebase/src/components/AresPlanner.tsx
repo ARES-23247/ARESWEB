@@ -95,7 +95,7 @@ export default function AresPlanner({
   
   // State variables
   const [pathName, setPathName] = useState("ARES_Auto_Path");
-  const [season, setSeason] = useState("into_the_deep");
+  const [season, setSeason] = useState("decode");
   const [originMode, setOriginMode] = useState<"center" | "corner">("corner");
   const [unitMode, setUnitMode] = useState<"inches" | "meters">("inches");
   const [isZenMode, setIsZenMode] = useState(false);
@@ -372,7 +372,126 @@ export default function AresPlanner({
         }
 
         // Season Specific Renderings
-        if (season === "into_the_deep") {
+        if (season === "decode") {
+          // 1. Base Zones (Tape-marked alliance parking zones)
+          // Red Base Zone (Bottom-Left)
+          ctx.strokeStyle = "rgba(192, 0, 0, 0.7)";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(0, h - 24 * scale, 24 * scale, 24 * scale);
+          ctx.fillStyle = "rgba(192, 0, 0, 0.08)";
+          ctx.fillRect(0, h - 24 * scale, 24 * scale, 24 * scale);
+          ctx.fillStyle = "rgba(192, 0, 0, 0.8)";
+          ctx.font = "bold 8px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("RED BASE", 12 * scale, h - 10 * scale);
+
+          // Blue Base Zone (Top-Right)
+          ctx.strokeStyle = "rgba(0, 136, 255, 0.7)";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(w - 24 * scale, 0, 24 * scale, 24 * scale);
+          ctx.fillStyle = "rgba(0, 136, 255, 0.08)";
+          ctx.fillRect(w - 24 * scale, 0, 24 * scale, 24 * scale);
+          ctx.fillStyle = "rgba(0, 136, 255, 0.8)";
+          ctx.font = "bold 8px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("BLUE BASE", w - 12 * scale, 15 * scale);
+
+          // 2. Ramps (Tall Red/Blue ramp goals for scoring Artifacts)
+          // Red Ramp (Center-Left centered at x=36, y=72)
+          const rRampX = 36 * scale - 12 * scale;
+          const rRampY = h - 72 * scale - 12 * scale;
+          const rRampSize = 24 * scale;
+          const redGrad = ctx.createLinearGradient(rRampX, rRampY, rRampX + rRampSize, rRampY);
+          redGrad.addColorStop(0, "rgba(192, 0, 0, 0.4)");
+          redGrad.addColorStop(1, "rgba(255, 51, 68, 0.85)");
+          ctx.fillStyle = redGrad;
+          ctx.fillRect(rRampX, rRampY, rRampSize, rRampSize);
+          ctx.strokeStyle = "rgba(255, 51, 68, 0.7)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(rRampX, rRampY, rRampSize, rRampSize);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.lineWidth = 1.5;
+          for (let offset = 4 * scale; offset < rRampSize; offset += 6 * scale) {
+            ctx.beginPath();
+            ctx.moveTo(rRampX + offset - 2 * scale, rRampY + 6 * scale);
+            ctx.lineTo(rRampX + offset, rRampY + 12 * scale);
+            ctx.lineTo(rRampX + offset - 2 * scale, rRampY + 18 * scale);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("RED RAMP", rRampX + rRampSize / 2, rRampY + 14 * scale);
+
+          // Blue Ramp (Center-Right centered at x=108, y=72)
+          const bRampX = 108 * scale - 12 * scale;
+          const bRampY = h - 72 * scale - 12 * scale;
+          const bRampSize = 24 * scale;
+          const blueGrad = ctx.createLinearGradient(bRampX + bRampSize, bRampY, bRampX, bRampY);
+          blueGrad.addColorStop(0, "rgba(0, 88, 192, 0.4)");
+          blueGrad.addColorStop(1, "rgba(0, 136, 255, 0.85)");
+          ctx.fillStyle = blueGrad;
+          ctx.fillRect(bRampX, bRampY, bRampSize, bRampSize);
+          ctx.strokeStyle = "rgba(0, 136, 255, 0.7)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(bRampX, bRampY, bRampSize, bRampSize);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.lineWidth = 1.5;
+          for (let offset = 4 * scale; offset < bRampSize; offset += 6 * scale) {
+            ctx.beginPath();
+            ctx.moveTo(bRampX + offset + 2 * scale, bRampY + 6 * scale);
+            ctx.lineTo(bRampX + offset, bRampY + 12 * scale);
+            ctx.lineTo(bRampX + offset + 2 * scale, bRampY + 18 * scale);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("BLUE RAMP", bRampX + bRampSize / 2, bRampY + 14 * scale);
+
+          // 3. Gates (Mechanical structures to release Artifacts)
+          // Top Gate (Centered at x=72, y=138, width 24", depth 12")
+          const tGateX = 72 * scale - 12 * scale;
+          const tGateY = 0;
+          const tGateW = 24 * scale;
+          const tGateH = 12 * scale;
+          ctx.fillStyle = "rgba(45, 45, 50, 0.75)";
+          ctx.fillRect(tGateX, tGateY, tGateW, tGateH);
+          ctx.strokeStyle = "rgba(255, 184, 28, 0.5)"; // ARES Gold
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(tGateX, tGateY, tGateW, tGateH);
+          ctx.beginPath();
+          ctx.moveTo(tGateX, tGateY); ctx.lineTo(tGateX + tGateW / 2, tGateY + tGateH);
+          ctx.moveTo(tGateX + tGateW / 2, tGateY); ctx.lineTo(tGateX, tGateY + tGateH);
+          ctx.moveTo(tGateX + tGateW / 2, tGateY); ctx.lineTo(tGateX + tGateW, tGateY + tGateH);
+          ctx.moveTo(tGateX + tGateW, tGateY); ctx.lineTo(tGateX + tGateW / 2, tGateY + tGateH);
+          ctx.stroke();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 8px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("GATE 1", tGateX + tGateW / 2, tGateY + 8 * scale);
+
+          // Bottom Gate (Centered at x=72, y=6, width 24", depth 12")
+          const bGateX = 72 * scale - 12 * scale;
+          const bGateY = h - 12 * scale;
+          const bGateW = 24 * scale;
+          const bGateH = 12 * scale;
+          ctx.fillStyle = "rgba(45, 45, 50, 0.75)";
+          ctx.fillRect(bGateX, bGateY, bGateW, bGateH);
+          ctx.strokeStyle = "rgba(255, 184, 28, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(bGateX, bGateY, bGateW, bGateH);
+          ctx.beginPath();
+          ctx.moveTo(bGateX, bGateY); ctx.lineTo(bGateX + bGateW / 2, bGateY + bGateH);
+          ctx.moveTo(bGateX + bGateW / 2, bGateY); ctx.lineTo(bGateX, bGateY + bGateH);
+          ctx.moveTo(bGateX + bGateW / 2, bGateY); ctx.lineTo(bGateX + bGateW, bGateY + bGateH);
+          ctx.moveTo(bGateX + bGateW, bGateY); ctx.lineTo(bGateX + bGateW / 2, bGateY + bGateH);
+          ctx.stroke();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 8px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("GATE 2", bGateX + bGateW / 2, bGateY + 8 * scale);
+        } else if (season === "into_the_deep") {
           // Submersible (Center 24" square)
           ctx.strokeStyle = "#FFB81C"; // ARES Gold
           ctx.lineWidth = 3;
@@ -699,13 +818,22 @@ export default function AresPlanner({
   const handleExportJSON = () => {
     const output = {
       waypoints: waypoints.map((w) => ({
-        anchor: { x: w.anchor.x.toFixed(2), y: w.anchor.y.toFixed(2) },
-        prevControl: w.prevControl ? { x: w.prevControl.x.toFixed(2), y: w.prevControl.y.toFixed(2) } : null,
-        nextControl: w.nextControl ? { x: w.nextControl.x.toFixed(2), y: w.nextControl.y.toFixed(2) } : null
+        anchor: { x: parseFloat(w.anchor.x.toFixed(2)), y: parseFloat(w.anchor.y.toFixed(2)) },
+        prevControl: w.prevControl ? { x: parseFloat(w.prevControl.x.toFixed(2)), y: parseFloat(w.prevControl.y.toFixed(2)) } : null,
+        nextControl: w.nextControl ? { x: parseFloat(w.nextControl.x.toFixed(2)), y: parseFloat(w.nextControl.y.toFixed(2)) } : null
+      })),
+      eventMarkers: markers.map((m) => ({
+        name: m.name,
+        waypointRelativePos: parseFloat((m.progress * (waypoints.length - 1)).toFixed(3)),
+        command: {
+          type: "named",
+          name: m.actions[0] || m.name
+        }
       })),
       markers: markers.map((m) => ({
+        id: m.id,
         name: m.name,
-        progress: m.progress.toFixed(3),
+        progress: parseFloat(m.progress.toFixed(3)),
         actions: m.actions
       })),
       season,
@@ -745,10 +873,27 @@ export default function AresPlanner({
     setSyncLog(`Initiating HTTP connection to Robot Controller Program & Manage server...\nTarget URL: http://${robotIp}:8080/\n\n`);
 
     const pathData = {
-      waypoints,
-      markers,
+      name: pathName,
       season,
-      name: pathName
+      waypoints: waypoints.map((w) => ({
+        anchor: { x: parseFloat(w.anchor.x.toFixed(2)), y: parseFloat(w.anchor.y.toFixed(2)) },
+        prevControl: w.prevControl ? { x: parseFloat(w.prevControl.x.toFixed(2)), y: parseFloat(w.prevControl.y.toFixed(2)) } : null,
+        nextControl: w.nextControl ? { x: parseFloat(w.nextControl.x.toFixed(2)), y: parseFloat(w.nextControl.y.toFixed(2)) } : null
+      })),
+      eventMarkers: markers.map((m) => ({
+        name: m.name,
+        waypointRelativePos: parseFloat((m.progress * (waypoints.length - 1)).toFixed(3)),
+        command: {
+          type: "named",
+          name: m.actions[0] || m.name
+        }
+      })),
+      markers: markers.map((m) => ({
+        id: m.id,
+        name: m.name,
+        progress: parseFloat(m.progress.toFixed(3)),
+        actions: m.actions
+      }))
     };
 
     try {
@@ -910,6 +1055,7 @@ export default function AresPlanner({
                   onChange={(e) => setSeason(e.target.value)}
                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1.5 text-xs text-white uppercase font-bold focus:outline-none"
                 >
+                  <option value="decode">DECODE (25/26)</option>
                   <option value="into_the_deep">Into The Deep (24/25)</option>
                   <option value="centerstage">Centerstage (23/24)</option>
                   <option value="powerplay">Powerplay (22/23)</option>
@@ -1071,6 +1217,32 @@ export default function AresPlanner({
                             >
                               Add
                             </button>
+                          </div>
+
+                          <div className="mt-2.5">
+                            <label className="text-[8px] font-mono uppercase text-marble/40 block mb-1">Suggested Hooks:</label>
+                            <div className="flex flex-wrap gap-1">
+                              {["IntakeOn", "IntakeOff", "FlywheelOn", "FlywheelOff", "IntakeDeploy", "FeederShoot", "Shoot", "Stop"].map((suggestedAct) => {
+                                const isAdded = marker.actions.includes(suggestedAct);
+                                return (
+                                  <button
+                                    key={suggestedAct}
+                                    type="button"
+                                    disabled={isAdded}
+                                    onClick={() => {
+                                      handleUpdateMarker(selectedMarkerId, { actions: [...marker.actions, suggestedAct] });
+                                    }}
+                                    className={`text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
+                                      isAdded 
+                                        ? "bg-white/5 border-white/5 text-marble/30 cursor-not-allowed" 
+                                        : "bg-white/5 border-white/10 hover:border-ares-gold/45 text-marble/75 hover:text-ares-gold"
+                                    }`}
+                                  >
+                                    +{suggestedAct}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>
