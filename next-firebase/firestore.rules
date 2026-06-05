@@ -81,6 +81,12 @@ service cloud.firestore {
       allow read, write: if isAuthorized();
     }
 
+    // aresplanner_paths
+    match /aresplanner_paths/{pathId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
     // user_profiles
     match /user_profiles/{userId} {
       allow read: if true;
