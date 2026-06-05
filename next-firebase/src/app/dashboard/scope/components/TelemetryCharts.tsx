@@ -2,18 +2,35 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { useScopeStore } from "../store/scopeStore";
+import { Plus, X } from "lucide-react";
 
 export default function TelemetryCharts() {
   const { telemetryData, currentTimeMs, setCurrentTimeMs, selectedKeys, toggleSelectedKey } = useScopeStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
 
-  const availableSignals = [
-    { key: "battery", label: "Battery Voltage (V)", color: "#F59E0B" },
-    { key: "loopTime", label: "Loop Cycle Time (ms)", color: "#06B6D4" },
-    { key: "slideCurrent", label: "Linear Slide Current (A)", color: "#EF4444" },
-    { key: "intakeCurrent", label: "Intake Current (A)", color: "#A855F7" }
-  ];
+  // Dynamic color helper
+  const getSignalColor = (key: string, index: number) => {
+    const predefinedColors: Record<string, string> = {
+      "Robot/BatteryVoltage": "#F59E0B",     // Gold
+      "Robot/LoopTime": "#06B6D4",           // Cyan
+      "Drive/MotorPower_FL": "#EF4444",      // Red
+      "Drive/MotorPower_FR": "#A855F7",      // Purple
+      "Drive/MotorPower_BL": "#3B82F6",      // Blue
+      "Drive/MotorPower_BR": "#10B981",      // Emerald
+      "Superstructure/Elevator_Height": "#E11D48", // Rose
+      "Drive/MotorCurrent_FL": "#F43F5E"     // Pink
+    };
+    if (predefinedColors[key]) return predefinedColors[key];
+    
+    // Golden ratio angle spacing to generate distinct HSL colors
+    const hue = (index * 137.5) % 360;
+    return `hsl(${hue}, 85%, 60%)`;
+  };
+
+  // Get available keys in the channels
+  const allAvailableKeys = telemetryData ? Object.keys(telemetryData.channels) : [];
+  const unselectedKeys = allAvailableKeys.filter((k) => !selectedKeys.includes(k));
 
   // Handle graph click/scrub
   const handleGraphInteraction = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -59,7 +76,7 @@ export default function TelemetryCharts() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Handle high DPI retina screens
+    // Handle high DPI screens
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
@@ -114,36 +131,22 @@ export default function TelemetryCharts() {
     }
 
     // Plot selected signals
-    selectedKeys.forEach((sigKey) => {
-      const signalConfig = availableSignals.find((s) => s.key === sigKey);
-      if (!signalConfig) return;
+    selectedKeys.forEach((sigKey, idx) => {
+      const dataPoints = telemetryData.channels[sigKey];
+      if (!dataPoints || dataPoints.length < 2) return;
 
-      let dataPoints: number[] = [];
-      let minVal = 0;
-      let maxVal = 20;
+      const color = getSignalColor(sigKey, idx);
 
-      if (sigKey === "battery") {
-        dataPoints = telemetryData.battery;
-        minVal = 9.5;
-        maxVal = 13.5;
-      } else if (sigKey === "loopTime") {
-        dataPoints = telemetryData.loopTime;
-        minVal = 0;
-        maxVal = 50;
-      } else if (sigKey === "slideCurrent") {
-        dataPoints = telemetryData.slides.current;
-        minVal = 0;
-        maxVal = 30;
-      } else if (sigKey === "intakeCurrent") {
-        dataPoints = telemetryData.intake.current;
-        minVal = 0;
-        maxVal = 10;
-      }
-
-      if (dataPoints.length < 2) return;
+      // Compute min/max dynamically
+      let minVal = Math.min(...dataPoints);
+      let maxVal = Math.max(...dataPoints);
+      const range = maxVal - minVal;
+      const padding = range === 0 ? 1.0 : range * 0.1;
+      minVal -= padding;
+      maxVal += padding;
 
       ctx.beginPath();
-      ctx.strokeStyle = signalConfig.color;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 1.8;
       ctx.lineJoin = "round";
 
@@ -165,7 +168,7 @@ export default function TelemetryCharts() {
     });
 
     // Draw active scrubbing playhead (Green indicator)
-    const playheadRatio = currentTimeMs / telemetryData.maxTimeMs;
+    const playheadRatio = telemetryData.maxTimeMs > 0 ? currentTimeMs / telemetryData.maxTimeMs : 0;
     const playheadX = paddingLeft + playheadRatio * gridWidth;
 
     ctx.strokeStyle = "#10B981"; // neon green
@@ -182,7 +185,7 @@ export default function TelemetryCharts() {
     ctx.fill();
 
     // Draw hover cursor (dashed white indicator)
-    if (hoveredTime !== null) {
+    if (hoveredTime !== null && telemetryData.maxTimeMs > 0) {
       const hoverRatio = hoveredTime / telemetryData.maxTimeMs;
       const hoverX = paddingLeft + hoverRatio * gridWidth;
 
@@ -213,27 +216,45 @@ export default function TelemetryCharts() {
           📈 High-Frequency Signal Viewer
         </h3>
         
-        {/* Signal Selectors */}
-        <div className="flex flex-wrap gap-2">
-          {availableSignals.map((sig) => {
-            const isSelected = selectedKeys.includes(sig.key);
-            return (
-              <button
-                key={sig.key}
-                onClick={() => toggleSelectedKey(sig.key)}
-                className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                  isSelected
-                    ? "text-white bg-white/10 border-white/20"
-                    : "text-marble/40 border-white/5 hover:border-white/10 hover:text-marble/65"
-                }`}
-                style={{
-                  borderLeft: isSelected ? `3px solid ${sig.color}` : undefined
+        {/* Dynamic Signal Selectors */}
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedKeys.map((sigKey, idx) => (
+            <button
+              key={sigKey}
+              onClick={() => toggleSelectedKey(sigKey)}
+              className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 text-[9px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all duration-300 cursor-pointer"
+              style={{
+                borderLeft: `3px solid ${getSignalColor(sigKey, idx)}`
+              }}
+              title="Click to remove from plot"
+            >
+              <span>{sigKey.includes("/") ? sigKey.split("/").pop() : sigKey}</span>
+              <X size={8} className="text-marble/40 hover:text-white" />
+            </button>
+          ))}
+
+          {/* Add Channel Dropdown */}
+          {unselectedKeys.length > 0 && (
+            <div className="relative flex items-center bg-black/50 border border-white/5 px-2.5 py-1 rounded-lg text-[9px] gap-1 transition-all">
+              <Plus size={10} className="text-ares-gold" />
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    toggleSelectedKey(e.target.value);
+                  }
                 }}
+                className="bg-transparent text-marble/60 hover:text-white focus:outline-none font-bold uppercase cursor-pointer"
               >
-                {sig.label.split(" ")[0]}
-              </button>
-            );
-          })}
+                <option value="" className="bg-neutral-900 text-marble/40">Add Signal...</option>
+                {unselectedKeys.map((k) => (
+                  <option key={k} value={k} className="bg-neutral-900 text-white">
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -252,7 +273,7 @@ export default function TelemetryCharts() {
       <div className="flex justify-between items-center text-[9px] font-mono text-marble/35">
         <span>Click / Drag anywhere on chart coordinates to scrub telemetry timeline</span>
         {hoveredTime !== null && (
-          <span className="text-ares-gold">
+          <span className="text-ares-gold font-bold">
             Hover Playhead: <strong>{((hoveredTime) / 1000).toFixed(2)}s</strong>
           </span>
         )}

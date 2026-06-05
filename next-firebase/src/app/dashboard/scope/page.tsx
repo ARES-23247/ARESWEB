@@ -193,30 +193,43 @@ export default function ScopeDashboard() {
         const lines = text.split("\n").filter((l) => l.trim() !== "");
         if (lines.length < 2) throw new Error("Invalid CSV format.");
 
-        const headers = lines[0].split(",");
+        const headers = lines[0].split(",").map((h) => h.trim());
         const timestamps: number[] = [];
         const coords: { x: number; y: number; heading: number }[] = [];
-        const battery: number[] = [];
-        const loopTime: number[] = [];
-        const motors = { lf: [] as number[], rf: [] as number[], lr: [] as number[], rr: [] as number[] };
-        const slides = { height: [] as number[], current: [] as number[] };
-        const intake = { current: [] as number[] };
+        const channels: Record<string, number[]> = {};
+        
+        headers.forEach((h) => {
+          channels[h] = [];
+        });
+
+        const findColIndex = (names: string[]) => {
+          return headers.findIndex((h) => 
+            names.some((n) => h.toLowerCase() === n.toLowerCase() || h.toLowerCase().includes(n.toLowerCase()))
+          );
+        };
+
+        const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x"]);
+        const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y"]);
+        const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading"]);
+        const timeIdx = findColIndex(["timestampms", "timestamp", "time", "ms"]);
 
         // Process line rows
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(",");
           if (cols.length < headers.length) continue;
 
-          const t = parseFloat(cols[0]) || (i - 1) * 50;
+          const colsNum = cols.map((c) => parseFloat(c.trim()) || 0);
+
+          const t = timeIdx !== -1 ? colsNum[timeIdx] : (i - 1) * 20;
           timestamps.push(t);
           
-          let x = parseFloat(cols[1]) || 12.0;
-          let y = parseFloat(cols[2]) || 12.0;
-          let heading = parseFloat(cols[3]) || 0.0;
+          let x = xIdx !== -1 ? colsNum[xIdx] : 0.0;
+          let y = yIdx !== -1 ? colsNum[yIdx] : 0.0;
+          let heading = headingIdx !== -1 ? colsNum[headingIdx] : 0.0;
 
           // If coordinates look like meters (small values), convert to inches and shift origin:
           // Center-origin meters -> bottom-left-origin inches
-          if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0) {
+          if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0 && (x !== 0 || y !== 0)) {
             const tempX = x;
             x = -y * 39.3701 + 72;
             y = tempX * 39.3701 + 72;
@@ -224,15 +237,10 @@ export default function ScopeDashboard() {
           }
 
           coords.push({ x, y, heading });
-          battery.push(parseFloat(cols[4]) || 12.6);
-          loopTime.push(parseFloat(cols[5]) || 9.5);
-          motors.lf.push(parseFloat(cols[6]) || 1.2);
-          motors.rf.push(parseFloat(cols[7]) || 1.2);
-          motors.lr.push(parseFloat(cols[8]) || 1.2);
-          motors.rr.push(parseFloat(cols[9]) || 1.2);
-          slides.height.push(parseFloat(cols[10]) || 0);
-          slides.current.push(parseFloat(cols[11]) || 0.4);
-          intake.current.push(parseFloat(cols[12]) || 0.2);
+
+          headers.forEach((h, idx) => {
+            channels[h].push(colsNum[idx]);
+          });
         }
 
         const customTelemetry: TelemetryData = {
@@ -240,12 +248,8 @@ export default function ScopeDashboard() {
           opModeName: "ARESImportedLocalLog",
           timestamps: timestamps,
           coords: coords,
-          battery: battery,
-          loopTime: loopTime,
-          motors: motors,
-          slides: slides,
-          intake: intake,
-          maxTimeMs: timestamps[timestamps.length - 1]
+          channels: channels,
+          maxTimeMs: timestamps.length > 0 ? timestamps[timestamps.length - 1] - timestamps[0] : 0
         };
 
         setTelemetryData(customTelemetry);

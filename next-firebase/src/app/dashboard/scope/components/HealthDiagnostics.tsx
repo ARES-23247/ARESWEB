@@ -33,55 +33,86 @@ export default function HealthDiagnostics() {
       return;
     }
 
-    const { battery, loopTime, motors, slides } = telemetryData;
+    const getChannel = (prefixes: string[]) => {
+      for (const p of prefixes) {
+        if (telemetryData.channels[p]) return telemetryData.channels[p];
+      }
+      return [];
+    };
+
+    const battery = getChannel(["Robot/BatteryVoltage", "battery", "power/battery_voltage"]);
+    const loopTime = getChannel(["Robot/LoopTime", "loopTime", "diagnostics/loop_time"]);
+    const motorLF = getChannel(["Drive/MotorPower_FL", "motors/lf", "power/current/motor_lf", "lf"]);
+    const motorRF = getChannel(["Drive/MotorPower_FR", "motors/rf", "power/current/motor_rf", "rf"]);
+    const motorLR = getChannel(["Drive/MotorPower_BL", "motors/lr", "power/current/motor_lr", "lr"]);
+    const motorRR = getChannel(["Drive/MotorPower_BR", "motors/rr", "power/current/motor_rr", "rr"]);
+    const slideCurrent = getChannel(["Drive/MotorCurrent_FL", "slideCurrent", "mechanisms/slide/current"]);
 
     // 1. Evaluate Battery Sags
-    const minBattery = Math.min(...battery);
+    const minBattery = battery.length > 0 ? Math.min(...battery) : 12.6;
     let battStatus: "healthy" | "warning" | "critical" = "healthy";
     let battMsg = "Nominal cell voltages. Grid holds charge perfectly under acceleration.";
-    if (minBattery < 11.0) {
-      battStatus = "critical";
-      battMsg = `Critical battery sag detected (${minBattery.toFixed(2)}V). High risk of Control Hub brownouts. Swap this battery immediately.`;
-    } else if (minBattery < 11.5) {
-      battStatus = "warning";
-      battMsg = `Moderate battery sag observed (${minBattery.toFixed(2)}V). Safe for testing but retract from official match play.`;
+    if (battery.length > 0) {
+      if (minBattery < 11.0) {
+        battStatus = "critical";
+        battMsg = `Critical battery sag detected (${minBattery.toFixed(2)}V). High risk of Control Hub brownouts. Swap this battery immediately.`;
+      } else if (minBattery < 11.5) {
+        battStatus = "warning";
+        battMsg = `Moderate battery sag observed (${minBattery.toFixed(2)}V). Safe for testing but retract from official match play.`;
+      }
+    } else {
+      battMsg = "No battery channel telemetry logged. Skipping power audits.";
     }
 
     // 2. Evaluate Motor Imbalances (Axle Binding)
-    const avgLF = motors.lf.reduce((a, b) => a + b, 0) / motors.lf.length;
-    const avgRF = motors.rf.reduce((a, b) => a + b, 0) / motors.rf.length;
-    const avgLR = motors.lr.reduce((a, b) => a + b, 0) / motors.lr.length;
-    const avgRR = motors.rr.reduce((a, b) => a + b, 0) / motors.rr.length;
-    const avgAll = (avgLF + avgRF + avgLR + avgRR) / 4;
-
-    const rfImbalance = ((avgRF - avgAll) / avgAll) * 100;
     let motorStat: "balanced" | "imbalanced" = "balanced";
     let motorMsg = "All four Mecanum motor current draws are symmetrical. Gearboxes running smoothly.";
-    
-    if (Math.abs(rfImbalance) > 15.0) {
-      motorStat = "imbalanced";
-      motorMsg = `Imbalanced drawing! Motor RF draws ${Math.abs(rfImbalance).toFixed(1)}% more current than average. Inspect axle shafts for physical binding.`;
+    let rfImbalance = 0;
+    if (motorLF.length > 0 && motorRF.length > 0 && motorLR.length > 0 && motorRR.length > 0) {
+      const avgLF = motorLF.reduce((a, b) => a + b, 0) / motorLF.length;
+      const avgRF = motorRF.reduce((a, b) => a + b, 0) / motorRF.length;
+      const avgLR = motorLR.reduce((a, b) => a + b, 0) / motorLR.length;
+      const avgRR = motorRR.reduce((a, b) => a + b, 0) / motorRR.length;
+      const avgAll = (avgLF + avgRF + avgLR + avgRR) / 4;
+
+      if (avgAll > 0) {
+        rfImbalance = ((avgRF - avgAll) / avgAll) * 100;
+        if (Math.abs(rfImbalance) > 15.0) {
+          motorStat = "imbalanced";
+          motorMsg = `Imbalanced drawing! Motor RF draws ${Math.abs(rfImbalance).toFixed(1)}% more current than average. Inspect axle shafts for physical binding.`;
+        }
+      }
+    } else {
+      motorMsg = "Drivetrain current draw channels not found. Skipping mechanical audits.";
     }
 
     // 3. Evaluate Loop Speed
-    const avgLoop = loopTime.reduce((a, b) => a + b, 0) / loopTime.length;
+    const avgLoop = loopTime.length > 0 ? loopTime.reduce((a, b) => a + b, 0) / loopTime.length : 10.0;
     let lpStatus: "fast" | "warning" | "critical" = "fast";
     let lpMsg = "Cycle frequency is optimal, providing steady velocity updates to motors.";
-    if (avgLoop > 30) {
-      lpStatus = "critical";
-      lpMsg = `Cycle delay average is too high (${avgLoop.toFixed(1)}ms). Major control lag detected. Optimize telemetry log dumps in ARESLib.`;
-    } else if (avgLoop > 20) {
-      lpStatus = "warning";
-      lpMsg = `Moderate cycle latency detected (${avgLoop.toFixed(1)}ms). Clean loop structures to prevent system bottlenecks.`;
+    if (loopTime.length > 0) {
+      if (avgLoop > 30) {
+        lpStatus = "critical";
+        lpMsg = `Cycle delay average is too high (${avgLoop.toFixed(1)}ms). Major control lag detected. Optimize telemetry log dumps in ARESLib.`;
+      } else if (avgLoop > 20) {
+        lpStatus = "warning";
+        lpMsg = `Moderate cycle latency detected (${avgLoop.toFixed(1)}ms). Clean loop structures to prevent system bottlenecks.`;
+      }
+    } else {
+      lpMsg = "Control loop timing keys not found. Skipping software frequency audits.";
     }
 
     // 4. Evaluate Slide Stall
-    const maxSlideCur = Math.max(...slides.current);
+    const maxSlideCur = slideCurrent.length > 0 ? Math.max(...slideCurrent) : 0.0;
     let sStatus: "healthy" | "stall" = "healthy";
     let sMsg = "Slide currents remain within safe operational bounds. Limit switches operating correctly.";
-    if (maxSlideCur > 25.0) {
-      sStatus = "stall";
-      sMsg = `High lifter slide currents peaked at ${maxSlideCur.toFixed(1)}A! Motor is stalling at limits. Verify structural alignments.`;
+    if (slideCurrent.length > 0) {
+      if (maxSlideCur > 25.0) {
+        sStatus = "stall";
+        sMsg = `High lifter slide currents peaked at ${maxSlideCur.toFixed(1)}A! Motor is stalling at limits. Verify structural alignments.`;
+      }
+    } else {
+      sMsg = "Superstructure current channels not found. Skipping lifter stall audits.";
     }
 
     setReport({

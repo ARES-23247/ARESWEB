@@ -17,11 +17,11 @@ function InspectorItem({ label, value, unit = "", signalKey, isPlottable = false
   const isSelected = signalKey ? selectedKeys.includes(signalKey) : false;
 
   return (
-    <div className="flex items-center justify-between border-b border-white/5 py-2.5 text-xs">
-      <span className="text-marble/70 font-mono font-medium">{label}</span>
+    <div className="flex items-center justify-between border-b border-white/5 py-2 text-xs">
+      <span className="text-marble/70 font-mono font-medium truncate max-w-[180px]">{label}</span>
       <div className="flex items-center gap-3">
         <span className="text-white font-mono font-bold tracking-tight">
-          {typeof value === "number" ? value.toFixed(2) : value}
+          {typeof value === "number" ? value.toFixed(3) : value}
           <span className="text-marble/35 ml-0.5 font-medium">{unit}</span>
         </span>
         
@@ -43,24 +43,87 @@ function InspectorItem({ label, value, unit = "", signalKey, isPlottable = false
   );
 }
 
+interface TreeNode {
+  name: string;
+  fullName: string;
+  value?: number;
+  children: Record<string, TreeNode>;
+}
+
+interface TreeNodeProps {
+  node: TreeNode;
+  search: string;
+  depth: number;
+}
+
+function TreeNodeComponent({ node, search, depth }: TreeNodeProps) {
+  const [isOpen, setIsOpen] = useState(depth < 2); // expand top levels by default
+  const hasChildren = Object.keys(node.children).length > 0;
+
+  // Search filter recursion
+  const visibleChildren = Object.values(node.children).filter((child) => {
+    if (!search) return true;
+    const recursiveCheck = (n: TreeNode): boolean => {
+      if (n.fullName.toLowerCase().includes(search.toLowerCase())) return true;
+      return Object.values(n.children).some(recursiveCheck);
+    };
+    return recursiveCheck(child);
+  });
+
+  if (search && !hasChildren && !node.fullName.toLowerCase().includes(search.toLowerCase())) {
+    return null;
+  }
+
+  if (search && hasChildren && visibleChildren.length === 0) {
+    return null;
+  }
+
+  const paddingLeft = `${depth * 10}px`;
+
+  if (hasChildren) {
+    return (
+      <div className="w-full">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between py-2 text-xs text-marble/90 hover:text-white border-b border-white/5 cursor-pointer font-bold font-mono transition-colors"
+          style={{ paddingLeft }}
+        >
+          <span className="flex items-center gap-1 text-ares-gold">
+            {isOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+            <span>{node.name}</span>
+          </span>
+          <span className="text-[8px] text-marble/35 uppercase font-medium mr-2">
+            ({Object.keys(node.children).length} channels)
+          </span>
+        </button>
+        {isOpen && (
+          <div className="flex flex-col">
+            {visibleChildren.map((child) => (
+              <TreeNodeComponent key={child.fullName} node={child} search={search} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingLeft }} className="pr-1.5">
+      <InspectorItem 
+        label={node.name} 
+        value={node.value ?? 0} 
+        signalKey={node.fullName} 
+        isPlottable 
+      />
+    </div>
+  );
+}
+
 export default function StateInspector() {
   const { telemetryData, currentTimeMs, getCurrentFrame } = useScopeStore();
   const [search, setSearch] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    odometry: true,
-    power: true,
-    actuators: true,
-    diagnostics: true
-  });
 
   const currentFrame = getCurrentFrame();
-
-  const toggleCategory = (cat: string) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [cat]: !prev[cat]
-    }));
-  };
 
   if (!telemetryData || !currentFrame) {
     return (
@@ -75,8 +138,48 @@ export default function StateInspector() {
     );
   }
 
-  // Categories helper mapping
-  const matchesSearch = (str: string) => str.toLowerCase().includes(search.toLowerCase());
+  // 1. Build TreeNode structure dynamically
+  const buildTree = (keys: string[], currentValues: Record<string, number>) => {
+    const root: Record<string, TreeNode> = {};
+    
+    keys.forEach((key) => {
+      const parts = key.split("/");
+      let current = root;
+      
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const isLeaf = i === parts.length - 1;
+        const subPath = parts.slice(0, i + 1).join("/");
+        
+        if (!current[part]) {
+          current[part] = {
+            name: part,
+            fullName: subPath,
+            children: {},
+            value: isLeaf ? currentValues[key] : undefined
+          };
+        }
+        
+        current = current[part].children;
+      }
+    });
+    
+    return root;
+  };
+
+  const allKeys = Object.keys(telemetryData.channels);
+  const treeRoot = buildTree(allKeys, currentFrame.values);
+  const rootNodes = Object.values(treeRoot);
+
+  // Filter root categories by search
+  const visibleRootNodes = rootNodes.filter((node) => {
+    if (!search) return true;
+    const recursiveCheck = (n: TreeNode): boolean => {
+      if (n.fullName.toLowerCase().includes(search.toLowerCase())) return true;
+      return Object.values(n.children).some(recursiveCheck);
+    };
+    return recursiveCheck(node);
+  });
 
   return (
     <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 h-full">
@@ -86,7 +189,7 @@ export default function StateInspector() {
           🔎 State Inspector
         </h3>
         <span className="bg-white/5 border border-white/10 text-[9px] font-mono px-2 py-0.5 text-marble/55 rounded-md">
-          {telemetryData.timestamps.length} frames
+          {allKeys.length} channels
         </span>
       </div>
 
@@ -105,103 +208,18 @@ export default function StateInspector() {
       </div>
 
       {/* Collapsible States Tree */}
-      <div className="flex-grow overflow-y-auto space-y-4 max-h-[360px] pr-1">
-        
-        {/* Category 1: Odometry */}
-        {matchesSearch("odometry x y heading pose coordinate") && (
-          <div className="border border-white/5 bg-black/25 rounded-xl overflow-hidden">
-            <button
-              onClick={() => toggleCategory("odometry")}
-              className="w-full bg-white/5 px-4 py-3 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white border-b border-white/5 cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5 text-ares-gold">
-                <Activity size={10} /> localization.odometry
-              </span>
-              {expandedCategories.odometry ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </button>
-            
-            {expandedCategories.odometry && (
-              <div className="p-4 space-y-0.5 bg-black/10">
-                <InspectorItem label="odometry/pose/x" value={currentFrame.x} unit="in" />
-                <InspectorItem label="odometry/pose/y" value={currentFrame.y} unit="in" />
-                <InspectorItem label="odometry/pose/heading" value={currentFrame.heading} unit="rad" />
-                <InspectorItem label="odometry/pose/heading_deg" value={(currentFrame.heading * 180) / Math.PI} unit="deg" />
-              </div>
-            )}
+      <div className="flex-grow overflow-y-auto space-y-2 max-h-[360px] pr-1">
+        {visibleRootNodes.length === 0 ? (
+          <div className="text-center py-8 text-marble/25 text-xs font-mono">
+            No keys match your query
           </div>
+        ) : (
+          visibleRootNodes.map((node) => (
+            <div key={node.fullName} className="border border-white/5 bg-black/25 rounded-xl overflow-hidden mb-3">
+              <TreeNodeComponent node={node} search={search} depth={0} />
+            </div>
+          ))
         )}
-
-        {/* Category 2: Power Subsystem */}
-        {matchesSearch("power battery motor current voltage amps") && (
-          <div className="border border-white/5 bg-black/25 rounded-xl overflow-hidden">
-            <button
-              onClick={() => toggleCategory("power")}
-              className="w-full bg-white/5 px-4 py-3 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white border-b border-white/5 cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5 text-ares-gold">
-                <Activity size={10} /> power.drivetrain
-              </span>
-              {expandedCategories.power ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </button>
-
-            {expandedCategories.power && (
-              <div className="p-4 space-y-0.5 bg-black/10">
-                <InspectorItem label="power/battery_voltage" value={currentFrame.battery} unit="V" signalKey="battery" isPlottable />
-                <InspectorItem label="power/current/motor_lf" value={currentFrame.motors.lf} unit="A" />
-                <InspectorItem label="power/current/motor_rf" value={currentFrame.motors.rf} unit="A" />
-                <InspectorItem label="power/current/motor_lr" value={currentFrame.motors.lr} unit="A" />
-                <InspectorItem label="power/current/motor_rr" value={currentFrame.motors.rr} unit="A" />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Category 3: Actuators & Mechanisms */}
-        {matchesSearch("actuators mechanisms slide height lifter intake height current") && (
-          <div className="border border-white/5 bg-black/25 rounded-xl overflow-hidden">
-            <button
-              onClick={() => toggleCategory("actuators")}
-              className="w-full bg-white/5 px-4 py-3 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white border-b border-white/5 cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5 text-ares-gold">
-                <Activity size={10} /> actuators.mechanisms
-              </span>
-              {expandedCategories.actuators ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </button>
-
-            {expandedCategories.actuators && (
-              <div className="p-4 space-y-0.5 bg-black/10">
-                <InspectorItem label="mechanisms/slide/height" value={currentFrame.slides.height} unit="ticks" />
-                <InspectorItem label="mechanisms/slide/current" value={currentFrame.slides.current} unit="A" signalKey="slideCurrent" isPlottable />
-                <InspectorItem label="mechanisms/intake/current" value={currentFrame.intake.current} unit="A" signalKey="intakeCurrent" isPlottable />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Category 4: Loop Diagnostics */}
-        {matchesSearch("diagnostics loop clock cycle times ms frequency") && (
-          <div className="border border-white/5 bg-black/25 rounded-xl overflow-hidden">
-            <button
-              onClick={() => toggleCategory("diagnostics")}
-              className="w-full bg-white/5 px-4 py-3 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-white border-b border-white/5 cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5 text-ares-gold">
-                <Activity size={10} /> diagnostics.system
-              </span>
-              {expandedCategories.diagnostics ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </button>
-
-            {expandedCategories.diagnostics && (
-              <div className="p-4 space-y-0.5 bg-black/10">
-                <InspectorItem label="diagnostics/loop_time" value={currentFrame.loopTime} unit="ms" signalKey="loopTime" isPlottable />
-                <InspectorItem label="diagnostics/loop_hz" value={1000 / currentFrame.loopTime} unit="Hz" />
-                <InspectorItem label="diagnostics/elapsed_time" value={currentTimeMs} unit="ms" />
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
     </div>
   );

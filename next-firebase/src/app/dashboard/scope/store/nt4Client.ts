@@ -143,15 +143,32 @@ export class NT4Client {
   }
 
   private emitFrame(timestamp: number) {
-    // Map accumulated telemetry keys into the structured TelemetryFrame
-    const x = Number(this.currentFrameData["Drive/Pose_X"] || this.currentFrameData["Drive/Odom_X"] || 0.0);
-    const y = Number(this.currentFrameData["Drive/Pose_Y"] || this.currentFrameData["Drive/Odom_Y"] || 0.0);
-    
+    const values: Record<string, number> = {};
+    Object.keys(this.currentFrameData).forEach((key) => {
+      const numVal = Number(this.currentFrameData[key]);
+      if (!isNaN(numVal)) {
+        values[key] = numVal;
+      }
+    });
+
+    // Auto-detect coordinates
+    const getVal = (prefixes: string[], fallback: number) => {
+      for (const p of prefixes) {
+        if (this.currentFrameData[p] !== undefined) {
+          const v = Number(this.currentFrameData[p]);
+          if (!isNaN(v)) return v;
+        }
+      }
+      return fallback;
+    };
+
+    const x = getVal(["Drive/Pose_X", "Drive/Odom_X", "Drive/PoseX", "PoseX", "x"], 0.0);
+    const y = getVal(["Drive/Pose_Y", "Drive/Odom_Y", "Drive/PoseY", "PoseY", "y"], 0.0);
+    let heading = getVal(["Drive/Drive_Heading", "Drive/Pose_Heading", "Drive/Odom_Heading", "PoseHeading", "heading"], 0.0);
+
     // Scale coordinate metrics if raw meters are detected to match web visualization space
     let scaledX = x;
     let scaledY = y;
-    let heading = Number(this.currentFrameData["Drive/Drive_Heading"] || this.currentFrameData["Drive/Odom_Heading"] || 0.0);
-
     if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0) {
       // Metric EKF meters -> visual inches, shifted to bottom-left arena space
       scaledX = -y * 39.3701 + 72;
@@ -164,21 +181,7 @@ export class NT4Client {
       x: scaledX,
       y: scaledY,
       heading: heading,
-      battery: Number(this.currentFrameData["Robot/BatteryVoltage"] || this.currentFrameData["battery"] || 12.6),
-      loopTime: Number(this.currentFrameData["Robot/LoopTime"] || 10.0),
-      motors: {
-        lf: Number(this.currentFrameData["Drive/MotorPower_FL"] || 0.0),
-        rf: Number(this.currentFrameData["Drive/MotorPower_FR"] || 0.0),
-        lr: Number(this.currentFrameData["Drive/MotorPower_BL"] || 0.0),
-        rr: Number(this.currentFrameData["Drive/MotorPower_BR"] || 0.0)
-      },
-      slides: {
-        height: Number(this.currentFrameData["Superstructure/Elevator_Height"] || 0.0),
-        current: Number(this.currentFrameData["Drive/MotorCurrent_FL"] || 0.0) // Mock slides currents to showcase charts
-      },
-      intake: {
-        current: Number(this.currentFrameData["Drive/MotorCurrent_FR"] || 0.0)
-      }
+      values
     };
 
     this.onFrame(frame);

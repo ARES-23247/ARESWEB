@@ -5,21 +5,7 @@ export interface TelemetryFrame {
   x: number;
   y: number;
   heading: number;
-  battery: number;
-  loopTime: number;
-  motors: {
-    lf: number;
-    rf: number;
-    lr: number;
-    rr: number;
-  };
-  slides: {
-    height: number;
-    current: number;
-  };
-  intake: {
-    current: number;
-  };
+  values: Record<string, number>;
 }
 
 export interface TelemetryData {
@@ -27,21 +13,7 @@ export interface TelemetryData {
   opModeName: string;
   timestamps: number[];
   coords: { x: number; y: number; heading: number }[];
-  battery: number[];
-  loopTime: number[];
-  motors: {
-    lf: number[];
-    rf: number[];
-    lr: number[];
-    rr: number[];
-  };
-  slides: {
-    height: number[];
-    current: number[];
-  };
-  intake: {
-    current: number[];
-  };
+  channels: Record<string, number[]>;
   maxTimeMs: number;
 }
 
@@ -58,6 +30,7 @@ interface ScopeState {
   telemetryData: TelemetryData | null;
   plannedPath: PlannedPathPoint[] | null;
   selectedKeys: string[];
+  driveMode: "mecanum" | "swerve";
   
   // Streaming States
   isStreaming: boolean;
@@ -72,6 +45,7 @@ interface ScopeState {
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
+  setDriveMode: (mode: "mecanum" | "swerve") => void;
   
   setStreaming: (isStreaming: boolean) => void;
   setStreamSource: (source: "local" | "cloud" | null) => void;
@@ -87,7 +61,8 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   playbackSpeed: 1.0,
   telemetryData: null,
   plannedPath: null,
-  selectedKeys: ["battery", "loopTime"],
+  selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"],
+  driveMode: "mecanum",
   
   isStreaming: false,
   streamSource: null,
@@ -119,6 +94,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
       : [...state.selectedKeys, key];
     return { selectedKeys: nextKeys };
   }),
+  setDriveMode: (driveMode) => set({ driveMode }),
   
   setStreaming: (isStreaming) => set({ isStreaming }),
   setStreamSource: (streamSource) => set({ streamSource }),
@@ -129,11 +105,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
       opModeName: "Live Stream",
       timestamps: [],
       coords: [],
-      battery: [],
-      loopTime: [],
-      motors: { lf: [], rf: [], lr: [], rr: [] },
-      slides: { height: [], current: [] },
-      intake: { current: [] },
+      channels: {},
       maxTimeMs: 0
     };
 
@@ -141,48 +113,37 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     
     const nextTimestamps = [...currentData.timestamps, frame.timestamp];
     const nextCoords = [...currentData.coords, { x: frame.x, y: frame.y, heading: frame.heading }];
-    const nextBattery = [...currentData.battery, frame.battery];
-    const nextLoopTime = [...currentData.loopTime, frame.loopTime];
     
-    const nextMotors = {
-      lf: [...currentData.motors.lf, frame.motors.lf],
-      rf: [...currentData.motors.rf, frame.motors.rf],
-      lr: [...currentData.motors.lr, frame.motors.lr],
-      rr: [...currentData.motors.rr, frame.motors.rr],
-    };
+    // Create new channels copy
+    const nextChannels = { ...currentData.channels };
+    
+    // Ensure all existing channels are padded to the new frame index
+    Object.keys(nextChannels).forEach((key) => {
+      const lastVal = nextChannels[key][nextChannels[key].length - 1] ?? 0;
+      nextChannels[key] = [...nextChannels[key], frame.values[key] ?? lastVal];
+    });
 
-    const nextSlides = {
-      height: [...currentData.slides.height, frame.slides.height],
-      current: [...currentData.slides.current, frame.slides.current],
-    };
-
-    const nextIntake = {
-      current: [...currentData.intake.current, frame.intake.current],
-    };
+    // Add any newly announced channels in the frame values
+    Object.keys(frame.values).forEach((key) => {
+      if (!nextChannels[key]) {
+        const padding = Array(nextTimestamps.length - 1).fill(0);
+        nextChannels[key] = [...padding, frame.values[key]];
+      }
+    });
 
     if (nextTimestamps.length > maxBufferSize) {
       nextTimestamps.shift();
       nextCoords.shift();
-      nextBattery.shift();
-      nextLoopTime.shift();
-      nextMotors.lf.shift();
-      nextMotors.rf.shift();
-      nextMotors.lr.shift();
-      nextMotors.rr.shift();
-      nextSlides.height.shift();
-      nextSlides.current.shift();
-      nextIntake.current.shift();
+      Object.keys(nextChannels).forEach((key) => {
+        nextChannels[key].shift();
+      });
     }
 
     const updatedData = {
       ...currentData,
       timestamps: nextTimestamps,
       coords: nextCoords,
-      battery: nextBattery,
-      loopTime: nextLoopTime,
-      motors: nextMotors,
-      slides: nextSlides,
-      intake: nextIntake,
+      channels: nextChannels,
       maxTimeMs: nextTimestamps[nextTimestamps.length - 1] - nextTimestamps[0]
     };
 
@@ -219,26 +180,17 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     // Safeguard index boundaries
     index = Math.max(0, Math.min(times.length - 1, index));
 
+    const values: Record<string, number> = {};
+    Object.keys(telemetryData.channels).forEach((key) => {
+      values[key] = telemetryData.channels[key][index] ?? 0;
+    });
+
     return {
       timestamp: times[index],
       x: telemetryData.coords[index]?.x ?? 0,
       y: telemetryData.coords[index]?.y ?? 0,
       heading: telemetryData.coords[index]?.heading ?? 0,
-      battery: telemetryData.battery[index] ?? 12.0,
-      loopTime: telemetryData.loopTime[index] ?? 10.0,
-      motors: {
-        lf: telemetryData.motors.lf[index] ?? 0,
-        rf: telemetryData.motors.rf[index] ?? 0,
-        lr: telemetryData.motors.lr[index] ?? 0,
-        rr: telemetryData.motors.rr[index] ?? 0,
-      },
-      slides: {
-        height: telemetryData.slides.height[index] ?? 0,
-        current: telemetryData.slides.current[index] ?? 0,
-      },
-      intake: {
-        current: telemetryData.intake.current[index] ?? 0,
-      }
+      values
     };
   }
 }));
