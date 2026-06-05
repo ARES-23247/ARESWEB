@@ -6,7 +6,7 @@ import { Move, Compass, Eye, Map } from "lucide-react";
 import * as THREE from "three";
 
 export default function WebGLReplayCanvas() {
-  const { telemetryData, currentTimeMs, getCurrentFrame } = useScopeStore();
+  const { telemetryData, currentTimeMs, getCurrentFrame, plannedPath } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
@@ -19,6 +19,7 @@ export default function WebGLReplayCanvas() {
   const slideCarriageRef = useRef<THREE.Mesh | null>(null);
   const intakeArmRef = useRef<THREE.Mesh | null>(null);
   const trailLineRef = useRef<THREE.Line | null>(null);
+  const plannedPathLineRef = useRef<THREE.Line | null>(null);
 
   const currentFrame = getCurrentFrame();
 
@@ -95,6 +96,33 @@ export default function WebGLReplayCanvas() {
     ctx.fillRect(toPxX(120), toPxY(144), 24 * scale, 24 * scale);
     ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
     ctx.strokeRect(toPxX(120), toPxY(144), 24 * scale, 24 * scale);
+
+    // Planned Path (Dashed Cyan Spline)
+    if (plannedPath && plannedPath.length > 0) {
+      ctx.strokeStyle = "rgba(6, 182, 212, 0.75)"; // Cyan-500
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      for (let i = 0; i < plannedPath.length; i++) {
+        const pt = plannedPath[i];
+        if (i === 0) ctx.moveTo(toPxX(pt.x), toPxY(pt.y));
+        else ctx.lineTo(toPxX(pt.x), toPxY(pt.y));
+      }
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset dashed line style
+
+      // Start node (green ring)
+      ctx.fillStyle = "#10B981"; // Emerald
+      ctx.beginPath();
+      ctx.arc(toPxX(plannedPath[0].x), toPxY(plannedPath[0].y), 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // End node (red ring)
+      ctx.fillStyle = "#EF4444"; // Red
+      ctx.beginPath();
+      ctx.arc(toPxX(plannedPath[plannedPath.length - 1].x), toPxY(plannedPath[plannedPath.length - 1].y), 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Glowing Trail
     if (telemetryData && telemetryData.timestamps.length > 0) {
@@ -384,6 +412,18 @@ export default function WebGLReplayCanvas() {
     scene.add(trail);
     trailLineRef.current = trail;
 
+    // Dynamic 3D Planned Path Line (dashed/dotted cyan)
+    const plannedTrailGeo = new THREE.BufferGeometry();
+    const plannedTrailMat = new THREE.LineDashedMaterial({ 
+      color: 0x06B6D4, // Cyan-500
+      linewidth: 1.5,
+      dashSize: 3,
+      gapSize: 2
+    });
+    const plannedTrail = new THREE.Line(plannedTrailGeo, plannedTrailMat);
+    scene.add(plannedTrail);
+    plannedPathLineRef.current = plannedTrail;
+
     // 8. Dynamic Animation Rendering loop
     let active = true;
     const animate = () => {
@@ -491,7 +531,25 @@ export default function WebGLReplayCanvas() {
         trail.visible = false;
       }
     }
-  }, [viewMode, currentFrame, currentTimeMs, telemetryData]);
+
+    // Update 3D Planned Path Line
+    const plannedTrail = plannedPathLineRef.current;
+    if (plannedTrail && plannedPath && plannedPath.length > 0) {
+      const points: THREE.Vector3[] = [];
+      for (let i = 0; i < plannedPath.length; i++) {
+        const pt = plannedPath[i];
+        // Convert bottom-left origin inches to center-origin 3D coordinates
+        points.push(new THREE.Vector3(pt.x - 72, 0.15, 72 - pt.y));
+      }
+      plannedTrail.geometry.setFromPoints(points);
+      plannedTrail.computeLineDistances(); // Required for LineDashedMaterial
+      plannedTrail.geometry.computeBoundingBox();
+      plannedTrail.geometry.computeBoundingSphere();
+      plannedTrail.visible = true;
+    } else if (plannedTrail) {
+      plannedTrail.visible = false;
+    }
+  }, [viewMode, currentFrame, currentTimeMs, telemetryData, plannedPath]);
 
   return (
     <div className="glass-card p-6 border border-white/10 flex flex-col gap-5 justify-between h-full">

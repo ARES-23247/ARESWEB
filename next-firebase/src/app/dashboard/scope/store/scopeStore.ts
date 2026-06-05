@@ -45,11 +45,18 @@ export interface TelemetryData {
   maxTimeMs: number;
 }
 
+export interface PlannedPathPoint {
+  x: number;
+  y: number;
+  heading: number;
+}
+
 interface ScopeState {
   isPlaying: boolean;
   currentTimeMs: number;
   playbackSpeed: number;
   telemetryData: TelemetryData | null;
+  plannedPath: PlannedPathPoint[] | null;
   selectedKeys: string[];
   
   // Actions
@@ -57,6 +64,7 @@ interface ScopeState {
   setCurrentTimeMs: (time: number) => void;
   setPlaybackSpeed: (speed: number) => void;
   setTelemetryData: (data: TelemetryData | null) => void;
+  setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
   getCurrentFrame: () => TelemetryFrame | null;
@@ -67,6 +75,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   currentTimeMs: 0,
   playbackSpeed: 1.0,
   telemetryData: null,
+  plannedPath: null,
   selectedKeys: ["battery", "loopTime"],
 
   setPlaying: (isPlaying) => set({ isPlaying }),
@@ -86,6 +95,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     currentTimeMs: 0, 
     isPlaying: false 
   }),
+  setPlannedPath: (plannedPath) => set({ plannedPath }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
     const isSelected = state.selectedKeys.includes(key);

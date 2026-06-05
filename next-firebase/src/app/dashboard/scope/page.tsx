@@ -16,7 +16,8 @@ import {
   Database,
   Sparkles,
   RefreshCw,
-  Cpu
+  Cpu,
+  Compass
 } from "lucide-react";
 
 export default function ScopeDashboard() {
@@ -28,13 +29,15 @@ export default function ScopeDashboard() {
     setPlaying, 
     setCurrentTimeMs, 
     setPlaybackSpeed, 
-    setTelemetryData 
+    setTelemetryData,
+    setPlannedPath
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pathInputRef = useRef<HTMLInputElement | null>(null);
 
   // High-performance 60 FPS animation/playback loop
   useEffect(() => {
@@ -141,11 +144,21 @@ export default function ScopeDashboard() {
 
           const t = parseFloat(cols[0]) || (i - 1) * 50;
           timestamps.push(t);
-          coords.push({
-            x: parseFloat(cols[1]) || 12.0,
-            y: parseFloat(cols[2]) || 12.0,
-            heading: parseFloat(cols[3]) || 0.0
-          });
+          
+          let x = parseFloat(cols[1]) || 12.0;
+          let y = parseFloat(cols[2]) || 12.0;
+          let heading = parseFloat(cols[3]) || 0.0;
+
+          // If coordinates look like meters (small values), convert to inches and shift origin:
+          // Center-origin meters -> bottom-left-origin inches
+          if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0) {
+            const tempX = x;
+            x = -y * 39.3701 + 72;
+            y = tempX * 39.3701 + 72;
+            heading = heading + Math.PI / 2;
+          }
+
+          coords.push({ x, y, heading });
           battery.push(parseFloat(cols[4]) || 12.6);
           loopTime.push(parseFloat(cols[5]) || 9.5);
           motors.lf.push(parseFloat(cols[6]) || 1.2);
@@ -174,6 +187,103 @@ export default function ScopeDashboard() {
         console.log(`[Local Parser] Parsed and loaded custom file: ${file.name}`);
       } catch (err: any) {
         alert("Failed to parse log file: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handlePathInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      parseLocalPathFile(e.target.files[0]);
+    }
+  };
+
+  const parseLocalPathFile = (file: File) => {
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        if (!text) throw new Error("Empty file data.");
+
+        const root = JSON.parse(text);
+        if (!root.waypoints || !Array.isArray(root.waypoints)) {
+          throw new Error("Invalid PathPlanner file: missing waypoints array.");
+        }
+
+        const M_TO_IN = 39.3701;
+        const parsedWaypoints = root.waypoints.map((wp: any) => {
+          const anchor = { x: (wp.anchor?.x ?? 0) * M_TO_IN, y: (wp.anchor?.y ?? 0) * M_TO_IN };
+          
+          const prevControl = wp.prevControl 
+            ? { x: (wp.prevControl.x ?? 0) * M_TO_IN, y: (wp.prevControl.y ?? 0) * M_TO_IN }
+            : anchor;
+            
+          const nextControl = wp.nextControl
+            ? { x: (wp.nextControl.x ?? 0) * M_TO_IN, y: (wp.nextControl.y ?? 0) * M_TO_IN }
+            : anchor;
+            
+          return { anchor, prevControl, nextControl };
+        });
+
+        if (parsedWaypoints.length === 0) {
+          throw new Error("No waypoints found in path.");
+        }
+
+        const densePoints: { x: number; y: number; heading: number }[] = [];
+        
+        let initialHeading = 0;
+        if (parsedWaypoints.length > 1) {
+          const wp1 = parsedWaypoints[0];
+          const wp2 = parsedWaypoints[1];
+          const p0 = wp1.anchor;
+          const p1 = wp1.nextControl;
+          const dx = 3 * (p1.x - p0.x);
+          const dy = 3 * (p1.y - p0.y);
+          initialHeading = Math.atan2(dy, dx);
+        }
+        
+        densePoints.push({
+          x: parsedWaypoints[0].anchor.x,
+          y: parsedWaypoints[0].anchor.y,
+          heading: initialHeading
+        });
+
+        const numSamples = 20;
+        for (let i = 0; i < parsedWaypoints.length - 1; i++) {
+          const wp1 = parsedWaypoints[i];
+          const wp2 = parsedWaypoints[i + 1];
+          
+          const p0 = wp1.anchor;
+          const p1 = wp1.nextControl;
+          const p2 = wp2.prevControl;
+          const p3 = wp2.anchor;
+
+          for (let step = 1; step <= numSamples; step++) {
+            const t = step / numSamples;
+            const omt = 1 - t;
+            const omt2 = omt * omt;
+            const omt3 = omt2 * omt;
+            const t2 = t * t;
+            const t3 = t2 * t;
+
+            const x = omt3 * p0.x + 3 * omt2 * t * p1.x + 3 * omt * t2 * p2.x + t3 * p3.x;
+            const y = omt3 * p0.y + 3 * omt2 * t * p1.y + 3 * omt * t2 * p2.y + t3 * p3.y;
+
+            const dx = 3 * omt2 * (p1.x - p0.x) + 6 * omt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x);
+            const dy = 3 * omt2 * (p1.y - p0.y) + 6 * omt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y);
+            const heading = Math.atan2(dy, dx);
+
+            densePoints.push({ x, y, heading });
+          }
+        }
+
+        setPlannedPath(densePoints);
+        console.log(`[Path Parser] Parsed and loaded planned path: ${file.name}`);
+      } catch (err: any) {
+        alert("Failed to parse PathPlanner file: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -226,6 +336,21 @@ export default function ScopeDashboard() {
             ref={fileInputRef}
             onChange={handleFileInput}
             accept=".csv,.txt"
+            className="hidden"
+          />
+
+          {/* Planned Path Upload */}
+          <button
+            onClick={() => pathInputRef.current?.click()}
+            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md"
+          >
+            <Compass size={12} /> Planned Path
+          </button>
+          <input
+            type="file"
+            ref={pathInputRef}
+            onChange={handlePathInput}
+            accept=".path,.json"
             className="hidden"
           />
         </div>
