@@ -19,7 +19,8 @@ import {
   Image as ImageIcon,
   Layers,
   ShieldCheck,
-  Cpu
+  Cpu,
+  Compass
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
@@ -142,8 +143,11 @@ export default function Navbar() {
               <Link href="/robots" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
               </Link>
+              <Link href="/aresplanner" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Compass size={12} className="text-ares-gold" /> ARESPlanner
+              </Link>
               <Link href="/simulators" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <LayoutDashboard size={12} className="text-ares-cyan" /> Simulators
+                <LayoutDashboard size={12} className="text-ares-cyan" /> Arm Kinematics
               </Link>
             </div>
           </div>
@@ -272,8 +276,11 @@ export default function Navbar() {
               <Link href="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
               </Link>
+              <Link href="/aresplanner" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Compass size={12} className="text-ares-gold" /> ARESPlanner
+              </Link>
               <Link href="/simulators" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <LayoutDashboard size={12} className="text-ares-cyan" /> Simulators
+                <LayoutDashboard size={12} className="text-ares-cyan" /> Arm Kinematics
               </Link>
             </div>
           </div>

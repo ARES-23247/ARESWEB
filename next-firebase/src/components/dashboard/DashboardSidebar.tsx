@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface NavButtonProps {
@@ -122,6 +122,13 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >
               <Cpu size={14} className="text-marble/40" /> Fleet Archive
+            </Link>
+            <Link
+              href="/aresplanner"
+              onClick={onCloseMobile}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
+            >
+              <Compass size={14} className="text-marble/40" /> ARES Trajectory Planner
             </Link>
             <Link
               href="/simulators"

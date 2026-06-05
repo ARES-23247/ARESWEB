@@ -8,6 +8,7 @@ type ElbowConfig = 'up' | 'down';
 type AngleMode = 'degrees' | 'radians';
 
 export default function TrigRoboticsSimPage() {
+
   const [mode, setMode] = useState<KinematicsMode>('ik');
   const [elbow, setElbow] = useState<ElbowConfig>('up');
   const [angleMode, setAngleMode] = useState<AngleMode>('degrees');
