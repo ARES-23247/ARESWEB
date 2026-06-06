@@ -73,9 +73,28 @@ If you have questions about implementing this on your robot, feel free to reach 
   }
 };
 
+async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 1200): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error("Firestore operation timed out"));
+    }, timeoutMs);
+  });
+  
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
 async function getBlogPostDetails(slug: string): Promise<BlogPostDetails | null> {
   try {
-    const docSnap = await adminDb.collection("posts").doc(slug).get();
+    const fetchPromise = adminDb.collection("posts").doc(slug).get();
+    const docSnap = await fetchWithTimeout(fetchPromise, 1200);
     
     if (!docSnap.exists) {
       return MOCK_DETAILS[slug] || null;

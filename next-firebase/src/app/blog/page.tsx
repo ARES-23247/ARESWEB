@@ -32,13 +32,33 @@ const MOCK_POSTS: BlogPost[] = [
   }
 ];
 
+async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 1200): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error("Firestore operation timed out"));
+    }, timeoutMs);
+  });
+  
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
 async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const snapshot = await adminDb
+    const fetchPromise = adminDb
       .collection("posts")
       .where("status", "==", "published")
       .where("isDeleted", "==", 0)
       .get();
+
+    const snapshot = await fetchWithTimeout(fetchPromise, 1200);
 
     if (snapshot.empty) {
       return MOCK_POSTS;
