@@ -181,7 +181,7 @@ export default function FieldObstacleEditor() {
           engineUsed: data.engine,
           fileSizeMb: data.fileSizeMb,
           optimizedUrl: data.cadUrl,
-          fieldYear: "2025-2026 Into The Deep",
+          fieldYear: data.fieldYear || "2025-2026 Into The Deep",
           elementCount: data.elementCount || 42
         };
 

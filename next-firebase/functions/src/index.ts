@@ -1093,12 +1093,40 @@ app.post("/api/analytics/onshape-sync", async (req: express.Request, res: expres
     let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
     let extractedObstacleCount = 0;
 
+    let fieldYear = "2025-2026 Into The Deep";
+    if (documentId.toLowerCase() === "c7b090d255194e764d0c133c" || documentId.toLowerCase().includes("decode")) {
+      fieldYear = "2026-2027 DECODE";
+    }
+
     console.log(`[Onshape Sync] Initiating CAD details sync. Type: ${type}`);
 
     if (onshapeAccessKey && onshapeSecretKey) {
       try {
         isRealSyncUsed = true;
         const authHeader = "Basic " + Buffer.from(`${onshapeAccessKey}:${onshapeSecretKey}`).toString("base64");
+
+        // Try to fetch document name for dynamic season resolution
+        try {
+          const docRes = await fetch(`https://cad.onshape.com/api/documents/${documentId}`, {
+            headers: {
+              "Authorization": authHeader,
+              "Accept": "application/vnd.onshape.v1+json"
+            }
+          });
+          if (docRes.ok) {
+            const docJson = await docRes.json() as any;
+            const docName = docJson.name || "";
+            if (docName.toLowerCase().includes("decode")) {
+              fieldYear = "2026-2027 DECODE";
+            } else if (docName.toLowerCase().includes("into the deep")) {
+              fieldYear = "2025-2026 Into The Deep";
+            } else if (docName) {
+              fieldYear = docName;
+            }
+          }
+        } catch (docErr) {
+          console.warn(`[Onshape Sync] Failed to fetch document name:`, docErr);
+        }
 
         // 1. Trigger translation request in Onshape
         console.log(`[Onshape Sync] Requesting GLTF translation...`);
@@ -1347,7 +1375,7 @@ app.post("/api/analytics/onshape-sync", async (req: express.Request, res: expres
           { mateName: "IntakePivotMate", type: "Revolute", channel: "mechanisms/intake/current" }
         ];
       } else {
-        configData.fieldYear = "2025-2026 Into The Deep";
+        configData.fieldYear = fieldYear;
         configData.elementCount = isRealSyncUsed ? 20 + extractedObstacleCount : 42;
       }
 
@@ -1362,6 +1390,7 @@ app.post("/api/analytics/onshape-sync", async (req: express.Request, res: expres
       engine: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
       cadUrl: optimizedUrl,
       fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82),
+      fieldYear,
       message: isRealSyncUsed 
         ? `Direct Onshape ${type} synchronization completed successfully! Extracted ${extractedObstacleCount} obstacles.`
         : `Simulation sync completed successfully (Fallback model loaded).`

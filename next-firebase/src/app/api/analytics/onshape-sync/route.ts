@@ -41,6 +41,11 @@ export async function POST(request: Request) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 
+    let fieldYear = "2025-2026 Into The Deep";
+    if (documentId.toLowerCase() === "c7b090d255194e764d0c133c" || documentId.toLowerCase().includes("decode")) {
+      fieldYear = "2026-2027 DECODE";
+    }
+
     // Save synced CAD metadata to Firestore
     try {
       const configDocName = type === "field" ? "field_config" : "cad_config";
@@ -62,7 +67,7 @@ export async function POST(request: Request) {
           { mateName: "IntakePivotMate", type: "Revolute", channel: "mechanisms/intake/current" }
         ];
       } else {
-        configData.fieldYear = "2025-2026 Into The Deep";
+        configData.fieldYear = fieldYear;
         configData.elementCount = 42;
       }
 
@@ -78,6 +83,7 @@ export async function POST(request: Request) {
       engine: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
       cadUrl: optimizedUrl,
       fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82),
+      fieldYear,
       message: `Direct Onshape ${type} synchronization completed successfully! CAD models and workspace configurations updated.`
     });
   } catch (error: any) {
