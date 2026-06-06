@@ -9,7 +9,7 @@ import StateInspector from "./components/StateInspector";
 import HealthDiagnostics from "./components/HealthDiagnostics";
 import OnshapeSyncCard from "./components/OnshapeSyncCard";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { 
   Play, 
   Pause, 
@@ -50,7 +50,8 @@ export default function ScopeDashboard() {
     setStreaming,
     setStreamSource,
     setConnectionStatus,
-    addLiveFrame
+    addLiveFrame,
+    setFieldObstacles
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
@@ -61,6 +62,50 @@ export default function ScopeDashboard() {
   
   // Video Sync States
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  // Field Obstacle Configuration States
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[] }[]>([]);
+  const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
+
+  useEffect(() => {
+    const fetchFieldConfigs = async () => {
+      try {
+        const q = query(collection(db, "field_configs"), orderBy("updatedAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const configs: any[] = [];
+        querySnapshot.forEach((docSnap) => {
+          configs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        setFieldConfigs(configs);
+        
+        // Auto-select the first one if available
+        if (configs.length > 0) {
+          setSelectedFieldConfigId(configs[0].id);
+          setFieldObstacles(configs[0].obstacles || []);
+        } else {
+          setFieldObstacles(null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch field configurations:", err);
+      }
+    };
+    fetchFieldConfigs();
+  }, [setFieldObstacles]);
+
+  const handleFieldConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const configId = e.target.value;
+    setSelectedFieldConfigId(configId);
+    if (!configId) {
+      setFieldObstacles(null);
+      return;
+    }
+    const config = fieldConfigs.find((c) => c.id === configId);
+    if (config) {
+      setFieldObstacles(config.obstacles || []);
+    } else {
+      setFieldObstacles(null);
+    }
+  };
 
   // Console Log UI States
   const [logFilter, setLogFilter] = useState("");
@@ -781,6 +826,29 @@ export default function ScopeDashboard() {
               <Wifi size={12} /> Go Live
             </button>
           )}
+
+          {/* Field Layout Selector */}
+          <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">
+            <Sliders size={14} className="text-ares-gold" />
+            <select
+              value={selectedFieldConfigId}
+              onChange={handleFieldConfigChange}
+              className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer"
+            >
+              {fieldConfigs.length === 0 ? (
+                <option value="" className="bg-neutral-900 text-white">No Obstacles</option>
+              ) : (
+                <>
+                  <option value="" className="bg-neutral-900 text-white">Clear Obstacles</option>
+                  {fieldConfigs.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-neutral-900 text-white">
+                      {c.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
 
           {/* Active Run Selector */}
           <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">

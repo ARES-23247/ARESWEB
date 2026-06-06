@@ -14,7 +14,8 @@ export default function WebGLReplayCanvas() {
     getCurrentComparisonFrame, 
     plannedPath, 
     driveMode, 
-    setDriveMode 
+    setDriveMode,
+    fieldObstacles
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
@@ -180,6 +181,29 @@ export default function WebGLReplayCanvas() {
     ctx.fillRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
     ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
     ctx.strokeRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
+
+    // Custom Obstacles from Field Config
+    if (fieldObstacles && fieldObstacles.length > 0) {
+      ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
+      ctx.strokeStyle = "#EF4444";
+      ctx.lineWidth = 1.5;
+      fieldObstacles.forEach((obs) => {
+        const obsHalfW = obs.width / 2;
+        const obsHalfH = obs.height / 2;
+        const leftPx = toPxX(obs.y + obsHalfW);
+        const topPx = toPxY(obs.x + obsHalfH);
+        const wPx = obs.width * scale;
+        const hPx = obs.height * scale;
+
+        ctx.fillRect(leftPx, topPx, wPx, hPx);
+        ctx.strokeRect(leftPx, topPx, wPx, hPx);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.font = "bold 8px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(obs.name, leftPx + wPx / 2, topPx + hPx / 2 + 3);
+      });
+    }
 
     // Planned Path (Dashed Cyan Spline)
     if (plannedPath && plannedPath.length > 0) {
@@ -389,7 +413,7 @@ export default function WebGLReplayCanvas() {
 
       ctx.restore();
     }
-  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov]);
+  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -503,6 +527,32 @@ export default function WebGLReplayCanvas() {
     addPipe(0.6096, -0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
     addPipe(0.6096, 0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
     scene.add(submersibleGroup);
+
+    // Custom 3D Obstacles
+    if (fieldObstacles && fieldObstacles.length > 0) {
+      const obstacleMat = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness: 0.6,
+        metalness: 0.2
+      });
+
+      fieldObstacles.forEach((obs) => {
+        const heightMeters = 0.35;
+        const obsGeo = new THREE.BoxGeometry(obs.width, heightMeters, obs.height);
+        const obsMesh = new THREE.Mesh(obsGeo, obstacleMat);
+        obsMesh.position.set(-obs.y, heightMeters / 2, -obs.x);
+        obsMesh.castShadow = true;
+        obsMesh.receiveShadow = true;
+        
+        // Red boundary outline
+        const borderGeo = new THREE.EdgesGeometry(obsGeo);
+        const borderMat = new THREE.LineBasicMaterial({ color: 0xEF4444, linewidth: 2 });
+        const borderLine = new THREE.LineSegments(borderGeo, borderMat);
+        obsMesh.add(borderLine);
+
+        scene.add(obsMesh);
+      });
+    }
 
     // 6. 3D Robot Model Group
     const robot = new THREE.Group();
@@ -672,7 +722,7 @@ export default function WebGLReplayCanvas() {
       renderer.dispose();
       container.innerHTML = "";
     };
-  }, [viewMode]);
+  }, [viewMode, fieldObstacles]);
 
   // ─── 3D TELEMETRY SYNCHRONIZATION KINEMATICS ───
   useEffect(() => {

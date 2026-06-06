@@ -34,6 +34,7 @@ import DashboardPhotosPage from "@/app/dashboard/photos/page";
 import DashboardScopePage from "@/app/dashboard/scope/page";
 import DashboardTasksPage from "@/app/dashboard/tasks/page";
 import DashboardVideosPage from "@/app/dashboard/videos/page";
+import DashboardFieldPage from "@/app/dashboard/field/page";
 
 export default function App() {
   return (
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="documents" element={<DashboardDocumentsPage />} />
               <Route path="videos" element={<DashboardVideosPage />} />
               <Route path="photos" element={<DashboardPhotosPage />} />
+              <Route path="field" element={<DashboardFieldPage />} />
             </Route>
             
             {/* 404 Route */}

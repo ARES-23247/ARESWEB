@@ -29,6 +29,15 @@ export interface ConsoleLogEntry {
   message: string;
 }
 
+export interface FieldObstacle {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface ScopeState {
   isPlaying: boolean;
   currentTimeMs: number;
@@ -39,6 +48,7 @@ interface ScopeState {
   consoleLogs: ConsoleLogEntry[] | null;
   selectedKeys: string[];
   driveMode: "mecanum" | "swerve";
+  fieldObstacles: FieldObstacle[] | null;
   
   // Streaming States
   isStreaming: boolean;
@@ -53,6 +63,7 @@ interface ScopeState {
   setComparisonTelemetryData: (data: TelemetryData | null) => void;
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setConsoleLogs: (logs: ConsoleLogEntry[] | null) => void;
+  setFieldObstacles: (obstacles: FieldObstacle[] | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
   setDriveMode: (mode: "mecanum" | "swerve") => void;
@@ -76,6 +87,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   consoleLogs: null,
   selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"],
   driveMode: "mecanum",
+  fieldObstacles: null,
   
   isStreaming: false,
   streamSource: null,
@@ -133,6 +145,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   },
   setConsoleLogs: (consoleLogs) => set({ consoleLogs }),
   setPlannedPath: (plannedPath) => set({ plannedPath }),
+  setFieldObstacles: (fieldObstacles) => set({ fieldObstacles }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
     const isSelected = state.selectedKeys.includes(key);
