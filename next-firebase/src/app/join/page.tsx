@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { siteConfig } from "@/lib/site-config";
 import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck, ArrowRight } from "lucide-react";
 
+declare global {
+  interface Window {
+    ARES_E2E_BYPASS?: boolean;
+  }
+}
+
 const INTEREST_OPTIONS = ["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"] as const;
 const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
 
@@ -72,8 +78,13 @@ export default function JoinPage() {
         throw new Error("Security verification service (reCAPTCHA) is currently loading or blocked. Please refresh.");
       }
 
-      window.grecaptcha.ready(() => {
-        window.grecaptcha!.execute("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", { action: "submit" })
+      const recaptcha = window.grecaptcha as unknown as {
+        ready: (cb: () => void) => void;
+        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      };
+
+      recaptcha.ready(() => {
+        recaptcha.execute("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", { action: "submit" })
           .then(async (token) => {
             await submitApplication(token);
           })

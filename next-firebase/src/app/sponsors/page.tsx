@@ -17,10 +17,6 @@ interface Sponsor {
 
 declare global {
   interface Window {
-    grecaptcha?: {
-      ready: (cb: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
-    };
     ARES_E2E_BYPASS?: boolean;
   }
 }
@@ -145,8 +141,13 @@ export default function SponsorsPage() {
         throw new Error("Security verification service (reCAPTCHA) is currently loading or blocked. Please refresh.");
       }
 
-      window.grecaptcha.ready(() => {
-        window.grecaptcha!.execute("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", { action: "submit" })
+      const recaptcha = window.grecaptcha as unknown as {
+        ready: (cb: () => void) => void;
+        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      };
+
+      recaptcha.ready(() => {
+        recaptcha.execute("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", { action: "submit" })
           .then(async (token) => {
             await submitInquiry(token);
           })

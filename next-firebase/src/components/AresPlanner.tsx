@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { 
   Play, Pause, RefreshCw, Info, HelpCircle, Compass, 
   Download, Maximize2, Minimize2, Plus, Trash2, Save, 
-  FolderOpen, Settings, Wifi, Copy, Check, ShieldCheck 
+  FolderOpen, Settings, Wifi, Copy, Check, ShieldCheck,
+  ChevronDown, ChevronUp, Lock, Unlock, Link
 } from "lucide-react";
 
 // Waypoint using cubic Bezier formatting
@@ -105,6 +106,29 @@ export default function AresPlanner({
   const [selectedWaypointIdx, setSelectedWaypointIdx] = useState<number | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [isAddingMarker, setIsAddingMarker] = useState(false);
+
+  // Sidebar accordion expansion states
+  const [isWaypointsExpanded, setIsWaypointsExpanded] = useState(true);
+  const [isEventsExpanded, setIsEventsExpanded] = useState(true);
+  const [isRotationExpanded, setIsRotationExpanded] = useState(false);
+  const [isPointZonesExpanded, setIsPointZonesExpanded] = useState(false);
+  const [isStartingStateExpanded, setIsStartingStateExpanded] = useState(false);
+  const [isEndStateExpanded, setIsEndStateExpanded] = useState(false);
+
+  // Expanded individual waypoints
+  const [expandedWaypoints, setExpandedWaypoints] = useState<Record<number, boolean>>({ 0: true });
+
+  // Lock body scroll when zen mode is active to prevent scroll to footer
+  useEffect(() => {
+    if (isZenMode) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isZenMode]);
   
   // Custom uploaded background
   const [customBgImage, setCustomBgImage] = useState<HTMLImageElement | null>(null);
@@ -836,6 +860,113 @@ export default function AresPlanner({
     return `X: ${dispX.toFixed(precision)}${unitStr}, Y: ${dispY.toFixed(precision)}${unitStr}`;
   };
 
+  const getWaypointHeadingDegrees = (idx: number) => {
+    const wp = waypoints[idx];
+    if (!wp) return 0;
+    let dx = 0;
+    let dy = 0;
+    if (wp.nextControl) {
+      dx = wp.nextControl.x - wp.anchor.x;
+      dy = wp.nextControl.y - wp.anchor.y;
+    } else if (idx < waypoints.length - 1) {
+      dx = waypoints[idx + 1].anchor.x - wp.anchor.x;
+      dy = waypoints[idx + 1].anchor.y - wp.anchor.y;
+    } else if (wp.prevControl) {
+      dx = wp.anchor.x - wp.prevControl.x;
+      dy = wp.anchor.y - wp.prevControl.y;
+    } else if (idx > 0) {
+      dx = wp.anchor.x - waypoints[idx - 1].anchor.x;
+      dy = wp.anchor.y - waypoints[idx - 1].anchor.y;
+    }
+    const rad = Math.atan2(dy, dx);
+    let deg = rad * (180 / Math.PI);
+    if (deg < 0) deg += 360;
+    return deg;
+  };
+
+  const getControlLength = (idx: number, type: "prev" | "next") => {
+    const wp = waypoints[idx];
+    if (!wp) return 0;
+    const ctrl = type === "prev" ? wp.prevControl : wp.nextControl;
+    if (!ctrl) return 0;
+    const dx = ctrl.x - wp.anchor.x;
+    const dy = ctrl.y - wp.anchor.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return unitMode === "meters" ? dist * 0.0254 : dist;
+  };
+
+  const handleUpdateWaypointAnchor = (idx: number, field: "x" | "y", valStr: string) => {
+    const val = parseFloat(valStr);
+    if (isNaN(val)) return;
+
+    setWaypoints((prev) => {
+      const nextWps = [...prev];
+      const wp = { ...nextWps[idx] };
+      const anchor = { ...wp.anchor };
+
+      const newInternalVal = unitMode === "meters" ? val / 0.0254 : val;
+      const oldInternalVal = field === "x" ? anchor.x : anchor.y;
+      const delta = newInternalVal - oldInternalVal;
+
+      if (field === "x") {
+        anchor.x = newInternalVal;
+        wp.anchor = anchor;
+        if (wp.prevControl) wp.prevControl = { x: wp.prevControl.x + delta, y: wp.prevControl.y };
+        if (wp.nextControl) wp.nextControl = { x: wp.nextControl.x + delta, y: wp.nextControl.y };
+      } else {
+        anchor.y = newInternalVal;
+        wp.anchor = anchor;
+        if (wp.prevControl) wp.prevControl = { x: wp.prevControl.x, y: wp.prevControl.y + delta };
+        if (wp.nextControl) wp.nextControl = { x: wp.nextControl.x, y: wp.nextControl.y + delta };
+      }
+
+      nextWps[idx] = wp;
+      return nextWps;
+    });
+  };
+
+  const handleUpdateControlLength = (idx: number, type: "prev" | "next", newLenStr: string) => {
+    const newLen = parseFloat(newLenStr);
+    if (isNaN(newLen) || newLen <= 0) return;
+    const internalLen = unitMode === "meters" ? newLen / 0.0254 : newLen;
+
+    setWaypoints((prev) => {
+      const nextWps = [...prev];
+      const wp = { ...nextWps[idx] };
+      const ctrl = type === "prev" ? wp.prevControl : wp.nextControl;
+      if (!ctrl) return nextWps;
+
+      const dx = ctrl.x - wp.anchor.x;
+      const dy = ctrl.y - wp.anchor.y;
+      const currentLen = Math.sqrt(dx * dx + dy * dy);
+      if (currentLen === 0) return nextWps;
+
+      const scale = internalLen / currentLen;
+      const updatedCtrl = {
+        x: wp.anchor.x + dx * scale,
+        y: wp.anchor.y + dy * scale
+      };
+
+      if (type === "prev") {
+        wp.prevControl = updatedCtrl;
+        if (wp.nextControl) {
+          const mDx = updatedCtrl.x - wp.anchor.x;
+          const mDy = updatedCtrl.y - wp.anchor.y;
+          wp.nextControl = { x: wp.anchor.x - mDx, y: wp.anchor.y - mDy };
+        }
+      } else {
+        wp.nextControl = updatedCtrl;
+        if (wp.prevControl) {
+          const mDx = updatedCtrl.x - wp.anchor.x;
+          const mDy = updatedCtrl.y - wp.anchor.y;
+          wp.prevControl = { x: wp.anchor.x - mDx, y: wp.anchor.y - mDy };
+        }
+      }
+      nextWps[idx] = wp;
+      return nextWps;
+    });
+  };
+
   // JSON Exporter
   const handleExportJSON = () => {
     const output = {
@@ -973,7 +1104,7 @@ export default function AresPlanner({
       ref={containerRef}
       className={`w-full flex flex-col gap-6 p-4 rounded-xl border border-white/10 ${
         isZenMode 
-          ? "fixed inset-0 z-modal bg-obsidian p-6 overflow-y-auto" 
+          ? "fixed inset-0 z-[9999] bg-obsidian p-6 overflow-y-auto" 
           : "glass-card max-w-5xl mx-auto"
       }`}
     >
@@ -1101,218 +1232,412 @@ export default function AresPlanner({
             </div>
           </div>
 
-          {/* Card 2: Interactive Configurator */}
-          <div className="bg-black/20 border border-white/5 rounded-xl p-4 min-h-[160px]">
+          {/* Collapsible Accordion Side Panel */}
+          <div className="flex flex-col gap-3">
             
-            {/* If Waypoint Node is Selected */}
-            {selectedWaypointIdx !== null && (
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs font-black uppercase text-ares-red tracking-wider">
-                    Waypoint #{selectedWaypointIdx + 1} Configuration
+            {/* 1. WAYPOINTS ACCORDION */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsWaypointsExpanded(!isWaypointsExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isWaypointsExpanded ? <ChevronUp size={14} className="text-ares-cyan" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-ares-cyan" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Waypoints</span>
+                </div>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className="bg-ares-cyan/15 border border-ares-cyan/35 text-ares-cyan text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                    {waypoints.length}
                   </span>
                   <button
-                    onClick={() => handleDeleteWaypoint(selectedWaypointIdx)}
-                    disabled={waypoints.length <= 2}
-                    className="p-1 text-marble/40 hover:text-ares-danger hover:bg-ares-red/10 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    title="Delete waypoint"
+                    onClick={handleAddWaypoint}
+                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
+                    title="Add waypoint"
                   >
-                    <Trash2 size={14} />
+                    <Plus size={12} />
                   </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                  <div>
-                    <span className="text-[9px] text-marble/50 uppercase block">Anchor Position</span>
-                    <div className="mt-1 bg-obsidian/60 border border-white/5 p-2 rounded text-white flex flex-col gap-1">
-                      <span>X: {unitMode === "meters" ? (waypoints[selectedWaypointIdx].anchor.x * 0.0254).toFixed(2) : waypoints[selectedWaypointIdx].anchor.x.toFixed(1)} {unitMode === "meters" ? "m" : "in"}</span>
-                      <span>Y: {unitMode === "meters" ? (waypoints[selectedWaypointIdx].anchor.y * 0.0254).toFixed(2) : waypoints[selectedWaypointIdx].anchor.y.toFixed(1)} {unitMode === "meters" ? "m" : "in"}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[9px] text-marble/50 uppercase block">Heading Tangents</span>
-                    <div className="mt-1 bg-obsidian/60 border border-white/5 p-2 rounded text-marble/70 flex flex-col gap-1">
-                      <span>Prev: {waypoints[selectedWaypointIdx].prevControl ? "Connected" : "Start Node"}</span>
-                      <span>Next: {waypoints[selectedWaypointIdx].nextControl ? "Connected" : "End Node"}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
-            )}
 
-            {/* If Event Marker is Selected */}
-            {selectedMarkerId !== null && (
-              <div className="flex flex-col gap-3">
-                {(() => {
-                  const marker = markers.find((m) => m.id === selectedMarkerId);
-                  if (!marker) return null;
-                  return (
-                    <>
-                      <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span className="text-xs font-black uppercase text-ares-gold tracking-wider">
-                          Event Action Marker
-                        </span>
-                        <button
-                          onClick={() => handleDeleteMarker(selectedMarkerId)}
-                          className="p-1 text-marble/40 hover:text-ares-danger hover:bg-ares-red/10 rounded cursor-pointer"
-                          title="Delete marker"
+              {isWaypointsExpanded && (
+                <div className="p-3 flex flex-col gap-2 max-h-[360px] overflow-y-auto">
+                  {waypoints.map((wp, idx) => {
+                    const isExpanded = !!expandedWaypoints[idx];
+                    const isSelected = selectedWaypointIdx === idx;
+                    const label = idx === 0 ? "Start Point" : idx === waypoints.length - 1 ? "End Point" : `Waypoint ${idx + 1}`;
+                    
+                    return (
+                      <div 
+                        key={idx}
+                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                          isSelected 
+                            ? "bg-ares-red/5 border-ares-red/45" 
+                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
+                        }`}
+                      >
+                        {/* Waypoint Card Header */}
+                        <div 
+                          onClick={() => {
+                            setSelectedWaypointIdx(idx);
+                            setSelectedMarkerId(null);
+                            setExpandedWaypoints(prev => ({ ...prev, [idx]: !prev[idx] }));
+                          }}
+                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] select-none"
                         >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div>
-                          <label className="text-[9px] font-mono uppercase text-marble/50">Marker Name</label>
-                          <input
-                            type="text"
-                            value={marker.name}
-                            onChange={(e) => handleUpdateMarker(selectedMarkerId, { name: e.target.value })}
-                            className="w-full bg-obsidian border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-ares-gold mt-1"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[9px] font-mono uppercase text-marble/50 flex justify-between">
-                            <span>Path Progress</span>
-                            <span className="font-bold text-white">{Math.round(marker.progress * 100)}%</span>
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="1"
-                            value={Math.round(marker.progress * 100)}
-                            onChange={(e) => handleUpdateMarker(selectedMarkerId, { progress: parseInt(e.target.value) / 100 })}
-                            className="w-full accent-ares-gold cursor-ew-resize bg-black/40 h-1 rounded mt-1.5"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[9px] font-mono uppercase text-marble/50">Actions Queue</label>
-                          <div className="flex flex-wrap gap-1 mt-1 bg-obsidian/40 border border-white/5 p-2 rounded min-h-[40px]">
-                            {marker.actions.map((act, aIdx) => (
-                              <span
-                                key={aIdx}
-                                className="bg-ares-gold/10 text-ares-gold text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-ares-gold/20 flex items-center gap-1 select-none"
-                              >
-                                {act}
-                                <span
-                                  onClick={() => handleUpdateMarker(selectedMarkerId, { actions: marker.actions.filter((_, idx) => idx !== aIdx) })}
-                                  className="text-white hover:text-ares-red cursor-pointer font-sans font-black ml-1 text-[8px]"
-                                >
-                                  ×
-                                </span>
-                              </span>
-                            ))}
-                            {marker.actions.length === 0 && (
-                              <span className="text-[10px] text-marble/35 font-mono italic">No actions registered.</span>
-                            )}
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? <ChevronUp size={11} className="text-marble/60" /> : <ChevronDown size={11} className="text-marble/35" />}
+                            <span className="text-xs font-bold text-white/90">{label}</span>
                           </div>
-
-                          <div className="flex gap-2 mt-2">
-                            <input
-                              type="text"
-                              id="actionInput"
-                              placeholder="ActionName (e.g. LiftUp)"
-                              className="flex-grow bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  const target = e.currentTarget;
-                                  if (target.value.trim()) {
-                                    handleUpdateMarker(selectedMarkerId, { actions: [...marker.actions, target.value.trim()] });
-                                    target.value = "";
-                                  }
-                                }
-                              }}
-                            />
+                          
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button className="p-1 hover:bg-white/5 rounded text-marble/40 hover:text-white cursor-pointer">
+                              <Lock size={12} />
+                            </button>
                             <button
-                              onClick={() => {
-                                const input = document.getElementById("actionInput") as HTMLInputElement;
-                                if (input && input.value.trim()) {
-                                  handleUpdateMarker(selectedMarkerId, { actions: [...marker.actions, input.value.trim()] });
-                                  input.value = "";
-                                }
-                              }}
-                              className="px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] text-white font-bold cursor-pointer"
+                              onClick={() => handleDeleteWaypoint(idx)}
+                              disabled={waypoints.length <= 2}
+                              className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Delete waypoint"
                             >
-                              Add
+                              <Trash2 size={12} />
                             </button>
                           </div>
-
-                          <div className="mt-2.5">
-                            <label className="text-[8px] font-mono uppercase text-marble/40 block mb-1">Suggested Hooks:</label>
-                            <div className="flex flex-wrap gap-1">
-                              {["IntakeOn", "IntakeOff", "FlywheelOn", "FlywheelOff", "IntakeDeploy", "FeederShoot", "Shoot", "Stop"].map((suggestedAct) => {
-                                const isAdded = marker.actions.includes(suggestedAct);
-                                return (
-                                  <button
-                                    key={suggestedAct}
-                                    type="button"
-                                    disabled={isAdded}
-                                    onClick={() => {
-                                      handleUpdateMarker(selectedMarkerId, { actions: [...marker.actions, suggestedAct] });
-                                    }}
-                                    className={`text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
-                                      isAdded 
-                                        ? "bg-white/5 border-white/5 text-marble/30 cursor-not-allowed" 
-                                        : "bg-white/5 border-white/10 hover:border-ares-gold/45 text-marble/75 hover:text-ares-gold"
-                                    }`}
-                                  >
-                                    +{suggestedAct}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
                         </div>
+
+                        {/* Waypoint Card Content */}
+                        {isExpanded && (
+                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5">
+                            <div className="grid grid-cols-3 gap-2">
+                              {/* X Position */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">X Position ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={parseFloat((unitMode === "meters" ? wp.anchor.x * 0.0254 : wp.anchor.x).toFixed(3))}
+                                  onChange={(e) => handleUpdateWaypointAnchor(idx, "x", e.target.value)}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
+                                />
+                              </div>
+                              {/* Y Position */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Y Position ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={parseFloat((unitMode === "meters" ? wp.anchor.y * 0.0254 : wp.anchor.y).toFixed(3))}
+                                  onChange={(e) => handleUpdateWaypointAnchor(idx, "y", e.target.value)}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
+                                />
+                              </div>
+                              {/* Tangent Heading */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Heading (Deg)</label>
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={`${getWaypointHeadingDegrees(idx).toFixed(1)}°`}
+                                  className="w-full bg-obsidian/30 border border-white/5 rounded px-2 py-1 text-[11px] font-mono text-marble/40 select-none focus:outline-none cursor-default"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Control Tangent Lengths */}
+                            {(wp.prevControl || wp.nextControl) && (
+                              <div className="flex flex-col gap-2 border-t border-white/[0.04] pt-2">
+                                {wp.prevControl && (
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[8px] font-mono uppercase text-marble/40 block">Prev Control Length ({unitMode === "meters" ? "M" : "In"})</label>
+                                    <input
+                                      type="number"
+                                      step="0.001"
+                                      value={parseFloat(getControlLength(idx, "prev").toFixed(3))}
+                                      onChange={(e) => handleUpdateControlLength(idx, "prev", e.target.value)}
+                                      className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
+                                    />
+                                  </div>
+                                )}
+                                {wp.nextControl && (
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[8px] font-mono uppercase text-marble/40 block">Next Control Length ({unitMode === "meters" ? "M" : "In"})</label>
+                                    <input
+                                      type="number"
+                                      step="0.001"
+                                      value={parseFloat(getControlLength(idx, "next").toFixed(3))}
+                                      onChange={(e) => handleUpdateControlLength(idx, "next", e.target.value)}
+                                      className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-            {/* Default State: Path Config Overview */}
-            {selectedWaypointIdx === null && selectedMarkerId === null && (
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-black uppercase text-marble/55 tracking-wider border-b border-white/5 pb-2 block">
-                  Trajectory Overview
-                </span>
-
-                <div className="flex flex-col gap-2.5 text-xs">
-                  <div className="flex justify-between font-mono">
-                    <span className="text-marble/50">Total Waypoints:</span>
-                    <span className="font-bold text-white">{waypoints.length} nodes</span>
-                  </div>
-
-                  <div className="flex justify-between font-mono">
-                    <span className="text-marble/50">Actions/Event Markers:</span>
-                    <span className="font-bold text-white">{markers.length} markers</span>
-                  </div>
-
-                  <div className="h-px bg-white/5 my-1" />
-
-                  {/* Actions buttons */}
-                  <div className="grid grid-cols-2 gap-2 mt-1">
-                    <button
-                      onClick={handleAddWaypoint}
-                      className="py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Plus size={12} className="text-ares-cyan" /> Add Waypoint
-                    </button>
-
-                    <button
-                      onClick={handleTriggerAddMarker}
-                      className="py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Plus size={12} className="text-ares-gold" /> Add Action
-                    </button>
-                  </div>
+            {/* 2. EVENT MARKERS ACCORDION */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsEventsExpanded(!isEventsExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isEventsExpanded ? <ChevronUp size={14} className="text-ares-gold" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Settings size={14} className="text-ares-gold" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Event Markers</span>
+                </div>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className="bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                    {markers.length}
+                  </span>
+                  <button
+                    onClick={handleTriggerAddMarker}
+                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
+                    title="Add event marker"
+                  >
+                    <Plus size={12} />
+                  </button>
                 </div>
               </div>
-            )}
+
+              {isEventsExpanded && (
+                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+                  {markers.map((marker) => {
+                    const isSelected = selectedMarkerId === marker.id;
+                    return (
+                      <div 
+                        key={marker.id}
+                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                          isSelected 
+                            ? "bg-ares-gold/[0.02] border-ares-gold/45" 
+                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
+                        }`}
+                      >
+                        {/* Event Card Header */}
+                        <div 
+                          onClick={() => {
+                            setSelectedMarkerId(marker.id);
+                            setSelectedWaypointIdx(null);
+                          }}
+                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
+                        >
+                          <div className="flex items-center gap-2 flex-grow">
+                            <input
+                              type="text"
+                              value={marker.name}
+                              onChange={(e) => handleUpdateMarker(marker.id, { name: e.target.value })}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-gold py-0.5"
+                            />
+                            <span className="text-[10px] text-marble/30 font-mono">({Math.round(marker.progress * 100)}%)</span>
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMarker(marker.id);
+                            }}
+                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
+                            title="Delete marker"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
+                        {/* Event Card Content */}
+                        {isSelected && (
+                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-3 text-xs">
+                            {/* Zoned Event Checkbox */}
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="checkbox" 
+                                id={`zoned-${marker.id}`} 
+                                className="accent-ares-gold h-3.5 w-3.5 border border-white/20 bg-obsidian rounded cursor-pointer"
+                              />
+                              <label htmlFor={`zoned-${marker.id}`} className="text-[10px] uppercase font-mono text-marble/50 cursor-pointer select-none">Zoned Event</label>
+                            </div>
+
+                            {/* Position slider */}
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex justify-between text-[9px] uppercase font-mono text-marble/40">
+                                <span>Position</span>
+                                <span className="font-bold text-white">{marker.progress.toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={Math.round(marker.progress * 100)}
+                                  onChange={(e) => handleUpdateMarker(marker.id, { progress: parseInt(e.target.value) / 100 })}
+                                  className="flex-grow accent-ares-gold h-1 rounded-full cursor-ew-resize bg-black/40"
+                                />
+                                <span className="bg-obsidian border border-white/10 px-2 py-0.5 rounded font-mono text-[10px] text-white">
+                                  {marker.progress.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Actions Queue */}
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] font-mono uppercase text-marble/40 block">Actions Queue</label>
+                              <div className="flex flex-wrap gap-1 bg-obsidian/45 border border-white/5 p-2 rounded min-h-[40px]">
+                                {marker.actions.map((act, aIdx) => (
+                                  <span
+                                    key={aIdx}
+                                    className="bg-ares-gold/10 text-ares-gold text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-ares-gold/20 flex items-center gap-1 select-none"
+                                  >
+                                    {act}
+                                    <span
+                                      onClick={() => handleUpdateMarker(marker.id, { actions: marker.actions.filter((_, idx) => idx !== aIdx) })}
+                                      className="text-white hover:text-ares-red cursor-pointer font-sans font-black ml-1 text-[8px]"
+                                    >
+                                      ×
+                                    </span>
+                                  </span>
+                                ))}
+                                {marker.actions.length === 0 && (
+                                  <span className="text-[10px] text-marble/35 font-mono italic">No actions.</span>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2 mt-1">
+                                <input
+                                  type="text"
+                                  id={`actionInput-${marker.id}`}
+                                  placeholder="ActionName (e.g. LiftUp)"
+                                  className="flex-grow bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      const target = e.currentTarget;
+                                      if (target.value.trim()) {
+                                        handleUpdateMarker(marker.id, { actions: [...marker.actions, target.value.trim()] });
+                                        target.value = "";
+                                      }
+                                    }
+                                  }}
+                                />
+                                <button
+                                  onClick={() => {
+                                    const input = document.getElementById(`actionInput-${marker.id}`) as HTMLInputElement;
+                                    if (input && input.value.trim()) {
+                                      handleUpdateMarker(marker.id, { actions: [...marker.actions, input.value.trim()] });
+                                      input.value = "";
+                                    }
+                                  }}
+                                  className="px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] text-white font-bold cursor-pointer"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {markers.length === 0 && (
+                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No event markers configured.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 3. ROTATION TARGETS PLACEHOLDER */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsRotationExpanded(!isRotationExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isRotationExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-marble/40" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Rotation Targets</span>
+                </div>
+                <span className="bg-white/5 border border-white/10 text-marble/40 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                  + 0
+                </span>
+              </div>
+              {isRotationExpanded && (
+                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
+                  No rotation targets defined.
+                </div>
+              )}
+            </div>
+
+            {/* 4. POINT TOWARDS ZONES PLACEHOLDER */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsPointZonesExpanded(!isPointZonesExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-marble/40" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Point Towards Zones</span>
+                </div>
+                <span className="bg-white/5 border border-white/10 text-marble/40 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                  + 0
+                </span>
+              </div>
+              {isPointZonesExpanded && (
+                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
+                  No point towards zones configured.
+                </div>
+              )}
+            </div>
+
+            {/* 5. IDEAL STARTING STATE PLACEHOLDER */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsStartingStateExpanded(!isStartingStateExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isStartingStateExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Link size={14} className="text-marble/40" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Ideal Starting State</span>
+                </div>
+                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
+                  0.00° starting with 0.00 M/S
+                </span>
+              </div>
+              {isStartingStateExpanded && (
+                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
+                  Starting configuration matches ideal coordinates.
+                </div>
+              )}
+            </div>
+
+            {/* 6. GOAL END STATE PLACEHOLDER */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsEndStateExpanded(!isEndStateExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isEndStateExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Link size={14} className="text-marble/40" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Goal End State</span>
+                </div>
+                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
+                  0.00° ending with 0.00 M/S
+                </span>
+              </div>
+              {isEndStateExpanded && (
+                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
+                  Goal velocity set to zero at end node.
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* Card 3: Cloud Sync / Saving */}
