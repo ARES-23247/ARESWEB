@@ -23,8 +23,13 @@ import {
   Grid,
   Info,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  ChevronUp,
+  Map,
+  CheckCircle2,
+  Link
 } from "lucide-react";
+import OnshapeRobotSyncCard from "./components/OnshapeRobotSyncCard";
 
 interface FieldObstacle {
   id: string;
@@ -51,6 +56,13 @@ export default function FieldObstacleEditor() {
   
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+
+  // Onshape Field CAD settings state
+  const [fieldDocId, setFieldDocId] = useState<string>("");
+  const [fieldWkId, setFieldWkId] = useState<string>("");
+  const [fieldElId, setFieldElId] = useState<string>("");
+  const [fieldSyncMeta, setFieldSyncMeta] = useState<any | null>(null);
+  const [isFieldConnected, setIsFieldConnected] = useState<boolean>(false);
 
   // Canvas Refs & States
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -104,6 +116,89 @@ export default function FieldObstacleEditor() {
   useEffect(() => {
     fetchConfigs();
   }, []);
+
+  // Fetch global field CAD settings on mount
+  useEffect(() => {
+    const fetchFieldCadSettings = async () => {
+      try {
+        const fieldDocSnap = await getDoc(doc(db, "settings", "field_cad"));
+        if (fieldDocSnap.exists()) {
+          const fieldData = fieldDocSnap.data();
+          setFieldDocId(fieldData.documentId || "");
+          setFieldWkId(fieldData.workspaceId || "");
+          setFieldElId(fieldData.elementId || "");
+          setFieldSyncMeta(fieldData.syncMeta || null);
+          setIsFieldConnected(!!fieldData.syncMeta);
+        } else {
+          // Defaults
+          setFieldDocId("d_23247_ftc_field_into_the_deep");
+          setFieldWkId("w_official_layout");
+          setFieldElId("e_arena_mesh");
+        }
+      } catch (err) {
+        console.warn("Failed to fetch field CAD settings on mount:", err);
+      }
+    };
+    fetchFieldCadSettings();
+  }, []);
+
+  const handleSyncFieldCAD = async () => {
+    if (!fieldDocId || !fieldWkId || !fieldElId) {
+      alert("Please fill in all Field CAD credentials.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/analytics/onshape-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentId: fieldDocId,
+          workspaceId: fieldWkId,
+          elementId: fieldElId,
+          type: "field"
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const meta = {
+          documentId: fieldDocId,
+          workspaceId: fieldWkId,
+          elementId: fieldElId,
+          engineUsed: data.engine,
+          fileSizeMb: data.fileSizeMb,
+          optimizedUrl: data.cadUrl,
+          fieldYear: "2025-2026 Into The Deep",
+          elementCount: data.elementCount || 42
+        };
+
+        // Save to Firestore under settings/field_cad so it persists globally
+        const fieldRef = doc(db, "settings", "field_cad");
+        await setDoc(fieldRef, {
+          documentId: fieldDocId,
+          workspaceId: fieldWkId,
+          elementId: fieldElId,
+          cadUrl: data.cadUrl,
+          syncMeta: meta
+        });
+
+        setFieldSyncMeta(meta);
+        setIsFieldConnected(true);
+        
+        // Reload layouts list to fetch the newly generated layout from Firestore
+        await fetchConfigs();
+        alert(data.message || "Field CAD synchronized successfully!");
+      } else {
+        alert("Failed to sync Field CAD: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Failed to sync Field CAD:", err);
+      alert("Failed to sync Field CAD model: Network connection error.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Set canvas size dynamically to fit container
   useEffect(() => {
@@ -741,9 +836,118 @@ export default function FieldObstacleEditor() {
             )}
           </div>
 
+          {/* Onshape Field CAD Synchronization was moved to the unified bottom section */}
         </div>
 
       </div>
+
+      {/* ─── ONSHAPE CAD INTEGRATION SECTION ─── */}
+      <section className="border-t border-white/5 pt-8 space-y-6">
+        <div>
+          <h2 className="text-lg font-black text-white uppercase tracking-tight font-heading flex items-center gap-2">
+            <Link size={18} className="text-ares-gold animate-pulse" /> Onshape CAD Synchronization
+          </h2>
+          <p className="text-marble/70 text-xs mt-1">
+            Manage your Onshape integrations. Synchronize 3D field meshes and associate robot assemblies to automatically fetch kinematic constraints and obstacle definitions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          {/* Onshape Field CAD Sync */}
+          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl flex flex-col justify-between space-y-4">
+            <div>
+              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Map size={14} className="text-ares-gold animate-pulse" /> Onshape 3D Field Sync
+                </span>
+                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
+                  isFieldConnected ? "bg-emerald-500/25 text-emerald-400 border border-emerald-500/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
+                }`}>
+                  {isFieldConnected ? "Synced" : "Not Synced"}
+                </span>
+              </h3>
+
+              <div className="space-y-3.5 mt-4">
+                <div>
+                  <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">
+                    Field Document ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. d_23247_ftc_field..."
+                    value={fieldDocId}
+                    onChange={(e) => setFieldDocId(e.target.value)}
+                    className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">Workspace ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. w_official..."
+                      value={fieldWkId}
+                      onChange={(e) => setFieldWkId(e.target.value)}
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">Element ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. e_arena..."
+                      value={fieldElId}
+                      onChange={(e) => setFieldElId(e.target.value)}
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={handleSyncFieldCAD}
+                disabled={loading}
+                className={`w-full py-2.5 bg-ares-gold hover:bg-ares-gold-soft text-black text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer transition-all duration-300 shadow-md flex items-center justify-center gap-2 ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw size={12} className="animate-spin" /> Syncing Field CAD...
+                  </>
+                ) : (
+                  <>
+                    <Map size={12} /> Sync Global Field CAD
+                  </>
+                )}
+              </button>
+
+              {fieldSyncMeta && (
+                <div className="bg-black/30 border border-white/5 p-3 rounded-xl space-y-1.5 text-[9px] font-mono text-marble/70">
+                  <div className="flex justify-between">
+                    <span>Field mesh size:</span>
+                    <span className="text-white font-bold">{fieldSyncMeta.fileSizeMb.toFixed(2)} MB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Season field:</span>
+                    <span className="text-white font-bold">{fieldSyncMeta.fieldYear}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Active obstacles:</span>
+                    <span className="text-ares-gold font-bold">{fieldSyncMeta.elementCount} synced</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Onshape Robot CAD Sync */}
+          <OnshapeRobotSyncCard />
+        </div>
+      </section>
 
     </div>
   );

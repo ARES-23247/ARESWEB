@@ -7,7 +7,6 @@ import WebGLReplayCanvas from "./components/WebGLReplayCanvas";
 import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
 import HealthDiagnostics from "./components/HealthDiagnostics";
-import OnshapeSyncCard from "./components/OnshapeSyncCard";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { 
@@ -1103,7 +1102,6 @@ export default function ScopeDashboard() {
               </div>
             </div>
             <div className="lg:col-span-1 flex flex-col gap-6">
-              <OnshapeSyncCard />
               <StateInspector />
             </div>
           </div>
