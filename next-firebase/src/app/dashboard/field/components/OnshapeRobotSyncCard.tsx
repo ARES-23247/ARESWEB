@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
 const parseOnshapeUrl = (url: string) => {
-  const match = url.match(/\/documents\/([^\/]+)\/(?:w|v)\/([^\/]+)\/e\/([^\/]+)/);
+  const match = url.match(/\/documents\/([a-zA-Z0-9_-]+)\/(?:w|v)\/([a-zA-Z0-9_-]+)\/e\/([a-zA-Z0-9_-]+)/);
   if (match) {
     return {
       documentId: match[1],
@@ -181,8 +181,14 @@ export default function OnshapeRobotSyncCard() {
       } else {
         alert("Failed to sync Robot CAD: " + (data.error || "Unknown error"));
       }
-    } catch (err) {
-      alert("Failed to sync Robot CAD model: Network connection error.");
+    } catch (err: any) {
+      console.error("Failed to sync Robot CAD:", err);
+      const isPermissionError = err?.message?.toLowerCase().includes("permission") || err?.code === "permission-denied";
+      alert(
+        isPermissionError
+          ? "Failed to save sync metadata: Insufficient database permissions."
+          : "Failed to sync Robot CAD: " + (err?.message || "Network connection or parsing error.")
+      );
     } finally {
       setLoading(false);
     }

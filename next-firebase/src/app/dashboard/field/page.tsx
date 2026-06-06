@@ -32,7 +32,7 @@ import {
 import OnshapeRobotSyncCard from "./components/OnshapeRobotSyncCard";
 
 const parseOnshapeUrl = (url: string) => {
-  const match = url.match(/\/documents\/([^\/]+)\/(?:w|v)\/([^\/]+)\/e\/([^\/]+)/);
+  const match = url.match(/\/documents\/([a-zA-Z0-9_-]+)\/(?:w|v)\/([a-zA-Z0-9_-]+)\/e\/([a-zA-Z0-9_-]+)/);
   if (match) {
     return {
       documentId: match[1],
@@ -204,9 +204,14 @@ export default function FieldObstacleEditor() {
       } else {
         alert("Failed to sync Field CAD: " + (data.error || "Unknown error"));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to sync Field CAD:", err);
-      alert("Failed to sync Field CAD model: Network connection error.");
+      const isPermissionError = err?.message?.toLowerCase().includes("permission") || err?.code === "permission-denied";
+      alert(
+        isPermissionError
+          ? "Failed to save sync metadata: Insufficient database permissions."
+          : "Failed to sync Field CAD: " + (err?.message || "Network connection or parsing error.")
+      );
     } finally {
       setLoading(false);
     }

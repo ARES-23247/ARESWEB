@@ -104,6 +104,36 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
     }
+
+    // robots
+    match /robots/{robotId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // field_configs
+    match /field_configs/{configId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // documents
+    match /documents/{docId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // videos
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
   }
 }
 
