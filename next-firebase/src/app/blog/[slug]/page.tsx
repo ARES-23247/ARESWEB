@@ -1,6 +1,9 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { adminDb } from "@/lib/firebase-admin";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface BlogPostDetails {
   slug: string;
@@ -11,8 +14,6 @@ interface BlogPostDetails {
   author?: string;
   content: string;
 }
-
-export const revalidate = 3600;
 
 const MOCK_DETAILS: Record<string, BlogPostDetails> = {
   "championship-2026-recap": {
@@ -73,71 +74,67 @@ If you have questions about implementing this on your robot, feel free to reach 
   }
 };
 
-async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 1200): Promise<T> {
-  let timeoutId: NodeJS.Timeout;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error("Firestore operation timed out"));
-    }, timeoutMs);
-  });
-  
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId!);
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId!);
-    throw error;
-  }
-}
+export default function BlogPostPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const [post, setPost] = useState<BlogPostDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-async function getBlogPostDetails(slug: string): Promise<BlogPostDetails | null> {
-  try {
-    const fetchPromise = adminDb.collection("posts").doc(slug).get();
-    const docSnap = await fetchWithTimeout(fetchPromise, 1200);
-    
-    if (!docSnap.exists) {
-      return MOCK_DETAILS[slug] || null;
-    }
-    
-    const data = docSnap.data();
-    if (!data || data.isDeleted === 1 || data.status !== "published") {
-      return MOCK_DETAILS[slug] || null;
-    }
-    
-    return {
-      slug,
-      title: data.title || "Untitled Post",
-      date: data.date || "",
-      snippet: data.snippet || "",
-      thumbnail: data.thumbnail || "",
-      author: data.author || "ARES Member",
-      content: data.content || data.snippet || ""
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!slug) return;
+      try {
+        const docRef = doc(db, "posts", slug);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          setPost(MOCK_DETAILS[slug] || null);
+          return;
+        }
+
+        const data = docSnap.data();
+        if (!data || data.isDeleted === 1 || data.status !== "published") {
+          setPost(MOCK_DETAILS[slug] || null);
+          return;
+        }
+
+        setPost({
+          slug,
+          title: data.title || "Untitled Post",
+          date: data.date || "",
+          snippet: data.snippet || "",
+          thumbnail: data.thumbnail || "",
+          author: data.author || "ARES Member",
+          content: data.content || data.snippet || ""
+        });
+      } catch (error) {
+        console.warn(`Firestore read failed for post slug: ${slug}, using mock fallback.`, error);
+        setPost(MOCK_DETAILS[slug] || null);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  } catch (error) {
-    console.warn(`Firestore read failed for post slug: ${slug}, using mock fallback.`, error);
-    return MOCK_DETAILS[slug] || null;
+
+    fetchPost();
+  }, [slug]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-obsidian text-marble">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+      </div>
+    );
   }
-}
-
-// Generate static parameters for static optimization
-export async function generateStaticParams() {
-  return [
-    { slug: "championship-2026-recap" },
-    { slug: "drivetrain-ekf-calibration" }
-  ];
-}
-
-interface PageProps {
-  params: Promise<{ slug: string }>;
-}
-
-export default async function BlogPostPage({ params }: PageProps) {
-  const { slug } = await params;
-  const post = await getBlogPostDetails(slug);
 
   if (!post) {
-    notFound();
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
+        <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Post Not Found</h2>
+        <p className="text-marble/60 text-sm mb-8">The blog article you are looking for does not exist or has been removed.</p>
+        <Link to="/blog" className="clipped-button bg-ares-red text-white uppercase text-xs">
+          Back to Blog
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -145,7 +142,6 @@ export default async function BlogPostPage({ params }: PageProps) {
       {/* ─── STANDALONE BLOG HERO ─── */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
         {post.thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={post.thumbnail}
             alt={post.title}
@@ -158,7 +154,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] rounded-full border border-ares-cyan/10 shadow-[0_0_120px_rgba(0,192,192,0.15)] pointer-events-none mix-blend-screen animate-pulse" aria-hidden="true"></div>
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 w-full mt-16">
-          <Link href="/blog" className="text-ares-gold hover:text-white uppercase tracking-widest text-xs font-bold transition-all flex items-center gap-2 mb-6 w-fit">
+          <Link to="/blog" className="text-ares-gold hover:text-white uppercase tracking-widest text-xs font-bold transition-all flex items-center gap-2 mb-6 w-fit">
             <span>&larr;</span> Back to all posts
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -24,7 +23,7 @@ const NavButton: React.FC<NavButtonProps> = ({
 
   return (
     <Link
-      href={targetPath}
+      to={targetPath}
       className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
         isActive
           ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
@@ -40,7 +39,7 @@ const NavButton: React.FC<NavButtonProps> = ({
 };
 
 export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const { user, authorizedUser, logout } = useAuth();
   
   const userRole = authorizedUser?.role || "Pending Verification";
@@ -101,7 +100,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <div className="h-px bg-white/5 mx-2 my-2" />
             
             <Link
-              href="/"
+              to="/"
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
             >
@@ -117,28 +116,28 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           </h4>
           <div className="space-y-1">
             <Link
-              href="/robots"
+              to="/robots"
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >
               <Cpu size={14} className="text-marble/40" /> Fleet Archive
             </Link>
             <Link
-              href="/aresplanner"
+              to="/aresplanner"
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >
               <Compass size={14} className="text-marble/40" /> ARES Trajectory Planner
             </Link>
             <Link
-              href="/simulators"
+              to="/simulators"
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >
               <Sparkles size={14} className="text-marble/40" /> Arm Kinematics
             </Link>
             <Link
-              href="/blog"
+              to="/blog"
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >

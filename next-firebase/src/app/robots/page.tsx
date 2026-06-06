@@ -1,6 +1,10 @@
-import Link from "next/link";
-import { Cpu, Scale, Code, ChevronRight } from "lucide-react";
-import { adminDb } from "@/lib/firebase-admin";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Cpu, Scale, Code } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface RobotItem {
   id: string;
@@ -12,8 +16,6 @@ interface RobotItem {
   programmingLanguage?: string;
   revealVideoId?: string;
 }
-
-export const revalidate = 3600;
 
 const MOCK_ROBOTS: RobotItem[] = [
   {
@@ -38,38 +40,48 @@ const MOCK_ROBOTS: RobotItem[] = [
   }
 ];
 
-async function getRobotsList(): Promise<RobotItem[]> {
-  try {
-    const snapshot = await adminDb
-      .collection("robots")
-      .where("isDeleted", "==", 0)
-      .get();
+export default function RobotsFeedPage() {
+  const [robots, setRobots] = useState<RobotItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    if (snapshot.empty) {
-      return MOCK_ROBOTS;
-    }
+  useEffect(() => {
+    const fetchRobots = async () => {
+      try {
+        const q = query(
+          collection(db, "robots"),
+          where("isDeleted", "==", 0)
+        );
+        const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || "Untitled Robot",
-        seasonName: data.seasonName || "Legacy",
-        challengeName: data.challengeName || "Unknown Challenge",
-        weightLbs: data.weightLbs,
-        drivetrainType: data.drivetrainType || "Custom Drive",
-        programmingLanguage: data.programmingLanguage || "Java",
-        revealVideoId: data.revealVideoId || ""
-      };
-    });
-  } catch (error) {
-    console.warn("Firestore empty or not connected during compilation, using mock fleet:", error);
-    return MOCK_ROBOTS;
-  }
-}
+        if (snapshot.empty) {
+          setRobots(MOCK_ROBOTS);
+          return;
+        }
 
-export default async function RobotsFeedPage() {
-  const robots = await getRobotsList();
+        const robotsList = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || "Untitled Robot",
+            seasonName: data.seasonName || "Legacy",
+            challengeName: data.challengeName || "Unknown Challenge",
+            weightLbs: data.weightLbs,
+            drivetrainType: data.drivetrainType || "Custom Drive",
+            programmingLanguage: data.programmingLanguage || "Java",
+            revealVideoId: data.revealVideoId || ""
+          };
+        });
+        setRobots(robotsList);
+      } catch (error) {
+        console.warn("Firestore empty or not connected, using mock fleet:", error);
+        setRobots(MOCK_ROBOTS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRobots();
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
@@ -89,7 +101,11 @@ export default async function RobotsFeedPage() {
         </header>
 
         {/* Fleet Grid */}
-        {robots.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+          </div>
+        ) : robots.length === 0 ? (
           <div className="text-center text-marble/35 p-20 glass-card ares-cut border border-white/10">
             <Cpu size={48} className="mx-auto mb-6 opacity-20" />
             <h3 className="text-xl font-bold uppercase tracking-widest text-white">No Fleet Records</h3>
@@ -100,14 +116,13 @@ export default async function RobotsFeedPage() {
             {robots.map((robot) => (
               <Link
                 key={robot.id}
-                href={`/robots/${robot.id}`}
+                to={`/robots/${robot.id}`}
                 className="group glass-card hero-card overflow-hidden hover:border-ares-red/50 transition-all duration-500 shadow-2xl flex flex-col h-full border border-white/10"
               >
                 <div className="aspect-video bg-black/40 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10 opacity-60"></div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-40 group-hover:opacity-75 group-hover:scale-105 transition-all duration-500">
                     {robot.revealVideoId ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={`https://img.youtube.com/vi/${robot.revealVideoId}/hqdefault.jpg`}
                         alt={robot.name}

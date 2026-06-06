@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Plus, Trash2, Pencil, Shield, Activity, Search, ExternalLink, X } from "lucide-react";
 
 interface BlogPost {

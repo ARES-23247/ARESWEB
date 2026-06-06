@@ -1,5 +1,9 @@
-import Link from "next/link";
-import { adminDb } from "@/lib/firebase-admin";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface BlogPost {
   slug: string;
@@ -9,9 +13,6 @@ interface BlogPost {
   thumbnail?: string;
   author?: string;
 }
-
-// Revalidate statically generated page at most every hour (ISR)
-export const revalidate = 3600;
 
 const MOCK_POSTS: BlogPost[] = [
   {
@@ -32,57 +33,47 @@ const MOCK_POSTS: BlogPost[] = [
   }
 ];
 
-async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number = 1200): Promise<T> {
-  let timeoutId: NodeJS.Timeout;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error("Firestore operation timed out"));
-    }, timeoutMs);
-  });
-  
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId!);
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId!);
-    throw error;
-  }
-}
+export default function BlogFeedPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-async function getBlogPosts(): Promise<BlogPost[]> {
-  try {
-    const fetchPromise = adminDb
-      .collection("posts")
-      .where("status", "==", "published")
-      .where("isDeleted", "==", 0)
-      .get();
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        const q = query(
+          collection(db, "posts"),
+          where("status", "==", "published"),
+          where("isDeleted", "==", 0)
+        );
+        const snapshot = await getDocs(q);
 
-    const snapshot = await fetchWithTimeout(fetchPromise, 1200);
+        if (snapshot.empty) {
+          setPosts(MOCK_POSTS);
+          return;
+        }
 
-    if (snapshot.empty) {
-      return MOCK_POSTS;
-    }
+        const postsList = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            slug: doc.id,
+            title: data.title || "Untitled Post",
+            date: data.date || "",
+            snippet: data.snippet || "",
+            thumbnail: data.thumbnail || "",
+            author: data.author || "ARES Member"
+          };
+        });
+        setPosts(postsList);
+      } catch (error) {
+        console.warn("Firestore empty or not connected, using mock articles:", error);
+        setPosts(MOCK_POSTS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        slug: doc.id,
-        title: data.title || "Untitled Post",
-        date: data.date || "",
-        snippet: data.snippet || "",
-        thumbnail: data.thumbnail || "",
-        author: data.author || "ARES Member"
-      };
-    });
-  } catch (error) {
-    console.warn("Firestore empty or not connected during compilation, using mock articles:", error);
-    return MOCK_POSTS;
-  }
-}
-
-export default async function BlogFeedPage() {
-  const posts = await getBlogPosts();
+    fetchBlogPosts();
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
@@ -99,59 +90,64 @@ export default async function BlogFeedPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
-                {post.thumbnail && (
-                  <div className="relative h-56 w-full overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={post.thumbnail}
-                      alt={post.title}
-                      className="w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                  </div>
-                )}
-                <div className="p-6 flex-grow flex flex-col justify-between">
-                  <div>
-                    <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red transition-colors">
-                      {post.title}
-                    </h4>
-                    <p className="text-sm text-white/60 line-clamp-3 mb-4">
-                      {post.snippet}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
-                    <p className="text-xs text-white/50">{post.date}</p>
-                    <div className="flex items-center gap-1.5">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {posts.map((post) => (
+              <Link
+                key={post.slug}
+                to={`/blog/${post.slug}`}
+                className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
+                  {post.thumbnail && (
+                    <div className="relative h-56 w-full overflow-hidden">
                       <img
-                        src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`}
-                        alt=""
-                        className="w-5 h-5 rounded-full object-cover border border-white/10"
+                        src={post.thumbnail}
+                        alt={post.title}
+                        className="w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover"
                       />
-                      <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[120px]">
-                        {post.author}
-                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    </div>
+                  )}
+                  <div className="p-6 flex-grow flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red transition-colors">
+                        {post.title}
+                      </h4>
+                      <p className="text-sm text-white/60 line-clamp-3 mb-4">
+                        {post.snippet}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
+                      <p className="text-xs text-white/50">{post.date}</p>
+                      <div className="flex items-center gap-1.5">
+                        <img
+                          src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`}
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover border border-white/10"
+                        />
+                        <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[120px]">
+                          {post.author}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </Link>
+            ))}
+            
+            {posts.length === 0 && (
+              <div className="text-white p-6 glass-card hero-card col-span-full border-dashed">
+                No posts published yet.
               </div>
-            </Link>
-          ))}
-          
-          {posts.length === 0 && (
-            <div className="text-white p-6 glass-card hero-card col-span-full border-dashed">
-              No posts published yet.
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,8 @@
 :root {
   --background: #f9f9f9; /* Marble White */
   --foreground: #1a1a1a; /* Obsidian Black */
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-spartan: "League Spartan", sans-serif;
   --ares-red: #c00000;
   --ares-red-light: #FF4D4D;
   --ares-red-dark: #8A0000;

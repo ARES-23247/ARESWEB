@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useParams } from "react-router-dom";
 import {
   doc,
   getDoc,
@@ -74,7 +73,6 @@ interface EventPhoto {
 
 export default function EventDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params?.id as string;
   const { user, authorizedUser } = useAuth();
 
@@ -349,7 +347,7 @@ export default function EventDetailPage() {
       <div className="w-full min-h-screen bg-obsidian text-marble flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-3xl font-black font-heading text-white uppercase mb-4">Event Record Lost</h1>
         <p className="text-marble/60 text-sm max-w-sm mb-6">This schedule item does not exist or has been removed from the calendar system.</p>
-        <Link href="/calendar" className="clipped-button bg-ares-red text-white py-3 px-6 text-xs font-black uppercase tracking-widest">
+        <Link to="/calendar" className="clipped-button bg-ares-red text-white py-3 px-6 text-xs font-black uppercase tracking-widest">
           ← Return to Calendar
         </Link>
       </div>

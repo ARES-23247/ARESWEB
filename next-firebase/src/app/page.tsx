@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { ArrowRight, LogIn, LogOut, ShieldCheck, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -68,7 +68,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex gap-4">
-                  <Link href="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
+                  <Link to="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
                     Go to Portal
                   </Link>
                   <button
@@ -112,7 +112,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {/* Card A: Blog */}
-            <Link href="/blog" className="group flex flex-col h-full">
+            <Link to="/blog" className="group flex flex-col h-full">
               <div className="bg-white/5 border border-white/10 hero-card p-10 flex flex-col h-full backdrop-blur-sm hover:border-ares-red/30 transition-colors">
                 <div>
                   <div className="w-12 h-12 bg-ares-red/10 rounded-lg flex items-center justify-center mb-6 border border-ares-red/30 group-hover:scale-110 transition-transform">
@@ -134,7 +134,7 @@ export default function Home() {
             </Link>
 
             {/* Card B: Schedule */}
-            <Link href="/calendar" className="group flex flex-col h-full">
+            <Link to="/calendar" className="group flex flex-col h-full">
               <div className="bg-white/5 border border-white/10 hero-card p-10 flex flex-col h-full backdrop-blur-sm hover:border-ares-red/30 transition-colors">
                 <div>
                   <div className="w-12 h-12 bg-ares-bronze/10 rounded-lg flex items-center justify-center mb-6 border border-ares-bronze/30 group-hover:scale-110 transition-transform">
@@ -156,7 +156,7 @@ export default function Home() {
             </Link>
 
             {/* Card C: Kanban Tasks */}
-            <Link href="/dashboard/tasks" className="group flex flex-col h-full">
+            <Link to="/dashboard/tasks" className="group flex flex-col h-full">
               <div className="bg-white/5 border border-white/10 hero-card p-10 flex flex-col h-full backdrop-blur-sm hover:border-ares-red/30 transition-colors">
                 <div>
                   <div className="w-12 h-12 bg-ares-cyan/10 rounded-lg flex items-center justify-center mb-6 border border-ares-cyan/30 group-hover:scale-110 transition-transform">
@@ -191,10 +191,10 @@ export default function Home() {
             Whether you&apos;re a student looking to build monsters of engineering or a sponsor looking to invest in the future of WV technology, there is a place for you at the table.
           </p>
           <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/sponsors" className="clipped-button bg-ares-bronze text-obsidian hover:bg-white hover:text-ares-red transition-all">
+            <Link to="/sponsors" className="clipped-button bg-ares-bronze text-obsidian hover:bg-white hover:text-ares-red transition-all">
               Become a Sponsor
             </Link>
-            <Link href="/join" className="clipped-button bg-transparent border-2 border-white text-white hover:bg-white hover:text-obsidian transition-all">
+            <Link to="/join" className="clipped-button bg-transparent border-2 border-white text-white hover:bg-white hover:text-obsidian transition-all">
               Team Application
             </Link>
           </div>

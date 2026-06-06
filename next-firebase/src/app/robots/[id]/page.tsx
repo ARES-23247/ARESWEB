@@ -1,7 +1,10 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, ShieldAlert } from "lucide-react";
-import { adminDb } from "@/lib/firebase-admin";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface RobotDetails {
   id: string;
@@ -17,8 +20,6 @@ interface RobotDetails {
   primaryMechanism?: string;
   content: string;
 }
-
-export const revalidate = 3600;
 
 const MOCK_DETAILS: Record<string, RobotDetails> = {
   "minotaur": {
@@ -59,57 +60,72 @@ The primary scoring mechanism consists of a dual-link coaxial jointed arm powere
   }
 };
 
-async function getRobotDetails(id: string): Promise<RobotDetails | null> {
-  try {
-    const docSnap = await adminDb.collection("robots").doc(id).get();
-    
-    if (!docSnap.exists) {
-      return MOCK_DETAILS[id] || null;
-    }
-    
-    const data = docSnap.data();
-    if (!data || data.isDeleted === 1) {
-      return MOCK_DETAILS[id] || null;
-    }
-    
-    return {
-      id,
-      name: data.name || "Untitled Robot",
-      seasonName: data.seasonName || "Legacy",
-      challengeName: data.challengeName || "Unknown Challenge",
-      weightLbs: data.weightLbs,
-      drivetrainType: data.drivetrainType || "Custom Drive",
-      programmingLanguage: data.programmingLanguage || "Java",
-      revealVideoId: data.revealVideoId || "",
-      onshapeUrl: data.onshapeUrl || "",
-      cadViewerUrl: data.cadViewerUrl || "",
-      primaryMechanism: data.primaryMechanism || "Custom Subsystem",
-      content: data.content || data.description || ""
+export default function RobotDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [robot, setRobot] = useState<RobotDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRobotDetails = async () => {
+      if (!id) return;
+      try {
+        const docRef = doc(db, "robots", id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          setRobot(MOCK_DETAILS[id] || null);
+          return;
+        }
+
+        const data = docSnap.data();
+        if (!data || data.isDeleted === 1) {
+          setRobot(MOCK_DETAILS[id] || null);
+          return;
+        }
+
+        setRobot({
+          id,
+          name: data.name || "Untitled Robot",
+          seasonName: data.seasonName || "Legacy",
+          challengeName: data.challengeName || "Unknown Challenge",
+          weightLbs: data.weightLbs,
+          drivetrainType: data.drivetrainType || "Custom Drive",
+          programmingLanguage: data.programmingLanguage || "Java",
+          revealVideoId: data.revealVideoId || "",
+          onshapeUrl: data.onshapeUrl || "",
+          cadViewerUrl: data.cadViewerUrl || "",
+          primaryMechanism: data.primaryMechanism || "Custom Subsystem",
+          content: data.content || data.description || ""
+        });
+      } catch (error) {
+        console.warn(`Firestore read failed for robot: ${id}, using mock fallback.`, error);
+        setRobot(MOCK_DETAILS[id] || null);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  } catch (error) {
-    console.warn(`Firestore read failed for robot: ${id}, using mock fallback.`, error);
-    return MOCK_DETAILS[id] || null;
+
+    fetchRobotDetails();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-obsidian text-marble">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+      </div>
+    );
   }
-}
-
-// Pre-render pages during build
-export async function generateStaticParams() {
-  return [
-    { id: "minotaur" },
-    { id: "prometheus" }
-  ];
-}
-
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function RobotDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const robot = await getRobotDetails(id);
 
   if (!robot) {
-    notFound();
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
+        <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Robot Not Found</h2>
+        <p className="text-marble/60 text-sm mb-8">The robot record you are looking for does not exist or has been removed.</p>
+        <Link to="/robots" className="clipped-button bg-ares-red text-white uppercase text-xs">
+          Back to Fleet
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -117,7 +133,7 @@ export default async function RobotDetailPage({ params }: PageProps) {
       <div className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20">
         
         {/* Back Link */}
-        <Link href="/robots" className="inline-flex items-center gap-2 text-marble/40 hover:text-ares-red transition-colors mb-8 font-black uppercase tracking-[0.2em] text-[10px]">
+        <Link to="/robots" className="inline-flex items-center gap-2 text-marble/40 hover:text-ares-red transition-colors mb-8 font-black uppercase tracking-[0.2em] text-[10px]">
           <ChevronLeft size={14} /> Back to Fleet
         </Link>
 

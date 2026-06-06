@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { 
@@ -580,7 +580,7 @@ export default function CalendarPage() {
                         event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
                       }`} />
                       
-                      <Link href={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
+                      <Link to={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
                         <div className="flex items-center gap-2">
                           <span className="text-[9px] font-mono text-marble/40">
                             {new Date(event.dateStart).toLocaleDateString("en-US", {

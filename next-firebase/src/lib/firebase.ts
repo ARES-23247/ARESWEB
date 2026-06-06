@@ -3,13 +3,23 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 
+const getEnv = (key: string): string => {
+  if (typeof import.meta !== "undefined" && import.meta.env?.[key]) {
+    return import.meta.env[key] as string;
+  }
+  if (typeof process !== "undefined" && process.env?.[key]) {
+    return process.env[key] as string;
+  }
+  return "";
+};
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "ares-web-preview.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ares-web-preview",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "ares-web-preview.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abcdef12345"
+  apiKey: getEnv("NEXT_PUBLIC_FIREBASE_API_KEY") || "dummy-api-key",
+  authDomain: getEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN") || "ares-web-preview.firebaseapp.com",
+  projectId: getEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID") || "ares-web-preview",
+  storageBucket: getEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") || "ares-web-preview.appspot.com",
+  messagingSenderId: getEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || "123456789",
+  appId: getEnv("NEXT_PUBLIC_FIREBASE_APP_ID") || "1:123456789:web:abcdef12345"
 };
 
 // Handle SSR check: only initialize on client or once globally
