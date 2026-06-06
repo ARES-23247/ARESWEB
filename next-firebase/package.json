@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:emulator": "firebase emulators:exec \"next dev\"",
+    "dev:emulator": "firebase emulators:exec \"npm run db:seed && next dev\"",
     "db:seed": "node scripts/seed-emulator.js",
     "build": "next build",
     "start": "next start",
