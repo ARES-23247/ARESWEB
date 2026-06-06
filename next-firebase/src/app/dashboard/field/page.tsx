@@ -853,6 +853,55 @@ export default function FieldObstacleEditor() {
             )}
           </div>
 
+          {/* Saved Layout Library */}
+          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-4">
+            <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
+              <Map size={14} className="text-ares-gold" /> Saved Layout Library
+            </h3>
+            
+            <div className="max-h-60 overflow-y-auto space-y-2.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+              {configs.length === 0 ? (
+                <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-8">
+                  No layouts saved in library.
+                </div>
+              ) : (
+                configs.map((cfg) => {
+                  const isActive = cfg.id === selectedConfigId;
+                  const formattedDate = new Date(cfg.updatedAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  });
+                  return (
+                    <div
+                      key={cfg.id}
+                      onClick={() => loadConfig(cfg)}
+                      className={`flex flex-col gap-1 p-3.5 border rounded-xl cursor-pointer transition-all ${
+                        isActive
+                          ? "bg-ares-gold/10 border-ares-gold text-white shadow-lg shadow-ares-gold/5"
+                          : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-extrabold truncate max-w-[150px] uppercase tracking-wide">
+                          {cfg.name}
+                        </span>
+                        <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
+                          {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
+                        <span>Updated: {formattedDate}</span>
+                        {isActive && <span className="text-ares-gold font-bold text-[8px] uppercase tracking-widest">Active</span>}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
           {/* Onshape Field CAD Synchronization was moved to the unified bottom section */}
         </div>
 
