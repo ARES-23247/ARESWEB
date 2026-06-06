@@ -1106,12 +1106,19 @@ app.post("/api/analytics/onshape-sync", async (req, res) => {
                         occurrences.forEach((occ) => {
                             const path = occ.path;
                             const name = resolveInstanceName(path);
-                            // Check naming convention
+                            const lowerName = name.toLowerCase();
+                            // Check naming convention (either explicit obstacle prefixes, or standard FTC field elements)
                             if (name &&
                                 (name.startsWith("Obstacle_") ||
                                     name.startsWith("Col_") ||
                                     name.includes("_Obstacle_") ||
-                                    name.includes("_Col_"))) {
+                                    name.includes("_Col_") ||
+                                    lowerName.includes("obstacle") ||
+                                    lowerName.includes("column") ||
+                                    lowerName.includes("chamber") ||
+                                    lowerName.includes("basket") ||
+                                    lowerName.includes("goal") ||
+                                    lowerName.includes("perimeter"))) {
                                 const transform = occ.transform;
                                 if (transform && transform.length === 16) {
                                     let tX = 0;
@@ -1130,18 +1137,32 @@ app.post("/api/analytics/onshape-sync", async (req, res) => {
                                             tY = transform[13];
                                         }
                                     }
-                                    // Parse size parameters from names: e.g. Obstacle_0.4x0.6_RedSubstation
+                                    // Default dimensions based on standard game element structures
                                     let width = 0.4;
                                     let height = 0.4;
                                     let displayName = name;
-                                    const dimMatch = name.match(/(?:Obstacle|Col)_([0-9.]+)[x_]([0-9.]+)(?:_(.*))?/i);
+                                    // Check if name has dimensions: e.g. Obstacle_0.4x0.6_RedSubstation
+                                    const dimMatch = name.match(/(?:Obstacle|Col|Chamber|Basket|Goal)_([0-9.]+)[x_]([0-9.]+)(?:_(.*))?/i);
                                     if (dimMatch) {
                                         width = parseFloat(dimMatch[1]) || 0.4;
                                         height = parseFloat(dimMatch[2]) || 0.4;
                                         displayName = dimMatch[3] || name;
                                     }
                                     else {
-                                        displayName = name.replace(/^(Obstacle|Col)_/i, "");
+                                        // Smart defaults for standard FTC game elements if dimensions aren't specified
+                                        if (lowerName.includes("basket") || lowerName.includes("goal")) {
+                                            width = 0.48;
+                                            height = 0.48;
+                                        }
+                                        else if (lowerName.includes("chamber")) {
+                                            width = 0.35;
+                                            height = 0.10;
+                                        }
+                                        else if (lowerName.includes("perimeter")) {
+                                            width = 3.66;
+                                            height = 0.05;
+                                        }
+                                        displayName = name.replace(/^(Obstacle|Col|Chamber|Basket|Goal)_/i, "");
                                     }
                                     parsedObstacles.push({
                                         id: Math.random().toString(36).substring(2, 9),
