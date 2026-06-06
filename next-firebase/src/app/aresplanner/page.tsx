@@ -21,6 +21,11 @@ type LinkedLog = {
   pathId: string;
   name: string;
   createdAt: any;
+  pathState?: {
+    waypoints: Waypoint[];
+    markers: EventMarker[];
+    season: string;
+  };
 };
 
 export default function AresPlannerPage() {
@@ -95,7 +100,8 @@ export default function AresPlannerPage() {
             id: docSnap.id,
             pathId: data.pathId,
             name: data.name || "Unnamed Log",
-            createdAt: data.createdAt
+            createdAt: data.createdAt,
+            pathState: data.pathState
           });
         });
         setCloudLogs(logs);
@@ -132,16 +138,28 @@ export default function AresPlannerPage() {
           throw new Error("Log file is empty.");
         }
 
+        const path = cloudPaths.find((p) => p.id === pathId);
+
         // Generate a random doc ID for the log
         const logRef = doc(collection(db, "aresplanner_logs"));
         
         // Write metadata
-        await setDoc(logRef, {
+        const metadata: any = {
           pathId,
           name: file.name,
           userId: user.uid,
           createdAt: serverTimestamp()
-        });
+        };
+
+        if (path) {
+          metadata.pathState = {
+            waypoints: path.waypoints,
+            markers: path.markers,
+            season: path.season
+          };
+        }
+
+        await setDoc(logRef, metadata);
 
         // Write content to aresplanner_log_data
         await setDoc(doc(db, "aresplanner_log_data", logRef.id), {
@@ -176,6 +194,33 @@ export default function AresPlannerPage() {
       console.error("Failed to delete telemetry log:", err);
       setErrorMsg(`Failed to delete log: ${err.message || err}`);
     }
+  };
+
+  // Handle restoring a frozen path version from a log run
+  const handleRestorePathVersion = (log: LinkedLog) => {
+    if (!user) return;
+    if (!log.pathState) {
+      setErrorMsg("No saved path version found for this log run.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to load the path version from log "${log.name}" into the editor? This will overwrite your current unsaved editor changes.`)) {
+      return;
+    }
+
+    const path = cloudPaths.find((p) => p.id === log.pathId);
+    const baseName = path ? path.name : "Restored Path";
+
+    setSelectedPath({
+      id: log.pathId,
+      name: `${baseName} (Log Version)`,
+      season: log.pathState.season,
+      waypoints: log.pathState.waypoints,
+      markers: log.pathState.markers,
+      updatedAt: null // set to null so they can save it back to cloud
+    });
+
+    setSuccessMsg(`Loaded path version from log "${log.name}" into the editor!`);
+    setTimeout(() => setSuccessMsg(""), 3000);
   };
 
   // Handle saving paths to Firestore
@@ -504,6 +549,15 @@ export default function AresPlannerPage() {
                                     >
                                       <Play size={8} className="stroke-[3]" /> Replay
                                     </a>
+                                    {log.pathState && (
+                                      <button
+                                        onClick={() => handleRestorePathVersion(log)}
+                                        className="text-ares-gold hover:text-ares-gold-soft flex items-center gap-0.5 transition-colors font-bold uppercase text-[9px] cursor-pointer"
+                                        title="Restore path version used in this log run"
+                                      >
+                                        Restore
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => handleDeleteLog(log.id, log.name)}
                                       className="text-marble/40 hover:text-ares-danger transition-colors cursor-pointer"

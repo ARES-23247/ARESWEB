@@ -310,6 +310,78 @@ export default function ScopeDashboard() {
     reader.readAsText(file);
   };
 
+  // Helper to generate dense points along the Bezier curves from saved waypoints
+  const generatePlannedPathFromWaypoints = (wps: any[]) => {
+    const parsedWaypoints = wps.map((wp: any) => {
+      // Convert AresPlanner inches to EKF meters
+      const anchor = {
+        x: (wp.anchor.y * 0.0254) - 1.8288,
+        y: 1.8288 - (wp.anchor.x * 0.0254)
+      };
+      
+      const prevControl = wp.prevControl 
+        ? { x: (wp.prevControl.y * 0.0254) - 1.8288, y: 1.8288 - (wp.prevControl.x * 0.0254) }
+        : anchor;
+        
+      const nextControl = wp.nextControl
+        ? { x: (wp.nextControl.y * 0.0254) - 1.8288, y: 1.8288 - (wp.nextControl.x * 0.0254) }
+        : anchor;
+        
+      return { anchor, prevControl, nextControl };
+    });
+
+    if (parsedWaypoints.length === 0) return [];
+
+    const densePoints: { x: number; y: number; heading: number }[] = [];
+    
+    let initialHeading = 0;
+    if (parsedWaypoints.length > 1) {
+      const wp1 = parsedWaypoints[0];
+      const wp2 = parsedWaypoints[1];
+      const p0 = wp1.anchor;
+      const p1 = wp1.nextControl;
+      const dx = 3 * (p1.x - p0.x);
+      const dy = 3 * (p1.y - p0.y);
+      initialHeading = Math.atan2(dy, dx);
+    }
+    
+    densePoints.push({
+      x: parsedWaypoints[0].anchor.x,
+      y: parsedWaypoints[0].anchor.y,
+      heading: initialHeading
+    });
+
+    const numSamples = 20;
+    for (let i = 0; i < parsedWaypoints.length - 1; i++) {
+      const wp1 = parsedWaypoints[i];
+      const wp2 = parsedWaypoints[i + 1];
+      
+      const p0 = wp1.anchor;
+      const p1 = wp1.nextControl;
+      const p2 = wp2.prevControl;
+      const p3 = wp2.anchor;
+
+      for (let step = 1; step <= numSamples; step++) {
+        const t = step / numSamples;
+        const omt = 1 - t;
+        const omt2 = omt * omt;
+        const omt3 = omt2 * omt;
+        const t2 = t * t;
+        const t3 = t2 * t;
+
+        const x = omt3 * p0.x + 3 * omt2 * t * p1.x + 3 * omt * t2 * p2.x + t3 * p3.x;
+        const y = omt3 * p0.y + 3 * omt2 * t * p1.y + 3 * omt * t2 * p2.y + t3 * p3.y;
+
+        const dx = 3 * omt2 * (p1.x - p0.x) + 6 * omt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x);
+        const dy = 3 * omt2 * (p1.y - p0.y) + 6 * omt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y);
+        const heading = Math.atan2(dy, dx);
+
+        densePoints.push({ x, y, heading });
+      }
+    }
+    return densePoints;
+  };
+
   // Effect to load cloud telemetry log if logId search parameter is set
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -334,13 +406,20 @@ export default function ScopeDashboard() {
           throw new Error("Telemetry log is empty or invalid.");
         }
 
-        // Fetch the corresponding metadata to get the actual file name
+        // Fetch the corresponding metadata to get the actual file name and path version
         const metaRef = doc(db, "aresplanner_logs", logId);
         const metaSnap = await getDoc(metaRef);
         const metaData = metaSnap.exists() ? metaSnap.data() : null;
         const name = metaData?.name || "cloud_telemetry.csv";
 
         parseCSVText(data.csvData, name);
+
+        // Load the frozen planned path version from the log metadata
+        if (metaData?.pathState?.waypoints) {
+          const densePoints = generatePlannedPathFromWaypoints(metaData.pathState.waypoints);
+          setPlannedPath(densePoints);
+          console.log(`[Path Versioning] Loaded frozen path version from log metadata for replay.`);
+        }
       } catch (err: any) {
         console.error("Failed to load cloud log:", err);
         alert("Failed to load cloud log: " + err.message);

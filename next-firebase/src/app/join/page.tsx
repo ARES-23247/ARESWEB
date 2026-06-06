@@ -7,6 +7,7 @@ import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck,
 declare global {
   interface Window {
     ARES_E2E_BYPASS?: boolean;
+    grecaptcha?: any;
   }
 }
 
