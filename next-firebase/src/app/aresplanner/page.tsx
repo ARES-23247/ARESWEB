@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Compass, AlertTriangle, LogIn } from "lucide-react";
+import { Compass, AlertTriangle, LogIn, FolderOpen, Edit2, Trash2, Calendar, Search, SlidersHorizontal, Map } from "lucide-react";
 import AresPlanner, { Waypoint, EventMarker } from "@/components/AresPlanner";
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { collection, doc, setDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 
 type PathConfig = {
@@ -113,6 +113,69 @@ export default function AresPlannerPage() {
     }
   };
 
+  // Search & Filter states for the file manager
+  const [searchTerm, setSearchTerm] = useState("");
+  const [seasonFilter, setSeasonFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
+
+  // Handle deleting a path from Firestore
+  const handleDeletePath = async (pathId: string, name: string) => {
+    if (!user) return;
+    if (!window.confirm(`Are you sure you want to delete path "${name}" from the cloud?`)) return;
+
+    try {
+      const docRef = doc(db, "aresplanner_paths", pathId);
+      await deleteDoc(docRef);
+      setSuccessMsg(`Path "${name}" deleted from the cloud.`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+      if (selectedPath?.id === pathId) {
+        setSelectedPath(undefined);
+      }
+    } catch (err: any) {
+      console.error("[Firestore] Failed to delete path:", err);
+      setErrorMsg(`Failed to delete path: ${err.message || err}`);
+    }
+  };
+
+  // Handle renaming a path in Firestore
+  const handleRenamePath = async (pathId: string, currentName: string) => {
+    if (!user) return;
+    const newName = window.prompt(`Enter a new name for path "${currentName}":`, currentName);
+    if (!newName || newName.trim() === "" || newName.trim() === currentName) return;
+
+    try {
+      const docRef = doc(db, "aresplanner_paths", pathId);
+      await updateDoc(docRef, {
+        name: newName.trim(),
+        updatedAt: serverTimestamp()
+      });
+      setSuccessMsg(`Path renamed to "${newName.trim()}" in the cloud!`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+      if (selectedPath?.id === pathId) {
+        setSelectedPath(prev => prev ? { ...prev, name: newName.trim() } : undefined);
+      }
+    } catch (err: any) {
+      console.error("[Firestore] Failed to rename path:", err);
+      setErrorMsg(`Failed to rename path: ${err.message || err}`);
+    }
+  };
+
+  const filteredPaths = cloudPaths
+    .filter((path) => {
+      const matchesSearch = path.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSeason = seasonFilter === "all" || path.season === seasonFilter;
+      return matchesSearch && matchesSeason;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      } else {
+        const timeA = a.updatedAt?.seconds ?? 0;
+        const timeB = b.updatedAt?.seconds ?? 0;
+        return timeB - timeA;
+      }
+    });
+
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center">
@@ -171,6 +234,146 @@ export default function AresPlannerPage() {
           onLoadPath={handleLoadPath}
           isSavingCloud={isSaving}
         />
+
+        {/* Cloud Path Manager Section */}
+        {user && isVerified && (
+          <div className="w-full max-w-5xl mt-12 bg-black/30 border border-white/5 rounded-xl p-6 shadow-2xl">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4 mb-6">
+              <div>
+                <h2 className="font-heading font-black text-xl text-white uppercase tracking-wider flex items-center gap-2">
+                  <FolderOpen className="text-ares-cyan" size={20} /> Cloud Path Manager
+                </h2>
+                <p className="text-xs text-marble/50 mt-1">Manage, rename, and delete your saved trajectories in the cloud</p>
+              </div>
+              <div className="text-[10px] font-mono text-ares-cyan bg-ares-cyan/10 px-3 py-1 rounded-full border border-ares-cyan/20">
+                {cloudPaths.length} Trajectories Stored
+              </div>
+            </div>
+
+            {/* Filter controls */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              {/* Search */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-3 text-marble/40" />
+                <input
+                  type="text"
+                  placeholder="Search paths..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-obsidian border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan"
+                />
+              </div>
+
+              {/* Season filter */}
+              <select
+                value={seasonFilter}
+                onChange={(e) => setSeasonFilter(e.target.value)}
+                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus:outline-none focus:border-ares-cyan uppercase font-bold"
+              >
+                <option value="all">ALL SEASONS</option>
+                <option value="decode">DECODE</option>
+                <option value="into_the_deep">INTO THE DEEP</option>
+                <option value="centerstage">CENTERSTAGE</option>
+                <option value="powerplay">POWERPLAY</option>
+              </select>
+
+              {/* Sort by */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus:outline-none focus:border-ares-cyan"
+              >
+                <option value="updatedAt">SORT BY: LAST UPDATED</option>
+                <option value="name">SORT BY: NAME (A-Z)</option>
+              </select>
+            </div>
+
+            {/* Paths Grid */}
+            {filteredPaths.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredPaths.map((path) => {
+                  const updateDate = path.updatedAt
+                    ? new Date(path.updatedAt.seconds * 1000).toLocaleString()
+                    : "Recently";
+
+                  const seasonColors: Record<string, string> = {
+                    decode: "bg-ares-red/10 text-ares-red border-ares-red/20",
+                    into_the_deep: "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20",
+                    centerstage: "bg-ares-gold/10 text-ares-gold border-ares-gold/20",
+                    powerplay: "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                  };
+
+                  const colorClass = seasonColors[path.season] || "bg-white/5 text-marble border-white/10";
+
+                  return (
+                    <div 
+                      key={path.id} 
+                      className={`glass-card p-4 border rounded-xl flex flex-col justify-between gap-4 transition-all duration-300 ${
+                        selectedPath?.id === path.id 
+                          ? "border-ares-cyan bg-ares-cyan/[0.02]" 
+                          : "border-white/5 hover:border-white/15"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-heading font-black text-white text-base tracking-wide uppercase">{path.name}</h3>
+                          <span className={`inline-block text-[8px] font-mono font-bold px-2 py-0.5 rounded border mt-1.5 uppercase ${colorClass}`}>
+                            {path.season.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => handleRenamePath(path.id, path.name)}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 rounded text-marble/60 hover:text-ares-gold border border-white/5 cursor-pointer transition-all"
+                            title="Rename path"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePath(path.id, path.name)}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 rounded text-marble/40 hover:text-ares-danger border border-white/5 cursor-pointer transition-all"
+                            title="Delete path"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-marble/40 border-y border-white/5 py-2">
+                        <div className="flex items-center gap-1">
+                          <Map size={10} className="text-ares-cyan" />
+                          <span>Waypoints: <strong className="text-white">{path.waypoints.length}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <SlidersHorizontal size={10} className="text-ares-gold" />
+                          <span>Event Markers: <strong className="text-white">{path.markers.length}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[9px] font-mono text-marble/30">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={10} />
+                          <span>Updated: {updateDate}</span>
+                        </div>
+                        <button
+                          onClick={() => handleLoadPath(path.id)}
+                          className="px-3 py-1 bg-ares-cyan hover:bg-ares-cyan/90 text-obsidian rounded font-black uppercase tracking-wider text-[9px] cursor-pointer shadow-md transition-all"
+                        >
+                          Load Path
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-black/10 border border-white/5 border-dashed rounded-xl">
+                <FolderOpen className="mx-auto text-marble/20 w-8 h-8 mb-2" />
+                <p className="text-xs text-marble/45">No paths found matching current filters.</p>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
