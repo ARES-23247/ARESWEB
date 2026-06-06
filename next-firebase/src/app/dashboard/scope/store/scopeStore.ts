@@ -93,12 +93,44 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     }
   },
   setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed }),
-  setTelemetryData: (telemetryData) => set({ 
-    telemetryData, 
-    currentTimeMs: 0, 
-    isPlaying: false 
-  }),
-  setComparisonTelemetryData: (comparisonTelemetryData) => set({ comparisonTelemetryData }),
+  setTelemetryData: (telemetryData) => {
+    if (telemetryData && !telemetryData.channels) {
+      const legacy = telemetryData as any;
+      telemetryData.channels = {
+        "Robot/BatteryVoltage": legacy.battery || [],
+        "Robot/LoopTime": legacy.loopTime || [],
+        "Drive/MotorPower_FL": legacy.motors?.lf || [],
+        "Drive/MotorPower_FR": legacy.motors?.rf || [],
+        "Drive/MotorPower_BL": legacy.motors?.lr || [],
+        "Drive/MotorPower_BR": legacy.motors?.rr || [],
+        "Superstructure/Elevator_Height": legacy.slides?.height || [],
+        "Drive/MotorCurrent_FL": legacy.slides?.current || [],
+        "Drive/IntakeCurrent": legacy.intake?.current || [],
+      };
+    }
+    set({ 
+      telemetryData, 
+      currentTimeMs: 0, 
+      isPlaying: false 
+    });
+  },
+  setComparisonTelemetryData: (comparisonTelemetryData) => {
+    if (comparisonTelemetryData && !comparisonTelemetryData.channels) {
+      const legacy = comparisonTelemetryData as any;
+      comparisonTelemetryData.channels = {
+        "Robot/BatteryVoltage": legacy.battery || [],
+        "Robot/LoopTime": legacy.loopTime || [],
+        "Drive/MotorPower_FL": legacy.motors?.lf || [],
+        "Drive/MotorPower_FR": legacy.motors?.rf || [],
+        "Drive/MotorPower_BL": legacy.motors?.lr || [],
+        "Drive/MotorPower_BR": legacy.motors?.rr || [],
+        "Superstructure/Elevator_Height": legacy.slides?.height || [],
+        "Drive/MotorCurrent_FL": legacy.slides?.current || [],
+        "Drive/IntakeCurrent": legacy.intake?.current || [],
+      };
+    }
+    set({ comparisonTelemetryData });
+  },
   setConsoleLogs: (consoleLogs) => set({ consoleLogs }),
   setPlannedPath: (plannedPath) => set({ plannedPath }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),

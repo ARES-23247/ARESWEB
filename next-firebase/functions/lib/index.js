@@ -211,16 +211,23 @@ function generateHighFidelityMockRun(runId) {
         slides.current.push(slideCur);
         intake.current.push(intakeCur);
     }
+    const channels = {
+        "Robot/BatteryVoltage": battery,
+        "Robot/LoopTime": loopTime,
+        "Drive/MotorPower_FL": motors.lf,
+        "Drive/MotorPower_FR": motors.rf,
+        "Drive/MotorPower_BL": motors.lr,
+        "Drive/MotorPower_BR": motors.rr,
+        "Superstructure/Elevator_Height": slides.height,
+        "Drive/MotorCurrent_FL": slides.current,
+        "Drive/IntakeCurrent": intake.current,
+    };
     return {
         runId: runId,
         opModeName: "ARESMecanumTeleOpDrive",
         timestamps: timestamps,
         coords: coords,
-        battery: battery,
-        loopTime: loopTime,
-        motors: motors,
-        slides: slides,
-        intake: intake,
+        channels: channels,
         maxTimeMs: timestamps[timestamps.length - 1],
     };
 }
@@ -758,26 +765,32 @@ app.get("/api/analytics/telemetry-log", async (req, res) => {
                 };
                 const [rows] = await bigquery.query(options);
                 if (rows && rows.length > 0) {
+                    const battery = rows.map((r) => r.battery);
+                    const loopTime = rows.map((r) => r.loopTime);
+                    const lf = rows.map((r) => r.lf);
+                    const rf = rows.map((r) => r.rf);
+                    const lr = rows.map((r) => r.lr);
+                    const rr = rows.map((r) => r.rr);
+                    const slideHeight = rows.map((r) => r.slideHeight);
+                    const slideCurrent = rows.map((r) => r.slideCurrent);
+                    const intakeCurrent = rows.map((r) => r.intakeCurrent);
+                    const channels = {
+                        "Robot/BatteryVoltage": battery,
+                        "Robot/LoopTime": loopTime,
+                        "Drive/MotorPower_FL": lf,
+                        "Drive/MotorPower_FR": rf,
+                        "Drive/MotorPower_BL": lr,
+                        "Drive/MotorPower_BR": rr,
+                        "Superstructure/Elevator_Height": slideHeight,
+                        "Drive/MotorCurrent_FL": slideCurrent,
+                        "Drive/IntakeCurrent": intakeCurrent,
+                    };
                     const formattedData = {
                         runId: runId,
                         opModeName: "ARESChampionshipAutoOp",
                         timestamps: rows.map((r) => r.timestamp),
                         coords: rows.map((r) => ({ x: r.x, y: r.y, heading: r.heading })),
-                        battery: rows.map((r) => r.battery),
-                        loopTime: rows.map((r) => r.loopTime),
-                        motors: {
-                            lf: rows.map((r) => r.lf),
-                            rf: rows.map((r) => r.rf),
-                            lr: rows.map((r) => r.lr),
-                            rr: rows.map((r) => r.rr),
-                        },
-                        slides: {
-                            height: rows.map((r) => r.slideHeight),
-                            current: rows.map((r) => r.slideCurrent),
-                        },
-                        intake: {
-                            current: rows.map((r) => r.intakeCurrent),
-                        },
+                        channels: channels,
                         maxTimeMs: rows[rows.length - 1].timestamp,
                     };
                     res.json(formattedData);
