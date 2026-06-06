@@ -4,6 +4,18 @@ import { Link, RefreshCw, CheckCircle2, Cpu, ChevronDown, ChevronUp } from "luci
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
+const parseOnshapeUrl = (url: string) => {
+  const match = url.match(/\/documents\/([^\/]+)\/(?:w|v)\/([^\/]+)\/e\/([^\/]+)/);
+  if (match) {
+    return {
+      documentId: match[1],
+      workspaceId: match[2],
+      elementId: match[3]
+    };
+  }
+  return null;
+};
+
 interface SyncMetadata {
   documentId: string;
   workspaceId: string;
@@ -221,9 +233,19 @@ export default function OnshapeRobotSyncCard() {
           </label>
           <input
             type="text"
-            placeholder="e.g. d_23247_ares_robot..."
+            placeholder="Paste Onshape URL or Document ID..."
             value={robotDocId}
-            onChange={(e) => setRobotDocId(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              const parsed = parseOnshapeUrl(val);
+              if (parsed) {
+                setRobotDocId(parsed.documentId);
+                setRobotWkId(parsed.workspaceId);
+                setRobotElId(parsed.elementId);
+              } else {
+                setRobotDocId(val);
+              }
+            }}
             className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
           />
         </div>
