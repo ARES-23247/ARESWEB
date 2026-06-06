@@ -149,15 +149,24 @@ export default function AresPlanner({
   // Expanded individual waypoints
   const [expandedWaypoints, setExpandedWaypoints] = useState<Record<number, boolean>>({ 0: true });
 
-  // Lock body scroll when zen mode is active to prevent scroll to footer
+  // Lock body scroll when zen mode is active to prevent scroll to footer, and listen to Escape key
   useEffect(() => {
     if (isZenMode) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isZenMode) {
+        setIsZenMode(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isZenMode]);
   
@@ -1383,6 +1392,16 @@ export default function AresPlanner({
           : "glass-card max-w-5xl mx-auto"
       }`}
     >
+      {/* Floating minimize button for fullscreen/zen mode */}
+      {isZenMode && (
+        <button
+          onClick={() => setIsZenMode(false)}
+          className="fixed top-6 right-6 z-[10000] p-3 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/10 shadow-2xl cursor-pointer transition-all duration-300 flex items-center justify-center hover:scale-105"
+          title="Exit Fullscreen (Esc)"
+        >
+          <Minimize2 size={16} />
+        </button>
+      )}
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
         <div className="flex items-center gap-3">
