@@ -18,7 +18,12 @@ export async function upsertProfile(
   userId: string,
   data: Record<string, unknown>
 ) {
-  const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+  let secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET;
+  const isProd = c.get("env")?.ENVIRONMENT === "production" || c.env?.ENVIRONMENT === "production";
+  if (isProd && (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long")) {
+    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+  }
+  if (!secret) secret = "01234567890123456789012345678901";
   const sessionUser = await getSessionUser(c);
   const db = getDb(c);
 

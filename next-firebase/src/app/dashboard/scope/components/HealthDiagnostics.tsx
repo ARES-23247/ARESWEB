@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { authenticatedFetch } from "@/lib/api";
 import { useScopeStore } from "../store/scopeStore";
 import { ShieldCheck, ShieldAlert, Cpu, Sparkles, Battery, RefreshCw, Layers } from "lucide-react";
 
@@ -167,7 +168,7 @@ export default function HealthDiagnostics() {
     };
 
     try {
-      const res = await fetch("/api/analytics/match-analysis", {
+      const res = await authenticatedFetch("/api/analytics/match-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(matchScoutingPayload)

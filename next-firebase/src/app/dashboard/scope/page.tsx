@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { authenticatedFetch } from "@/lib/api";
 import { useScopeStore, TelemetryData } from "./store/scopeStore";
 import { NT4Client } from "./store/nt4Client";
 import WebGLReplayCanvas from "./components/WebGLReplayCanvas";
@@ -239,7 +240,7 @@ export default function ScopeDashboard() {
   const fetchTelemetryRun = async (runId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/analytics/telemetry-log?runId=${runId}`);
+      const res = await authenticatedFetch(`/api/analytics/telemetry-log?runId=${runId}`);
       const data = await res.json();
       if (data && data.timestamps) {
         setTelemetryData(data as TelemetryData);

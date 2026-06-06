@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { authenticatedFetch } from "@/lib/api";
 import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
@@ -81,7 +82,7 @@ export default function GalleryPage() {
   useEffect(() => {
     async function loadPhotos() {
       try {
-        const res = await fetch("/api/photos");
+        const res = await authenticatedFetch("/api/photos");
         if (res.ok) {
           const data = await res.json();
           if (data.photos && data.photos.length > 0) {

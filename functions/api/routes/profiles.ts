@@ -44,19 +44,21 @@ _profilesRouter.use("*", async (c, next) => {
     return next();
   }
 
+  // Extract the relative subpath within the profiles router (removing /api/profile or /api/profiles prefix)
+  const relativePath = path.replace(/^\/api\/profiles?/, "");
+
   // /me is user-specific (varies by authenticated user) - never cache
-  if (path.includes("/me")) {
+  if (relativePath.includes("/me")) {
     return next();
   }
 
   // /public/:userId is truly public (same data for all viewers) - cache it
-  if (path.startsWith("/public/")) {
+  if (relativePath.startsWith("/public/")) {
     return edgeCacheMiddleware(180, 60, 300)(c, next);
   }
 
   // Legacy /:userId route varies by requester (admin/self see more data) - don't cache
-  // We detect this by checking if path doesn't start with /public/ and doesn't match other routes
-  if (path.match(/^\/[^/]+$/) && !path.startsWith("/team-roster") && !path.startsWith("/public/")) {
+  if (relativePath.match(/^\/[^/]+$/) && !relativePath.startsWith("/team-roster") && !relativePath.startsWith("/public/")) {
     return next();
   }
 

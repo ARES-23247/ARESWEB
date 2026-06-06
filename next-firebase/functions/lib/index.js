@@ -47,6 +47,8 @@ const vertex_1 = require("./lib/vertex");
 const zulip_1 = require("./lib/zulip");
 const bigquery_1 = require("@google-cloud/bigquery");
 const genai_1 = require("@google/genai");
+const auth_1 = require("./middleware/auth");
+const crypto_1 = require("./lib/crypto");
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)({ origin: true }));
@@ -235,7 +237,7 @@ function generateHighFidelityMockRun(runId) {
 // API ROUTES
 // ─────────────────────────────────────────────────────────────────────────
 // GET /api/photos
-app.get("/api/photos", async (req, res) => {
+app.get("/api/photos", auth_1.ensureAuth, async (req, res) => {
     try {
         const photosSnap = await firebase_admin_1.adminDb
             .collection("imported_photos")
@@ -253,7 +255,7 @@ app.get("/api/photos", async (req, res) => {
     }
 });
 // GET /api/photos/albums
-app.get("/api/photos/albums", async (req, res) => {
+app.get("/api/photos/albums", auth_1.ensureAuth, async (req, res) => {
     try {
         const albumsSnap = await firebase_admin_1.adminDb
             .collection("albums")
@@ -271,7 +273,7 @@ app.get("/api/photos/albums", async (req, res) => {
     }
 });
 // POST /api/photos/albums
-app.post("/api/photos/albums", async (req, res) => {
+app.post("/api/photos/albums", auth_1.ensureAdmin, async (req, res) => {
     try {
         const { title, description, category, coverImageUrl } = req.body;
         if (!title || !category) {
@@ -309,7 +311,7 @@ app.post("/api/photos/albums", async (req, res) => {
     }
 });
 // POST /api/photos/import
-app.post("/api/photos/import", async (req, res) => {
+app.post("/api/photos/import", auth_1.ensureAdmin, async (req, res) => {
     try {
         const { items, albumId, albumName } = req.body;
         if (!items || items.length === 0) {
@@ -325,86 +327,97 @@ app.post("/api/photos/import", async (req, res) => {
         const baseFolder = `gallery/${sanitizedAlbum}/${dateStr}`;
         let successCount = 0;
         let failedCount = 0;
-        for (const item of items) {
-            const filename = item.filename ?? `photo-${item.id}.jpg`;
-            const mimeType = item.mimeType ?? "image/jpeg";
-            try {
-                const photoRef = firebase_admin_1.adminDb.collection("imported_photos").doc(item.id);
-                const docSnap = await photoRef.get();
-                if (docSnap.exists) {
-                    const existingData = docSnap.data();
+        // Bounded concurrency processing helper (4 items in parallel)
+        const chunkArray = (arr, size) => {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += size) {
+                chunks.push(arr.slice(i, i + size));
+            }
+            return chunks;
+        };
+        const itemChunks = chunkArray(items, 4);
+        for (const chunk of itemChunks) {
+            await Promise.all(chunk.map(async (item) => {
+                const filename = item.filename ?? `photo-${item.id}.jpg`;
+                const mimeType = item.mimeType ?? "image/jpeg";
+                try {
+                    const photoRef = firebase_admin_1.adminDb.collection("imported_photos").doc(item.id);
+                    const docSnap = await photoRef.get();
+                    if (docSnap.exists) {
+                        const existingData = docSnap.data();
+                        results.push({
+                            mediaItemId: item.id,
+                            status: "success",
+                            filename,
+                            storagePath: existingData?.storagePath,
+                            publicUrl: existingData?.publicUrl,
+                        });
+                        successCount++;
+                        return;
+                    }
+                    const downloadUrl = `${item.baseUrl}=d`;
+                    const downloadRes = await fetch(downloadUrl, {
+                        headers: { Authorization: `Bearer ${googleToken}` },
+                    });
+                    if (!downloadRes.ok) {
+                        throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
+                    }
+                    const buffer = await downloadRes.arrayBuffer();
+                    const validation = (0, imageImport_1.validateImageMagicBytes)(buffer);
+                    if (!validation.valid) {
+                        throw new Error(validation.error ?? "File did not pass magic bytes verification");
+                    }
+                    const fileKey = `${baseFolder}/${item.id}-${filename}`;
+                    const storageFile = bucket.file(fileKey);
+                    await storageFile.save(Buffer.from(buffer), {
+                        metadata: {
+                            contentType: mimeType,
+                            metadata: {
+                                googleMediaItemId: item.id,
+                                importedBy: "ARES Team Picker",
+                            },
+                        },
+                        resumable: false,
+                    });
+                    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
+                    const photoMeta = {
+                        id: item.id,
+                        storagePath: fileKey,
+                        publicUrl,
+                        originalFilename: filename,
+                        mimeType,
+                        fileSize: buffer.byteLength,
+                        importedAt: new Date().toISOString(),
+                        albumId: albumId || null,
+                    };
+                    await photoRef.set(photoMeta);
+                    if (albumId) {
+                        await firebase_admin_1.adminDb
+                            .collection("albums")
+                            .doc(albumId)
+                            .collection("photos")
+                            .doc(item.id)
+                            .set(photoMeta);
+                    }
                     results.push({
                         mediaItemId: item.id,
                         status: "success",
                         filename,
-                        storagePath: existingData?.storagePath,
-                        publicUrl: existingData?.publicUrl,
+                        storagePath: fileKey,
+                        publicUrl,
                     });
                     successCount++;
-                    continue;
                 }
-                const downloadUrl = `${item.baseUrl}=d`;
-                const downloadRes = await fetch(downloadUrl, {
-                    headers: { Authorization: `Bearer ${googleToken}` },
-                });
-                if (!downloadRes.ok) {
-                    throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
+                catch (err) {
+                    results.push({
+                        mediaItemId: item.id,
+                        status: "failed",
+                        filename,
+                        error: err.message || "Unknown import error",
+                    });
+                    failedCount++;
                 }
-                const buffer = await downloadRes.arrayBuffer();
-                const validation = (0, imageImport_1.validateImageMagicBytes)(buffer);
-                if (!validation.valid) {
-                    throw new Error(validation.error ?? "File did not pass magic bytes verification");
-                }
-                const fileKey = `${baseFolder}/${item.id}-${filename}`;
-                const storageFile = bucket.file(fileKey);
-                await storageFile.save(Buffer.from(buffer), {
-                    metadata: {
-                        contentType: mimeType,
-                        metadata: {
-                            googleMediaItemId: item.id,
-                            importedBy: "ARES Team Picker",
-                        },
-                    },
-                    resumable: false,
-                });
-                const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
-                const photoMeta = {
-                    id: item.id,
-                    storagePath: fileKey,
-                    publicUrl,
-                    originalFilename: filename,
-                    mimeType,
-                    fileSize: buffer.byteLength,
-                    importedAt: new Date().toISOString(),
-                    albumId: albumId || null,
-                };
-                await photoRef.set(photoMeta);
-                if (albumId) {
-                    await firebase_admin_1.adminDb
-                        .collection("albums")
-                        .doc(albumId)
-                        .collection("photos")
-                        .doc(item.id)
-                        .set(photoMeta);
-                }
-                results.push({
-                    mediaItemId: item.id,
-                    status: "success",
-                    filename,
-                    storagePath: fileKey,
-                    publicUrl,
-                });
-                successCount++;
-            }
-            catch (err) {
-                results.push({
-                    mediaItemId: item.id,
-                    status: "failed",
-                    filename,
-                    error: err.message || "Unknown import error",
-                });
-                failedCount++;
-            }
+            }));
         }
         if (albumId && successCount > 0) {
             try {
@@ -507,7 +520,7 @@ app.get("/api/photos/auth", async (req, res) => {
     }
 });
 // GET /api/photos/picker/media-proxy
-app.get("/api/photos/picker/media-proxy", async (req, res) => {
+app.get("/api/photos/picker/media-proxy", auth_1.ensureAuth, async (req, res) => {
     try {
         const url = req.query.url;
         if (!url) {
@@ -533,7 +546,7 @@ app.get("/api/photos/picker/media-proxy", async (req, res) => {
     }
 });
 // GET /api/photos/picker/:sessionId/items
-app.get("/api/photos/picker/:sessionId/items", async (req, res) => {
+app.get("/api/photos/picker/:sessionId/items", auth_1.ensureAuth, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
@@ -554,7 +567,7 @@ app.get("/api/photos/picker/:sessionId/items", async (req, res) => {
     }
 });
 // GET /api/photos/picker/:sessionId
-app.get("/api/photos/picker/:sessionId", async (req, res) => {
+app.get("/api/photos/picker/:sessionId", auth_1.ensureAuth, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
@@ -575,7 +588,7 @@ app.get("/api/photos/picker/:sessionId", async (req, res) => {
     }
 });
 // POST /api/photos/picker
-app.post("/api/photos/picker", async (req, res) => {
+app.post("/api/photos/picker", auth_1.ensureAuth, async (req, res) => {
     try {
         const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
         const response = await fetch(`${PICKER_API_BASE}/sessions`, {
@@ -599,7 +612,7 @@ app.post("/api/photos/picker", async (req, res) => {
     }
 });
 // DELETE /api/photos/picker/:sessionId
-app.delete("/api/photos/picker/:sessionId", async (req, res) => {
+app.delete("/api/photos/picker/:sessionId", auth_1.ensureAuth, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
@@ -638,12 +651,15 @@ app.post("/api/inquiries", async (req, res) => {
                 return;
             }
         }
+        const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+        const encryptedName = await (0, crypto_1.encrypt)(name.trim(), secret);
+        const encryptedEmail = await (0, crypto_1.encrypt)(email.trim().toLowerCase(), secret);
         const inquiryId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const newInquiry = {
             id: inquiryId,
             type,
-            name: name.trim(),
-            email: email.trim().toLowerCase(),
+            name: encryptedName,
+            email: encryptedEmail,
             status: "pending",
             metadata: metadata || {},
             createdAt: new Date().toISOString(),
@@ -655,8 +671,7 @@ app.post("/api/inquiries", async (req, res) => {
 **Type:** ${type}
 **Message:** ${metadata?.message || "(no message payload)"}
 [Open Command Center](https://aresfirst.org/dashboard)`;
-            (0, zulip_1.sendZulipAlert)("Applicant", `New ${type} Submission`, messageBody)
-                .catch(err => console.error("[Zulip Inquiries Alert] background error:", err));
+            await (0, zulip_1.sendZulipAlert)("Applicant", `New ${type} Submission`, messageBody);
         }
         catch (e) {
             console.error("[Zulip Inquiries Alert] error:", e);
@@ -673,7 +688,7 @@ app.post("/api/inquiries", async (req, res) => {
     }
 });
 // POST /api/tasks/comment
-app.post("/api/tasks/comment", async (req, res) => {
+app.post("/api/tasks/comment", auth_1.ensureAuth, async (req, res) => {
     try {
         const { taskId, author, content } = req.body;
         if (!taskId || !author || !content) {
@@ -695,7 +710,7 @@ app.post("/api/tasks/comment", async (req, res) => {
     }
 });
 // POST /api/tasks/notify
-app.post("/api/tasks/notify", async (req, res) => {
+app.post("/api/tasks/notify", auth_1.ensureAuth, async (req, res) => {
     try {
         const { taskId, action, title, status, description, subteam, priority } = req.body;
         if (!taskId || !action || !title) {
@@ -733,7 +748,7 @@ app.post("/api/tasks/notify", async (req, res) => {
     }
 });
 // GET /api/analytics/telemetry-log
-app.get("/api/analytics/telemetry-log", async (req, res) => {
+app.get("/api/analytics/telemetry-log", auth_1.ensureAuth, async (req, res) => {
     try {
         const runId = req.query.runId || "run_2026_championship_finals";
         const gcpProject = process.env.GCP_PROJECT_ID;
@@ -883,7 +898,7 @@ function generateDeterministicReport(match) {
 `;
 }
 // POST /api/analytics/match-analysis
-app.post("/api/analytics/match-analysis", async (req, res) => {
+app.post("/api/analytics/match-analysis", auth_1.ensureAdmin, async (req, res) => {
     try {
         const { matchData } = req.body;
         if (!matchData || !matchData.matchId) {
@@ -978,7 +993,7 @@ Endgame Period:
     }
 });
 // POST /api/analytics/onshape-sync
-app.post("/api/analytics/onshape-sync", async (req, res) => {
+app.post("/api/analytics/onshape-sync", auth_1.ensureAdmin, async (req, res) => {
     try {
         const { documentId, workspaceId, elementId, type = "robot" } = req.body;
         if (!documentId || !workspaceId || !elementId) {
@@ -1327,7 +1342,7 @@ app.post("/api/webhooks/zulip", async (req, res) => {
     }
 });
 // POST /api/upload (telemetry file upload)
-app.post("/api/upload", async (req, res) => {
+app.post("/api/upload", auth_1.ensureAdmin, async (req, res) => {
     try {
         const contentType = req.headers["content-type"] || "";
         let csvText = "";

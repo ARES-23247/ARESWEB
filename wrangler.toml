@@ -4,6 +4,10 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 placement = { mode = "smart" }
 
+[vars]
+ENVIRONMENT = "production"
+
+
 [[d1_databases]]
 binding = "DB"
 database_name = "ares-db"

@@ -13,13 +13,13 @@
     "@google/genai": "^2.7.0",
     "clsx": "^2.1.1",
     "firebase": "^12.14.0",
-    "firebase-admin": "^13.10.0",
     "lucide-react": "^1.17.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-router-dom": "^7.14.2",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
+    "vaul": "^1.0.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

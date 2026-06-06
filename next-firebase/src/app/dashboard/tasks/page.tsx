@@ -5,6 +5,8 @@ import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from "fireb
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
+import { authenticatedFetch } from "@/lib/api";
+import { Drawer } from "vaul";
 
 interface TaskComment {
   id: string;
@@ -34,7 +36,8 @@ interface TaskItem {
 }
 
 interface MemberProfile {
-  email: string;
+  uid: string;
+  email?: string;
   nickname: string;
   avatar: string;
 }
@@ -47,7 +50,7 @@ const MOCK_TASKS: TaskItem[] = [
     status: "in_progress",
     priority: "high",
     subteam: "software",
-    assignees: ["lead.programmer@gmail.com"],
+    assignees: ["lead_programmer"],
     subtasks: [
       { id: "sub_1", title: "Run friction sweep script", done: true },
       { id: "sub_2", title: "Apply 0.05 kS compensation in FtcMecanumRobot.kt", done: false }
@@ -61,7 +64,7 @@ const MOCK_TASKS: TaskItem[] = [
     status: "todo",
     priority: "medium",
     subteam: "hardware",
-    assignees: ["mechanic.lead@gmail.com"],
+    assignees: ["mechanic_lead"],
     subtasks: [
       { id: "sub_3", title: "3D print TPU compliant wheels", done: true },
       { id: "sub_4", title: "Mount hex shaft to side plates", done: false }
@@ -75,7 +78,7 @@ const MOCK_TASKS: TaskItem[] = [
     status: "review",
     priority: "high",
     subteam: "business",
-    assignees: ["coach.david@gmail.com"],
+    assignees: ["coach_david"],
     subtasks: [
       { id: "sub_5", title: "Compile World Championship recap data", done: true },
       { id: "sub_6", title: "Review pamphlet layouts with advisors", done: false }
@@ -109,7 +112,7 @@ function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit:
       setNewComment("");
 
       // Forward to Zulip stream
-      await fetch("/api/tasks/comment", {
+      await authenticatedFetch("/api/tasks/comment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -220,6 +223,14 @@ function TaskDetailsModal({
   const [modalAssignees, setModalAssignees] = useState<string[]>(task.assignees || []);
   const [submitting, setSubmitting] = useState(false);
   const [newSubTitle, setNewSubTitle] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     setModalTitle(task.title);
@@ -244,7 +255,7 @@ function TaskDetailsModal({
         assignees: modalAssignees
       });
 
-      fetch("/api/tasks/notify", {
+      authenticatedFetch("/api/tasks/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -272,204 +283,223 @@ function TaskDetailsModal({
     setNewSubTitle("");
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+  const renderInnerContent = () => (
+    <>
+      <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/20 shrink-0">
+        <div>
+          <span className="text-[9px] font-mono text-marble/40 uppercase tracking-widest block mb-0.5">Task ID: {task.id}</span>
+          <input
+            type="text"
+            value={modalTitle}
+            onChange={(e) => setModalTitle(e.target.value)}
+            className="bg-transparent border-none text-white text-lg font-bold p-0 focus:outline-none focus:ring-0 max-w-lg w-full placeholder:text-marble/30"
+            placeholder="Task Title"
+            disabled={!canEdit}
+          />
+        </div>
+        <button onClick={onClose} className="text-marble/40 hover:text-white transition-colors cursor-pointer text-xl p-1">
+          &times;
+        </button>
+      </div>
 
-      <div className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/20">
+      <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+        <div className="lg:col-span-2 space-y-6">
           <div>
-            <span className="text-[9px] font-mono text-marble/40 uppercase tracking-widest block mb-0.5">Task ID: {task.id}</span>
-            <input
-              type="text"
-              value={modalTitle}
-              onChange={(e) => setModalTitle(e.target.value)}
-              className="bg-transparent border-none text-white text-lg font-bold p-0 focus:outline-none focus:ring-0 max-w-lg w-full placeholder:text-marble/30"
-              placeholder="Task Title"
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+              Description
+            </label>
+            <textarea
+              value={modalDesc}
+              onChange={(e) => setModalDesc(e.target.value)}
+              placeholder="Detail technical requirements, subsystem specs, etc..."
+              className="w-full bg-black/60 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-ares-red h-32 transition-colors placeholder:text-marble/30"
               disabled={!canEdit}
             />
           </div>
-          <button onClick={onClose} className="text-marble/40 hover:text-white transition-colors cursor-pointer text-xl p-1">
-            &times;
-          </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                Description
-              </label>
-              <textarea
-                value={modalDesc}
-                onChange={(e) => setModalDesc(e.target.value)}
-                placeholder="Detail technical requirements, subsystem specs, etc..."
-                className="w-full bg-black/60 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-ares-red h-32 transition-colors placeholder:text-marble/30"
-                disabled={!canEdit}
-              />
-            </div>
+          <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
+            <h4 className="text-xs font-bold text-ares-gold uppercase tracking-wider">
+              Subtasks Checklist
+            </h4>
 
-            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
-              <h4 className="text-xs font-bold text-ares-gold uppercase tracking-wider">
-                Subtasks Checklist
-              </h4>
-
-              {task.subtasks?.length > 0 ? (
-                <div className="space-y-2">
-                  {task.subtasks.map((sub) => (
-                    <div key={sub.id} className="flex justify-between items-center group/sub">
-                      <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
-                        <input
-                          type="checkbox"
-                          checked={sub.done}
-                          disabled={!canEdit}
-                          onChange={() => onToggleSubtask(task.id, sub.id)}
-                          className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                        />
-                        <span className={sub.done ? "line-through text-marble/40" : ""}>
-                          {sub.title}
-                        </span>
-                      </label>
-                      {canEdit && (
-                        <button
-                          onClick={() => onDeleteSubtask(task.id, sub.id)}
-                          className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
-                          title="Delete subtask"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
-              )}
-
-              {canEdit && (
-                <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
-                  <input
-                    type="text"
-                    value={newSubTitle}
-                    onChange={(e) => setNewSubTitle(e.target.value)}
-                    placeholder="New subtask..."
-                    className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newSubTitle.trim()}
-                    className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                  >
-                    Add
-                  </button>
-                </form>
-              )}
-            </div>
-
-            <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
-          </div>
-
-          <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Status</label>
-              <select
-                value={modalStatus}
-                onChange={(e) => setModalStatus(e.target.value as any)}
-                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
-                disabled={!canEdit}
-              >
-                <option value="todo">📋 To Do</option>
-                <option value="in_progress">⚙️ In Progress</option>
-                <option value="review">👀 In Review</option>
-                <option value="completed">✅ Completed</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
-              <select
-                value={modalSubteam}
-                onChange={(e) => setModalSubteam(e.target.value as any)}
-                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
-                disabled={!canEdit}
-              >
-                <option value="software">Software</option>
-                <option value="hardware">Hardware</option>
-                <option value="business">Business</option>
-                <option value="outreach">Outreach</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
-              <select
-                value={modalPriority}
-                onChange={(e) => setModalPriority(e.target.value as any)}
-                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
-                disabled={!canEdit}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                Assignees ({modalAssignees.length})
-              </label>
-              <div className="bg-black/40 border border-white/10 rounded p-2.5 max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-                {teamProfiles.map((member) => {
-                  const isAssigned = modalAssignees.includes(member.email);
-                  return (
-                    <label
-                      key={member.email}
-                      className="flex items-center gap-2 text-xs text-marble/80 cursor-pointer select-none hover:text-white"
-                    >
+            {task.subtasks?.length > 0 ? (
+              <div className="space-y-2">
+                {task.subtasks.map((sub) => (
+                  <div key={sub.id} className="flex justify-between items-center group/sub">
+                    <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
                       <input
                         type="checkbox"
-                        checked={isAssigned}
+                        checked={sub.done}
                         disabled={!canEdit}
-                        onChange={() => {
-                          if (isAssigned) {
-                            setModalAssignees(modalAssignees.filter((email) => email !== member.email));
-                          } else {
-                            setModalAssignees([...modalAssignees, member.email]);
-                          }
-                        }}
+                        onChange={() => onToggleSubtask(task.id, sub.id)}
                         className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
                       />
-                      <img src={member.avatar} alt={member.nickname} className="w-4 h-4 rounded-full object-contain shrink-0 bg-black/50" />
-                      <span className="truncate">{member.nickname}</span>
+                      <span className={sub.done ? "line-through text-marble/40" : ""}>
+                        {sub.title}
+                      </span>
                     </label>
-                  );
-                })}
+                    {canEdit && (
+                      <button
+                        onClick={() => onDeleteSubtask(task.id, sub.id)}
+                        className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
+                        title="Delete subtask"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
+            )}
 
             {canEdit && (
-              <div className="pt-3 border-t border-white/5 space-y-2">
+              <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
+                <input
+                  type="text"
+                  value={newSubTitle}
+                  onChange={(e) => setNewSubTitle(e.target.value)}
+                  placeholder="New subtask..."
+                  className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
+                />
                 <button
-                  onClick={handleSave}
-                  className="w-full bg-ares-red hover:bg-ares-red-dark text-white text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer"
+                  type="submit"
+                  disabled={!newSubTitle.trim()}
+                  className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
                 >
-                  Save Changes
+                  Add
                 </button>
-                <button
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete this task card?")) {
-                      onDeleteTask(task.id);
-                      onClose();
-                    }
-                  }}
-                  className="w-full bg-black/40 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/35 text-marble/60 hover:text-ares-red text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Trash2 size={12} /> Delete Card
-                </button>
-              </div>
+              </form>
             )}
           </div>
+
+          <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
         </div>
+
+        <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Status</label>
+            <select
+              value={modalStatus}
+              onChange={(e) => setModalStatus(e.target.value as any)}
+              className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+              disabled={!canEdit}
+            >
+              <option value="todo">📋 To Do</option>
+              <option value="in_progress">⚙️ In Progress</option>
+              <option value="review">👀 In Review</option>
+              <option value="completed">✅ Completed</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
+            <select
+              value={modalSubteam}
+              onChange={(e) => setModalSubteam(e.target.value as any)}
+              className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+              disabled={!canEdit}
+            >
+              <option value="software">Software</option>
+              <option value="hardware">Hardware</option>
+              <option value="business">Business</option>
+              <option value="outreach">Outreach</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
+            <select
+              value={modalPriority}
+              onChange={(e) => setModalPriority(e.target.value as any)}
+              className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+              disabled={!canEdit}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+              Assignees ({modalAssignees.length})
+            </label>
+            <div className="bg-black/40 border border-white/10 rounded p-2.5 max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+              {teamProfiles.map((member) => {
+                const isAssigned = modalAssignees.includes(member.uid);
+                return (
+                  <label
+                    key={member.uid}
+                    className="flex items-center gap-2 text-xs text-marble/80 cursor-pointer select-none hover:text-white"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isAssigned}
+                      disabled={!canEdit}
+                      onChange={() => {
+                        if (isAssigned) {
+                          setModalAssignees(modalAssignees.filter((uid) => uid !== member.uid));
+                        } else {
+                          setModalAssignees([...modalAssignees, member.uid]);
+                        }
+                      }}
+                      className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                    />
+                    <img src={member.avatar} alt={member.nickname} className="w-4 h-4 rounded-full object-contain shrink-0 bg-black/50" />
+                    <span className="truncate">{member.nickname}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {canEdit && (
+            <div className="pt-3 border-t border-white/5 space-y-2">
+              <button
+                onClick={handleSave}
+                className="w-full bg-ares-red hover:bg-ares-red-dark text-white text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure you want to delete this task card?")) {
+                    onDeleteTask(task.id);
+                    onClose();
+                  }
+                }}
+                className="w-full bg-black/40 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/35 text-marble/60 hover:text-ares-red text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={12} /> Delete Card
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer.Root open={true} onOpenChange={(open) => !open && onClose()}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" />
+          <Drawer.Content className="bg-obsidian border-t border-white/10 flex flex-col rounded-t-[20px] max-h-[92vh] fixed bottom-0 left-0 right-0 z-50 focus:outline-none overflow-hidden">
+            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-white/20 my-4" />
+            {renderInnerContent()}
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        {renderInnerContent()}
       </div>
     </div>
   );
@@ -542,8 +572,9 @@ export default function KanbanPage() {
         const list = snapshot.docs.map((doc) => {
           const data = doc.data();
           return {
-            email: doc.id,
-            nickname: data.nickname || data.firstName || doc.id,
+            uid: doc.id,
+            email: data.email || "",
+            nickname: data.nickname || data.firstName || data.displayName || "Team Member",
             avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`
           };
         });
@@ -568,7 +599,7 @@ export default function KanbanPage() {
       status: "todo",
       priority: newTaskPriority,
       subteam: newTaskSubteam,
-      assignees: [user?.email || "anonymous"],
+      assignees: [user?.uid || "anonymous"],
       subtasks: [],
       createdAt: new Date().toISOString()
     };
@@ -578,7 +609,7 @@ export default function KanbanPage() {
       setNewTaskTitle("");
       setNewTaskDesc("");
 
-      fetch("/api/tasks/notify", {
+      authenticatedFetch("/api/tasks/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -604,7 +635,7 @@ export default function KanbanPage() {
       await updateDoc(taskRef, { status: newStatus });
 
       if (task) {
-        fetch("/api/tasks/notify", {
+        authenticatedFetch("/api/tasks/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -938,13 +969,13 @@ export default function KanbanPage() {
                       <div className="border-t border-white/5 pt-3 flex justify-between items-center gap-2 mt-auto text-[10px]">
                         {/* Assignees visual stack */}
                         <div className="flex -space-x-1.5 overflow-hidden">
-                          {task.assignees?.slice(0, 4).map((email) => {
-                            const profile = teamProfiles.find((p) => p.email === email);
-                            const avatar = profile?.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${email}`;
-                            const name = profile?.nickname || email;
+                          {task.assignees?.slice(0, 4).map((uid) => {
+                            const profile = teamProfiles.find((p) => p.uid === uid);
+                            const avatar = profile?.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${uid}`;
+                            const name = profile?.nickname || "Team Member";
                             return (
                               <img
-                                key={email}
+                                key={uid}
                                 className="inline-block h-5 w-5 rounded-full ring-1 ring-black bg-black object-contain shrink-0"
                                 src={avatar}
                                 alt={name}

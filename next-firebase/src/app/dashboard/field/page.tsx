@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
+import { authenticatedFetch } from "@/lib/api";
 import { 
   collection, 
   getDocs, 
@@ -162,7 +163,7 @@ export default function FieldObstacleEditor() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/analytics/onshape-sync", {
+      const res = await authenticatedFetch("/api/analytics/onshape-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -27,7 +27,7 @@ service cloud.firestore {
       // Users can read their own registration doc; admins can read everything
       allow read: if isAuthenticated() && (getUserEmail() == email || hasRole('admin'));
       // Only admins can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
-      allow write: if hasRole('admin') || (isAuthenticated() && email == 'coach.david@gmail.com' && !exists(/databases/$(database)/documents/authorized_users/coach.david@gmail.com));
+      allow write: if hasRole('admin') || (isAuthenticated() && request.auth.token.email.lower() == 'coach.david@gmail.com' && !exists(/databases/$(database)/documents/authorized_users/coach.david@gmail.com));
     }
 
     // Public collections (blogs, calendar, knowledge base docs)
@@ -63,7 +63,9 @@ service cloud.firestore {
 
     match /chat_sessions/{sessionId} {
       // Allow read/write for authorized team members, or guests under standard "anonymous" sessions
-      allow read, write: if isAuthorized() || (isAuthenticated() && get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data.userId == 'anonymous');
+      allow read: if isAuthorized() || (isAuthenticated() && resource.data.userId == 'anonymous');
+      allow create: if isAuthorized() || (isAuthenticated() && request.resource.data.userId == 'anonymous');
+      allow update, delete: if isAuthorized() || (isAuthenticated() && resource.data.userId == 'anonymous');
     }
 
     match /telemetry_runs/{runId} {
@@ -101,7 +103,7 @@ service cloud.firestore {
 
     // user_profiles
     match /user_profiles/{userId} {
-      allow read: if true;
+      allow read: if isAuthorized();
       allow write: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
     }
 

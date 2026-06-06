@@ -33,7 +33,7 @@ export default function Leaderboard() {
       <SEO title="Team Leaderboard — ARES 23247" description="The most engaged students and mentors on Team ARES 23247." />
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-white hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors bg-obsidian px-3 py-1.5 ares-cut-sm border border-white/10 shadow-lg">
+        <Link to="/" className="inline-flex items-center gap-2 text-white hover:text-white text-xs font-bold uppercase tracking-widest mb-12 transition-colors bg-obsidian px-3 py-1.5 ares-cut-sm border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian">
           <ArrowLeft size={16} /> Back to Portal
         </Link>
         <header className="mb-20 text-center">
@@ -89,7 +89,7 @@ export default function Leaderboard() {
                   transition={{ delay: 0.3 + (idx * 0.1), type: "spring", stiffness: 100 }}
                   className="flex flex-col items-center w-full md:w-64"
                 >
-                  <Link to="/profile/$userId" params={{ userId: user.userId }} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2">
+                  <Link to="/profile/$userId" params={{ userId: user.userId }} className="group relative z-10 flex flex-col items-center mb-4 transition-transform hover:-translate-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian rounded-xl">
                     <div className={`w-20 h-20 rounded-full border-4 ${border} bg-obsidian overflow-hidden mb-3 relative`}>
                       <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.userId}`} alt="Avatar" className="w-full h-full object-cover" />
                       <div className={`absolute -bottom-2 -right-2 bg-obsidian rounded-full p-1 border-2 ${border}`}>
@@ -138,7 +138,7 @@ export default function Leaderboard() {
                     <tr key={user.userId} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                       <td className="py-4 text-center font-bold text-ares-gray">{(idx + 4).toString().padStart(2, '0')}</td>
                       <td className="py-4">
-                        <Link to="/profile/$userId" params={{ userId: user.userId }} className="flex items-center gap-3">
+                        <Link to="/profile/$userId" params={{ userId: user.userId }} className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian rounded-lg">
                           <div className="w-8 h-8 rounded-full bg-ares-gray-dark shrink-0 overflow-hidden border border-white/10 group-hover:border-white/60 transition-colors">
                             <img src={user.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.userId}`} alt="Avatar" className="w-full h-full object-cover" />
                           </div>

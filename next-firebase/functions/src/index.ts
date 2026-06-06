@@ -8,6 +8,8 @@ import { runTelemetryDiagnostics } from "./lib/vertex";
 import { sendZulipMessage, sendZulipAlert } from "./lib/zulip";
 import { BigQuery } from "@google-cloud/bigquery";
 import { GoogleGenAI } from "@google/genai";
+import { ensureAuth, ensureAdmin } from "./middleware/auth";
+import { encrypt } from "./lib/crypto";
 
 const app = express();
 
@@ -208,7 +210,7 @@ function generateHighFidelityMockRun(runId: string) {
 // ─────────────────────────────────────────────────────────────────────────
 
 // GET /api/photos
-app.get("/api/photos", async (req, res) => {
+app.get("/api/photos", ensureAuth, async (req, res) => {
   try {
     const photosSnap = await adminDb
       .collection("imported_photos")
@@ -228,7 +230,7 @@ app.get("/api/photos", async (req, res) => {
 });
 
 // GET /api/photos/albums
-app.get("/api/photos/albums", async (req, res) => {
+app.get("/api/photos/albums", ensureAuth, async (req, res) => {
   try {
     const albumsSnap = await adminDb
       .collection("albums")
@@ -248,7 +250,7 @@ app.get("/api/photos/albums", async (req, res) => {
 });
 
 // POST /api/photos/albums
-app.post("/api/photos/albums", async (req: express.Request, res: express.Response) => {
+app.post("/api/photos/albums", ensureAdmin, async (req: express.Request, res: express.Response) => {
   try {
     const { title, description, category, coverImageUrl } = req.body as {
       title: string;
@@ -297,7 +299,7 @@ app.post("/api/photos/albums", async (req: express.Request, res: express.Respons
 });
 
 // POST /api/photos/import
-app.post("/api/photos/import", async (req: express.Request, res: express.Response) => {
+app.post("/api/photos/import", ensureAdmin, async (req: express.Request, res: express.Response) => {
   try {
     const { items, albumId, albumName } = req.body as {
       items: Array<{
@@ -328,99 +330,113 @@ app.post("/api/photos/import", async (req: express.Request, res: express.Respons
     let successCount = 0;
     let failedCount = 0;
 
-    for (const item of items) {
-      const filename = item.filename ?? `photo-${item.id}.jpg`;
-      const mimeType = item.mimeType ?? "image/jpeg";
-
-      try {
-        const photoRef = adminDb.collection("imported_photos").doc(item.id);
-        const docSnap = await photoRef.get();
-
-        if (docSnap.exists) {
-          const existingData = docSnap.data();
-          results.push({
-            mediaItemId: item.id,
-            status: "success",
-            filename,
-            storagePath: existingData?.storagePath,
-            publicUrl: existingData?.publicUrl,
-          });
-          successCount++;
-          continue;
-        }
-
-        const downloadUrl = `${item.baseUrl}=d`;
-        const downloadRes = await fetch(downloadUrl, {
-          headers: { Authorization: `Bearer ${googleToken}` },
-        });
-
-        if (!downloadRes.ok) {
-          throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
-        }
-
-        const buffer = await downloadRes.arrayBuffer();
-
-        const validation = validateImageMagicBytes(buffer);
-        if (!validation.valid) {
-          throw new Error(validation.error ?? "File did not pass magic bytes verification");
-        }
-
-        const fileKey = `${baseFolder}/${item.id}-${filename}`;
-        const storageFile = bucket.file(fileKey);
-
-        await storageFile.save(Buffer.from(buffer), {
-          metadata: {
-            contentType: mimeType,
-            metadata: {
-              googleMediaItemId: item.id,
-              importedBy: "ARES Team Picker",
-            },
-          },
-          resumable: false,
-        });
-
-        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
-
-        const photoMeta = {
-          id: item.id,
-          storagePath: fileKey,
-          publicUrl,
-          originalFilename: filename,
-          mimeType,
-          fileSize: buffer.byteLength,
-          importedAt: new Date().toISOString(),
-          albumId: albumId || null,
-        };
-
-        await photoRef.set(photoMeta);
-
-        if (albumId) {
-          await adminDb
-            .collection("albums")
-            .doc(albumId)
-            .collection("photos")
-            .doc(item.id)
-            .set(photoMeta);
-        }
-
-        results.push({
-          mediaItemId: item.id,
-          status: "success",
-          filename,
-          storagePath: fileKey,
-          publicUrl,
-        });
-
-        successCount++;
-      } catch (err: any) {
-        results.push({
-          mediaItemId: item.id,
-          status: "failed",
-          filename,
-          error: err.message || "Unknown import error",
-        });
-        failedCount++;
+    // Bounded concurrency processing helper (4 items in parallel)
+    const chunkArray = <T>(arr: T[], size: number): T[][] => {
+      const chunks: T[][] = [];
+      for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
       }
+      return chunks;
+    };
+
+    const itemChunks = chunkArray(items, 4);
+    for (const chunk of itemChunks) {
+      await Promise.all(
+        chunk.map(async (item) => {
+          const filename = item.filename ?? `photo-${item.id}.jpg`;
+          const mimeType = item.mimeType ?? "image/jpeg";
+
+          try {
+            const photoRef = adminDb.collection("imported_photos").doc(item.id);
+            const docSnap = await photoRef.get();
+
+            if (docSnap.exists) {
+              const existingData = docSnap.data();
+              results.push({
+                mediaItemId: item.id,
+                status: "success",
+                filename,
+                storagePath: existingData?.storagePath,
+                publicUrl: existingData?.publicUrl,
+              });
+              successCount++;
+              return;
+            }
+
+            const downloadUrl = `${item.baseUrl}=d`;
+            const downloadRes = await fetch(downloadUrl, {
+              headers: { Authorization: `Bearer ${googleToken}` },
+            });
+
+            if (!downloadRes.ok) {
+              throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
+            }
+
+            const buffer = await downloadRes.arrayBuffer();
+
+            const validation = validateImageMagicBytes(buffer);
+            if (!validation.valid) {
+              throw new Error(validation.error ?? "File did not pass magic bytes verification");
+            }
+
+            const fileKey = `${baseFolder}/${item.id}-${filename}`;
+            const storageFile = bucket.file(fileKey);
+
+            await storageFile.save(Buffer.from(buffer), {
+              metadata: {
+                contentType: mimeType,
+                metadata: {
+                  googleMediaItemId: item.id,
+                  importedBy: "ARES Team Picker",
+                },
+              },
+              resumable: false,
+            });
+
+            const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
+
+            const photoMeta = {
+              id: item.id,
+              storagePath: fileKey,
+              publicUrl,
+              originalFilename: filename,
+              mimeType,
+              fileSize: buffer.byteLength,
+              importedAt: new Date().toISOString(),
+              albumId: albumId || null,
+            };
+
+            await photoRef.set(photoMeta);
+
+            if (albumId) {
+              await adminDb
+                .collection("albums")
+                .doc(albumId)
+                .collection("photos")
+                .doc(item.id)
+                .set(photoMeta);
+            }
+
+            results.push({
+              mediaItemId: item.id,
+              status: "success",
+              filename,
+              storagePath: fileKey,
+              publicUrl,
+            });
+
+            successCount++;
+          } catch (err: any) {
+            results.push({
+              mediaItemId: item.id,
+              status: "failed",
+              filename,
+              error: err.message || "Unknown import error",
+            });
+            failedCount++;
+          }
+        })
+      );
     }
 
     if (albumId && successCount > 0) {
@@ -540,7 +556,7 @@ app.get("/api/photos/auth", async (req: express.Request, res: express.Response) 
 });
 
 // GET /api/photos/picker/media-proxy
-app.get("/api/photos/picker/media-proxy", async (req: express.Request, res: express.Response) => {
+app.get("/api/photos/picker/media-proxy", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const url = req.query.url as string | undefined;
     if (!url) {
@@ -570,7 +586,7 @@ app.get("/api/photos/picker/media-proxy", async (req: express.Request, res: expr
 });
 
 // GET /api/photos/picker/:sessionId/items
-app.get("/api/photos/picker/:sessionId/items", async (req: express.Request, res: express.Response) => {
+app.get("/api/photos/picker/:sessionId/items", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();
@@ -593,7 +609,7 @@ app.get("/api/photos/picker/:sessionId/items", async (req: express.Request, res:
 });
 
 // GET /api/photos/picker/:sessionId
-app.get("/api/photos/picker/:sessionId", async (req: express.Request, res: express.Response) => {
+app.get("/api/photos/picker/:sessionId", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();
@@ -616,7 +632,7 @@ app.get("/api/photos/picker/:sessionId", async (req: express.Request, res: expre
 });
 
 // POST /api/photos/picker
-app.post("/api/photos/picker", async (req: express.Request, res: express.Response) => {
+app.post("/api/photos/picker", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const googleToken = await getGooglePhotosAccessToken();
     const response = await fetch(`${PICKER_API_BASE}/sessions`, {
@@ -642,7 +658,7 @@ app.post("/api/photos/picker", async (req: express.Request, res: express.Respons
 });
 
 // DELETE /api/photos/picker/:sessionId
-app.delete("/api/photos/picker/:sessionId", async (req: express.Request, res: express.Response) => {
+app.delete("/api/photos/picker/:sessionId", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();
@@ -694,12 +710,16 @@ app.post("/api/inquiries", async (req: express.Request, res: express.Response) =
       }
     }
 
+    const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+    const encryptedName = await encrypt(name.trim(), secret);
+    const encryptedEmail = await encrypt(email.trim().toLowerCase(), secret);
+
     const inquiryId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const newInquiry = {
       id: inquiryId,
       type,
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+      name: encryptedName,
+      email: encryptedEmail,
       status: "pending",
       metadata: metadata || {},
       createdAt: new Date().toISOString(),
@@ -714,8 +734,7 @@ app.post("/api/inquiries", async (req: express.Request, res: express.Response) =
 **Message:** ${metadata?.message || "(no message payload)"}
 [Open Command Center](https://aresfirst.org/dashboard)`;
 
-      sendZulipAlert("Applicant", `New ${type} Submission`, messageBody)
-        .catch(err => console.error("[Zulip Inquiries Alert] background error:", err));
+      await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
     } catch (e) {
       console.error("[Zulip Inquiries Alert] error:", e);
     }
@@ -732,7 +751,7 @@ app.post("/api/inquiries", async (req: express.Request, res: express.Response) =
 });
 
 // POST /api/tasks/comment
-app.post("/api/tasks/comment", async (req: express.Request, res: express.Response) => {
+app.post("/api/tasks/comment", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const { taskId, author, content } = req.body as {
       taskId: string;
@@ -762,7 +781,7 @@ app.post("/api/tasks/comment", async (req: express.Request, res: express.Respons
 });
 
 // POST /api/tasks/notify
-app.post("/api/tasks/notify", async (req: express.Request, res: express.Response) => {
+app.post("/api/tasks/notify", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const { taskId, action, title, status, description, subteam, priority } = req.body as {
       taskId: string;
@@ -811,7 +830,7 @@ app.post("/api/tasks/notify", async (req: express.Request, res: express.Response
 });
 
 // GET /api/analytics/telemetry-log
-app.get("/api/analytics/telemetry-log", async (req: express.Request, res: express.Response) => {
+app.get("/api/analytics/telemetry-log", ensureAuth, async (req: express.Request, res: express.Response) => {
   try {
     const runId = (req.query.runId as string) || "run_2026_championship_finals";
     const gcpProject = process.env.GCP_PROJECT_ID;
@@ -969,7 +988,7 @@ function generateDeterministicReport(match: any): string {
 }
 
 // POST /api/analytics/match-analysis
-app.post("/api/analytics/match-analysis", async (req: express.Request, res: express.Response) => {
+app.post("/api/analytics/match-analysis", ensureAdmin, async (req: express.Request, res: express.Response) => {
   try {
     const { matchData } = req.body as { matchData: any };
 
@@ -1073,7 +1092,7 @@ Endgame Period:
 });
 
 // POST /api/analytics/onshape-sync
-app.post("/api/analytics/onshape-sync", async (req: express.Request, res: express.Response) => {
+app.post("/api/analytics/onshape-sync", ensureAdmin, async (req: express.Request, res: express.Response) => {
   try {
     const { documentId, workspaceId, elementId, type = "robot" } = req.body as {
       documentId: string;
@@ -1467,7 +1486,7 @@ app.post("/api/webhooks/zulip", async (req: express.Request, res: express.Respon
 });
 
 // POST /api/upload (telemetry file upload)
-app.post("/api/upload", async (req: express.Request, res: express.Response) => {
+app.post("/api/upload", ensureAdmin, async (req: express.Request, res: express.Response) => {
   try {
     const contentType = req.headers["content-type"] || "";
     let csvText = "";

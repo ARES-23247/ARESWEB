@@ -408,7 +408,7 @@ export const outreachLogs = sqliteTable("outreach_logs", {
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 },
 (table) => [
-	index("idx_outreach_date_desc").on(table.date),
+	index("idx_outreach_date_desc").on(sql`${table.date} DESC`),
 	index("idx_outreach_date").on(table.date),
 	index("idx_outreach_season").on(table.seasonId),
 ]);
@@ -729,7 +729,8 @@ export const sponsorshipAssignments = sqliteTable("sponsorship_assignments", {
 	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" } ),
 },
 (table) => [
-	primaryKey({ columns: [table.sponsorshipId, table.userId], name: "sponsorship_assignments_sponsorship_id_user_id_pk"})
+	primaryKey({ columns: [table.sponsorshipId, table.userId], name: "sponsorship_assignments_sponsorship_id_user_id_pk"}),
+	index("idx_sponsorship_assignments_user").on(table.userId),
 ]);
 
 export const documentSnapshots = sqliteTable("document_snapshots", {
@@ -947,6 +948,7 @@ export const onshapeBomHistory = sqliteTable("onshape_bom_history", {
 (table) => [
 	index("idx_onshape_bom_history_document").on(table.documentId),
 	index("idx_onshape_bom_history_synced_at").on(table.syncedAt),
+	index("idx_onshape_bom_history_synced_by").on(table.syncedBy),
 ]);
 
 export const albums = sqliteTable("albums", {
@@ -988,7 +990,10 @@ export const robots = sqliteTable("robots", {
 	isDeleted: integer("is_deleted").default(0),
 	createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [
+	index("idx_robots_season").on(table.seasonId),
+	index("idx_robots_album").on(table.albumId),
+]);
 
 export const tournaments = sqliteTable("tournaments", {
 	id: text().primaryKey(),

@@ -676,6 +676,10 @@ CREATE INDEX IF NOT EXISTS idx_docs_history_author ON docs_history(author_email)
 CREATE INDEX IF NOT EXISTS idx_docs_category_sort ON docs(category, sort_order);
 CREATE INDEX IF NOT EXISTS idx_docs_history_slug_created ON docs_history(slug, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_outreach_date_desc ON outreach_logs(date DESC);
+CREATE INDEX IF NOT EXISTS idx_sponsorship_assignments_user ON sponsorship_assignments(user_id);
+CREATE INDEX IF NOT EXISTS idx_onshape_bom_history_synced_by ON onshape_bom_history(synced_by);
+CREATE INDEX IF NOT EXISTS idx_robots_season ON robots(season_id);
+CREATE INDEX IF NOT EXISTS idx_robots_album ON robots(album_id);
 
 -- â”€â”€ AI Integrations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { authenticatedFetch } from "@/lib/api";
 import { Link, RefreshCw, CheckCircle2, Cpu, ChevronDown, ChevronUp } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
@@ -129,7 +130,7 @@ export default function OnshapeRobotSyncCard() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/analytics/onshape-sync", {
+      const res = await authenticatedFetch("/api/analytics/onshape-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

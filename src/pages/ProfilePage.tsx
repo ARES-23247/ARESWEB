@@ -145,7 +145,7 @@ export default function ProfilePage() {
         <p className="text-marble max-w-md">
           {error?.message || "The profile you are looking for does not exist or has been hidden by the user."}
         </p>
-        <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all text-sm font-bold">
+        <Link to="/about" className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian">
           Back to Team Roster
         </Link>
       </div>
@@ -168,12 +168,12 @@ export default function ProfilePage() {
       />
       <div className="max-w-3xl mx-auto px-6 py-16">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <Link to="/about" className="inline-flex items-center gap-2 text-marble hover:text-white text-sm font-bold transition-colors">
+          <Link to="/about" className="inline-flex items-center gap-2 text-marble hover:text-white text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian rounded">
             <ArrowLeft size={16} /> Back to Team
           </Link>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-ares-red hover:bg-ares-bronze text-white text-sm font-bold ares-cut-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-ares-red hover:bg-ares-bronze text-white text-sm font-bold ares-cut-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
           >
             <LucideIcons.Printer size={16} /> Export Portfolio
           </button>
