@@ -8,6 +8,8 @@ import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
 import HealthDiagnostics from "./components/HealthDiagnostics";
 import OnshapeSyncCard from "./components/OnshapeSyncCard";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { 
   Play, 
   Pause, 
@@ -174,6 +176,12 @@ export default function ScopeDashboard() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("logId")) {
+        return; // Skip loading default telemetry if loading from URL parameter
+      }
+    }
     if (!isStreaming) {
       fetchTelemetryRun(selectedRunId);
     }
@@ -214,6 +222,75 @@ export default function ScopeDashboard() {
     }
   };
 
+  // Standalone CSV parser that updates the scope store telemetry data
+  const parseCSVText = (text: string, fileName: string) => {
+    // Simple CSV parser
+    const lines = text.split("\n").filter((l) => l.trim() !== "");
+    if (lines.length < 2) throw new Error("Invalid CSV format.");
+
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const timestamps: number[] = [];
+    const coords: { x: number; y: number; heading: number }[] = [];
+    const channels: Record<string, number[]> = {};
+    
+    headers.forEach((h) => {
+      channels[h] = [];
+    });
+
+    const findColIndex = (names: string[]) => {
+      return headers.findIndex((h) => 
+        names.some((n) => h.toLowerCase() === n.toLowerCase() || h.toLowerCase().includes(n.toLowerCase()))
+      );
+    };
+
+    const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x", "estimatedpose[0]", "robotpose[0]"]);
+    const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y", "estimatedpose[1]", "robotpose[1]"]);
+    const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading", "estimatedpose[2]", "robotpose[2]"]);
+    const timeIdx = findColIndex(["timestampms", "timestamp", "time", "ms"]);
+
+    // Process line rows
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(",");
+      if (cols.length < headers.length) continue;
+
+      const colsNum = cols.map((c) => parseFloat(c.trim()) || 0);
+
+      const t = timeIdx !== -1 ? colsNum[timeIdx] : (i - 1) * 20;
+      timestamps.push(t);
+      
+      let x = xIdx !== -1 ? colsNum[xIdx] : 0.0;
+      let y = yIdx !== -1 ? colsNum[yIdx] : 0.0;
+      let heading = headingIdx !== -1 ? colsNum[headingIdx] : 0.0;
+
+      // Ensure coordinates are in center-origin meters.
+      // If they look like bottom-left inches (large values), convert to center-origin meters:
+      if (Math.abs(x) > 5.0 || Math.abs(y) > 5.0) {
+        const tempX = x;
+        x = (y - 72) / 39.3701;
+        y = -(tempX - 72) / 39.3701;
+        heading = heading - Math.PI / 2;
+      }
+
+      coords.push({ x, y, heading });
+
+      headers.forEach((h, idx) => {
+        channels[h].push(colsNum[idx]);
+      });
+    }
+
+    const customTelemetry: TelemetryData = {
+      runId: fileName.substring(0, 15),
+      opModeName: "ARESImportedCloudLog",
+      timestamps: timestamps,
+      coords: coords,
+      channels: channels,
+      maxTimeMs: timestamps.length > 0 ? timestamps[timestamps.length - 1] - timestamps[0] : 0
+    };
+
+    setTelemetryData(customTelemetry);
+    console.log(`[CSV Parser] Parsed and loaded file: ${fileName}`);
+  };
+
   // Local log parsing engine (Zero UI block)
   const parseLocalLogFile = (file: File) => {
     handleDisconnectLive();
@@ -223,72 +300,7 @@ export default function ScopeDashboard() {
       try {
         const text = event.target?.result as string;
         if (!text) throw new Error("Empty file data.");
-
-        // Simple CSV parser
-        const lines = text.split("\n").filter((l) => l.trim() !== "");
-        if (lines.length < 2) throw new Error("Invalid CSV format.");
-
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const timestamps: number[] = [];
-        const coords: { x: number; y: number; heading: number }[] = [];
-        const channels: Record<string, number[]> = {};
-        
-        headers.forEach((h) => {
-          channels[h] = [];
-        });
-
-        const findColIndex = (names: string[]) => {
-          return headers.findIndex((h) => 
-            names.some((n) => h.toLowerCase() === n.toLowerCase() || h.toLowerCase().includes(n.toLowerCase()))
-          );
-        };
-
-        const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x", "estimatedpose[0]", "robotpose[0]"]);
-        const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y", "estimatedpose[1]", "robotpose[1]"]);
-        const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading", "estimatedpose[2]", "robotpose[2]"]);
-        const timeIdx = findColIndex(["timestampms", "timestamp", "time", "ms"]);
-
-        // Process line rows
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(",");
-          if (cols.length < headers.length) continue;
-
-          const colsNum = cols.map((c) => parseFloat(c.trim()) || 0);
-
-          const t = timeIdx !== -1 ? colsNum[timeIdx] : (i - 1) * 20;
-          timestamps.push(t);
-          
-          let x = xIdx !== -1 ? colsNum[xIdx] : 0.0;
-          let y = yIdx !== -1 ? colsNum[yIdx] : 0.0;
-          let heading = headingIdx !== -1 ? colsNum[headingIdx] : 0.0;
-
-          // Ensure coordinates are in center-origin meters.
-          // If they look like bottom-left inches (large values), convert to center-origin meters:
-          if (Math.abs(x) > 5.0 || Math.abs(y) > 5.0) {
-            const tempX = x;
-            x = (y - 72) / 39.3701;
-            y = -(tempX - 72) / 39.3701;
-            heading = heading - Math.PI / 2;
-          }
-
-          coords.push({ x, y, heading });
-
-          headers.forEach((h, idx) => {
-            channels[h].push(colsNum[idx]);
-          });
-        }
-
-        const customTelemetry: TelemetryData = {
-          runId: file.name.substring(0, 15),
-          opModeName: "ARESImportedLocalLog",
-          timestamps: timestamps,
-          coords: coords,
-          channels: channels,
-          maxTimeMs: timestamps.length > 0 ? timestamps[timestamps.length - 1] - timestamps[0] : 0
-        };
-
-        setTelemetryData(customTelemetry);
-        console.log(`[Local Parser] Parsed and loaded custom file: ${file.name}`);
+        parseCSVText(text, file.name);
       } catch (err: any) {
         alert("Failed to parse log file: " + err.message);
       } finally {
@@ -297,6 +309,48 @@ export default function ScopeDashboard() {
     };
     reader.readAsText(file);
   };
+
+  // Effect to load cloud telemetry log if logId search parameter is set
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const logId = params.get("logId");
+    if (!logId) return;
+
+    const loadCloudLog = async () => {
+      handleDisconnectLive();
+      setLoading(true);
+      try {
+        const docRef = doc(db, "aresplanner_log_data", logId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          throw new Error("Telemetry log content not found in the cloud.");
+        }
+
+        const data = docSnap.data();
+        if (!data || !data.csvData) {
+          throw new Error("Telemetry log is empty or invalid.");
+        }
+
+        // Fetch the corresponding metadata to get the actual file name
+        const metaRef = doc(db, "aresplanner_logs", logId);
+        const metaSnap = await getDoc(metaRef);
+        const metaData = metaSnap.exists() ? metaSnap.data() : null;
+        const name = metaData?.name || "cloud_telemetry.csv";
+
+        parseCSVText(data.csvData, name);
+      } catch (err: any) {
+        console.error("Failed to load cloud log:", err);
+        alert("Failed to load cloud log: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCloudLog();
+  }, [db]);
 
   const handlePathInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

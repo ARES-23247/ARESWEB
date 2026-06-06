@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Compass, AlertTriangle, LogIn, FolderOpen, Edit2, Trash2, Calendar, Search, SlidersHorizontal, Map } from "lucide-react";
+import { Compass, AlertTriangle, LogIn, FolderOpen, Edit2, Trash2, Calendar, Search, SlidersHorizontal, Map, Paperclip, Upload, Play, Loader2 } from "lucide-react";
 import AresPlanner, { Waypoint, EventMarker } from "@/components/AresPlanner";
 import { db } from "@/lib/firebase";
 import { collection, doc, setDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
@@ -16,9 +16,18 @@ type PathConfig = {
   updatedAt: any;
 };
 
+type LinkedLog = {
+  id: string;
+  pathId: string;
+  name: string;
+  createdAt: any;
+};
+
 export default function AresPlannerPage() {
   const { user, authorizedUser, loading: authLoading, loginWithGoogle } = useAuth();
   const [cloudPaths, setCloudPaths] = useState<PathConfig[]>([]);
+  const [cloudLogs, setCloudLogs] = useState<LinkedLog[]>([]);
+  const [uploadingPathId, setUploadingPathId] = useState<string | null>(null);
   const [selectedPath, setSelectedPath] = useState<PathConfig | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -63,6 +72,111 @@ export default function AresPlannerPage() {
       console.warn("[Firestore] Initialization error:", e);
     }
   }, [user]);
+
+  // Listen for telemetry logs in Firestore
+  useEffect(() => {
+    if (!user) {
+      setCloudLogs([]);
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, "aresplanner_logs"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const logs: LinkedLog[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          logs.push({
+            id: docSnap.id,
+            pathId: data.pathId,
+            name: data.name || "Unnamed Log",
+            createdAt: data.createdAt
+          });
+        });
+        setCloudLogs(logs);
+      }, (err) => {
+        console.warn("[Firestore] Failed to listen to logs:", err);
+      });
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("[Firestore] Initialization error:", e);
+    }
+  }, [user]);
+
+  // Handle uploading and linking a telemetry CSV log file
+  const handleUploadLog = async (pathId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    if (!event.target.files || event.target.files.length === 0) return;
+
+    const file = event.target.files[0];
+    if (!file.name.endsWith(".csv") && !file.name.endsWith(".txt")) {
+      setErrorMsg("Please upload a valid CSV or TXT telemetry log.");
+      return;
+    }
+
+    setUploadingPathId(pathId);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        if (!text || text.trim() === "") {
+          throw new Error("Log file is empty.");
+        }
+
+        // Generate a random doc ID for the log
+        const logRef = doc(collection(db, "aresplanner_logs"));
+        
+        // Write metadata
+        await setDoc(logRef, {
+          pathId,
+          name: file.name,
+          userId: user.uid,
+          createdAt: serverTimestamp()
+        });
+
+        // Write content to aresplanner_log_data
+        await setDoc(doc(db, "aresplanner_log_data", logRef.id), {
+          csvData: text
+        });
+
+        setSuccessMsg(`Log "${file.name}" linked successfully!`);
+        setTimeout(() => setSuccessMsg(""), 3000);
+      } catch (err: any) {
+        console.error("Failed to upload telemetry log:", err);
+        setErrorMsg(`Failed to upload log: ${err.message || err}`);
+      } finally {
+        setUploadingPathId(null);
+        // Reset file input value so same file can be uploaded again if needed
+        event.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Handle deleting/unlinking a telemetry log from Firestore
+  const handleDeleteLog = async (logId: string, name: string) => {
+    if (!user) return;
+    if (!window.confirm(`Are you sure you want to unlink and delete telemetry log "${name}"?`)) return;
+
+    try {
+      await deleteDoc(doc(db, "aresplanner_logs", logId));
+      await deleteDoc(doc(db, "aresplanner_log_data", logId));
+      setSuccessMsg(`Telemetry log "${name}" deleted.`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err: any) {
+      console.error("Failed to delete telemetry log:", err);
+      setErrorMsg(`Failed to delete log: ${err.message || err}`);
+    }
+  };
 
   // Handle saving paths to Firestore
   const handleSaveToCloud = async (name: string, season: string, waypoints: Waypoint[], markers: EventMarker[]) => {
@@ -347,6 +461,62 @@ export default function AresPlannerPage() {
                         <div className="flex items-center gap-1">
                           <SlidersHorizontal size={10} className="text-ares-gold" />
                           <span>Event Markers: <strong className="text-white">{path.markers.length}</strong></span>
+                        </div>
+                      </div>
+
+                      {/* Linked Logs Section */}
+                      <div className="flex flex-col gap-2 mt-1 pb-2 border-b border-white/5">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-marble/50 tracking-wider">
+                          <span className="flex items-center gap-1"><Paperclip size={10} className="text-ares-cyan" /> Linked Logs</span>
+                          <label className="flex items-center gap-1 text-[9px] text-ares-gold hover:text-ares-gold-soft cursor-pointer transition-colors">
+                            {uploadingPathId === path.id ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : (
+                              <Upload size={10} />
+                            )}
+                            <span>Upload Log</span>
+                            <input
+                              type="file"
+                              accept=".csv,.txt"
+                              onChange={(e) => handleUploadLog(path.id, e)}
+                              className="hidden"
+                              disabled={uploadingPathId !== null}
+                            />
+                          </label>
+                        </div>
+                        
+                        {/* List of logs for this path */}
+                        <div className="flex flex-col gap-1 max-h-24 overflow-y-auto">
+                          {cloudLogs.filter((log) => log.pathId === path.id).length > 0 ? (
+                            cloudLogs
+                              .filter((log) => log.pathId === path.id)
+                              .map((log) => (
+                                <div key={log.id} className="flex justify-between items-center bg-black/25 border border-white/5 rounded px-2 py-1 text-[10px] font-mono hover:border-white/10 transition-colors">
+                                  <span className="text-marble/70 truncate max-w-[150px] md:max-w-[180px]" title={log.name}>
+                                    {log.name}
+                                  </span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <a
+                                      href={`/dashboard/scope?logId=${log.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-ares-cyan hover:text-ares-cyan-soft flex items-center gap-0.5 transition-colors font-bold uppercase text-[9px]"
+                                    >
+                                      <Play size={8} className="stroke-[3]" /> Replay
+                                    </a>
+                                    <button
+                                      onClick={() => handleDeleteLog(log.id, log.name)}
+                                      className="text-marble/40 hover:text-ares-danger transition-colors cursor-pointer"
+                                      title="Delete log association"
+                                    >
+                                      <Trash2 size={10} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                          ) : (
+                            <span className="text-[9px] text-marble/30 italic">No telemetry logs linked to this path.</span>
+                          )}
                         </div>
                       </div>
 
