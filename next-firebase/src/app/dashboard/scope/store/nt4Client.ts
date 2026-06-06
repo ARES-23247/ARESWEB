@@ -191,20 +191,19 @@ export class NT4Client {
       }
     }
 
-    // Scale coordinate metrics if raw meters are detected to match web visualization space
-    let scaledX = x;
-    let scaledY = y;
-    if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0 && (x !== 0 || y !== 0)) {
-      // Metric EKF meters -> visual inches, shifted to bottom-left arena space
-      scaledX = -y * 39.3701 + 72;
-      scaledY = x * 39.3701 + 72;
-      heading = heading + Math.PI / 2;
+    // Ensure coordinate metrics are stored as raw center-origin meters.
+    // If coordinates look like bottom-left inches (large values), convert to center-origin meters:
+    if (Math.abs(x) > 5.0 || Math.abs(y) > 5.0) {
+      const tempX = x;
+      x = (y - 72) / 39.3701;
+      y = -(tempX - 72) / 39.3701;
+      heading = heading - Math.PI / 2;
     }
 
     const frame: TelemetryFrame = {
       timestamp: timestamp,
-      x: scaledX,
-      y: scaledY,
+      x: x,
+      y: y,
       heading: heading,
       values
     };

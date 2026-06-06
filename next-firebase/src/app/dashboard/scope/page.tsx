@@ -262,13 +262,13 @@ export default function ScopeDashboard() {
           let y = yIdx !== -1 ? colsNum[yIdx] : 0.0;
           let heading = headingIdx !== -1 ? colsNum[headingIdx] : 0.0;
 
-          // If coordinates look like meters (small values), convert to inches and shift origin:
-          // Center-origin meters -> bottom-left-origin inches
-          if (Math.abs(x) < 5.0 && Math.abs(y) < 5.0 && (x !== 0 || y !== 0)) {
+          // Ensure coordinates are in center-origin meters.
+          // If they look like bottom-left inches (large values), convert to center-origin meters:
+          if (Math.abs(x) > 5.0 || Math.abs(y) > 5.0) {
             const tempX = x;
-            x = -y * 39.3701 + 72;
-            y = tempX * 39.3701 + 72;
-            heading = heading + Math.PI / 2;
+            x = (y - 72) / 39.3701;
+            y = -(tempX - 72) / 39.3701;
+            heading = heading - Math.PI / 2;
           }
 
           coords.push({ x, y, heading });
@@ -317,16 +317,18 @@ export default function ScopeDashboard() {
           throw new Error("Invalid PathPlanner file: missing waypoints array.");
         }
 
-        const M_TO_IN = 39.3701;
         const parsedWaypoints = root.waypoints.map((wp: any) => {
-          const anchor = { x: (wp.anchor?.x ?? 0) * M_TO_IN, y: (wp.anchor?.y ?? 0) * M_TO_IN };
+          const anchor = {
+            x: (wp.anchor?.y ?? 0) - 1.8288,
+            y: 1.8288 - (wp.anchor?.x ?? 0)
+          };
           
           const prevControl = wp.prevControl 
-            ? { x: (wp.prevControl.x ?? 0) * M_TO_IN, y: (wp.prevControl.y ?? 0) * M_TO_IN }
+            ? { x: wp.prevControl.y - 1.8288, y: 1.8288 - wp.prevControl.x }
             : anchor;
             
           const nextControl = wp.nextControl
-            ? { x: (wp.nextControl.x ?? 0) * M_TO_IN, y: (wp.nextControl.y ?? 0) * M_TO_IN }
+            ? { x: wp.nextControl.y - 1.8288, y: 1.8288 - wp.nextControl.x }
             : anchor;
             
           return { anchor, prevControl, nextControl };

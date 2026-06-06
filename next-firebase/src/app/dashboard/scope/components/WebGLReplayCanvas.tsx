@@ -8,6 +8,7 @@ import * as THREE from "three";
 export default function WebGLReplayCanvas() {
   const { telemetryData, currentTimeMs, getCurrentFrame, plannedPath, driveMode, setDriveMode } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
+  const [showFov, setShowFov] = useState<boolean>(true);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
@@ -20,6 +21,7 @@ export default function WebGLReplayCanvas() {
   const intakeArmRef = useRef<THREE.Mesh | null>(null);
   const trailLineRef = useRef<THREE.Line | null>(null);
   const plannedPathLineRef = useRef<THREE.Line | null>(null);
+  const cameraFovGroupsRef = useRef<THREE.Group[]>([]);
 
   // Wheel module group refs for Swerve steering pivots
   const moduleLFRef = useRef<THREE.Group | null>(null);
@@ -28,6 +30,48 @@ export default function WebGLReplayCanvas() {
   const moduleBRRef = useRef<THREE.Group | null>(null);
 
   const currentFrame = getCurrentFrame();
+
+  // Helper to extract camera poses from telemetry frame values dynamically
+  interface CameraPose {
+    x: number;
+    y: number;
+    yaw: number;
+  }
+
+  const getCameraPoses = (frame: any): CameraPose[] => {
+    const poses: CameraPose[] = [];
+    let i = 0;
+    while (true) {
+      const prefix1 = `Vision/Camera_${i}`;
+      const prefix2 = `Vision/CameraPoses/${i}`;
+      const prefix3 = `camera_pose_${i}`;
+      
+      const getValByKeywords = (keys: string[]) => {
+        for (const k of keys) {
+          if (frame.values[k] !== undefined) return frame.values[k];
+        }
+        return undefined;
+      };
+      
+      const cx = getValByKeywords([`${prefix1}_X`, `${prefix1}_x`, `${prefix2}/Translation_X`, `${prefix2}/Translation_x`, `${prefix2}/x`, `${prefix3}_x`]);
+      const cy = getValByKeywords([`${prefix1}_Y`, `${prefix1}_y`, `${prefix2}/Translation_Y`, `${prefix2}/Translation_y`, `${prefix2}/y`, `${prefix3}_y`]);
+      const cyaw = getValByKeywords([`${prefix1}_Yaw`, `${prefix1}_yaw`, `${prefix2}/Rotation_Z`, `${prefix2}/Rotation_z`, `${prefix2}/yaw`, `${prefix3}_yaw`]);
+      
+      if (cx === undefined || cy === undefined) {
+        break;
+      }
+      
+      poses.push({ x: cx, y: cy, yaw: cyaw ?? 0 });
+      i++;
+      if (i > 10) break;
+    }
+    
+    if (poses.length === 0) {
+      // Default single front camera
+      return [{ x: 0.18, y: 0.0, yaw: 0.0 }];
+    }
+    return poses;
+  };
 
   // Helper to extract swerve module angles dynamically
   const getSwerveAngles = (frame: any) => {
@@ -62,31 +106,37 @@ export default function WebGLReplayCanvas() {
 
     const width = size;
     const height = size;
-    const fieldSizeInches = 144.0;
+    const fieldSizeMeters = 3.6576;
     const padding = 15;
     const mapSize = width - padding * 2;
-    const scale = mapSize / fieldSizeInches;
+    const scale = mapSize / fieldSizeMeters; // pixels per meter
 
-    const toPxX = (inchX: number) => padding + inchX * scale;
-    const toPxY = (inchY: number) => height - padding - inchY * scale;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Center-origin EKF coordinates (X forward, Y left) to canvas pixels
+    const toPxX = (y_ekf: number) => centerX - y_ekf * scale; // Left is positive Y, maps to screen left
+    const toPxY = (x_ekf: number) => centerY - x_ekf * scale; // Forward is positive X, maps to screen top
 
     // Background
     ctx.fillStyle = "#0D0D0D";
     ctx.fillRect(0, 0, width, height);
 
-    // 6x6 Grid Tiles (each is 24x24 inches)
+    // 6x6 Grid Tiles (each is 24x24 inches = 0.6096m x 0.6096m)
     ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 6; i++) {
-      const offset = i * 24;
+    for (let i = -3; i <= 3; i++) {
+      const offset = i * 0.6096;
+      // Vertical grid lines (constant Y_ekf)
       ctx.beginPath();
-      ctx.moveTo(toPxX(offset), toPxY(0));
-      ctx.lineTo(toPxX(offset), toPxY(144));
+      ctx.moveTo(toPxX(offset), toPxY(-1.8288));
+      ctx.lineTo(toPxX(offset), toPxY(1.8288));
       ctx.stroke();
 
+      // Horizontal grid lines (constant X_ekf)
       ctx.beginPath();
-      ctx.moveTo(toPxX(0), toPxY(offset));
-      ctx.lineTo(toPxX(144), toPxY(offset));
+      ctx.moveTo(toPxX(-1.8288), toPxY(offset));
+      ctx.lineTo(toPxX(1.8288), toPxY(offset));
       ctx.stroke();
     }
 
@@ -94,31 +144,31 @@ export default function WebGLReplayCanvas() {
     ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.rect(toPxX(0), toPxY(144), mapSize, mapSize);
+    ctx.rect(toPxX(1.8288), toPxY(1.8288), mapSize, mapSize);
     ctx.stroke();
 
-    // Red Basket Corner (Top-Left)
+    // Red Basket Corner (Top-Left on screen, EKF X = 1.8288, Y = 1.8288)
     ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
     ctx.beginPath();
-    ctx.arc(toPxX(0), toPxY(144), 20 * scale, 0, Math.PI * 2);
+    ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2); // 20 inches = 0.508m
     ctx.fill();
 
-    // Blue Basket Corner (Bottom-Right)
+    // Blue Basket Corner (Bottom-Right on screen, EKF X = -1.8288, Y = -1.8288)
     ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
     ctx.beginPath();
-    ctx.arc(toPxX(144), toPxY(0), 20 * scale, 0, Math.PI * 2);
+    ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
     ctx.fill();
 
-    // Substations
+    // Substations (Red bottom-left screen, Blue top-right screen)
     ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
-    ctx.fillRect(toPxX(0), toPxY(24), 24 * scale, 24 * scale);
+    ctx.fillRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale); // 24 inches = 0.6096m
     ctx.strokeStyle = "rgba(239, 68, 68, 0.2)";
-    ctx.strokeRect(toPxX(0), toPxY(24), 24 * scale, 24 * scale);
+    ctx.strokeRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale);
 
     ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
-    ctx.fillRect(toPxX(120), toPxY(144), 24 * scale, 24 * scale);
+    ctx.fillRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
     ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
-    ctx.strokeRect(toPxX(120), toPxY(144), 24 * scale, 24 * scale);
+    ctx.strokeRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
 
     // Planned Path (Dashed Cyan Spline)
     if (plannedPath && plannedPath.length > 0) {
@@ -128,8 +178,8 @@ export default function WebGLReplayCanvas() {
       ctx.beginPath();
       for (let i = 0; i < plannedPath.length; i++) {
         const pt = plannedPath[i];
-        if (i === 0) ctx.moveTo(toPxX(pt.x), toPxY(pt.y));
-        else ctx.lineTo(toPxX(pt.x), toPxY(pt.y));
+        if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
+        else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
       }
       ctx.stroke();
       ctx.setLineDash([]); // Reset dashed line style
@@ -137,13 +187,13 @@ export default function WebGLReplayCanvas() {
       // Start node (green ring)
       ctx.fillStyle = "#10B981"; // Emerald
       ctx.beginPath();
-      ctx.arc(toPxX(plannedPath[0].x), toPxY(plannedPath[0].y), 4, 0, Math.PI * 2);
+      ctx.arc(toPxX(plannedPath[0].y), toPxY(plannedPath[0].x), 4, 0, Math.PI * 2);
       ctx.fill();
 
       // End node (red ring)
       ctx.fillStyle = "#EF4444"; // Red
       ctx.beginPath();
-      ctx.arc(toPxX(plannedPath[plannedPath.length - 1].x), toPxY(plannedPath[plannedPath.length - 1].y), 4, 0, Math.PI * 2);
+      ctx.arc(toPxX(plannedPath[plannedPath.length - 1].y), toPxY(plannedPath[plannedPath.length - 1].x), 4, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -163,18 +213,48 @@ export default function WebGLReplayCanvas() {
         for (let i = 0; i <= currentIndex; i++) {
           const pt = telemetryData.coords[i];
           if (!pt) continue;
-          if (i === 0) ctx.moveTo(toPxX(pt.x), toPxY(pt.y));
-          else ctx.lineTo(toPxX(pt.x), toPxY(pt.y));
+          if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
+          else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
         }
         ctx.stroke();
       }
     }
 
-    // Robot Chassis (18" Square)
+    // Camera FOV Wedges (drawn under the robot chassis)
+    if (showFov && currentFrame) {
+      const cameras = getCameraPoses(currentFrame);
+      cameras.forEach((cam) => {
+        const cx = currentFrame.x + cam.x * Math.cos(currentFrame.heading) - cam.y * Math.sin(currentFrame.heading);
+        const cy = currentFrame.y + cam.x * Math.sin(currentFrame.heading) + cam.y * Math.cos(currentFrame.heading);
+        const camHeading = currentFrame.heading + cam.yaw;
+        
+        const pxX = toPxX(cy);
+        const pxY = toPxY(cx);
+        const rangePx = 4.0 * scale;
+        const halfFov = (31.5 * Math.PI) / 180;
+        const screenAngle = -camHeading - Math.PI / 2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pxX, pxY);
+        ctx.arc(pxX, pxY, rangePx, screenAngle - halfFov, screenAngle + halfFov);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(245, 158, 11, 0.05)";
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // Robot Chassis (0.4572m Square = 18")
     if (currentFrame) {
-      const pxX = toPxX(currentFrame.x);
-      const pxY = toPxY(currentFrame.y);
-      const robotSizePx = 18.0 * scale;
+      const pxX = toPxX(currentFrame.y);
+      const pxY = toPxY(currentFrame.x);
+      const robotSizePx = 0.4572 * scale;
 
       ctx.save();
       ctx.translate(pxX, pxY);
@@ -195,8 +275,8 @@ export default function WebGLReplayCanvas() {
       ctx.strokeStyle = "#F59E0B";
       ctx.lineWidth = 1;
 
-      const wheelW = 4 * scale;
-      const wheelH = 8 * scale;
+      const wheelW = 0.1016 * scale; // 4 inches
+      const wheelH = 0.2032 * scale; // 8 inches
       const swerveAngles = getSwerveAngles(currentFrame);
 
       const drawWheel2D = (offsetX: number, offsetY: number, moduleAngle: number) => {
@@ -239,7 +319,7 @@ export default function WebGLReplayCanvas() {
       ctx.arc(pxX, pxY, 3, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [viewMode, telemetryData, currentTimeMs, currentFrame, driveMode]);
+  }, [viewMode, telemetryData, currentTimeMs, currentFrame, driveMode, showFov]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -283,16 +363,16 @@ export default function WebGLReplayCanvas() {
     arenaLight.position.set(0, 30, 0);
     scene.add(arenaLight);
 
-    // 3. FTC Floor (144" x 144")
-    const floorGeo = new THREE.PlaneGeometry(144, 144);
+    // 3. FTC Floor (3.6576m x 3.6576m)
+    const floorGeo = new THREE.PlaneGeometry(3.6576, 3.6576);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.receiveShadow = true;
     scene.add(floorMesh);
 
-    const gridHelper = new THREE.GridHelper(144, 6, 0x333333, 0x222222);
-    gridHelper.position.y = 0.05;
+    const gridHelper = new THREE.GridHelper(3.6576, 6, 0x333333, 0x222222);
+    gridHelper.position.y = 0.001;
     scene.add(gridHelper);
 
     // 4. Glass Walls
@@ -302,56 +382,56 @@ export default function WebGLReplayCanvas() {
       opacity: 0.15,
       roughness: 0.1,
       transmission: 0.6,
-      thickness: 1.5,
+      thickness: 0.05,
       side: THREE.DoubleSide
     });
 
     const addWall = (w: number, h: number, x: number, y: number, z: number, rY = 0) => {
-      const geo = new THREE.BoxGeometry(w, h, 2);
+      const geo = new THREE.BoxGeometry(w, h, 0.05);
       const mesh = new THREE.Mesh(geo, glassWallMat);
       mesh.position.set(x, y, z);
       mesh.rotation.y = rY;
       scene.add(mesh);
     };
 
-    addWall(144, 12, 0, 6, -72); // North
-    addWall(144, 12, 0, 6, 72);  // South
-    addWall(144, 12, -72, 6, 0, Math.PI / 2); // West
-    addWall(144, 12, 72, 6, 0, Math.PI / 2);  // East
+    addWall(3.6576, 0.3048, 0, 0.1524, -1.8288); // North (12 inches height is 0.3048m, y-position is 0.1524m)
+    addWall(3.6576, 0.3048, 0, 0.1524, 1.8288);  // South
+    addWall(3.6576, 0.3048, -1.8288, 0.1524, 0, Math.PI / 2); // West
+    addWall(3.6576, 0.3048, 1.8288, 0.1524, 0, Math.PI / 2);  // East
 
     // 5. Game Field elements
     const basketRedBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(15, 18, 1, 16),
+      new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16), // 15" radius is 0.381m, 18" radius is 0.4572m, 1" height is 0.0254m
       new THREE.MeshStandardMaterial({ color: 0xEF4444, roughness: 0.5 })
     );
-    basketRedBase.position.set(-60, 0.5, 60);
+    basketRedBase.position.set(-1.524, 0.0127, 1.524); // (-60", 0.5", 60") becomes (-1.524m, 0.0127m, 1.524m)
     scene.add(basketRedBase);
 
     const basketBlueBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(15, 18, 1, 16),
+      new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16),
       new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.5 })
     );
-    basketBlueBase.position.set(60, 0.5, -60);
+    basketBlueBase.position.set(1.524, 0.0127, -1.524); // (60", 0.5", -60") becomes (1.524m, 0.0127m, -1.524m)
     scene.add(basketBlueBase);
 
     // Submersible Cage
     const submersibleGroup = new THREE.Group();
     const pipeMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 });
     const addPipe = (len: number, x: number, y: number, z: number, rot = new THREE.Euler()) => {
-      const geo = new THREE.CylinderGeometry(0.8, 0.8, len, 8);
+      const geo = new THREE.CylinderGeometry(0.02, 0.02, len, 8); // 0.8 inches is ~0.02m
       const mesh = new THREE.Mesh(geo, pipeMat);
       mesh.position.set(x, y, z);
       mesh.rotation.copy(rot);
       submersibleGroup.add(mesh);
     };
-    addPipe(18, -12, 9, -12);
-    addPipe(18, 12, 9, -12);
-    addPipe(18, -12, 9, 12);
-    addPipe(18, 12, 9, 12);
-    addPipe(24, 0, 18, -12, new THREE.Euler(0, 0, Math.PI / 2));
-    addPipe(24, 0, 18, 12, new THREE.Euler(0, 0, Math.PI / 2));
-    addPipe(24, -12, 18, 0, new THREE.Euler(Math.PI / 2, 0, 0));
-    addPipe(24, 12, 18, 0, new THREE.Euler(Math.PI / 2, 0, 0));
+    addPipe(0.4572, -0.3048, 0.2286, -0.3048); // 18", -12", 9", -12"
+    addPipe(0.4572, 0.3048, 0.2286, -0.3048);
+    addPipe(0.4572, -0.3048, 0.2286, 0.3048);
+    addPipe(0.4572, 0.3048, 0.2286, 0.3048);
+    addPipe(0.6096, 0, 0.4572, -0.3048, new THREE.Euler(0, 0, Math.PI / 2)); // 24", 0, 18", -12"
+    addPipe(0.6096, 0, 0.4572, 0.3048, new THREE.Euler(0, 0, Math.PI / 2));
+    addPipe(0.6096, -0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
+    addPipe(0.6096, 0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
     scene.add(submersibleGroup);
 
     // 6. 3D Robot Model Group
@@ -359,8 +439,8 @@ export default function WebGLReplayCanvas() {
     robotGroupRef.current = robot;
     scene.add(robot);
 
-    // Chassis body base
-    const chassisGeo = new THREE.BoxGeometry(18, 5, 18);
+    // Chassis body base (0.4572m square = 18")
+    const chassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572); // 18" x 5" x 18"
     const chassisMat = new THREE.MeshStandardMaterial({
       color: 0xF59E0B,
       metalness: 0.6,
@@ -369,21 +449,21 @@ export default function WebGLReplayCanvas() {
       opacity: 0.95
     });
     const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-    chassis.position.y = 3.5;
+    chassis.position.y = 0.0889; // 3.5 inches
     chassis.castShadow = true;
     chassis.receiveShadow = true;
     robot.add(chassis);
 
     // Red Front indicator arrow mesh
-    const arrowGeo = new THREE.ConeGeometry(2.5, 6, 4);
+    const arrowGeo = new THREE.ConeGeometry(0.0635, 0.1524, 4); // 2.5" radius, 6" length
     const arrowMat = new THREE.MeshBasicMaterial({ color: 0xEF4444 });
     const arrow = new THREE.Mesh(arrowGeo, arrowMat);
-    arrow.position.set(0, 6.5, -9);
+    arrow.position.set(0, 0.1651, -0.2286); // 0, 6.5", -9"
     arrow.rotation.x = -Math.PI / 2;
     robot.add(arrow);
 
     // Swerve wheel module cylinders (placed inside intermediate pivot groups)
-    const wheelGeo = new THREE.CylinderGeometry(3, 3, 2.5, 16);
+    const wheelGeo = new THREE.CylinderGeometry(0.0762, 0.0762, 0.0635, 16); // 3" radius, 2.5" thickness
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 });
     
     const create3DWheelModule = (x: number, y: number, z: number) => {
@@ -399,36 +479,36 @@ export default function WebGLReplayCanvas() {
       return pivotGroup;
     };
 
-    moduleLFRef.current = create3DWheelModule(-9.5, 3, -7);
-    moduleRFRef.current = create3DWheelModule(9.5, 3, -7);
-    moduleBLRef.current = create3DWheelModule(-9.5, 3, 7);
-    moduleBRRef.current = create3DWheelModule(9.5, 3, 7);
+    moduleLFRef.current = create3DWheelModule(-0.2413, 0.0762, -0.1778); // -9.5", 3", -7"
+    moduleRFRef.current = create3DWheelModule(0.2413, 0.0762, -0.1778);
+    moduleBLRef.current = create3DWheelModule(-0.2413, 0.0762, 0.1778);
+    moduleBRRef.current = create3DWheelModule(0.2413, 0.0762, 0.1778);
 
     // Rails mechanism
     const railMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.2 });
-    const railGeo = new THREE.BoxGeometry(1, 24, 1);
+    const railGeo = new THREE.BoxGeometry(0.0254, 0.6096, 0.0254); // 1" x 24" x 1"
     
     const railL = new THREE.Mesh(railGeo, railMat);
-    railL.position.set(-4, 14.5, 4);
+    railL.position.set(-0.1016, 0.3683, 0.1016); // -4", 14.5", 4"
     robot.add(railL);
 
     const railR = new THREE.Mesh(railGeo, railMat);
-    railR.position.set(4, 14.5, 4);
+    railR.position.set(0.1016, 0.3683, 0.1016);
     robot.add(railR);
 
     // Sliding carriage
-    const carriageGeo = new THREE.BoxGeometry(9, 3, 4);
+    const carriageGeo = new THREE.BoxGeometry(0.2286, 0.0762, 0.1016); // 9" x 3" x 4"
     const carriageMat = new THREE.MeshStandardMaterial({ color: 0xEE4444, metalness: 0.3, roughness: 0.5 });
     const carriage = new THREE.Mesh(carriageGeo, carriageMat);
-    carriage.position.set(0, 8, 4);
+    carriage.position.set(0, 0.2032, 0.1016); // 0, 8", 4"
     robot.add(carriage);
     slideCarriageRef.current = carriage;
 
     // Intake pivot arm
-    const armGeo = new THREE.BoxGeometry(2, 2, 10);
+    const armGeo = new THREE.BoxGeometry(0.0508, 0.0508, 0.254); // 2" x 2" x 10"
     const armMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.8 });
     const arm = new THREE.Mesh(armGeo, armMat);
-    arm.position.set(0, 0, -4);
+    arm.position.set(0, 0, -0.1016); // 0, 0, -4"
     carriage.add(arm);
     intakeArmRef.current = arm;
 
@@ -495,8 +575,8 @@ export default function WebGLReplayCanvas() {
 
     const robot = robotGroupRef.current;
     if (robot && currentFrame) {
-      robot.position.x = currentFrame.x - 72;
-      robot.position.z = 72 - currentFrame.y;
+      robot.position.x = -currentFrame.y;
+      robot.position.z = -currentFrame.x;
       robot.rotation.y = currentFrame.heading;
 
       // Swerve module steering orientations
@@ -517,7 +597,7 @@ export default function WebGLReplayCanvas() {
       const carriage = slideCarriageRef.current;
       if (carriage) {
         const slideHeight = currentFrame.values["Superstructure/Elevator_Height"] || currentFrame.values["Elevator/Height"] || currentFrame.values["slides/height"] || 0;
-        const minHeightOffset = 5;
+        const minHeightOffset = 0.127; // 5 inches
         carriage.position.y = minHeightOffset + slideHeight * 0.75;
       }
 
@@ -526,6 +606,79 @@ export default function WebGLReplayCanvas() {
       if (intake) {
         const pivotLoad = currentFrame.values["Drive/MotorCurrent_FR"] || currentFrame.values["Intake/Current"] || currentFrame.values["intake/current"] || 0;
         intake.rotation.x = Math.min(Math.PI / 4, pivotLoad * 0.5);
+      }
+
+      // Update camera FOV meshes
+      if (!showFov) {
+        cameraFovGroupsRef.current.forEach((g) => robot.remove(g));
+        cameraFovGroupsRef.current = [];
+      } else {
+        const cameras = getCameraPoses(currentFrame);
+        if (cameraFovGroupsRef.current.length !== cameras.length) {
+          cameraFovGroupsRef.current.forEach((g) => robot.remove(g));
+          cameraFovGroupsRef.current = [];
+          
+          cameras.forEach((cam) => {
+            const group = new THREE.Group();
+            
+            // 1. Semi-transparent fill mesh
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0);
+            const halfFov = (31.5 * Math.PI) / 180;
+            const numPoints = 16;
+            for (let i = 0; i <= numPoints; i++) {
+              const angle = -halfFov + (i / numPoints) * (2 * halfFov);
+              shape.lineTo(4.0 * Math.sin(angle), -4.0 * Math.cos(angle));
+            }
+            shape.lineTo(0, 0);
+            
+            const fovGeo = new THREE.ShapeGeometry(shape);
+            const fovMat = new THREE.MeshBasicMaterial({
+              color: 0xFFB81C,
+              transparent: true,
+              opacity: 0.04,
+              side: THREE.DoubleSide
+            });
+            const fovMesh = new THREE.Mesh(fovGeo, fovMat);
+            fovMesh.rotation.x = Math.PI / 2; // Lay flat
+            group.add(fovMesh);
+            
+            // 2. Dashed outline line
+            const outlinePoints = [];
+            outlinePoints.push(new THREE.Vector3(0, 0.001, 0));
+            for (let i = 0; i <= numPoints; i++) {
+              const angle = -halfFov + (i / numPoints) * (2 * halfFov);
+              outlinePoints.push(new THREE.Vector3(4.0 * Math.sin(angle), 0.001, -4.0 * Math.cos(angle)));
+            }
+            outlinePoints.push(new THREE.Vector3(0, 0.001, 0));
+            
+            const borderGeo = new THREE.BufferGeometry().setFromPoints(outlinePoints);
+            const borderMat = new THREE.LineDashedMaterial({
+              color: 0xFFB81C,
+              opacity: 0.25,
+              transparent: true,
+              dashSize: 0.15,
+              gapSize: 0.1
+            });
+            const borderLine = new THREE.Line(borderGeo, borderMat);
+            borderLine.computeLineDistances();
+            group.add(borderLine);
+            
+            robot.add(group);
+            cameraFovGroupsRef.current.push(group);
+          });
+        }
+        
+        // Update positions of the camera groups relative to the robot center
+        cameras.forEach((cam, idx) => {
+          const group = cameraFovGroupsRef.current[idx];
+          if (group) {
+            group.position.x = -cam.y;
+            group.position.z = -cam.x;
+            group.position.y = 0.005; // Slightly above robot chassis base helper height
+            group.rotation.y = cam.yaw;
+          }
+        });
       }
     }
 
@@ -543,7 +696,7 @@ export default function WebGLReplayCanvas() {
       for (let i = 0; i <= currentIndex; i++) {
         const pt = telemetryData.coords[i];
         if (pt) {
-          points.push(new THREE.Vector3(pt.x - 72, 0.25, 72 - pt.y));
+          points.push(new THREE.Vector3(-pt.y, 0.01, -pt.x));
         }
       }
 
@@ -563,7 +716,7 @@ export default function WebGLReplayCanvas() {
       const points: THREE.Vector3[] = [];
       for (let i = 0; i < plannedPath.length; i++) {
         const pt = plannedPath[i];
-        points.push(new THREE.Vector3(pt.x - 72, 0.15, 72 - pt.y));
+        points.push(new THREE.Vector3(-pt.y, 0.005, -pt.x));
       }
       plannedTrail.geometry.setFromPoints(points);
       plannedTrail.computeLineDistances();
@@ -573,7 +726,7 @@ export default function WebGLReplayCanvas() {
     } else if (plannedTrail) {
       plannedTrail.visible = false;
     }
-  }, [viewMode, currentFrame, currentTimeMs, telemetryData, plannedPath, driveMode]);
+  }, [viewMode, currentFrame, currentTimeMs, telemetryData, plannedPath, driveMode, showFov]);
 
   return (
     <div className="glass-card p-6 border border-white/10 flex flex-col gap-5 justify-between h-full">
@@ -605,6 +758,16 @@ export default function WebGLReplayCanvas() {
               </button>
             </div>
 
+            {/* Camera FOV Toggle */}
+            <button
+              onClick={() => setShowFov(!showFov)}
+              className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                showFov ? "bg-ares-gold text-black font-black" : "text-marble/45 hover:text-white bg-black/45 border border-white/5"
+              }`}
+            >
+              Cam FOV
+            </button>
+
             {/* 2D/3D View Selector Tabs */}
             <div className="flex bg-black/45 border border-white/5 p-0.5 rounded-lg gap-0.5">
               <button
@@ -634,7 +797,7 @@ export default function WebGLReplayCanvas() {
               <Move size={8} /> Coord X
             </span>
             <p className="text-sm font-black font-heading text-white mt-0.5">
-              {currentFrame ? `${currentFrame.x.toFixed(1)}"` : `0.0"`}
+              {currentFrame ? `${currentFrame.x.toFixed(2)}m` : `0.00m`}
             </p>
           </div>
           <div className="bg-black/45 border border-white/5 p-2 rounded-xl text-center">
@@ -642,7 +805,7 @@ export default function WebGLReplayCanvas() {
               <Move size={8} /> Coord Y
             </span>
             <p className="text-sm font-black font-heading text-white mt-0.5">
-              {currentFrame ? `${currentFrame.y.toFixed(1)}"` : `0.0"`}
+              {currentFrame ? `${currentFrame.y.toFixed(2)}m` : `0.00m`}
             </p>
           </div>
           <div className="bg-black/45 border border-white/5 p-2 rounded-xl text-center">

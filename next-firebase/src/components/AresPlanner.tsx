@@ -97,7 +97,7 @@ export default function AresPlanner({
   const [pathName, setPathName] = useState("ARES_Auto_Path");
   const [season, setSeason] = useState("decode");
   const [originMode, setOriginMode] = useState<"center" | "corner">("corner");
-  const [unitMode, setUnitMode] = useState<"inches" | "meters">("inches");
+  const [unitMode, setUnitMode] = useState<"inches" | "meters">("meters");
   const [isZenMode, setIsZenMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
@@ -832,7 +832,8 @@ export default function AresPlanner({
     }
 
     const unitStr = unitMode === "inches" ? "in" : "m";
-    return `X: ${dispX.toFixed(1)}${unitStr}, Y: ${dispY.toFixed(1)}${unitStr}`;
+    const precision = unitMode === "meters" ? 2 : 1;
+    return `X: ${dispX.toFixed(precision)}${unitStr}, Y: ${dispY.toFixed(precision)}${unitStr}`;
   };
 
   // JSON Exporter
@@ -1124,8 +1125,8 @@ export default function AresPlanner({
                   <div>
                     <span className="text-[9px] text-marble/50 uppercase block">Anchor Position</span>
                     <div className="mt-1 bg-obsidian/60 border border-white/5 p-2 rounded text-white flex flex-col gap-1">
-                      <span>X: {waypoints[selectedWaypointIdx].anchor.x.toFixed(1)} in</span>
-                      <span>Y: {waypoints[selectedWaypointIdx].anchor.y.toFixed(1)} in</span>
+                      <span>X: {unitMode === "meters" ? (waypoints[selectedWaypointIdx].anchor.x * 0.0254).toFixed(2) : waypoints[selectedWaypointIdx].anchor.x.toFixed(1)} {unitMode === "meters" ? "m" : "in"}</span>
+                      <span>Y: {unitMode === "meters" ? (waypoints[selectedWaypointIdx].anchor.y * 0.0254).toFixed(2) : waypoints[selectedWaypointIdx].anchor.y.toFixed(1)} {unitMode === "meters" ? "m" : "in"}</span>
                     </div>
                   </div>
 
