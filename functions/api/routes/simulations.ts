@@ -219,7 +219,7 @@ export const simulationsRouter = _simulationsRouter
 
         if (!putRes.ok) throw new ApiError("Failed to upload to GitHub", 500);
 
-        c.executionCtx.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));return typedJson(c, { id: `github:${simIdStr}` }, 200);
+        c.executionCtx?.waitUntil(logAuditAction(c, "UPDATE", "simulation", simIdStr, `Created/updated simulation: ${name || simIdStr}`));return typedJson(c, { id: `github:${simIdStr}` }, 200);
     })
     .openapi(deleteSimulationRoute, async (c) => {
         const sessionUser = await requireAuth(c);
@@ -262,7 +262,7 @@ export const simulationsRouter = _simulationsRouter
             });
         }
 
-        c.executionCtx.waitUntil(logAuditAction(c, "DELETE", "simulation", simIdStr, `Deleted simulation ${simIdStr}`));
+        c.executionCtx?.waitUntil(logAuditAction(c, "DELETE", "simulation", simIdStr, `Deleted simulation ${simIdStr}`));
         return c.json({ success: true }, 200);
     })
     .openapi(createGistRoute, async (c) => {

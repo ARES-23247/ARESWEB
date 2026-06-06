@@ -192,9 +192,23 @@ export default function EventDetailPage() {
     setSignupError(null);
     setSubmittingRsvp(true);
 
+    let nickname = "Team Member";
+    try {
+      const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
+      if (profileSnap.exists()) {
+        const data = profileSnap.data();
+        nickname = data.nickname || data.firstName || "Team Member";
+      } else {
+        nickname = user.displayName?.split(" ")[0] || "Team Member";
+      }
+    } catch (err) {
+      console.warn("Could not retrieve user profile for nickname:", err);
+      nickname = user.displayName?.split(" ")[0] || "Team Member";
+    }
+
     const rsvpDoc: EventSignup = {
       userId: user.uid,
-      nickname: user.displayName || user.email?.split("@")[0] || "Anonymous",
+      nickname,
       bringing: event?.isPotluck ? bringing.trim() : undefined,
       notes: notes.trim() || undefined,
       prepHours: event?.isVolunteer ? Number(prepHours) || 0 : undefined,
@@ -268,11 +282,25 @@ export default function EventDetailPage() {
       const snapshot = await uploadBytes(imageRef, file);
       const url = await getDownloadURL(snapshot.ref);
 
+      let uploaderNickname = "Team Member";
+      try {
+        const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
+        if (profileSnap.exists()) {
+          const data = profileSnap.data();
+          uploaderNickname = data.nickname || data.firstName || "Team Member";
+        } else {
+          uploaderNickname = user.displayName?.split(" ")[0] || "Team Member";
+        }
+      } catch (err) {
+        console.warn("Could not retrieve user profile for nickname:", err);
+        uploaderNickname = user.displayName?.split(" ")[0] || "Team Member";
+      }
+
       // Save metadata to Firestore
       const photoId = `photo_${Date.now()}`;
       await setDoc(doc(db, "events", id, "photos", photoId), {
         url,
-        uploadedBy: user.displayName || user.email?.split("@")[0] || "Team Member",
+        uploadedBy: uploaderNickname,
         uploadedAt: new Date().toISOString(),
         filename: file.name
       });

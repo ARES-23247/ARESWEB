@@ -1,4 +1,5 @@
 import { adminDb } from "./firebase-admin";
+import { decrypt } from "./crypto";
 
 /**
  * Retrieves a fresh temporary access token from Google using the stored team refresh token in Firestore.
@@ -13,14 +14,21 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
   }
 
   const authData = authDoc.data();
-  const { clientId, clientSecret, refreshToken } = authData as {
-    clientId: string;
-    clientSecret: string;
-    refreshToken: string;
-  };
+  const encryptedClientId = authData?.clientId;
+  const encryptedClientSecret = authData?.clientSecret;
+  const encryptedRefreshToken = authData?.refreshToken;
 
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Google Auth document is missing required configuration keys (clientId, clientSecret, refreshToken).");
+  if (!encryptedClientId || !encryptedClientSecret || !encryptedRefreshToken) {
+    throw new Error("Google Auth document is missing required configuration keys.");
+  }
+
+  const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+  const clientId = await decrypt(encryptedClientId, secret);
+  const clientSecret = await decrypt(encryptedClientSecret, secret);
+  const refreshToken = await decrypt(encryptedRefreshToken, secret);
+
+  if (clientId.includes("[Decryption Failed]") || clientSecret.includes("[Decryption Failed]") || refreshToken.includes("[Decryption Failed]")) {
+    throw new Error("Failed to decrypt Google Auth credentials. Verify your ENCRYPTION_SECRET configuration.");
   }
 
   console.log("[Google Auth] Refreshing team access token...");

@@ -527,10 +527,15 @@ app.get("/api/photos/auth", async (req: express.Request, res: express.Response) 
         return;
       }
 
+      const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const encryptedClientId = await encrypt(clientId, secret);
+      const encryptedClientSecret = await encrypt(clientSecret, secret);
+      const encryptedRefreshToken = await encrypt(finalRefreshToken, secret);
+
       await authRef.set({
-        clientId,
-        clientSecret,
-        refreshToken: finalRefreshToken,
+        clientId: encryptedClientId,
+        clientSecret: encryptedClientSecret,
+        refreshToken: encryptedRefreshToken,
         linkedAt: new Date().toISOString(),
         scopes: tokens.scope.split(" "),
         tokenType: tokens.token_type,

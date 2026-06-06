@@ -104,7 +104,11 @@ service cloud.firestore {
     // user_profiles
     match /user_profiles/{userId} {
       allow read: if isAuthorized();
-      allow write: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
+      allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin'));
+      allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin'));
+      allow delete: if hasRole('admin');
     }
 
     // robots

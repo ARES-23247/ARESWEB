@@ -87,7 +87,7 @@ const MOCK_TASKS: TaskItem[] = [
   }
 ];
 
-function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit: boolean; user: any }) {
+function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: TaskItem; canEdit: boolean; user: any; teamProfiles: MemberProfile[] }) {
   const [expanded, setExpanded] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -97,9 +97,12 @@ function TaskCommentsSection({ task, canEdit, user }: { task: TaskItem; canEdit:
     if (!newComment.trim() || submitting || !canEdit) return;
 
     setSubmitting(true);
+    const myProfile = teamProfiles.find(p => p.uid === user?.uid || (user?.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()));
+    const authorNickname = myProfile?.nickname || "Team Member";
+
     const commentPayload = {
       id: `comment_${Date.now()}`,
-      author: user?.displayName || user?.email || "Web User",
+      author: authorNickname,
       content: newComment.trim(),
       createdAt: new Date().toISOString(),
       source: "web" as const,
@@ -374,7 +377,7 @@ function TaskDetailsModal({
             )}
           </div>
 
-          <TaskCommentsSection task={task} canEdit={canEdit} user={user} />
+          <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} />
         </div>
 
         <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">

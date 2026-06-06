@@ -70,6 +70,30 @@ export default function TelemetryCharts() {
     setHoveredTime(null);
   };
 
+  const handleCanvasKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (!telemetryData || !telemetryData.maxTimeMs) return;
+
+    let step = 100;
+    if (e.shiftKey) step = 1000;
+    if (e.altKey) step = 10;
+
+    if (e.key === "ArrowLeft") {
+      const newTime = Math.max(0, currentTimeMs - step);
+      setCurrentTimeMs(newTime);
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      const newTime = Math.min(telemetryData.maxTimeMs, currentTimeMs + step);
+      setCurrentTimeMs(newTime);
+      e.preventDefault();
+    } else if (e.key === "Home") {
+      setCurrentTimeMs(0);
+      e.preventDefault();
+    } else if (e.key === "End") {
+      setCurrentTimeMs(telemetryData.maxTimeMs);
+      e.preventDefault();
+    }
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !telemetryData) return;
@@ -265,7 +289,11 @@ export default function TelemetryCharts() {
           onMouseDown={handleGraphInteraction}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          className="absolute inset-0 w-full h-full cursor-col-resize"
+          onKeyDown={handleCanvasKeyDown}
+          tabIndex={0}
+          role="img"
+          aria-label="Interactive telemetry timeline graph. Use Left/Right Arrow keys to scrub through time, and Home/End to jump to start/end."
+          className="absolute inset-0 w-full h-full cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
           style={{ display: "block" }}
         />
       </div>

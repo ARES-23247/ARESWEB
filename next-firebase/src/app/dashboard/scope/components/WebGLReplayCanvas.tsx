@@ -461,6 +461,8 @@ export default function WebGLReplayCanvas() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.innerHTML = "";
+    renderer.domElement.setAttribute("role", "img");
+    renderer.domElement.setAttribute("aria-label", "3D Arena Replay Viewport");
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -763,13 +765,25 @@ export default function WebGLReplayCanvas() {
       active = false;
       window.removeEventListener("resize", handleResize);
       
-      scene.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return;
-        object.geometry.dispose();
-        if (Array.isArray(object.material)) {
-          object.material.forEach((material) => material.dispose());
-        } else {
-          object.material.dispose();
+      scene.traverse((object: any) => {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
+        if (object.material) {
+          const disposeMaterial = (mat: any) => {
+            for (const key of Object.keys(mat)) {
+              if (mat[key] && typeof mat[key] === "object" && mat[key].isTexture) {
+                mat[key].dispose();
+              }
+            }
+            mat.dispose();
+          };
+          
+          if (Array.isArray(object.material)) {
+            object.material.forEach(disposeMaterial);
+          } else {
+            disposeMaterial(object.material);
+          }
         }
       });
 
@@ -1078,7 +1092,7 @@ export default function WebGLReplayCanvas() {
       {/* Main WebGL Replay Viewport */}
       <div className="relative aspect-square w-full max-w-[360px] bg-black/85 rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center shadow-inner self-center">
         {viewMode === "2d" ? (
-          <canvas ref={canvas2DRef} style={{ display: "block" }} />
+          <canvas ref={canvas2DRef} style={{ display: "block" }} role="img" aria-label="Tactical 2D Replay Viewport" />
         ) : (
           <div 
             ref={container3DRef} 

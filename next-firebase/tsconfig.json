@@ -22,5 +22,15 @@
     "**/*.tsx",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "next.config.ts",
+    "next-env.d.ts",
+    "src/app/layout.tsx",
+    "src/app/api/**/*",
+    "src/lib/firebase-admin.ts",
+    "src/lib/googleAuth.ts",
+    "src/lib/vertex.ts"
+  ]
 }

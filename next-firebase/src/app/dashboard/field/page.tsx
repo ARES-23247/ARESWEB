@@ -6,6 +6,7 @@ import { authenticatedFetch } from "@/lib/api";
 import { 
   collection, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   deleteDoc, 
@@ -579,6 +580,46 @@ export default function FieldObstacleEditor() {
     dragModeRef.current = "none";
   };
 
+  const handleCanvasKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (!selectedObstacleId) {
+      if (e.key === "Enter" || e.key === " ") {
+        if (obstacles.length > 0) {
+          setSelectedObstacleId(obstacles[0].id);
+          e.preventDefault();
+        }
+      }
+      return;
+    }
+
+    const step = e.shiftKey ? 1.0 : 0.1;
+    const obs = obstacles.find((o) => o.id === selectedObstacleId);
+    if (!obs) return;
+
+    if (e.key === "ArrowUp") {
+      handleUpdateObstacleField(obs.id, "y", Number((obs.y + step).toFixed(2)));
+      e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+      handleUpdateObstacleField(obs.id, "y", Number((obs.y - step).toFixed(2)));
+      e.preventDefault();
+    } else if (e.key === "ArrowLeft") {
+      handleUpdateObstacleField(obs.id, "x", Number((obs.x - step).toFixed(2)));
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      handleUpdateObstacleField(obs.id, "x", Number((obs.x + step).toFixed(2)));
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setSelectedObstacleId(null);
+      e.preventDefault();
+    } else if (e.key === "Tab") {
+      const idx = obstacles.findIndex((o) => o.id === selectedObstacleId);
+      if (idx !== -1) {
+        const nextIdx = (idx + 1) % obstacles.length;
+        setSelectedObstacleId(obstacles[nextIdx].id);
+        e.preventDefault();
+      }
+    }
+  };
+
   const selectedObs = obstacles.find((o) => o.id === selectedObstacleId);
 
   return (
@@ -651,7 +692,12 @@ export default function FieldObstacleEditor() {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onKeyDown={handleCanvasKeyDown}
+                tabIndex={0}
+                role="img"
+                aria-label="Interactive 2D Field Map. Use Arrow keys to move the selected obstacle, Tab to cycle obstacles, and Escape to deselect."
                 style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
               />
             </div>
             

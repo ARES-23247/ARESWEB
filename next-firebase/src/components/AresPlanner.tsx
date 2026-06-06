@@ -501,6 +501,43 @@ export default function AresPlanner({
     }
   };
 
+  const handleCanvasKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (selectedWaypointIdx === null) {
+      if (e.key === "Enter" || e.key === " ") {
+        if (waypoints.length > 0) {
+          setSelectedWaypointIdx(0);
+          e.preventDefault();
+        }
+      }
+      return;
+    }
+
+    const stepInches = e.shiftKey ? 5.0 : 1.0;
+    const wp = waypoints[selectedWaypointIdx];
+    if (!wp) return;
+
+    if (e.key === "ArrowUp") {
+      handleUpdateWaypointAnchor(selectedWaypointIdx, "y", (wp.anchor.y - stepInches).toString());
+      e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+      handleUpdateWaypointAnchor(selectedWaypointIdx, "y", (wp.anchor.y + stepInches).toString());
+      e.preventDefault();
+    } else if (e.key === "ArrowLeft") {
+      handleUpdateWaypointAnchor(selectedWaypointIdx, "x", (wp.anchor.x - stepInches).toString());
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      handleUpdateWaypointAnchor(selectedWaypointIdx, "x", (wp.anchor.x + stepInches).toString());
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setSelectedWaypointIdx(null);
+      e.preventDefault();
+    } else if (e.key === "Tab") {
+      const nextIdx = (selectedWaypointIdx + 1) % waypoints.length;
+      setSelectedWaypointIdx(nextIdx);
+      e.preventDefault();
+    }
+  };
+
   // Rendering Loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1464,7 +1501,11 @@ export default function AresPlanner({
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              className="block cursor-crosshair select-none touch-none max-w-full rounded"
+              onKeyDown={handleCanvasKeyDown}
+              tabIndex={0}
+              role="img"
+              aria-label="Interactive 2D Path Planner. Press Arrow keys to move selected waypoint. Press Tab to cycle through waypoints, and Escape to deselect."
+              className="block cursor-crosshair select-none touch-none max-w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
               style={{ width: `${canvasDim}px`, height: `${canvasDim}px` }}
             />
             {/* Overlay Cursor coordinates tracking */}

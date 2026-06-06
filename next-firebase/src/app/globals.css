@@ -214,3 +214,14 @@ select option {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Accessibility: Enforce WCAG AA Contrast for ARES Red Text on Dark Backgrounds */
+.obsidian-section .text-ares-red,
+.bg-obsidian .text-ares-red,
+.bg-black .text-ares-red,
+[class*="bg-neutral"] .text-ares-red,
+[class*="bg-zinc"] .text-ares-red,
+[class*="bg-obsidian"] .text-ares-red,
+.dark .text-ares-red {
+  color: var(--ares-red-light) !important;
+}
+

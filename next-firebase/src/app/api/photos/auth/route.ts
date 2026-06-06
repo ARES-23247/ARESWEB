@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { encrypt } from "@/lib/crypto";
 
 /**
  * GET /api/photos/auth
@@ -85,10 +86,15 @@ export async function GET(request: Request) {
         );
       }
 
+      const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const encryptedClientId = await encrypt(clientId, secret);
+      const encryptedClientSecret = await encrypt(clientSecret, secret);
+      const encryptedRefreshToken = await encrypt(finalRefreshToken, secret);
+
       await authRef.set({
-        clientId,
-        clientSecret,
-        refreshToken: finalRefreshToken,
+        clientId: encryptedClientId,
+        clientSecret: encryptedClientSecret,
+        refreshToken: encryptedRefreshToken,
         linkedAt: new Date().toISOString(),
         scopes: tokens.scope.split(" "),
         tokenType: tokens.token_type,

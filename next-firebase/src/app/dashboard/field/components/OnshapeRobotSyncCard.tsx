@@ -38,7 +38,8 @@ const MOCK_ROBOT_TYPES = [
     challengeName: "INTO THE DEEP", 
     onshapeDocId: "d_23247_ares_robot_v4", 
     onshapeWorkspaceId: "w_build_season_final", 
-    onshapeElementId: "e_chassis_assembly" 
+    onshapeElementId: "e_chassis_assembly",
+    syncMeta: null
   },
   { 
     id: "prometheus", 
@@ -47,7 +48,8 @@ const MOCK_ROBOT_TYPES = [
     challengeName: "CENTERSTAGE", 
     onshapeDocId: "d_23247_ftc_prometheus", 
     onshapeWorkspaceId: "w_centerstage_final", 
-    onshapeElementId: "e_lift_mechanism" 
+    onshapeElementId: "e_lift_mechanism",
+    syncMeta: null
   }
 ];
 

@@ -367,6 +367,7 @@ apiRouter.get("/health", (c) => {
 app.onError(async (err, c) => {
   // Import ApiError dynamically to avoid circular deps
   const { ApiError } = await import("./middleware/errorHandler");
+  const { ZodError } = await import("zod");
 
   // Handle ApiError with correct status code (400, 404, 429, etc.)
   if (err instanceof ApiError) {
@@ -376,11 +377,22 @@ app.onError(async (err, c) => {
     return c.json(response, err.status as 400 | 401 | 403 | 404 | 409 | 429 | 500);
   }
 
+  // Handle ZodError
+  if (err instanceof ZodError) {
+    const details: Record<string, string> = {};
+    for (const issue of err.issues) {
+      const key = issue.path.join(".") || "value";
+      details[key] = issue.message;
+    }
+    const { ErrorCode } = await import("../../shared/errors/api");
+    return c.json({ error: err.message, code: ErrorCode.VALIDATION_ERROR, details }, 400);
+  }
+
   // Generic errors — log and return 500
   console.error("Global API Error:", err);
   const db = c.get("db");
   if (c.env?.DB && db) {
-    c.executionCtx.waitUntil(logSystemError(db, "GlobalErrorHandler", err.message || "Unknown error", err.stack));
+    c.executionCtx?.waitUntil(logSystemError(db, "GlobalErrorHandler", err.message || "Unknown error", err.stack));
   }
   const isProd = c.env?.ENVIRONMENT === "production";
   return c.json({ error: "Internal Server Error", message: isProd ? "Unexpected error" : err.message }, 500);

@@ -392,25 +392,16 @@ export const analyticsRouter = _analyticsRouter
       async (c) => {
         const db = getDb(c);
         const { q } = c.req.valid("query");
-        // W3A-SEC-01: Use proper FTS5 query sanitization to prevent SQL injection
-        // Allows alphanumeric, spaces, hyphens, and periods. Uses proper FTS5 phrase search.
-        const sanitizeFtsQuery = (query: string): string => {
-          // Remove all characters except alphanumeric, spaces, hyphens, and periods
-          const cleanQ = (query || "").replace(/[^\w\s\-.]/g, "").trim();
-          if (!cleanQ) return "";
-          // Escape double quotes by doubling them (FTS5 escaping)
-          // Use prefix search with * for better UX
-          return `"${cleanQ.replace(/"/g, '""')}*`;
-        };
-        const ftsQ = sanitizeFtsQuery(String(q || ""));
-        if (!ftsQ) {
+        const qClean = (q || "").replace(/[^a-zA-Z0-9\s]/g, "").trim().substring(0, 100);
+        if (!qClean) {
           return c.json({ results: [] }, 200);
         }
+        const ftsQ = qClean.replace(/'/g, "''") + '*';
 
         const [postsReq, eventsReq, docsReq] = await Promise.all([
-          db.all(`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
-          db.all(`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
-          db.all(`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH ${ftsQ} LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`)
+          db.all(`SELECT f.slug as id, f.title FROM posts_fts f JOIN posts p ON f.slug = p.slug WHERE p.is_deleted = 0 AND p.status = 'published' AND f.posts_fts MATCH '${ftsQ}' LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
+          db.all(`SELECT f.id, f.title FROM events_fts f JOIN events e ON f.id = e.id WHERE e.is_deleted = 0 AND e.status = 'published' AND f.events_fts MATCH '${ftsQ}' LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`),
+          db.all(`SELECT f.slug as id, f.title FROM docs_fts f JOIN docs d ON f.slug = d.slug WHERE d.status = 'published' AND d.is_deleted = 0 AND f.docs_fts MATCH '${ftsQ}' LIMIT ${QUERY_LIMITS.GLOBAL_SEARCH}`)
         ]);
 
         const postsRows = postsReq || [];
