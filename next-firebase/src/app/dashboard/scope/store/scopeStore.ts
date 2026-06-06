@@ -23,12 +23,20 @@ export interface PlannedPathPoint {
   heading: number;
 }
 
+export interface ConsoleLogEntry {
+  timestamp: number; // in ms
+  level: "INFO" | "WARN" | "ERROR";
+  message: string;
+}
+
 interface ScopeState {
   isPlaying: boolean;
   currentTimeMs: number;
   playbackSpeed: number;
   telemetryData: TelemetryData | null;
+  comparisonTelemetryData: TelemetryData | null;
   plannedPath: PlannedPathPoint[] | null;
+  consoleLogs: ConsoleLogEntry[] | null;
   selectedKeys: string[];
   driveMode: "mecanum" | "swerve";
   
@@ -42,7 +50,9 @@ interface ScopeState {
   setCurrentTimeMs: (time: number) => void;
   setPlaybackSpeed: (speed: number) => void;
   setTelemetryData: (data: TelemetryData | null) => void;
+  setComparisonTelemetryData: (data: TelemetryData | null) => void;
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
+  setConsoleLogs: (logs: ConsoleLogEntry[] | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
   setDriveMode: (mode: "mecanum" | "swerve") => void;
@@ -53,6 +63,7 @@ interface ScopeState {
   addLiveFrame: (frame: TelemetryFrame) => void;
 
   getCurrentFrame: () => TelemetryFrame | null;
+  getCurrentComparisonFrame: () => TelemetryFrame | null;
 }
 
 export const useScopeStore = create<ScopeState>((set, get) => ({
@@ -60,7 +71,9 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   currentTimeMs: 0,
   playbackSpeed: 1.0,
   telemetryData: null,
+  comparisonTelemetryData: null,
   plannedPath: null,
+  consoleLogs: null,
   selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"],
   driveMode: "mecanum",
   
@@ -85,6 +98,8 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     currentTimeMs: 0, 
     isPlaying: false 
   }),
+  setComparisonTelemetryData: (comparisonTelemetryData) => set({ comparisonTelemetryData }),
+  setConsoleLogs: (consoleLogs) => set({ consoleLogs }),
   setPlannedPath: (plannedPath) => set({ plannedPath }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
@@ -190,6 +205,46 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
       x: telemetryData.coords[index]?.x ?? 0,
       y: telemetryData.coords[index]?.y ?? 0,
       heading: telemetryData.coords[index]?.heading ?? 0,
+      values
+    };
+  },
+  
+  getCurrentComparisonFrame: () => {
+    const { comparisonTelemetryData, currentTimeMs } = get();
+    if (!comparisonTelemetryData || comparisonTelemetryData.timestamps.length === 0) return null;
+
+    // Find closest index using binary search
+    const times = comparisonTelemetryData.timestamps;
+    let low = 0;
+    let high = times.length - 1;
+    let index = 0;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      if (times[mid] === currentTimeMs) {
+        index = mid;
+        break;
+      }
+      if (times[mid] < currentTimeMs) {
+        index = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    index = Math.max(0, Math.min(times.length - 1, index));
+
+    const values: Record<string, number> = {};
+    Object.keys(comparisonTelemetryData.channels).forEach((key) => {
+      values[key] = comparisonTelemetryData.channels[key][index] ?? 0;
+    });
+
+    return {
+      timestamp: times[index],
+      x: comparisonTelemetryData.coords[index]?.x ?? 0,
+      y: comparisonTelemetryData.coords[index]?.y ?? 0,
+      heading: comparisonTelemetryData.coords[index]?.heading ?? 0,
       values
     };
   }

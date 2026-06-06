@@ -6,7 +6,16 @@ import { Move, Compass, Eye, Map, Sliders } from "lucide-react";
 import * as THREE from "three";
 
 export default function WebGLReplayCanvas() {
-  const { telemetryData, currentTimeMs, getCurrentFrame, plannedPath, driveMode, setDriveMode } = useScopeStore();
+  const { 
+    telemetryData, 
+    comparisonTelemetryData, 
+    currentTimeMs, 
+    getCurrentFrame, 
+    getCurrentComparisonFrame, 
+    plannedPath, 
+    driveMode, 
+    setDriveMode 
+  } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
   
@@ -17,9 +26,11 @@ export default function WebGLReplayCanvas() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const robotGroupRef = useRef<THREE.Group | null>(null);
+  const comparisonRobotGroupRef = useRef<THREE.Group | null>(null);
   const slideCarriageRef = useRef<THREE.Mesh | null>(null);
   const intakeArmRef = useRef<THREE.Mesh | null>(null);
   const trailLineRef = useRef<THREE.Line | null>(null);
+  const comparisonTrailLineRef = useRef<THREE.Line | null>(null);
   const plannedPathLineRef = useRef<THREE.Line | null>(null);
   const cameraFovGroupsRef = useRef<THREE.Group[]>([]);
 
@@ -220,6 +231,31 @@ export default function WebGLReplayCanvas() {
       }
     }
 
+    // Comparison Trail (Dashed Red Line)
+    if (comparisonTelemetryData && comparisonTelemetryData.timestamps.length > 0) {
+      const times = comparisonTelemetryData.timestamps;
+      let currentIndex = 0;
+      for (let i = 0; i < times.length; i++) {
+        if (times[i] <= currentTimeMs) currentIndex = i;
+        else break;
+      }
+
+      if (currentIndex > 0) {
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (let i = 0; i <= currentIndex; i++) {
+          const pt = comparisonTelemetryData.coords[i];
+          if (!pt) continue;
+          if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
+          else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
     // Camera FOV Wedges (drawn under the robot chassis)
     if (showFov && currentFrame) {
       const cameras = getCameraPoses(currentFrame);
@@ -319,7 +355,41 @@ export default function WebGLReplayCanvas() {
       ctx.arc(pxX, pxY, 3, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [viewMode, telemetryData, currentTimeMs, currentFrame, driveMode, showFov]);
+
+    // Comparison Ghost Robot Chassis (dashed red outline)
+    const comparisonFrame = getCurrentComparisonFrame();
+    if (comparisonFrame) {
+      const pxX = toPxX(comparisonFrame.y);
+      const pxY = toPxY(comparisonFrame.x);
+      const robotSizePx = 0.4572 * scale;
+
+      ctx.save();
+      ctx.translate(pxX, pxY);
+      ctx.rotate(-comparisonFrame.heading);
+
+      // Chassis Body (dashed red)
+      ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
+      ctx.beginPath();
+      ctx.rect(-robotSizePx / 2, -robotSizePx / 2, robotSizePx, robotSizePx);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Heading Arrow (Dashed Red)
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -robotSizePx * 0.7);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -519,6 +589,19 @@ export default function WebGLReplayCanvas() {
     scene.add(trail);
     trailLineRef.current = trail;
 
+    const compTrailGeo = new THREE.BufferGeometry();
+    const compTrailMat = new THREE.LineDashedMaterial({ 
+      color: 0xEF4444,
+      linewidth: 1.5,
+      dashSize: 0.1,
+      gapSize: 0.08,
+      transparent: true,
+      opacity: 0.6
+    });
+    const compTrail = new THREE.Line(compTrailGeo, compTrailMat);
+    scene.add(compTrail);
+    comparisonTrailLineRef.current = compTrail;
+
     const plannedTrailGeo = new THREE.BufferGeometry();
     const plannedTrailMat = new THREE.LineDashedMaterial({ 
       color: 0x06B6D4,
@@ -529,6 +612,28 @@ export default function WebGLReplayCanvas() {
     const plannedTrail = new THREE.Line(plannedTrailGeo, plannedTrailMat);
     scene.add(plannedTrail);
     plannedPathLineRef.current = plannedTrail;
+
+    // 7.5 3D Comparison Ghost Robot Model Group
+    const compRobot = new THREE.Group();
+    comparisonRobotGroupRef.current = compRobot;
+    scene.add(compRobot);
+
+    const compChassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572);
+    const compChassisMat = new THREE.MeshStandardMaterial({
+      color: 0xEF4444, // Red
+      metalness: 0.3,
+      roughness: 0.5,
+      transparent: true,
+      opacity: 0.35
+    });
+    const compChassis = new THREE.Mesh(compChassisGeo, compChassisMat);
+    compChassis.position.y = 0.0889;
+    compRobot.add(compChassis);
+
+    const compArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0xEF4444, transparent: true, opacity: 0.5 }));
+    compArrow.position.set(0, 0.1651, -0.2286);
+    compArrow.rotation.x = -Math.PI / 2;
+    compRobot.add(compArrow);
 
     // 8. Animation loop
     let active = true;
@@ -726,7 +831,54 @@ export default function WebGLReplayCanvas() {
     } else if (plannedTrail) {
       plannedTrail.visible = false;
     }
-  }, [viewMode, currentFrame, currentTimeMs, telemetryData, plannedPath, driveMode, showFov]);
+
+    // Sync comparison ghost robot in 3D
+    const compRobot = comparisonRobotGroupRef.current;
+    const compFrame = getCurrentComparisonFrame();
+    if (compRobot) {
+      if (compFrame && comparisonTelemetryData) {
+        compRobot.position.x = -compFrame.y;
+        compRobot.position.z = -compFrame.x;
+        compRobot.rotation.y = compFrame.heading;
+        compRobot.visible = true;
+      } else {
+        compRobot.visible = false;
+      }
+    }
+
+    // Sync comparison 3D trail
+    const compTrail = comparisonTrailLineRef.current;
+    if (compTrail) {
+      if (comparisonTelemetryData && comparisonTelemetryData.timestamps.length > 0) {
+        const times = comparisonTelemetryData.timestamps;
+        let currentIndex = 0;
+        for (let i = 0; i < times.length; i++) {
+          if (times[i] <= currentTimeMs) currentIndex = i;
+          else break;
+        }
+
+        const points: THREE.Vector3[] = [];
+        for (let i = 0; i <= currentIndex; i++) {
+          const pt = comparisonTelemetryData.coords[i];
+          if (pt) {
+            points.push(new THREE.Vector3(-pt.y, 0.008, -pt.x)); // slightly below main trail to avoid Z-fighting
+          }
+        }
+
+        if (points.length > 0) {
+          compTrail.geometry.setFromPoints(points);
+          compTrail.computeLineDistances();
+          compTrail.geometry.computeBoundingBox();
+          compTrail.geometry.computeBoundingSphere();
+          compTrail.visible = true;
+        } else {
+          compTrail.visible = false;
+        }
+      } else {
+        compTrail.visible = false;
+      }
+    }
+  }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov]);
 
   return (
     <div className="glass-card p-6 border border-white/10 flex flex-col gap-5 justify-between h-full">

@@ -23,12 +23,32 @@ export type EventMarker = {
   actions: string[];
 };
 
+export type ConstraintZone = {
+  id: string;
+  name: string;
+  x: number;       // Center X in inches (0-144)
+  y: number;       // Center Y in inches (0-144)
+  width: number;   // Width in inches
+  height: number;  // Height in inches
+  maxVelocity: number; // in m/s
+};
+
+export type RotationTarget = {
+  id: string;
+  name: string;
+  x: number;       // Target face X in inches (0-144)
+  y: number;       // Target face Y in inches (0-144)
+  waypointIndex: number; // Waypoint index it's linked to (e.g. 0, 1, 2)
+};
+
 interface AresPlannerProps {
   initialPathData?: {
     name: string;
     season: string;
     waypoints: Waypoint[];
     markers: EventMarker[];
+    constraintZones?: ConstraintZone[];
+    rotationTargets?: RotationTarget[];
   };
   cloudPaths?: Array<{
     id: string;
@@ -36,9 +56,18 @@ interface AresPlannerProps {
     season: string;
     waypoints: Waypoint[];
     markers: EventMarker[];
+    constraintZones?: ConstraintZone[];
+    rotationTargets?: RotationTarget[];
     updatedAt: any;
   }>;
-  onSaveToCloud?: (name: string, season: string, waypoints: Waypoint[], markers: EventMarker[]) => Promise<void>;
+  onSaveToCloud?: (
+    name: string,
+    season: string,
+    waypoints: Waypoint[],
+    markers: EventMarker[],
+    constraintZones?: ConstraintZone[],
+    rotationTargets?: RotationTarget[]
+  ) => Promise<void>;
   onLoadPath?: (pathId: string) => void;
   isSavingCloud?: boolean;
 }
@@ -105,6 +134,8 @@ export default function AresPlanner({
   // Selected elements for config panels
   const [selectedWaypointIdx, setSelectedWaypointIdx] = useState<number | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [selectedRotationTargetId, setSelectedRotationTargetId] = useState<string | null>(null);
+  const [selectedConstraintZoneId, setSelectedConstraintZoneId] = useState<string | null>(null);
   const [isAddingMarker, setIsAddingMarker] = useState(false);
 
   // Sidebar accordion expansion states
@@ -168,6 +199,9 @@ export default function AresPlanner({
     { id: "2", name: "Outtake Score", progress: 0.85, actions: ["RaiseSlide", "OpenClaw"] }
   ]);
 
+  const [constraintZones, setConstraintZones] = useState<ConstraintZone[]>([]);
+  const [rotationTargets, setRotationTargets] = useState<RotationTarget[]>([]);
+
   // Handle loading initial data
   useEffect(() => {
     if (initialPathData) {
@@ -175,20 +209,33 @@ export default function AresPlanner({
       if (initialPathData.season) setSeason(initialPathData.season);
       if (initialPathData.waypoints) setWaypoints(initialPathData.waypoints);
       if (initialPathData.markers) setMarkers(initialPathData.markers);
+      if (initialPathData.constraintZones) setConstraintZones(initialPathData.constraintZones);
+      else setConstraintZones([]);
+      if (initialPathData.rotationTargets) setRotationTargets(initialPathData.rotationTargets);
+      else setRotationTargets([]);
     }
   }, [initialPathData]);
 
   // Spline values reference for rendering loops
   const waypointsRef = useRef<Waypoint[]>(waypoints);
   const markersRef = useRef<EventMarker[]>(markers);
+  const constraintZonesRef = useRef<ConstraintZone[]>(constraintZones);
+  const rotationTargetsRef = useRef<RotationTarget[]>(rotationTargets);
+  const selectedConstraintZoneIdRef = useRef<string | null>(selectedConstraintZoneId);
+  const selectedRotationTargetIdRef = useRef<string | null>(selectedRotationTargetId);
+  
   const pathRef = useRef<{x: number, y: number}[]>([]);
   const robotRef = useRef({ progress: 0, x: 24, y: 120, heading: 0 });
   const isPlayingRef = useRef(isPlaying);
-  const dragInfo = useRef<{ type: "anchor" | "prev" | "next"; index: number } | null>(null);
+  const dragInfo = useRef<{ type: "anchor" | "prev" | "next" | "rotationTarget" | "constraintZoneMove" | "constraintZoneResize"; index: number } | null>(null);
 
   // Keep references updated
   useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
   useEffect(() => { markersRef.current = markers; }, [markers]);
+  useEffect(() => { constraintZonesRef.current = constraintZones; }, [constraintZones]);
+  useEffect(() => { rotationTargetsRef.current = rotationTargets; }, [rotationTargets]);
+  useEffect(() => { selectedConstraintZoneIdRef.current = selectedConstraintZoneId; }, [selectedConstraintZoneId]);
+  useEffect(() => { selectedRotationTargetIdRef.current = selectedRotationTargetId; }, [selectedRotationTargetId]);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
   // Compute actual spline points
@@ -308,15 +355,61 @@ export default function AresPlanner({
         if (mPos && Math.hypot(mPos.x - pos.x, mPos.y - pos.y) < hitRadius) {
           setSelectedMarkerId(m.id);
           setSelectedWaypointIdx(null);
+          setSelectedRotationTargetId(null);
+          setSelectedConstraintZoneId(null);
           setIsPlaying(false);
           return;
         }
       }
     }
 
+    // Check hit on Rotation Targets
+    for (let i = 0; i < rotationTargets.length; i++) {
+      const rot = rotationTargets[i];
+      if (Math.hypot(rot.x - pos.x, rot.y - pos.y) < hitRadius) {
+        dragInfo.current = { type: "rotationTarget", index: i };
+        setSelectedRotationTargetId(rot.id);
+        setSelectedWaypointIdx(null);
+        setSelectedMarkerId(null);
+        setSelectedConstraintZoneId(null);
+        setIsPlaying(false);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
+
+    // Check hit on Constraint Zones
+    for (let i = 0; i < constraintZones.length; i++) {
+      const zone = constraintZones[i];
+      const brX = zone.x + zone.width / 2;
+      const brY = zone.y - zone.height / 2;
+      if (Math.hypot(brX - pos.x, brY - pos.y) < hitRadius) {
+        dragInfo.current = { type: "constraintZoneResize", index: i };
+        setSelectedConstraintZoneId(zone.id);
+        setSelectedWaypointIdx(null);
+        setSelectedMarkerId(null);
+        setSelectedRotationTargetId(null);
+        setIsPlaying(false);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        return;
+      }
+      if (Math.hypot(zone.x - pos.x, zone.y - pos.y) < hitRadius) {
+        dragInfo.current = { type: "constraintZoneMove", index: i };
+        setSelectedConstraintZoneId(zone.id);
+        setSelectedWaypointIdx(null);
+        setSelectedMarkerId(null);
+        setSelectedRotationTargetId(null);
+        setIsPlaying(false);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
+
     // Clicked empty space
     setSelectedWaypointIdx(null);
     setSelectedMarkerId(null);
+    setSelectedRotationTargetId(null);
+    setSelectedConstraintZoneId(null);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -324,45 +417,72 @@ export default function AresPlanner({
     const pos = getFieldPosFromEvent(e);
     const { type, index } = dragInfo.current;
     
-    setWaypoints((prev) => {
-      const nextWps = [...prev];
-      const wp = { ...nextWps[index] };
+    if (type === "rotationTarget") {
+      setRotationTargets((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], x: pos.x, y: pos.y };
+        return next;
+      });
+    } else if (type === "constraintZoneMove") {
+      setConstraintZones((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], x: pos.x, y: pos.y };
+        return next;
+      });
+    } else if (type === "constraintZoneResize") {
+      setConstraintZones((prev) => {
+        const next = [...prev];
+        const zone = next[index];
+        const halfWidth = Math.max(4, Math.abs(pos.x - zone.x));
+        const halfHeight = Math.max(4, Math.abs(pos.y - zone.y));
+        next[index] = {
+          ...zone,
+          width: halfWidth * 2,
+          height: halfHeight * 2
+        };
+        return next;
+      });
+    } else {
+      setWaypoints((prev) => {
+        const nextWps = [...prev];
+        const wp = { ...nextWps[index] };
 
-      if (type === "anchor") {
-        const dx = pos.x - wp.anchor.x;
-        const dy = pos.y - wp.anchor.y;
-        
-        // Move anchor and shift control points together
-        wp.anchor = pos;
-        if (wp.prevControl) {
-          wp.prevControl = { x: wp.prevControl.x + dx, y: wp.prevControl.y + dy };
-        }
-        if (wp.nextControl) {
-          wp.nextControl = { x: wp.nextControl.x + dx, y: wp.nextControl.y + dy };
-        }
-      } else if (type === "next") {
-        wp.nextControl = pos;
-        
-        // Mirror to prevControl for C1 continuity
-        if (wp.prevControl) {
+        if (type === "anchor") {
           const dx = pos.x - wp.anchor.x;
           const dy = pos.y - wp.anchor.y;
-          wp.prevControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
+          
+          // Move anchor and shift control points together
+          wp.anchor = pos;
+          if (wp.prevControl) {
+            wp.prevControl = { x: wp.prevControl.x + dx, y: wp.prevControl.y + dy };
+          }
+          if (wp.nextControl) {
+            wp.nextControl = { x: wp.nextControl.x + dx, y: wp.nextControl.y + dy };
+          }
+        } else if (type === "next") {
+          wp.nextControl = pos;
+          
+          // Mirror to prevControl for C1 continuity
+          if (wp.prevControl) {
+            const dx = pos.x - wp.anchor.x;
+            const dy = pos.y - wp.anchor.y;
+            wp.prevControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
+          }
+        } else if (type === "prev") {
+          wp.prevControl = pos;
+          
+          // Mirror to nextControl for C1 continuity
+          if (wp.nextControl) {
+            const dx = pos.x - wp.anchor.x;
+            const dy = pos.y - wp.anchor.y;
+            wp.nextControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
+          }
         }
-      } else if (type === "prev") {
-        wp.prevControl = pos;
-        
-        // Mirror to nextControl for C1 continuity
-        if (wp.nextControl) {
-          const dx = pos.x - wp.anchor.x;
-          const dy = pos.y - wp.anchor.y;
-          wp.nextControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
-        }
-      }
 
-      nextWps[index] = wp;
-      return nextWps;
-    });
+        nextWps[index] = wp;
+        return nextWps;
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -702,6 +822,93 @@ export default function AresPlanner({
         
         ctx.restore();
       });
+
+      // Draw Constraint Zones
+      constraintZonesRef.current.forEach((zone) => {
+        const cx = zone.x * scale;
+        const cy = h - zone.y * scale;
+        const zw = zone.width * scale;
+        const zh = zone.height * scale;
+        const isSelected = selectedConstraintZoneIdRef.current === zone.id;
+
+        ctx.save();
+        ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.12)";
+        ctx.fillRect(cx - zw / 2, cy - zh / 2, zw, zh);
+
+        ctx.strokeStyle = isSelected ? "rgba(245, 158, 11, 0.9)" : "rgba(245, 158, 11, 0.55)";
+        ctx.lineWidth = isSelected ? 2 : 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(cx - zw / 2, cy - zh / 2, zw, zh);
+        ctx.setLineDash([]);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#f59e0b";
+        ctx.fill();
+
+        if (isSelected) {
+          const brX = cx + zw / 2;
+          const brY = cy + zh / 2;
+          ctx.beginPath();
+          ctx.arc(brX, brY, 5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.fill();
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "bold 8px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${zone.name} (${zone.maxVelocity.toFixed(1)} m/s)`, cx, cy - zh / 2 - 4);
+        ctx.restore();
+      });
+
+      // Draw Rotation Targets
+      rotationTargetsRef.current.forEach((rot) => {
+        const tx = rot.x * scale;
+        const ty = h - rot.y * scale;
+        const isSelected = selectedRotationTargetIdRef.current === rot.id;
+
+        const wp = waypointsRef.current[rot.waypointIndex];
+        if (wp) {
+          const ax = wp.anchor.x * scale;
+          const ay = h - wp.anchor.y * scale;
+
+          ctx.save();
+          ctx.strokeStyle = "rgba(168, 85, 247, 0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(tx, ty);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.translate(tx, ty);
+
+        ctx.strokeStyle = isSelected ? "#a855f7" : "rgba(168, 85, 247, 0.85)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-14, 0); ctx.lineTo(14, 0);
+        ctx.moveTo(0, -14); ctx.lineTo(0, 14);
+        ctx.stroke();
+
+        ctx.restore();
+
+        ctx.fillStyle = "#c084fc";
+        ctx.font = "bold 8px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(`Target: ${rot.name}`, tx + 16, ty + 3);
+      });
     };
 
     const drawRobot = () => {
@@ -742,20 +949,18 @@ export default function AresPlanner({
       const rx = robotRef.current.x * scale;
       const ry = h - robotRef.current.y * scale;
       const rh = robotRef.current.heading;
-      const rbSize = 18 * scale; // 18-inch robot dimensions standard limit
+      const rbSize = 18 * scale;
 
       ctx.save();
       ctx.translate(rx, ry);
-      ctx.rotate(-rh); // Canvas Y coordinates inverted, invert heading angle rotation
+      ctx.rotate(-rh);
 
-      // Chassis body
       ctx.fillStyle = "rgba(10, 10, 10, 0.75)";
-      ctx.strokeStyle = "#FFB81C"; // ARES Gold
+      ctx.strokeStyle = "#FFB81C";
       ctx.lineWidth = 2.5;
       ctx.fillRect(-rbSize / 2, -rbSize / 2, rbSize, rbSize);
       ctx.strokeRect(-rbSize / 2, -rbSize / 2, rbSize, rbSize);
 
-      // Direction Pointer
       ctx.strokeStyle = "#C00000";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -778,7 +983,7 @@ export default function AresPlanner({
     return () => {
       cancelAnimationFrame(animFrameId);
     };
-  }, [canvasDim, season, customBgImage, selectedWaypointIdx, selectedMarkerId, decodeDarkImage, decodeLightImage]);
+  }, [canvasDim, season, customBgImage, selectedWaypointIdx, selectedMarkerId, selectedConstraintZoneId, selectedRotationTargetId, decodeDarkImage, decodeLightImage]);
 
   // Handle waypoint deletions
   const handleDeleteWaypoint = (idx: number) => {
@@ -838,6 +1043,60 @@ export default function AresPlanner({
   // Update marker parameters
   const handleUpdateMarker = (id: string, updates: Partial<EventMarker>) => {
     setMarkers(markers.map((m) => m.id === id ? { ...m, ...updates } : m));
+  };
+
+  // Actions for Constraint Zones
+  const handleAddConstraintZone = () => {
+    const newZone: ConstraintZone = {
+      id: `zone-${Date.now()}`,
+      name: `Speed Zone ${constraintZones.length + 1}`,
+      x: 72,
+      y: 72,
+      width: 24,
+      height: 24,
+      maxVelocity: 1.5
+    };
+    setConstraintZones([...constraintZones, newZone]);
+    setSelectedConstraintZoneId(newZone.id);
+    setSelectedWaypointIdx(null);
+    setSelectedMarkerId(null);
+    setSelectedRotationTargetId(null);
+  };
+
+  const handleUpdateConstraintZone = (id: string, updates: Partial<ConstraintZone>) => {
+    setConstraintZones(constraintZones.map((z) => z.id === id ? { ...z, ...updates } : z));
+  };
+
+  const handleDeleteConstraintZone = (id: string) => {
+    setConstraintZones(constraintZones.filter((z) => z.id !== id));
+    if (selectedConstraintZoneId === id) setSelectedConstraintZoneId(null);
+  };
+
+  // Actions for Rotation Targets
+  const handleAddRotationTarget = () => {
+    const linkedWpIdx = selectedWaypointIdx !== null ? selectedWaypointIdx : 0;
+    const wp = waypoints[linkedWpIdx];
+    const newTarget: RotationTarget = {
+      id: `rot-${Date.now()}`,
+      name: `Target ${rotationTargets.length + 1}`,
+      x: wp ? Math.min(136, wp.anchor.x + 20) : 72,
+      y: wp ? Math.min(136, wp.anchor.y + 20) : 72,
+      waypointIndex: linkedWpIdx
+    };
+    setRotationTargets([...rotationTargets, newTarget]);
+    setSelectedRotationTargetId(newTarget.id);
+    setSelectedWaypointIdx(null);
+    setSelectedMarkerId(null);
+    setSelectedConstraintZoneId(null);
+  };
+
+  const handleUpdateRotationTarget = (id: string, updates: Partial<RotationTarget>) => {
+    setRotationTargets(rotationTargets.map((r) => r.id === id ? { ...r, ...updates } : r));
+  };
+
+  const handleDeleteRotationTarget = (id: string) => {
+    setRotationTargets(rotationTargets.filter((r) => r.id !== id));
+    if (selectedRotationTargetId === id) setSelectedRotationTargetId(null);
   };
 
   // Unit transformation helpers
@@ -988,6 +1247,22 @@ export default function AresPlanner({
         name: m.name,
         progress: parseFloat(m.progress.toFixed(3)),
         actions: m.actions
+      })),
+      constraintZones: constraintZones.map((z) => ({
+        id: z.id,
+        name: z.name,
+        x: parseFloat(z.x.toFixed(2)),
+        y: parseFloat(z.y.toFixed(2)),
+        width: parseFloat(z.width.toFixed(2)),
+        height: parseFloat(z.height.toFixed(2)),
+        maxVelocity: z.maxVelocity
+      })),
+      rotationTargets: rotationTargets.map((r) => ({
+        id: r.id,
+        name: r.name,
+        x: parseFloat(r.x.toFixed(2)),
+        y: parseFloat(r.y.toFixed(2)),
+        waypointIndex: r.waypointIndex
       })),
       season,
       name: pathName
@@ -1550,46 +1825,309 @@ export default function AresPlanner({
               )}
             </div>
 
-            {/* 3. ROTATION TARGETS PLACEHOLDER */}
+            {/* 3. ROTATION TARGETS EDITOR */}
             <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
               <div 
                 onClick={() => setIsRotationExpanded(!isRotationExpanded)}
                 className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
               >
                 <div className="flex items-center gap-2">
-                  {isRotationExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-marble/40" />
+                  {isRotationExpanded ? <ChevronUp size={14} className="text-purple-400" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-purple-400" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">Rotation Targets</span>
                 </div>
-                <span className="bg-white/5 border border-white/10 text-marble/40 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                  + 0
-                </span>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className="bg-purple-500/15 border border-purple-500/35 text-purple-400 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                    {rotationTargets.length}
+                  </span>
+                  <button
+                    onClick={handleAddRotationTarget}
+                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
+                    title="Add rotation target"
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               </div>
+              
               {isRotationExpanded && (
-                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
-                  No rotation targets defined.
+                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto bg-black/5">
+                  {rotationTargets.map((rot, idx) => {
+                    const isSelected = selectedRotationTargetId === rot.id;
+                    return (
+                      <div 
+                        key={rot.id}
+                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                          isSelected 
+                            ? "bg-purple-500/[0.02] border-purple-500/45" 
+                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
+                        }`}
+                      >
+                        {/* Target Header */}
+                        <div 
+                          onClick={() => {
+                            setSelectedRotationTargetId(rot.id);
+                            setSelectedWaypointIdx(null);
+                            setSelectedMarkerId(null);
+                            setSelectedConstraintZoneId(null);
+                          }}
+                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
+                        >
+                          <div className="flex items-center gap-2 flex-grow">
+                            <input
+                              type="text"
+                              value={rot.name}
+                              onChange={(e) => handleUpdateRotationTarget(rot.id, { name: e.target.value })}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-purple-400 py-0.5"
+                            />
+                            <span className="text-[10px] text-marble/30 font-mono">(WP {rot.waypointIndex + 1})</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRotationTarget(rot.id);
+                            }}
+                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
+                            title="Delete target"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
+                        {/* Target Content */}
+                        {isSelected && (
+                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-xs">
+                            <div className="grid grid-cols-2 gap-2">
+                              {/* Linked Waypoint */}
+                              <div className="flex flex-col gap-1 col-span-2">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Link to Waypoint</label>
+                                <select
+                                  value={rot.waypointIndex}
+                                  onChange={(e) => handleUpdateRotationTarget(rot.id, { waypointIndex: parseInt(e.target.value) })}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                                >
+                                  {waypoints.map((_, wIdx) => (
+                                    <option key={wIdx} value={wIdx} className="bg-neutral-900">
+                                      {wIdx === 0 ? "Start Point" : wIdx === waypoints.length - 1 ? "End Point" : `Waypoint ${wIdx + 1}`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Target X */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Target X ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={parseFloat((unitMode === "meters" ? rot.x * 0.0254 : rot.x).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateRotationTarget(rot.id, { x: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-purple-400"
+                                />
+                              </div>
+
+                              {/* Target Y */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Target Y ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={parseFloat((unitMode === "meters" ? rot.y * 0.0254 : rot.y).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateRotationTarget(rot.id, { y: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-purple-400"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {rotationTargets.length === 0 && (
+                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No rotation targets defined.</p>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* 4. POINT TOWARDS ZONES PLACEHOLDER */}
+            {/* 4. CONSTRAINT ZONES EDITOR */}
             <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
               <div 
                 onClick={() => setIsPointZonesExpanded(!isPointZonesExpanded)}
                 className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
               >
                 <div className="flex items-center gap-2">
-                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-marble/40" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Point Towards Zones</span>
+                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-amber-500" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-amber-500" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Constraint Zones</span>
                 </div>
-                <span className="bg-white/5 border border-white/10 text-marble/40 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                  + 0
-                </span>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className="bg-amber-500/15 border border-amber-500/35 text-amber-500 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                    {constraintZones.length}
+                  </span>
+                  <button
+                    onClick={handleAddConstraintZone}
+                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
+                    title="Add constraint zone"
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               </div>
+              
               {isPointZonesExpanded && (
-                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
-                  No point towards zones configured.
+                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto bg-black/5">
+                  {constraintZones.map((zone, idx) => {
+                    const isSelected = selectedConstraintZoneId === zone.id;
+                    return (
+                      <div 
+                        key={zone.id}
+                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                          isSelected 
+                            ? "bg-amber-500/[0.02] border-amber-500/45" 
+                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
+                        }`}
+                      >
+                        {/* Zone Header */}
+                        <div 
+                          onClick={() => {
+                            setSelectedConstraintZoneId(zone.id);
+                            setSelectedWaypointIdx(null);
+                            setSelectedMarkerId(null);
+                            setSelectedRotationTargetId(null);
+                          }}
+                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
+                        >
+                          <div className="flex items-center gap-2 flex-grow">
+                            <input
+                              type="text"
+                              value={zone.name}
+                              onChange={(e) => handleUpdateConstraintZone(zone.id, { name: e.target.value })}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                            />
+                            <span className="text-[10px] text-marble/30 font-mono">({zone.maxVelocity.toFixed(1)} m/s)</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteConstraintZone(zone.id);
+                            }}
+                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
+                            title="Delete zone"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
+                        {/* Zone Content */}
+                        {isSelected && (
+                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-xs">
+                            <div className="grid grid-cols-2 gap-2">
+                              {/* Max Velocity */}
+                              <div className="flex flex-col gap-1 col-span-2">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Speed Limit (m/s)</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={zone.maxVelocity}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateConstraintZone(zone.id, { maxVelocity: val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+
+                              {/* Center X */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Center X ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={parseFloat((unitMode === "meters" ? zone.x * 0.0254 : zone.x).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateConstraintZone(zone.id, { x: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+
+                              {/* Center Y */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Center Y ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={parseFloat((unitMode === "meters" ? zone.y * 0.0254 : zone.y).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateConstraintZone(zone.id, { y: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+
+                              {/* Width */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Width ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={parseFloat((unitMode === "meters" ? zone.width * 0.0254 : zone.width).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateConstraintZone(zone.id, { width: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+
+                              {/* Height */}
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Height ({unitMode === "meters" ? "M" : "In"})</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={parseFloat((unitMode === "meters" ? zone.height * 0.0254 : zone.height).toFixed(2))}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (!isNaN(val)) {
+                                      handleUpdateConstraintZone(zone.id, { height: unitMode === "meters" ? val / 0.0254 : val });
+                                    }
+                                  }}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {constraintZones.length === 0 && (
+                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No constraint zones configured.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -1649,7 +2187,7 @@ export default function AresPlanner({
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => onSaveToCloud(pathName, season, waypoints, markers)}
+                  onClick={() => onSaveToCloud(pathName, season, waypoints, markers, constraintZones, rotationTargets)}
                   disabled={isSavingCloud}
                   className="flex-grow py-2 bg-ares-cyan hover:bg-ares-cyan/90 text-obsidian rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
                 >

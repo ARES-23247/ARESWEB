@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Compass, AlertTriangle, LogIn, FolderOpen, Edit2, Trash2, Calendar, Search, SlidersHorizontal, Map, Paperclip, Upload, Play, Loader2 } from "lucide-react";
-import AresPlanner, { Waypoint, EventMarker } from "@/components/AresPlanner";
+import AresPlanner, { Waypoint, EventMarker, ConstraintZone, RotationTarget } from "@/components/AresPlanner";
 import { db } from "@/lib/firebase";
 import { collection, doc, setDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,8 @@ type PathConfig = {
   season: string;
   waypoints: Waypoint[];
   markers: EventMarker[];
+  constraintZones?: ConstraintZone[];
+  rotationTargets?: RotationTarget[];
   updatedAt: any;
 };
 
@@ -25,6 +27,8 @@ type LinkedLog = {
     waypoints: Waypoint[];
     markers: EventMarker[];
     season: string;
+    constraintZones?: ConstraintZone[];
+    rotationTargets?: RotationTarget[];
   };
 };
 
@@ -64,6 +68,8 @@ export default function AresPlannerPage() {
             season: data.season || "into_the_deep",
             waypoints: data.waypoints || [],
             markers: data.markers || [],
+            constraintZones: data.constraintZones || [],
+            rotationTargets: data.rotationTargets || [],
             updatedAt: data.updatedAt
           });
         });
@@ -155,7 +161,9 @@ export default function AresPlannerPage() {
           metadata.pathState = {
             waypoints: path.waypoints,
             markers: path.markers,
-            season: path.season
+            season: path.season,
+            constraintZones: path.constraintZones || [],
+            rotationTargets: path.rotationTargets || []
           };
         }
 
@@ -216,6 +224,8 @@ export default function AresPlannerPage() {
       season: log.pathState.season,
       waypoints: log.pathState.waypoints,
       markers: log.pathState.markers,
+      constraintZones: log.pathState.constraintZones || [],
+      rotationTargets: log.pathState.rotationTargets || [],
       updatedAt: null // set to null so they can save it back to cloud
     });
 
@@ -224,7 +234,14 @@ export default function AresPlannerPage() {
   };
 
   // Handle saving paths to Firestore
-  const handleSaveToCloud = async (name: string, season: string, waypoints: Waypoint[], markers: EventMarker[]) => {
+  const handleSaveToCloud = async (
+    name: string,
+    season: string,
+    waypoints: Waypoint[],
+    markers: EventMarker[],
+    constraintZones?: ConstraintZone[],
+    rotationTargets?: RotationTarget[]
+  ) => {
     if (!user) {
       setErrorMsg("You must be signed in to save paths to the cloud.");
       return;
@@ -248,6 +265,8 @@ export default function AresPlannerPage() {
         season,
         waypoints,
         markers,
+        constraintZones: constraintZones || [],
+        rotationTargets: rotationTargets || [],
         userId: user.uid,
         updatedAt: serverTimestamp()
       });

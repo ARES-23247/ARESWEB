@@ -24,7 +24,9 @@ import {
   Wifi,
   WifiOff,
   X,
-  Eye
+  Eye,
+  Sliders,
+  Terminal
 } from "lucide-react";
 
 export default function ScopeDashboard() {
@@ -33,6 +35,8 @@ export default function ScopeDashboard() {
     currentTimeMs, 
     playbackSpeed, 
     telemetryData, 
+    comparisonTelemetryData,
+    consoleLogs,
     isStreaming,
     streamSource,
     connectionStatus,
@@ -40,6 +44,8 @@ export default function ScopeDashboard() {
     setCurrentTimeMs, 
     setPlaybackSpeed, 
     setTelemetryData,
+    setComparisonTelemetryData,
+    setConsoleLogs,
     setPlannedPath,
     setStreaming,
     setStreamSource,
@@ -55,10 +61,36 @@ export default function ScopeDashboard() {
   
   // Video Sync States
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  // Console Log UI States
+  const [logFilter, setLogFilter] = useState("");
+  const [logLevelFilter, setLogLevelFilter] = useState<"ALL" | "INFO" | "WARN" | "ERROR">("ALL");
+  const [autoScrollLogs, setAutoScrollLogs] = useState(true);
+  const logContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const activeLogs = consoleLogs
+    ? consoleLogs.filter((log) => log.timestamp <= currentTimeMs)
+    : [];
+
+  const filteredLogs = activeLogs.filter((log) => {
+    const matchesLevel = logLevelFilter === "ALL" || log.level === logLevelFilter;
+    const matchesSearch = log.message.toLowerCase().includes(logFilter.toLowerCase()) || 
+                          log.level.toLowerCase().includes(logFilter.toLowerCase());
+    return matchesLevel && matchesSearch;
+  });
+
+  // Auto scroll effect
+  useEffect(() => {
+    if (autoScrollLogs && logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [activeLogs.length, autoScrollLogs]);
   
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pathInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const comparisonInputRef = useRef<HTMLInputElement | null>(null);
+  const consoleInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const ntClientRef = useRef<NT4Client | null>(null);
 
@@ -308,6 +340,157 @@ export default function ScopeDashboard() {
       }
     };
     reader.readAsText(file);
+  };
+
+  // Parser for synchronised console log statements
+  const parseConsoleLogFile = (file: File) => {
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        if (!text) throw new Error("Empty file data.");
+
+        const lines = text.split("\n").filter((l) => l.trim() !== "");
+        const parsedEntries: any[] = [];
+
+        lines.forEach((line, idx) => {
+          let timestamp = idx * 100; // default incremental fallback (ms)
+          let level: "INFO" | "WARN" | "ERROR" = "INFO";
+          let message = line;
+
+          // Deduce level
+          if (line.includes("[WARN]") || line.toLowerCase().includes("warn")) {
+            level = "WARN";
+          } else if (line.includes("[ERROR]") || line.toLowerCase().includes("error") || line.toLowerCase().includes("fail")) {
+            level = "ERROR";
+          }
+
+          // Extract bracketed or colon timestamps: e.g. [1.25s], [1250ms], 1250:
+          const bracketMatch = line.match(/\[(\d+(?:\.\d+)?)(s|ms)?\]/);
+          const colonMatch = line.match(/^(\d+(?:\.\d+)?)(s|ms)?:/);
+          
+          if (bracketMatch) {
+            const val = parseFloat(bracketMatch[1]);
+            const unit = bracketMatch[2] || "ms";
+            timestamp = unit === "s" ? val * 1000 : val;
+            message = line.replace(bracketMatch[0], "").trim();
+          } else if (colonMatch) {
+            const val = parseFloat(colonMatch[1]);
+            const unit = colonMatch[2] || "ms";
+            timestamp = unit === "s" ? val * 1000 : val;
+            message = line.replace(colonMatch[0], "").trim();
+          }
+
+          // Strip level brackets from the visual message string
+          message = message.replace(/\[(INFO|WARN|ERROR)\]/i, "").replace(/\s+/g, " ").trim();
+
+          parsedEntries.push({ timestamp, level, message });
+        });
+
+        // Ensure chronological sorting
+        parsedEntries.sort((a, b) => a.timestamp - b.timestamp);
+
+        setConsoleLogs(parsedEntries);
+        console.log(`[Console Log Parser] Loaded ${parsedEntries.length} entries: ${file.name}`);
+      } catch (err: any) {
+        alert("Failed to parse console log file: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      parseConsoleLogFile(e.target.files[0]);
+    }
+  };
+
+  // Parser for second telemetry run (comparison overlay)
+  const parseComparisonLogFile = (file: File) => {
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        if (!text) throw new Error("Empty file data.");
+
+        const lines = text.split("\n").filter((l) => l.trim() !== "");
+        if (lines.length < 2) throw new Error("Invalid CSV format.");
+
+        const headers = lines[0].split(",").map((h) => h.trim());
+        const timestamps: number[] = [];
+        const coords: { x: number; y: number; heading: number }[] = [];
+        const channels: Record<string, number[]> = {};
+        
+        headers.forEach((h) => {
+          channels[h] = [];
+        });
+
+        const findColIndex = (names: string[]) => {
+          return headers.findIndex((h) => 
+            names.some((n) => h.toLowerCase() === n.toLowerCase() || h.toLowerCase().includes(n.toLowerCase()))
+          );
+        };
+
+        const xIdx = findColIndex(["drive/pose_x", "drive/odom_x", "posex", "x", "estimatedpose[0]", "robotpose[0]"]);
+        const yIdx = findColIndex(["drive/pose_y", "drive/odom_y", "posey", "y", "estimatedpose[1]", "robotpose[1]"]);
+        const headingIdx = findColIndex(["drive/drive_heading", "drive/pose_heading", "drive/odom_heading", "heading", "poseheading", "estimatedpose[2]", "robotpose[2]"]);
+        const timeIdx = findColIndex(["timestampms", "timestamp", "time", "ms"]);
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(",");
+          if (cols.length < headers.length) continue;
+
+          const colsNum = cols.map((c) => parseFloat(c.trim()) || 0);
+
+          const t = timeIdx !== -1 ? colsNum[timeIdx] : (i - 1) * 20;
+          timestamps.push(t);
+          
+          let x = xIdx !== -1 ? colsNum[xIdx] : 0.0;
+          let y = yIdx !== -1 ? colsNum[yIdx] : 0.0;
+          let heading = headingIdx !== -1 ? colsNum[headingIdx] : 0.0;
+
+          if (Math.abs(x) > 5.0 || Math.abs(y) > 5.0) {
+            const tempX = x;
+            x = (y - 72) / 39.3701;
+            y = -(tempX - 72) / 39.3701;
+            heading = heading - Math.PI / 2;
+          }
+
+          coords.push({ x, y, heading });
+
+          headers.forEach((h, idx) => {
+            channels[h].push(colsNum[idx]);
+          });
+        }
+
+        const customTelemetry: TelemetryData = {
+          runId: file.name.substring(0, 15),
+          opModeName: "ARESComparisonLog",
+          timestamps: timestamps,
+          coords: coords,
+          channels: channels,
+          maxTimeMs: timestamps.length > 0 ? timestamps[timestamps.length - 1] - timestamps[0] : 0
+        };
+
+        setComparisonTelemetryData(customTelemetry);
+        console.log(`[Comparison Parser] Parsed and loaded comparison: ${file.name}`);
+      } catch (err: any) {
+        alert("Failed to parse comparison log: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleComparisonInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      parseComparisonLogFile(e.target.files[0]);
+    }
   };
 
   // Helper to generate dense points along the Bezier curves from saved waypoints
@@ -628,6 +811,62 @@ export default function ScopeDashboard() {
             className="hidden"
           />
 
+          {/* Comparison Log Upload */}
+          <button
+            onClick={() => comparisonTelemetryData ? setComparisonTelemetryData(null) : comparisonInputRef.current?.click()}
+            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md ${
+              comparisonTelemetryData 
+                ? "bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25" 
+                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
+            }`}
+            title={comparisonTelemetryData ? "Clear comparison log" : "Upload comparison CSV log"}
+          >
+            {comparisonTelemetryData ? (
+              <>
+                <X size={12} /> Comparison Active
+              </>
+            ) : (
+              <>
+                <Activity size={12} /> Compare Log
+              </>
+            )}
+          </button>
+          <input
+            type="file"
+            ref={comparisonInputRef}
+            onChange={handleComparisonInput}
+            accept=".csv,.txt"
+            className="hidden"
+          />
+
+          {/* Console Log Upload */}
+          <button
+            onClick={() => consoleLogs ? setConsoleLogs(null) : consoleInputRef.current?.click()}
+            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md ${
+              consoleLogs 
+                ? "bg-amber-500/15 text-amber-400 border border-amber-500/25 hover:bg-amber-500/25" 
+                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
+            }`}
+            title={consoleLogs ? "Clear console log" : "Upload system console text log"}
+          >
+            {consoleLogs ? (
+              <>
+                <X size={12} /> Clear Console
+              </>
+            ) : (
+              <>
+                <Sliders size={12} /> System Console
+              </>
+            )}
+          </button>
+          <input
+            type="file"
+            ref={consoleInputRef}
+            onChange={handleConsoleInput}
+            accept=".txt,.log"
+            className="hidden"
+          />
+
           {/* Planned Path Upload */}
           <button
             onClick={() => pathInputRef.current?.click()}
@@ -720,8 +959,80 @@ export default function ScopeDashboard() {
 
           {/* Canvas Plot View & collapsers split */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col gap-6">
               <TelemetryCharts />
+              
+              {/* Playhead-Synchronized System Console Logs */}
+              <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 relative">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                  <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
+                    <Terminal size={14} className="text-amber-400" />
+                    System Console Logs
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Filter logs..."
+                      value={logFilter}
+                      onChange={(e) => setLogFilter(e.target.value)}
+                      className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35"
+                    />
+                    <select
+                      value={logLevelFilter}
+                      onChange={(e) => setLogLevelFilter(e.target.value as any)}
+                      className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer"
+                    >
+                      <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
+                      <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
+                      <option value="WARN" className="bg-neutral-900 text-amber-400">WARN</option>
+                      <option value="ERROR" className="bg-neutral-900 text-red-400">ERROR</option>
+                    </select>
+                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoScrollLogs}
+                        onChange={(e) => setAutoScrollLogs(e.target.checked)}
+                        className="accent-ares-gold cursor-pointer rounded border-white/10"
+                      />
+                      Auto-scroll
+                    </label>
+                  </div>
+                </div>
+
+                <div 
+                  ref={logContainerRef}
+                  className="h-64 overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
+                >
+                  {filteredLogs.length === 0 ? (
+                    <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
+                      {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
+                    </div>
+                  ) : (
+                    filteredLogs.map((entry, idx) => {
+                      let levelColor = "text-marble/70";
+                      let levelBg = "bg-transparent";
+                      if (entry.level === "WARN") {
+                        levelColor = "text-amber-400";
+                        levelBg = "bg-amber-500/5 border border-amber-500/10";
+                      } else if (entry.level === "ERROR") {
+                        levelColor = "text-red-400";
+                        levelBg = "bg-red-500/5 border border-red-500/10";
+                      }
+                      return (
+                        <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
+                          <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
+                          <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
+                            entry.level === "ERROR" ? "bg-red-500/20 text-red-400" :
+                            entry.level === "WARN" ? "bg-amber-500/20 text-amber-400" :
+                            "bg-white/10 text-marble/60"
+                          }`}>{entry.level}</span>
+                          <span className={`break-all ${levelColor}`}>{entry.message}</span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
             <div className="lg:col-span-1 flex flex-col gap-6">
               <OnshapeSyncCard />
