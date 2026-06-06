@@ -4,6 +4,9 @@ import React, { useRef, useEffect, useState } from "react";
 import { useScopeStore } from "../store/scopeStore";
 import { Move, Compass, Eye, Map, Sliders } from "lucide-react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function WebGLReplayCanvas() {
   const { 
@@ -19,6 +22,26 @@ export default function WebGLReplayCanvas() {
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
+  const [fieldCadUrl, setFieldCadUrl] = useState<string | null>(null);
+
+  // Fetch field CAD URL from settings/field_cad on mount
+  useEffect(() => {
+    const fetchFieldCadUrl = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, "settings", "field_cad"));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.cadUrl) {
+            setFieldCadUrl(data.cadUrl);
+            console.log("[Visualizer] Found synchronized field CAD URL:", data.cadUrl);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch field CAD settings from Firestore:", err);
+      }
+    };
+    fetchFieldCadUrl();
+  }, []);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
@@ -494,39 +517,70 @@ export default function WebGLReplayCanvas() {
     addWall(3.6576, 0.3048, 1.8288, 0.1524, 0, Math.PI / 2);  // East
 
     // 5. Game Field elements
-    const basketRedBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16), // 15" radius is 0.381m, 18" radius is 0.4572m, 1" height is 0.0254m
-      new THREE.MeshStandardMaterial({ color: 0xEF4444, roughness: 0.5 })
-    );
-    basketRedBase.position.set(-1.524, 0.0127, 1.524); // (-60", 0.5", 60") becomes (-1.524m, 0.0127m, 1.524m)
-    scene.add(basketRedBase);
+    const fallbackGroup = new THREE.Group();
+    scene.add(fallbackGroup);
 
-    const basketBlueBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16),
-      new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.5 })
-    );
-    basketBlueBase.position.set(1.524, 0.0127, -1.524); // (60", 0.5", -60") becomes (1.524m, 0.0127m, -1.524m)
-    scene.add(basketBlueBase);
+    const renderFallbackField = () => {
+      const basketRedBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16), // 15" radius is 0.381m, 18" radius is 0.4572m, 1" height is 0.0254m
+        new THREE.MeshStandardMaterial({ color: 0xEF4444, roughness: 0.5 })
+      );
+      basketRedBase.position.set(-1.524, 0.0127, 1.524); // (-60", 0.5", 60") becomes (-1.524m, 0.0127m, 1.524m)
+      fallbackGroup.add(basketRedBase);
 
-    // Submersible Cage
-    const submersibleGroup = new THREE.Group();
-    const pipeMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 });
-    const addPipe = (len: number, x: number, y: number, z: number, rot = new THREE.Euler()) => {
-      const geo = new THREE.CylinderGeometry(0.02, 0.02, len, 8); // 0.8 inches is ~0.02m
-      const mesh = new THREE.Mesh(geo, pipeMat);
-      mesh.position.set(x, y, z);
-      mesh.rotation.copy(rot);
-      submersibleGroup.add(mesh);
+      const basketBlueBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16),
+        new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.5 })
+      );
+      basketBlueBase.position.set(1.524, 0.0127, -1.524); // (60", 0.5", -60") becomes (1.524m, 0.0127m, -1.524m)
+      fallbackGroup.add(basketBlueBase);
+
+      // Submersible Cage
+      const submersibleGroup = new THREE.Group();
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 });
+      const addPipe = (len: number, x: number, y: number, z: number, rot = new THREE.Euler()) => {
+        const geo = new THREE.CylinderGeometry(0.02, 0.02, len, 8); // 0.8 inches is ~0.02m
+        const mesh = new THREE.Mesh(geo, pipeMat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.copy(rot);
+        submersibleGroup.add(mesh);
+      };
+      addPipe(0.4572, -0.3048, 0.2286, -0.3048); // 18", -12", 9", -12"
+      addPipe(0.4572, 0.3048, 0.2286, -0.3048);
+      addPipe(0.4572, -0.3048, 0.2286, 0.3048);
+      addPipe(0.4572, 0.3048, 0.2286, 0.3048);
+      addPipe(0.6096, 0, 0.4572, -0.3048, new THREE.Euler(0, 0, Math.PI / 2)); // 24", 0, 18", -12"
+      addPipe(0.6096, 0, 0.4572, 0.3048, new THREE.Euler(0, 0, Math.PI / 2));
+      addPipe(0.6096, -0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
+      addPipe(0.6096, 0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
+      fallbackGroup.add(submersibleGroup);
     };
-    addPipe(0.4572, -0.3048, 0.2286, -0.3048); // 18", -12", 9", -12"
-    addPipe(0.4572, 0.3048, 0.2286, -0.3048);
-    addPipe(0.4572, -0.3048, 0.2286, 0.3048);
-    addPipe(0.4572, 0.3048, 0.2286, 0.3048);
-    addPipe(0.6096, 0, 0.4572, -0.3048, new THREE.Euler(0, 0, Math.PI / 2)); // 24", 0, 18", -12"
-    addPipe(0.6096, 0, 0.4572, 0.3048, new THREE.Euler(0, 0, Math.PI / 2));
-    addPipe(0.6096, -0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
-    addPipe(0.6096, 0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
-    scene.add(submersibleGroup);
+
+    if (fieldCadUrl) {
+      console.log("[WebGL Visualizer] Attempting to load field GLB from Onshape:", fieldCadUrl);
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.load(
+        fieldCadUrl,
+        (gltf) => {
+          const model = gltf.scene;
+          model.traverse((node) => {
+            if (node instanceof THREE.Mesh) {
+              node.castShadow = true;
+              node.receiveShadow = true;
+            }
+          });
+          scene.add(model);
+          console.log("[WebGL Visualizer] Synchronized field GLB loaded successfully.");
+        },
+        undefined,
+        (err) => {
+          console.warn("[WebGL Visualizer] Failed to load custom GLB. Rendering fallback field.", err);
+          renderFallbackField();
+        }
+      );
+    } else {
+      renderFallbackField();
+    }
 
     // Custom 3D Obstacles
     if (fieldObstacles && fieldObstacles.length > 0) {
@@ -722,7 +776,7 @@ export default function WebGLReplayCanvas() {
       renderer.dispose();
       container.innerHTML = "";
     };
-  }, [viewMode, fieldObstacles]);
+  }, [viewMode, fieldObstacles, fieldCadUrl]);
 
   // ─── 3D TELEMETRY SYNCHRONIZATION KINEMATICS ───
   useEffect(() => {

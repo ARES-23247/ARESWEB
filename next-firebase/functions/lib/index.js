@@ -989,19 +989,194 @@ app.post("/api/analytics/onshape-sync", async (req, res) => {
         const onshapeSecretKey = process.env.ONSHAPE_SECRET_KEY;
         let isRealSyncUsed = false;
         let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
-        console.log(`[Onshape Sync] Syncing CAD details...`);
+        let extractedObstacleCount = 0;
+        console.log(`[Onshape Sync] Initiating CAD details sync. Type: ${type}`);
         if (onshapeAccessKey && onshapeSecretKey) {
             try {
                 isRealSyncUsed = true;
-                optimizedUrl = `https://firebasestorage.googleapis.com/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ares-web-preview"}.appspot.com/o/cad%2F${type}_latest.glb?alt=media`;
+                const authHeader = "Basic " + Buffer.from(`${onshapeAccessKey}:${onshapeSecretKey}`).toString("base64");
+                // 1. Trigger translation request in Onshape
+                console.log(`[Onshape Sync] Requesting GLTF translation...`);
+                const translateUrl = `https://cad.onshape.com/api/translations/d/${documentId}/w/${workspaceId}/e/${elementId}`;
+                const translateRes = await fetch(translateUrl, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": authHeader,
+                        "Accept": "application/vnd.onshape.v1+json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        formatName: "GLTF",
+                        destinationName: `${type}_latest.glb`,
+                        gltfVersion: "2.0",
+                        storeInDocument: false
+                    })
+                });
+                if (!translateRes.ok) {
+                    throw new Error(`Onshape translation initiation failed: ${translateRes.status} ${translateRes.statusText}`);
+                }
+                const translateJson = await translateRes.json();
+                const translationId = translateJson.id;
+                let state = translateJson.requestState;
+                // 2. Poll translation status
+                console.log(`[Onshape Sync] Polling translation status for ID: ${translationId}`);
+                const maxPolls = 20; // 20 * 2.5s = 50 seconds max
+                let pollCount = 0;
+                while ((state === "ACTIVE" || state === "QUEUED") && pollCount < maxPolls) {
+                    await new Promise((resolve) => setTimeout(resolve, 2500));
+                    pollCount++;
+                    const statusRes = await fetch(`https://cad.onshape.com/api/translations/${translationId}`, {
+                        headers: {
+                            "Authorization": authHeader,
+                            "Accept": "application/vnd.onshape.v1+json"
+                        }
+                    });
+                    if (statusRes.ok) {
+                        const statusJson = await statusRes.json();
+                        state = statusJson.requestState;
+                        console.log(`[Onshape Sync] Poll ${pollCount}/${maxPolls}: State is ${state}`);
+                    }
+                }
+                if (state !== "DONE") {
+                    throw new Error(`Onshape translation did not complete within limit (Current state: ${state})`);
+                }
+                // 3. Download the translated GLB bytes
+                console.log(`[Onshape Sync] Downloading translation result...`);
+                const downloadUrl = `https://cad.onshape.com/api/translations/${translationId}/download`;
+                const downloadRes = await fetch(downloadUrl, {
+                    headers: {
+                        "Authorization": authHeader
+                    }
+                });
+                if (!downloadRes.ok) {
+                    throw new Error(`Failed to download translated GLB payload: ${downloadRes.statusText}`);
+                }
+                const arrayBuffer = await downloadRes.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                // 4. Save to Firebase Storage
+                const bucket = firebase_admin_1.adminStorage.bucket();
+                const fileDest = `cad/${type}_latest.glb`;
+                const file = bucket.file(fileDest);
+                console.log(`[Onshape Sync] Writing GLB to storage bucket: ${fileDest}`);
+                await file.save(buffer, {
+                    metadata: {
+                        contentType: "model/gltf-binary"
+                    }
+                });
+                optimizedUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileDest)}?alt=media`;
+                console.log(`[Onshape Sync] Saved file successfully. URL: ${optimizedUrl}`);
+                // 5. If type is "field", fetch assembly definition and extract obstacles
+                if (type === "field") {
+                    console.log(`[Onshape Sync] Fetching assembly hierarchy definition for obstacle extraction...`);
+                    const assemblyUrl = `https://cad.onshape.com/api/assemblies/d/${documentId}/w/${workspaceId}/e/${elementId}?includeMateFeatures=false`;
+                    const assemblyRes = await fetch(assemblyUrl, {
+                        headers: {
+                            "Authorization": authHeader,
+                            "Accept": "application/vnd.onshape.v1+json"
+                        }
+                    });
+                    if (assemblyRes.ok) {
+                        const assemblyJson = await assemblyRes.json();
+                        const rootAssembly = assemblyJson.rootAssembly;
+                        const subAssemblies = assemblyJson.subAssemblies || [];
+                        // Helper to recursively lookup instance name from the occurrences path IDs
+                        const resolveInstanceName = (path) => {
+                            let currentAssembly = rootAssembly;
+                            let name = "";
+                            for (let i = 0; i < path.length; i++) {
+                                const instId = path[i];
+                                const inst = currentAssembly.instances.find((ins) => ins.id === instId);
+                                if (!inst)
+                                    break;
+                                name = inst.name;
+                                if (i < path.length - 1) {
+                                    const subAss = subAssemblies.find((sa) => sa.elementId === inst.elementId);
+                                    if (subAss) {
+                                        currentAssembly = subAss;
+                                    }
+                                    else {
+                                        break;
+                                    }
+                                }
+                            }
+                            return name;
+                        };
+                        const parsedObstacles = [];
+                        const occurrences = rootAssembly.occurrences || [];
+                        occurrences.forEach((occ) => {
+                            const path = occ.path;
+                            const name = resolveInstanceName(path);
+                            // Check naming convention
+                            if (name &&
+                                (name.startsWith("Obstacle_") ||
+                                    name.startsWith("Col_") ||
+                                    name.includes("_Obstacle_") ||
+                                    name.includes("_Col_"))) {
+                                const transform = occ.transform;
+                                if (transform && transform.length === 16) {
+                                    let tX = 0;
+                                    let tY = 0;
+                                    // Detect Row-major vs Column-major transforms
+                                    if (transform[15] === 1) {
+                                        if (transform[12] === 0 &&
+                                            transform[13] === 0 &&
+                                            transform[14] === 0 &&
+                                            (transform[3] !== 0 || transform[7] !== 0 || transform[11] !== 0)) {
+                                            tX = transform[3];
+                                            tY = transform[7];
+                                        }
+                                        else {
+                                            tX = transform[12];
+                                            tY = transform[13];
+                                        }
+                                    }
+                                    // Parse size parameters from names: e.g. Obstacle_0.4x0.6_RedSubstation
+                                    let width = 0.4;
+                                    let height = 0.4;
+                                    let displayName = name;
+                                    const dimMatch = name.match(/(?:Obstacle|Col)_([0-9.]+)[x_]([0-9.]+)(?:_(.*))?/i);
+                                    if (dimMatch) {
+                                        width = parseFloat(dimMatch[1]) || 0.4;
+                                        height = parseFloat(dimMatch[2]) || 0.4;
+                                        displayName = dimMatch[3] || name;
+                                    }
+                                    else {
+                                        displayName = name.replace(/^(Obstacle|Col)_/i, "");
+                                    }
+                                    parsedObstacles.push({
+                                        id: Math.random().toString(36).substring(2, 9),
+                                        name: displayName,
+                                        x: Number(tX.toFixed(3)),
+                                        y: Number(tY.toFixed(3)),
+                                        width: Number(width.toFixed(3)),
+                                        height: Number(height.toFixed(3))
+                                    });
+                                }
+                            }
+                        });
+                        extractedObstacleCount = parsedObstacles.length;
+                        console.log(`[Onshape Sync] Parsed occurrences. Extracted ${extractedObstacleCount} obstacles.`);
+                        if (parsedObstacles.length > 0) {
+                            const layoutId = `layout_onshape_${documentId}`;
+                            const layoutRef = firebase_admin_1.adminDb.collection("field_configs").doc(layoutId);
+                            await layoutRef.set({
+                                name: `Onshape - ${documentId.substring(0, 8)}`,
+                                updatedAt: Date.now(),
+                                obstacles: parsedObstacles
+                            });
+                            console.log(`[Onshape Sync] Saved layout field_configs/${layoutId} with ${parsedObstacles.length} obstacles.`);
+                        }
+                    }
+                }
             }
             catch (err) {
-                console.warn(`[Onshape Sync] Connection failed: ${err}. Falling back.`);
+                console.warn(`[Onshape Sync] Connection failed: ${err.message}. Falling back.`);
                 isRealSyncUsed = false;
             }
         }
         if (!isRealSyncUsed) {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
+            console.log(`[Onshape Sync] Running simulation fallback sync...`);
+            await new Promise((resolve) => setTimeout(resolve, 2000));
         }
         try {
             const configDocName = type === "field" ? "field_config" : "cad_config";
@@ -1023,7 +1198,7 @@ app.post("/api/analytics/onshape-sync", async (req, res) => {
             }
             else {
                 configData.fieldYear = "2025-2026 Into The Deep";
-                configData.elementCount = 42;
+                configData.elementCount = isRealSyncUsed ? 20 + extractedObstacleCount : 42;
             }
             await settingsRef.set(configData, { merge: true });
         }
@@ -1036,7 +1211,9 @@ app.post("/api/analytics/onshape-sync", async (req, res) => {
             engine: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
             cadUrl: optimizedUrl,
             fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82),
-            message: `Direct Onshape ${type} synchronization completed successfully!`
+            message: isRealSyncUsed
+                ? `Direct Onshape ${type} synchronization completed successfully! Extracted ${extractedObstacleCount} obstacles.`
+                : `Simulation sync completed successfully (Fallback model loaded).`
         });
     }
     catch (error) {
