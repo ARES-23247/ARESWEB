@@ -88,7 +88,7 @@ export default function Home() {
                   <LogIn size={16} /> Team Member Sign In
                 </button>
                 <Link
-                  href="/calendar"
+                  to="/calendar"
                   className="clipped-button bg-transparent border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all"
                 >
                   View Schedule

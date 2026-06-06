@@ -75,7 +75,7 @@ export default function Navbar() {
       </div>
       <div className="flex items-center justify-between relative z-10">
         <Link
-          href="/"
+          to="/"
           className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
           aria-label="ARES 23247 Home"
         >
@@ -200,7 +200,7 @@ export default function Navbar() {
                     <p className="text-xs font-bold text-white truncate">{user.email}</p>
                   </div>
                   <Link
-                    href="/dashboard"
+                    to="/dashboard"
                     className="w-full text-left block mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
                   >
                     <LayoutDashboard size={12} /> Command Center
@@ -322,7 +322,7 @@ export default function Navbar() {
                 </div>
               </div>
               <Link
-                href="/dashboard"
+                to="/dashboard"
                 onClick={() => setOpen(false)}
                 className="w-full mt-2 text-center py-2 text-xs text-white bg-white/5 hover:bg-white/10 rounded transition-colors font-bold uppercase tracking-wider border border-white/10 flex items-center justify-center gap-2 cursor-pointer"
               >

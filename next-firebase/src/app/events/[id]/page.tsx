@@ -376,7 +376,7 @@ export default function EventDetailPage() {
         
         <div className="relative z-10 max-w-5xl mx-auto px-6 w-full mt-16">
           <Link
-            href="/calendar"
+            to="/calendar"
             className="text-ares-gold hover:text-white uppercase tracking-widest text-[10px] font-black transition-all flex items-center gap-2 mb-6 w-fit"
           >
             <span>&larr;</span> Back to calendar
@@ -717,7 +717,7 @@ export default function EventDetailPage() {
                   Access to event rosters and RSVP actions is restricted to authorized team members.
                 </p>
                 <Link
-                  href="/calendar"
+                  to="/calendar"
                   className="mt-4 inline-block px-4 py-2 bg-white/5 border border-white/10 text-white hover:text-ares-gold text-[9px] font-black uppercase tracking-widest transition-colors"
                 >
                   Return to calendar

@@ -139,7 +139,7 @@ export default function AboutPage() {
               </p>
               <div className="mt-6">
                 <Link
-                  href="/join"
+                  to="/join"
                   className="text-white font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2 hover:translate-x-1.5 transition-transform"
                 >
                   Apply to Join the Roster <ArrowRight size={12} className="text-ares-red" />

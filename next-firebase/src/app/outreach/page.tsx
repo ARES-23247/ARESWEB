@@ -169,7 +169,7 @@ export default function OutreachPage() {
                 Support Spark!
               </a>
               <Link
-                href="/join"
+                to="/join"
                 className="px-5 py-2.5 bg-white/5 border border-white/10 text-marble text-xs uppercase font-black tracking-wider ares-cut-sm hover:bg-white/10 transition-all"
               >
                 Join Outreach

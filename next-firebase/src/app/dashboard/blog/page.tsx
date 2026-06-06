@@ -304,7 +304,7 @@ export default function BlogManagementPage() {
 
               <div className="border-t border-white/5 pt-4 mt-4 flex items-center justify-between">
                 <Link
-                  href={`/blog/${post.slug}`}
+                  to={`/blog/${post.slug}`}
                   target="_blank"
                   className="text-[10px] text-ares-cyan hover:text-white uppercase font-bold tracking-widest inline-flex items-center gap-1"
                 >

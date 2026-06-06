@@ -244,7 +244,7 @@ export default function DashboardHome() {
           {/* Quick Shortcuts */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link 
-              href="/dashboard/tasks" 
+              to="/dashboard/tasks" 
               className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
             >
               <div className="flex items-center gap-3">
@@ -260,7 +260,7 @@ export default function DashboardHome() {
             </Link>
 
             <Link 
-              href="/dashboard/scope" 
+              to="/dashboard/scope" 
               className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
             >
               <div className="flex items-center gap-3">

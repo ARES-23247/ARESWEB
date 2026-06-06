@@ -178,7 +178,7 @@ export default function Footer() {
 
           <Link to="/tech-stack" className="hover:text-ares-gold transition-colors mr-2">Tech Stack</Link>
           <Link 
-            href="/sponsors" 
+            to="/sponsors" 
             className="bg-ares-red hover:bg-red-700 text-white px-4 py-2 font-black tracking-widest transition-all shadow-lg shadow-ares-red/20 flex items-center gap-2 ares-cut-sm hover:-translate-y-0.5 mx-2"
           >
             <Heart size={12} className="fill-current" />

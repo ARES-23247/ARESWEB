@@ -437,7 +437,7 @@ export default function CalendarPage() {
                 ) : (
                   selectedDayEvents.map((event) => (
                     <Link 
-                      href={`/events/${event.id}`}
+                      to={`/events/${event.id}`}
                       key={event.id}
                       className={`block p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
                         event.category === "outreach"
@@ -513,7 +513,7 @@ export default function CalendarPage() {
               <div className="space-y-6">
                 {upcomingEvents.map((event) => (
                   <Link 
-                    href={`/events/${event.id}`}
+                    to={`/events/${event.id}`}
                     key={event.id} 
                     className={`block bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/40 hover:-translate-y-0.5 p-6 ares-cut-lg ${
                       event.category === "outreach"
