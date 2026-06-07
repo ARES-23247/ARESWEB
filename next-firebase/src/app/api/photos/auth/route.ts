@@ -86,10 +86,17 @@ export async function GET(request: Request) {
         );
       }
 
-      const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
-      const encryptedClientId = await encrypt(clientId, secret);
-      const encryptedClientSecret = await encrypt(clientSecret, secret);
-      const encryptedRefreshToken = await encrypt(finalRefreshToken, secret);
+      const secret = process.env.ENCRYPTION_SECRET;
+      if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+        const isProd = process.env.NODE_ENV === "production";
+        if (isProd) {
+          throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+        }
+      }
+      const activeSecret = secret || "01234567890123456789012345678901";
+      const encryptedClientId = await encrypt(clientId, activeSecret);
+      const encryptedClientSecret = await encrypt(clientSecret, activeSecret);
+      const encryptedRefreshToken = await encrypt(finalRefreshToken, activeSecret);
 
       await authRef.set({
         clientId: encryptedClientId,
