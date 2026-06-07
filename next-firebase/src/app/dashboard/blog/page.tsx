@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
@@ -50,6 +50,7 @@ export default function BlogManagementPage() {
   const [posts, setPosts] = useState<BlogPost[]>(MOCK_POSTS);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLive, setIsLive] = useState(false);
+  const [userNickname, setUserNickname] = useState("");
   
   // Editor State
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -62,6 +63,25 @@ export default function BlogManagementPage() {
   const [formThumbnail, setFormThumbnail] = useState("");
   const [formStatus, setFormStatus] = useState<"draft" | "published">("draft");
   const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchNickname = async () => {
+      try {
+        const userProfileRef = doc(db, "user_profiles", user.uid);
+        const userProfileSnap = await getDoc(userProfileRef);
+        if (userProfileSnap.exists()) {
+          const profileData = userProfileSnap.data();
+          if (profileData.nickname) {
+            setUserNickname(profileData.nickname);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not retrieve user profile for nickname:", err);
+      }
+    };
+    fetchNickname();
+  }, [user]);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -129,7 +149,7 @@ export default function BlogManagementPage() {
     setFormSlug("");
     setFormSnippet("");
     setFormContent("");
-    setFormAuthor(user?.displayName || "ARES Member");
+    setFormAuthor(userNickname || user?.displayName || "ARES Member");
     setFormThumbnail("https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=60");
     setFormStatus("draft");
     setIsEditorOpen(true);

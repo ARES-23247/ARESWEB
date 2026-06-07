@@ -36,7 +36,7 @@ export default function RootLayout({
             {children}
           </LayoutWrapper>
           <Script
-            src="https://www.google.com/recaptcha/api.js?render=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+            src={`https://www.google.com/recaptcha/api.js?render=${import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}`}
             strategy="lazyOnload"
           />
         </AuthProvider>

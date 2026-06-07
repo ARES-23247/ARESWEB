@@ -603,7 +603,7 @@ export default function AresPlannerPage() {
                         </div>
                         <button
                           onClick={() => handleLoadPath(path.id)}
-                          className="px-3 py-1 bg-ares-cyan hover:bg-ares-cyan/90 text-obsidian rounded font-black uppercase tracking-wider text-[9px] cursor-pointer shadow-md transition-all"
+                          className="px-3 py-1 bg-ares-red hover:bg-ares-red/90 text-white rounded font-black uppercase tracking-wider text-[9px] cursor-pointer shadow-md transition-all"
                         >
                           Load Path
                         </button>

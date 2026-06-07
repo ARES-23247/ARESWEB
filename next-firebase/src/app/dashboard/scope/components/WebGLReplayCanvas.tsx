@@ -232,7 +232,7 @@ export default function WebGLReplayCanvas() {
     // Custom Obstacles from Field Config
     if (fieldObstacles && fieldObstacles.length > 0) {
       ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
-      ctx.strokeStyle = "#EF4444";
+      ctx.strokeStyle = "#c00000";
       ctx.lineWidth = 1.5;
       fieldObstacles.forEach((obs) => {
         const obsHalfW = obs.width / 2;
@@ -273,7 +273,7 @@ export default function WebGLReplayCanvas() {
       ctx.fill();
 
       // End node (red ring)
-      ctx.fillStyle = "#EF4444"; // Red
+      ctx.fillStyle = "#c00000"; // Red
       ctx.beginPath();
       ctx.arc(toPxX(plannedPath[plannedPath.length - 1].y), toPxY(plannedPath[plannedPath.length - 1].x), 4, 0, Math.PI * 2);
       ctx.fill();
@@ -403,9 +403,9 @@ export default function WebGLReplayCanvas() {
       drawWheel2D(-robotSizePx / 2 + wheelH / 2, robotSizePx / 2 + wheelW / 2, swerveAngles.bl);
       drawWheel2D(robotSizePx / 2 - wheelH / 2, robotSizePx / 2 + wheelW / 2, swerveAngles.br);
 
-      // Red Heading Arrow
-      ctx.strokeStyle = "#EF4444";
-      ctx.fillStyle = "#EF4444";
+      // Heading Arrow
+      ctx.strokeStyle = "#FFB81C";
+      ctx.fillStyle = "#FFB81C";
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -502,7 +502,7 @@ export default function WebGLReplayCanvas() {
     dirLight.shadow.bias = -0.001;
     scene.add(dirLight);
 
-    const arenaLight = new THREE.PointLight(0xF59E0B, 1.2, 120);
+    const arenaLight = new THREE.PointLight(0xFFB81C, 1.2, 120);
     arenaLight.position.set(0, 30, 0);
     scene.add(arenaLight);
 
@@ -549,7 +549,7 @@ export default function WebGLReplayCanvas() {
     const renderFallbackField = () => {
       const basketRedBase = new THREE.Mesh(
         new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16), // 15" radius is 0.381m, 18" radius is 0.4572m, 1" height is 0.0254m
-        new THREE.MeshStandardMaterial({ color: 0xEF4444, roughness: 0.5 })
+        new THREE.MeshStandardMaterial({ color: 0xC00000, roughness: 0.5 })
       );
       basketRedBase.position.set(-1.524, 0.0127, 1.524); // (-60", 0.5", 60") becomes (-1.524m, 0.0127m, 1.524m)
       fallbackGroup.add(basketRedBase);
@@ -626,7 +626,7 @@ export default function WebGLReplayCanvas() {
         
         // Red boundary outline
         const borderGeo = new THREE.EdgesGeometry(obsGeo);
-        const borderMat = new THREE.LineBasicMaterial({ color: 0xEF4444, linewidth: 2 });
+        const borderMat = new THREE.LineBasicMaterial({ color: 0xC00000, linewidth: 2 });
         const borderLine = new THREE.LineSegments(borderGeo, borderMat);
         obsMesh.add(borderLine);
 
@@ -642,7 +642,7 @@ export default function WebGLReplayCanvas() {
     // Chassis body base (0.4572m square = 18")
     const chassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572); // 18" x 5" x 18"
     const chassisMat = new THREE.MeshStandardMaterial({
-      color: 0xF59E0B,
+      color: 0xFFB81C,
       metalness: 0.6,
       roughness: 0.2,
       transparent: true,
@@ -656,7 +656,7 @@ export default function WebGLReplayCanvas() {
 
     // Red Front indicator arrow mesh
     const arrowGeo = new THREE.ConeGeometry(0.0635, 0.1524, 4); // 2.5" radius, 6" length
-    const arrowMat = new THREE.MeshBasicMaterial({ color: 0xEF4444 });
+    const arrowMat = new THREE.MeshBasicMaterial({ color: 0xC00000 });
     const arrow = new THREE.Mesh(arrowGeo, arrowMat);
     arrow.position.set(0, 0.1651, -0.2286); // 0, 6.5", -9"
     arrow.rotation.x = -Math.PI / 2;
@@ -698,7 +698,7 @@ export default function WebGLReplayCanvas() {
 
     // Sliding carriage
     const carriageGeo = new THREE.BoxGeometry(0.2286, 0.0762, 0.1016); // 9" x 3" x 4"
-    const carriageMat = new THREE.MeshStandardMaterial({ color: 0xEE4444, metalness: 0.3, roughness: 0.5 });
+    const carriageMat = new THREE.MeshStandardMaterial({ color: 0xC00000, metalness: 0.3, roughness: 0.5 });
     const carriage = new THREE.Mesh(carriageGeo, carriageMat);
     carriage.position.set(0, 0.2032, 0.1016); // 0, 8", 4"
     robot.add(carriage);
@@ -706,7 +706,7 @@ export default function WebGLReplayCanvas() {
 
     // Intake pivot arm
     const armGeo = new THREE.BoxGeometry(0.0508, 0.0508, 0.254); // 2" x 2" x 10"
-    const armMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.8 });
+    const armMat = new THREE.MeshStandardMaterial({ color: 0xFFB81C, metalness: 0.8 });
     const arm = new THREE.Mesh(armGeo, armMat);
     arm.position.set(0, 0, -0.1016); // 0, 0, -4"
     carriage.add(arm);
@@ -714,14 +714,14 @@ export default function WebGLReplayCanvas() {
 
     // 7. Trails
     const trailGeo = new THREE.BufferGeometry();
-    const trailMat = new THREE.LineBasicMaterial({ color: 0xF59E0B, linewidth: 2 });
+    const trailMat = new THREE.LineBasicMaterial({ color: 0xFFB81C, linewidth: 2 });
     const trail = new THREE.Line(trailGeo, trailMat);
     scene.add(trail);
     trailLineRef.current = trail;
 
     const compTrailGeo = new THREE.BufferGeometry();
     const compTrailMat = new THREE.LineDashedMaterial({ 
-      color: 0xEF4444,
+      color: 0xC00000,
       linewidth: 1.5,
       dashSize: 0.1,
       gapSize: 0.08,
@@ -734,7 +734,7 @@ export default function WebGLReplayCanvas() {
 
     const plannedTrailGeo = new THREE.BufferGeometry();
     const plannedTrailMat = new THREE.LineDashedMaterial({ 
-      color: 0x06B6D4,
+      color: 0x00E5FF,
       linewidth: 1.5,
       dashSize: 3,
       gapSize: 2
@@ -750,7 +750,7 @@ export default function WebGLReplayCanvas() {
 
     const compChassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572);
     const compChassisMat = new THREE.MeshStandardMaterial({
-      color: 0xEF4444, // Red
+      color: 0xC00000, // Red
       metalness: 0.3,
       roughness: 0.5,
       transparent: true,
@@ -760,7 +760,7 @@ export default function WebGLReplayCanvas() {
     compChassis.position.y = 0.0889;
     compRobot.add(compChassis);
 
-    const compArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0xEF4444, transparent: true, opacity: 0.5 }));
+    const compArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0xC00000, transparent: true, opacity: 0.5 }));
     compArrow.position.set(0, 0.1651, -0.2286);
     compArrow.rotation.x = -Math.PI / 2;
     compRobot.add(compArrow);

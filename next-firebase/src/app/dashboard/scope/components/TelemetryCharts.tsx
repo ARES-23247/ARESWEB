@@ -201,11 +201,11 @@ export default function TelemetryCharts() {
       ctx.stroke();
     });
 
-    // Draw active scrubbing playhead (Green indicator)
+    // Draw active scrubbing playhead (Cyan indicator)
     const playheadRatio = telemetryData.maxTimeMs > 0 ? currentTimeMs / telemetryData.maxTimeMs : 0;
     const playheadX = paddingLeft + playheadRatio * gridWidth;
 
-    ctx.strokeStyle = "#10B981"; // neon green
+    ctx.strokeStyle = getCSSVariableValue("--ares-cyan", "#00E5FF");
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(playheadX, paddingTop);
@@ -213,7 +213,7 @@ export default function TelemetryCharts() {
     ctx.stroke();
 
     // Glowing head dot
-    ctx.fillStyle = "#10B981";
+    ctx.fillStyle = getCSSVariableValue("--ares-cyan", "#00E5FF");
     ctx.beginPath();
     ctx.arc(playheadX, paddingTop, 4, 0, Math.PI * 2);
     ctx.fill();

@@ -464,6 +464,22 @@ router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
       return;
     }
 
+    try {
+      const parsedUrl = new URL(url);
+      const host = parsedUrl.hostname.toLowerCase();
+      const isAllowedHost =
+        host === "photospicker.googleapis.com" ||
+        host.endsWith(".googleusercontent.com") ||
+        host === "lh3.googleusercontent.com";
+      if (!isAllowedHost) {
+        res.status(400).json({ error: "Forbidden: Target host is not authorized" });
+        return;
+      }
+    } catch {
+      res.status(400).json({ error: "Invalid URL format" });
+      return;
+    }
+
     const googleToken = await getGooglePhotosAccessToken();
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${googleToken}` },

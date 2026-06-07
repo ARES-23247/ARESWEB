@@ -56,8 +56,8 @@ router.post("/", inquiryLimiter, async (req, res) => {
           body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
         });
 
-        const verifyData = (await verifyRes.json()) as any;
-        if (!verifyData.success) {
+        const verifyData = (await verifyRes.json()) as { success: boolean; score?: number };
+        if (!verifyData.success || (verifyData.score !== undefined && verifyData.score < 0.5)) {
           res.status(400).json({ success: false, error: "Spam check verification failed. Please try again." });
           return;
         }
@@ -82,11 +82,17 @@ router.post("/", inquiryLimiter, async (req, res) => {
     await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
 
     try {
-      const messageBody = `**Name:** ${name.trim()}
-**Email:** ${email.trim()}
+      const nameVal = name.trim();
+      const maskedName = nameVal.charAt(0) + "***" + nameVal.charAt(nameVal.length - 1);
+      const emailVal = email.trim().toLowerCase();
+      const emailParts = emailVal.split("@");
+      const maskedEmail = emailParts[0].charAt(0) + "***@" + emailParts[1];
+
+      const messageBody = `**Name:** ${maskedName}
+**Email:** ${maskedEmail}
 **Type:** ${type}
-**Message:** ${metadata?.message || "(no message payload)"}
-[Open Command Center](https://aresfirst.org/dashboard)`;
+**Message:** ${metadata?.message ? (metadata.message.length > 80 ? metadata.message.substring(0, 80) + "..." : metadata.message) : "(no message payload)"}
+[Open Command Center to view applicant details](https://aresfirst.org/dashboard)`;
 
       // Await Zulip Sync
       await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);

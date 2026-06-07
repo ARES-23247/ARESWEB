@@ -85,7 +85,8 @@ export default function JoinPage() {
       };
 
       recaptcha.ready(() => {
-        recaptcha.execute("6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", { action: "submit" })
+        const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+        recaptcha.execute(siteKey, { action: "submit" })
           .then(async (token) => {
             await submitApplication(token);
           })
@@ -144,7 +145,7 @@ export default function JoinPage() {
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble py-12 relative overflow-hidden">
       {/* Background radial highlight */}
-      <div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.1)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />
+      <div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(192,0,0,0.1)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />
 
       {/* ─── HERO SECTION ─── */}
       <section className="relative max-w-5xl mx-auto px-6 z-10 text-center mb-16">
@@ -172,7 +173,7 @@ export default function JoinPage() {
 
           <div className="space-y-6">
             <div className="flex gap-4">
-              <div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-red/10 flex items-center justify-center text-ares-red border border-ares-red/20 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+              <div className="mt-1 flex-shrink-0 w-10 h-10 rounded-full bg-ares-red/10 flex items-center justify-center text-ares-red border border-ares-red/20 shadow-[0_0_15px_rgba(192,0,0,0.2)]">
                 <Wrench size={18} />
               </div>
               <div>
@@ -358,8 +359,8 @@ export default function JoinPage() {
                 </div>
               )}
 
-              <div>
-                <p id="join-interests-label" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-1.5 ml-1">Interests / Expertise *</p>
+              <fieldset className="border-none p-0 m-0">
+                <legend id="join-interests-label" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-1.5 ml-1">Interests / Expertise *</legend>
                 <p className="text-[11px] text-obsidian/70 mb-4 ml-1 leading-relaxed font-semibold">Select all areas you are most interested in pursuing with ARES:</p>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -375,7 +376,7 @@ export default function JoinPage() {
                     </label>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               <div>
                 <label htmlFor="join-additional" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
@@ -395,7 +396,7 @@ export default function JoinPage() {
                   disabled={submitStatus === "sending"}
                   className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 text-xs cursor-pointer ${
                     role === "student" 
-                      ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(220,38,38,0.3)]" 
+                      ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(192,0,0,0.3)]" 
                       : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
                   }`}
                 >

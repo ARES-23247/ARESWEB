@@ -84,13 +84,26 @@ router.post("/sync", async (req, res) => {
 
     const { userId, profile, email, role, name } = req.body;
 
-    if (!userId || !profile) {
+    if (!userId || !profile || typeof profile !== "object") {
       res.status(400).json({ error: "Bad Request: Missing userId or profile payload." });
       return;
     }
 
+    // SEC-F03: Whitelist profile properties to prevent mass assignment / parameter injection
+    const allowedProfileKeys = [
+      "nickname", "firstName", "lastName", "phone", "contactEmail",
+      "showEmail", "showPhone", "pronouns", "gradeYear", "subteams",
+      "memberType", "bio", "colleges", "showOnAbout", "avatar"
+    ];
+    const cleanProfile: Record<string, any> = {};
+    for (const key of allowedProfileKeys) {
+      if (profile[key] !== undefined) {
+        cleanProfile[key] = profile[key];
+      }
+    }
+
     // Write to Firestore user_profiles
-    await adminDb.collection("user_profiles").doc(userId).set(profile, { merge: true });
+    await adminDb.collection("user_profiles").doc(userId).set(cleanProfile, { merge: true });
 
     // Sync to authorized_users if email/role is provided
     if (email) {

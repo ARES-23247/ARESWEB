@@ -2249,7 +2249,7 @@ export default function AresPlanner({
                 <button
                   onClick={() => onSaveToCloud(pathName, season, waypoints, markers, constraintZones, rotationTargets)}
                   disabled={isSavingCloud}
-                  className="flex-grow py-2 bg-ares-cyan hover:bg-ares-cyan/90 text-obsidian rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+                  className="flex-grow py-2 bg-ares-red hover:bg-ares-red/90 text-white rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
                 >
                   <Save size={12} /> {isSavingCloud ? "Saving..." : "Save Path to Cloud"}
                 </button>

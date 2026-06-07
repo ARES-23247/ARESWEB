@@ -13,7 +13,15 @@ function getEncryptionSecret(): string {
   return secret;
 }
 
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number | null = null; // timestamp in ms
+
 export async function getGooglePhotosAccessToken(): Promise<string> {
+  if (cachedAccessToken && tokenExpiresAt && Date.now() < tokenExpiresAt - 30000) {
+    console.log("[Google Auth] Using cached team access token...");
+    return cachedAccessToken;
+  }
+
   const authRef = adminDb.collection("system_settings").doc("google_auth");
   const authDoc = await authRef.get();
 
@@ -63,6 +71,9 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
     scope: string;
     token_type: string;
   };
+
+  cachedAccessToken = data.access_token;
+  tokenExpiresAt = Date.now() + (data.expires_in * 1000);
 
   console.log("[Google Auth] Access token refreshed successfully.");
   return data.access_token;
