@@ -143,7 +143,7 @@ export default function RobotDetailPage() {
             <div className="inline-block bg-ares-red/10 text-ares-red px-3.5 py-1.5 ares-cut-sm text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-ares-red/20">
               {robot.seasonName} // {robot.challengeName}
             </div>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase font-heading text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-orange-500 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase font-heading text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold leading-tight">
               {robot.name}
             </h1>
           </div>
@@ -164,7 +164,7 @@ export default function RobotDetailPage() {
                 href={robot.onshapeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="clipped-button bg-ares-cyan text-black shadow-xl shadow-ares-cyan/20 group text-xs uppercase font-extrabold"
+                className="clipped-button bg-ares-red text-white shadow-xl shadow-ares-red/20 group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 <LinkIcon size={16} className="mr-2 group-hover:rotate-12 transition-transform" /> View CAD Workspace
               </a>
@@ -248,8 +248,8 @@ export default function RobotDetailPage() {
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Control Language</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
-                      <div className="p-2.5 bg-emerald-500/15 ares-cut-sm border border-emerald-500/20 shrink-0">
-                        <Code size={18} className="text-emerald-400" />
+                      <div className="p-2.5 bg-ares-success/15 ares-cut-sm border border-ares-success/20 shrink-0">
+                        <Code size={18} className="text-ares-success" />
                       </div>
                       <span className="font-heading leading-tight">{robot.programmingLanguage}</span>
                     </div>

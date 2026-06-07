@@ -93,7 +93,7 @@ export default function RobotsFeedPage() {
             ARES 23247 Engineering
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading">
-            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-orange-500">Fleet</span>
+            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">Fleet</span>
           </h1>
           <p className="text-lg text-marble/60 max-w-2xl mx-auto font-medium leading-relaxed">
             Archive of championship-caliber robotics systems engineered for the FIRST® Tech Challenge by team ARES.

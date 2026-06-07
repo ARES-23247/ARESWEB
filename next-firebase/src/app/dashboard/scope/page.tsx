@@ -816,7 +816,7 @@ export default function ScopeDashboard() {
           {isStreaming ? (
             <button
               onClick={handleDisconnectLive}
-              className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/20 hover:border-red-500/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
+              className="px-4 py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 hover:border-ares-red/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
             >
               <WifiOff size={12} /> Disconnect
             </button>
@@ -884,9 +884,9 @@ export default function ScopeDashboard() {
           {/* Comparison Log Upload */}
           <button
             onClick={() => comparisonTelemetryData ? setComparisonTelemetryData(null) : comparisonInputRef.current?.click()}
-            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md ${
+            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md focus:ring-2 focus:ring-ares-cyan focus:outline-none ${
               comparisonTelemetryData 
-                ? "bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25" 
+                ? "bg-ares-red/15 text-ares-red-light border border-ares-red/25 hover:bg-ares-red/25" 
                 : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
             }`}
             title={comparisonTelemetryData ? "Clear comparison log" : "Upload comparison CSV log"}
@@ -1045,17 +1045,18 @@ export default function ScopeDashboard() {
                       placeholder="Filter logs..."
                       value={logFilter}
                       onChange={(e) => setLogFilter(e.target.value)}
-                      className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35"
+                      className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
+                      aria-label="Filter logs"
                     />
                     <select
                       value={logLevelFilter}
                       onChange={(e) => setLogLevelFilter(e.target.value as any)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan"
                     >
                       <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
                       <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
                       <option value="WARN" className="bg-neutral-900 text-amber-400">WARN</option>
-                      <option value="ERROR" className="bg-neutral-900 text-red-400">ERROR</option>
+                      <option value="ERROR" className="bg-neutral-900 text-ares-red-light">ERROR</option>
                     </select>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
                       <input
@@ -1085,14 +1086,14 @@ export default function ScopeDashboard() {
                         levelColor = "text-amber-400";
                         levelBg = "bg-amber-500/5 border border-amber-500/10";
                       } else if (entry.level === "ERROR") {
-                        levelColor = "text-red-400";
-                        levelBg = "bg-red-500/5 border border-red-500/10";
+                        levelColor = "text-ares-red-light";
+                        levelBg = "bg-ares-red/5 border border-ares-red/10";
                       }
                       return (
                         <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
                           <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
                           <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
-                            entry.level === "ERROR" ? "bg-red-500/20 text-red-400" :
+                            entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
                             entry.level === "WARN" ? "bg-amber-500/20 text-amber-400" :
                             "bg-white/10 text-marble/60"
                           }`}>{entry.level}</span>
@@ -1211,15 +1212,16 @@ export default function ScopeDashboard() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+              <label htmlFor="robotIpInput" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
                 Robot IP Address / Host
               </label>
               <input
+                id="robotIpInput"
                 type="text"
                 value={ipAddress}
                 onChange={(e) => setIpAddress(e.target.value)}
                 placeholder="192.168.43.1"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-ares-gold transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-ares-gold transition-colors focus:ring-2 focus:ring-ares-cyan"
               />
               <p className="text-[10px] text-marble/40 mt-1 leading-normal">
                 Default for FTC Wi-Fi Direct: <code className="text-ares-gold">192.168.43.1</code>. Control Hub / ADB: <code className="text-ares-gold">localhost</code> or <code className="text-ares-gold">192.168.43.1</code>.

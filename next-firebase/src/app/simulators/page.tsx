@@ -175,7 +175,7 @@ export default function TrigRoboticsSimPage() {
                 {daemonStatus === 'connected' ? (
                   <button
                     onClick={disconnectFromDaemon}
-                    className="w-full py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/20 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
+                    className="w-full py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                   >
                     <WifiOff size={12} /> Disconnect
                   </button>
@@ -208,14 +208,14 @@ export default function TrigRoboticsSimPage() {
                 <button
                   onClick={startSimulator}
                   disabled={daemonStatus !== 'connected' || simState !== 'idle'}
-                  className="w-full py-3 bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-30 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
+                  className="w-full py-3 bg-ares-success text-white hover:bg-ares-success/90 disabled:opacity-30 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   <Play size={12} className="fill-current" /> Build & Run Simulator
                 </button>
                 <button
                   onClick={stopSimulator}
                   disabled={daemonStatus !== 'connected' || simState === 'idle'}
-                  className="w-full py-3 bg-red-600 text-white hover:bg-red-500 disabled:opacity-30 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
+                  className="w-full py-3 bg-ares-red text-white hover:bg-ares-red-dark disabled:opacity-30 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   <Square size={12} className="fill-current" /> Stop Simulator
                 </button>
@@ -224,7 +224,7 @@ export default function TrigRoboticsSimPage() {
               <div className="flex items-center justify-between text-xs bg-black/45 p-3 rounded-lg border border-white/5 font-mono">
                 <span className="text-marble/55 uppercase text-[10px] tracking-wider">Sim Status:</span>
                 <span className={`font-bold uppercase tracking-widest text-[10px] ${
-                  simState === 'running' ? 'text-emerald-400 animate-pulse' :
+                  simState === 'running' ? 'text-ares-success animate-pulse' :
                   simState === 'building' ? 'text-amber-400 animate-pulse' :
                   'text-marble/35'
                 }`}>
@@ -296,7 +296,7 @@ export default function TrigRoboticsSimPage() {
                 <div className="flex flex-col gap-3 font-mono text-xs">
                   <div className="flex justify-between items-center p-2 bg-black/35 rounded border border-white/5">
                     <span className="text-marble/55 text-[10px]">JDK 17+:</span>
-                    <span className={`font-bold ${diagnostics.jdkValid ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-bold ${diagnostics.jdkValid ? 'text-ares-success' : 'text-ares-red-light'}`}>
                       {diagnostics.jdkValid ? 'Valid ✅' : 'Invalid ❌'}
                     </span>
                   </div>
@@ -306,7 +306,7 @@ export default function TrigRoboticsSimPage() {
                   </div>
                   <div className="flex justify-between items-center p-2 bg-black/35 rounded border border-white/5">
                     <span className="text-marble/55 text-[10px]">Gradle Wrapper:</span>
-                    <span className={`font-bold ${diagnostics.gradlewExists ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-bold ${diagnostics.gradlewExists ? 'text-ares-success' : 'text-ares-red-light'}`}>
                       {diagnostics.gradlewExists ? 'Found ✅' : 'Missing ❌'}
                     </span>
                   </div>
@@ -342,22 +342,22 @@ export default function TrigRoboticsSimPage() {
               </div>
 
               {/* Log Terminal Window */}
-              <div className="flex-1 bg-black/60 p-4 rounded-xl border border-white/10 font-mono text-[10px] sm:text-xs overflow-y-auto text-emerald-400 h-96 min-h-[350px] max-h-[500px] flex flex-col gap-1.5 leading-relaxed selection:bg-emerald-500/20">
+              <div className="flex-1 bg-black/60 p-4 rounded-xl border border-white/10 font-mono text-[10px] sm:text-xs overflow-y-auto text-ares-success h-96 min-h-[350px] max-h-[500px] flex flex-col gap-1.5 leading-relaxed selection:bg-ares-success/20">
                 {logs.length === 0 ? (
                   <div className="text-marble/20 text-center py-12 select-none">
                     Console idle. Establish connection and launch simulator.
                   </div>
                 ) : (
                   logs.map((log, index) => {
-                    let colorClass = 'text-emerald-400';
+                    let colorClass = 'text-ares-success';
                     if (log.includes('[ERROR]') || log.includes('[Daemon Error]')) {
-                      colorClass = 'text-red-400 font-bold';
+                      colorClass = 'text-ares-red-light font-bold';
                     } else if (log.includes('[System]')) {
-                      colorClass = 'text-cyan-400 font-bold';
+                      colorClass = 'text-ares-cyan font-bold';
                     } else if (log.includes('[System Error]')) {
-                      colorClass = 'text-rose-500 font-black';
+                      colorClass = 'text-ares-red font-black';
                     } else if (log.includes('[Daemon]')) {
-                      colorClass = 'text-amber-400';
+                      colorClass = 'text-ares-gold';
                     }
                     return (
                       <div key={index} className={colorClass}>

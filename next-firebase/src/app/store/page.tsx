@@ -333,7 +333,7 @@ export default function StorePage() {
                 <button
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
-                  className="w-full bg-ares-gold hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,183,27,0.2)] hover:shadow-[0_0_25px_rgba(255,183,27,0.4)] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider text-xs"
+                  className="w-full bg-ares-gold hover:bg-ares-gold/90 text-black font-bold py-3 px-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,183,27,0.2)] hover:shadow-[0_0_25px_rgba(255,183,27,0.4)] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   {isCheckingOut ? (
                     <>

@@ -293,8 +293,9 @@ export default function OutreachPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Your Name *</label>
+                    <label htmlFor="outreachName" className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Your Name *</label>
                     <input 
+                      id="outreachName"
                       type="text" 
                       required 
                       value={name} 
@@ -303,8 +304,9 @@ export default function OutreachPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Email Address *</label>
+                    <label htmlFor="outreachEmail" className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Email Address *</label>
                     <input 
+                      id="outreachEmail"
                       type="email" 
                       required 
                       value={email} 
@@ -316,8 +318,9 @@ export default function OutreachPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Organization</label>
+                    <label htmlFor="outreachOrg" className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Organization</label>
                     <input 
+                      id="outreachOrg"
                       type="text" 
                       value={organization} 
                       onChange={e => setOrganization(e.target.value)}
@@ -326,8 +329,9 @@ export default function OutreachPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Phone (Optional)</label>
+                    <label htmlFor="outreachPhone" className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Phone (Optional)</label>
                     <input 
+                      id="outreachPhone"
                       type="tel" 
                       value={phone} 
                       onChange={e => setPhone(e.target.value)}
@@ -338,8 +342,9 @@ export default function OutreachPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Details & Dates *</label>
+                  <label htmlFor="outreachDetails" className="block text-[9px] font-black uppercase tracking-wider text-marble/45 mb-1.5">Details & Dates *</label>
                   <textarea 
+                    id="outreachDetails"
                     required 
                     rows={4}
                     value={description} 

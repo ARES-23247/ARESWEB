@@ -722,7 +722,7 @@ export default function FieldObstacleEditor() {
               <button
                 onClick={handleDeleteLayout}
                 disabled={!selectedConfigId || loading}
-                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-20"
+                className="w-full bg-ares-red/10 hover:bg-ares-red/20 text-ares-red-light border border-ares-red/20 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-20 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 <Trash2 size={12} /> Delete
               </button>
@@ -770,7 +770,7 @@ export default function FieldObstacleEditor() {
                           e.stopPropagation();
                           handleDeleteObstacle(obs.id);
                         }}
-                        className="text-marble/40 hover:text-red-400 p-1 cursor-pointer transition-colors"
+                        className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                         title="Delete obstacle"
                       >
                         <Trash2 size={12} />
