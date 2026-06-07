@@ -53,19 +53,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (currentUser && currentUser.email) {
         try {
-          // Normalize Google email local part (ignore dots)
-          const cleanEmail = currentUser.email.trim().toLowerCase();
-          const userRef = doc(db, "authorized_users", currentUser.uid);
-          const userSnap = await getDoc(userRef);
+          // Verify and link user profile securely via functions backend
+          const idToken = await currentUser.getIdToken();
+          const response = await fetch("/api/profiles/session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
+            }
+          });
 
-          if (userSnap.exists()) {
-            setAuthorizedUser(userSnap.data() as AuthorizedUser);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.authorizedUser) {
+              setAuthorizedUser(data.authorizedUser as AuthorizedUser);
+            } else {
+              console.warn(`User ${currentUser.email} is authenticated but not authorized.`);
+              setAuthorizedUser(null);
+            }
           } else {
-            console.warn(`User ${cleanEmail} is authenticated but not in the authorized_users list.`);
+            console.warn(`Session linking endpoint returned status ${response.status}`);
             setAuthorizedUser(null);
           }
         } catch (error) {
-          console.error("Error fetching authorized user metadata:", error);
+          console.error("Error verifying auth session with backend:", error);
           setAuthorizedUser(null);
         }
       } else {

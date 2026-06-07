@@ -12,9 +12,10 @@ if (!admin.apps.length) {
     });
   } else {
     // Fall back to local emulator credentials or default credentials
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || "aresfirst-portal";
     admin.initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ares-web-preview",
-      storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ares-web-preview"}.appspot.com`
+      projectId,
+      storageBucket: `${projectId}.appspot.com`
     });
   }
 }
