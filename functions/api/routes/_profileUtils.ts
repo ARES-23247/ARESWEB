@@ -126,6 +126,79 @@ export async function upsertProfile(
         }
       })
       .run();
+
+    // Synchronize to Firebase Firestore
+    try {
+      const userRow = await db
+        .select({
+          email: schema.user.email,
+          role: schema.user.role,
+          name: schema.user.name
+        })
+        .from(schema.user)
+        .where(eq(schema.user.id, userId))
+        .get();
+
+      const parseJSON = (val: unknown, fallback: unknown) => {
+        if (typeof val !== "string") return fallback;
+        try {
+          return JSON.parse(val);
+        } catch {
+          return fallback;
+        }
+      };
+
+      const firebaseHost = c.env?.FIREBASE_API_HOST || "https://aresfirst-portal.web.app";
+      const syncUrl = `${firebaseHost}/api/profiles/sync`;
+      const payload = {
+        userId,
+        email: userRow?.email || "",
+        role: userRow?.role || "member",
+        name: userRow?.name || values.nickname || "ARES Member",
+        profile: {
+          nickname: values.nickname,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          phone: values.phone,
+          contactEmail: values.contactEmail,
+          showEmail: values.showEmail === 1,
+          showPhone: values.showPhone === 1,
+          pronouns: values.pronouns,
+          gradeYear: values.gradeYear,
+          subteams: parseJSON(values.subteams, []),
+          memberType: values.memberType,
+          bio: values.bio,
+          colleges: parseJSON(values.colleges, []),
+          showOnAbout: values.showOnAbout === 1,
+          avatar: (existing as Record<string, unknown>)?.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${userId}`
+        }
+      };
+
+      const syncPromise = fetch(syncUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-sync-secret": secret
+        },
+        body: JSON.stringify(payload)
+      }).then(async (res) => {
+        if (!res.ok) {
+          console.error(`[Profile Sync] Firebase returned status ${res.status}: ${await res.text()}`);
+        } else {
+          console.log(`[Profile Sync] Successfully synced profile for ${userId} to Firebase`);
+        }
+      }).catch(err => {
+        console.error(`[Profile Sync] Network error syncing profile for ${userId}:`, err);
+      });
+
+      if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+        c.executionCtx.waitUntil(syncPromise);
+      } else {
+        await syncPromise;
+      }
+    } catch (syncErr) {
+      console.error("[Profile Sync] Failed to execute sync:", syncErr);
+    }
   } catch (err: unknown) {
     console.error("[Profile:Upsert] Database error:", err);
     throw err;

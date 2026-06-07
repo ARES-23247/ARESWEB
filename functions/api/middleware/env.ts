@@ -16,6 +16,7 @@ export function getValidatedEnv(runtimeEnv: Record<string, unknown>) {
       GITHUB_CLIENT_ID: isProd ? z.string().min(1) : z.string().optional().default(""),
       GITHUB_CLIENT_SECRET: isProd ? z.string().min(1) : z.string().optional().default(""),
       ENCRYPTION_SECRET: isProd ? z.string().min(1) : z.string().optional().default("test-encryption-secret-with-32-chars-long"),
+      FIREBASE_API_HOST: z.string().optional(),
       ZULIP_CLIENT_ID: isProd ? z.string().min(1) : z.string().optional().default(""),
       ZULIP_CLIENT_SECRET: isProd ? z.string().min(1) : z.string().optional().default(""),
       TURNSTILE_SECRET_KEY: z.string().optional(),

@@ -6,6 +6,7 @@ placement = { mode = "smart" }
 
 [vars]
 ENVIRONMENT = "production"
+FIREBASE_API_HOST = "https://aresfirst-portal.web.app"
 
 
 [[d1_databases]]

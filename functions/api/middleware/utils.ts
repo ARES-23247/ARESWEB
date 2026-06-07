@@ -34,6 +34,7 @@ export type Bindings = {
   GITHUB_REPO_NAME?: string;
   GITHUB_BRANCH?: string;
   ENCRYPTION_SECRET: string;
+  FIREBASE_API_HOST?: string;
   ZULIP_CLIENT_ID: string;
   ZULIP_CLIENT_SECRET: string;
   ZULIP_URL?: string;
