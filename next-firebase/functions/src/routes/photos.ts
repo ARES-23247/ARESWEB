@@ -11,13 +11,10 @@ const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
 
 function getEncryptionSecret(): string {
   const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
-    const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
-    if (isProd) {
-      throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
-    }
+  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
   }
-  return secret || "01234567890123456789012345678901";
+  return secret;
 }
 
 // GET /api/photos

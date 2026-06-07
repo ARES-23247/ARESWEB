@@ -23,16 +23,12 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
   }
 
   const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
-    const isProd = process.env.NODE_ENV === "production";
-    if (isProd) {
-      throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
-    }
+  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
   }
-  const activeSecret = secret || "01234567890123456789012345678901";
-  const clientId = await decrypt(encryptedClientId, activeSecret);
-  const clientSecret = await decrypt(encryptedClientSecret, activeSecret);
-  const refreshToken = await decrypt(encryptedRefreshToken, activeSecret);
+  const clientId = await decrypt(encryptedClientId, secret);
+  const clientSecret = await decrypt(encryptedClientSecret, secret);
+  const refreshToken = await decrypt(encryptedRefreshToken, secret);
 
   if (clientId.includes("[Decryption Failed]") || clientSecret.includes("[Decryption Failed]") || refreshToken.includes("[Decryption Failed]")) {
     throw new Error("Failed to decrypt Google Auth credentials. Verify your ENCRYPTION_SECRET configuration.");
