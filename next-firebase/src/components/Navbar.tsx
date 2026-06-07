@@ -147,7 +147,7 @@ export default function Navbar() {
               <Link to="/aresplanner" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Compass size={12} className="text-ares-gold" /> ARESPlanner
               </Link>
-              <Link to="/simulators" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+              <Link to="/dashboard/scope?sim=true" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
               </Link>
             </div>
@@ -280,7 +280,7 @@ export default function Navbar() {
               <Link to="/aresplanner" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Compass size={12} className="text-ares-gold" /> ARESPlanner
               </Link>
-              <Link to="/simulators" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+              <Link to="/dashboard/scope?sim=true" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
               </Link>
             </div>

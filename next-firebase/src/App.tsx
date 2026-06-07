@@ -6,23 +6,31 @@ import LayoutWrapper from "@/components/layout/LayoutWrapper";
 // Import all pages using the @ alias
 import Home from "@/app/page";
 import AboutPage from "@/app/about/page";
+import AcademyPage from "@/app/academy/page";
+import AccessibilityPage from "@/app/accessibility/page";
 import AresPlannerPage from "@/app/aresplanner/page";
 import BlogFeedPage from "@/app/blog/page";
 import BlogPostPage from "@/app/blog/[slug]/page";
 import CalendarPage from "@/app/calendar/page";
+import DeveloperApiPage from "@/app/developer-api/page";
 import EventDetailPage from "@/app/events/[id]/page";
+import FinanceLedgerPage from "@/app/finance/page";
 import GalleryPage from "@/app/gallery/page";
 import JoinPage from "@/app/join/page";
 import JudgesPage from "@/app/judges/page";
 import LeaderboardPage from "@/app/leaderboard/page";
+import LocationMorgantownPage from "@/app/location-morgantown/page";
 import OutreachPage from "@/app/outreach/page";
+import PrintPortfolioPage from "@/app/print-portfolio/page";
+import PrivacyPage from "@/app/privacy/page";
 import RobotsFeedPage from "@/app/robots/page";
 import RobotDetailPage from "@/app/robots/[id]/page";
-import SimulatorsPage from "@/app/simulators/page";
+import SeasonsPage from "@/app/seasons/page";
 import SponsorsPage from "@/app/sponsors/page";
 import StorePage from "@/app/store/page";
 import TasksRedirect from "@/app/tasks/page";
 import TechStackPage from "@/app/tech-stack/page";
+import TermsPage from "@/app/terms/page";
 
 // Dashboard
 import DashboardLayout from "@/app/dashboard/layout";
@@ -44,23 +52,32 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/academy" element={<AcademyPage />} />
+            <Route path="/academy/:slug" element={<AcademyPage />} />
+            <Route path="/accessibility" element={<AccessibilityPage />} />
             <Route path="/aresplanner" element={<AresPlannerPage />} />
             <Route path="/blog" element={<BlogFeedPage />} />
             <Route path="/blog/:slug" element={<BlogPostPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/developer-api" element={<DeveloperApiPage />} />
             <Route path="/events/:id" element={<EventDetailPage />} />
+            <Route path="/finance" element={<FinanceLedgerPage />} />
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/join" element={<JoinPage />} />
             <Route path="/judges" element={<JudgesPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
             <Route path="/outreach" element={<OutreachPage />} />
+            <Route path="/print-portfolio" element={<PrintPortfolioPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/robots" element={<RobotsFeedPage />} />
             <Route path="/robots/:id" element={<RobotDetailPage />} />
-            <Route path="/simulators" element={<SimulatorsPage />} />
+            <Route path="/seasons" element={<SeasonsPage />} />
             <Route path="/sponsors" element={<SponsorsPage />} />
             <Route path="/store" element={<StorePage />} />
             <Route path="/tasks" element={<TasksRedirect />} />
             <Route path="/tech-stack" element={<TechStackPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             
             {/* Dashboard routes nested under DashboardLayout */}
             <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>

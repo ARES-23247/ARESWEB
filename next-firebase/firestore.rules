@@ -138,6 +138,43 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuthorized();
     }
+
+    // seasons
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // awards
+    match /awards/{awardId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // outreach_logs
+    match /outreach_logs/{logId} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
+
+    // finance_transactions
+    match /finance_transactions/{txId} {
+      allow read, write: if isAuthorized();
+    }
+
+    // judge_access_codes
+    match /judge_access_codes/{codeId} {
+      allow read: if isAuthorized();
+      allow write: if hasRole('admin');
+    }
+
+    // docs_feedback
+    match /docs_feedback/{feedbackId} {
+      allow create: if true;
+      allow read: if isAuthorized();
+    }
   }
 }
+
+
 

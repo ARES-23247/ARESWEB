@@ -9,6 +9,7 @@ import analyticsRouter from "./routes/analytics";
 import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
 import profilesRouter from "./routes/profiles";
+import judgesRouter from "./routes/judges";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -47,6 +48,7 @@ app.use("/api/analytics", analyticsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/profiles", profilesRouter);
+app.use("/api/judges", judgesRouter);
 
 // Export Cloud Function
 export const api = onRequest({ cors: true, maxInstances: 10, secrets: ["ENCRYPTION_SECRET"] }, app);
