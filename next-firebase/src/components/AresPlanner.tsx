@@ -5,7 +5,7 @@ import {
   Play, Pause, RefreshCw, Info, HelpCircle, Compass, 
   Download, Maximize2, Minimize2, Plus, Trash2, Save, 
   FolderOpen, Settings, Wifi, Copy, Check, ShieldCheck,
-  ChevronDown, ChevronUp, Lock, Unlock, Link
+  ChevronDown, ChevronUp, Lock, Unlock, Link, Upload
 } from "lucide-react";
 
 // Waypoint using cubic Bezier formatting
@@ -49,6 +49,14 @@ interface AresPlannerProps {
     markers: EventMarker[];
     constraintZones?: ConstraintZone[];
     rotationTargets?: RotationTarget[];
+    maxVelocity?: number;
+    maxAcceleration?: number;
+    maxAngularVelocity?: number;
+    maxAngularAcceleration?: number;
+    startVelocity?: number;
+    startHeading?: number;
+    endVelocity?: number;
+    endHeading?: number;
   };
   cloudPaths?: Array<{
     id: string;
@@ -58,6 +66,14 @@ interface AresPlannerProps {
     markers: EventMarker[];
     constraintZones?: ConstraintZone[];
     rotationTargets?: RotationTarget[];
+    maxVelocity?: number;
+    maxAcceleration?: number;
+    maxAngularVelocity?: number;
+    maxAngularAcceleration?: number;
+    startVelocity?: number;
+    startHeading?: number;
+    endVelocity?: number;
+    endHeading?: number;
     updatedAt: any;
   }>;
   onSaveToCloud?: (
@@ -66,7 +82,15 @@ interface AresPlannerProps {
     waypoints: Waypoint[],
     markers: EventMarker[],
     constraintZones?: ConstraintZone[],
-    rotationTargets?: RotationTarget[]
+    rotationTargets?: RotationTarget[],
+    maxVelocity?: number,
+    maxAcceleration?: number,
+    maxAngularVelocity?: number,
+    maxAngularAcceleration?: number,
+    startVelocity?: number,
+    startHeading?: number,
+    endVelocity?: number,
+    endHeading?: number
   ) => Promise<void>;
   onLoadPath?: (pathId: string) => void;
   isSavingCloud?: boolean;
@@ -137,6 +161,17 @@ export default function AresPlanner({
   const [selectedRotationTargetId, setSelectedRotationTargetId] = useState<string | null>(null);
   const [selectedConstraintZoneId, setSelectedConstraintZoneId] = useState<string | null>(null);
   const [isAddingMarker, setIsAddingMarker] = useState(false);
+
+  // Kinematics and start/end states
+  const [maxVelocity, setMaxVelocity] = useState(3.0);
+  const [maxAcceleration, setMaxAcceleration] = useState(3.0);
+  const [maxAngularVelocity, setMaxAngularVelocity] = useState(270.0);
+  const [maxAngularAcceleration, setMaxAngularAcceleration] = useState(270.0);
+  const [startVelocity, setStartVelocity] = useState(0.0);
+  const [startHeading, setStartHeading] = useState(0.0);
+  const [endVelocity, setEndVelocity] = useState(0.0);
+  const [endHeading, setEndHeading] = useState(0.0);
+  const [isKinematicsExpanded, setIsKinematicsExpanded] = useState(false);
 
   // Sidebar accordion expansion states
   const [isWaypointsExpanded, setIsWaypointsExpanded] = useState(true);
@@ -222,6 +257,15 @@ export default function AresPlanner({
       else setConstraintZones([]);
       if (initialPathData.rotationTargets) setRotationTargets(initialPathData.rotationTargets);
       else setRotationTargets([]);
+
+      setMaxVelocity(initialPathData.maxVelocity ?? 3.0);
+      setMaxAcceleration(initialPathData.maxAcceleration ?? 3.0);
+      setMaxAngularVelocity(initialPathData.maxAngularVelocity ?? 270.0);
+      setMaxAngularAcceleration(initialPathData.maxAngularAcceleration ?? 270.0);
+      setStartVelocity(initialPathData.startVelocity ?? 0.0);
+      setStartHeading(initialPathData.startHeading ?? 0.0);
+      setEndVelocity(initialPathData.endVelocity ?? 0.0);
+      setEndHeading(initialPathData.endHeading ?? 0.0);
     }
   }, [initialPathData]);
 
@@ -1310,6 +1354,14 @@ export default function AresPlanner({
         y: parseFloat(r.y.toFixed(2)),
         waypointIndex: r.waypointIndex
       })),
+      maxVelocity,
+      maxAcceleration,
+      maxAngularVelocity,
+      maxAngularAcceleration,
+      startVelocity,
+      startHeading,
+      endVelocity,
+      endHeading,
       season,
       name: pathName
     };
@@ -1321,6 +1373,40 @@ export default function AresPlanner({
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  // JSON Importer
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target?.result as string);
+          if (data.name) setPathName(data.name);
+          if (data.season) setSeason(data.season);
+          if (data.waypoints) setWaypoints(data.waypoints);
+          if (data.markers) setMarkers(data.markers);
+          if (data.constraintZones) setConstraintZones(data.constraintZones);
+          else setConstraintZones([]);
+          if (data.rotationTargets) setRotationTargets(data.rotationTargets);
+          else setRotationTargets([]);
+
+          if (data.maxVelocity !== undefined) setMaxVelocity(data.maxVelocity);
+          if (data.maxAcceleration !== undefined) setMaxAcceleration(data.maxAcceleration);
+          if (data.maxAngularVelocity !== undefined) setMaxAngularVelocity(data.maxAngularVelocity);
+          if (data.maxAngularAcceleration !== undefined) setMaxAngularAcceleration(data.maxAngularAcceleration);
+          if (data.startVelocity !== undefined) setStartVelocity(data.startVelocity);
+          if (data.startHeading !== undefined) setStartHeading(data.startHeading);
+          if (data.endVelocity !== undefined) setEndVelocity(data.endVelocity);
+          if (data.endHeading !== undefined) setEndHeading(data.endHeading);
+        } catch (err) {
+          console.error("Failed to parse imported path JSON:", err);
+          alert("Invalid path JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   // Upload file custom background
@@ -1367,7 +1453,31 @@ export default function AresPlanner({
         name: m.name,
         progress: parseFloat(m.progress.toFixed(3)),
         actions: m.actions
-      }))
+      })),
+      constraintZones: constraintZones.map((z) => ({
+        id: z.id,
+        name: z.name,
+        x: parseFloat(z.x.toFixed(2)),
+        y: parseFloat(z.y.toFixed(2)),
+        width: parseFloat(z.width.toFixed(2)),
+        height: parseFloat(z.height.toFixed(2)),
+        maxVelocity: z.maxVelocity
+      })),
+      rotationTargets: rotationTargets.map((r) => ({
+        id: r.id,
+        name: r.name,
+        x: parseFloat(r.x.toFixed(2)),
+        y: parseFloat(r.y.toFixed(2)),
+        waypointIndex: r.waypointIndex
+      })),
+      maxVelocity,
+      maxAcceleration,
+      maxAngularVelocity,
+      maxAngularAcceleration,
+      startVelocity,
+      startHeading,
+      endVelocity,
+      endHeading
     };
 
     try {
@@ -2192,7 +2302,90 @@ export default function AresPlanner({
               )}
             </div>
 
-            {/* 5. IDEAL STARTING STATE PLACEHOLDER */}
+            {/* Robot Kinematics Panel */}
+            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
+              <div 
+                onClick={() => setIsKinematicsExpanded(!isKinematicsExpanded)}
+                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
+              >
+                <div className="flex items-center gap-2">
+                  {isKinematicsExpanded ? <ChevronUp size={14} className="text-ares-cyan" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Settings size={14} className="text-ares-cyan" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">Robot Kinematics</span>
+                </div>
+                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
+                  Max: {maxVelocity.toFixed(1)} m/s | {maxAngularVelocity.toFixed(0)}°/s
+                </span>
+              </div>
+              {isKinematicsExpanded && (
+                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Max Velocity */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Velocity (m/s)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={maxVelocity}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setMaxVelocity(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+                    {/* Max Acceleration */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Acceleration (m/s²)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={maxAcceleration}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setMaxAcceleration(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+                    {/* Max Angular Velocity */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Velocity (°/s)</label>
+                      <input
+                        type="number"
+                        step="5"
+                        min="1"
+                        value={maxAngularVelocity}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setMaxAngularVelocity(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+                    {/* Max Angular Acceleration */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Accel. (°/s²)</label>
+                      <input
+                        type="number"
+                        step="5"
+                        min="1"
+                        value={maxAngularAcceleration}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setMaxAngularAcceleration(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 5. IDEAL STARTING STATE */}
             <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
               <div 
                 onClick={() => setIsStartingStateExpanded(!isStartingStateExpanded)}
@@ -2204,17 +2397,47 @@ export default function AresPlanner({
                   <span className="text-xs font-black uppercase tracking-wider text-white">Ideal Starting State</span>
                 </div>
                 <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
-                  0.00° starting with 0.00 M/S
+                  {startHeading.toFixed(1)}° starting with {startVelocity.toFixed(2)} M/S
                 </span>
               </div>
               {isStartingStateExpanded && (
-                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
-                  Starting configuration matches ideal coordinates.
+                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Start Velocity */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Velocity (m/s)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={startVelocity}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setStartVelocity(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
+                      />
+                    </div>
+                    {/* Start Heading */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Heading (Deg)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={startHeading}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setStartHeading(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 6. GOAL END STATE PLACEHOLDER */}
+            {/* 6. GOAL END STATE */}
             <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
               <div 
                 onClick={() => setIsEndStateExpanded(!isEndStateExpanded)}
@@ -2226,12 +2449,42 @@ export default function AresPlanner({
                   <span className="text-xs font-black uppercase tracking-wider text-white">Goal End State</span>
                 </div>
                 <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
-                  0.00° ending with 0.00 M/S
+                  {endHeading.toFixed(1)}° ending with {endVelocity.toFixed(2)} M/S
                 </span>
               </div>
               {isEndStateExpanded && (
-                <div className="p-3 text-[10px] font-mono text-marble/30 text-center italic bg-black/10">
-                  Goal velocity set to zero at end node.
+                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* End Velocity */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Velocity (m/s)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={endVelocity}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setEndVelocity(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
+                      />
+                    </div>
+                    {/* End Heading */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Heading (Deg)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={endHeading}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setEndHeading(val);
+                        }}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -2247,7 +2500,22 @@ export default function AresPlanner({
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => onSaveToCloud(pathName, season, waypoints, markers, constraintZones, rotationTargets)}
+                  onClick={() => onSaveToCloud(
+                    pathName, 
+                    season, 
+                    waypoints, 
+                    markers, 
+                    constraintZones, 
+                    rotationTargets,
+                    maxVelocity,
+                    maxAcceleration,
+                    maxAngularVelocity,
+                    maxAngularAcceleration,
+                    startVelocity,
+                    startHeading,
+                    endVelocity,
+                    endHeading
+                  )}
                   disabled={isSavingCloud}
                   className="flex-grow py-2 bg-ares-red hover:bg-ares-red/90 text-white rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
                 >
@@ -2343,6 +2611,16 @@ export default function AresPlanner({
         </div>
 
         <div className="flex items-center gap-2">
+          <label className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5 select-none">
+            <Upload size={12} /> Import Path
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportJSON}
+              className="hidden"
+            />
+          </label>
+
           <button
             onClick={handleExportJSON}
             className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5"

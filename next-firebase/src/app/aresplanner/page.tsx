@@ -15,6 +15,14 @@ type PathConfig = {
   markers: EventMarker[];
   constraintZones?: ConstraintZone[];
   rotationTargets?: RotationTarget[];
+  maxVelocity?: number;
+  maxAcceleration?: number;
+  maxAngularVelocity?: number;
+  maxAngularAcceleration?: number;
+  startVelocity?: number;
+  startHeading?: number;
+  endVelocity?: number;
+  endHeading?: number;
   updatedAt: any;
 };
 
@@ -29,6 +37,14 @@ type LinkedLog = {
     season: string;
     constraintZones?: ConstraintZone[];
     rotationTargets?: RotationTarget[];
+    maxVelocity?: number;
+    maxAcceleration?: number;
+    maxAngularVelocity?: number;
+    maxAngularAcceleration?: number;
+    startVelocity?: number;
+    startHeading?: number;
+    endVelocity?: number;
+    endHeading?: number;
   };
 };
 
@@ -70,6 +86,14 @@ export default function AresPlannerPage() {
             markers: data.markers || [],
             constraintZones: data.constraintZones || [],
             rotationTargets: data.rotationTargets || [],
+            maxVelocity: data.maxVelocity,
+            maxAcceleration: data.maxAcceleration,
+            maxAngularVelocity: data.maxAngularVelocity,
+            maxAngularAcceleration: data.maxAngularAcceleration,
+            startVelocity: data.startVelocity,
+            startHeading: data.startHeading,
+            endVelocity: data.endVelocity,
+            endHeading: data.endHeading,
             updatedAt: data.updatedAt
           });
         });
@@ -163,7 +187,15 @@ export default function AresPlannerPage() {
             markers: path.markers,
             season: path.season,
             constraintZones: path.constraintZones || [],
-            rotationTargets: path.rotationTargets || []
+            rotationTargets: path.rotationTargets || [],
+            maxVelocity: path.maxVelocity ?? 3.0,
+            maxAcceleration: path.maxAcceleration ?? 3.0,
+            maxAngularVelocity: path.maxAngularVelocity ?? 270.0,
+            maxAngularAcceleration: path.maxAngularAcceleration ?? 270.0,
+            startVelocity: path.startVelocity ?? 0.0,
+            startHeading: path.startHeading ?? 0.0,
+            endVelocity: path.endVelocity ?? 0.0,
+            endHeading: path.endHeading ?? 0.0
           };
         }
 
@@ -226,6 +258,14 @@ export default function AresPlannerPage() {
       markers: log.pathState.markers,
       constraintZones: log.pathState.constraintZones || [],
       rotationTargets: log.pathState.rotationTargets || [],
+      maxVelocity: log.pathState.maxVelocity,
+      maxAcceleration: log.pathState.maxAcceleration,
+      maxAngularVelocity: log.pathState.maxAngularVelocity,
+      maxAngularAcceleration: log.pathState.maxAngularAcceleration,
+      startVelocity: log.pathState.startVelocity,
+      startHeading: log.pathState.startHeading,
+      endVelocity: log.pathState.endVelocity,
+      endHeading: log.pathState.endHeading,
       updatedAt: null // set to null so they can save it back to cloud
     });
 
@@ -233,14 +273,21 @@ export default function AresPlannerPage() {
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
-  // Handle saving paths to Firestore
   const handleSaveToCloud = async (
     name: string,
     season: string,
     waypoints: Waypoint[],
     markers: EventMarker[],
     constraintZones?: ConstraintZone[],
-    rotationTargets?: RotationTarget[]
+    rotationTargets?: RotationTarget[],
+    maxVelocity?: number,
+    maxAcceleration?: number,
+    maxAngularVelocity?: number,
+    maxAngularAcceleration?: number,
+    startVelocity?: number,
+    startHeading?: number,
+    endVelocity?: number,
+    endHeading?: number
   ) => {
     if (!user) {
       setErrorMsg("You must be signed in to save paths to the cloud.");
@@ -267,6 +314,14 @@ export default function AresPlannerPage() {
         markers,
         constraintZones: constraintZones || [],
         rotationTargets: rotationTargets || [],
+        maxVelocity: maxVelocity ?? 3.0,
+        maxAcceleration: maxAcceleration ?? 3.0,
+        maxAngularVelocity: maxAngularVelocity ?? 270.0,
+        maxAngularAcceleration: maxAngularAcceleration ?? 270.0,
+        startVelocity: startVelocity ?? 0.0,
+        startHeading: startHeading ?? 0.0,
+        endVelocity: endVelocity ?? 0.0,
+        endHeading: endHeading ?? 0.0,
         userId: user.uid,
         updatedAt: serverTimestamp()
       });
