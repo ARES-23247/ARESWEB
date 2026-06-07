@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface NavButtonProps {
@@ -88,6 +88,20 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="tasks" icon={ClipboardList} label="Kanban Tasks" currentPath={pathname} />
             <NavButton tab="scope" icon={Cpu} label="ARES-Scope" currentPath={pathname} />
             <NavButton tab="field" icon={Grid} label="Field Editor" currentPath={pathname} />
+            <Link
+              to="/simulators"
+              onClick={onCloseMobile}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
+                pathname === "/simulators"
+                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
+                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
+              }`}
+            >
+              <div className="flex items-center gap-3 truncate">
+                <Play size={16} className={pathname === "/simulators" ? "text-white animate-pulse" : "text-marble/55"} />
+                <span className="truncate">Robot Simulator</span>
+              </div>
+            </Link>
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             
@@ -134,7 +148,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               onClick={onCloseMobile}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
             >
-              <Sparkles size={14} className="text-marble/40" /> Arm Kinematics
+              <Sparkles size={14} className="text-marble/40" /> Robot Simulator
             </Link>
             <Link
               to="/blog"
