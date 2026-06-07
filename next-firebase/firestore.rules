@@ -9,7 +9,7 @@ service cloud.firestore {
     
     // Helper function to get the user's email (normalized to lowercase)
     function getUserEmail() {
-      return request.auth != null && request.auth.token != null && request.auth.token.email != null ? request.auth.token.email.lower() : null;
+      return if request.auth != null && request.auth.token != null && request.auth.token.email != null then request.auth.token.email.lower() else null;
     }
     
     // Helper function to check if the user exists in the authorized_users collection

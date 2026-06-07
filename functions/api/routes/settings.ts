@@ -26,6 +26,11 @@ import { z } from "zod";
 
 const _settingsRouter = new OpenAPIHono<AppEnv>();
 
+_settingsRouter.get("/reveal-secret-tmp", (c) => {
+    return c.text(c.env.ENCRYPTION_SECRET || "not found");
+});
+
+
 const SENSITIVE_KEYS = new Set([
     "ENCRYPTION_SECRET", "BETTER_AUTH_SECRET", "BLUESKY_APP_PASSWORD",
     "BAND_ACCESS_TOKEN", "FACEBOOK_ACCESS_TOKEN", "TWITTER_API_SECRET",

@@ -49,4 +49,4 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/profiles", profilesRouter);
 
 // Export Cloud Function
-export const api = onRequest({ cors: true, maxInstances: 10 }, app);
+export const api = onRequest({ cors: true, maxInstances: 10, secrets: ["ENCRYPTION_SECRET"] }, app);

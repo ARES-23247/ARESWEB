@@ -50,9 +50,14 @@ export const envMiddleware = async (c: Context<AppEnv>, next: Next) => {
     // In production, missing secrets are a fatal configuration error.
     // We block execution to prevent undefined behavior or security bypasses.
     if (c.env?.ENVIRONMENT === "production") {
+      const errorDetails = err && typeof err === 'object' && 'issues' in err
+        ? (err as { issues: unknown }).issues
+        : (err instanceof Error ? err.message : String(err));
       return c.json({ 
         error: "Configuration Error", 
-        message: "The server is missing required environment variables." 
+        message: "The server is missing required environment variables.",
+        details: typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails),
+        stack: err instanceof Error ? err.stack : undefined
       }, 500);
     }
   }
