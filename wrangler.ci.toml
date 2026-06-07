@@ -13,10 +13,6 @@ migrations_dir = "drizzle"
 binding = "ARES_STORAGE"
 bucket_name = "ares-media"
 
-[[kv_namespaces]]
-binding = "RATE_LIMITS"
-id = "d7be46d8eb9049b78c32791b31c17301"
-preview_id = "228df7ca14b7464b92d5dbe1516ba94c"
 
 # PartyKit D1 binding for document snapshot persistence
 # Shares the main D1 database for document snapshots (WR-05)

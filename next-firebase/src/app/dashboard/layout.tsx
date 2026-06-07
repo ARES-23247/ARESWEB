@@ -197,7 +197,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Core page canvas */}
-        <main className="flex-grow p-6 md:p-10 max-w-7xl mx-auto w-full relative z-10">
+        <main id="main-content" role="main" className="flex-grow p-6 md:p-10 max-w-7xl mx-auto w-full relative z-10">
           {children}
         </main>
       </div>
