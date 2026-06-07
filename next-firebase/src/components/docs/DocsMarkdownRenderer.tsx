@@ -70,7 +70,6 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         simulationplayground: () => <LazyWrap><SimulationPlayground /></LazyWrap>,
         codeplayground: () => <LazyWrap><CodePlayground /></LazyWrap>,
         screenshotgallery: () => <LazyWrap><ScreenshotGallery /></LazyWrap>,
-        // @ts-expect-error Custom component tag names
         interactivetutorial: () => <LazyWrap><InteractiveTutorial /></LazyWrap>,
         // All sims from SIM_COMPONENTS (auto-populated)
         ...Object.fromEntries(

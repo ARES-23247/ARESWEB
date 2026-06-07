@@ -31,6 +31,7 @@
     "src/app/api/**/*",
     "src/lib/firebase-admin.ts",
     "src/lib/googleAuth.ts",
-    "src/lib/vertex.ts"
+    "src/lib/vertex.ts",
+    "functions"
   ]
 }

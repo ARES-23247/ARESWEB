@@ -10,7 +10,8 @@ import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
 import HealthDiagnostics from "./components/HealthDiagnostics";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Play, 
   Pause, 
@@ -30,9 +31,56 @@ import {
   Terminal,
   Square,
   Copy,
-  Check
+  Check,
+  Plus,
+  Trash2,
+  Maximize2,
+  Edit3,
+  Layout,
+  Save,
+  Download,
+  Upload,
+  RotateCcw
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+
+export interface ChartConfig {
+  id: string;
+  selectedKeys: string[];
+}
+
+export interface LayoutItem {
+  id: string;
+  type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts";
+  title: string;
+  visible: boolean;
+  colSpan: number;
+  height: "short" | "medium" | "tall";
+  order: number;
+}
+
+export interface DashboardPreset {
+  id: string;
+  name: string;
+  isShared: boolean;
+  createdBy?: string;
+  creatorName?: string;
+  layout: LayoutItem[];
+  chartConfigs: ChartConfig[];
+  updatedAt: any;
+}
+
+const DEFAULT_LAYOUT: LayoutItem[] = [
+  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1 },
+  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2 },
+  { id: "charts-1", type: "charts", title: "Telemetry Chart", visible: true, colSpan: 2, height: "medium", order: 3 },
+  { id: "inspector", type: "inspector", title: "State Inspector", visible: true, colSpan: 1, height: "medium", order: 4 },
+  { id: "logs", type: "logs", title: "System Console Logs", visible: true, colSpan: 2, height: "medium", order: 5 },
+];
+
+const DEFAULT_CHART_CONFIGS: ChartConfig[] = [
+  { id: "charts-1", selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"] }
+];
 
 export default function ScopeDashboard() {
   const { 
@@ -93,6 +141,100 @@ export default function ScopeDashboard() {
   const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[]; cadUrl?: string }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
 
+  // authentication
+  const { user } = useAuth();
+
+  // layout customization state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [dashboardLayout, setDashboardLayout] = useState<LayoutItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ares_scope_layout");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse stored layout:", e);
+        }
+      }
+    }
+    return DEFAULT_LAYOUT;
+  });
+
+  const [chartConfigs, setChartConfigs] = useState<ChartConfig[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ares_scope_chart_configs");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse stored chart configs:", e);
+        }
+      }
+    }
+    return DEFAULT_CHART_CONFIGS;
+  });
+
+  // persisting layout changes
+  useEffect(() => {
+    localStorage.setItem("ares_scope_layout", JSON.stringify(dashboardLayout));
+  }, [dashboardLayout]);
+
+  useEffect(() => {
+    localStorage.setItem("ares_scope_chart_configs", JSON.stringify(chartConfigs));
+  }, [chartConfigs]);
+
+  // presets and cloud variables
+  const [cloudPresets, setCloudPresets] = useState<DashboardPreset[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string>("");
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [isSharedToggle, setIsSharedToggle] = useState(false);
+  const [savingPreset, setSavingPreset] = useState(false);
+
+  // drag-and-drop state
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+
+  // card renaming state
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editingTitleText, setEditingTitleText] = useState<string>("");
+
+  const fetchLayoutPresets = async () => {
+    const presetsList: DashboardPreset[] = [];
+    
+    // 1. Fetch team layouts
+    try {
+      const teamQuery = query(collection(db, "team_layouts"), orderBy("updatedAt", "desc"));
+      const teamSnap = await getDocs(teamQuery);
+      teamSnap.forEach(docSnap => {
+        presetsList.push({ id: docSnap.id, ...docSnap.data() } as DashboardPreset);
+      });
+    } catch (err) {
+      console.error("Failed to fetch team layouts:", err);
+    }
+
+    // 2. Fetch private user layouts
+    if (user) {
+      try {
+        const privateQuery = query(
+          collection(db, "user_profiles", user.uid, "layouts"),
+          orderBy("updatedAt", "desc")
+        );
+        const privateSnap = await getDocs(privateQuery);
+        privateSnap.forEach(docSnap => {
+          presetsList.push({ id: docSnap.id, ...docSnap.data() } as DashboardPreset);
+        });
+      } catch (err) {
+        console.error("Failed to fetch private layouts:", err);
+      }
+    }
+
+    setCloudPresets(presetsList);
+  };
+
+  useEffect(() => {
+    fetchLayoutPresets();
+  }, [user]);
+
   useEffect(() => {
     const fetchFieldConfigs = async () => {
       try {
@@ -145,6 +287,231 @@ export default function ScopeDashboard() {
       setFieldElements(null);
       setFieldElementTypes(null);
       setFieldCadUrl(null);
+    }
+  };
+
+  // Layout Operations
+  const handleAddChart = () => {
+    const newId = `charts-${Date.now()}`;
+    const nextOrder = dashboardLayout.length > 0
+      ? Math.max(...dashboardLayout.map(item => item.order)) + 1
+      : 1;
+
+    const newLayoutItem: LayoutItem = {
+      id: newId,
+      type: "charts",
+      title: "Telemetry Chart",
+      visible: true,
+      colSpan: 2,
+      height: "medium",
+      order: nextOrder
+    };
+
+    const newChartConfig: ChartConfig = {
+      id: newId,
+      selectedKeys: ["Robot/BatteryVoltage"]
+    };
+
+    setDashboardLayout([...dashboardLayout, newLayoutItem]);
+    setChartConfigs([...chartConfigs, newChartConfig]);
+  };
+
+  const handleDuplicateChart = (sourceId: string) => {
+    const sourceConfig = chartConfigs.find(c => c.id === sourceId);
+    const sourceLayout = dashboardLayout.find(l => l.id === sourceId);
+    if (!sourceLayout) return;
+
+    const newId = `charts-${Date.now()}`;
+    const nextOrder = Math.max(...dashboardLayout.map(item => item.order)) + 1;
+
+    const newLayoutItem: LayoutItem = {
+      ...sourceLayout,
+      id: newId,
+      title: `${sourceLayout.title} (Copy)`,
+      order: nextOrder
+    };
+
+    const newChartConfig: ChartConfig = {
+      id: newId,
+      selectedKeys: sourceConfig ? [...sourceConfig.selectedKeys] : ["Robot/BatteryVoltage"]
+    };
+
+    setDashboardLayout([...dashboardLayout, newLayoutItem]);
+    setChartConfigs([...chartConfigs, newChartConfig]);
+  };
+
+  const handleDeleteChart = (cardId: string) => {
+    setDashboardLayout(dashboardLayout.filter(item => item.id !== cardId));
+    setChartConfigs(chartConfigs.filter(config => config.id !== cardId));
+  };
+
+  const handleStartRename = (cardId: string, currentTitle: string) => {
+    setEditingCardId(cardId);
+    setEditingTitleText(currentTitle);
+  };
+
+  const handleSaveRename = (cardId: string) => {
+    if (editingTitleText.trim() === "") return;
+    setDashboardLayout(dashboardLayout.map(item => 
+      item.id === cardId ? { ...item, title: editingTitleText.trim() } : item
+    ));
+    setEditingCardId(null);
+  };
+
+  const handleExportLayout = () => {
+    const payload = {
+      layout: dashboardLayout,
+      chartConfigs: chartConfigs
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `ares_scope_layout_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportLayout = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const payload = JSON.parse(event.target?.result as string);
+          if (payload && Array.isArray(payload.layout) && Array.isArray(payload.chartConfigs)) {
+            setDashboardLayout(payload.layout);
+            setChartConfigs(payload.chartConfigs);
+          } else {
+            alert("Invalid layout file format.");
+          }
+        } catch (err: any) {
+          alert("Failed to parse layout JSON: " + err.message);
+        }
+      };
+      reader.readAsText(e.target.files[0]);
+    }
+  };
+
+  const handleResetLayout = () => {
+    setDashboardLayout(DEFAULT_LAYOUT);
+    setChartConfigs(DEFAULT_CHART_CONFIGS);
+    setActivePresetId("");
+  };
+
+  // Drag and drop sorting mechanics
+  const handleDragStart = (e: React.DragEvent, cardId: string) => {
+    if (!isEditMode) return;
+    setDraggedCardId(cardId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, cardId: string) => {
+    if (!isEditMode || draggedCardId === cardId) return;
+    e.preventDefault();
+  };
+
+  const handleDropCard = (e: React.DragEvent, targetCardId: string) => {
+    if (!isEditMode || !draggedCardId || draggedCardId === targetCardId) return;
+    
+    const sourceItem = dashboardLayout.find(item => item.id === draggedCardId);
+    const targetItem = dashboardLayout.find(item => item.id === targetCardId);
+    if (!sourceItem || !targetItem) return;
+
+    const sourceOrder = sourceItem.order;
+    const targetOrder = targetItem.order;
+
+    const updatedLayout = dashboardLayout.map(item => {
+      if (item.id === draggedCardId) {
+        return { ...item, order: targetOrder };
+      } else if (item.id === targetCardId) {
+        return { ...item, order: sourceOrder };
+      }
+      return item;
+    });
+
+    setDashboardLayout(updatedLayout);
+    setDraggedCardId(null);
+  };
+
+  // Cloud presets actions
+  const handleSavePreset = async () => {
+    if (!newPresetName.trim()) return;
+    setSavingPreset(true);
+
+    const presetId = `preset-${Date.now()}`;
+    const presetData = {
+      name: newPresetName.trim(),
+      isShared: isSharedToggle,
+      createdBy: user?.uid || "anonymous",
+      creatorName: user?.displayName || "Anonymous Team Member",
+      layout: dashboardLayout,
+      chartConfigs: chartConfigs,
+      updatedAt: serverTimestamp()
+    };
+
+    try {
+      if (isSharedToggle) {
+        await setDoc(doc(db, "team_layouts", presetId), presetData);
+      } else if (user) {
+        await setDoc(doc(db, "user_profiles", user.uid, "layouts", presetId), presetData);
+      } else {
+        throw new Error("You must be logged in to save private presets.");
+      }
+
+      setShowSavePresetModal(false);
+      setNewPresetName("");
+      fetchLayoutPresets();
+      setActivePresetId(presetId);
+    } catch (err: any) {
+      console.error("Failed to save preset:", err);
+      alert("Failed to save preset: " + err.message);
+    } finally {
+      setSavingPreset(false);
+    }
+  };
+
+  const handleLoadPreset = (presetId: string) => {
+    const preset = cloudPresets.find(p => p.id === presetId);
+    if (preset) {
+      setDashboardLayout(preset.layout);
+      setChartConfigs(preset.chartConfigs);
+      setActivePresetId(presetId);
+    }
+  };
+
+  const handleDeletePresetFromCloud = async (preset: DashboardPreset, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete preset "${preset.name}"?`)) return;
+
+    try {
+      if (preset.isShared) {
+        await deleteDoc(doc(db, "team_layouts", preset.id));
+      } else if (user) {
+        await deleteDoc(doc(db, "user_profiles", user.uid, "layouts", preset.id));
+      }
+      fetchLayoutPresets();
+      if (activePresetId === preset.id) {
+        setActivePresetId("");
+      }
+    } catch (err: any) {
+      console.error("Failed to delete preset:", err);
+      alert("Failed to delete preset: " + err.message);
+    }
+  };
+
+  // Fullscreen Zoom handler
+  const handleToggleFullscreen = (cardId: string) => {
+    const element = document.getElementById(`workspace-card-${cardId}`);
+    if (!element) return;
+
+    if (!document.fullscreenElement) {
+      element.requestFullscreen().catch(err => {
+        console.error("Error attempting to enable full-screen mode:", err);
+      });
+    } else {
+      document.exitFullscreen();
     }
   };
 
@@ -1161,128 +1528,396 @@ export default function ScopeDashboard() {
 
       {!loading && (
         <div className="space-y-6">
-          
-          {/* Main Visualizer split: 3D map left, state tree / health checks right */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-            {/* Left Column: Top-down Field view & Match Video */}
-            <div className="lg:col-span-1 flex flex-col gap-6 h-full">
-              <WebGLReplayCanvas />
-              {videoUrl && (
-                <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 relative">
-                  <button
-                    onClick={() => setVideoUrl(null)}
-                    className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
-                    title="Close video player"
-                  >
-                    <X size={16} />
-                  </button>
-                  <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
-                    🎥 Synchronized Match Video
-                  </h3>
-                  <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-white/5 shadow-inner">
-                    <video
-                      ref={videoRef}
-                      src={videoUrl}
-                      className="w-full h-full object-contain"
-                      controls={false}
-                      muted
-                      playsInline
-                    />
-                  </div>
-                  <div className="text-[9px] font-mono text-marble/35 text-center leading-relaxed">
-                    Video playback rate and playhead synchronized to telemetry timeline.
-                  </div>
-                </div>
+          {/* Workspace Customizer & Presets Toolbar */}
+          <div className="glass-card p-4 border border-white/10 bg-neutral-900/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center bg-black/55 border border-white/10 px-3 py-2 rounded-xl text-xs gap-2">
+                <Layout size={14} className="text-ares-gold" />
+                <span className="text-marble/55 uppercase font-bold text-[10px] tracking-wider">Workspace:</span>
+                <select
+                  value={activePresetId}
+                  onChange={(e) => {
+                    if (e.target.value === "default") {
+                      handleResetLayout();
+                    } else if (e.target.value) {
+                      handleLoadPreset(e.target.value);
+                    }
+                  }}
+                  className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer text-xs"
+                >
+                  <option value="" className="bg-neutral-900 text-marble/40">Select Preset...</option>
+                  <option value="default" className="bg-neutral-900 text-white font-bold">Standard Layout</option>
+                  
+                  {cloudPresets.filter(p => !p.isShared).length > 0 && (
+                    <optgroup label="My Presets" className="bg-neutral-900 text-ares-gold font-bold">
+                      {cloudPresets.filter(p => !p.isShared).map(p => (
+                        <option key={p.id} value={p.id} className="text-white">
+                          {p.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {cloudPresets.filter(p => p.isShared).length > 0 && (
+                    <optgroup label="Team Presets" className="bg-neutral-900 text-ares-cyan font-bold">
+                      {cloudPresets.filter(p => p.isShared).map(p => (
+                        <option key={p.id} value={p.id} className="text-white">
+                          {p.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              {activePresetId && activePresetId !== "default" && (
+                <button
+                  onClick={(e) => {
+                    const activePreset = cloudPresets.find(p => p.id === activePresetId);
+                    if (activePreset) handleDeletePresetFromCloud(activePreset, e);
+                  }}
+                  className="p-2 bg-ares-red/10 hover:bg-ares-red/20 text-ares-red border border-ares-red/20 rounded-xl hover:text-ares-red-light transition-all cursor-pointer"
+                  title="Delete current preset from cloud"
+                >
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
 
-            {/* Right Column: Dynamic diagnostics / alerts */}
-            <div className="lg:col-span-2 h-full">
-              <HealthDiagnostics />
+            <div className="flex flex-wrap items-center gap-3">
+              {isEditMode ? (
+                <>
+                  <button
+                    onClick={handleAddChart}
+                    className="px-3 py-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/20 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    <Plus size={12} /> Add Chart
+                  </button>
+
+                  <button
+                    onClick={handleResetLayout}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    <RotateCcw size={12} /> Reset to Default
+                  </button>
+
+                  <button
+                    onClick={handleExportLayout}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    <Download size={12} /> Export Layout
+                  </button>
+
+                  <button
+                    onClick={() => importFileInputRef.current?.click()}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    <Upload size={12} /> Import Layout
+                  </button>
+                  <input
+                    type="file"
+                    ref={importFileInputRef}
+                    onChange={handleImportLayout}
+                    accept=".json"
+                    className="hidden"
+                  />
+
+                  <button
+                    onClick={() => setShowSavePresetModal(true)}
+                    className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    <Save size={12} /> Save Preset
+                  </button>
+
+                  <button
+                    onClick={() => setIsEditMode(false)}
+                    className="px-4 py-2 bg-ares-success/15 text-ares-success border border-ares-success/20 hover:bg-ares-success/25 hover:border-ares-success/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                  >
+                    Done
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditMode(true)}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
+                >
+                  <Layout size={12} /> Customize Layout
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Canvas Plot View & collapsers split */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              <TelemetryCharts />
-              
-              {/* Playhead-Synchronized System Console Logs */}
-              <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 relative">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-                  <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
-                    <Terminal size={14} className="text-ares-gold" />
-                    System Console Logs
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Filter logs..."
-                      value={logFilter}
-                      onChange={(e) => setLogFilter(e.target.value)}
-                      className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
-                      aria-label="Filter logs"
-                    />
-                    <select
-                      value={logLevelFilter}
-                      onChange={(e) => setLogLevelFilter(e.target.value as any)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan"
-                    >
-                      <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
-                      <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
-                      <option value="WARN" className="bg-neutral-900 text-ares-gold">WARN</option>
-                      <option value="ERROR" className="bg-neutral-900 text-ares-red-light">ERROR</option>
-                    </select>
-                    <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={autoScrollLogs}
-                        onChange={(e) => setAutoScrollLogs(e.target.checked)}
-                        className="accent-ares-gold cursor-pointer rounded border-white/10"
-                      />
-                      Auto-scroll
-                    </label>
-                  </div>
-                </div>
+          {/* Dynamic Grid Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {dashboardLayout
+              .filter((item) => item.visible)
+              .sort((a, b) => a.order - b.order)
+              .map((item) => {
+                const heightClass = 
+                  item.height === "short" ? "min-h-[220px]" :
+                  item.height === "tall" ? "min-h-[580px]" :
+                  "min-h-[380px]";
+                
+                const colSpanClass = 
+                  item.colSpan === 1 ? "md:col-span-1" :
+                  item.colSpan === 2 ? "md:col-span-2" :
+                  "md:col-span-3";
 
-                <div 
-                  ref={logContainerRef}
-                  className="h-64 overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
-                >
-                  {filteredLogs.length === 0 ? (
-                    <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
-                      {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
-                    </div>
-                  ) : (
-                    filteredLogs.map((entry, idx) => {
-                      let levelColor = "text-marble/70";
-                      let levelBg = "bg-transparent";
-                      if (entry.level === "WARN") {
-                        levelColor = "text-ares-gold";
-                        levelBg = "bg-ares-gold/5 border border-ares-gold/10";
-                      } else if (entry.level === "ERROR") {
-                        levelColor = "text-ares-red-light";
-                        levelBg = "bg-ares-red/5 border border-ares-red/10";
-                      }
-                      return (
-                        <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
-                          <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
-                          <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
-                            entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
-                            entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
-                            "bg-white/10 text-marble/60"
-                          }`}>{entry.level}</span>
-                          <span className={`break-all ${levelColor}`}>{entry.message}</span>
+                return (
+                  <div
+                    key={item.id}
+                    id={`workspace-card-${item.id}`}
+                    draggable={isEditMode}
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onDragOver={(e) => handleDragOver(e, item.id)}
+                    onDrop={(e) => handleDropCard(e, item.id)}
+                    className={`${colSpanClass} ${heightClass} transition-all duration-300 relative flex flex-col group bg-obsidian-light rounded-2xl border ${
+                      isEditMode 
+                        ? "border-ares-gold/40 border-dashed cursor-move hover:border-ares-gold animate-pulse" 
+                        : "border-white/10"
+                    }`}
+                  >
+                    {/* Hover Fullscreen button when NOT in edit mode */}
+                    {!isEditMode && (
+                      <button
+                        onClick={() => handleToggleFullscreen(item.id)}
+                        className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-1.5 rounded-lg bg-black/60 border border-white/10 text-marble/60 hover:text-white cursor-pointer"
+                        title="Maximize panel to fullscreen"
+                      >
+                        <Maximize2 size={12} />
+                      </button>
+                    )}
+
+                    {/* Card Header inside Edit Mode */}
+                    {isEditMode && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-black/50 border-b border-white/5 select-none text-[10px] uppercase font-bold text-marble/60 rounded-t-2xl">
+                        <div className="flex items-center gap-2">
+                          <div className="cursor-move text-ares-gold font-bold text-sm" title="Drag to reorder">
+                            ☰
+                          </div>
+                          {editingCardId === item.id ? (
+                            <input
+                              type="text"
+                              value={editingTitleText}
+                              onChange={(e) => setEditingTitleText(e.target.value)}
+                              onBlur={() => handleSaveRename(item.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveRename(item.id);
+                                if (e.key === "Escape") setEditingCardId(null);
+                              }}
+                              autoFocus
+                              className="bg-black/60 border border-white/20 text-white rounded px-2 py-0.5 text-[10px] font-bold uppercase focus:outline-none focus:border-ares-gold"
+                            />
+                          ) : (
+                            <span 
+                              onDoubleClick={() => handleStartRename(item.id, item.title)}
+                              className="font-heading text-white cursor-pointer hover:text-ares-gold flex items-center gap-1.5"
+                              title="Double click to rename card"
+                            >
+                              {item.title}
+                              <Edit3 size={8} className="text-marble/40" />
+                            </span>
+                          )}
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="lg:col-span-1 flex flex-col gap-6">
-              <StateInspector />
-            </div>
+
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.colSpan}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              setDashboardLayout(dashboardLayout.map(l => 
+                                l.id === item.id ? { ...l, colSpan: val } : l
+                              ));
+                            }}
+                            className="bg-black/65 border border-white/10 rounded px-1 py-0.5 text-[8px] text-white focus:outline-none font-bold cursor-pointer"
+                            title="Grid column span"
+                          >
+                            <option value={1}>1 Col</option>
+                            <option value={2}>2 Col</option>
+                            <option value={3}>3 Col</option>
+                          </select>
+
+                          <select
+                            value={item.height}
+                            onChange={(e) => {
+                              const val = e.target.value as "short" | "medium" | "tall";
+                              setDashboardLayout(dashboardLayout.map(l => 
+                                l.id === item.id ? { ...l, height: val } : l
+                              ));
+                            }}
+                            className="bg-black/65 border border-white/10 rounded px-1 py-0.5 text-[8px] text-white focus:outline-none font-bold cursor-pointer"
+                            title="Card vertical height"
+                          >
+                            <option value="short">Short</option>
+                            <option value="medium">Medium</option>
+                            <option value="tall">Tall</option>
+                          </select>
+
+                          <button
+                            onClick={() => handleToggleFullscreen(item.id)}
+                            className="text-marble/45 hover:text-white transition-colors cursor-pointer"
+                            title="Fullscreen zoom"
+                          >
+                            <Maximize2 size={10} />
+                          </button>
+
+                          {item.type === "charts" && (
+                            <button
+                              onClick={() => handleDuplicateChart(item.id)}
+                              className="text-marble/45 hover:text-white transition-colors cursor-pointer"
+                              title="Duplicate chart"
+                            >
+                              <Copy size={10} />
+                            </button>
+                          )}
+
+                          {item.type === "charts" && dashboardLayout.filter(l => l.type === "charts").length > 1 && (
+                            <button
+                              onClick={() => handleDeleteChart(item.id)}
+                              className="text-ares-red hover:text-ares-red-light transition-colors cursor-pointer"
+                              title="Delete chart panel"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card Body containing actual component */}
+                    <div className="flex-grow overflow-hidden relative rounded-b-2xl">
+                      {item.type === "visualizer" && (
+                        <div className="flex flex-col gap-4 h-full p-4 overflow-y-auto">
+                          <div className="flex-grow">
+                            <WebGLReplayCanvas />
+                          </div>
+                          {videoUrl && (
+                            <div className="glass-card p-4 border border-white/10 flex flex-col gap-3 relative shrink-0">
+                              <button
+                                onClick={() => setVideoUrl(null)}
+                                className="absolute top-2 right-2 text-marble/40 hover:text-white cursor-pointer transition-colors"
+                                title="Close video player"
+                              >
+                                <X size={14} />
+                              </button>
+                              <h3 className="text-[10px] font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-2 flex items-center gap-1.5">
+                                🎥 Synchronized Match Video
+                              </h3>
+                              <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-white/5 shadow-inner">
+                                <video
+                                  ref={videoRef}
+                                  src={videoUrl}
+                                  className="w-full h-full object-contain"
+                                  controls={false}
+                                  muted
+                                  playsInline
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {item.type === "diagnostics" && <HealthDiagnostics />}
+                      
+                      {item.type === "inspector" && <StateInspector />}
+                      
+                      {item.type === "logs" && (
+                        <div className="flex flex-col gap-4 h-full p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                            <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
+                              <Terminal size={14} className="text-ares-gold" />
+                              System Console Logs
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="Filter logs..."
+                                value={logFilter}
+                                onChange={(e) => setLogFilter(e.target.value)}
+                                className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
+                                aria-label="Filter logs"
+                              />
+                              <select
+                                value={logLevelFilter}
+                                onChange={(e) => setLogLevelFilter(e.target.value as any)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan"
+                              >
+                                <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
+                                <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
+                                <option value="WARN" className="bg-neutral-900 text-ares-gold">WARN</option>
+                                <option value="ERROR" className="bg-neutral-900 text-ares-red-light">ERROR</option>
+                              </select>
+                              <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={autoScrollLogs}
+                                  onChange={(e) => setAutoScrollLogs(e.target.checked)}
+                                  className="accent-ares-gold cursor-pointer rounded border-white/10"
+                                />
+                                Auto-scroll
+                              </label>
+                            </div>
+                          </div>
+
+                          <div 
+                            ref={logContainerRef}
+                            className="flex-grow overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
+                          >
+                            {filteredLogs.length === 0 ? (
+                              <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
+                                {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
+                              </div>
+                            ) : (
+                              filteredLogs.map((entry, idx) => {
+                                let levelColor = "text-marble/70";
+                                let levelBg = "bg-transparent";
+                                if (entry.level === "WARN") {
+                                  levelColor = "text-ares-gold";
+                                  levelBg = "bg-ares-gold/5 border border-ares-gold/10";
+                                } else if (entry.level === "ERROR") {
+                                  levelColor = "text-ares-red-light";
+                                  levelBg = "bg-ares-red/5 border border-ares-red/10";
+                                }
+                                return (
+                                  <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
+                                    <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
+                                    <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
+                                      entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
+                                      entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
+                                      "bg-white/10 text-marble/60"
+                                    }`}>{entry.level}</span>
+                                    <span className={`break-all ${levelColor}`}>{entry.message}</span>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {item.type === "charts" && (
+                        <TelemetryCharts 
+                          chartId={item.id}
+                          selectedKeys={chartConfigs.find(c => c.id === item.id)?.selectedKeys || []}
+                          onToggleKey={(key) => {
+                            setChartConfigs(chartConfigs.map(c => {
+                              if (c.id === item.id) {
+                                const isSelected = c.selectedKeys.includes(key);
+                                const nextKeys = isSelected
+                                  ? c.selectedKeys.filter(k => k !== key)
+                                  : [...c.selectedKeys, key];
+                                return { ...c, selectedKeys: nextKeys };
+                              }
+                              return c;
+                            }));
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
 
           {/* ─── MASTER SCRUBBING TIMELINE TIMELINE DECK ─── */}
@@ -1411,10 +2046,90 @@ export default function ScopeDashboard() {
                 Cancel
               </button>
               <button
-                onClick={handleConnectLive}
+                onClick={() => handleConnectLive()}
                 className="flex-1 py-3 bg-ares-gold text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
               >
                 <Wifi size={12} className="stroke-[3]" /> Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSavePresetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300">
+          <div className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none">
+            <button
+              onClick={() => setShowSavePresetModal(false)}
+              className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
+            >
+              <X size={16} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center text-ares-gold">
+                <Save size={20} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
+                  Save Layout Preset
+                </h3>
+                <p className="text-marble/55 text-[10px] font-bold uppercase tracking-wider">
+                  Cloud Workspace Sync
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="presetNameInput" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+                  Preset Name
+                </label>
+                <input
+                  id="presetNameInput"
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="e.g. Swerve Calibrations"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-ares-gold transition-colors focus:ring-2 focus:ring-ares-cyan"
+                />
+              </div>
+
+              {/* Share Toggle */}
+              <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-white">Share with Team</span>
+                  <span className="text-[8px] text-marble/40 leading-normal">Save to team collection `/team_layouts`</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isSharedToggle}
+                  onChange={(e) => setIsSharedToggle(e.target.checked)}
+                  className="accent-ares-gold w-4 h-4 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => setShowSavePresetModal(false)}
+                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePreset}
+                disabled={savingPreset || !newPresetName.trim()}
+                className="flex-1 py-3 bg-ares-gold disabled:opacity-50 text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
+              >
+                {savingPreset ? (
+                  <>
+                    <RefreshCw size={12} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={12} className="stroke-[3]" /> Save Preset
+                  </>
+                )}
               </button>
             </div>
           </div>

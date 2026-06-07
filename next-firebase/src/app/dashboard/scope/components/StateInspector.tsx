@@ -127,7 +127,7 @@ export default function StateInspector() {
 
   if (!telemetryData || !currentFrame) {
     return (
-      <div className="glass-card p-6 border border-white/10 h-full flex flex-col gap-4">
+      <div className="h-full flex flex-col gap-4 p-6">
         <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3">
           🔎 State Inspector
         </h3>
@@ -182,7 +182,7 @@ export default function StateInspector() {
   });
 
   return (
-    <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-4 h-full p-6">
       {/* Header */}
       <div className="border-b border-white/5 pb-3 flex items-center justify-between">
         <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading">

@@ -14,8 +14,17 @@ const getCSSVariableValue = (varName: string, fallback: string): string => {
   }
 };
 
-export default function TelemetryCharts() {
-  const { telemetryData, currentTimeMs, setCurrentTimeMs, selectedKeys, toggleSelectedKey } = useScopeStore();
+interface TelemetryChartsProps {
+  chartId?: string;
+  selectedKeys?: string[];
+  onToggleKey?: (key: string) => void;
+}
+
+export default function TelemetryCharts({ chartId, selectedKeys: propSelectedKeys, onToggleKey }: TelemetryChartsProps = {}) {
+  const { telemetryData, currentTimeMs, setCurrentTimeMs, selectedKeys: storeSelectedKeys, toggleSelectedKey: storeToggleSelectedKey } = useScopeStore();
+  const selectedKeys = propSelectedKeys !== undefined ? propSelectedKeys : storeSelectedKeys;
+  const toggleSelectedKey = onToggleKey !== undefined ? onToggleKey : storeToggleSelectedKey;
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
 
@@ -243,7 +252,7 @@ export default function TelemetryCharts() {
   }
 
   return (
-    <div className="glass-card p-6 border border-white/10 flex flex-col gap-4">
+    <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 h-full">
       {/* Chart Headers */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-3">
         <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading">
@@ -294,7 +303,7 @@ export default function TelemetryCharts() {
       </div>
 
       {/* Main Canvas Graph */}
-      <div className="relative w-full h-[180px] bg-black/60 rounded-xl overflow-hidden shadow-inner border border-white/5">
+      <div className="relative w-full flex-grow min-h-[120px] h-0 bg-black/60 rounded-xl overflow-hidden shadow-inner border border-white/5">
         <canvas
           ref={canvasRef}
           onMouseDown={handleGraphInteraction}

@@ -1048,7 +1048,7 @@ export default function WebGLReplayCanvas() {
   }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov]);
 
   return (
-    <div className="glass-card p-6 border border-white/10 flex flex-col gap-5 justify-between h-full">
+    <div className="flex flex-col gap-5 justify-between h-full p-6">
       {/* HUD Metrics & Selector Header */}
       <div className="w-full border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">

@@ -107,6 +107,10 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
                     (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin'));
       allow delete: if hasRole('admin');
+
+      match /layouts/{layoutId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
 
     // robots
@@ -172,6 +176,11 @@ service cloud.firestore {
     match /docs_feedback/{feedbackId} {
       allow create: if true;
       allow read: if isAuthorized();
+    }
+
+    // team_layouts
+    match /team_layouts/{layoutId} {
+      allow read, write: if isAuthorized();
     }
   }
 }
