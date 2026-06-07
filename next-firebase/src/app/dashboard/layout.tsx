@@ -5,11 +5,13 @@ import { useAuth } from "@/context/AuthContext";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { LogIn, Menu, X, KeyRound } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, loginWithGoogle, loginWithMockUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLocal, setIsLocal] = useState(false);
+  const mobileRef = useFocusTrap(mobileMenuOpen, () => setMobileMenuOpen(false));
 
   React.useEffect(() => {
     setIsLocal(
@@ -160,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setMobileMenuOpen(false)}
           />
           {/* Sidebar panel */}
-          <div className="relative z-50 flex flex-col bg-obsidian h-full border-r border-white/10 animate-slide-in">
+          <div ref={mobileRef} tabIndex={-1} className="relative z-50 flex flex-col bg-obsidian h-full border-r border-white/10 animate-slide-in focus:outline-none">
             {/* Close button overlay */}
             <button 
               onClick={() => setMobileMenuOpen(false)}

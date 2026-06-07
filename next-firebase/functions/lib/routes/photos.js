@@ -1,0 +1,531 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const crypto_1 = __importDefault(require("crypto"));
+const firebase_admin_1 = __importStar(require("../lib/firebase-admin"));
+const googleAuth_1 = require("../lib/googleAuth");
+const imageImport_1 = require("../lib/imageImport");
+const auth_1 = require("../middleware/auth");
+const crypto_2 = require("../lib/crypto");
+const router = express_1.default.Router();
+const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
+function getEncryptionSecret() {
+    const secret = process.env.ENCRYPTION_SECRET;
+    if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+        const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
+        if (isProd) {
+            throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+        }
+    }
+    return secret || "01234567890123456789012345678901";
+}
+// GET /api/photos
+router.get("/", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const photosSnap = await firebase_admin_1.adminDb
+            .collection("imported_photos")
+            .orderBy("importedAt", "desc")
+            .get();
+        const photos = photosSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        res.json({ photos });
+    }
+    catch (error) {
+        console.error("[Photos GET Endpoint Error]:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// GET /api/photos/albums
+router.get("/albums", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const albumsSnap = await firebase_admin_1.adminDb
+            .collection("albums")
+            .orderBy("createdAt", "desc")
+            .get();
+        const albums = albumsSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        res.json({ albums });
+    }
+    catch (error) {
+        console.error("[Albums GET Endpoint Error]:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// POST /api/photos/albums
+router.post("/albums", auth_1.ensureAdmin, async (req, res) => {
+    try {
+        const { title, description, category, coverImageUrl } = req.body;
+        if (!title || !category) {
+            res.status(400).json({ error: "Missing required fields: title, category" });
+            return;
+        }
+        const albumId = title
+            .toLowerCase()
+            .replace(/[\s_]+/g, "-")
+            .replace(/[^a-z0-9-]/g, "")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        const albumDocRef = firebase_admin_1.adminDb.collection("albums").doc(albumId);
+        const existing = await albumDocRef.get();
+        if (existing.exists) {
+            res.status(400).json({ error: "An album with this title slug already exists." });
+            return;
+        }
+        const newAlbum = {
+            id: albumId,
+            title,
+            description: description || "",
+            category,
+            coverImageUrl: coverImageUrl || "",
+            mediaCount: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        await albumDocRef.set(newAlbum);
+        res.json({ success: true, album: newAlbum });
+    }
+    catch (error) {
+        console.error("[Albums POST Endpoint Error]:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// POST /api/photos/import
+router.post("/import", auth_1.ensureAdmin, async (req, res) => {
+    try {
+        const { items, albumId, albumName } = req.body;
+        if (!items || items.length === 0) {
+            res.status(400).json({ error: "No items provided for import" });
+            return;
+        }
+        console.log(`[Photo Import] Starting ingestion of ${items.length} items on Firebase...`);
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const bucket = firebase_admin_1.adminStorage.bucket();
+        const results = [];
+        const dateStr = new Date().toISOString().split("T")[0];
+        const sanitizedAlbum = albumName ? (0, imageImport_1.sanitizeAlbumName)(albumName) : "imported";
+        const baseFolder = `gallery/${sanitizedAlbum}/${dateStr}`;
+        let successCount = 0;
+        let failedCount = 0;
+        // EFF-F01 Batch Optimization: Read all existing photos in a single batch read
+        const itemIds = items.map(item => item.id);
+        const docRefs = itemIds.map(id => firebase_admin_1.adminDb.collection("imported_photos").doc(id));
+        const docSnaps = await firebase_admin_1.adminDb.getAll(...docRefs);
+        const docMap = new Map(docSnaps.map(snap => [snap.id, snap]));
+        // We compile writes in a Firestore WriteBatch
+        const writeBatch = firebase_admin_1.adminDb.batch();
+        let batchHasOperations = false;
+        // Process items in parallel chunks of 4 for downloads & GCS uploads
+        const chunkArray = (arr, size) => {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += size) {
+                chunks.push(arr.slice(i, i + size));
+            }
+            return chunks;
+        };
+        const itemChunks = chunkArray(items, 4);
+        for (const chunk of itemChunks) {
+            await Promise.all(chunk.map(async (item) => {
+                const filename = item.filename ?? `photo-${item.id}.jpg`;
+                const mimeType = item.mimeType ?? "image/jpeg";
+                try {
+                    const docSnap = docMap.get(item.id);
+                    if (docSnap && docSnap.exists) {
+                        const existingData = docSnap.data();
+                        results.push({
+                            mediaItemId: item.id,
+                            status: "success",
+                            filename,
+                            storagePath: existingData?.storagePath,
+                            publicUrl: existingData?.publicUrl,
+                        });
+                        successCount++;
+                        return;
+                    }
+                    const downloadUrl = `${item.baseUrl}=d`;
+                    const downloadRes = await fetch(downloadUrl, {
+                        headers: { Authorization: `Bearer ${googleToken}` },
+                    });
+                    if (!downloadRes.ok) {
+                        throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
+                    }
+                    const buffer = await downloadRes.arrayBuffer();
+                    const validation = (0, imageImport_1.validateImageMagicBytes)(buffer);
+                    if (!validation.valid) {
+                        throw new Error(validation.error ?? "File did not pass magic bytes verification");
+                    }
+                    const fileKey = `${baseFolder}/${item.id}-${filename}`;
+                    const storageFile = bucket.file(fileKey);
+                    await storageFile.save(Buffer.from(buffer), {
+                        metadata: {
+                            contentType: mimeType,
+                            metadata: {
+                                googleMediaItemId: item.id,
+                                importedBy: "ARES Team Picker",
+                            },
+                        },
+                        resumable: false,
+                    });
+                    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
+                    const photoMeta = {
+                        id: item.id,
+                        storagePath: fileKey,
+                        publicUrl,
+                        originalFilename: filename,
+                        mimeType,
+                        fileSize: buffer.byteLength,
+                        importedAt: new Date().toISOString(),
+                        albumId: albumId || null,
+                    };
+                    const photoRef = firebase_admin_1.adminDb.collection("imported_photos").doc(item.id);
+                    writeBatch.set(photoRef, photoMeta);
+                    batchHasOperations = true;
+                    if (albumId) {
+                        const albumPhotoRef = firebase_admin_1.adminDb
+                            .collection("albums")
+                            .doc(albumId)
+                            .collection("photos")
+                            .doc(item.id);
+                        writeBatch.set(albumPhotoRef, photoMeta);
+                    }
+                    results.push({
+                        mediaItemId: item.id,
+                        status: "success",
+                        filename,
+                        storagePath: fileKey,
+                        publicUrl,
+                    });
+                    successCount++;
+                }
+                catch (err) {
+                    results.push({
+                        mediaItemId: item.id,
+                        status: "failed",
+                        filename,
+                        error: err.message || "Unknown import error",
+                    });
+                    failedCount++;
+                }
+            }));
+        }
+        // Commit all Firestore writes in a single batch
+        if (batchHasOperations) {
+            await writeBatch.commit();
+            console.log(`[Photo Import] Batch committed ${successCount} entries successfully.`);
+        }
+        if (albumId && successCount > 0) {
+            try {
+                const albumRef = firebase_admin_1.adminDb.collection("albums").doc(albumId);
+                const albumSnap = await albumRef.get();
+                if (albumSnap.exists) {
+                    const currentCount = albumSnap.data()?.mediaCount ?? 0;
+                    await albumRef.update({
+                        mediaCount: currentCount + successCount,
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+            }
+            catch (countErr) {
+                console.warn("[Photo Import] Failed to update album count doc:", countErr);
+            }
+        }
+        res.json({
+            imported: successCount,
+            failed: failedCount,
+            results,
+        });
+    }
+    catch (error) {
+        console.error("[Photos Ingestion Endpoint Error]:", error);
+        res.status(500).json({ error: "Inward pipeline error." });
+    }
+});
+// GET /api/photos/auth/init
+// Secure route to generate anti-CSRF token and return redirect URL
+router.get("/auth/init", async (req, res) => {
+    try {
+        const token = req.query.token;
+        if (!token) {
+            res.status(401).json({ error: "Unauthorized: Missing authentication token" });
+            return;
+        }
+        // Verify admin identity
+        const decodedToken = await firebase_admin_1.default.auth().verifyIdToken(token);
+        const email = decodedToken.email?.toLowerCase();
+        if (!email) {
+            res.status(403).json({ error: "Forbidden: No email in token" });
+            return;
+        }
+        const userDoc = await firebase_admin_1.adminDb.collection("authorized_users").doc(email).get();
+        if (!userDoc.exists) {
+            res.status(403).json({ error: "Forbidden: User not authorized" });
+            return;
+        }
+        const userData = userDoc.data();
+        if (userData?.role !== "admin" && userData?.role !== "coach" && userData?.role !== "mentor") {
+            res.status(403).json({ error: "Forbidden: Insufficient privileges" });
+            return;
+        }
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        if (!clientId || !clientSecret) {
+            res.status(500).json({ error: "Google OAuth credentials not configured." });
+            return;
+        }
+        const origin = `${req.protocol}://${req.get("host")}`;
+        const redirectUri = `${origin}/api/photos/auth`;
+        // Generate secure state token
+        const state = crypto_1.default.randomBytes(16).toString("hex");
+        // Save to Firestore with a 10 minute expiration
+        await firebase_admin_1.adminDb.collection("oauth_states").doc(state).set({
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        });
+        const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        googleAuthUrl.searchParams.set("client_id", clientId);
+        googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
+        googleAuthUrl.searchParams.set("response_type", "code");
+        googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly");
+        googleAuthUrl.searchParams.set("access_type", "offline");
+        googleAuthUrl.searchParams.set("prompt", "consent");
+        googleAuthUrl.searchParams.set("state", state);
+        res.redirect(googleAuthUrl.toString());
+    }
+    catch (error) {
+        console.error("[Google OAuth Init Error]:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// GET /api/photos/auth (callback URL)
+router.get("/auth", async (req, res) => {
+    try {
+        const code = req.query.code;
+        const error = req.query.error;
+        const state = req.query.state;
+        const origin = `${req.protocol}://${req.get("host")}`;
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        if (!clientId || !clientSecret) {
+            res.status(500).json({ error: "Google OAuth credentials not configured." });
+            return;
+        }
+        const redirectUri = `${origin}/api/photos/auth`;
+        if (error) {
+            console.error("[Google OAuth Callback Error]:", error);
+            res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent(error)}`);
+            return;
+        }
+        // SEC-F01: Verify State Parameter against database to prevent CSRF hijacking
+        if (!state) {
+            res.status(400).json({ error: "State parameter missing. Anti-CSRF check failed." });
+            return;
+        }
+        const stateDocRef = firebase_admin_1.adminDb.collection("oauth_states").doc(state);
+        const stateSnap = await stateDocRef.get();
+        if (!stateSnap.exists) {
+            res.status(400).json({ error: "Invalid or expired state parameter. Anti-CSRF check failed." });
+            return;
+        }
+        // Clean up state parameter
+        await stateDocRef.delete();
+        if (code) {
+            console.log("[Google OAuth] Received auth code, exchanging for tokens...");
+            const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    code,
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    redirect_uri: redirectUri,
+                    grant_type: "authorization_code",
+                }),
+            });
+            if (!tokenRes.ok) {
+                const errorText = await tokenRes.text();
+                console.error("[Google OAuth] Token exchange failed:", errorText);
+                res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent("Token exchange failed")}`);
+                return;
+            }
+            const tokens = (await tokenRes.json());
+            const authRef = firebase_admin_1.adminDb.collection("system_settings").doc("google_auth");
+            const existingDoc = await authRef.get();
+            const existingData = existingDoc.exists ? existingDoc.data() : null;
+            const finalRefreshToken = tokens.refresh_token || existingData?.refreshToken;
+            if (!finalRefreshToken) {
+                res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent("No refresh token received.")}`);
+                return;
+            }
+            const secret = getEncryptionSecret();
+            const encryptedClientId = await (0, crypto_2.encrypt)(clientId, secret);
+            const encryptedClientSecret = await (0, crypto_2.encrypt)(clientSecret, secret);
+            const encryptedRefreshToken = await (0, crypto_2.encrypt)(finalRefreshToken, secret);
+            await authRef.set({
+                clientId: encryptedClientId,
+                clientSecret: encryptedClientSecret,
+                refreshToken: encryptedRefreshToken,
+                linkedAt: new Date().toISOString(),
+                scopes: tokens.scope.split(" "),
+                tokenType: tokens.token_type,
+            }, { merge: true });
+            res.redirect(`${origin}/dashboard/photos?auth_status=success`);
+            return;
+        }
+        res.status(400).json({ error: "Invalid OAuth handshake requests." });
+    }
+    catch (error) {
+        console.error("[Google OAuth Endpoint Error]:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// GET /api/photos/picker/media-proxy
+router.get("/picker/media-proxy", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const url = req.query.url;
+        if (!url) {
+            res.status(400).json({ error: "Missing 'url' query parameter" });
+            return;
+        }
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${googleToken}` },
+        });
+        if (!response.ok) {
+            res.status(response.status).json({ error: "Failed to proxy media" });
+            return;
+        }
+        const contentType = response.headers.get("Content-Type") || "image/jpeg";
+        const buffer = await response.arrayBuffer();
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.send(Buffer.from(buffer));
+    }
+    catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// GET /api/photos/picker/:sessionId/items
+router.get("/picker/:sessionId/items", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const response = await fetch(`${PICKER_API_BASE}/mediaItems?sessionId=${sessionId}`, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${googleToken}` },
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            res.status(response.status).json({ error: `Picker API failed: ${errorText}` });
+            return;
+        }
+        const data = await response.json();
+        res.json(data);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// GET /api/photos/picker/:sessionId
+router.get("/picker/:sessionId", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${googleToken}` },
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            res.status(response.status).json({ error: `Picker API failed: ${errorText}` });
+            return;
+        }
+        const data = await response.json();
+        res.json(data);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// POST /api/photos/picker
+router.post("/picker", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const response = await fetch(`${PICKER_API_BASE}/sessions`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${googleToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            res.status(response.status).json({ error: `Picker API failed: ${errorText}` });
+            return;
+        }
+        const data = await response.json();
+        res.json(data);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+// DELETE /api/photos/picker/:sessionId
+router.delete("/picker/:sessionId", auth_1.ensureAuth, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const googleToken = await (0, googleAuth_1.getGooglePhotosAccessToken)();
+        const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${googleToken}` },
+        });
+        if (!response.ok && response.status !== 404) {
+            console.warn("[Picker API] Warning: Delete session got status:", response.status);
+        }
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+exports.default = router;
+//# sourceMappingURL=photos.js.map

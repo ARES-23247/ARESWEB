@@ -174,46 +174,15 @@ export default function FieldObstacleEditor() {
           type: "field"
         })
       });
-      const data = await res.json();
-      if (data.success) {
-        const meta = {
-          documentId: fieldDocId,
-          workspaceId: fieldWkId,
-          elementId: fieldElId,
-          engineUsed: data.engine,
-          fileSizeMb: data.fileSizeMb,
-          optimizedUrl: data.cadUrl,
-          fieldYear: data.fieldYear || "2025-2026 Into The Deep",
-          elementCount: data.elementCount || 42
-        };
-
-        // Save to Firestore under settings/field_cad so it persists globally
-        const fieldRef = doc(db, "settings", "field_cad");
-        await setDoc(fieldRef, {
-          documentId: fieldDocId,
-          workspaceId: fieldWkId,
-          elementId: fieldElId,
-          cadUrl: data.cadUrl,
-          syncMeta: meta
-        });
-
-        setFieldSyncMeta(meta);
-        setIsFieldConnected(true);
-        
-        // Reload layouts list to fetch the newly generated layout from Firestore
-        await fetchConfigs();
-        alert(data.message || "Field CAD synchronized successfully!");
+      if (res.status === 202 || res.ok) {
+        alert("Field CAD synchronization initiated successfully in the background. The field layout and model will update in a few moments.");
       } else {
+        const data = await res.json();
         alert("Failed to sync Field CAD: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Failed to sync Field CAD:", err);
-      const isPermissionError = err?.message?.toLowerCase().includes("permission") || err?.code === "permission-denied";
-      alert(
-        isPermissionError
-          ? "Failed to save sync metadata: Insufficient database permissions."
-          : "Failed to sync Field CAD: " + (err?.message || "Network connection or parsing error.")
-      );
+      alert("Failed to sync Field CAD: " + (err?.message || "Network connection or parsing error."));
     } finally {
       setLoading(false);
     }
@@ -646,7 +615,7 @@ export default function FieldObstacleEditor() {
               const cfg = configs.find((c) => c.id === e.target.value);
               if (cfg) loadConfig(cfg);
             }}
-            className="bg-black/50 text-white text-xs border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:border-ares-gold uppercase font-bold cursor-pointer min-w-[150px]"
+            className="bg-black/50 text-white text-xs border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:border-ares-cyan uppercase font-bold cursor-pointer min-w-[150px]"
           >
             {configs.length === 0 ? (
               <option value="" className="bg-neutral-900">No Layouts Saved</option>
@@ -697,7 +666,7 @@ export default function FieldObstacleEditor() {
                 role="img"
                 aria-label="Interactive 2D Field Map. Use Arrow keys to move the selected obstacle, Tab to cycle obstacles, and Escape to deselect."
                 style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
-                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               />
             </div>
             
@@ -729,7 +698,7 @@ export default function FieldObstacleEditor() {
                 value={configName}
                 onChange={(e) => setConfigName(e.target.value)}
                 placeholder="Championship Finals layout..."
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-gold transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
               />
             </div>
 
@@ -828,7 +797,7 @@ export default function FieldObstacleEditor() {
                       type="text"
                       value={selectedObs.name}
                       onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-gold"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                     />
                   </div>
 
@@ -841,7 +810,7 @@ export default function FieldObstacleEditor() {
                       step="0.01"
                       value={selectedObs.x}
                       onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-gold"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                     />
                   </div>
 
@@ -854,7 +823,7 @@ export default function FieldObstacleEditor() {
                       step="0.01"
                       value={selectedObs.y}
                       onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-gold"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                     />
                   </div>
 
@@ -868,7 +837,7 @@ export default function FieldObstacleEditor() {
                       min="0.05"
                       value={selectedObs.width}
                       onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-gold"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                     />
                   </div>
 
@@ -882,7 +851,7 @@ export default function FieldObstacleEditor() {
                       min="0.05"
                       value={selectedObs.height}
                       onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-gold"
+                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                     />
                   </div>
                 </div>
@@ -1000,7 +969,7 @@ export default function FieldObstacleEditor() {
                         setFieldDocId(val);
                       }
                     }}
-                    className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                    className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
                   />
                 </div>
                 
@@ -1012,7 +981,7 @@ export default function FieldObstacleEditor() {
                       placeholder="e.g. w_official..."
                       value={fieldWkId}
                       onChange={(e) => setFieldWkId(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
                     />
                   </div>
                   <div>
@@ -1022,7 +991,7 @@ export default function FieldObstacleEditor() {
                       placeholder="e.g. e_arena..."
                       value={fieldElId}
                       onChange={(e) => setFieldElId(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
                     />
                   </div>
                 </div>

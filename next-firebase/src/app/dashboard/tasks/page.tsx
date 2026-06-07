@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { Drawer } from "vaul";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface TaskComment {
   id: string;
@@ -227,6 +228,7 @@ function TaskDetailsModal({
   const [submitting, setSubmitting] = useState(false);
   const [newSubTitle, setNewSubTitle] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const modalRef = useFocusTrap(!isMobile, onClose);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -501,7 +503,7 @@ function TaskDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div ref={modalRef} tabIndex={-1} className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none">
         {renderInnerContent()}
       </div>
     </div>

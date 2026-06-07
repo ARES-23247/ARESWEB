@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, LogIn, LogOut, ShieldCheck, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
+import { maskEmail } from "@/lib/utils";
 
 export default function Home() {
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
@@ -60,7 +61,7 @@ export default function Home() {
                   />
                   <div>
                     <p className="text-xs text-marble/60">Active Session</p>
-                    <p className="text-sm font-bold text-white truncate max-w-[200px]">{user.displayName || user.email}</p>
+                    <p className="text-sm font-bold text-white truncate max-w-[200px]">{user.displayName || maskEmail(user.email)}</p>
                     <span className="text-[10px] text-ares-gold uppercase tracking-wider font-semibold">
                       Role: {authorizedUser?.role || "Pending Verification"}
                     </span>

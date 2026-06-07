@@ -80,7 +80,8 @@ service cloud.firestore {
 
     // inquiries (securely gated to adminDb server writes only!)
     match /inquiries/{inquiryId} {
-      allow read, write: if isAuthorized();
+      allow read: if isAuthorized();
+      allow write: if false;
     }
 
     // aresplanner_paths

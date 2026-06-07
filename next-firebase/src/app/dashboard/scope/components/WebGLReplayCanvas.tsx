@@ -1123,12 +1123,12 @@ export default function WebGLReplayCanvas() {
             aria-label="Tactical 2D Replay Viewport. Use Left/Right Arrow keys to scrub through time, and Home/End to jump to start/end." 
             tabIndex={0}
             onKeyDown={handleKeyDown}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           />
         ) : (
           <div 
             ref={container3DRef} 
-            className="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold" 
+            className="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" 
             style={{ minHeight: "360px" }}
             tabIndex={0}
             onKeyDown={handleKeyDown}

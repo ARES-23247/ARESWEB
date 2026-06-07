@@ -67,10 +67,15 @@ export default function GoogleSyncPage() {
     }
   }, []);
 
-  const handleTriggerOAuth = () => {
-    if (!canEdit) return;
-    // Redirect to the backend OAuth initialization URL
-    window.location.href = "/api/photos/auth";
+  const handleTriggerOAuth = async () => {
+    if (!canEdit || !user) return;
+    try {
+      const token = await user.getIdToken();
+      window.location.href = `/api/photos/auth/init?token=${encodeURIComponent(token)}`;
+    } catch (err: any) {
+      console.error("Failed to get ID token:", err);
+      alert("Failed to initiate Google authentication: " + err.message);
+    }
   };
 
   return (

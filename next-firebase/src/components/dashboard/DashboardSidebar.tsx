@@ -43,7 +43,6 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const { user, authorizedUser, logout } = useAuth();
   
   const userRole = authorizedUser?.role || "Pending Verification";
-  const userEmail = user?.email || "";
   const userImage = user?.photoURL;
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 

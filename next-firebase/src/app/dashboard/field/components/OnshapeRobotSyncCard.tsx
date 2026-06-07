@@ -139,59 +139,19 @@ export default function OnshapeRobotSyncCard() {
           documentId: robotDocId,
           workspaceId: robotWkId,
           elementId: robotElId,
-          type: "robot"
+          type: "robot",
+          robotId: selectedRobotId
         })
       });
-      const data = await res.json();
-      if (data.success) {
-        const meta: SyncMetadata = {
-          documentId: robotDocId,
-          workspaceId: robotWkId,
-          elementId: robotElId,
-          engineUsed: data.engine,
-          fileSizeMb: data.fileSizeMb,
-          optimizedUrl: data.cadUrl,
-          mateBindings: [
-            { mateName: "LinearSlideMate", type: "Slider", channel: "mechanisms/slide/height" },
-            { mateName: "IntakePivotMate", type: "Revolute", channel: "mechanisms/intake/current" }
-          ]
-        };
-
-        // Save to Firestore under the selected robot document
-        const robotRef = doc(db, "robots", selectedRobotId);
-        await setDoc(robotRef, {
-          onshapeDocId: robotDocId,
-          onshapeWorkspaceId: robotWkId,
-          onshapeElementId: robotElId,
-          onshapeUrl: `https://cad.onshape.com/documents/${robotDocId}/w/${robotWkId}/e/${robotElId}`,
-          cadViewerUrl: data.cadUrl,
-          syncMeta: meta
-        }, { merge: true });
-
-        // Update local state
-        setRobots(prev => prev.map(r => r.id === selectedRobotId ? {
-          ...r,
-          onshapeDocId: robotDocId,
-          onshapeWorkspaceId: robotWkId,
-          onshapeElementId: robotElId,
-          onshapeUrl: `https://cad.onshape.com/documents/${robotDocId}/w/${robotWkId}/e/${robotElId}`,
-          cadViewerUrl: data.cadUrl,
-          syncMeta: meta
-        } : r));
-
-        setRobotSyncMeta(meta);
-        setIsRobotConnected(true);
+      if (res.status === 202 || res.ok) {
+        alert("Robot CAD synchronization initiated successfully in the background. The model will update in a few moments.");
       } else {
+        const data = await res.json();
         alert("Failed to sync Robot CAD: " + (data.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Failed to sync Robot CAD:", err);
-      const isPermissionError = err?.message?.toLowerCase().includes("permission") || err?.code === "permission-denied";
-      alert(
-        isPermissionError
-          ? "Failed to save sync metadata: Insufficient database permissions."
-          : "Failed to sync Robot CAD: " + (err?.message || "Network connection or parsing error.")
-      );
+      alert("Failed to sync Robot CAD: " + (err?.message || "Network connection or parsing error."));
     } finally {
       setLoading(false);
     }
@@ -255,7 +215,7 @@ export default function OnshapeRobotSyncCard() {
                 setRobotDocId(val);
               }
             }}
-            className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+            className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-3.5">
@@ -266,7 +226,7 @@ export default function OnshapeRobotSyncCard() {
               placeholder="e.g. w_official..."
               value={robotWkId}
               onChange={(e) => setRobotWkId(e.target.value)}
-              className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+              className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
             />
           </div>
           <div>
@@ -276,7 +236,7 @@ export default function OnshapeRobotSyncCard() {
               placeholder="e.g. e_chassis..."
               value={robotElId}
               onChange={(e) => setRobotElId(e.target.value)}
-              className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+              className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
             />
           </div>
         </div>

@@ -1448,7 +1448,7 @@ export default function AresPlanner({
               type="text" 
               value={pathName}
               onChange={(e) => setPathName(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-              className="bg-transparent text-white font-heading font-black text-lg uppercase tracking-wider border-b border-white/10 focus:border-ares-gold focus:outline-none w-48"
+              className="bg-transparent text-white font-heading font-black text-lg uppercase tracking-wider border-b border-white/10 focus:border-ares-cyan focus:outline-none w-48"
               title="Name of the path file"
             />
             <p className="text-[10px] text-marble/40 font-mono mt-1">FTC Cubic Bezier Spline Editor</p>
@@ -1505,7 +1505,7 @@ export default function AresPlanner({
               tabIndex={0}
               role="img"
               aria-label="Interactive 2D Path Planner. Press Arrow keys to move selected waypoint. Press Tab to cycle through waypoints, and Escape to deselect."
-              className="block cursor-crosshair select-none touch-none max-w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+              className="block cursor-crosshair select-none touch-none max-w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               style={{ width: `${canvasDim}px`, height: `${canvasDim}px` }}
             />
             {/* Overlay Cursor coordinates tracking */}
@@ -1768,7 +1768,7 @@ export default function AresPlanner({
                               value={marker.name}
                               onChange={(e) => handleUpdateMarker(marker.id, { name: e.target.value })}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-gold py-0.5"
+                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-cyan py-0.5"
                             />
                             <span className="text-[10px] text-marble/30 font-mono">({Math.round(marker.progress * 100)}%)</span>
                           </div>

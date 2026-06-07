@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Pencil, Shield, Activity, Search, ExternalLink, X } from "lucide-react";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface BlogPost {
   slug: string;
@@ -60,6 +61,7 @@ export default function BlogManagementPage() {
   const [formAuthor, setFormAuthor] = useState("");
   const [formThumbnail, setFormThumbnail] = useState("");
   const [formStatus, setFormStatus] = useState<"draft" | "published">("draft");
+  const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -349,7 +351,7 @@ export default function BlogManagementPage() {
           />
 
           {/* Editor Drawer */}
-          <div className="relative z-10 w-full max-w-3xl h-full bg-obsidian border-l border-white/10 flex flex-col justify-between animate-slide-in shadow-2xl">
+          <div ref={editorRef} tabIndex={-1} className="relative z-10 w-full max-w-3xl h-full bg-obsidian border-l border-white/10 flex flex-col justify-between animate-slide-in shadow-2xl focus:outline-none">
             <header className="px-6 py-4.5 border-b border-white/10 flex items-center justify-between bg-black/20">
               <div>
                 <h3 className="text-white font-extrabold text-lg font-heading uppercase tracking-tight">

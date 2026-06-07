@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { maskEmail } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -189,7 +190,7 @@ export default function DashboardHome() {
               <h4 className="font-extrabold text-white text-lg tracking-tight leading-tight">
                 {user?.displayName || "ARES Member"}
               </h4>
-              <p className="text-marble/60 text-xs mt-1 select-all">{user?.email}</p>
+              <p className="text-marble/60 text-xs mt-1 select-all">{maskEmail(user?.email)}</p>
             </div>
           </div>
 

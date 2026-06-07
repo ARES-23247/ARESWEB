@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { authenticatedFetch } from "@/lib/api";
 import { useScopeStore, TelemetryData } from "./store/scopeStore";
 import { NT4Client } from "./store/nt4Client";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import WebGLReplayCanvas from "./components/WebGLReplayCanvas";
 import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
@@ -59,6 +60,7 @@ export default function ScopeDashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [ipAddress, setIpAddress] = useState("192.168.43.1");
   const [showLiveModal, setShowLiveModal] = useState(false);
+  const liveModalRef = useFocusTrap(showLiveModal, () => setShowLiveModal(false));
   
   // Video Sync States
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -1187,7 +1189,7 @@ export default function ScopeDashboard() {
 
       {showLiveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300">
-          <div className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative">
+          <div ref={liveModalRef} tabIndex={-1} className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none">
             <button
               onClick={() => setShowLiveModal(false)}
               className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
