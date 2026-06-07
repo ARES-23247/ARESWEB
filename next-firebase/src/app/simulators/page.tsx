@@ -10,7 +10,9 @@ import {
   WifiOff,
   Terminal,
   Play,
-  Square
+  Square,
+  Copy,
+  Check
 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
@@ -23,6 +25,8 @@ export default function TrigRoboticsSimPage() {
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [osTab, setOsTab] = useState<'windows' | 'mac' | 'linux'>('windows');
+  const [copied, setCopied] = useState(false);
   
   // EKF config overrides states
   const [visionStdDevX, setVisionStdDevX] = useState(0.05);
@@ -231,6 +235,56 @@ export default function TrigRoboticsSimPage() {
                     )}
                   </button>
                 )}
+              </div>
+            </div>
+
+            {/* Local Daemon Commands Helper */}
+            <div className="glass-card p-6 border border-white/10 bg-neutral-950/65 flex flex-col gap-4 shadow-xl">
+              <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
+                <Terminal size={14} /> Daemon Startup
+              </h3>
+              <p className="text-[10px] text-marble/60 leading-normal">
+                Run these commands in your terminal from the root of your local <strong>ARESLib-Kotlin</strong> repository:
+              </p>
+              
+              {/* OS Tabs */}
+              <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 gap-1">
+                {(['windows', 'mac', 'linux'] as const).map((os) => (
+                  <button
+                    key={os}
+                    onClick={() => setOsTab(os)}
+                    className={`flex-1 py-1 text-[9px] uppercase tracking-wider font-black rounded-lg transition-all cursor-pointer ${
+                      osTab === os
+                        ? 'bg-ares-gold text-black font-black'
+                        : 'text-marble/60 hover:text-white hover:bg-white/5 font-semibold'
+                    }`}
+                  >
+                    {os === 'windows' ? 'Windows' : os === 'mac' ? 'macOS' : 'Linux'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Command Block */}
+              <div className="relative bg-black/60 rounded-xl border border-white/5 p-3 font-mono text-[10px] text-ares-cyan flex items-center justify-between group">
+                <span className="truncate pr-8 select-all">
+                  {osTab === 'windows' 
+                    ? 'cd tools\\sim-launcher-daemon; node daemon.js' 
+                    : 'cd tools/sim-launcher-daemon && node daemon.js'}
+                </span>
+                <button
+                  onClick={() => {
+                    const cmd = osTab === 'windows' 
+                      ? 'cd tools\\sim-launcher-daemon; node daemon.js' 
+                      : 'cd tools/sim-launcher-daemon && node daemon.js';
+                    navigator.clipboard.writeText(cmd);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="absolute right-2 p-1.5 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center"
+                  title="Copy command"
+                >
+                  {copied ? <Check size={12} className="text-ares-success" /> : <Copy size={12} />}
+                </button>
               </div>
             </div>
 
