@@ -310,10 +310,11 @@ function TaskDetailsModal({
       <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+            <label htmlFor="modal-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
               Description
             </label>
             <textarea
+              id="modal-desc"
               value={modalDesc}
               onChange={(e) => setModalDesc(e.target.value)}
               placeholder="Detail technical requirements, subsystem specs, etc..."
@@ -384,8 +385,9 @@ function TaskDetailsModal({
 
         <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Status</label>
+            <label htmlFor="modal-status" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Status</label>
             <select
+              id="modal-status"
               value={modalStatus}
               onChange={(e) => setModalStatus(e.target.value as any)}
               className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
@@ -399,8 +401,9 @@ function TaskDetailsModal({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
+            <label htmlFor="modal-subteam" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
             <select
+              id="modal-subteam"
               value={modalSubteam}
               onChange={(e) => setModalSubteam(e.target.value as any)}
               className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
@@ -414,8 +417,9 @@ function TaskDetailsModal({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
+            <label htmlFor="modal-priority" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
             <select
+              id="modal-priority"
               value={modalPriority}
               onChange={(e) => setModalPriority(e.target.value as any)}
               className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
@@ -796,8 +800,9 @@ export default function KanbanPage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Title</label>
+              <label htmlFor="new-task-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Title</label>
               <input
+                id="new-task-title"
                 type="text"
                 placeholder="e.g. Calibrate pinpoint pod parameters"
                 value={newTaskTitle}
@@ -808,8 +813,9 @@ export default function KanbanPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
+                <label htmlFor="new-task-subteam" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
                 <select
+                  id="new-task-subteam"
                   value={newTaskSubteam}
                   onChange={(e) => setNewTaskSubteam(e.target.value as any)}
                   className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
@@ -821,8 +827,9 @@ export default function KanbanPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
+                <label htmlFor="new-task-priority" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
                 <select
+                  id="new-task-priority"
                   value={newTaskPriority}
                   onChange={(e) => setNewTaskPriority(e.target.value as any)}
                   className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
@@ -835,8 +842,9 @@ export default function KanbanPage() {
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
+            <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
             <textarea
+              id="new-task-desc"
               placeholder="Detail technical calibration thresholds, subsystem specs, etc..."
               value={newTaskDesc}
               onChange={(e) => setNewTaskDesc(e.target.value)}
@@ -899,6 +907,15 @@ export default function KanbanPage() {
                       draggable={canEdit}
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onDragEnd={handleDragEnd}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Task: ${task.title}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setEditingTaskId(task.id);
+                        }
+                      }}
                       onClick={(e) => {
                         const target = e.target as HTMLElement;
                         if (
@@ -927,8 +944,8 @@ export default function KanbanPage() {
                               task.priority === "high"
                                 ? "bg-ares-gold/20 text-ares-gold border-ares-gold/30"
                                 : task.priority === "medium"
-                                ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
-                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
+                                : "bg-ares-success/10 text-ares-success border-ares-success/20"
                             }`}
                           >
                             {task.priority}

@@ -43,17 +43,24 @@ router.post("/", inquiryLimiter, async (req, res) => {
     const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
 
     if (!isBypass) {
-      const secretKey = process.env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnFTxWb0Ncczb12qycWb";
-      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
-      });
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+      if (!secretKey) {
+        if (isProd) {
+          throw new Error("Fatal: RECAPTCHA_SECRET_KEY environment variable is not configured in production.");
+        }
+        console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY is missing, bypassing verification in non-production.");
+      } else {
+        const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
+        });
 
-      const verifyData = (await verifyRes.json()) as any;
-      if (!verifyData.success) {
-        res.status(400).json({ success: false, error: "Spam check verification failed. Please try again." });
-        return;
+        const verifyData = (await verifyRes.json()) as any;
+        if (!verifyData.success) {
+          res.status(400).json({ success: false, error: "Spam check verification failed. Please try again." });
+          return;
+        }
       }
     }
 

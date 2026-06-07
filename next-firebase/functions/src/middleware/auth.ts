@@ -31,12 +31,7 @@ export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next
   const token = authHeader.split("Bearer ")[1];
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
-    const email = decodedToken.email?.toLowerCase();
-    if (!email) {
-      res.status(403).json({ error: "Forbidden: No email in token" });
-      return;
-    }
-    const userDoc = await adminDb.collection("authorized_users").doc(email).get();
+    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
     if (!userDoc.exists) {
       res.status(403).json({ error: "Forbidden: User not authorized" });
       return;

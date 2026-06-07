@@ -292,15 +292,17 @@ export default function DocumentsManagementPage() {
                             <>
                               <button
                                 onClick={() => handleOpenEdit(docItem)}
-                                className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer"
+                                className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                                 title="Edit Doc Info"
+                                aria-label={`Edit ${docItem.title}`}
                               >
                                 <Pencil size={12} />
                               </button>
                               <button
                                 onClick={() => handleDeleteDoc(docItem.slug)}
-                                className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-danger-soft border border-white/10 rounded transition-all cursor-pointer"
+                                className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                                 title="Delete Doc Info"
+                                aria-label={`Delete ${docItem.title}`}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -341,7 +343,8 @@ export default function DocumentsManagementPage() {
               </div>
               <button
                 onClick={() => setIsEditorOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                aria-label="Close editor drawer"
               >
                 <X size={16} />
               </button>
@@ -350,36 +353,39 @@ export default function DocumentsManagementPage() {
             {/* Form Canvas */}
             <form onSubmit={handleSaveDoc} className="flex-1 overflow-y-auto p-6 space-y-6">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Document Title</label>
+                <label htmlFor="formTitle" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Document Title</label>
                 <input
+                  id="formTitle"
                   type="text"
                   placeholder="e.g. Pinpoint Pod EKF Integration Guide"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Custom Document Slug</label>
+                <label htmlFor="formSlug" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Custom Document Slug</label>
                 <input
+                  id="formSlug"
                   type="text"
                   placeholder="e.g. pinpoint-ekf-guide"
                   value={formSlug}
                   onChange={(e) => setFormSlug(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono disabled:opacity-50"
+                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono disabled:opacity-50 focus:ring-2 focus:ring-ares-cyan"
                   disabled={!!editSlug}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Document Library Category</label>
+                <label htmlFor="formCategory" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Document Library Category</label>
                 <select
+                  id="formCategory"
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as any)}
-                  className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none"
+                  className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
                 >
                   <option value="spec">🛑 Mechanical / CAD Specifications</option>
                   <option value="guide">⚙️ Software / Electronics Guide</option>
@@ -388,24 +394,26 @@ export default function DocumentsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Reference URL (File Path / Cloud Link)</label>
+                <label htmlFor="formFileUrl" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Reference URL (File Path / Cloud Link)</label>
                 <input
+                  id="formFileUrl"
                   type="url"
                   placeholder="e.g. https://drive.google.com/... or https://github.com/..."
                   value={formFileUrl}
                   onChange={(e) => setFormFileUrl(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono"
+                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono focus:ring-2 focus:ring-ares-cyan"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Detailed Description</label>
+                <label htmlFor="formDescription" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Detailed Description</label>
                 <textarea
+                  id="formDescription"
                   placeholder="Describe target specifications, design budget margins, coding dependencies, etc..."
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red h-24 transition-colors resize-none leading-relaxed"
+                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red h-24 transition-colors resize-none leading-relaxed focus:ring-2 focus:ring-ares-cyan"
                 />
               </div>
             </form>
@@ -414,13 +422,13 @@ export default function DocumentsManagementPage() {
               <button
                 type="button"
                 onClick={() => setIsEditorOpen(false)}
-                className="px-4 py-2 border border-white/10 text-white font-semibold text-xs rounded hover:bg-white/5 transition-all cursor-pointer"
+                className="px-4 py-2 border border-white/10 text-white font-semibold text-xs rounded hover:bg-white/5 transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveDoc}
-                className="clipped-button-sm bg-ares-cyan text-black font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg"
+                className="clipped-button-sm bg-ares-red text-white hover:bg-ares-red-dark font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 {editSlug ? "Update Entry" : "Add to Library"}
               </button>

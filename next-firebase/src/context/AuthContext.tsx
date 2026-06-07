@@ -55,9 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           // Normalize Google email local part (ignore dots)
           const cleanEmail = currentUser.email.trim().toLowerCase();
-          const emailDocId = cleanEmail; // Document ID is the email address
-
-          const userRef = doc(db, "authorized_users", emailDocId);
+          const userRef = doc(db, "authorized_users", currentUser.uid);
           const userSnap = await getDoc(userRef);
 
           if (userSnap.exists()) {
@@ -156,8 +154,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Mock user client-only fallback (Auth Emulator offline/refused):", err);
     }
 
+    const mockUserUid = auth.currentUser?.uid || 
+      (mockEmail === "coach.david@gmail.com" ? "coach_david_uid" : 
+       mockEmail === "student.lead@gmail.com" ? "student_lead_uid" : 
+       mockEmail === "mentor.expert@gmail.com" ? "mentor_expert_uid" : "mock_user_123");
+
     const mockUser = {
-      uid: auth.currentUser?.uid || "mock_user_123",
+      uid: mockUserUid,
       email: mockEmail,
       displayName: name || "ARES Lead",
       photoURL: `https://api.dicebear.com/9.x/bottts/svg?seed=${mockEmail}`,
@@ -173,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Attempt to bootstrap the authorized_users record in the Firestore Emulator
     try {
-      const userRef = doc(db, "authorized_users", mockEmail);
+      const userRef = doc(db, "authorized_users", mockUser.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
         console.log("⚡ Bootstrapping admin user in Firestore Emulator...");

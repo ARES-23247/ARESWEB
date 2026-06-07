@@ -144,9 +144,8 @@ router.post("/import", ensureAdmin, async (req, res) => {
     const docSnaps = await adminDb.getAll(...docRefs);
     const docMap = new Map(docSnaps.map(snap => [snap.id, snap]));
 
-    // We compile writes in a Firestore WriteBatch
-    const writeBatch = adminDb.batch();
-    let batchHasOperations = false;
+    // We compile writes in an array of operations to commit in chunks
+    const batchOperations: { ref: any; data: any }[] = [];
 
     // Process items in parallel chunks of 4 for downloads & GCS uploads
     const chunkArray = <T>(arr: T[], size: number): T[][] => {
@@ -224,8 +223,7 @@ router.post("/import", ensureAdmin, async (req, res) => {
             };
 
             const photoRef = adminDb.collection("imported_photos").doc(item.id);
-            writeBatch.set(photoRef, photoMeta);
-            batchHasOperations = true;
+            batchOperations.push({ ref: photoRef, data: photoMeta });
 
             if (albumId) {
               const albumPhotoRef = adminDb
@@ -233,7 +231,7 @@ router.post("/import", ensureAdmin, async (req, res) => {
                 .doc(albumId)
                 .collection("photos")
                 .doc(item.id);
-              writeBatch.set(albumPhotoRef, photoMeta);
+              batchOperations.push({ ref: albumPhotoRef, data: photoMeta });
             }
 
             results.push({
@@ -258,9 +256,17 @@ router.post("/import", ensureAdmin, async (req, res) => {
       );
     }
 
-    // Commit all Firestore writes in a single batch
-    if (batchHasOperations) {
-      await writeBatch.commit();
+    // Commit all Firestore writes in chunks of max 400 operations to prevent 500 limit crash
+    if (batchOperations.length > 0) {
+      const batchSize = 400;
+      for (let i = 0; i < batchOperations.length; i += batchSize) {
+        const batch = adminDb.batch();
+        const slice = batchOperations.slice(i, i + batchSize);
+        for (const op of slice) {
+          batch.set(op.ref, op.data);
+        }
+        await batch.commit();
+      }
       console.log(`[Photo Import] Batch committed ${successCount} entries successfully.`);
     }
 
@@ -303,13 +309,7 @@ router.get("/auth/init", async (req, res) => {
 
     // Verify admin identity
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const email = decodedToken.email?.toLowerCase();
-    if (!email) {
-      res.status(403).json({ error: "Forbidden: No email in token" });
-      return;
-    }
-
-    const userDoc = await adminDb.collection("authorized_users").doc(email).get();
+    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
     if (!userDoc.exists) {
       res.status(403).json({ error: "Forbidden: User not authorized" });
       return;
@@ -456,7 +456,7 @@ router.get("/auth", async (req, res) => {
 });
 
 // GET /api/photos/picker/media-proxy
-router.get("/picker/media-proxy", ensureAuth, async (req, res) => {
+router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
   try {
     const url = req.query.url as string | undefined;
     if (!url) {
@@ -486,7 +486,7 @@ router.get("/picker/media-proxy", ensureAuth, async (req, res) => {
 });
 
 // GET /api/photos/picker/:sessionId/items
-router.get("/picker/:sessionId/items", ensureAuth, async (req, res) => {
+router.get("/picker/:sessionId/items", ensureAdmin, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();
@@ -509,7 +509,7 @@ router.get("/picker/:sessionId/items", ensureAuth, async (req, res) => {
 });
 
 // GET /api/photos/picker/:sessionId
-router.get("/picker/:sessionId", ensureAuth, async (req, res) => {
+router.get("/picker/:sessionId", ensureAdmin, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();
@@ -532,7 +532,7 @@ router.get("/picker/:sessionId", ensureAuth, async (req, res) => {
 });
 
 // POST /api/photos/picker
-router.post("/picker", ensureAuth, async (req, res) => {
+router.post("/picker", ensureAdmin, async (req, res) => {
   try {
     const googleToken = await getGooglePhotosAccessToken();
     const response = await fetch(`${PICKER_API_BASE}/sessions`, {
@@ -558,7 +558,7 @@ router.post("/picker", ensureAuth, async (req, res) => {
 });
 
 // DELETE /api/photos/picker/:sessionId
-router.delete("/picker/:sessionId", ensureAuth, async (req, res) => {
+router.delete("/picker/:sessionId", ensureAdmin, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const googleToken = await getGooglePhotosAccessToken();

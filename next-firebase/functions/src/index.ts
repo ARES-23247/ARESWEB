@@ -10,6 +10,11 @@ import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
 import profilesRouter from "./routes/profiles";
 
+const secret = process.env.ENCRYPTION_SECRET;
+if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+  throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
+}
+
 const app = express();
 
 // Enable trust proxy for rate limiting behind Cloud Functions hosting proxy

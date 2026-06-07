@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 import admin, { adminDb } from "../lib/firebase-admin";
 
 const router = express.Router();
@@ -8,11 +9,7 @@ function timingSafeEqual(a: string, b: string): boolean {
   const aBuf = Buffer.from(a);
   const bBuf = Buffer.from(b);
   if (aBuf.length !== bBuf.length) return false;
-  let result = 0;
-  for (let i = 0; i < aBuf.length; i++) {
-    result |= aBuf[i] ^ bBuf[i];
-  }
-  return result === 0;
+  return crypto.timingSafeEqual(aBuf, bBuf);
 }
 
 // POST /api/webhooks/zulip

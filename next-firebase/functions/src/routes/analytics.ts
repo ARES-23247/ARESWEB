@@ -451,19 +451,14 @@ router.post("/onshape-sync", ensureAdmin, async (req, res) => {
       return;
     }
 
-    // SCA-F01: Immediately return 202 Accepted and run the rest of the sync process asynchronously in the background.
-    res.status(202).json({
-      success: true,
-      message: `Direct Onshape ${type} synchronization initiated in the background.`
-    });
+    let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
 
-    // Run Onshape sync logic in the background
-    (async () => {
+    // SCA-F01: Run Onshape sync logic and await to prevent serverless container freeze
+    await (async () => {
       try {
         const onshapeAccessKey = process.env.ONSHAPE_ACCESS_KEY;
         const onshapeSecretKey = process.env.ONSHAPE_SECRET_KEY;
         let isRealSyncUsed = false;
-        let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
         let extractedObstacleCount = 0;
 
         let fieldYear = "2025-2026 Into The Deep";
@@ -794,6 +789,12 @@ router.post("/onshape-sync", ensureAdmin, async (req, res) => {
         console.error("[Onshape Sync Async Error]:", asyncErr);
       }
     })();
+
+    res.status(200).json({
+      success: true,
+      message: `Direct Onshape ${type} synchronization completed.`,
+      optimizedUrl
+    });
   } catch (error: any) {
     console.error("[Onshape Sync Endpoint Error]:", error);
     res.status(500).json({ error: "Internal server error." });

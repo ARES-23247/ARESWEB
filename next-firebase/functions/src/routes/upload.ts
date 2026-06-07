@@ -114,16 +114,8 @@ router.post("/", ensureAdmin, async (req, res) => {
       }
     };
 
-    // SCA-F02 Optimization: Return 202 Accepted immediately, do background processing!
-    res.status(202).json({
-      success: true,
-      runId,
-      summary,
-      message: "Telemetry uploaded. Parsing, archiving, and Vertex diagnostics running in background."
-    });
-
-    // Background Ingestion Flow
-    (async () => {
+    // SCA-F01: Run upload and diagnostic checks, awaiting to prevent serverless container freeze
+    await (async () => {
       try {
         // 1. Archive CSV to GCS
         try {
@@ -190,6 +182,13 @@ router.post("/", ensureAdmin, async (req, res) => {
         console.error("[Telemetry Ingestion Background Error]:", bgErr);
       }
     })();
+
+    res.status(200).json({
+      success: true,
+      runId,
+      summary,
+      message: "Telemetry uploaded, archived, and Vertex diagnostics completed successfully."
+    });
 
   } catch (error: any) {
     console.error("Telemetry upload error:", error);

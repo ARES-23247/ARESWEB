@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     function isAuthorized() {
-      return request.auth != null && firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.token.email.lower()));
+      return request.auth != null && firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.uid));
     }
 
     match /events/{eventId}/photos/{photoId} {

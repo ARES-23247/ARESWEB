@@ -187,8 +187,8 @@ export default function BlogManagementPage() {
     if (!confirm("Are you sure you want to delete this blog post? This will move it to trash/archives.")) return;
 
     try {
-      // Soft delete by updating isDeleted, or hard delete
-      await deleteDoc(doc(db, "posts", slug));
+      // Soft delete by updating isDeleted
+      await setDoc(doc(db, "posts", slug), { isDeleted: 1 }, { merge: true });
     } catch (err) {
       console.warn("Firestore offline, soft-deleting card locally.", err);
       setPosts(posts.filter(p => p.slug !== slug));
@@ -326,7 +326,7 @@ export default function BlogManagementPage() {
                       </button>
                       <button
                         onClick={() => handleDeletePost(post.slug)}
-                        className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-danger-soft border border-white/10 rounded transition-all cursor-pointer"
+                        className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer"
                         title="Delete Post"
                       >
                         <Trash2 size={13} />
@@ -364,6 +364,7 @@ export default function BlogManagementPage() {
               </div>
               <button
                 onClick={() => setIsEditorOpen(false)}
+                aria-label="Close editor"
                 className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
               >
                 <X size={16} />
@@ -374,8 +375,9 @@ export default function BlogManagementPage() {
             <form onSubmit={handleSavePost} className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Article Title</label>
+                  <label htmlFor="blog-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Article Title</label>
                   <input
+                    id="blog-title"
                     type="text"
                     placeholder="e.g. Tuning EKF Headings"
                     value={formTitle}
@@ -386,8 +388,9 @@ export default function BlogManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Custom URL Slug</label>
+                  <label htmlFor="blog-slug" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Custom URL Slug</label>
                   <input
+                    id="blog-slug"
                     type="text"
                     placeholder="tuning-ekf-headings"
                     value={formSlug}
@@ -401,8 +404,9 @@ export default function BlogManagementPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Thumbnail Image URL</label>
+                  <label htmlFor="blog-thumbnail" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Thumbnail Image URL</label>
                   <input
+                    id="blog-thumbnail"
                     type="url"
                     value={formThumbnail}
                     onChange={(e) => setFormThumbnail(e.target.value)}
@@ -411,8 +415,9 @@ export default function BlogManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Author Name</label>
+                  <label htmlFor="blog-author" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Author Name</label>
                   <input
+                    id="blog-author"
                     type="text"
                     value={formAuthor}
                     onChange={(e) => setFormAuthor(e.target.value)}
@@ -423,8 +428,9 @@ export default function BlogManagementPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Summary Snippet</label>
+                <label htmlFor="blog-snippet" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Summary Snippet</label>
                 <input
+                  id="blog-snippet"
                   type="text"
                   placeholder="Summarize the core technical findings or community outcomes in 2-3 sentences..."
                   value={formSnippet}
@@ -435,8 +441,9 @@ export default function BlogManagementPage() {
               </div>
 
               <div className="flex flex-col flex-1 h-[250px]">
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Body Content (Markdown)</label>
+                <label htmlFor="blog-content" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Body Content (Markdown)</label>
                 <textarea
+                  id="blog-content"
                   placeholder="### Heading 3\nWrite blog content using standard markdown syntax. Code syntax blocks are supported..."
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
@@ -447,10 +454,11 @@ export default function BlogManagementPage() {
 
               <div className="bg-black/45 border border-white/5 p-4 rounded-xl flex items-center justify-between">
                 <div>
-                  <h4 className="text-white text-xs font-bold uppercase tracking-wide">Publish Status</h4>
+                  <label htmlFor="blog-status" className="text-white text-xs font-bold uppercase tracking-wide cursor-pointer">Publish Status</label>
                   <p className="text-[10px] text-marble/60">Drafts are hidden from the public feed</p>
                 </div>
                 <select
+                  id="blog-status"
                   value={formStatus}
                   onChange={(e) => setFormStatus(e.target.value as any)}
                   className="bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer"
@@ -471,7 +479,7 @@ export default function BlogManagementPage() {
               </button>
               <button
                 onClick={handleSavePost}
-                className="clipped-button-sm bg-ares-cyan text-black font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg"
+                className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg"
               >
                 {editSlug ? "Update Entry" : "Publish Entry"}
               </button>

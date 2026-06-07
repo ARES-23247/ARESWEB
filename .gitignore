@@ -49,8 +49,9 @@ testGcal.ts
 test-bsky.ts
 test-insert.ts
 auth.cli.ts
-# NOTE: eslint.config.js is intentionally tracked — it is the project linting config.
+# NOTE: eslint.config.js and eslint.config.mjs are intentionally tracked — project linting configs.
 !eslint.config.js
+!eslint.config.mjs
 # NOTE: .pa11yci.cjs is intentionally tracked — it is the accessibility CI config.
 !.pa11yci.cjs
 
