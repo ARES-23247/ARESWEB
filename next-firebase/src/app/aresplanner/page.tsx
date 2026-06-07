@@ -436,17 +436,19 @@ export default function AresPlannerPage() {
                 <input
                   type="text"
                   placeholder="Search paths..."
+                  aria-label="Search paths"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan"
+                  className="w-full bg-obsidian border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
                 />
               </div>
 
               {/* Season filter */}
               <select
                 value={seasonFilter}
+                aria-label="Filter by season"
                 onChange={(e) => setSeasonFilter(e.target.value)}
-                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus:outline-none focus:border-ares-cyan uppercase font-bold"
+                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian uppercase font-bold"
               >
                 <option value="all">ALL SEASONS</option>
                 <option value="decode">DECODE</option>
@@ -458,8 +460,9 @@ export default function AresPlannerPage() {
               {/* Sort by */}
               <select
                 value={sortBy}
+                aria-label="Sort by"
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus:outline-none focus:border-ares-cyan"
+                className="w-full bg-obsidian border border-white/10 rounded-lg px-3 py-2 text-xs text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
               >
                 <option value="updatedAt">SORT BY: LAST UPDATED</option>
                 <option value="name">SORT BY: NAME (A-Z)</option>

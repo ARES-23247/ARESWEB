@@ -254,9 +254,10 @@ export default function BlogManagementPage() {
           <input
             type="text"
             placeholder="Search posts by title, author, or snippet..."
+            aria-label="Search posts"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-all"
+            className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-all"
           />
         </div>
         <div className="text-xs font-mono flex items-center justify-end text-marble/60 px-2 uppercase font-semibold">
@@ -379,7 +380,7 @@ export default function BlogManagementPage() {
                     placeholder="e.g. Tuning EKF Headings"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
                     required
                   />
                 </div>
@@ -391,7 +392,7 @@ export default function BlogManagementPage() {
                     placeholder="tuning-ekf-headings"
                     value={formSlug}
                     onChange={(e) => setFormSlug(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono disabled:opacity-50"
+                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors font-mono disabled:opacity-50"
                     disabled={!!editSlug}
                     required
                   />
@@ -405,7 +406,7 @@ export default function BlogManagementPage() {
                     type="url"
                     value={formThumbnail}
                     onChange={(e) => setFormThumbnail(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
                   />
                 </div>
 
@@ -415,7 +416,7 @@ export default function BlogManagementPage() {
                     type="text"
                     value={formAuthor}
                     onChange={(e) => setFormAuthor(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
                     required
                   />
                 </div>
@@ -428,7 +429,7 @@ export default function BlogManagementPage() {
                   placeholder="Summarize the core technical findings or community outcomes in 2-3 sentences..."
                   value={formSnippet}
                   onChange={(e) => setFormSnippet(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
                   required
                 />
               </div>
@@ -439,7 +440,7 @@ export default function BlogManagementPage() {
                   placeholder="### Heading 3\nWrite blog content using standard markdown syntax. Code syntax blocks are supported..."
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
-                  className="w-full flex-grow bg-black/60 border border-white/10 rounded px-4 py-3 text-xs text-white font-mono focus:outline-none focus:border-ares-red h-[200px] resize-none leading-relaxed"
+                  className="w-full flex-grow bg-black/60 border border-white/10 rounded px-4 py-3 text-xs text-white font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian h-[200px] resize-none leading-relaxed"
                   required
                 />
               </div>
