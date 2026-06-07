@@ -20,6 +20,8 @@ export default function WebGLReplayCanvas() {
     driveMode, 
     setDriveMode,
     fieldObstacles,
+    fieldElements,
+    fieldElementTypes,
     fieldCadUrl
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
@@ -615,6 +617,48 @@ export default function WebGLReplayCanvas() {
       });
     }
 
+    // Custom 3D Elements (Pollen, Artifacts, etc.)
+    if (fieldElements && fieldElements.length > 0 && fieldElementTypes && fieldElementTypes.length > 0) {
+      fieldElements.forEach((el) => {
+        const type = fieldElementTypes.find((t) => t.id === el.elementTypeId);
+        if (!type) return;
+
+        let geom: THREE.BufferGeometry;
+        const thickness = type.depth || 0.15;
+
+        if (type.shape === "box") {
+          geom = new THREE.BoxGeometry(type.width, thickness, type.height);
+        } else if (type.shape === "cylinder") {
+          const radius = (type.diameter || 0.15) / 2;
+          geom = new THREE.CylinderGeometry(radius, radius, thickness, 16);
+        } else {
+          const radius = (type.diameter || 0.15) / 2;
+          geom = new THREE.SphereGeometry(radius, 16, 16);
+        }
+
+        const mat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(type.color),
+          roughness: 0.5,
+          metalness: 0.1
+        });
+
+        const mesh = new THREE.Mesh(geom, mat);
+        const yOffset = type.shape === "sphere" ? (type.diameter || 0.15) / 2 : thickness / 2;
+        mesh.position.set(-el.y, yOffset, -el.x);
+        mesh.rotation.y = el.rotation * Math.PI / 180;
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        const borderGeo = new THREE.EdgesGeometry(geom);
+        const borderMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
+        const borderLine = new THREE.LineSegments(borderGeo, borderMat);
+        mesh.add(borderLine);
+
+        scene.add(mesh);
+      });
+    }
+
     // 6. 3D Robot Model Group
     const robot = new THREE.Group();
     robotGroupRef.current = robot;
@@ -795,7 +839,7 @@ export default function WebGLReplayCanvas() {
       renderer.dispose();
       container.innerHTML = "";
     };
-  }, [viewMode, fieldObstacles, fieldCadUrl]);
+  }, [viewMode, fieldObstacles, fieldElements, fieldElementTypes, fieldCadUrl]);
 
   // ─── 3D TELEMETRY SYNCHRONIZATION KINEMATICS ───
   useEffect(() => {

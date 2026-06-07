@@ -53,6 +53,8 @@ export default function ScopeDashboard() {
     setConnectionStatus,
     addLiveFrame,
     setFieldObstacles,
+    setFieldElements,
+    setFieldElementTypes,
     setFieldCadUrl
   } = useScopeStore();
 
@@ -67,7 +69,7 @@ export default function ScopeDashboard() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   // Field Obstacle Configuration States
-  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; cadUrl?: string }[]>([]);
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[]; cadUrl?: string }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
 
   useEffect(() => {
@@ -85,9 +87,13 @@ export default function ScopeDashboard() {
         if (configs.length > 0) {
           setSelectedFieldConfigId(configs[0].id);
           setFieldObstacles(configs[0].obstacles || []);
+          setFieldElements(configs[0].elements || []);
+          setFieldElementTypes(configs[0].elementTypes || []);
           setFieldCadUrl(configs[0].cadUrl || null);
         } else {
           setFieldObstacles(null);
+          setFieldElements(null);
+          setFieldElementTypes(null);
           setFieldCadUrl(null);
         }
       } catch (err) {
@@ -95,22 +101,28 @@ export default function ScopeDashboard() {
       }
     };
     fetchFieldConfigs();
-  }, [setFieldObstacles, setFieldCadUrl]);
+  }, [setFieldObstacles, setFieldElements, setFieldElementTypes, setFieldCadUrl]);
 
   const handleFieldConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const configId = e.target.value;
     setSelectedFieldConfigId(configId);
     if (!configId) {
       setFieldObstacles(null);
+      setFieldElements(null);
+      setFieldElementTypes(null);
       setFieldCadUrl(null);
       return;
     }
     const config = fieldConfigs.find((c) => c.id === configId);
     if (config) {
       setFieldObstacles(config.obstacles || []);
+      setFieldElements(config.elements || []);
+      setFieldElementTypes(config.elementTypes || []);
       setFieldCadUrl(config.cadUrl || null);
     } else {
       setFieldObstacles(null);
+      setFieldElements(null);
+      setFieldElementTypes(null);
       setFieldCadUrl(null);
     }
   };

@@ -30,7 +30,7 @@ export default function TrigRoboticsSimPage() {
   const [visionStdDevTheta, setVisionStdDevTheta] = useState(0.1);
 
   // Field config selection states
-  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[] }[]>([]);
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[] }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>('');
 
   useEffect(() => {
@@ -126,6 +126,8 @@ export default function TrigRoboticsSimPage() {
     
     const activeConfig = fieldConfigs.find(c => c.id === selectedFieldConfigId);
     const obstacles = activeConfig ? activeConfig.obstacles : [];
+    const elements = activeConfig ? activeConfig.elements : [];
+    const elementTypes = activeConfig ? activeConfig.elementTypes : [];
 
     wsRef.current.send(JSON.stringify({
       type: "start",
@@ -133,7 +135,9 @@ export default function TrigRoboticsSimPage() {
         visionStdDevX,
         visionStdDevY,
         visionStdDevTheta,
-        obstacles
+        obstacles,
+        elements,
+        elementTypes
       }
     }));
   };

@@ -57,11 +57,34 @@ interface FieldObstacle {
   height: number; // Height in meters (vertical on screen, EKF X axis)
 }
 
+interface ElementType {
+  id: string;
+  name: string;
+  shape: "box" | "cylinder" | "sphere";
+  width: number;       // For box (width along Y axis)
+  height: number;      // For box (height along X axis)
+  depth: number;       // Z axis height/thickness
+  diameter?: number;   // For cylinder / sphere
+  color: string;       // Hex color
+  massKg: number;      // weight in kg
+  movable: boolean;    // true = dynamic physics, false = static
+}
+
+interface FieldElementInstance {
+  id: string;
+  elementTypeId: string; // references ElementType.id
+  x: number;             // EKF X
+  y: number;             // EKF Y
+  rotation: number;      // rotation in degrees
+}
+
 interface FieldConfig {
   id: string;
   name: string;
   updatedAt: number;
   obstacles: FieldObstacle[];
+  elementTypes?: ElementType[];
+  elements?: FieldElementInstance[];
   cadUrl?: string;
   bgImageUrl?: string;
 }
@@ -72,6 +95,13 @@ export default function FieldObstacleEditor() {
   const [configName, setConfigName] = useState<string>("New Configuration");
   const [obstacles, setObstacles] = useState<FieldObstacle[]>([]);
   const [selectedObstacleId, setSelectedObstacleId] = useState<string | null>(null);
+
+  // Custom game elements states
+  const [editMode, setEditMode] = useState<"obstacles" | "elements">("obstacles");
+  const [elementTypes, setElementTypes] = useState<ElementType[]>([]);
+  const [elements, setElements] = useState<FieldElementInstance[]>([]);
+  const [selectedElementTypeId, setSelectedElementTypeId] = useState<string | null>(null);
+  const [selectedElementInstanceId, setSelectedElementInstanceId] = useState<string | null>(null);
   
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -204,6 +234,8 @@ export default function FieldObstacleEditor() {
           name: data.name || "Untitled Layout",
           updatedAt: data.updatedAt || Date.now(),
           obstacles: data.obstacles || [],
+          elementTypes: data.elementTypes || [],
+          elements: data.elements || [],
           cadUrl: data.cadUrl || "",
           bgImageUrl: data.bgImageUrl || ""
         });
@@ -323,7 +355,11 @@ export default function FieldObstacleEditor() {
     setSelectedConfigId(config.id);
     setConfigName(config.name);
     setObstacles([...config.obstacles]);
+    setElementTypes(config.elementTypes ? [...config.elementTypes] : []);
+    setElements(config.elements ? [...config.elements] : []);
     setSelectedObstacleId(null);
+    setSelectedElementInstanceId(null);
+    setSelectedElementTypeId(null);
     setLocalBgFile(null);
     setLocalGlbFile(null);
   };
@@ -332,7 +368,11 @@ export default function FieldObstacleEditor() {
     setSelectedConfigId("");
     setConfigName("New Field Layout");
     setObstacles([]);
+    setElementTypes([]);
+    setElements([]);
     setSelectedObstacleId(null);
+    setSelectedElementInstanceId(null);
+    setSelectedElementTypeId(null);
     setLocalBgFile(null);
     setLocalGlbFile(null);
   };
@@ -364,6 +404,88 @@ export default function FieldObstacleEditor() {
           return { ...obs, [field]: value };
         }
         return obs;
+      })
+    );
+  };
+
+  // Element Type Catalog Actions
+  const handleAddElementType = () => {
+    const newType: ElementType = {
+      id: `type_${Math.random().toString(36).substring(2, 9)}`,
+      name: `Element Type ${elementTypes.length + 1}`,
+      shape: "sphere",
+      width: 0.127, // 5 inches
+      height: 0.127,
+      depth: 0.127,
+      diameter: 0.127,
+      color: "#00E5FF", // Brand Cyan
+      massKg: 0.1,
+      movable: true
+    };
+    setElementTypes([...elementTypes, newType]);
+    setSelectedElementTypeId(newType.id);
+  };
+
+  const handleDeleteElementType = (id: string) => {
+    setElementTypes(elementTypes.filter((t) => t.id !== id));
+    setElements(elements.filter((el) => el.elementTypeId !== id));
+    if (selectedElementTypeId === id) {
+      setSelectedElementTypeId(null);
+    }
+    if (selectedElementInstanceId) {
+      const inst = elements.find((el) => el.id === selectedElementInstanceId);
+      if (inst && inst.elementTypeId === id) {
+        setSelectedElementInstanceId(null);
+      }
+    }
+  };
+
+  const handleUpdateElementTypeField = (id: string, field: keyof ElementType, value: any) => {
+    setElementTypes(
+      elementTypes.map((t) => {
+        if (t.id === id) {
+          const updated = { ...t, [field]: value };
+          if (field === "diameter" && value) {
+            updated.width = value;
+            updated.height = value;
+          }
+          return updated;
+        }
+        return t;
+      })
+    );
+  };
+
+  // Placed Element Instance Actions
+  const handleAddElementInstance = (elementTypeId: string) => {
+    const type = elementTypes.find((t) => t.id === elementTypeId);
+    if (!type) return;
+
+    const newInst: FieldElementInstance = {
+      id: `inst_${Math.random().toString(36).substring(2, 9)}`,
+      elementTypeId,
+      x: 0,
+      y: 0,
+      rotation: 0
+    };
+    setElements([...elements, newInst]);
+    setSelectedElementInstanceId(newInst.id);
+  };
+
+  const handleDeleteElementInstance = (id: string) => {
+    setElements(elements.filter((el) => el.id !== id));
+    if (selectedElementInstanceId === id) {
+      setSelectedElementInstanceId(null);
+    }
+  };
+
+  const handleUpdateElementInstanceField = (id: string, field: keyof FieldElementInstance, value: any) => {
+    setElements(
+      elements.map((el) => {
+        if (el.id === id) {
+          return { ...el, [field]: value };
+        }
+        return el;
       })
     );
   };
@@ -406,6 +528,25 @@ export default function FieldObstacleEditor() {
           y: Number(obs.y),
           width: Number(obs.width),
           height: Number(obs.height)
+        })),
+        elementTypes: elementTypes.map((t) => ({
+          id: t.id,
+          name: t.name,
+          shape: t.shape,
+          width: Number(t.width),
+          height: Number(t.height),
+          depth: Number(t.depth),
+          diameter: t.diameter ? Number(t.diameter) : undefined,
+          color: t.color,
+          massKg: Number(t.massKg),
+          movable: Boolean(t.movable)
+        })),
+        elements: elements.map((el) => ({
+          id: el.id,
+          elementTypeId: el.elementTypeId,
+          x: Number(el.x),
+          y: Number(el.y),
+          rotation: Number(el.rotation)
         }))
       };
 
@@ -562,7 +703,56 @@ export default function FieldObstacleEditor() {
       }
     });
 
-  }, [obstacles, selectedObstacleId, canvasSize, bgImage]);
+    // 7. Draw Field Elements
+    elements.forEach((el) => {
+      const type = elementTypes.find((t) => t.id === el.elementTypeId);
+      if (!type) return;
+
+      const isSelected = el.id === selectedElementInstanceId;
+      const sizeMeters = type.shape === "box" ? Math.max(type.width, type.height) : (type.diameter || 0.15);
+      
+      const pxX = toPxX(el.y);
+      const pxY = toPxY(el.x);
+
+      ctx.save();
+      ctx.translate(pxX, pxY);
+      ctx.rotate(-el.rotation * Math.PI / 180);
+
+      // Draw Shape
+      ctx.fillStyle = type.color;
+      ctx.strokeStyle = isSelected ? "#00E5FF" : "rgba(255,255,255,0.4)";
+      ctx.lineWidth = isSelected ? 2.5 : 1;
+
+      if (type.shape === "box") {
+        const wPx = type.width * scale;
+        const hPx = type.height * scale;
+        ctx.fillRect(-wPx / 2, -hPx / 2, wPx, hPx);
+        ctx.strokeRect(-wPx / 2, -hPx / 2, wPx, hPx);
+      } else {
+        // cylinder or sphere drawn as circle in 2D
+        const radiusPx = ((type.diameter || 0.15) / 2) * scale;
+        ctx.beginPath();
+        ctx.arc(0, 0, radiusPx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -radiusPx);
+        ctx.strokeStyle = "rgba(0,0,0,0.5)";
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      // Draw label name slightly below
+      ctx.fillStyle = isSelected ? "#00E5FF" : "rgba(255, 255, 255, 0.7)";
+      ctx.font = "9px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(type.name, pxX, pxY + (sizeMeters * scale) / 2 + 10);
+    });
+
+  }, [obstacles, selectedObstacleId, canvasSize, bgImage, editMode, elements, elementTypes, selectedElementInstanceId]);
 
   // Mouse Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -576,58 +766,85 @@ export default function FieldObstacleEditor() {
     const mx = toEkfX(mouseY);
     const my = toEkfY(mouseX);
 
-    // 1. Check if we clicked on the active obstacle's resize handle
-    if (selectedObstacleId) {
-      const obs = obstacles.find((o) => o.id === selectedObstacleId);
-      if (obs) {
-        const handleX = toPxX(obs.y - obs.width / 2);
-        const handleY = toPxY(obs.x - obs.height / 2);
-        const dist = Math.hypot(mouseX - handleX, mouseY - handleY);
+    if (editMode === "obstacles") {
+      // 1. Check if we clicked on the active obstacle's resize handle
+      if (selectedObstacleId) {
+        const obs = obstacles.find((o) => o.id === selectedObstacleId);
+        if (obs) {
+          const handleX = toPxX(obs.y - obs.width / 2);
+          const handleY = toPxY(obs.x - obs.height / 2);
+          const dist = Math.hypot(mouseX - handleX, mouseY - handleY);
 
-        if (dist <= 10) {
-          // Resize mode initiated
-          dragModeRef.current = "resizing";
+          if (dist <= 10) {
+            dragModeRef.current = "resizing";
+            dragStartRef.current = {
+              mx,
+              my,
+              ox: obs.x,
+              oy: obs.y,
+              ow: obs.width,
+              oh: obs.height,
+              fixedX: obs.x + obs.height / 2,
+              fixedY: obs.y + obs.width / 2
+            };
+            return;
+          }
+        }
+      }
+
+      // 2. Check if we clicked inside any obstacle
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        const halfW = obs.width / 2;
+        const halfH = obs.height / 2;
+
+        const insideX = mx >= obs.x - halfH && mx <= obs.x + halfH;
+        const insideY = my >= obs.y - halfW && my <= obs.y + halfW;
+
+        if (insideX && insideY) {
+          setSelectedObstacleId(obs.id);
+          setSelectedElementInstanceId(null);
+          dragModeRef.current = "dragging";
           dragStartRef.current = {
             mx,
             my,
             ox: obs.x,
-            oy: obs.y,
-            ow: obs.width,
-            oh: obs.height,
-            // Fixed opposite corner (top-left in screen space is EKF X positive, Y positive)
-            fixedX: obs.x + obs.height / 2,
-            fixedY: obs.y + obs.width / 2
+            oy: obs.y
           };
           return;
         }
       }
-    }
 
-    // 2. Check if we clicked inside any obstacle (top-most in index gets selected)
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-      const obs = obstacles[i];
-      const halfW = obs.width / 2;
-      const halfH = obs.height / 2;
+      // 3. Clicked empty space
+      setSelectedObstacleId(null);
+      dragModeRef.current = "none";
+    } else {
+      // editMode === "elements"
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        const type = elementTypes.find((t) => t.id === el.elementTypeId);
+        if (!type) continue;
 
-      const insideX = mx >= obs.x - halfH && mx <= obs.x + halfH;
-      const insideY = my >= obs.y - halfW && my <= obs.y + halfW;
+        const radius = type.shape === "box" ? Math.max(type.width, type.height) / 2 : (type.diameter || 0.15) / 2;
+        const dist = Math.hypot(mx - el.x, my - el.y);
 
-      if (insideX && insideY) {
-        setSelectedObstacleId(obs.id);
-        dragModeRef.current = "dragging";
-        dragStartRef.current = {
-          mx,
-          my,
-          ox: obs.x,
-          oy: obs.y
-        };
-        return;
+        if (dist <= radius + 0.08) { // 8cm click padding
+          setSelectedElementInstanceId(el.id);
+          setSelectedObstacleId(null);
+          dragModeRef.current = "dragging";
+          dragStartRef.current = {
+            mx,
+            my,
+            ox: el.x,
+            oy: el.y
+          };
+          return;
+        }
       }
-    }
 
-    // 3. Clicked empty space
-    setSelectedObstacleId(null);
-    dragModeRef.current = "none";
+      setSelectedElementInstanceId(null);
+      dragModeRef.current = "none";
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -641,40 +858,53 @@ export default function FieldObstacleEditor() {
     const mx = toEkfX(mouseY);
     const my = toEkfY(mouseX);
 
-    if (dragModeRef.current === "dragging" && selectedObstacleId) {
-      const diffX = mx - dragStartRef.current.mx;
-      const diffY = my - dragStartRef.current.my;
+    if (dragModeRef.current === "dragging") {
+      if (editMode === "obstacles" && selectedObstacleId) {
+        const diffX = mx - dragStartRef.current.mx;
+        const diffY = my - dragStartRef.current.my;
 
-      // Bound center so it doesn't leave the field limits (1.8288m)
-      const nextX = Math.max(-1.8, Math.min(1.8, dragStartRef.current.ox + diffX));
-      const nextY = Math.max(-1.8, Math.min(1.8, dragStartRef.current.oy + diffY));
+        const nextX = Math.max(-1.8, Math.min(1.8, dragStartRef.current.ox + diffX));
+        const nextY = Math.max(-1.8, Math.min(1.8, dragStartRef.current.oy + diffY));
 
-      setObstacles(
-        obstacles.map((obs) => {
-          if (obs.id === selectedObstacleId) {
-            return {
-              ...obs,
-              x: Number(nextX.toFixed(3)),
-              y: Number(nextY.toFixed(3))
-            };
-          }
-          return obs;
-        })
-      );
+        setObstacles(
+          obstacles.map((obs) => {
+            if (obs.id === selectedObstacleId) {
+              return {
+                ...obs,
+                x: Number(nextX.toFixed(3)),
+                y: Number(nextY.toFixed(3))
+              };
+            }
+            return obs;
+          })
+        );
+      } else if (editMode === "elements" && selectedElementInstanceId) {
+        const diffX = mx - dragStartRef.current.mx;
+        const diffY = my - dragStartRef.current.my;
+
+        const nextX = Math.max(-1.8, Math.min(1.8, dragStartRef.current.ox + diffX));
+        const nextY = Math.max(-1.8, Math.min(1.8, dragStartRef.current.oy + diffY));
+
+        setElements(
+          elements.map((el) => {
+            if (el.id === selectedElementInstanceId) {
+              return {
+                ...el,
+                x: Number(nextX.toFixed(3)),
+                y: Number(nextY.toFixed(3))
+              };
+            }
+            return el;
+          })
+        );
+      }
     } else if (dragModeRef.current === "resizing" && selectedObstacleId) {
       const drag = dragStartRef.current;
       if (drag.fixedX === undefined || drag.fixedY === undefined || drag.ow === undefined || drag.oh === undefined) return;
 
-      // Opposite (fixed) corner in screen space (top-left) has higher values in EKF coords:
-      // fixedX = obs.x + height/2
-      // fixedY = obs.y + width/2
-      // The cursor represents the bottom-right corner which has smaller values in EKF space:
-      // mx is cursor EKF X, my is cursor EKF Y.
-      
       const newHeight = Math.max(0.1, drag.fixedX - mx);
       const newWidth = Math.max(0.1, drag.fixedY - my);
 
-      // Calculate new center based on keeping opposite corner fixed
       const newX = drag.fixedX - newHeight / 2;
       const newY = drag.fixedY - newWidth / 2;
 
@@ -833,6 +1063,30 @@ export default function FieldObstacleEditor() {
         {/* Configuration settings & Properties Panel */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           
+          {/* Mode Select Tabs */}
+          <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl w-full">
+            <button
+              onClick={() => setEditMode("obstacles")}
+              className={`w-1/2 py-2 text-center text-[10px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer ${
+                editMode === "obstacles"
+                  ? "bg-ares-gold text-black font-bold"
+                  : "text-marble/60 hover:text-white"
+              }`}
+            >
+              Obstacles Mode
+            </button>
+            <button
+              onClick={() => setEditMode("elements")}
+              className={`w-1/2 py-2 text-center text-[10px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer ${
+                editMode === "elements"
+                  ? "bg-ares-gold text-black font-bold"
+                  : "text-marble/60 hover:text-white"
+              }`}
+            >
+              Game Elements Mode
+            </button>
+          </div>
+
           {/* Metadata Card */}
           <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-4">
             <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
@@ -879,145 +1133,476 @@ export default function FieldObstacleEditor() {
             </div>
           </div>
 
-          {/* Active Obstacles & Selected Item Properties */}
-          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
-                <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
-              </h3>
-              <button
-                onClick={handleAddObstacle}
-                className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
-              >
-                <Plus size={10} /> Add Box
-              </button>
-            </div>
+          {/* Active Panel conditional rendering */}
+          {editMode === "obstacles" ? (
+            /* Active Obstacles & Selected Item Properties */
+            <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
+                  <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
+                </h3>
+                <button
+                  onClick={handleAddObstacle}
+                  className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
+                >
+                  <Plus size={10} /> Add Box
+                </button>
+              </div>
 
-            {/* List of Obstacles */}
-            <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-              {obstacles.length === 0 ? (
-                <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-6">
-                  No obstacles placed yet.
+              {/* List of Obstacles */}
+              <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                {obstacles.length === 0 ? (
+                  <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-6">
+                    No obstacles placed yet.
+                  </div>
+                ) : (
+                  obstacles.map((obs) => {
+                    const isSelected = obs.id === selectedObstacleId;
+                    return (
+                      <div
+                        key={obs.id}
+                        onClick={() => setSelectedObstacleId(obs.id)}
+                        className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                          isSelected 
+                            ? "bg-ares-gold/10 border-ares-gold text-white" 
+                            : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className="text-[11px] font-mono font-bold truncate">
+                          {obs.name}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteObstacle(obs.id);
+                          }}
+                          className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                          title="Delete obstacle"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Selected Obstacle Parameter Controls */}
+              {selectedObs ? (
+                <div className="border-t border-white/5 pt-4 space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                    Parameters: {selectedObs.name}
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5 col-span-2">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Label Name
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedObs.name}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Position X (m)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={selectedObs.x}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Position Y (m)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={selectedObs.y}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Width (m) - Y Axis
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.05"
+                        value={selectedObs.width}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Height (m) - X Axis
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.05"
+                        value={selectedObs.height}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-[9px] leading-relaxed text-marble/35 font-mono pt-1">
+                    X coordinates represent North (+) / South (-).
+                    <br />
+                    Y coordinates represent West (+) / East (-).
+                  </div>
                 </div>
               ) : (
-                obstacles.map((obs) => {
-                  const isSelected = obs.id === selectedObstacleId;
-                  return (
-                    <div
-                      key={obs.id}
-                      onClick={() => setSelectedObstacleId(obs.id)}
-                      className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                        isSelected 
-                          ? "bg-ares-gold/10 border-ares-gold text-white" 
-                          : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <span className="text-[11px] font-mono font-bold truncate">
-                        {obs.name}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteObstacle(obs.id);
-                        }}
-                        className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                        title="Delete obstacle"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  );
-                })
+                <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                  Select an obstacle to edit parameters.
+                </div>
               )}
             </div>
-
-            {/* Selected Obstacle Parameter Controls */}
-            {selectedObs ? (
-              <div className="border-t border-white/5 pt-4 space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                  Parameters: {selectedObs.name}
-                </h4>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5 col-span-2">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                      Label Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedObs.name}
-                      onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                      Position X (m)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={selectedObs.x}
-                      onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                      Position Y (m)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={selectedObs.y}
-                      onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                      Width (m) - Y Axis
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.05"
-                      value={selectedObs.width}
-                      onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                      Height (m) - X Axis
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.05"
-                      value={selectedObs.height}
-                      onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
-                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                    />
-                  </div>
+          ) : (
+            /* Game Elements Panel */
+            <div className="flex flex-col gap-6">
+              {/* Element Types Catalog Card */}
+              <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
+                    <Sliders size={14} className="text-ares-gold" /> Element Types Catalog
+                  </h3>
+                  <button
+                    onClick={handleAddElementType}
+                    className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
+                  >
+                    <Plus size={10} /> New Type
+                  </button>
                 </div>
 
-                <div className="text-[9px] leading-relaxed text-marble/35 font-mono pt-1">
-                  X coordinates represent North (+) / South (-).
-                  <br />
-                  Y coordinates represent West (+) / East (-).
+                {/* List of Types */}
+                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                  {elementTypes.length === 0 ? (
+                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
+                      No element types defined.
+                    </div>
+                  ) : (
+                    elementTypes.map((t) => {
+                      const isSelected = t.id === selectedElementTypeId;
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => setSelectedElementTypeId(t.id)}
+                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-ares-gold/10 border-ares-gold text-white"
+                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: t.color }}
+                            />
+                            <span className="text-[11px] font-mono font-bold truncate">
+                              {t.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddElementInstance(t.id);
+                              }}
+                              className="px-2 py-0.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
+                              title="Place instance of this type on field"
+                            >
+                              Place
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteElementType(t.id);
+                              }}
+                              className="text-marble/45 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                              title="Delete type catalog template"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
+
+                {/* Selected Type Parameters */}
+                {selectedElementTypeId ? (
+                  (() => {
+                    const t = elementTypes.find((x) => x.id === selectedElementTypeId);
+                    if (!t) return null;
+                    return (
+                      <div className="border-t border-white/5 pt-4 space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                          Type Properties: {t.name}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col gap-1.5 col-span-2">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Type Name
+                            </label>
+                            <input
+                              type="text"
+                              value={t.name}
+                              onChange={(e) => handleUpdateElementTypeField(t.id, "name", e.target.value)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Shape
+                            </label>
+                            <select
+                              value={t.shape}
+                              onChange={(e) => handleUpdateElementTypeField(t.id, "shape", e.target.value as any)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                            >
+                              <option value="sphere">Sphere (Circle)</option>
+                              <option value="cylinder">Cylinder (Circle)</option>
+                              <option value="box">Box (Rect)</option>
+                            </select>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Color (Hex)
+                            </label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="color"
+                                value={t.color}
+                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
+                                className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer p-0 shrink-0"
+                              />
+                              <input
+                                type="text"
+                                value={t.color}
+                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan w-full text-center"
+                              />
+                            </div>
+                          </div>
+                          {t.shape === "box" ? (
+                            <>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Width (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={t.width}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "width", parseFloat(e.target.value) || 0.15)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Height (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={t.height}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "height", parseFloat(e.target.value) || 0.15)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Diameter (m)
+                              </label>
+                              <input
+                                  type="number"
+                                  step="0.01"
+                                  value={t.diameter || 0.15}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "diameter", parseFloat(e.target.value) || 0.15)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Depth/Z-Height (m)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={t.depth}
+                              onChange={(e) => handleUpdateElementTypeField(t.id, "depth", parseFloat(e.target.value) || 0.15)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Mass (kg)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={t.massKg}
+                              onChange={(e) => handleUpdateElementTypeField(t.id, "massKg", parseFloat(e.target.value) || 0.1)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 col-span-2 pt-1">
+                            <input
+                              type="checkbox"
+                              id="movable-chk"
+                              checked={t.movable}
+                              onChange={(e) => handleUpdateElementTypeField(t.id, "movable", e.target.checked)}
+                              className="w-4 h-4 accent-ares-gold cursor-pointer"
+                            />
+                            <label htmlFor="movable-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                              Movable Physics Body (Dynamic)
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                    Select a type template to edit.
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                Select an obstacle to edit parameters.
+
+              {/* Element Instances Inventory Card */}
+              <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
+                    <Activity size={14} className="text-ares-gold" /> Placed Elements
+                  </h3>
+                </div>
+
+                {/* Placed Elements List */}
+                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                  {elements.length === 0 ? (
+                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
+                      No elements placed on field.
+                    </div>
+                  ) : (
+                    elements.map((el, idx) => {
+                      const type = elementTypes.find((t) => t.id === el.elementTypeId);
+                      const isSelected = el.id === selectedElementInstanceId;
+                      return (
+                        <div
+                          key={el.id}
+                          onClick={() => setSelectedElementInstanceId(el.id)}
+                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-ares-gold/10 border-ares-gold text-white"
+                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: type?.color || "#fff" }}
+                            />
+                            <span className="text-[11px] font-mono font-bold truncate">
+                              {type?.name || "Unknown"} #{idx + 1}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteElementInstance(el.id);
+                            }}
+                            className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                            title="Delete placed instance"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Selected Instance Parameters */}
+                {selectedElementInstanceId ? (
+                  (() => {
+                    const el = elements.find((x) => x.id === selectedElementInstanceId);
+                    if (!el) return null;
+                    const type = elementTypes.find((t) => t.id === el.elementTypeId);
+                    return (
+                      <div className="border-t border-white/5 pt-4 space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                          Instance: {type?.name || "Element"}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Position X (m)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={el.x}
+                              onChange={(e) => handleUpdateElementInstanceField(el.id, "x", parseFloat(e.target.value) || 0)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Position Y (m)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={el.y}
+                              onChange={(e) => handleUpdateElementInstanceField(el.id, "y", parseFloat(e.target.value) || 0)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5 col-span-2">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Rotation (deg)
+                            </label>
+                            <input
+                              type="number"
+                              step="1"
+                              value={el.rotation}
+                              onChange={(e) => handleUpdateElementInstanceField(el.id, "rotation", parseFloat(e.target.value) || 0)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                    Select a placed element to edit.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Saved Layout Library */}
           <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-4">
@@ -1054,7 +1639,7 @@ export default function FieldObstacleEditor() {
                           {cfg.name}
                         </span>
                         <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
-                          {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"}
+                          {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">

@@ -38,6 +38,27 @@ export interface FieldObstacle {
   height: number;
 }
 
+export interface FieldElementType {
+  id: string;
+  name: string;
+  shape: "box" | "cylinder" | "sphere";
+  width: number;
+  height: number;
+  depth: number;
+  diameter?: number;
+  color: string;
+  massKg: number;
+  movable: boolean;
+}
+
+export interface FieldElementInstance {
+  id: string;
+  elementTypeId: string;
+  x: number;
+  y: number;
+  rotation: number;
+}
+
 interface ScopeState {
   isPlaying: boolean;
   currentTimeMs: number;
@@ -49,6 +70,8 @@ interface ScopeState {
   selectedKeys: string[];
   driveMode: "mecanum" | "swerve";
   fieldObstacles: FieldObstacle[] | null;
+  fieldElements: FieldElementInstance[] | null;
+  fieldElementTypes: FieldElementType[] | null;
   fieldCadUrl: string | null;
   
   // Streaming States
@@ -65,6 +88,8 @@ interface ScopeState {
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setConsoleLogs: (logs: ConsoleLogEntry[] | null) => void;
   setFieldObstacles: (obstacles: FieldObstacle[] | null) => void;
+  setFieldElements: (elements: FieldElementInstance[] | null) => void;
+  setFieldElementTypes: (types: FieldElementType[] | null) => void;
   setFieldCadUrl: (url: string | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
@@ -90,6 +115,8 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"],
   driveMode: "mecanum",
   fieldObstacles: null,
+  fieldElements: null,
+  fieldElementTypes: null,
   fieldCadUrl: null,
   
   isStreaming: false,
@@ -149,6 +176,8 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   setConsoleLogs: (consoleLogs) => set({ consoleLogs }),
   setPlannedPath: (plannedPath) => set({ plannedPath }),
   setFieldObstacles: (fieldObstacles) => set({ fieldObstacles }),
+  setFieldElements: (fieldElements) => set({ fieldElements }),
+  setFieldElementTypes: (fieldElementTypes) => set({ fieldElementTypes }),
   setFieldCadUrl: (fieldCadUrl) => set({ fieldCadUrl }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
