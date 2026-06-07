@@ -783,23 +783,23 @@ export default function ScopeDashboard() {
           {isStreaming && (
             <div className={`flex items-center gap-2 border px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider ${
               connectionStatus === "connected"
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                ? "bg-ares-success/10 text-ares-success border-ares-success/20"
                 : connectionStatus === "connecting"
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                ? "bg-ares-gold/10 text-ares-gold border-ares-gold/20"
                 : "bg-white/5 text-marble/50 border-white/5"
             }`}>
               {connectionStatus === "connected" && (
                 <>
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-success opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-success"></span>
                   </span>
                   <span>Connected</span>
                 </>
               )}
               {connectionStatus === "connecting" && (
                 <>
-                  <RefreshCw size={12} className="animate-spin text-amber-400" />
+                  <RefreshCw size={12} className="animate-spin text-ares-gold" />
                   <span>Connecting</span>
                 </>
               )}
@@ -914,7 +914,7 @@ export default function ScopeDashboard() {
             onClick={() => consoleLogs ? setConsoleLogs(null) : consoleInputRef.current?.click()}
             className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md ${
               consoleLogs 
-                ? "bg-amber-500/15 text-amber-400 border border-amber-500/25 hover:bg-amber-500/25" 
+                ? "bg-ares-gold/15 text-ares-gold border border-ares-gold/25 hover:bg-ares-gold/25" 
                 : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
             }`}
             title={consoleLogs ? "Clear console log" : "Upload system console text log"}
@@ -1036,7 +1036,7 @@ export default function ScopeDashboard() {
               <div className="glass-card p-6 border border-white/10 flex flex-col gap-4 relative">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
                   <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
-                    <Terminal size={14} className="text-amber-400" />
+                    <Terminal size={14} className="text-ares-gold" />
                     System Console Logs
                   </h3>
                   <div className="flex flex-wrap items-center gap-2">
@@ -1055,7 +1055,7 @@ export default function ScopeDashboard() {
                     >
                       <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
                       <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
-                      <option value="WARN" className="bg-neutral-900 text-amber-400">WARN</option>
+                      <option value="WARN" className="bg-neutral-900 text-ares-gold">WARN</option>
                       <option value="ERROR" className="bg-neutral-900 text-ares-red-light">ERROR</option>
                     </select>
                     <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
@@ -1083,8 +1083,8 @@ export default function ScopeDashboard() {
                       let levelColor = "text-marble/70";
                       let levelBg = "bg-transparent";
                       if (entry.level === "WARN") {
-                        levelColor = "text-amber-400";
-                        levelBg = "bg-amber-500/5 border border-amber-500/10";
+                        levelColor = "text-ares-gold";
+                        levelBg = "bg-ares-gold/5 border border-ares-gold/10";
                       } else if (entry.level === "ERROR") {
                         levelColor = "text-ares-red-light";
                         levelBg = "bg-ares-red/5 border border-ares-red/10";
@@ -1094,7 +1094,7 @@ export default function ScopeDashboard() {
                           <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
                           <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
                             entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
-                            entry.level === "WARN" ? "bg-amber-500/20 text-amber-400" :
+                            entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
                             "bg-white/10 text-marble/60"
                           }`}>{entry.level}</span>
                           <span className={`break-all ${levelColor}`}>{entry.message}</span>

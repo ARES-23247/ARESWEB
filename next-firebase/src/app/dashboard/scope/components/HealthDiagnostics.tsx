@@ -206,7 +206,7 @@ export default function HealthDiagnostics() {
         <h3 className="text-sm font-black uppercase text-white tracking-widest font-heading">
           🩺 Diagnostic Health Center
         </h3>
-        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-2 py-0.5 rounded-md animate-pulse">
+        <span className="bg-ares-success/10 text-ares-success border border-ares-success/20 text-[9px] font-mono px-2 py-0.5 rounded-md animate-pulse">
           Self-Healer Connected
         </span>
       </div>
@@ -231,7 +231,7 @@ export default function HealthDiagnostics() {
                 ? "bg-ares-danger/25 text-white"
                 : report.batteryStatus === "warning"
                 ? "bg-ares-gold/25 text-white"
-                : "bg-emerald-500/25 text-white"
+                : "bg-ares-success/25 text-white"
             }`}>
               {report.batteryStatus.toUpperCase()}
             </span>
@@ -249,10 +249,10 @@ export default function HealthDiagnostics() {
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase text-white tracking-wider flex items-center gap-1">
-              <RefreshCw size={12} className={report.motorStatus === "imbalanced" ? "text-ares-gold animate-spin" : "text-emerald-400"} /> mechanical.drivetrain
+              <RefreshCw size={12} className={report.motorStatus === "imbalanced" ? "text-ares-gold animate-spin" : "text-ares-success"} /> mechanical.drivetrain
             </span>
             <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
-              report.motorStatus === "imbalanced" ? "bg-ares-gold/25 text-white" : "bg-emerald-500/25 text-white"
+              report.motorStatus === "imbalanced" ? "bg-ares-gold/25 text-white" : "bg-ares-success/25 text-white"
             }`}>
               {report.motorStatus.toUpperCase()}
             </span>
@@ -279,7 +279,7 @@ export default function HealthDiagnostics() {
                 ? "bg-ares-danger/25 text-white"
                 : report.loopStatus === "warning"
                 ? "bg-ares-gold/25 text-white"
-                : "bg-emerald-500/25 text-white"
+                : "bg-ares-success/25 text-white"
             }`}>
               {report.loopStatus.toUpperCase()}
             </span>
@@ -297,10 +297,10 @@ export default function HealthDiagnostics() {
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase text-white tracking-wider flex items-center gap-1">
-              <Layers size={12} className={report.slideStatus === "stall" ? "text-ares-danger-soft animate-pulse" : "text-purple-400"} /> lifter.linear_slides
+              <Layers size={12} className={report.slideStatus === "stall" ? "text-ares-danger-soft animate-pulse" : "text-ares-success"} /> lifter.linear_slides
             </span>
             <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
-              report.slideStatus === "stall" ? "bg-ares-danger/25 text-white" : "bg-emerald-500/25 text-white"
+              report.slideStatus === "stall" ? "bg-ares-danger/25 text-white" : "bg-ares-success/25 text-white"
             }`}>
               {report.slideStatus.toUpperCase()}
             </span>

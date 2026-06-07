@@ -281,7 +281,7 @@ export default function CalendarPage() {
             <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading flex flex-wrap items-center gap-4">
               Team <span className="bg-ares-red px-6 py-1 pb-3 ares-cut shadow-xl text-white font-bold">Calendar</span>
               {isLive ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/20">
                   ● Live Firestore Sync
                 </span>
               ) : (

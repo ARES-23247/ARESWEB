@@ -151,8 +151,8 @@ export default function DashboardHome() {
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Telemetry Voltage</p>
             <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">12.87 V</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-500/15 rounded-xl flex items-center justify-center border border-emerald-500/30">
-            <BatteryCharging size={20} className="text-emerald-400" />
+          <div className="w-12 h-12 bg-ares-success/15 rounded-xl flex items-center justify-center border border-ares-success/30">
+            <BatteryCharging size={20} className="text-ares-success" />
           </div>
         </div>
 
@@ -162,8 +162,8 @@ export default function DashboardHome() {
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Robot Uplink</p>
             <p className="text-2xl font-black text-white mt-1.5 uppercase font-heading tracking-tight">Active (WiFi)</p>
           </div>
-          <div className="w-12 h-12 bg-sky-500/15 rounded-xl flex items-center justify-center border border-sky-500/30">
-            <Wifi size={20} className="text-sky-400 animate-pulse" />
+          <div className="w-12 h-12 bg-ares-gold/15 rounded-xl flex items-center justify-center border border-ares-gold/30">
+            <Wifi size={20} className="text-ares-gold animate-pulse" />
           </div>
         </div>
 
@@ -222,7 +222,7 @@ export default function DashboardHome() {
               <h3 className="text-lg font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
                 <Terminal size={18} /> Active Diagnostics Uplink
               </h3>
-              <div className="bg-black/75 border border-white/5 font-mono text-[11px] p-5 rounded-xl text-emerald-400 space-y-2 h-[200px] overflow-y-auto overflow-x-hidden leading-relaxed shadow-inner w-full">
+              <div className="bg-black/75 border border-white/5 font-mono text-[11px] p-5 rounded-xl text-ares-success space-y-2 h-[200px] overflow-y-auto overflow-x-hidden leading-relaxed shadow-inner w-full">
                 {logs.map((log, idx) => (
                   <div key={idx} className="truncate">
                     <span className="text-marble/40">{log.substring(0, 10)}</span>
@@ -235,8 +235,8 @@ export default function DashboardHome() {
             
             <div className="flex flex-wrap gap-4 items-center justify-between border-t border-white/5 pt-4 text-[10px] font-bold text-marble/55 uppercase tracking-wider mt-4">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span className="text-emerald-400">Stream Connection Live</span>
+                <span className="w-2 h-2 rounded-full bg-ares-success animate-ping"></span>
+                <span className="text-ares-success">Stream Connection Live</span>
               </span>
               <span>115200 Baudrate</span>
             </div>

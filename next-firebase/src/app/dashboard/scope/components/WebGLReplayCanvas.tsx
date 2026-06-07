@@ -267,7 +267,7 @@ export default function WebGLReplayCanvas() {
       ctx.setLineDash([]); // Reset dashed line style
 
       // Start node (green ring)
-      ctx.fillStyle = "#10B981"; // Emerald
+      ctx.fillStyle = "#22C55E"; // ARES Success
       ctx.beginPath();
       ctx.arc(toPxX(plannedPath[0].y), toPxY(plannedPath[0].x), 4, 0, Math.PI * 2);
       ctx.fill();

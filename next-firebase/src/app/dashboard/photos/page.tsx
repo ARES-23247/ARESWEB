@@ -120,7 +120,7 @@ export default function GoogleSyncPage() {
             ) : authConfig ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                  <div className="w-10 h-10 rounded-lg bg-ares-success/10 border border-ares-success/30 flex items-center justify-center text-ares-success shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
                     <CheckCircle size={20} />
                   </div>
                   <div>

@@ -2028,12 +2028,12 @@ export default function AresPlanner({
                 className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
               >
                 <div className="flex items-center gap-2">
-                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-amber-500" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-amber-500" />
+                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-ares-gold" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <Compass size={14} className="text-ares-gold" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">Constraint Zones</span>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <span className="bg-amber-500/15 border border-amber-500/35 text-amber-500 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                  <span className="bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
                     {constraintZones.length}
                   </span>
                   <button
@@ -2055,7 +2055,7 @@ export default function AresPlanner({
                         key={zone.id}
                         className={`border rounded-lg overflow-hidden transition-all duration-300 ${
                           isSelected 
-                            ? "bg-amber-500/[0.02] border-amber-500/45" 
+                            ? "bg-ares-gold/[0.02] border-ares-gold/45" 
                             : "bg-obsidian/30 border-white/5 hover:border-white/15"
                         }`}
                       >
@@ -2075,7 +2075,7 @@ export default function AresPlanner({
                               value={zone.name}
                               onChange={(e) => handleUpdateConstraintZone(zone.id, { name: e.target.value })}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-amber-500 py-0.5"
+                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-gold py-0.5"
                             />
                             <span className="text-[10px] text-marble/30 font-mono">({zone.maxVelocity.toFixed(1)} m/s)</span>
                           </div>
@@ -2090,7 +2090,7 @@ export default function AresPlanner({
                             <Trash2 size={12} />
                           </button>
                         </div>
-
+ 
                         {/* Zone Content */}
                         {isSelected && (
                           <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-xs">
@@ -2108,10 +2108,10 @@ export default function AresPlanner({
                                       handleUpdateConstraintZone(zone.id, { maxVelocity: val });
                                     }
                                   }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
-
+ 
                               {/* Center X */}
                               <div className="flex flex-col gap-1">
                                 <label className="text-[8px] font-mono uppercase text-marble/40 block">Center X ({unitMode === "meters" ? "M" : "In"})</label>
@@ -2125,10 +2125,10 @@ export default function AresPlanner({
                                       handleUpdateConstraintZone(zone.id, { x: unitMode === "meters" ? val / 0.0254 : val });
                                     }
                                   }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
-
+ 
                               {/* Center Y */}
                               <div className="flex flex-col gap-1">
                                 <label className="text-[8px] font-mono uppercase text-marble/40 block">Center Y ({unitMode === "meters" ? "M" : "In"})</label>
@@ -2142,10 +2142,10 @@ export default function AresPlanner({
                                       handleUpdateConstraintZone(zone.id, { y: unitMode === "meters" ? val / 0.0254 : val });
                                     }
                                   }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
-
+ 
                               {/* Width */}
                               <div className="flex flex-col gap-1">
                                 <label className="text-[8px] font-mono uppercase text-marble/40 block">Width ({unitMode === "meters" ? "M" : "In"})</label>
@@ -2159,10 +2159,10 @@ export default function AresPlanner({
                                       handleUpdateConstraintZone(zone.id, { width: unitMode === "meters" ? val / 0.0254 : val });
                                     }
                                   }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
-
+ 
                               {/* Height */}
                               <div className="flex flex-col gap-1">
                                 <label className="text-[8px] font-mono uppercase text-marble/40 block">Height ({unitMode === "meters" ? "M" : "In"})</label>
@@ -2176,7 +2176,7 @@ export default function AresPlanner({
                                       handleUpdateConstraintZone(zone.id, { height: unitMode === "meters" ? val / 0.0254 : val });
                                     }
                                   }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-amber-500"
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
                             </div>

@@ -189,7 +189,7 @@ export default function EventsManagementPage() {
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Manage Events
             {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-inset ring-emerald-500/30 ml-2">
+              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
                 ● Live Sync
               </span>
             ) : (
@@ -428,7 +428,7 @@ export default function EventsManagementPage() {
               </button>
               <button
                 onClick={handleSaveEvent}
-                className="clipped-button-sm bg-ares-cyan text-black font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg"
+                className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg"
               >
                 {editId ? "Update Schedule" : "Add to Calendar"}
               </button>

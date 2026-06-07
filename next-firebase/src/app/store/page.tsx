@@ -146,7 +146,7 @@ export default function StorePage() {
 
         {/* Notifications */}
         {checkoutSuccess && (
-          <div className="mb-10 p-5 glass-card ares-cut border border-emerald-500/30 bg-emerald-500/5 flex items-start gap-4 text-emerald-400">
+          <div className="mb-10 p-5 glass-card ares-cut border border-ares-success/30 bg-ares-success/5 flex items-start gap-4 text-ares-success">
             <CheckCircle2 className="w-6 h-6 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-bold text-white text-lg">Order Successful!</h3>

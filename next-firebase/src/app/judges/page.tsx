@@ -265,7 +265,7 @@ export default function JudgesHubPage() {
                     </div>
                     <div className="flex items-center justify-between border-b border-white/5 pb-3">
                       <span className="text-marble/75">Software Test Coverage:</span>
-                      <span className="font-bold text-emerald-400">100% Function</span>
+                      <span className="font-bold text-ares-success">100% Function</span>
                     </div>
                   </div>
                 </div>

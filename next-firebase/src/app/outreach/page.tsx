@@ -282,7 +282,7 @@ export default function OutreachPage() {
             </p>
 
             {isSubmitted ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-xl text-center space-y-3">
+              <div className="bg-ares-success/10 border border-ares-success/20 text-ares-success p-6 rounded-xl text-center space-y-3">
                 <Check size={24} className="mx-auto" />
                 <div className="font-bold">STEM Request Received!</div>
                 <p className="text-xs opacity-85 leading-relaxed">

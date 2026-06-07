@@ -9,7 +9,7 @@ service cloud.firestore {
     
     // Helper function to get the user's email (normalized to lowercase)
     function getUserEmail() {
-      return request.auth.token.email != null ? request.auth.token.email.lower() : null;
+      return request.auth != null && request.auth.token != null && request.auth.token.email != null ? request.auth.token.email.lower() : null;
     }
     
     // Helper function to check if the user exists in the authorized_users collection
@@ -86,20 +86,17 @@ service cloud.firestore {
 
     // aresplanner_paths
     match /aresplanner_paths/{pathId} {
-      allow read: if true;
-      allow write: if isAuthorized();
+      allow read, write: if isAuthorized();
     }
 
     // aresplanner_logs
     match /aresplanner_logs/{logId} {
-      allow read: if true;
-      allow write: if isAuthorized();
+      allow read, write: if isAuthorized();
     }
 
     // aresplanner_log_data
     match /aresplanner_log_data/{logId} {
-      allow read: if true;
-      allow write: if isAuthorized();
+      allow read, write: if isAuthorized();
     }
 
     // user_profiles

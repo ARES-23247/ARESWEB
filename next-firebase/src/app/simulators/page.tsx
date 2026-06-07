@@ -164,7 +164,7 @@ export default function TrigRoboticsSimPage() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-gold transition-colors"
                 />
                 {daemonUrl.startsWith('ws://') && (
-                  <p className="text-[9px] text-amber-400 flex items-start gap-1 font-medium mt-0.5 leading-normal">
+                  <p className="text-[9px] text-ares-gold flex items-start gap-1 font-medium mt-0.5 leading-normal">
                     <AlertTriangle size={10} className="shrink-0 mt-0.5" />
                     <span>Local WS is compatible with localhost development. Production HTTPS requires secure WSS.</span>
                   </p>
@@ -225,7 +225,7 @@ export default function TrigRoboticsSimPage() {
                 <span className="text-marble/55 uppercase text-[10px] tracking-wider">Sim Status:</span>
                 <span className={`font-bold uppercase tracking-widest text-[10px] ${
                   simState === 'running' ? 'text-ares-success animate-pulse' :
-                  simState === 'building' ? 'text-amber-400 animate-pulse' :
+                  simState === 'building' ? 'text-ares-gold animate-pulse' :
                   'text-marble/35'
                 }`}>
                   {simState}

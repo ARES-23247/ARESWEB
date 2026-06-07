@@ -943,7 +943,7 @@ export default function FieldObstacleEditor() {
                   <Map size={14} className="text-ares-gold animate-pulse" /> Onshape 3D Field Sync
                 </span>
                 <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
-                  isFieldConnected ? "bg-emerald-500/25 text-emerald-400 border border-emerald-500/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
+                  isFieldConnected ? "bg-ares-success/25 text-ares-success border border-ares-success/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
                 }`}>
                   {isFieldConnected ? "Synced" : "Not Synced"}
                 </span>
