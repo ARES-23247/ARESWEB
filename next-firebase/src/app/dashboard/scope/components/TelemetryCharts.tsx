@@ -4,6 +4,16 @@ import React, { useRef, useEffect, useState } from "react";
 import { useScopeStore } from "../store/scopeStore";
 import { Plus, X } from "lucide-react";
 
+const getCSSVariableValue = (varName: string, fallback: string): string => {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    return value || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export default function TelemetryCharts() {
   const { telemetryData, currentTimeMs, setCurrentTimeMs, selectedKeys, toggleSelectedKey } = useScopeStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -12,14 +22,14 @@ export default function TelemetryCharts() {
   // Dynamic color helper
   const getSignalColor = (key: string, index: number) => {
     const predefinedColors: Record<string, string> = {
-      "Robot/BatteryVoltage": "#F59E0B",     // Gold
-      "Robot/LoopTime": "#06B6D4",           // Cyan
-      "Drive/MotorPower_FL": "#EF4444",      // Red
-      "Drive/MotorPower_FR": "#A855F7",      // Purple
-      "Drive/MotorPower_BL": "#3B82F6",      // Blue
-      "Drive/MotorPower_BR": "#10B981",      // Emerald
-      "Superstructure/Elevator_Height": "#E11D48", // Rose
-      "Drive/MotorCurrent_FL": "#F43F5E"     // Pink
+      "Robot/BatteryVoltage": getCSSVariableValue("--ares-gold", "#FFB81C"),
+      "Robot/LoopTime": getCSSVariableValue("--ares-cyan", "#00E5FF"),
+      "Drive/MotorPower_FL": getCSSVariableValue("--ares-red", "#C00000"),
+      "Drive/MotorPower_FR": getCSSVariableValue("--ares-bronze", "#CD7F32"),
+      "Drive/MotorPower_BL": getCSSVariableValue("--ares-success", "#22C55E"),
+      "Drive/MotorPower_BR": getCSSVariableValue("--ares-danger", "#EF4444"),
+      "Superstructure/Elevator_Height": getCSSVariableValue("--ares-red-light", "#FF4D4D"),
+      "Drive/MotorCurrent_FL": getCSSVariableValue("--ares-bronze-light", "#E69B4D")
     };
     if (predefinedColors[key]) return predefinedColors[key];
     

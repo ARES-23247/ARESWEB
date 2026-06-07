@@ -33,7 +33,7 @@ export function MemberCard({ member }: { member: TeamMember }) {
           />
         </div>
         <h4 className="text-white font-bold text-base mb-0.5 group-hover:text-ares-red transition-colors">
-          {member.nickname || member.name || "ARES Member"}
+          {member.nickname || (member.memberType === "student" ? "ARES Member" : (member.name || "ARES Member"))}
         </h4>
         {member.pronouns && (
           <p className="text-marble/60 text-xs mb-2">{member.pronouns}</p>

@@ -85,7 +85,7 @@ describe("MemberCard Component", () => {
   });
 
   it("falls back to name when nickname is not available", () => {
-    const memberWithoutNickname = { ...mockMember, nickname: "" };
+    const memberWithoutNickname = { ...mockMember, nickname: "", memberType: "mentor" };
     renderWithRouter(<MemberCard member={memberWithoutNickname} />);
 
     expect(screen.getByText("Test User")).toBeInTheDocument();

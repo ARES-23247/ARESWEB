@@ -166,7 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Close button overlay */}
             <button 
               onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-4 right-[-3rem] w-9 h-9 bg-ares-red text-white flex items-center justify-center border border-white/10 ares-cut-sm focus:outline-none cursor-pointer"
+              className="absolute top-4 right-[-3rem] w-9 h-9 bg-ares-red text-white flex items-center justify-center border border-white/10 ares-cut-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian cursor-pointer"
               aria-label="Close sidebar"
             >
               <X size={18} />
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 ares-cut-sm text-ares-gold focus:outline-none cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 ares-cut-sm text-ares-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian cursor-pointer"
               aria-label="Open sidebar menu"
             >
               <Menu size={20} />

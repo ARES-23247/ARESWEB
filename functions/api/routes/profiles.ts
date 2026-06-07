@@ -384,20 +384,7 @@ export const profilesRouter = _profilesRouter
 
       const memberType = String(profileRow.memberType || "student");
 
-      // Parse JSON arrays for subteams, colleges, employers
-      const safeJSONParse = (val: unknown): unknown[] => {
-        if (!val) return [];
-        if (Array.isArray(val)) return val;
-        if (typeof val === "string") {
-          try { return JSON.parse(val); }
-          catch { return []; }
-        }
-        return [];
-      };
 
-      const subteams = safeJSONParse(profileRow.subteams);
-      const colleges = safeJSONParse(profileRow.colleges);
-      const employers = safeJSONParse(profileRow.employers);
 
       // PII-F01: Decrypt contact fields before public display
       const secret = getEncryptionSecret(c);
@@ -417,34 +404,43 @@ export const profilesRouter = _profilesRouter
       const decryptedPhone = showPhoneFlag ? await safeDecryptPublic(profileRow.phone) : null;
 
       // Build public-safe response using the same sanitization logic
-      const publicProfile: z.infer<typeof rosterMemberSchema> = {
+      const sanitized = sanitizeProfileForPublic({
         userId: profileRow.userId,
-        nickname: profileRow.nickname || undefined,
-        avatar: profileRow.avatar || undefined,
-        pronouns: profileRow.pronouns || undefined,
-        subteams: subteams as string[],
-        memberType: memberType as z.infer<typeof MemberTypeEnum>,
-        bio: profileRow.bio || undefined,
-        funFact: profileRow.funFact || undefined,
-        favoriteFirstThing: profileRow.favoriteFirstThing || undefined,
-        colleges: colleges as unknown[],
-        employers: employers as unknown[],
-        name: profileRow.name || undefined,
-        role: profileRow.role || undefined,
-        showOnAbout: Number(profileRow.showOnAbout || 0) === 1,
-        favoriteRobotMechanism: profileRow.favoriteRobotMechanism || undefined,
-        preMatchSuperstition: profileRow.preMatchSuperstition || undefined,
-        leadershipRole: profileRow.leadershipRole || undefined,
-        rookieYear: profileRow.rookieYear ? String(profileRow.rookieYear) : undefined,
+        nickname: profileRow.nickname,
+        avatar: profileRow.avatar,
+        pronouns: profileRow.pronouns,
+        subteams: profileRow.subteams,
+        memberType: profileRow.memberType,
+        bio: profileRow.bio,
+        funFact: profileRow.funFact,
+        favoriteFirstThing: profileRow.favoriteFirstThing,
+        colleges: profileRow.colleges,
+        employers: profileRow.employers,
+        name: profileRow.name,
+        role: profileRow.role,
+        showOnAbout: profileRow.showOnAbout,
+        favoriteRobotMechanism: profileRow.favoriteRobotMechanism,
+        preMatchSuperstition: profileRow.preMatchSuperstition,
+        leadershipRole: profileRow.leadershipRole,
+        rookieYear: profileRow.rookieYear,
         favoriteFood: undefined,
-        gradeYear: profileRow.gradeYear || undefined,
-        // Mentors/coaches: show decrypted email/phone ONLY if they opted in
-        email: decryptedEmail || undefined,
-        phone: decryptedPhone || undefined,
-        showEmail: Number(profileRow.showEmail || 0) === 1,
-        showPhone: Number(profileRow.showPhone || 0) === 1,
-        contactEmail: undefined,
-      };
+        gradeYear: profileRow.gradeYear,
+        contactEmail: decryptedEmail,
+        phone: decryptedPhone,
+        showEmail: profileRow.showEmail,
+        showPhone: profileRow.showPhone,
+      }, memberType);
+
+      const publicProfile = {
+        ...sanitized,
+        userId: String(sanitized.userId),
+        nickname: sanitized.nickname || sanitized.name || "ARES Member",
+        avatar: sanitized.avatar || null,
+        memberType: memberType as z.infer<typeof MemberTypeEnum>,
+        subteams: Array.isArray(sanitized.subteams) ? sanitized.subteams : [],
+        colleges: Array.isArray(sanitized.colleges) ? sanitized.colleges : [],
+        employers: Array.isArray(sanitized.employers) ? sanitized.employers : [],
+      } as unknown as z.infer<typeof rosterMemberSchema>;
 
       const response = c.json(publicProfile, 200);
       // CACHEABLE: This endpoint is safe to cache because it:

@@ -24,7 +24,7 @@ export default function About() {
     
     return rawMembers.map((m): TeamMember => ({
       userId: m.userId,
-      nickname: m.nickname || m.name || "ARES Member",
+      nickname: m.nickname || (m.memberType === "student" ? "ARES Member" : (m.name || "ARES Member")),
       name: m.name,
       avatar: m.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${m.userId}`,
       pronouns: m.pronouns,
