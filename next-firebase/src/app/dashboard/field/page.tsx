@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { authenticatedFetch } from "@/lib/api";
 import { 
   collection, 
@@ -59,6 +62,8 @@ interface FieldConfig {
   name: string;
   updatedAt: number;
   obstacles: FieldObstacle[];
+  cadUrl?: string;
+  bgImageUrl?: string;
 }
 
 export default function FieldObstacleEditor() {
@@ -70,6 +75,93 @@ export default function FieldObstacleEditor() {
   
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+
+  // Local asset files upload states
+  const [localBgFile, setLocalBgFile] = useState<File | null>(null);
+  const [localGlbFile, setLocalGlbFile] = useState<File | null>(null);
+  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
+
+  // Client-side Three.js Top-Down GLB Snapshot generator
+  const generateTopDownSnapshot = (glbBuffer: ArrayBuffer): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("#0A0A0A");
+
+        const fieldSize = 3.6576; // 12 feet
+        const camera = new THREE.OrthographicCamera(
+          -fieldSize / 2,
+          fieldSize / 2,
+          fieldSize / 2,
+          -fieldSize / 2,
+          0.1,
+          100
+        );
+        camera.position.set(0, 10, 0);
+        camera.lookAt(0, 0, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, 15, 5);
+        scene.add(dirLight);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        renderer.setSize(512, 512);
+
+        const loader = new GLTFLoader();
+        loader.parse(
+          glbBuffer,
+          "",
+          (gltf) => {
+            scene.add(gltf.scene);
+            renderer.render(scene, camera);
+            renderer.domElement.toBlob((blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error("Failed to export WebGL canvas to Blob"));
+              }
+              renderer.dispose();
+            }, "image/png");
+          },
+          (err) => {
+            reject(err);
+          }
+        );
+      } catch (e) {
+        reject(e);
+      }
+    });
+  };
+
+  const handleGlbFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLocalGlbFile(file);
+    setLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const buffer = event.target?.result as ArrayBuffer;
+        if (!buffer) return;
+        try {
+          const snapshotBlob = await generateTopDownSnapshot(buffer);
+          const snapshotFile = new File([snapshotBlob], "snapshot_bg.png", { type: "image/png" });
+          setLocalBgFile(snapshotFile);
+        } catch (snapErr) {
+          console.error("Failed to generate top-down snapshot from GLB:", snapErr);
+          alert("Selected 3D file, but failed to generate a top-down preview. You can manually upload a 2D image instead.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      console.error("Error reading GLB file:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Onshape Field CAD settings state
   const [fieldDocId, setFieldDocId] = useState<string>("");
@@ -111,7 +203,9 @@ export default function FieldObstacleEditor() {
           id: docSnap.id,
           name: data.name || "Untitled Layout",
           updatedAt: data.updatedAt || Date.now(),
-          obstacles: data.obstacles || []
+          obstacles: data.obstacles || [],
+          cadUrl: data.cadUrl || "",
+          bgImageUrl: data.bgImageUrl || ""
         });
       });
       setConfigs(fetchedConfigs);
@@ -130,6 +224,29 @@ export default function FieldObstacleEditor() {
   useEffect(() => {
     fetchConfigs();
   }, []);
+
+  // Set bgImage dynamically based on localBgFile selection or selectedConfigId URL change
+  useEffect(() => {
+    if (localBgFile) {
+      const url = URL.createObjectURL(localBgFile);
+      const img = new Image();
+      img.src = url;
+      img.onload = () => setBgImage(img);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      const activeConfig = configs.find((c) => c.id === selectedConfigId);
+      const bgUrl = activeConfig?.bgImageUrl || "";
+      if (bgUrl) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = bgUrl;
+        img.onload = () => setBgImage(img);
+        img.onerror = () => setBgImage(null);
+      } else {
+        setBgImage(null);
+      }
+    }
+  }, [localBgFile, selectedConfigId, configs]);
 
   // Fetch global field CAD settings on mount
   useEffect(() => {
@@ -207,6 +324,8 @@ export default function FieldObstacleEditor() {
     setConfigName(config.name);
     setObstacles([...config.obstacles]);
     setSelectedObstacleId(null);
+    setLocalBgFile(null);
+    setLocalGlbFile(null);
   };
 
   const handleCreateNew = () => {
@@ -214,6 +333,8 @@ export default function FieldObstacleEditor() {
     setConfigName("New Field Layout");
     setObstacles([]);
     setSelectedObstacleId(null);
+    setLocalBgFile(null);
+    setLocalGlbFile(null);
   };
 
   const handleAddObstacle = () => {
@@ -256,8 +377,26 @@ export default function FieldObstacleEditor() {
     try {
       const docId = selectedConfigId || `config_${Math.random().toString(36).substring(2, 9)}`;
       const docRef = doc(db, "field_configs", docId);
+
+      let cadUrl = configs.find((c) => c.id === docId)?.cadUrl || "";
+      let bgImageUrl = configs.find((c) => c.id === docId)?.bgImageUrl || "";
+
+      if (localGlbFile) {
+        const storagePath = `fields/layout_${docId}.glb`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, localGlbFile);
+        cadUrl = await getDownloadURL(storageRef);
+      }
+
+      if (localBgFile) {
+        const storagePath = `fields/layout_${docId}_bg.png`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, localBgFile);
+        bgImageUrl = await getDownloadURL(storageRef);
+      }
       
-      const payload = {
+      const payload: any = {
+        id: docId,
         name: configName,
         updatedAt: Date.now(),
         obstacles: obstacles.map((obs) => ({
@@ -270,8 +409,13 @@ export default function FieldObstacleEditor() {
         }))
       };
 
+      if (cadUrl) payload.cadUrl = cadUrl;
+      if (bgImageUrl) payload.bgImageUrl = bgImageUrl;
+
       await setDoc(docRef, payload);
       setSelectedConfigId(docId);
+      setLocalBgFile(null);
+      setLocalGlbFile(null);
       await fetchConfigs();
       alert("Layout saved successfully to Firestore.");
     } catch (err: any) {
@@ -316,11 +460,15 @@ export default function FieldObstacleEditor() {
     ctx.scale(dpr, dpr);
 
     // 1. Draw Field Background
-    ctx.fillStyle = "#0A0A0A";
-    ctx.fillRect(0, 0, canvasSize, canvasSize);
+    if (bgImage) {
+      ctx.drawImage(bgImage, 0, 0, canvasSize, canvasSize);
+    } else {
+      ctx.fillStyle = "#0A0A0A";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+    }
 
     // 2. Draw 6x6 Grid Tiles (each tape tile is 24x24 inches = 0.6096m x 0.6096m)
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.03)";
     ctx.lineWidth = 1;
     for (let i = -3; i <= 3; i++) {
       const offset = i * 0.6096;
@@ -338,12 +486,12 @@ export default function FieldObstacleEditor() {
     }
 
     // 3. Draw Outer Perimeter Wall
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.3)" : "rgba(255, 255, 255, 0.12)";
     ctx.lineWidth = 2;
     ctx.strokeRect(toPxX(1.8288), toPxY(1.8288), canvasSize - 2 * toPxX(1.8288), canvasSize - 2 * toPxY(1.8288));
 
     // 4. Draw Center Origin Marker
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.15)";
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(centerX - 10, centerY);
@@ -352,16 +500,18 @@ export default function FieldObstacleEditor() {
     ctx.lineTo(centerX, centerY + 10);
     ctx.stroke();
 
-    // 5. Draw red and blue zones/substations as faint context
-    ctx.fillStyle = "rgba(239, 68, 68, 0.05)";
-    ctx.beginPath();
-    ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2);
-    ctx.fill();
+    // 5. Draw red and blue zones/substations as faint context (only if no custom background image)
+    if (!bgImage) {
+      ctx.fillStyle = "rgba(239, 68, 68, 0.05)";
+      ctx.beginPath();
+      ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.fillStyle = "rgba(59, 130, 246, 0.05)";
-    ctx.beginPath();
-    ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = "rgba(59, 130, 246, 0.05)";
+      ctx.beginPath();
+      ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // 6. Draw Obstacles
     obstacles.forEach((obs) => {
@@ -412,7 +562,7 @@ export default function FieldObstacleEditor() {
       }
     });
 
-  }, [obstacles, selectedObstacleId, canvasSize]);
+  }, [obstacles, selectedObstacleId, canvasSize, bgImage]);
 
   // Mouse Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -923,116 +1073,76 @@ export default function FieldObstacleEditor() {
 
       </div>
 
-      {/* ─── ONSHAPE CAD INTEGRATION SECTION ─── */}
+      {/* ─── FTC FIELD ASSETS INTEGRATION SECTION ─── */}
       <section className="border-t border-white/5 pt-8 space-y-6">
         <div>
           <h2 className="text-lg font-black text-white uppercase tracking-tight font-heading flex items-center gap-2">
-            <Link size={18} className="text-ares-gold animate-pulse" /> Onshape CAD Synchronization
+            <Link size={18} className="text-ares-gold animate-pulse" /> Simulation Field Integrations
           </h2>
           <p className="text-marble/70 text-xs mt-1">
-            Manage your Onshape integrations. Synchronize 3D field meshes and associate robot assemblies to automatically fetch kinematic constraints and obstacle definitions.
+            Manage your physical simulation environments. Upload 3D field meshes and custom 2D layouts to associate obstacle geometries with active simulation modes.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          {/* Onshape Field CAD Sync */}
+          {/* FTC Field Asset Manager */}
           <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl flex flex-col justify-between space-y-4">
             <div>
               <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Map size={14} className="text-ares-gold animate-pulse" /> Onshape 3D Field Sync
+                  <Map size={14} className="text-ares-gold" /> FTC Field Asset Manager
                 </span>
                 <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
-                  isFieldConnected ? "bg-ares-success/25 text-ares-success border border-ares-success/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
+                  (localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) ? "bg-ares-success/25 text-ares-success border border-ares-success/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
                 }`}>
-                  {isFieldConnected ? "Synced" : "Not Synced"}
+                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) ? "Assets Active" : "No 3D Model"}
                 </span>
               </h3>
 
-              <div className="space-y-3.5 mt-4">
+              <div className="space-y-4 mt-4">
+                {/* 3D Model GLB File Upload */}
                 <div>
                   <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">
-                    Field Document ID
+                    Upload 3D Field Model (.glb, .gltf)
                   </label>
                   <input
-                    type="text"
-                    placeholder="Paste Onshape URL or Document ID..."
-                    value={fieldDocId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const parsed = parseOnshapeUrl(val);
-                      if (parsed) {
-                        setFieldDocId(parsed.documentId);
-                        setFieldWkId(parsed.workspaceId);
-                        setFieldElId(parsed.elementId);
-                      } else {
-                        setFieldDocId(val);
-                      }
-                    }}
-                    className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
+                    type="file"
+                    accept=".glb,.gltf"
+                    onChange={handleGlbFileChange}
+                    className="w-full text-xs text-marble/55 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:white file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-2 rounded-xl border border-white/5 focus:outline-none"
                   />
+                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
+                    <p className="text-[8px] font-mono text-ares-success mt-1">
+                      ✓ 3D Model GLB associated: {localGlbFile ? localGlbFile.name : "Saved on Cloud"}
+                    </p>
+                  )}
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">Workspace ID</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. w_official..."
-                      value={fieldWkId}
-                      onChange={(e) => setFieldWkId(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">Element ID</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. e_arena..."
-                      value={fieldElId}
-                      onChange={(e) => setFieldElId(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/25 rounded-xl px-3 py-2 text-xs text-white placeholder-marble/30 font-medium font-mono focus:outline-none"
-                    />
-                  </div>
+
+                {/* 2D Background Image Upload */}
+                <div>
+                  <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">
+                    Upload 2D Field Image (.png, .jpg)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setLocalBgFile(file);
+                    }}
+                    className="w-full text-xs text-marble/55 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:white file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-2 rounded-xl border border-white/5 focus:outline-none"
+                  />
+                  {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
+                    <p className="text-[8px] font-mono text-ares-success mt-1">
+                      ✓ 2D Background associated: {localBgFile ? localBgFile.name : "Saved on Cloud"}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <button
-                onClick={handleSyncFieldCAD}
-                disabled={loading}
-                className={`w-full py-2.5 bg-ares-gold hover:bg-ares-gold-soft text-black text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer transition-all duration-300 shadow-md flex items-center justify-center gap-2 ${
-                  loading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw size={12} className="animate-spin" /> Syncing Field CAD...
-                  </>
-                ) : (
-                  <>
-                    <Map size={12} /> Sync Global Field CAD
-                  </>
-                )}
-              </button>
-
-              {fieldSyncMeta && (
-                <div className="bg-black/30 border border-white/5 p-3 rounded-xl space-y-1.5 text-[9px] font-mono text-marble/70">
-                  <div className="flex justify-between">
-                    <span>Field mesh size:</span>
-                    <span className="text-white font-bold">{fieldSyncMeta.fileSizeMb.toFixed(2)} MB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Season field:</span>
-                    <span className="text-white font-bold">{fieldSyncMeta.fieldYear}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Active obstacles:</span>
-                    <span className="text-ares-gold font-bold">{fieldSyncMeta.elementCount} synced</span>
-                  </div>
-                </div>
-              )}
+            <div className="pt-2 text-[9px] leading-relaxed text-marble/40 font-mono">
+              Note: When you select a 3D field model (.glb), ARES will automatically render a top-down orthographic snapshot on the client and set it as the background image. If you prefer, you can manually upload a custom 2D field diagram.
             </div>
           </div>
 

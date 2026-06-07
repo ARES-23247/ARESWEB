@@ -52,7 +52,8 @@ export default function ScopeDashboard() {
     setStreamSource,
     setConnectionStatus,
     addLiveFrame,
-    setFieldObstacles
+    setFieldObstacles,
+    setFieldCadUrl
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
@@ -66,7 +67,7 @@ export default function ScopeDashboard() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   // Field Obstacle Configuration States
-  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[] }[]>([]);
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; cadUrl?: string }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
 
   useEffect(() => {
@@ -84,28 +85,33 @@ export default function ScopeDashboard() {
         if (configs.length > 0) {
           setSelectedFieldConfigId(configs[0].id);
           setFieldObstacles(configs[0].obstacles || []);
+          setFieldCadUrl(configs[0].cadUrl || null);
         } else {
           setFieldObstacles(null);
+          setFieldCadUrl(null);
         }
       } catch (err) {
         console.error("Failed to fetch field configurations:", err);
       }
     };
     fetchFieldConfigs();
-  }, [setFieldObstacles]);
+  }, [setFieldObstacles, setFieldCadUrl]);
 
   const handleFieldConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const configId = e.target.value;
     setSelectedFieldConfigId(configId);
     if (!configId) {
       setFieldObstacles(null);
+      setFieldCadUrl(null);
       return;
     }
     const config = fieldConfigs.find((c) => c.id === configId);
     if (config) {
       setFieldObstacles(config.obstacles || []);
+      setFieldCadUrl(config.cadUrl || null);
     } else {
       setFieldObstacles(null);
+      setFieldCadUrl(null);
     }
   };
 

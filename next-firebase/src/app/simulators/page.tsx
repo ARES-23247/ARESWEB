@@ -12,6 +12,8 @@ import {
   Play,
   Square
 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 export default function TrigRoboticsSimPage() {
   // Launcher WebSocket state
@@ -26,6 +28,30 @@ export default function TrigRoboticsSimPage() {
   const [visionStdDevX, setVisionStdDevX] = useState(0.05);
   const [visionStdDevY, setVisionStdDevY] = useState(0.05);
   const [visionStdDevTheta, setVisionStdDevTheta] = useState(0.1);
+
+  // Field config selection states
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[] }[]>([]);
+  const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>('');
+
+  useEffect(() => {
+    const fetchFieldConfigs = async () => {
+      try {
+        const q = query(collection(db, "field_configs"), orderBy("updatedAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const configs: any[] = [];
+        querySnapshot.forEach((docSnap) => {
+          configs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        setFieldConfigs(configs);
+        if (configs.length > 0) {
+          setSelectedFieldConfigId(configs[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch field configurations in simulator page:", err);
+      }
+    };
+    fetchFieldConfigs();
+  }, []);
   
   const wsRef = useRef<WebSocket | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
@@ -95,14 +121,19 @@ export default function TrigRoboticsSimPage() {
 
   const startSimulator = () => {
     if (!wsRef.current || daemonStatus !== 'connected') return;
-    setLogs((prev) => [...prev, '[System] Requesting simulator launch with EKF config overrides...']);
+    setLogs((prev) => [...prev, '[System] Requesting simulator launch with EKF and layout config...']);
     setSimState('building');
+    
+    const activeConfig = fieldConfigs.find(c => c.id === selectedFieldConfigId);
+    const obstacles = activeConfig ? activeConfig.obstacles : [];
+
     wsRef.current.send(JSON.stringify({
       type: "start",
       params: {
         visionStdDevX,
         visionStdDevY,
-        visionStdDevTheta
+        visionStdDevTheta,
+        obstacles
       }
     }));
   };
@@ -204,6 +235,25 @@ export default function TrigRoboticsSimPage() {
               <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
                 <Sliders size={14} /> Sim Controls
               </h3>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] uppercase font-black tracking-widest text-marble/40">
+                  Select Field Layout
+                </label>
+                <select
+                  value={selectedFieldConfigId}
+                  onChange={(e) => setSelectedFieldConfigId(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-ares-gold transition-colors cursor-pointer"
+                >
+                  <option value="" className="bg-neutral-950">Default (No Custom Obstacles)</option>
+                  {fieldConfigs.map((config) => (
+                    <option key={config.id} value={config.id} className="bg-neutral-950">
+                      {config.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex flex-col gap-3">
                 <button
                   onClick={startSimulator}

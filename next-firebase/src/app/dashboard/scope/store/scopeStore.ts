@@ -49,6 +49,7 @@ interface ScopeState {
   selectedKeys: string[];
   driveMode: "mecanum" | "swerve";
   fieldObstacles: FieldObstacle[] | null;
+  fieldCadUrl: string | null;
   
   // Streaming States
   isStreaming: boolean;
@@ -64,6 +65,7 @@ interface ScopeState {
   setPlannedPath: (path: PlannedPathPoint[] | null) => void;
   setConsoleLogs: (logs: ConsoleLogEntry[] | null) => void;
   setFieldObstacles: (obstacles: FieldObstacle[] | null) => void;
+  setFieldCadUrl: (url: string | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
   setDriveMode: (mode: "mecanum" | "swerve") => void;
@@ -88,6 +90,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"],
   driveMode: "mecanum",
   fieldObstacles: null,
+  fieldCadUrl: null,
   
   isStreaming: false,
   streamSource: null,
@@ -146,6 +149,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   setConsoleLogs: (consoleLogs) => set({ consoleLogs }),
   setPlannedPath: (plannedPath) => set({ plannedPath }),
   setFieldObstacles: (fieldObstacles) => set({ fieldObstacles }),
+  setFieldCadUrl: (fieldCadUrl) => set({ fieldCadUrl }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
     const isSelected = state.selectedKeys.includes(key);

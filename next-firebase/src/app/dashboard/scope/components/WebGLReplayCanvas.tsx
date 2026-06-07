@@ -19,30 +19,11 @@ export default function WebGLReplayCanvas() {
     plannedPath, 
     driveMode, 
     setDriveMode,
-    fieldObstacles
+    fieldObstacles,
+    fieldCadUrl
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
-  const [fieldCadUrl, setFieldCadUrl] = useState<string | null>(null);
-
-  // Fetch field CAD URL from settings/field_cad on mount
-  useEffect(() => {
-    const fetchFieldCadUrl = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, "settings", "field_cad"));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.cadUrl) {
-            setFieldCadUrl(data.cadUrl);
-            console.log("[Visualizer] Found synchronized field CAD URL:", data.cadUrl);
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to fetch field CAD settings from Firestore:", err);
-      }
-    };
-    fetchFieldCadUrl();
-  }, []);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
