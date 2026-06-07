@@ -10,16 +10,16 @@ You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a fi
 ## 📋 The 12 Pillars of Excellence
 
 ### 1. Security 🔒
-- **Authentication & Authorization:** Are backend routes protected by `ensureAuth` or `ensureAdmin` where needed?
-- **Injection Prevention:** Are D1 database queries using bound parameters (`?`) rather than template string concatenation? 
-- **Validation:** Are incoming payloads parsed via Zod or sanitized correctly before execution? Use `@hono/zod-openapi` validation rules (`c.req.valid`) for end-to-end type safety.
-- **DoW & DoS Hardening:** Verify Cloudflare Turnstile on public forms, strict per-IP write rate limiting on endpoints, and in-memory/CDN caching to minimize superfluous D1 reads.
-- **Fail-Closed Logic:** Ensure security utilities (like Turnstile verify) return `false` on network errors, never `true`.
+- **Authentication & Authorization:** Are backend routes protected by `ensureAuth` or `ensureAdmin` (Firebase) or route middlewares (Cloudflare) where needed?
+- **Injection Prevention:** Are database queries using bound parameters (`?` for D1, bound parameters for BigQuery, Firestore query builders) rather than template string concatenation? 
+- **Validation:** Are incoming payloads validated via request parameter checks or schema parsers (like Zod on Hono routes) before execution?
+- **DoW & DoS Hardening:** Verify Google reCAPTCHA v3 (for the new Firebase site) or Cloudflare Turnstile (for legacy Cloudflare forms) on public forms, strict per-IP write rate limiting on endpoints, and caching to minimize database reads.
+- **Fail-Closed Logic:** Ensure verification utilities (like reCAPTCHA or Turnstile verify) return `false` on network errors, never `true`.
 
 ### 2. Privacy & Youth Protection 🛡️
-- **YPP & COPPA Compliance:** (Reference `aresweb-youth-data-protection`). Does the code leak student PII (email, phone, address, full name)?
-- **Cryptography:** Are sensitive fields encrypted with `encrypt()` before database insertion and successfully decrypted with `decrypt()` before retrieval?
-- **Payload Minimization:** Is the API returning `select *` when the frontend only needs an ID? Use `OpenAPIHono` route response schemas to enforce strict payload boundaries.
+- **YPP & COPPA Compliance:** (Reference `aresweb-youth-data-protection`). Does the code leak student PII (email, phone, address, full name)? Ensure emails are never used as document keys in Firestore paths.
+- **Cryptography:** Are sensitive fields encrypted before database insertion and successfully decrypted before retrieval?
+- **Payload Minimization:** Is the API returning unnecessary database columns? Use schema validators or data transfer objects (DTOs) to enforce strict payload boundaries (such as roster sanitization).
 
 ### 3. Web Accessibility (WCAG) ♿
 - **Compliance:** Audit for WCAG 2.1 AA (Reference `aresweb-web-accessibility`). Check for 4.5:1 contrast ratios and keyboard navigability.
