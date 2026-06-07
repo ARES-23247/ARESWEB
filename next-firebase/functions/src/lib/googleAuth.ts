@@ -5,6 +5,17 @@ import { decrypt } from "./crypto";
  * Retrieves a fresh temporary access token from Google using the stored team refresh token in Firestore.
  * This completely encapsulates the token refresh logic.
  */
+function getEncryptionSecret(): string {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+    const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
+    if (isProd) {
+      throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+    }
+  }
+  return secret || "01234567890123456789012345678901";
+}
+
 export async function getGooglePhotosAccessToken(): Promise<string> {
   const authRef = adminDb.collection("system_settings").doc("google_auth");
   const authDoc = await authRef.get();
@@ -22,7 +33,7 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
     throw new Error("Google Auth document is missing required configuration keys.");
   }
 
-  const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+  const secret = getEncryptionSecret();
   const clientId = await decrypt(encryptedClientId, secret);
   const clientSecret = await decrypt(encryptedClientSecret, secret);
   const refreshToken = await decrypt(encryptedRefreshToken, secret);

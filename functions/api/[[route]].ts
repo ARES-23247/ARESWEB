@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
+import { ZodError } from "zod";
 import { Bindings, AppEnv, persistentRateLimitMiddleware, logSystemError, dbMiddleware, envMiddleware, originIntegrityMiddleware, DrizzleDB } from "./middleware";
 import { desc, eq, and, inArray, lt, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -367,7 +368,6 @@ apiRouter.get("/health", (c) => {
 app.onError(async (err, c) => {
   // Import ApiError dynamically to avoid circular deps
   const { ApiError } = await import("./middleware/errorHandler");
-  const { ZodError } = await import("zod");
 
   // Handle ApiError with correct status code (400, 404, 429, etc.)
   if (err instanceof ApiError) {
@@ -378,14 +378,15 @@ app.onError(async (err, c) => {
   }
 
   // Handle ZodError
-  if (err instanceof ZodError) {
+  if (err instanceof ZodError || err.name === "ZodError") {
+    const zodErr = err as ZodError;
     const details: Record<string, string> = {};
-    for (const issue of err.issues) {
+    for (const issue of zodErr.issues) {
       const key = issue.path.join(".") || "value";
       details[key] = issue.message;
     }
     const { ErrorCode } = await import("../../shared/errors/api");
-    return c.json({ error: err.message, code: ErrorCode.VALIDATION_ERROR, details }, 400);
+    return c.json({ error: zodErr.message, code: ErrorCode.VALIDATION_ERROR, details }, 400);
   }
 
   // Generic errors — log and return 500

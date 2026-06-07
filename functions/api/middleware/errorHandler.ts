@@ -57,13 +57,14 @@ export const globalErrorHandler = (err: Error, c: Context<AppEnv>): Response => 
     return c.json(response, status);
   }
 
-  if (err instanceof ZodError) {
+  if (err instanceof ZodError || err.name === "ZodError") {
+    const zodErr = err as ZodError;
     const details: Record<string, string> = {};
-    for (const issue of err.issues) {
+    for (const issue of zodErr.issues) {
       const key = issue.path.join(".") || "value";
       details[key] = issue.message;
     }
-    return c.json(createErrorResponse(err.message, ErrorCode.VALIDATION_ERROR, details), 400);
+    return c.json(createErrorResponse(zodErr.message, ErrorCode.VALIDATION_ERROR, details), 400);
   }
 
   // Generic errors — return 500

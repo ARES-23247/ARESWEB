@@ -111,6 +111,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
           onClick={() => refetch()}
           className="text-ares-gray hover:text-white transition-colors"
           title="Refresh Messages"
+          aria-label="Refresh Messages"
         >
           <RefreshCw size={16} />
         </button>
@@ -162,6 +163,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={`Reply to #${stream} > ${topic}...`}
+            aria-label="Message content"
             className="flex-grow bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-ares-cyan"
             disabled={sendMessageMutation.isPending}
           />

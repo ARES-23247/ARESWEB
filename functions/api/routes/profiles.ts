@@ -2,6 +2,16 @@ import { ApiError } from "../middleware/errorHandler";
 import { eq, desc, sql, and } from "drizzle-orm";
 import * as schema from "../../../src/db/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Context } from "hono";
+
+function getEncryptionSecret(c: Context<AppEnv>): string {
+  const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET;
+  const isProd = c.get("env")?.ENVIRONMENT === "production" || c.env?.ENVIRONMENT === "production";
+  if (isProd && (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long")) {
+    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+  }
+  return (secret as string) || "01234567890123456789012345678901";
+}
 
 import {
   AppEnv,
@@ -159,7 +169,7 @@ export const profilesRouter = _profilesRouter
       };
 
       if (profileRow) {
-        const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+        const secret = getEncryptionSecret(c);
         // W3A-SEC-03: Check for encryption marker before attempting decryption
         // Encrypted values have format "salt_hex:iv_hex:ciphertext_hex"
         const safeDecrypt = async (val: string | null) => {
@@ -262,7 +272,7 @@ export const profilesRouter = _profilesRouter
         ))
         .all();
 
-      const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const secret = getEncryptionSecret(c);
       const safeDecrypt = async (val: string | null) => {
         if (!val || !val.includes(":")) return val || null;
         try {
@@ -390,7 +400,7 @@ export const profilesRouter = _profilesRouter
       const employers = safeJSONParse(profileRow.employers);
 
       // PII-F01: Decrypt contact fields before public display
-      const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const secret = getEncryptionSecret(c);
       const safeDecryptPublic = async (val: string | null): Promise<string | null> => {
         if (!val || !val.includes(":")) return val || null;
         try {
@@ -565,7 +575,7 @@ export const profilesRouter = _profilesRouter
           .get();
 
         if (sensitive) {
-          const secret = c.get("env")?.ENCRYPTION_SECRET || c.env?.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+          const secret = getEncryptionSecret(c);
           // W3A-SEC-03: Helper to safely decrypt only if data has encryption marker
           const safeDecryptValue = async (val: string | null): Promise<string | null> => {
             if (!val || !val.includes(":")) return val || null;

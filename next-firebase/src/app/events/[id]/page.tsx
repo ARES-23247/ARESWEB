@@ -192,18 +192,15 @@ export default function EventDetailPage() {
     setSignupError(null);
     setSubmittingRsvp(true);
 
-    let nickname = "Team Member";
+    let nickname = "ARES Member";
     try {
       const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
       if (profileSnap.exists()) {
         const data = profileSnap.data();
-        nickname = data.nickname || data.firstName || "Team Member";
-      } else {
-        nickname = user.displayName?.split(" ")[0] || "Team Member";
+        nickname = data.nickname || "ARES Member";
       }
     } catch (err) {
       console.warn("Could not retrieve user profile for nickname:", err);
-      nickname = user.displayName?.split(" ")[0] || "Team Member";
     }
 
     const rsvpDoc: EventSignup = {
@@ -282,18 +279,15 @@ export default function EventDetailPage() {
       const snapshot = await uploadBytes(imageRef, file);
       const url = await getDownloadURL(snapshot.ref);
 
-      let uploaderNickname = "Team Member";
+      let uploaderNickname = "ARES Member";
       try {
         const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
         if (profileSnap.exists()) {
           const data = profileSnap.data();
-          uploaderNickname = data.nickname || data.firstName || "Team Member";
-        } else {
-          uploaderNickname = user.displayName?.split(" ")[0] || "Team Member";
+          uploaderNickname = data.nickname || "ARES Member";
         }
       } catch (err) {
         console.warn("Could not retrieve user profile for nickname:", err);
-        uploaderNickname = user.displayName?.split(" ")[0] || "Team Member";
       }
 
       // Save metadata to Firestore
@@ -563,7 +557,7 @@ export default function EventDetailPage() {
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-left">
                       <span className="text-[7px] text-white/55 font-bold uppercase truncate">{item.filename}</span>
-                      <span className="text-[8px] text-ares-gold font-black uppercase tracking-wide truncate">By {item.uploadedBy}</span>
+                      <span className="text-[8px] text-ares-gold font-black uppercase tracking-wide truncate">By {item.uploadedBy?.includes("@") ? "ARES Member" : item.uploadedBy || "ARES Member"}</span>
                     </div>
                     <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Maximize2 size={10} className="text-white" />
@@ -717,7 +711,7 @@ export default function EventDetailPage() {
                               </div>
                             )}
                             <div className="overflow-hidden">
-                              <span className="text-xs font-bold text-white block truncate">{entry.nickname}</span>
+                              <span className="text-xs font-bold text-white block truncate">{entry.nickname?.includes("@") ? "ARES Member" : entry.nickname || "ARES Member"}</span>
                               {entry.bringing && (
                                 <span className="text-[9px] text-ares-gold truncate block font-medium">Brings: {entry.bringing}</span>
                               )}
@@ -765,7 +759,7 @@ export default function EventDetailPage() {
             <header className="w-full flex items-center justify-between border-b border-white/5 pb-3.5">
               <div>
                 <span className="text-[10px] text-marble/40 font-mono">
-                  Uploaded by {selectedPhoto.uploadedBy} &middot; {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
+                  Uploaded by {selectedPhoto.uploadedBy?.includes("@") ? "ARES Member" : selectedPhoto.uploadedBy || "ARES Member"} &middot; {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
                 </span>
               </div>
               <button

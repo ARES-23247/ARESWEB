@@ -88,7 +88,7 @@ export const settingsRouter = _settingsRouter
             ? `Updated ${updatedCount} integration keys (sensitive: ${sensitiveKeysUpdated.join(", ")})`
             : `Updated ${updatedCount} integration keys.`;
 
-        c.executionCtx.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
+        c.executionCtx?.waitUntil(logAuditAction(c, "updated_settings", "system_settings", null, auditMessage));
         return c.json({ success: true, updated: updatedCount }, 200);
     })
     .openapi(getStatsRoute, async (c) => {
@@ -202,7 +202,7 @@ export const finalSettingsRouter = settingsRouter.openapi(_getBackupRoute, async
     });
     const results = await Promise.all(backupPromises);
     for (const res of results) backup[res.tableName] = res.data;
-    c.executionCtx.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
+    c.executionCtx?.waitUntil(logAuditAction(c, "database_export", "system", null, "Exported full D1 database backup as JSON."));
     return c.json({ success: true, timestamp: new Date().toISOString(), backup }, 200);
 });
 

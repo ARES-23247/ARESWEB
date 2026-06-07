@@ -250,14 +250,14 @@ export default function Docs() {
                     <div className="flex items-center">
                       <div className="relative z-10 w-8 h-8 rounded-full border-2 border-ares-gray-deep overflow-hidden bg-ares-gray-dark">
                         <img
-                          src={currentDoc.original_authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentDoc.cf_email}`}
+                          src={currentDoc.original_authorAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(currentDoc.original_authorNickname || currentDoc.title || "Author")}`}
                           alt={`${currentDoc.original_authorNickname || "Author"}'s avatar`}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="ml-2 flex flex-col justify-center">
                         <span className="text-xs uppercase font-bold text-ares-gold/80 tracking-wider leading-none">Created By</span>
-                        <span className="text-white font-medium">{currentDoc.original_authorNickname || currentDoc.cf_email?.split('@')[0] || "Author"}</span>
+                        <span className="text-white font-medium">{currentDoc.original_authorNickname || "ARES Member"}</span>
                       </div>
                     </div>
 

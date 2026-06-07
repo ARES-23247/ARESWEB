@@ -13,6 +13,7 @@ export default function WebGLReplayCanvas() {
     telemetryData, 
     comparisonTelemetryData, 
     currentTimeMs, 
+    setCurrentTimeMs,
     getCurrentFrame, 
     getCurrentComparisonFrame, 
     plannedPath, 
@@ -45,6 +46,29 @@ export default function WebGLReplayCanvas() {
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (!telemetryData || !telemetryData.maxTimeMs) return;
+    let step = 100;
+    if (e.shiftKey) step = 1000;
+    if (e.altKey) step = 10;
+
+    if (e.key === "ArrowLeft") {
+      const newTime = Math.max(0, currentTimeMs - step);
+      setCurrentTimeMs(newTime);
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      const newTime = Math.min(telemetryData.maxTimeMs, currentTimeMs + step);
+      setCurrentTimeMs(newTime);
+      e.preventDefault();
+    } else if (e.key === "Home") {
+      setCurrentTimeMs(0);
+      e.preventDefault();
+    } else if (e.key === "End") {
+      setCurrentTimeMs(telemetryData.maxTimeMs);
+      e.preventDefault();
+    }
+  };
 
   // Three.js instances stored in refs to avoid re-creation
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -1092,12 +1116,24 @@ export default function WebGLReplayCanvas() {
       {/* Main WebGL Replay Viewport */}
       <div className="relative aspect-square w-full max-w-[360px] bg-black/85 rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center shadow-inner self-center">
         {viewMode === "2d" ? (
-          <canvas ref={canvas2DRef} style={{ display: "block" }} role="img" aria-label="Tactical 2D Replay Viewport" />
+          <canvas 
+            ref={canvas2DRef} 
+            style={{ display: "block" }} 
+            role="img" 
+            aria-label="Tactical 2D Replay Viewport. Use Left/Right Arrow keys to scrub through time, and Home/End to jump to start/end." 
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+          />
         ) : (
           <div 
             ref={container3DRef} 
-            className="w-full h-full relative" 
+            className="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold" 
             style={{ minHeight: "360px" }}
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            role="img"
+            aria-label="3D Arena Replay Viewport. Use Left/Right Arrow keys to scrub through time, and Home/End to jump to start/end."
           />
         )}
       </div>

@@ -931,3 +931,171 @@ CREATE INDEX IF NOT EXISTS idx_file_usage_file ON file_usage(file_id);
 CREATE INDEX IF NOT EXISTS idx_file_usage_post ON file_usage(post_id);
 CREATE INDEX IF NOT EXISTS idx_file_usage_linked ON file_usage(linked_at);
 
+
+-- ─── Photo Albums (Google Photos Import) ───────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS photo_albums (
+    id TEXT PRIMARY KEY NOT NULL,
+    google_album_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    r2_folder TEXT NOT NULL,
+    synced_at TEXT NOT NULL,
+    media_items_count TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_photo_albums_google_id ON photo_albums(google_album_id);
+
+CREATE TABLE IF NOT EXISTS imported_photos (
+    id TEXT PRIMARY KEY NOT NULL,
+    r2_key TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    google_media_item_id TEXT NOT NULL UNIQUE,
+    album_id TEXT REFERENCES photo_albums(id) ON DELETE SET NULL,
+    imported_by TEXT NOT NULL,
+    imported_at TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    file_size TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_imported_photos_google_id ON imported_photos(google_media_item_id);
+CREATE INDEX IF NOT EXISTS idx_imported_photos_album ON imported_photos(album_id);
+
+CREATE TABLE IF NOT EXISTS import_audit_log (
+    id TEXT PRIMARY KEY NOT NULL,
+    media_item_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    r2_key TEXT,
+    imported_by TEXT NOT NULL,
+    imported_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_import_audit_imported_at ON import_audit_log(imported_at);
+
+
+-- ─── Document Albums ───────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS albums (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    cover_image_id TEXT,
+    display_mode TEXT DEFAULT 'masonry' NOT NULL,
+    is_deleted INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS album_media (
+    album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    media_id TEXT NOT NULL REFERENCES imported_photos(id) ON DELETE CASCADE,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (album_id, media_id)
+);
+CREATE INDEX IF NOT EXISTS idx_album_media_album ON album_media(album_id);
+CREATE INDEX IF NOT EXISTS idx_album_media_media ON album_media(media_id);
+
+
+-- ─── Onshape Integrations ───────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS onshape_credentials (
+    user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_onshape_credentials_last_used ON onshape_credentials(last_used_at);
+
+CREATE TABLE IF NOT EXISTS onshape_documents (
+    document_id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    thumbnail_url TEXT,
+    owner_name TEXT,
+    is_public INTEGER DEFAULT 0 NOT NULL,
+    last_synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_onshape_documents_public ON onshape_documents(is_public);
+
+CREATE TABLE IF NOT EXISTS onshape_bom_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id TEXT NOT NULL,
+    element_id TEXT NOT NULL,
+    part_count INTEGER NOT NULL,
+    synced_by TEXT NOT NULL REFERENCES user(id) ON DELETE SET NULL,
+    synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_onshape_bom_history_document ON onshape_bom_history(document_id);
+CREATE INDEX IF NOT EXISTS idx_onshape_bom_history_synced_at ON onshape_bom_history(synced_at);
+CREATE INDEX IF NOT EXISTS idx_onshape_bom_history_synced_by ON onshape_bom_history(synced_by);
+
+
+-- ─── Robots & Tournaments ───────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS robots (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL,
+    ast TEXT,
+    album_id TEXT REFERENCES albums(id) ON DELETE SET NULL,
+    onshape_url TEXT,
+    cad_viewer_url TEXT,
+    reveal_video_id TEXT,
+    weight_lbs REAL,
+    drivetrain_type TEXT,
+    programming_language TEXT,
+    primary_mechanism TEXT,
+    is_deleted INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_robots_season ON robots(season_id);
+CREATE INDEX IF NOT EXISTS idx_robots_album ON robots(album_id);
+
+CREATE TABLE IF NOT EXISTS tournaments (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    season_id INTEGER REFERENCES seasons(start_year) ON DELETE SET NULL,
+    robot_id TEXT REFERENCES robots(id) ON DELETE SET NULL,
+    ftc_event_code TEXT,
+    ast TEXT,
+    album_id TEXT REFERENCES albums(id) ON DELETE SET NULL,
+    start_date TEXT,
+    end_date TEXT,
+    location TEXT,
+    rank INTEGER,
+    alliance_role TEXT,
+    elimination_status TEXT,
+    opr REAL,
+    is_deleted INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_tournaments_season ON tournaments(season_id);
+CREATE INDEX IF NOT EXISTS idx_tournaments_robot ON tournaments(robot_id);
+
+CREATE TABLE IF NOT EXISTS tournament_matches (
+    id TEXT PRIMARY KEY NOT NULL,
+    tournament_id TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    match_number INTEGER NOT NULL,
+    match_type TEXT NOT NULL,
+    red_score INTEGER,
+    blue_score INTEGER,
+    youtube_video_id TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_tournament_matches_tournament ON tournament_matches(tournament_id);
+
+CREATE TABLE IF NOT EXISTS tournament_awards (
+    id TEXT PRIMARY KEY NOT NULL,
+    tournament_id TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    placement TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_tournament_awards_tournament ON tournament_awards(tournament_id);
+
+

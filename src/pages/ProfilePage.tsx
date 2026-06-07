@@ -7,6 +7,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import SEO from "../components/SEO";
 import { validateIdParam } from "../utils/security";
 import { logger } from "../utils/logger";
+import { useDashboardSession } from "../hooks/useDashboardSession";
 
 interface ProfilePublic {
   firstName?: string;
@@ -47,6 +48,10 @@ interface BadgeDef {
 export default function ProfilePage() {
   const { userId } = useParams({ strict: false }) as Record<string, string>;
   const validatedUserId = validateIdParam(userId);
+
+  const { session, permissions } = useDashboardSession();
+  const isSelf = session?.user?.id === validatedUserId;
+  const showPrivateDetails = !!(permissions.isAdmin || permissions.memberType === "coach" || permissions.memberType === "mentor" || isSelf);
 
   // All React hooks must be declared before any early returns
   const [profile, setProfile] = useState<ProfilePublic | null>(null);
@@ -280,7 +285,7 @@ export default function ProfilePage() {
           )}
 
           {/* Admin / Private Details */}
-          {(profile.emergencyContactName || profile.dietaryRestrictions || profile.tshirtSize) && (
+          {showPrivateDetails && (profile.emergencyContactName || profile.dietaryRestrictions || profile.tshirtSize) && (
              <div className="bg-ares-red/5 border border-ares-red/20 ares-cut p-6 mb-8 relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-ares-red text-white text-[9px] font-black uppercase px-2 py-1 ares-cut-sm">Private / Admin Only</div>
                <h3 className="ares-badge-red mb-6 flex items-center gap-2"><Shield size={14} /> Internal Records</h3>

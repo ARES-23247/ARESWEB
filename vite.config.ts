@@ -37,7 +37,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
     globals: true,
-    exclude: ['**/node_modules/**', 'tests/e2e/**', '.claude/**'],
+    exclude: ['**/node_modules/**', 'tests/e2e/**', '.claude/**', 'next-firebase/**'],
     coverage: {
       provider: "v8",
       include: ['src/utils/**', 'src/hooks/**', 'functions/api/routes/**'],

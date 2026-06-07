@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import { X, ShoppingCart, Plus, Minus, Loader2 } from "lucide-react";
 import { useCartStore } from "../../store/useCartStore";
 import { useCreateCheckoutSession } from "../../api/store";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 export const CartDrawer: React.FC = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getCartTotal } = useCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const checkoutMutation = useCreateCheckoutSession();
+
+  const { modalRef } = useFocusTrap({
+    isOpen,
+    onClose: () => setIsOpen(false),
+  });
 
   if (!isOpen) return null;
 
@@ -42,19 +48,23 @@ export const CartDrawer: React.FC = () => {
         className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity w-full border-none cursor-default"
         onClick={() => setIsOpen(false)}
         aria-label="Close cart backdrop"
+        tabIndex={-1}
       />
-      <div className="fixed inset-y-0 right-0 w-full md:w-[400px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+      <div 
+        ref={modalRef}
+        className="fixed inset-y-0 right-0 w-full md:w-[400px] bg-obsidian border-l border-white/10 shadow-2xl z-50 flex flex-col transform transition-transform duration-300"
+      >
+        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-obsidian/50">
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-ares-gold" />
             <h2 className="font-heading font-bold text-lg text-white">Your Cart</h2>
-            <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded-full ml-2">
+            <span className="bg-white/5 text-marble/85 text-xs px-2 py-0.5 rounded-full ml-2">
               {items.length} {items.length === 1 ? 'item' : 'items'}
             </span>
           </div>
           <button 
             onClick={() => setIsOpen(false)}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
+            className="p-2 text-marble/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -62,24 +72,24 @@ export const CartDrawer: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+            <div className="flex flex-col items-center justify-center h-full text-marble/60 space-y-4">
               <ShoppingCart className="w-16 h-16 opacity-20" />
               <p>Your cart is empty.</p>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
               >
                 Continue Shopping
               </button>
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.product.id} className="flex gap-4 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+              <div key={item.product.id} className="flex gap-4 bg-white/5 p-3 rounded-xl border border-white/10">
+                <div className="w-20 h-20 bg-black/40 rounded-lg overflow-hidden flex-shrink-0">
                   {item.product.imageUrl ? (
                     <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-600">
+                    <div className="w-full h-full flex items-center justify-center text-marble/30">
                       No Image
                     </div>
                   )}
@@ -92,24 +102,24 @@ export const CartDrawer: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-3 bg-slate-900 rounded-lg border border-slate-700 p-1">
+                    <div className="flex items-center gap-3 bg-black/40 rounded-lg border border-white/10 p-1">
                       <button 
                         onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                        className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white transition-colors"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-sm font-mono text-white w-4 text-center">{item.quantity}</span>
                       <button 
                         onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
+                        className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white transition-colors"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
                     <button
                       onClick={() => removeItem(item.product.id)}
-                      className="text-xs text-ares-danger hover:text-ares-danger/80 transition-colors"
+                      className="text-xs text-ares-red hover:text-ares-red/80 transition-colors"
                     >
                       Remove
                     </button>
@@ -121,9 +131,9 @@ export const CartDrawer: React.FC = () => {
         </div>
 
         {items.length > 0 && (
-          <div className="p-4 border-t border-slate-800 bg-slate-900/90 backdrop-blur-md">
+          <div className="p-4 border-t border-white/10 bg-obsidian/90 backdrop-blur-md">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-slate-400">Subtotal</span>
+              <span className="text-marble/60">Subtotal</span>
               <span className="text-xl font-bold text-white font-mono">
                 ${(getCartTotal() / 100).toFixed(2)}
               </span>

@@ -25,6 +25,11 @@
   --ares-success: #22C55E;
 }
 
+/* Accessibility: Map text-ares-red to high-contrast red #FF4D4D to satisfy WCAG AA contrast on dark backgrounds */
+.text-ares-red {
+  color: #FF4D4D;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

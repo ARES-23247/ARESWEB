@@ -280,7 +280,7 @@ function VitalCard({ name, value, threshold, unit, icon }: {
 
   const isGood = value <= threshold.good;
   const isPoor = value > threshold.poor;
-  const color = isGood ? "text-green-500" : isPoor ? "text-ares-red" : "text-ares-gold";
+  const color = isGood ? "text-ares-cyan" : isPoor ? "text-ares-red" : "text-ares-gold";
   const status = isGood ? "Good" : isPoor ? "Poor" : "Needs Improvement";
 
   return (

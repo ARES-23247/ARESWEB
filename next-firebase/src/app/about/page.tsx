@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 interface TeamMember {
   userId: string;
@@ -42,25 +40,10 @@ export default function AboutPage() {
   useEffect(() => {
     const fetchRoster = async () => {
       try {
-        const querySnapshot = await getDocs(
-          query(collection(db, "user_profiles"), where("showOnAbout", "==", true))
-        );
-        const membersList = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            userId: doc.id,
-            nickname: data.nickname || "ARES Member",
-            pronouns: data.pronouns || "",
-            subteams: data.subteams || [],
-            memberType: data.memberType || "student",
-            avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`,
-            bio: data.bio || "",
-            colleges: data.colleges || []
-          } as TeamMember;
-        });
-
-        // Filter out parents
-        const visibleMembers = membersList.filter(m => m.memberType !== "parent");
+        const response = await fetch("/api/profiles/about-roster");
+        if (!response.ok) throw new Error(`Failed to fetch roster: ${response.status}`);
+        const data = await response.json();
+        const visibleMembers = (data.members || []) as TeamMember[];
 
         // Sort by role order, then nickname
         visibleMembers.sort((a, b) => {

@@ -103,7 +103,7 @@ service cloud.firestore {
 
     // user_profiles
     match /user_profiles/{userId} {
-      allow read: if isAuthorized();
+      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach') || hasRole('mentor'));
       allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
                     (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin'));
       allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&

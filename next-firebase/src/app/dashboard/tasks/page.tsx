@@ -152,7 +152,7 @@ function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: Task
               {task.comments?.map((comment) => (
                 <div key={comment.id} className="text-[11px] bg-black/45 p-2.5 rounded-lg border border-white/5">
                   <div className="flex justify-between items-baseline mb-1">
-                    <span className="font-extrabold text-white">{comment.author}</span>
+                    <span className="font-extrabold text-white">{comment.author?.includes("@") ? "Team Member" : comment.author || "Team Member"}</span>
                     <span className="text-marble/30 text-[9px] flex items-center gap-1">
                       {comment.source === "zulip" && (
                         <span className="text-ares-gold font-bold tracking-wider">[ZULIP]</span>
@@ -569,24 +569,17 @@ export default function KanbanPage() {
   }, []);
 
   useEffect(() => {
-    try {
-      const profilesRef = collection(db, "user_profiles");
-      const unsubscribe = onSnapshot(profilesRef, (snapshot) => {
-        const list = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            uid: doc.id,
-            email: data.email || "",
-            nickname: data.nickname || data.firstName || data.displayName || "Team Member",
-            avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`
-          };
-        });
-        setTeamProfiles(list);
-      });
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Failed to listen to user_profiles collection:", e);
-    }
+    const fetchTeamRoster = async () => {
+      try {
+        const response = await authenticatedFetch("/api/profiles/team-roster");
+        if (!response.ok) throw new Error(`Failed to fetch team roster: ${response.status}`);
+        const data = await response.json();
+        setTeamProfiles(data.members || []);
+      } catch (e) {
+        console.warn("Failed to fetch team roster from backend:", e);
+      }
+    };
+    fetchTeamRoster();
   }, []);
 
   const handleCreateTask = async (e: React.FormEvent) => {

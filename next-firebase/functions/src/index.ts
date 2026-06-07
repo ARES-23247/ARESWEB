@@ -13,6 +13,17 @@ import { encrypt } from "./lib/crypto";
 
 const app = express();
 
+function getEncryptionSecret(): string {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+    const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
+    if (isProd) {
+      throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret in production environment.");
+    }
+  }
+  return secret || "01234567890123456789012345678901";
+}
+
 // Middleware
 app.use(cors({ origin: true }));
 // Use raw body parsing for the upload endpoint, and json for everything else
@@ -527,7 +538,7 @@ app.get("/api/photos/auth", async (req: express.Request, res: express.Response) 
         return;
       }
 
-      const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+      const secret = getEncryptionSecret();
       const encryptedClientId = await encrypt(clientId, secret);
       const encryptedClientSecret = await encrypt(clientSecret, secret);
       const encryptedRefreshToken = await encrypt(finalRefreshToken, secret);
@@ -715,7 +726,7 @@ app.post("/api/inquiries", async (req: express.Request, res: express.Response) =
       }
     }
 
-    const secret = process.env.ENCRYPTION_SECRET || "01234567890123456789012345678901";
+    const secret = getEncryptionSecret();
     const encryptedName = await encrypt(name.trim(), secret);
     const encryptedEmail = await encrypt(email.trim().toLowerCase(), secret);
 
@@ -1665,6 +1676,51 @@ app.post("/api/upload", ensureAdmin, async (req: express.Request, res: express.R
   } catch (error: any) {
     console.error("Telemetry upload error:", error);
     res.status(500).json({ error: "Server failed to process telemetry upload: " + error.message });
+  }
+});
+
+// GET /api/profiles/about-roster (public-facing roster)
+app.get("/api/profiles/about-roster", async (req: express.Request, res: express.Response) => {
+  try {
+    const snapshot = await adminDb.collection("user_profiles").where("showOnAbout", "==", true).get();
+    const members = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Parents should be filtered out
+      if (data.memberType === "parent") return null;
+      return {
+        userId: doc.id,
+        nickname: data.nickname || data.firstName || "ARES Member",
+        pronouns: data.pronouns || "",
+        subteams: data.subteams || [],
+        memberType: data.memberType || "student",
+        avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`,
+        bio: data.bio || "",
+        colleges: data.colleges || []
+      };
+    }).filter(m => m !== null);
+    res.json({ members });
+  } catch (error: any) {
+    console.error("Error fetching about-roster:", error);
+    res.status(500).json({ error: "Failed to fetch team roster: " + error.message });
+  }
+});
+
+// GET /api/profiles/team-roster (requires authentication, for dashboard assignees picker)
+app.get("/api/profiles/team-roster", ensureAuth, async (req: express.Request, res: express.Response) => {
+  try {
+    const snapshot = await adminDb.collection("user_profiles").get();
+    const members = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        uid: doc.id,
+        nickname: data.nickname || data.firstName || "Team Member",
+        avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`
+      };
+    });
+    res.json({ members });
+  } catch (error: any) {
+    console.error("Error fetching team-roster:", error);
+    res.status(500).json({ error: "Failed to fetch team profiles: " + error.message });
   }
 });
 

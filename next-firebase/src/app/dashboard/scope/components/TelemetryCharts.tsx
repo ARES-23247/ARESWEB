@@ -268,6 +268,7 @@ export default function TelemetryCharts() {
                     toggleSelectedKey(e.target.value);
                   }
                 }}
+                aria-label="Add telemetry signal"
                 className="bg-transparent text-marble/60 hover:text-white focus:outline-none font-bold uppercase cursor-pointer"
               >
                 <option value="" className="bg-neutral-900 text-marble/40">Add Signal...</option>
@@ -293,7 +294,7 @@ export default function TelemetryCharts() {
           tabIndex={0}
           role="img"
           aria-label="Interactive telemetry timeline graph. Use Left/Right Arrow keys to scrub through time, and Home/End to jump to start/end."
-          className="absolute inset-0 w-full h-full cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
+          className="absolute inset-0 w-full h-full cursor-col-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           style={{ display: "block" }}
         />
       </div>
