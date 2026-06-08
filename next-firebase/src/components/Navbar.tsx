@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Search, 
-  LogIn, 
+  LogIn,
+  User, 
   ShoppingBag, 
   Calendar as CalendarIcon, 
   GraduationCap, 
@@ -205,6 +206,12 @@ export default function Navbar() {
                     className="w-full text-left block mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
                   >
                     <LayoutDashboard size={12} /> Command Center
+                  </Link>
+                  <Link
+                    to="/dashboard/profile"
+                    className="w-full text-left block mt-1 px-3 py-2 text-xs text-marble hover:bg-white/5 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
+                  >
+                    <User size={12} className="text-ares-cyan" /> My Profile
                   </Link>
                   <button
                     onClick={logout}

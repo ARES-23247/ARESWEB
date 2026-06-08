@@ -35,6 +35,7 @@ import TermsPage from "@/app/terms/page";
 // Dashboard
 import DashboardLayout from "@/app/dashboard/layout";
 import DashboardPage from "@/app/dashboard/page";
+import DashboardProfilePage from "@/app/dashboard/profile/page";
 import DashboardBlogPage from "@/app/dashboard/blog/page";
 import DashboardDocumentsPage from "@/app/dashboard/documents/page";
 import DashboardEventsPage from "@/app/dashboard/events/page";
@@ -82,6 +83,7 @@ export default function App() {
             {/* Dashboard routes nested under DashboardLayout */}
             <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
               <Route index element={<DashboardPage />} />
+              <Route path="profile" element={<DashboardProfilePage />} />
               <Route path="tasks" element={<DashboardTasksPage />} />
               <Route path="scope" element={<DashboardScopePage />} />
               <Route path="blog" element={<DashboardBlogPage />} />
