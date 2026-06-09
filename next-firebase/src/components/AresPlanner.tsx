@@ -172,6 +172,11 @@ export default function AresPlanner({
   const [endVelocity, setEndVelocity] = useState(0.0);
   const [endHeading, setEndHeading] = useState(0.0);
   const [isKinematicsExpanded, setIsKinematicsExpanded] = useState(false);
+  const [lockedWaypoints, setLockedWaypoints] = useState<Record<number, boolean>>({});
+
+  const toggleLockWaypoint = (idx: number) => {
+    setLockedWaypoints(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
   // Sidebar accordion expansion states
   const [isWaypointsExpanded, setIsWaypointsExpanded] = useState(true);
@@ -266,6 +271,7 @@ export default function AresPlanner({
       setStartHeading(initialPathData.startHeading ?? 0.0);
       setEndVelocity(initialPathData.endVelocity ?? 0.0);
       setEndHeading(initialPathData.endHeading ?? 0.0);
+      setLockedWaypoints({});
     }
   }, [initialPathData]);
 
@@ -295,6 +301,76 @@ export default function AresPlanner({
   useEffect(() => {
     pathRef.current = generateBezierPath(waypoints);
   }, [waypoints]);
+
+  const lockedWaypointsRef = useRef<Record<number, boolean>>(lockedWaypoints);
+  useEffect(() => { lockedWaypointsRef.current = lockedWaypoints; }, [lockedWaypoints]);
+
+  const trajectoryAnalytics = React.useMemo(() => {
+    if (waypoints.length < 2) return { length: 0, duration: 0, velocities: [] };
+
+    let totalLengthInches = 0;
+    const segments: { ds: number; vMax: number }[] = [];
+
+    const pts = generateBezierPath(waypoints);
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const dsInches = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      totalLengthInches += dsInches;
+      const dsMeters = dsInches * 0.0254;
+
+      let segmentVMax = maxVelocity;
+      for (const zone of constraintZones) {
+        const hw = zone.width / 2;
+        const hh = zone.height / 2;
+        if (p1.x >= zone.x - hw && p1.x <= zone.x + hw &&
+            p1.y >= zone.y - hh && p1.y <= zone.y + hh) {
+          segmentVMax = Math.min(segmentVMax, zone.maxVelocity);
+        }
+      }
+      segments.push({ ds: dsMeters, vMax: segmentVMax });
+    }
+
+    const n = segments.length;
+    const v = new Array(n + 1).fill(0);
+
+    // Forward pass
+    v[0] = startVelocity;
+    for (let i = 0; i < n; i++) {
+      const limit = segments[i].vMax;
+      const ds = segments[i].ds;
+      const maxReachable = Math.sqrt(v[i] * v[i] + 2 * maxAcceleration * ds);
+      v[i + 1] = Math.min(limit, maxReachable);
+    }
+
+    // Backward pass
+    v[n] = endVelocity;
+    for (let i = n - 1; i >= 0; i--) {
+      const limit = v[i];
+      const ds = segments[i].ds;
+      const maxReachable = Math.sqrt(v[i + 1] * v[i + 1] + 2 * maxAcceleration * ds);
+      v[i] = Math.min(limit, maxReachable);
+    }
+
+    // Calculate duration
+    let totalDuration = 0;
+    for (let i = 0; i < n; i++) {
+      const ds = segments[i].ds;
+      const vAvg = (v[i] + v[i + 1]) / 2;
+      const dt = vAvg > 0.01 ? ds / vAvg : ds / 0.01;
+      totalDuration += dt;
+    }
+
+    return {
+      length: totalLengthInches,
+      duration: totalDuration,
+      velocities: v
+    };
+  }, [waypoints, constraintZones, maxVelocity, maxAcceleration, startVelocity, endVelocity]);
+
+  const trajectoryAnalyticsRef = useRef(trajectoryAnalytics);
+  useEffect(() => { trajectoryAnalyticsRef.current = trajectoryAnalytics; }, [trajectoryAnalytics]);
 
   // Resize handler
   const [canvasDim, setCanvasDim] = useState(500);
@@ -370,30 +446,33 @@ export default function AresPlanner({
       
       // Check Anchor
       if (Math.hypot(wp.anchor.x - pos.x, wp.anchor.y - pos.y) < hitRadius) {
-        dragInfo.current = { type: "anchor", index: i };
         setSelectedWaypointIdx(i);
         setSelectedMarkerId(null);
         setIsPlaying(false);
+        if (lockedWaypoints[i]) return;
+        dragInfo.current = { type: "anchor", index: i };
         e.currentTarget.setPointerCapture(e.pointerId);
         return;
       }
       
       // Check Next Control handle
       if (wp.nextControl && Math.hypot(wp.nextControl.x - pos.x, wp.nextControl.y - pos.y) < hitRadius) {
-        dragInfo.current = { type: "next", index: i };
         setSelectedWaypointIdx(i);
         setSelectedMarkerId(null);
         setIsPlaying(false);
+        if (lockedWaypoints[i]) return;
+        dragInfo.current = { type: "next", index: i };
         e.currentTarget.setPointerCapture(e.pointerId);
         return;
       }
 
       // Check Prev Control handle
       if (wp.prevControl && Math.hypot(wp.prevControl.x - pos.x, wp.prevControl.y - pos.y) < hitRadius) {
-        dragInfo.current = { type: "prev", index: i };
         setSelectedWaypointIdx(i);
         setSelectedMarkerId(null);
         setIsPlaying(false);
+        if (lockedWaypoints[i]) return;
+        dragInfo.current = { type: "prev", index: i };
         e.currentTarget.setPointerCapture(e.pointerId);
         return;
       }
@@ -559,6 +638,7 @@ export default function AresPlanner({
     const stepInches = e.shiftKey ? 5.0 : 1.0;
     const wp = waypoints[selectedWaypointIdx];
     if (!wp) return;
+    if (lockedWaypoints[selectedWaypointIdx]) return;
 
     if (e.key === "ArrowUp") {
       handleUpdateWaypointAnchor(selectedWaypointIdx, "y", (wp.anchor.y - stepInches).toString());
@@ -812,16 +892,29 @@ export default function AresPlanner({
       const scale = w / 144;
       const pts = pathRef.current;
 
-      // Draw Spline Line
+      // Draw Spline Line with velocity color mapping
       if (pts.length > 0) {
-        ctx.beginPath();
-        ctx.strokeStyle = "rgba(255, 184, 28, 0.85)"; // ARES Gold
+        const { velocities } = trajectoryAnalyticsRef.current;
         ctx.lineWidth = 3.5;
-        ctx.moveTo(pts[0].x * scale, h - pts[0].y * scale);
-        for (let i = 1; i < pts.length; i++) {
-          ctx.lineTo(pts[i].x * scale, h - pts[i].y * scale);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p1 = pts[i];
+          const p2 = pts[i + 1];
+          const vel = velocities[i] ?? maxVelocity;
+          const ratio = maxVelocity > 0 ? Math.min(1, vel / maxVelocity) : 0;
+          
+          // Interpolate color from ARES Red (#C00000) to ARES Gold (#FFB81C)
+          // Red RGB: 192, 0, 0
+          // Gold RGB: 255, 184, 28
+          const r = Math.round(192 + (255 - 192) * ratio);
+          const g = Math.round(0 + (184 - 0) * ratio);
+          const b = Math.round(0 + (28 - 0) * ratio);
+          
+          ctx.beginPath();
+          ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+          ctx.moveTo(p1.x * scale, h - p1.y * scale);
+          ctx.lineTo(p2.x * scale, h - p2.y * scale);
+          ctx.stroke();
         }
-        ctx.stroke();
       }
 
       // Draw Control handle lines
@@ -853,9 +946,12 @@ export default function AresPlanner({
         // Anchor node (glowing red circle)
         ctx.beginPath();
         ctx.arc(ax, ay, 6, 0, Math.PI * 2);
-        ctx.fillStyle = selectedWaypointIdx === idx ? "#C00000" : "rgba(192, 0, 0, 0.85)";
+        const isLocked = lockedWaypointsRef.current[idx];
+        ctx.fillStyle = isLocked 
+          ? "rgba(100, 100, 100, 0.85)" 
+          : (selectedWaypointIdx === idx ? "#C00000" : "rgba(192, 0, 0, 0.85)");
         ctx.fill();
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = isLocked ? "#aaaaaa" : "#ffffff";
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
@@ -1072,6 +1168,7 @@ export default function AresPlanner({
   // Handle waypoint deletions
   const handleDeleteWaypoint = (idx: number) => {
     if (waypoints.length <= 2) return; // Keep minimum 2 points
+    if (lockedWaypoints[idx]) return;
     const nextWps = waypoints.filter((_, i) => i !== idx);
     
     // Repair controls constraints
@@ -1228,6 +1325,7 @@ export default function AresPlanner({
   };
 
   const handleUpdateWaypointHeading = (idx: number, valStr: string) => {
+    if (lockedWaypoints[idx]) return;
     const val = parseFloat(valStr);
     if (isNaN(val)) return;
 
@@ -1357,6 +1455,7 @@ export default function AresPlanner({
   };
 
   const handleUpdateWaypointAnchor = (idx: number, field: "x" | "y", valStr: string) => {
+    if (lockedWaypoints[idx]) return;
     const val = parseFloat(valStr);
     if (isNaN(val)) return;
 
@@ -1387,6 +1486,7 @@ export default function AresPlanner({
   };
 
   const handleUpdateControlLength = (idx: number, type: "prev" | "next", newLenStr: string) => {
+    if (lockedWaypoints[idx]) return;
     const newLen = parseFloat(newLenStr);
     if (isNaN(newLen) || newLen <= 0) return;
     const internalLen = unitMode === "meters" ? newLen / 0.0254 : newLen;
@@ -1426,6 +1526,99 @@ export default function AresPlanner({
       nextWps[idx] = wp;
       return nextWps;
     });
+  };
+
+  const handleMirror = (axis: "x" | "y") => {
+    setWaypoints((prev) =>
+      prev.map((wp) => ({
+        anchor: {
+          x: axis === "x" ? 144 - wp.anchor.x : wp.anchor.x,
+          y: axis === "y" ? 144 - wp.anchor.y : wp.anchor.y
+        },
+        prevControl: wp.prevControl
+          ? {
+              x: axis === "x" ? 144 - wp.prevControl.x : wp.prevControl.x,
+              y: axis === "y" ? 144 - wp.prevControl.y : wp.prevControl.y
+            }
+          : null,
+        nextControl: wp.nextControl
+          ? {
+              x: axis === "x" ? 144 - wp.nextControl.x : wp.nextControl.x,
+              y: axis === "y" ? 144 - wp.nextControl.y : wp.nextControl.y
+            }
+          : null
+      }))
+    );
+
+    setRotationTargets((prev) =>
+      prev.map((r) => ({
+        ...r,
+        x: axis === "x" ? 144 - r.x : r.x,
+        y: axis === "y" ? 144 - r.y : r.y
+      }))
+    );
+
+    setConstraintZones((prev) =>
+      prev.map((z) => ({
+        ...z,
+        x: axis === "x" ? 144 - z.x : z.x,
+        y: axis === "y" ? 144 - z.y : z.y
+      }))
+    );
+
+    if (axis === "x") {
+      setStartHeading((h) => (180 - h + 360) % 360);
+      setEndHeading((h) => (180 - h + 360) % 360);
+    } else {
+      setStartHeading((h) => (360 - h) % 360);
+      setEndHeading((h) => (360 - h) % 360);
+    }
+  };
+
+  const handleRotate = (angleDeg: number) => {
+    const rad = angleDeg * (Math.PI / 180);
+    const rotatePoint = (x: number, y: number, cx: number, cy: number) => {
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const dx = x - cx;
+      const dy = y - cy;
+      return {
+        x: Math.max(0, Math.min(144, cx + dx * cos - dy * sin)),
+        y: Math.max(0, Math.min(144, cy + dx * sin + dy * cos))
+      };
+    };
+
+    setWaypoints((prev) =>
+      prev.map((wp) => ({
+        anchor: rotatePoint(wp.anchor.x, wp.anchor.y, 72, 72),
+        prevControl: wp.prevControl ? rotatePoint(wp.prevControl.x, wp.prevControl.y, 72, 72) : null,
+        nextControl: wp.nextControl ? rotatePoint(wp.nextControl.x, wp.nextControl.y, 72, 72) : null
+      }))
+    );
+
+    setRotationTargets((prev) =>
+      prev.map((r) => {
+        const rotated = rotatePoint(r.x, r.y, 72, 72);
+        return { ...r, x: rotated.x, y: rotated.y };
+      })
+    );
+
+    setConstraintZones((prev) =>
+      prev.map((z) => {
+        const rotated = rotatePoint(z.x, z.y, 72, 72);
+        const shouldSwap = Math.abs(angleDeg) % 180 === 90;
+        return {
+          ...z,
+          x: rotated.x,
+          y: rotated.y,
+          width: shouldSwap ? z.height : z.width,
+          height: shouldSwap ? z.width : z.height
+        };
+      })
+    );
+
+    setStartHeading((h) => (h + angleDeg + 360) % 360);
+    setEndHeading((h) => (h + angleDeg + 360) % 360);
   };
 
   // JSON Exporter
@@ -1503,6 +1696,7 @@ export default function AresPlanner({
           else setConstraintZones([]);
           if (data.rotationTargets) setRotationTargets(data.rotationTargets);
           else setRotationTargets([]);
+          setLockedWaypoints({});
 
           if (data.maxVelocity !== undefined) setMaxVelocity(data.maxVelocity);
           if (data.maxAcceleration !== undefined) setMaxAcceleration(data.maxAcceleration);
@@ -1735,6 +1929,23 @@ export default function AresPlanner({
               <span className="text-marble/40 uppercase">Robot Pos: </span>
               {getCoordinatesDisplay(robotRef.current.x, robotRef.current.y)}
             </div>
+            {/* Overlay Trajectory Analytics */}
+            <div className="absolute top-4 right-4 bg-obsidian/90 border border-white/10 px-2.5 py-1.5 rounded text-[10px] font-mono text-white select-none shadow flex flex-col gap-0.5">
+              <div>
+                <span className="text-marble/40 uppercase">Length: </span>
+                <span className="text-ares-cyan font-bold">
+                  {unitMode === "meters" 
+                    ? `${(trajectoryAnalytics.length * 0.0254).toFixed(2)} m` 
+                    : `${trajectoryAnalytics.length.toFixed(1)} in`}
+                </span>
+              </div>
+              <div>
+                <span className="text-marble/40 uppercase">Est. Time: </span>
+                <span className="text-ares-gold font-bold">
+                  {trajectoryAnalytics.duration.toFixed(2)}s
+                </span>
+              </div>
+            </div>
             {isAddingMarker && (
               <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center text-center p-6 rounded cursor-pointer pointer-events-none">
                 <div className="bg-ares-gold text-obsidian text-xs font-black uppercase py-2.5 px-4 rounded border border-white/20 shadow-xl animate-pulse">
@@ -1786,6 +1997,39 @@ export default function AresPlanner({
                   />
                 </label>
               </div>
+            </div>
+          </div>
+
+          {/* Path Transforms Utility Card */}
+          <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+            <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-1.5">
+              <RefreshCw size={14} /> Path Transforms
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleMirror("x")}
+                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
+              >
+                Flip Horiz (X)
+              </button>
+              <button
+                onClick={() => handleMirror("y")}
+                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
+              >
+                Flip Vert (Y)
+              </button>
+              <button
+                onClick={() => handleRotate(90)}
+                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
+              >
+                Rotate +90°
+              </button>
+              <button
+                onClick={() => handleRotate(-90)}
+                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
+              >
+                Rotate -90°
+              </button>
             </div>
           </div>
 
@@ -1848,12 +2092,20 @@ export default function AresPlanner({
                           </div>
                           
                           <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                            <button className="p-1 hover:bg-white/5 rounded text-marble/40 hover:text-white cursor-pointer">
-                              <Lock size={12} />
+                            <button 
+                              onClick={() => toggleLockWaypoint(idx)}
+                              className={`p-1 rounded cursor-pointer transition-colors ${
+                                lockedWaypoints[idx] 
+                                  ? "text-ares-red bg-ares-red/10 hover:bg-ares-red/20" 
+                                  : "text-marble/40 hover:bg-white/5 hover:text-white"
+                              }`}
+                              title={lockedWaypoints[idx] ? "Unlock waypoint" : "Lock waypoint"}
+                            >
+                              {lockedWaypoints[idx] ? <Lock size={12} /> : <Unlock size={12} />}
                             </button>
                             <button
                               onClick={() => handleDeleteWaypoint(idx)}
-                              disabled={waypoints.length <= 2}
+                              disabled={waypoints.length <= 2 || lockedWaypoints[idx]}
                               className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               title="Delete waypoint"
                             >
@@ -2516,6 +2768,30 @@ export default function AresPlanner({
               {isStartingStateExpanded && (
                 <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
                   <div className="grid grid-cols-2 gap-2">
+                    {/* Start X */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start X ({unitMode === "meters" ? "M" : "In"})</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.x * 0.0254 : waypoints[0].anchor.x).toFixed(3)) : 0}
+                        onChange={(e) => handleUpdateWaypointAnchor(0, "x", e.target.value)}
+                        disabled={lockedWaypoints[0]}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
+                      />
+                    </div>
+                    {/* Start Y */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Y ({unitMode === "meters" ? "M" : "In"})</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.y * 0.0254 : waypoints[0].anchor.y).toFixed(3)) : 0}
+                        onChange={(e) => handleUpdateWaypointAnchor(0, "y", e.target.value)}
+                        disabled={lockedWaypoints[0]}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
+                      />
+                    </div>
                     {/* Start Velocity */}
                     <div className="flex flex-col gap-1">
                       <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Velocity (m/s)</label>
@@ -2568,6 +2844,30 @@ export default function AresPlanner({
               {isEndStateExpanded && (
                 <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
                   <div className="grid grid-cols-2 gap-2">
+                    {/* End X */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End X ({unitMode === "meters" ? "M" : "In"})</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.x * 0.0254 : waypoints[waypoints.length - 1].anchor.x).toFixed(3)) : 0}
+                        onChange={(e) => handleUpdateWaypointAnchor(waypoints.length - 1, "x", e.target.value)}
+                        disabled={lockedWaypoints[waypoints.length - 1]}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
+                      />
+                    </div>
+                    {/* End Y */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Y ({unitMode === "meters" ? "M" : "In"})</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.y * 0.0254 : waypoints[waypoints.length - 1].anchor.y).toFixed(3)) : 0}
+                        onChange={(e) => handleUpdateWaypointAnchor(waypoints.length - 1, "y", e.target.value)}
+                        disabled={lockedWaypoints[waypoints.length - 1]}
+                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
+                      />
+                    </div>
                     {/* End Velocity */}
                     <div className="flex flex-col gap-1">
                       <label className="text-[8px] font-mono uppercase text-marble/40 block">End Velocity (m/s)</label>
