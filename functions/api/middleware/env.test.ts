@@ -98,8 +98,6 @@ describe('env middleware', () => {
         GITHUB_CLIENT_ID: 'test',
         GITHUB_CLIENT_SECRET: 'test',
         ENCRYPTION_SECRET: 'test',
-        ZULIP_CLIENT_ID: 'test',
-        ZULIP_CLIENT_SECRET: 'test',
       };
 
       const result = getValidatedEnv(minimalEnv);
@@ -108,6 +106,8 @@ describe('env middleware', () => {
       expect(result.TURNSTILE_SECRET_KEY).toBeUndefined();
       expect(result.DEV_BYPASS).toBeUndefined();
       expect(result.CRON_SECRET).toBeUndefined();
+      expect(result.ZULIP_CLIENT_ID).toBeUndefined();
+      expect(result.ZULIP_CLIENT_SECRET).toBeUndefined();
     });
 
     it('treats empty strings as undefined', () => {
@@ -246,6 +246,8 @@ describe('env middleware', () => {
       'DEV_BYPASS',
       'CRON_SECRET',
       'SENTRY_DSN',
+      'ZULIP_CLIENT_ID',
+      'ZULIP_CLIENT_SECRET',
     ];
 
     it.each(optionalVars)('allows %s to be optional', (varName) => {

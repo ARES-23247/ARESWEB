@@ -1015,23 +1015,17 @@ export default function AresPlanner({
           setIsPlaying(false);
         } else {
           const idx = Math.floor(r.progress * (pts.length - 1));
-          const nextIdx = Math.min(idx + 1, pts.length - 1);
           const p1 = pts[idx];
-          const p2 = pts[nextIdx];
 
           r.x = p1.x;
           r.y = p1.y;
-          if (idx !== nextIdx) {
-            r.heading = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-          }
+          r.heading = getInterpolatedRobotHeading(r.progress);
         }
       } else if (!isPlayingRef.current && pts.length > 0) {
         robotRef.current.progress = 0;
         robotRef.current.x = pts[0].x;
         robotRef.current.y = pts[0].y;
-        const p1 = pts[0];
-        const p2 = pts[1] || p1;
-        robotRef.current.heading = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        robotRef.current.heading = getInterpolatedRobotHeading(0);
       }
 
       if (pts.length === 0) return;
@@ -1231,6 +1225,124 @@ export default function AresPlanner({
     let deg = rad * (180 / Math.PI);
     if (deg < 0) deg += 360;
     return deg;
+  };
+
+  const handleUpdateWaypointHeading = (idx: number, valStr: string) => {
+    const val = parseFloat(valStr);
+    if (isNaN(val)) return;
+
+    setWaypoints((prev) => {
+      const nextWps = [...prev];
+      const wp = { ...nextWps[idx] };
+      const rad = val * (Math.PI / 180);
+
+      // Determine which control point to rotate
+      if (wp.nextControl) {
+        const dx = wp.nextControl.x - wp.anchor.x;
+        const dy = wp.nextControl.y - wp.anchor.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        
+        wp.nextControl = {
+          x: wp.anchor.x + len * Math.cos(rad),
+          y: wp.anchor.y + len * Math.sin(rad)
+        };
+
+        // Mirror to prevControl for C1 continuity
+        if (wp.prevControl) {
+          wp.prevControl = {
+            x: wp.anchor.x - len * Math.cos(rad),
+            y: wp.anchor.y - len * Math.sin(rad)
+          };
+        }
+      } else if (wp.prevControl) {
+        const dx = wp.anchor.x - wp.prevControl.x;
+        const dy = wp.anchor.y - wp.prevControl.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+
+        // Prev control is in the opposite direction of path tangent
+        wp.prevControl = {
+          x: wp.anchor.x - len * Math.cos(rad),
+          y: wp.anchor.y - len * Math.sin(rad)
+        };
+      }
+
+      nextWps[idx] = wp;
+      return nextWps;
+    });
+  };
+
+  const interpolateAngles = (from: number, to: number, ratio: number) => {
+    let diff = to - from;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    return from + diff * ratio;
+  };
+
+  const getWaypointRobotHeading = (idx: number) => {
+    const target = rotationTargets.find((r) => r.waypointIndex === idx);
+    if (target) {
+      const wp = waypoints[idx];
+      if (wp) {
+        const dx = target.x - wp.anchor.x;
+        const dy = target.y - wp.anchor.y;
+        return Math.atan2(dy, dx);
+      }
+    }
+
+    if (idx === 0) {
+      return startHeading * (Math.PI / 180);
+    }
+    if (idx === waypoints.length - 1) {
+      return endHeading * (Math.PI / 180);
+    }
+
+    let prevIdx = 0;
+    let prevHeading = startHeading * (Math.PI / 180);
+    for (let i = idx - 1; i >= 0; i--) {
+      const prevTarget = rotationTargets.find((r) => r.waypointIndex === i);
+      if (prevTarget || i === 0) {
+        prevIdx = i;
+        if (prevTarget) {
+          const wp = waypoints[i];
+          prevHeading = Math.atan2(prevTarget.y - wp.anchor.y, prevTarget.x - wp.anchor.x);
+        } else {
+          prevHeading = startHeading * (Math.PI / 180);
+        }
+        break;
+      }
+    }
+
+    let nextIdx = waypoints.length - 1;
+    let nextHeading = endHeading * (Math.PI / 180);
+    for (let i = idx + 1; i < waypoints.length; i++) {
+      const nextTarget = rotationTargets.find((r) => r.waypointIndex === i);
+      if (nextTarget || i === waypoints.length - 1) {
+        nextIdx = i;
+        if (nextTarget) {
+          const wp = waypoints[i];
+          nextHeading = Math.atan2(nextTarget.y - wp.anchor.y, nextTarget.x - wp.anchor.x);
+        } else {
+          nextHeading = endHeading * (Math.PI / 180);
+        }
+        break;
+      }
+    }
+
+    const ratio = (idx - prevIdx) / (nextIdx - prevIdx);
+    return interpolateAngles(prevHeading, nextHeading, ratio);
+  };
+
+  const getInterpolatedRobotHeading = (progress: number) => {
+    if (waypoints.length < 2) return 0;
+    const numSegments = waypoints.length - 1;
+    const segmentFloat = progress * numSegments;
+    const segIdx = Math.max(0, Math.min(numSegments - 1, Math.floor(segmentFloat)));
+    const segT = segmentFloat - segIdx;
+
+    const hStart = getWaypointRobotHeading(segIdx);
+    const hEnd = getWaypointRobotHeading(segIdx + 1);
+
+    return interpolateAngles(hStart, hEnd, segT);
   };
 
   const getControlLength = (idx: number, type: "prev" | "next") => {
@@ -1780,10 +1892,11 @@ export default function AresPlanner({
                               <div className="flex flex-col gap-1">
                                 <label className="text-[8px] font-mono uppercase text-marble/40 block">Heading (Deg)</label>
                                 <input
-                                  type="text"
-                                  readOnly
-                                  value={`${getWaypointHeadingDegrees(idx).toFixed(1)}°`}
-                                  className="w-full bg-obsidian/30 border border-white/5 rounded px-2 py-1 text-[11px] font-mono text-marble/40 select-none focus:outline-none cursor-default"
+                                  type="number"
+                                  step="0.1"
+                                  value={parseFloat(getWaypointHeadingDegrees(idx).toFixed(1))}
+                                  onChange={(e) => handleUpdateWaypointHeading(idx, e.target.value)}
+                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
                                 />
                               </div>
                             </div>

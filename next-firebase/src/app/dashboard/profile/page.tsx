@@ -97,11 +97,13 @@ export default function DashboardProfilePage() {
   const isAdmin = userRole === "admin";
 
   useEffect(() => {
-    if (!user) return;
+    const currentUser = user;
+    if (!currentUser) return;
 
     async function loadProfile() {
+      if (!currentUser) return;
       try {
-        const docRef = doc(db, "user_profiles", user.uid);
+        const docRef = doc(db, "user_profiles", currentUser.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -161,8 +163,8 @@ export default function DashboardProfilePage() {
           setEmployers(parsedEmployers);
         } else {
           // Initialize defaults if profile document does not exist yet
-          setNickname(user.displayName || "");
-          setContactEmail(user.email || "");
+          setNickname(currentUser.displayName || "");
+          setContactEmail(currentUser.email || "");
         }
       } catch (err) {
         console.error("Failed to load user profile details:", err);
