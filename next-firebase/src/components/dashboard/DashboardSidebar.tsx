@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 interface NavButtonProps {
   tab: string;
@@ -41,9 +43,33 @@ const NavButton: React.FC<NavButtonProps> = ({
 export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const { pathname, search } = useLocation();
   const { user, authorizedUser, logout } = useAuth();
-  
+  const [profileAvatar, setProfileAvatar] = useState<string>("");
+  const [profileNickname, setProfileNickname] = useState<string>("");
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const docRef = doc(db, "user_profiles", user.uid);
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfileAvatar(data.avatar || "");
+          setProfileNickname(data.nickname || "");
+        }
+      },
+      (error) => {
+        console.error("Error listening to user profile in sidebar:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
   const userRole = authorizedUser?.role || "Pending Verification";
-  const userImage = user?.photoURL;
+  const userImage = profileAvatar || user?.photoURL;
+  const displayName = profileNickname || user?.displayName || "ARES Member";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 
   return (
@@ -61,7 +87,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-white text-sm font-bold truncate tracking-tight">
-              {user?.displayName || "ARES Member"}
+              {displayName}
             </span>
             <div className="flex flex-col gap-1">
               <span className="text-ares-gold text-[10px] font-black uppercase tracking-widest truncate">
