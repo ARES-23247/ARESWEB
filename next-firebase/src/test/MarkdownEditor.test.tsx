@@ -16,6 +16,34 @@ vi.mock("firebase/storage", () => ({
   )
 }));
 
+// Mock API endpoint for synced media gallery
+vi.mock("@/lib/api", () => ({
+  authenticatedFetch: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          photos: [
+            {
+              id: "photo-1",
+              publicUrl: "https://firebasestorage.googleapis.com/v0/b/mock/o/synced-photo-1.jpg",
+              originalFilename: "synced-photo-1.jpg",
+              albumId: "Robot Specs",
+              importedAt: "2026-06-12T15:00:00Z"
+            },
+            {
+              id: "photo-2",
+              publicUrl: "https://firebasestorage.googleapis.com/v0/b/mock/o/synced-photo-2.jpg",
+              originalFilename: "synced-photo-2.jpg",
+              albumId: "Outreach",
+              importedAt: "2026-06-12T15:10:00Z"
+            }
+          ]
+        })
+    })
+  )
+}));
+
 // Simple wrapper to test state changes
 function TestWrapper({ initialValue = "" }: { initialValue?: string }) {
   const [val, setVal] = useState(initialValue);
@@ -172,5 +200,43 @@ This is **bold** text`} />);
     expect(screen.queryByText("Embed Image")).not.toBeInTheDocument();
     expect(textarea.value).toContain("Start ![Intake Mechanism](https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2F");
   });
+
+  it("fetches synced photos from the gallery and inserts the selected one", async () => {
+    render(<TestWrapper initialValue="Gallery: " />);
+    const textarea = screen.getByPlaceholderText("Type here...") as HTMLTextAreaElement;
+
+    // Open image modal
+    const imageButton = screen.getByLabelText("Insert image");
+    fireEvent.click(imageButton);
+
+    // Switch to ARES Gallery tab
+    const galleryTabButton = screen.getByText("ARES Gallery");
+    fireEvent.click(galleryTabButton);
+
+    // Wait for the gallery photos to load (they are fetched asynchronously)
+    expect(await screen.findByAltText("synced-photo-1.jpg")).toBeInTheDocument();
+    expect(screen.getByAltText("synced-photo-2.jpg")).toBeInTheDocument();
+
+    // Select the first photo
+    const firstPhoto = screen.getByAltText("synced-photo-1.jpg");
+    fireEvent.click(firstPhoto);
+
+    // Set selection range to end of text
+    textarea.focus();
+    textarea.setSelectionRange(9, 9);
+
+    // Alt text should have been auto-filled with filename without extension
+    const altInput = screen.getByPlaceholderText("Describe image contents") as HTMLInputElement;
+    expect(altInput.value).toBe("synced-photo-1");
+
+    // Click Insert Image button
+    const insertButton = screen.getByRole("button", { name: "Insert Image" });
+    fireEvent.click(insertButton);
+
+    // Modal should close and markdown should embed the selected gallery photo URL
+    expect(screen.queryByText("Embed Image")).not.toBeInTheDocument();
+    expect(textarea.value).toBe("Gallery: ![synced-photo-1](https://firebasestorage.googleapis.com/v0/b/mock/o/synced-photo-1.jpg)");
+  });
 });
+
 

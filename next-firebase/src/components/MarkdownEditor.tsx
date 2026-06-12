@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
-import { Bold, Italic, Heading3, Code, List, ListOrdered, Quote, Link, Eye, Edit3, Image as ImageIcon, X, AlertCircle, Upload } from "lucide-react";
+import { Bold, Italic, Heading3, Code, List, ListOrdered, Quote, Link, Eye, Edit3, Image as ImageIcon, X, AlertCircle, Upload, Search } from "lucide-react";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { authenticatedFetch } from "@/lib/api";
 
 interface MarkdownEditorProps {
   id?: string;
@@ -29,12 +30,19 @@ export default function MarkdownEditor({
 
   // Image Modal States
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [imageTab, setImageTab] = useState<"upload" | "url">("upload");
+  const [imageTab, setImageTab] = useState<"upload" | "url" | "gallery">("upload");
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Gallery Picker States
+  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGalleryUrl, setSelectedGalleryUrl] = useState("");
 
   const insertMarkdown = (prefix: string, suffix: string, placeholderText = "") => {
     const textarea = textareaRef.current;
@@ -145,6 +153,8 @@ export default function MarkdownEditor({
     setIsImageModalOpen(false);
     setImageUrl("");
     setImageAlt("");
+    setSelectedGalleryUrl("");
+    setSearchQuery("");
     setUploadError(null);
 
     requestAnimationFrame(() => {
@@ -158,6 +168,8 @@ export default function MarkdownEditor({
     e.preventDefault();
     if (imageTab === "url" && imageUrl.trim()) {
       insertImageMarkdown(imageUrl.trim(), imageAlt.trim());
+    } else if (imageTab === "gallery" && selectedGalleryUrl.trim()) {
+      insertImageMarkdown(selectedGalleryUrl.trim(), imageAlt.trim());
     }
   };
 
@@ -197,6 +209,47 @@ export default function MarkdownEditor({
     }
   };
 
+  const fetchGalleryPhotos = async () => {
+    if (galleryPhotos.length > 0) return; // already loaded
+    setLoadingGallery(true);
+    setGalleryError(null);
+    try {
+      const res = await authenticatedFetch("/api/photos");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.photos) {
+          setGalleryPhotos(data.photos);
+        } else {
+          setGalleryPhotos([]);
+        }
+      } else {
+        throw new Error(`Failed to load photos (HTTP ${res.status})`);
+      }
+    } catch (err: any) {
+      console.error("MarkdownEditor: failed to fetch gallery photos", err);
+      setGalleryError(err.message || "Failed to load synced media gallery.");
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
+
+  const handleTabChange = (tab: "upload" | "url" | "gallery") => {
+    setImageTab(tab);
+    setUploadError(null);
+    if (tab === "gallery") {
+      fetchGalleryPhotos();
+    }
+  };
+
+  const handleSelectGalleryPhoto = (photo: any) => {
+    setSelectedGalleryUrl(photo.publicUrl);
+    if (!imageAlt.trim()) {
+      let titleClean = photo.originalFilename || "image";
+      titleClean = titleClean.replace(/\.[^/.]+$/, "");
+      setImageAlt(titleClean);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleUploadFile(file);
@@ -218,6 +271,13 @@ export default function MarkdownEditor({
     const file = e.dataTransfer.files?.[0];
     if (file) handleUploadFile(file);
   };
+
+  const filteredPhotos = galleryPhotos.filter((photo: any) => {
+    const filename = (photo.originalFilename || "").toLowerCase();
+    const album = (photo.albumId || "").toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return filename.includes(query) || album.includes(query);
+  });
 
   return (
     <div className="flex flex-col w-full bg-black/60 border border-white/10 rounded-lg overflow-hidden focus-within:border-ares-red/60 focus-within:ring-1 focus-within:ring-ares-red/60 transition-all">
@@ -396,10 +456,7 @@ export default function MarkdownEditor({
             <div className="flex bg-black/35 p-0.5 rounded border border-white/5 text-[9px] font-black uppercase tracking-widest w-fit mb-2">
               <button
                 type="button"
-                onClick={() => {
-                  setImageTab("upload");
-                  setUploadError(null);
-                }}
+                onClick={() => handleTabChange("upload")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   imageTab === "upload"
                     ? "bg-ares-red text-white shadow"
@@ -410,10 +467,18 @@ export default function MarkdownEditor({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setImageTab("url");
-                  setUploadError(null);
-                }}
+                onClick={() => handleTabChange("gallery")}
+                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                  imageTab === "gallery"
+                    ? "bg-ares-red text-white shadow"
+                    : "text-marble/60 hover:text-white"
+                }`}
+              >
+                ARES Gallery
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange("url")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   imageTab === "url"
                     ? "bg-ares-red text-white shadow"
@@ -467,6 +532,60 @@ export default function MarkdownEditor({
                     </div>
                   )}
                 </div>
+              ) : imageTab === "gallery" ? (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
+                    <input
+                      type="text"
+                      placeholder="Search synced media..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                    />
+                  </div>
+
+                  {loadingGallery ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                      <span className="w-5 h-5 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[10px] text-marble/55">Loading gallery files...</span>
+                    </div>
+                  ) : galleryError ? (
+                    <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded leading-relaxed text-center">
+                      {galleryError}
+                    </div>
+                  ) : filteredPhotos.length === 0 ? (
+                    <div className="py-8 text-center text-[10px] font-mono text-marble/35 border border-dashed border-white/10 rounded">
+                      No matching gallery photos found
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                      {filteredPhotos.map((photo: any) => (
+                        <div
+                          key={photo.id}
+                          onClick={() => handleSelectGalleryPhoto(photo)}
+                          className={`aspect-square relative overflow-hidden rounded border transition-all cursor-pointer bg-black/40 ${
+                            selectedGalleryUrl === photo.publicUrl
+                              ? "border-ares-gold ring-1 ring-ares-gold"
+                              : "border-white/15 hover:border-white/45"
+                          }`}
+                        >
+                          <img
+                            src={photo.publicUrl}
+                            alt={photo.originalFilename}
+                            className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                            loading="lazy"
+                          />
+                          {photo.albumId && (
+                            <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/75 text-ares-cyan text-[5px] font-black uppercase tracking-wider rounded truncate max-w-[95%]">
+                              {photo.albumId}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-3">
                   <div>
@@ -506,11 +625,15 @@ export default function MarkdownEditor({
                 >
                   Cancel
                 </button>
-                {imageTab === "url" && (
+                {(imageTab === "url" || imageTab === "gallery") && (
                   <button
                     type="submit"
                     className="px-4 py-2 bg-ares-gold hover:brightness-110 text-black text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer shadow-lg disabled:opacity-40"
-                    disabled={!imageUrl.trim() || isUploading}
+                    disabled={
+                      (imageTab === "url" && !imageUrl.trim()) ||
+                      (imageTab === "gallery" && !selectedGalleryUrl.trim()) ||
+                      isUploading
+                    }
                   >
                     Insert Image
                   </button>
@@ -523,4 +646,5 @@ export default function MarkdownEditor({
     </div>
   );
 }
+
 
