@@ -8,6 +8,7 @@ import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "luci
 import { authenticatedFetch } from "@/lib/api";
 import { Drawer } from "vaul";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface TaskComment {
   id: string;
@@ -313,12 +314,12 @@ function TaskDetailsModal({
             <label htmlFor="modal-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
               Description
             </label>
-            <textarea
+            <MarkdownEditor
               id="modal-desc"
               value={modalDesc}
-              onChange={(e) => setModalDesc(e.target.value)}
+              onChange={setModalDesc}
               placeholder="Detail technical requirements, subsystem specs, etc..."
-              className="w-full bg-black/60 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-ares-red h-32 transition-colors placeholder:text-marble/30"
+              className="h-32"
               disabled={!canEdit}
             />
           </div>
@@ -843,12 +844,12 @@ export default function KanbanPage() {
           </div>
           <div>
             <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
-            <textarea
+            <MarkdownEditor
               id="new-task-desc"
               placeholder="Detail technical calibration thresholds, subsystem specs, etc..."
               value={newTaskDesc}
-              onChange={(e) => setNewTaskDesc(e.target.value)}
-              className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red h-24 transition-colors"
+              onChange={setNewTaskDesc}
+              className="h-28"
             />
           </div>
           <div className="flex justify-end">

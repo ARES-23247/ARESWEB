@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Pencil, Shield, Activity, Search, ExternalLink, X } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface BlogPost {
   slug: string;
@@ -460,14 +461,15 @@ export default function BlogManagementPage() {
                 />
               </div>
 
-              <div className="flex flex-col flex-1 h-[250px]">
+              <div className="flex flex-col flex-1">
                 <label htmlFor="blog-content" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Body Content (Markdown)</label>
-                <textarea
+                <MarkdownEditor
                   id="blog-content"
-                  placeholder="### Heading 3\nWrite blog content using standard markdown syntax. Code syntax blocks are supported..."
+                  placeholder={`### Heading 3
+Write blog content using standard markdown syntax. Code syntax blocks are supported...`}
                   value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  className="w-full flex-grow bg-black/60 border border-white/10 rounded px-4 py-3 text-xs text-white font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian h-[200px] resize-none leading-relaxed"
+                  onChange={setFormContent}
+                  className="h-[280px]"
                   required
                 />
               </div>

@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, MapPin, Calendar, Clock, X } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface TeamEvent {
   id: string;
@@ -409,11 +410,11 @@ export default function EventsManagementPage() {
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Brief Summary</label>
-                <textarea
+                <MarkdownEditor
                   placeholder="Summarize target operational goals, tuning benchmarks, or logistics requirements..."
                   value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red h-24 transition-colors resize-none leading-relaxed"
+                  onChange={setFormDescription}
+                  className="h-28"
                 />
               </div>
             </form>
