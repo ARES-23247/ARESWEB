@@ -315,7 +315,9 @@ router.post("/auth/init", ensureAdmin, async (req, res) => {
       return;
     }
 
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const origin = `${proto}://${host}`;
     const redirectUri = `${origin}/api/photos/auth`;
 
     // Generate secure state token
@@ -349,7 +351,9 @@ router.get("/auth", async (req, res) => {
     const code = req.query.code as string | undefined;
     const error = req.query.error as string | undefined;
     const state = req.query.state as string | undefined;
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const origin = `${proto}://${host}`;
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
