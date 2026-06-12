@@ -25,5 +25,10 @@ service firebase.storage {
       allow read: if isAuthorized();
       allow write: if isAuthorized();
     }
+
+    match /editor/uploads/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
   }
 }
