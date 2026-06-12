@@ -3,6 +3,19 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import MarkdownEditor from "../components/MarkdownEditor";
 
+// Mock Firebase Storage
+vi.mock("@/lib/firebase", () => ({
+  storage: {}
+}));
+
+vi.mock("firebase/storage", () => ({
+  ref: vi.fn((storage, path) => ({ path })),
+  uploadBytes: vi.fn((ref, file) => Promise.resolve({ ref })),
+  getDownloadURL: vi.fn((ref) =>
+    Promise.resolve(`https://firebasestorage.googleapis.com/v0/b/mock/o/${encodeURIComponent(ref.path)}`)
+  )
+}));
+
 // Simple wrapper to test state changes
 function TestWrapper({ initialValue = "" }: { initialValue?: string }) {
   const [val, setVal] = useState(initialValue);
@@ -92,4 +105,72 @@ This is **bold** text`} />);
     const boldText = screen.getByText("bold");
     expect(boldText.tagName).toBe("STRONG");
   });
+
+  it("opens image embed modal and inserts image from URL", async () => {
+    render(<TestWrapper initialValue="Initial text" />);
+    const textarea = screen.getByPlaceholderText("Type here...") as HTMLTextAreaElement;
+
+    // Click Insert Image button to open modal
+    const imageButton = screen.getByLabelText("Insert image");
+    fireEvent.click(imageButton);
+
+    // Modal should render
+    expect(screen.getByText("Embed Image")).toBeInTheDocument();
+
+    // Switch to Image URL tab
+    const urlTabButton = screen.getByText("Image URL");
+    fireEvent.click(urlTabButton);
+
+    // Focus and set selection range to end of text
+    textarea.focus();
+    textarea.setSelectionRange(12, 12);
+
+    // Enter URL and Alt Text
+    const urlInput = screen.getByPlaceholderText("https://example.com/image.png");
+    fireEvent.change(urlInput, { target: { value: "https://example.com/robot.jpg" } });
+
+    const altInput = screen.getByPlaceholderText("Describe image contents");
+    fireEvent.change(altInput, { target: { value: "Robot Setup" } });
+
+    // Submit form
+    const insertButton = screen.getByRole("button", { name: "Insert Image" });
+    fireEvent.click(insertButton);
+
+    // Modal should close and image markdown should be appended
+    expect(screen.queryByText("Embed Image")).not.toBeInTheDocument();
+    expect(textarea.value).toBe("Initial text![Robot Setup](https://example.com/robot.jpg)");
+  });
+
+  it("uploads local file and embeds generated URL", async () => {
+    const { container } = render(<TestWrapper initialValue="Start " />);
+    const textarea = screen.getByPlaceholderText("Type here...") as HTMLTextAreaElement;
+
+    // Open image modal
+    const imageButton = screen.getByLabelText("Insert image");
+    fireEvent.click(imageButton);
+
+    // Focus and set selection range to end of text
+    textarea.focus();
+    textarea.setSelectionRange(6, 6);
+
+    // Enter alt text first
+    const altInput = screen.getByPlaceholderText("Describe image contents");
+    fireEvent.change(altInput, { target: { value: "Intake Mechanism" } });
+
+    // Create a mock image file
+    const file = new File(["dummy content"], "intake.png", { type: "image/png" });
+
+    // Find hidden file input and trigger upload
+    const fileInput = container.querySelector("input[type='file']") as HTMLInputElement;
+
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    // Modal should close and markdown should embed the mock storage URL
+    expect(screen.queryByText("Embed Image")).not.toBeInTheDocument();
+    expect(textarea.value).toContain("Start ![Intake Mechanism](https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2F");
+  });
 });
+

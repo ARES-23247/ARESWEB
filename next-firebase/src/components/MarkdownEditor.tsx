@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
-import { Bold, Italic, Heading3, Code, List, ListOrdered, Quote, Link, Eye, Edit3 } from "lucide-react";
+import { Bold, Italic, Heading3, Code, List, ListOrdered, Quote, Link, Eye, Edit3, Image as ImageIcon, X, AlertCircle, Upload } from "lucide-react";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 
 interface MarkdownEditorProps {
   id?: string;
@@ -23,6 +25,16 @@ export default function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [mode, setMode] = useState<"write" | "preview">("write");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image Modal States
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageTab, setImageTab] = useState<"upload" | "url">("upload");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageAlt, setImageAlt] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const insertMarkdown = (prefix: string, suffix: string, placeholderText = "") => {
     const textarea = textareaRef.current;
@@ -114,6 +126,99 @@ export default function MarkdownEditor({
     }
   };
 
+  // Image Embedding Handlers
+  const insertImageMarkdown = (url: string, altText: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentText = textarea.value;
+
+    const beforeText = currentText.substring(0, start);
+    const afterText = currentText.substring(end);
+    const imageMarkdown = `![${altText || "image"}](${url})`;
+
+    const newValue = beforeText + imageMarkdown + afterText;
+    onChange(newValue);
+
+    setIsImageModalOpen(false);
+    setImageUrl("");
+    setImageAlt("");
+    setUploadError(null);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const newCursorPos = start + imageMarkdown.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    });
+  };
+
+  const handleImageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (imageTab === "url" && imageUrl.trim()) {
+      insertImageMarkdown(imageUrl.trim(), imageAlt.trim());
+    }
+  };
+
+  const handleUploadFile = async (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Only image files are permitted.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError("Image size exceeds the 8MB limit.");
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      if (!storage) {
+        throw new Error("Firebase Storage client SDK is not initialized.");
+      }
+
+      const storagePath = `editor/uploads/${Date.now()}_${file.name}`;
+      const imageRef = ref(storage, storagePath);
+      const snapshot = await uploadBytes(imageRef, file);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+
+      insertImageMarkdown(downloadUrl, imageAlt.trim() || file.name.split(".")[0]);
+    } catch (err: any) {
+      console.error("MarkdownEditor: image upload failed", err);
+      setUploadError(
+        err.message || "Failed to upload image. Storage permissions or configuration error."
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleUploadFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleUploadFile(file);
+  };
+
   return (
     <div className="flex flex-col w-full bg-black/60 border border-white/10 rounded-lg overflow-hidden focus-within:border-ares-red/60 focus-within:ring-1 focus-within:ring-ares-red/60 transition-all">
       {/* Editor Toolbar Header */}
@@ -200,6 +305,16 @@ export default function MarkdownEditor({
           >
             <Link size={14} />
           </button>
+          <button
+            type="button"
+            onClick={() => setIsImageModalOpen(true)}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none border-l border-white/5 pl-1.5"
+            title="Insert Image (![alt](url))"
+            aria-label="Insert image"
+          >
+            <ImageIcon size={14} />
+          </button>
         </div>
 
         {/* Mode Tabs (Write / Preview) */}
@@ -256,6 +371,156 @@ export default function MarkdownEditor({
           </div>
         )}
       </div>
+
+      {/* Premium Embed Image Modal */}
+      {isImageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          {/* Modal Backdrop click */}
+          <div className="absolute inset-0" onClick={() => setIsImageModalOpen(false)} />
+          
+          <div className="relative w-full max-w-md bg-obsidian border border-white/10 p-6 shadow-2xl ares-cut-lg flex flex-col gap-4 text-marble z-10 text-left">
+            <header className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <ImageIcon size={16} className="text-ares-red" /> Embed Image
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsImageModalOpen(false)}
+                className="text-marble/55 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </header>
+
+            {/* Modal Tabs */}
+            <div className="flex bg-black/35 p-0.5 rounded border border-white/5 text-[9px] font-black uppercase tracking-widest w-fit mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setImageTab("upload");
+                  setUploadError(null);
+                }}
+                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                  imageTab === "upload"
+                    ? "bg-ares-red text-white shadow"
+                    : "text-marble/60 hover:text-white"
+                }`}
+              >
+                Upload File
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageTab("url");
+                  setUploadError(null);
+                }}
+                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                  imageTab === "url"
+                    ? "bg-ares-red text-white shadow"
+                    : "text-marble/60 hover:text-white"
+                }`}
+              >
+                Image URL
+              </button>
+            </div>
+
+            {/* Alert Box for Errors */}
+            {uploadError && (
+              <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded flex items-start gap-2 leading-relaxed">
+                <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleImageSubmit} className="space-y-4">
+              {/* Tab Contents */}
+              {imageTab === "upload" ? (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+                    dragActive
+                      ? "border-ares-cyan bg-ares-cyan/5"
+                      : "border-white/10 hover:border-ares-red/40 bg-black/25"
+                  } ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="w-6 h-6 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-[11px] text-marble/70">Uploading to Firebase Storage...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload size={20} className="text-marble/40" />
+                      <span className="text-xs font-bold text-white">Drag & drop image, or click to browse</span>
+                      <span className="text-[9px] text-marble/40 uppercase font-mono">Supports JPG, PNG, GIF up to 8MB</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Image URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/image.png"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/20 font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Alt Text / Caption */}
+              <div>
+                <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
+                <input
+                  type="text"
+                  placeholder="Describe image contents"
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                  disabled={isUploading}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(false)}
+                  className="px-4 py-2 border border-white/10 hover:bg-white/5 text-marble text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-colors cursor-pointer"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </button>
+                {imageTab === "url" && (
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-ares-gold hover:brightness-110 text-black text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer shadow-lg disabled:opacity-40"
+                    disabled={!imageUrl.trim() || isUploading}
+                  >
+                    Insert Image
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
