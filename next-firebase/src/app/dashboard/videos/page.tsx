@@ -7,6 +7,26 @@ import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, X } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
+function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`lucide lucide-youtube ${className}`}
+    >
+      <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
+      <polygon points="10 15 15 12 10 9" />
+    </svg>
+  );
+}
+
 interface TeamVideo {
   id: string;
   title: string;
@@ -219,14 +239,24 @@ export default function VideosManagementPage() {
           </p>
         </div>
 
-        {canEdit && (
-          <button
-            onClick={handleOpenCreate}
-            className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl"
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="https://www.youtube.com/@ares23247WV"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 border border-white/10 hover:border-ares-red bg-white/5 hover:bg-ares-red/10 text-marble hover:text-white font-black text-xs uppercase tracking-widest ares-cut inline-flex items-center gap-2 cursor-pointer transition-all duration-200"
           >
-            <Plus size={16} /> Add Video Link
-          </button>
-        )}
+            <Youtube size={16} className="text-ares-red" /> YouTube Channel
+          </a>
+          {canEdit && (
+            <button
+              onClick={handleOpenCreate}
+              className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl"
+            >
+              <Plus size={16} /> Add Video Link
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Guest Lockscreen Warning */}
@@ -408,6 +438,18 @@ export default function VideosManagementPage() {
                     className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono"
                     required
                   />
+                  <p className="text-[9px] text-marble/55 mt-1.5 flex items-center gap-1">
+                    <Youtube size={10} className="text-ares-red animate-pulse" />
+                    Find IDs on the{" "}
+                    <a
+                      href="https://www.youtube.com/@ares23247WV"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ares-cyan hover:underline inline-flex items-center gap-0.5"
+                    >
+                      ARES YouTube Channel <ExternalLink size={8} />
+                    </a>
+                  </p>
                 </div>
 
                 <div>
