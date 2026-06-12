@@ -508,7 +508,7 @@ function TaskDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div ref={modalRef} tabIndex={-1} className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none">
+      <div ref={modalRef} tabIndex={-1} className="relative w-full max-w-4xl bg-obsidian border border-white/10 ares-cut-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none">
         {renderInnerContent()}
       </div>
     </div>
@@ -795,7 +795,7 @@ export default function KanbanPage() {
 
       {/* Create Task Form */}
       {canEdit ? (
-        <form onSubmit={handleCreateTask} className="glass-card hero-card text-marble mb-12 max-w-3xl mx-auto p-8 space-y-6 border border-white/10">
+        <form onSubmit={handleCreateTask} className="glass-card ares-cut-lg text-marble mb-12 max-w-3xl mx-auto p-8 space-y-6 border border-white/10">
           <h3 className="text-lg font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
             <Plus size={18} /> Create New Task Card
           </h3>
@@ -862,7 +862,7 @@ export default function KanbanPage() {
           </div>
         </form>
       ) : (
-        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 rounded-xl text-center text-xs font-semibold max-w-lg mx-auto mb-12 flex items-center gap-3 justify-center">
+        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 text-center text-xs font-semibold max-w-lg mx-auto mb-12 flex items-center gap-3 justify-center">
           <Shield size={16} className="text-ares-gold shrink-0" />
           <span>🔒 Guest View Mode: Please request developer clearance to manage task cards.</span>
         </div>
@@ -876,7 +876,7 @@ export default function KanbanPage() {
           return (
             <div
               key={col.id}
-              className="glass-card p-5 border border-white/10 min-h-[550px] flex flex-col rounded-2xl bg-black/10"
+              className="glass-card p-5 border border-white/10 min-h-[550px] flex flex-col ares-cut-lg bg-black/10"
             >
               <h3 className="font-extrabold text-base text-white border-b border-white/5 pb-4 mb-4 flex items-center justify-between font-heading uppercase tracking-tight">
                 <span className="flex items-center gap-2">
@@ -893,7 +893,7 @@ export default function KanbanPage() {
                 onDragEnter={() => setDraggedOverCol(col.id)}
                 onDragLeave={() => setDraggedOverCol(null)}
                 className={`space-y-4 flex-1 transition-all duration-300 ${
-                  draggedOverCol === col.id ? "bg-white/5 border border-dashed border-ares-red/20 rounded-xl p-2" : ""
+                  draggedOverCol === col.id ? "bg-white/5 border border-dashed border-ares-red/20 ares-cut-lg p-2" : ""
                 }`}
               >
                 {colTasks.map((task) => {
@@ -930,7 +930,7 @@ export default function KanbanPage() {
                         }
                         setEditingTaskId(task.id);
                       }}
-                      className={`bg-black/35 border border-white/5 rounded-xl p-4.5 transition-all duration-200 hover:border-ares-red hover:-translate-y-0.5 shadow-sm flex flex-col justify-between gap-4 cursor-grab active:cursor-grabbing ${
+                      className={`bg-black/35 border border-white/5 ares-cut p-4.5 transition-all duration-200 hover:border-ares-red hover:-translate-y-0.5 shadow-sm flex flex-col justify-between gap-4 cursor-grab active:cursor-grabbing ${
                         draggingTaskId === task.id ? "opacity-30 border-dashed border-white/20" : ""
                       }`}
                     >

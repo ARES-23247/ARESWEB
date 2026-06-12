@@ -216,14 +216,14 @@ export default function DocumentsManagementPage() {
 
       {/* Guest Lockscreen Warning */}
       {!canEdit && (
-        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 rounded-xl text-center text-xs font-semibold max-w-lg mx-auto flex items-center gap-3 justify-center">
+        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 text-center text-xs font-semibold max-w-lg mx-auto flex items-center gap-3 justify-center">
           <Shield size={16} className="text-ares-gold shrink-0" />
           <span>🔒 Read-only Guest Mode: Request authorization clearance to modify the document library.</span>
         </div>
       )}
 
       {/* Documents Table View */}
-      <div className="glass-card border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      <div className="glass-card border border-white/10 ares-cut-lg overflow-hidden shadow-xl">
         <div className="p-6 border-b border-white/5 bg-black/20 flex justify-between items-center text-xs font-black uppercase text-ares-gold tracking-widest">
           <span>Active Document Inventory</span>
           <span>{documents.length} Files</span>

@@ -262,14 +262,14 @@ export default function BlogManagementPage() {
 
       {/* Guest Lockscreen Warning */}
       {!canEdit && (
-        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 rounded-xl text-center text-xs font-semibold max-w-lg mx-auto flex items-center gap-3 justify-center">
+        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 text-center text-xs font-semibold max-w-lg mx-auto flex items-center gap-3 justify-center">
           <Shield size={16} className="text-ares-gold shrink-0" />
           <span>🔒 Read-only Guest Mode: Request authorization clearance to publish blog posts.</span>
         </div>
       )}
 
       {/* Search & Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-black/40 border border-white/10 p-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-4 bg-black/40 border border-white/10 p-4 ares-cut">
         <div className="relative flex-grow">
           <Search size={16} className="absolute left-3.5 top-3.5 text-marble/45" />
           <input
@@ -291,7 +291,7 @@ export default function BlogManagementPage() {
         {filteredPosts.map((post) => (
           <div
             key={post.slug}
-            className="glass-card flex flex-col justify-between overflow-hidden border border-white/10 group hover:border-ares-red/40 transition-colors"
+            className="glass-card hero-card flex flex-col justify-between overflow-hidden border border-white/10 group"
           >
             {post.thumbnail && (
               <div className="relative h-44 w-full overflow-hidden bg-black/40 border-b border-white/5">
