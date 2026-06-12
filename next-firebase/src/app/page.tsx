@@ -18,7 +18,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
             className="absolute right-[-10%] top-[10%] w-[85%] h-[85%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
-            style={{ backgroundImage: "url('/favicon.ico')" }}
+            style={{ backgroundImage: "url('/favicon.svg')" }}
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
         </div>
@@ -26,7 +26,7 @@ export default function Home() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-12 pb-16 flex flex-col items-start text-left">
           <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16 mb-6">
             <img
-              src="/favicon.ico"
+              src="/favicon.svg"
               alt="ARES 23247 Logo"
               className="w-32 md:w-48 lg:w-56 h-32 md:h-48 lg:h-56 object-contain drop-shadow-[0_0_25px_rgba(192,0,0,0.6)] shrink-0"
             />
