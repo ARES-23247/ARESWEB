@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, X, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
 function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
@@ -80,6 +80,8 @@ export default function VideosManagementPage() {
   const [formType, setFormType] = useState<"video" | "short">("video");
   const [formThumbnail, setFormThumbnail] = useState("");
   const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -147,6 +149,90 @@ export default function VideosManagementPage() {
     setFormType(vid.type);
     setFormThumbnail(vid.thumbnailUrl || "");
     setIsEditorOpen(true);
+  };
+
+  // Action: Sync with YouTube Channel
+  const handleSyncYoutube = async () => {
+    if (!canEdit) return;
+    setIsSyncing(true);
+    setSyncStatus(null);
+    try {
+      const apiKey = "AIzaSyA1BCs1QLtbdmBXr6NdE72WxBPVKuQjeUw";
+      const playlistId = "UUre4FN7UThyVd-biFk0n-Ig";
+      
+      const allItems: any[] = [];
+      let nextPageToken: string | undefined = undefined;
+      
+      do {
+        const pageTokenParam = nextPageToken ? `&pageToken=${nextPageToken}` : "";
+        const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}${pageTokenParam}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`YouTube API returned status ${response.status}`);
+        }
+        
+        const data = await response.json() as { items?: any[]; nextPageToken?: string };
+        if (data.items) {
+          allItems.push(...data.items);
+        }
+        nextPageToken = data.nextPageToken;
+      } while (nextPageToken);
+      
+      if (allItems.length === 0) {
+        setSyncStatus("No videos found on YouTube channel.");
+        setIsSyncing(false);
+        return;
+      }
+
+      let addedCount = 0;
+      
+      for (const item of allItems) {
+        const snippet = item.snippet;
+        const videoId = snippet.resourceId?.videoId;
+        if (!videoId) continue;
+        
+        const title = snippet.title || "";
+        const description = snippet.description || "";
+        const titleStr = title.toLowerCase();
+        const descStr = description.toLowerCase();
+        const isShort = titleStr.includes("#shorts") || descStr.includes("#shorts");
+        const type = isShort ? "short" : "video";
+        
+        const videoDoc = {
+          id: `video_${videoId}`,
+          title,
+          description,
+          platform: "youtube",
+          videoId,
+          thumbnailUrl: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          embedUrl: `https://www.youtube.com/embed/${videoId}`,
+          type,
+          createdAt: snippet.publishedAt ? snippet.publishedAt.split("T")[0] : new Date().toISOString().split("T")[0]
+        };
+        
+        await setDoc(doc(db, "videos", `video_${videoId}`), videoDoc);
+        addedCount++;
+      }
+      
+      // Clean up Firestore videos that are no longer in YouTube playlist items
+      const ytVideoIds = new Set(allItems.map(item => item.snippet.resourceId?.videoId).filter(Boolean));
+      const videosToDelete = videos.filter(v => v.platform === "youtube" && !ytVideoIds.has(v.videoId));
+      
+      let deletedCount = 0;
+      for (const v of videosToDelete) {
+        await deleteDoc(doc(db, "videos", v.id));
+        deletedCount++;
+      }
+      
+      setSyncStatus(`Successfully synced YouTube channel! Added/updated ${addedCount} videos, removed ${deletedCount} obsolete ones.`);
+      setTimeout(() => setSyncStatus(null), 8000);
+    } catch (err: any) {
+      console.error("Error syncing YouTube channel:", err);
+      setSyncStatus(`Sync failed: ${err.message || err}`);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // 2. Action: Save Video
@@ -249,15 +335,38 @@ export default function VideosManagementPage() {
             <Youtube size={16} className="text-ares-red" /> YouTube Channel
           </a>
           {canEdit && (
-            <button
-              onClick={handleOpenCreate}
-              className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl"
-            >
-              <Plus size={16} /> Add Video Link
-            </button>
+            <>
+              <button
+                onClick={handleSyncYoutube}
+                disabled={isSyncing}
+                className="px-5 py-3 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-white font-black text-xs uppercase tracking-widest ares-cut inline-flex items-center gap-2 cursor-pointer transition-all duration-200 disabled:opacity-50"
+                title="Pull all videos from the team YouTube channel"
+              >
+                <RefreshCw size={16} className={`text-ares-gold ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Syncing..." : "Sync YouTube"}
+              </button>
+              <button
+                onClick={handleOpenCreate}
+                className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl"
+              >
+                <Plus size={16} /> Add Video Link
+              </button>
+            </>
           )}
         </div>
       </header>
+
+      {/* Sync Status Banner */}
+      {syncStatus && (
+        <div className={`p-4 border flex items-center gap-3 text-xs font-semibold max-w-2xl mx-auto ares-cut ${
+          syncStatus.includes("failed") || syncStatus.includes("Failed")
+            ? "bg-ares-red/10 border-ares-red/20 text-ares-red" 
+            : "bg-ares-cyan/10 border-ares-cyan/20 text-ares-cyan"
+        }`}>
+          <Activity size={16} className={syncStatus.includes("failed") || syncStatus.includes("Failed") ? "" : "animate-pulse"} />
+          <span>{syncStatus}</span>
+        </div>
+      )}
 
       {/* Guest Lockscreen Warning */}
       {!canEdit && (
