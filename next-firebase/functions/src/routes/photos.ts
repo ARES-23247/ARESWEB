@@ -297,6 +297,13 @@ router.post("/import", ensureAdmin, async (req, res) => {
   }
 });
 
+// GET /api/photos/auth/init
+// Handle deprecated GET request gracefully if browser cache is stale
+router.get("/auth/init", (req, res) => {
+  const origin = `${req.protocol}://${req.get("host")}`;
+  res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=Stale%20browser%20cache%20detected.%20Please%20refresh%20the%20page%20and%20try%20again.`);
+});
+
 // POST /api/photos/auth/init
 // Secure route to generate anti-CSRF token and return redirect URL
 router.post("/auth/init", ensureAdmin, async (req, res) => {
