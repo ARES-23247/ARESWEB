@@ -125,6 +125,12 @@ service cloud.firestore {
       allow write: if isAuthorized();
     }
 
+    // system_settings (secure credentials read-only for authorized members)
+    match /system_settings/{settingId} {
+      allow read: if isAuthorized();
+      allow write: if false;
+    }
+
     // field_configs
     match /field_configs/{configId} {
       allow read: if true;
