@@ -19,6 +19,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import AvatarEditor from "@/components/AvatarEditor";
 
 interface College {
   name: string;
@@ -49,6 +50,7 @@ export default function DashboardProfilePage() {
   const [lastName, setLastName] = useState("");
   const [pronouns, setPronouns] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [isAvatarCreatorOpen, setIsAvatarCreatorOpen] = useState(false);
   const [bio, setBio] = useState("");
   const [funFact, setFunFact] = useState("");
   const [favoriteFirstThing, setFavoriteFirstThing] = useState("");
@@ -427,13 +429,29 @@ export default function DashboardProfilePage() {
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Avatar Image URL</label>
-                    <input
-                      type="url"
-                      value={avatar}
-                      onChange={(e) => setAvatar(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="https://..."
-                    />
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {avatar && (
+                        <div className="w-12 h-12 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center p-1 shrink-0">
+                          <img src={avatar} alt="Avatar Preview" className="w-full h-full object-contain" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="url"
+                          value={avatar}
+                          onChange={(e) => setAvatar(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+                          placeholder="https://..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsAvatarCreatorOpen(true)}
+                          className="px-3 py-1.5 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          Customize Avatar
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -932,6 +950,13 @@ export default function DashboardProfilePage() {
         </form>
 
       </div>
+      {isAvatarCreatorOpen && (
+        <AvatarEditor
+          currentImage={avatar}
+          onClose={() => setIsAvatarCreatorOpen(false)}
+          onSave={(imageUrl) => setAvatar(imageUrl)}
+        />
+      )}
     </div>
   );
 }

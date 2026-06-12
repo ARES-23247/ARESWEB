@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import DashboardProfilePage from "../app/dashboard/profile/page";
 import { useAuth } from "../context/AuthContext";
@@ -58,6 +58,7 @@ describe("DashboardProfilePage imports", () => {
       nickname: "Testy",
       firstName: "Test",
       lastName: "User",
+      avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=test",
       subteams: ["Programming"],
       dietaryRestrictions: ["Vegetarian"],
       colleges: [{ name: "WVU", domain: "wvu.edu", years: "2021-2025", degree: "CS" }],
@@ -74,8 +75,27 @@ describe("DashboardProfilePage imports", () => {
     });
 
     expect(screen.queryByText(/Loading Settings Panel.../i)).not.toBeInTheDocument();
-    
-    // Check if form is visible by checking for some form text
     expect(screen.getByText(/User Settings/i)).toBeInTheDocument();
+
+    // Verify avatar preview and button exist
+    const customizeButton = screen.getByRole("button", { name: /Customize Avatar/i });
+    expect(customizeButton).toBeInTheDocument();
+
+    // Open Character Creator modal
+    await act(async () => {
+      fireEvent.click(customizeButton);
+    });
+
+    // Check if the modal title is visible
+    expect(screen.getByText(/Character Creator/i)).toBeInTheDocument();
+
+    // Click confirm avatar in character creator to save
+    const confirmButton = screen.getByRole("button", { name: /Confirm Avatar/i });
+    await act(async () => {
+      fireEvent.click(confirmButton);
+    });
+
+    // Verify modal is closed
+    expect(screen.queryByText(/Character Creator/i)).not.toBeInTheDocument();
   });
 });
