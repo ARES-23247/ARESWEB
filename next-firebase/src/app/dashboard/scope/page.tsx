@@ -43,6 +43,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import VariablesTuner, { TunableConstant } from "./components/VariablesTuner";
 
 export interface ChartConfig {
   id: string;
@@ -51,12 +52,22 @@ export interface ChartConfig {
 
 export interface LayoutItem {
   id: string;
-  type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts";
+  type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts" | "tuner" | "group";
   title: string;
   visible: boolean;
   colSpan: number;
   height: "short" | "medium" | "tall";
   order: number;
+  
+  // Grid layout coordinates
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  
+  // Tabbed widget groups
+  childrenIds?: string[];
+  activeTabId?: string;
 }
 
 export interface DashboardPreset {
@@ -67,20 +78,59 @@ export interface DashboardPreset {
   creatorName?: string;
   layout: LayoutItem[];
   chartConfigs: ChartConfig[];
+  tuningConstants?: TunableConstant[];
   updatedAt: any;
 }
 
 const DEFAULT_LAYOUT: LayoutItem[] = [
-  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1 },
-  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2 },
-  { id: "charts-1", type: "charts", title: "Telemetry Chart", visible: true, colSpan: 2, height: "medium", order: 3 },
-  { id: "inspector", type: "inspector", title: "State Inspector", visible: true, colSpan: 1, height: "medium", order: 4 },
-  { id: "logs", type: "logs", title: "System Console Logs", visible: true, colSpan: 2, height: "medium", order: 5 },
+  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1, x: 0, y: 1, w: 4, h: 5 },
+  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2, x: 4, y: 1, w: 8, h: 5 },
+  { id: "charts-1", type: "charts", title: "Telemetry Chart", visible: true, colSpan: 2, height: "medium", order: 3, x: 0, y: 6, w: 8, h: 3 },
+  { id: "inspector", type: "inspector", title: "State Inspector", visible: true, colSpan: 1, height: "medium", order: 4, x: 8, y: 6, w: 4, h: 3 },
+  { id: "logs", type: "logs", title: "System Console Logs", visible: true, colSpan: 2, height: "medium", order: 5, x: 0, y: 9, w: 8, h: 3 },
+  { id: "tuner", type: "tuner", title: "Variables Tuner", visible: true, colSpan: 1, height: "medium", order: 6, x: 8, y: 9, w: 4, h: 3 },
 ];
 
 const DEFAULT_CHART_CONFIGS: ChartConfig[] = [
   { id: "charts-1", selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"] }
 ];
+
+export function migrateLayoutCoordinates(layout: LayoutItem[]): LayoutItem[] {
+  let currentY = 1;
+  let currentX = 0;
+
+  return layout.map((item) => {
+    if (
+      item.x !== undefined &&
+      item.y !== undefined &&
+      item.w !== undefined &&
+      item.h !== undefined
+    ) {
+      return item;
+    }
+
+    const w = item.colSpan === 1 ? 4 : item.colSpan === 2 ? 8 : 12;
+    const h = item.height === "short" ? 2 : item.height === "medium" ? 3 : 5;
+
+    if (currentX + w > 12) {
+      currentX = 0;
+      currentY += 4;
+    }
+
+    const x = currentX;
+    const y = currentY;
+
+    currentX += w;
+
+    return {
+      ...item,
+      x,
+      y,
+      w,
+      h
+    };
+  });
+}
 
 export default function ScopeDashboard() {
   const { 
@@ -151,13 +201,13 @@ export default function ScopeDashboard() {
       const stored = localStorage.getItem("ares_scope_layout");
       if (stored) {
         try {
-          return JSON.parse(stored);
+          return migrateLayoutCoordinates(JSON.parse(stored));
         } catch (e) {
           console.error("Failed to parse stored layout:", e);
         }
       }
     }
-    return DEFAULT_LAYOUT;
+    return migrateLayoutCoordinates(DEFAULT_LAYOUT);
   });
 
   const [chartConfigs, setChartConfigs] = useState<ChartConfig[]>(() => {
@@ -174,6 +224,20 @@ export default function ScopeDashboard() {
     return DEFAULT_CHART_CONFIGS;
   });
 
+  const [tuningConstants, setTuningConstants] = useState<TunableConstant[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ares_scope_tuning_constants");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse stored tuning constants:", e);
+        }
+      }
+    }
+    return [];
+  });
+
   // persisting layout changes
   useEffect(() => {
     localStorage.setItem("ares_scope_layout", JSON.stringify(dashboardLayout));
@@ -183,6 +247,10 @@ export default function ScopeDashboard() {
     localStorage.setItem("ares_scope_chart_configs", JSON.stringify(chartConfigs));
   }, [chartConfigs]);
 
+  useEffect(() => {
+    localStorage.setItem("ares_scope_tuning_constants", JSON.stringify(tuningConstants));
+  }, [tuningConstants]);
+
   // presets and cloud variables
   const [cloudPresets, setCloudPresets] = useState<DashboardPreset[]>([]);
   const [activePresetId, setActivePresetId] = useState<string>("");
@@ -191,8 +259,28 @@ export default function ScopeDashboard() {
   const [isSharedToggle, setIsSharedToggle] = useState(false);
   const [savingPreset, setSavingPreset] = useState(false);
 
-  // drag-and-drop state
-  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  // pointer-based layout engine states
+  const gridContainerRef = useRef<HTMLDivElement | null>(null);
+  const [activeDrag, setActiveDrag] = useState<{
+    id: string;
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    startGridX: number;
+    startGridY: number;
+    startGridW: number;
+    startGridH: number;
+  } | null>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // card renaming state
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -291,29 +379,49 @@ export default function ScopeDashboard() {
   };
 
   // Layout Operations
-  const handleAddChart = () => {
-    const newId = `charts-${Date.now()}`;
+  const handleAddWidget = (type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts" | "tuner" | "group") => {
+    const newId = `${type}-${Date.now()}`;
     const nextOrder = dashboardLayout.length > 0
       ? Math.max(...dashboardLayout.map(item => item.order)) + 1
       : 1;
 
+    const w = type === "charts" || type === "diagnostics" || type === "logs" ? 8 : 4;
+    const h = type === "visualizer" || type === "diagnostics" ? 5 : 3;
+
+    const maxY = dashboardLayout.length > 0
+      ? Math.max(...dashboardLayout.map(item => (item.y ?? 1) + (item.h ?? 3)))
+      : 1;
+
     const newLayoutItem: LayoutItem = {
       id: newId,
-      type: "charts",
-      title: "Telemetry Chart",
+      type,
+      title: 
+        type === "visualizer" ? "3D Field Visualizer" :
+        type === "inspector" ? "State Inspector" :
+        type === "diagnostics" ? "Health & Diagnostics" :
+        type === "logs" ? "System Console Logs" :
+        type === "charts" ? "Telemetry Chart" :
+        type === "tuner" ? "Variables Tuner" : "Widget Tab Group",
       visible: true,
-      colSpan: 2,
+      colSpan: 1,
       height: "medium",
-      order: nextOrder
+      order: nextOrder,
+      x: 0,
+      y: maxY,
+      w,
+      h,
+      childrenIds: type === "group" ? [] : undefined
     };
 
-    const newChartConfig: ChartConfig = {
-      id: newId,
-      selectedKeys: ["Robot/BatteryVoltage"]
-    };
+    if (type === "charts") {
+      const newChartConfig: ChartConfig = {
+        id: newId,
+        selectedKeys: ["Robot/BatteryVoltage"]
+      };
+      setChartConfigs([...chartConfigs, newChartConfig]);
+    }
 
     setDashboardLayout([...dashboardLayout, newLayoutItem]);
-    setChartConfigs([...chartConfigs, newChartConfig]);
   };
 
   const handleDuplicateChart = (sourceId: string) => {
@@ -328,7 +436,9 @@ export default function ScopeDashboard() {
       ...sourceLayout,
       id: newId,
       title: `${sourceLayout.title} (Copy)`,
-      order: nextOrder
+      order: nextOrder,
+      x: 0,
+      y: (sourceLayout.y ?? 1) + (sourceLayout.h ?? 3),
     };
 
     const newChartConfig: ChartConfig = {
@@ -340,9 +450,40 @@ export default function ScopeDashboard() {
     setChartConfigs([...chartConfigs, newChartConfig]);
   };
 
-  const handleDeleteChart = (cardId: string) => {
+  const handleDeleteWidget = (cardId: string) => {
     setDashboardLayout(dashboardLayout.filter(item => item.id !== cardId));
     setChartConfigs(chartConfigs.filter(config => config.id !== cardId));
+  };
+
+  const handleAddToGroup = (groupId: string, childId: string) => {
+    setDashboardLayout(prev => prev.map(item => {
+      if (item.id === groupId) {
+        const nextChildren = [...(item.childrenIds || []), childId];
+        return { ...item, childrenIds: nextChildren, activeTabId: childId };
+      }
+      return item;
+    }));
+  };
+
+  const handleRemoveFromGroup = (groupId: string, childId: string) => {
+    setDashboardLayout(prev => prev.map(item => {
+      if (item.id === groupId) {
+        const nextChildren = (item.childrenIds || []).filter(cid => cid !== childId);
+        const nextActive = item.activeTabId === childId ? nextChildren[0] || "" : item.activeTabId;
+        return { ...item, childrenIds: nextChildren, activeTabId: nextActive };
+      }
+      if (item.id === childId) {
+        const group = prev.find(g => g.id === groupId);
+        return {
+          ...item,
+          x: group ? group.x : 0,
+          y: group ? (group.y + group.h) : 10,
+          w: 4,
+          h: 3
+        };
+      }
+      return item;
+    }));
   };
 
   const handleStartRename = (cardId: string, currentTitle: string) => {
@@ -381,7 +522,7 @@ export default function ScopeDashboard() {
         try {
           const payload = JSON.parse(event.target?.result as string);
           if (payload && Array.isArray(payload.layout) && Array.isArray(payload.chartConfigs)) {
-            setDashboardLayout(payload.layout);
+            setDashboardLayout(migrateLayoutCoordinates(payload.layout));
             setChartConfigs(payload.chartConfigs);
           } else {
             alert("Invalid layout file format.");
@@ -395,44 +536,75 @@ export default function ScopeDashboard() {
   };
 
   const handleResetLayout = () => {
-    setDashboardLayout(DEFAULT_LAYOUT);
+    setDashboardLayout(migrateLayoutCoordinates(DEFAULT_LAYOUT));
     setChartConfigs(DEFAULT_CHART_CONFIGS);
     setActivePresetId("");
   };
 
-  // Drag and drop sorting mechanics
-  const handleDragStart = (e: React.DragEvent, cardId: string) => {
+  // Pointer dragging and resizing handlers
+  const handlePointerDown = (
+    e: React.PointerEvent,
+    itemId: string,
+    mode: "move" | "resize"
+  ) => {
     if (!isEditMode) return;
-    setDraggedCardId(cardId);
-    e.dataTransfer.effectAllowed = "move";
-  };
+    const item = dashboardLayout.find((l) => l.id === itemId);
+    if (!item) return;
 
-  const handleDragOver = (e: React.DragEvent, cardId: string) => {
-    if (!isEditMode || draggedCardId === cardId) return;
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+
+    setActiveDrag({
+      id: itemId,
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      startGridX: item.x ?? 0,
+      startGridY: item.y ?? 1,
+      startGridW: item.w ?? 4,
+      startGridH: item.h ?? 3,
+    });
+
     e.preventDefault();
   };
 
-  const handleDropCard = (e: React.DragEvent, targetCardId: string) => {
-    if (!isEditMode || !draggedCardId || draggedCardId === targetCardId) return;
-    
-    const sourceItem = dashboardLayout.find(item => item.id === draggedCardId);
-    const targetItem = dashboardLayout.find(item => item.id === targetCardId);
-    if (!sourceItem || !targetItem) return;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!activeDrag || !gridContainerRef.current) return;
 
-    const sourceOrder = sourceItem.order;
-    const targetOrder = targetItem.order;
+    const containerRect = gridContainerRef.current.getBoundingClientRect();
+    const colWidth = containerRect.width / 12;
+    const rowHeight = 110;
 
-    const updatedLayout = dashboardLayout.map(item => {
-      if (item.id === draggedCardId) {
-        return { ...item, order: targetOrder };
-      } else if (item.id === targetCardId) {
-        return { ...item, order: sourceOrder };
-      }
-      return item;
-    });
+    const dx = e.clientX - activeDrag.startX;
+    const dy = e.clientY - activeDrag.startY;
 
-    setDashboardLayout(updatedLayout);
-    setDraggedCardId(null);
+    const colDelta = Math.round(dx / colWidth);
+    const rowDelta = Math.round(dy / rowHeight);
+
+    setDashboardLayout((prev) =>
+      prev.map((item) => {
+        if (item.id !== activeDrag.id) return item;
+
+        if (activeDrag.mode === "move") {
+          const newX = Math.max(0, Math.min(12 - (item.w ?? 4), activeDrag.startGridX + colDelta));
+          const newY = Math.max(1, activeDrag.startGridY + rowDelta);
+          return { ...item, x: newX, y: newY };
+        } else {
+          const newW = Math.max(1, Math.min(12 - (item.x ?? 0), activeDrag.startGridW + colDelta));
+          const newH = Math.max(1, activeDrag.startGridH + rowDelta);
+          return { ...item, w: newW, h: newH };
+        }
+      })
+    );
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!activeDrag) return;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    setActiveDrag(null);
   };
 
   // Cloud presets actions
@@ -448,6 +620,7 @@ export default function ScopeDashboard() {
       creatorName: user?.displayName || "Anonymous Team Member",
       layout: dashboardLayout,
       chartConfigs: chartConfigs,
+      tuningConstants: tuningConstants,
       updatedAt: serverTimestamp()
     };
 
@@ -475,8 +648,11 @@ export default function ScopeDashboard() {
   const handleLoadPreset = (presetId: string) => {
     const preset = cloudPresets.find(p => p.id === presetId);
     if (preset) {
-      setDashboardLayout(preset.layout);
+      setDashboardLayout(migrateLayoutCoordinates(preset.layout));
       setChartConfigs(preset.chartConfigs);
+      if (preset.tuningConstants) {
+        setTuningConstants(preset.tuningConstants);
+      }
       setActivePresetId(presetId);
     }
   };
@@ -1288,6 +1464,84 @@ export default function ScopeDashboard() {
     reader.readAsText(file);
   };
 
+  const renderConsoleLogsWidget = (showTitle: boolean = true) => {
+    return (
+      <div className="flex flex-col gap-4 h-full p-6 bg-obsidian-light">
+        {showTitle && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+            <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
+              <Terminal size={14} className="text-ares-gold" />
+              System Console Logs
+            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                placeholder="Filter logs..."
+                value={logFilter}
+                onChange={(e) => setLogFilter(e.target.value)}
+                className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
+                aria-label="Filter logs"
+              />
+              <select
+                value={logLevelFilter}
+                onChange={(e) => setLogLevelFilter(e.target.value as any)}
+                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:ring-offset-obsidian"
+              >
+                <option value="ALL" className="bg-neutral-900 text-marble/60 font-heading">ALL LEVELS</option>
+                <option value="INFO" className="bg-neutral-900 text-white font-heading">INFO</option>
+                <option value="WARN" className="bg-neutral-900 text-ares-gold font-heading">WARN</option>
+                <option value="ERROR" className="bg-neutral-900 text-ares-red-light font-heading">ERROR</option>
+              </select>
+              <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer font-heading">
+                <input
+                  type="checkbox"
+                  checked={autoScrollLogs}
+                  onChange={(e) => setAutoScrollLogs(e.target.checked)}
+                  className="accent-ares-gold cursor-pointer rounded border-white/10"
+                />
+                Auto-scroll
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div 
+          ref={logContainerRef}
+          className="flex-grow overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
+        >
+          {filteredLogs.length === 0 ? (
+            <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
+              {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
+            </div>
+          ) : (
+            filteredLogs.map((entry, idx) => {
+              let levelColor = "text-marble/70";
+              let levelBg = "bg-transparent";
+              if (entry.level === "WARN") {
+                levelColor = "text-ares-gold";
+                levelBg = "bg-ares-gold/5 border border-ares-gold/10";
+              } else if (entry.level === "ERROR") {
+                levelColor = "text-ares-red-light";
+                levelBg = "bg-ares-red/5 border border-ares-red/10";
+              }
+              return (
+                <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
+                  <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
+                  <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider font-heading ${
+                    entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
+                    entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
+                    "bg-white/10 text-marble/60"
+                  }`}>{entry.level}</span>
+                  <span className={`break-all ${levelColor}`}>{entry.message}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       
@@ -1587,12 +1841,30 @@ export default function ScopeDashboard() {
             <div className="flex flex-wrap items-center gap-3">
               {isEditMode ? (
                 <>
-                  <button
-                    onClick={handleAddChart}
-                    className="px-3 py-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/20 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
-                  >
-                    <Plus size={12} /> Add Chart
-                  </button>
+                  {isEditMode && (
+                    <div className="flex items-center bg-black/55 border border-white/10 px-3 py-2 rounded-xl text-xs gap-2">
+                      <span className="text-[10px] uppercase font-black tracking-widest text-marble/55 font-heading">Add Widget:</span>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          if (val) {
+                            handleAddWidget(val);
+                          }
+                        }}
+                        className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer text-[10px]"
+                      >
+                        <option value="" className="bg-neutral-900 text-marble/40">Choose...</option>
+                        <option value="visualizer" className="bg-neutral-900 text-white">3D Field Visualizer</option>
+                        <option value="diagnostics" className="bg-neutral-900 text-white">Health & Diagnostics</option>
+                        <option value="inspector" className="bg-neutral-900 text-white">State Inspector</option>
+                        <option value="logs" className="bg-neutral-900 text-white">System Console Logs</option>
+                        <option value="charts" className="bg-neutral-900 text-white">Telemetry Chart</option>
+                        <option value="tuner" className="bg-neutral-900 text-white">Variables Tuner</option>
+                        <option value="group" className="bg-neutral-900 text-white">Widget Tab Group</option>
+                      </select>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleResetLayout}
@@ -1647,35 +1919,43 @@ export default function ScopeDashboard() {
             </div>
           </div>
 
-          {/* Dynamic Grid Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          {/* Dynamic Grid Layout Playground */}
+          <div 
+            ref={gridContainerRef}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            className={`transition-all duration-300 relative ${
+              isMobile 
+                ? "flex flex-col gap-6" 
+                : "grid grid-cols-12 auto-rows-[110px] gap-6"
+            } ${
+              isEditMode && !isMobile
+                ? "bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:calc(100%/12)_110px] rounded-2xl border border-white/5 p-4 min-h-[700px]"
+                : ""
+            }`}
+          >
             {dashboardLayout
-              .filter((item) => item.visible)
-              .sort((a, b) => a.order - b.order)
+              .filter((item) => item.visible && !dashboardLayout.some(other => other.type === "group" && other.childrenIds?.includes(item.id)))
               .map((item) => {
-                const heightClass = 
-                  item.height === "short" ? "min-h-[220px]" :
-                  item.height === "tall" ? "min-h-[580px]" :
-                  "min-h-[380px]";
-                
-                const colSpanClass = 
-                  item.colSpan === 1 ? "md:col-span-1" :
-                  item.colSpan === 2 ? "md:col-span-2" :
-                  "md:col-span-3";
+                const cardStyle = isMobile
+                  ? {}
+                  : {
+                      gridColumnStart: (item.x ?? 0) + 1,
+                      gridColumnEnd: (item.x ?? 0) + 1 + (item.w ?? 4),
+                      gridRowStart: item.y ?? 1,
+                      gridRowEnd: (item.y ?? 1) + (item.h ?? 3),
+                    };
 
                 return (
                   <div
                     key={item.id}
                     id={`workspace-card-${item.id}`}
-                    draggable={isEditMode}
-                    onDragStart={(e) => handleDragStart(e, item.id)}
-                    onDragOver={(e) => handleDragOver(e, item.id)}
-                    onDrop={(e) => handleDropCard(e, item.id)}
-                    className={`${colSpanClass} ${heightClass} transition-all duration-300 relative flex flex-col group bg-obsidian-light rounded-2xl border ${
+                    style={cardStyle}
+                    className={`transition-all duration-300 relative flex flex-col group bg-obsidian-light rounded-2xl border overflow-hidden ${
                       isEditMode 
-                        ? "border-ares-gold/40 border-dashed cursor-move hover:border-ares-gold animate-pulse" 
+                        ? "border-ares-gold/40 border-dashed hover:border-ares-gold" 
                         : "border-white/10"
-                    }`}
+                    } ${isMobile ? "min-h-[350px]" : ""}`}
                   >
                     {/* Hover Fullscreen button when NOT in edit mode */}
                     {!isEditMode && (
@@ -1690,9 +1970,13 @@ export default function ScopeDashboard() {
 
                     {/* Card Header inside Edit Mode */}
                     {isEditMode && (
-                      <div className="flex items-center justify-between px-4 py-2 bg-black/50 border-b border-white/5 select-none text-[10px] uppercase font-bold text-marble/60 rounded-t-2xl">
+                      <div className="flex items-center justify-between px-4 py-2 bg-black/50 border-b border-white/5 select-none text-[10px] uppercase font-bold text-marble/60 font-sans z-10 shrink-0">
                         <div className="flex items-center gap-2">
-                          <div className="cursor-move text-ares-gold font-bold text-sm" title="Drag to reorder">
+                          <div 
+                            onPointerDown={(e) => handlePointerDown(e, item.id, "move")}
+                            className="cursor-move text-ares-gold font-bold text-sm select-none" 
+                            title="Drag to move panel"
+                          >
                             ☰
                           </div>
                           {editingCardId === item.id ? (
@@ -1706,12 +1990,12 @@ export default function ScopeDashboard() {
                                 if (e.key === "Escape") setEditingCardId(null);
                               }}
                               autoFocus
-                              className="bg-black/60 border border-white/20 text-white rounded px-2 py-0.5 text-[10px] font-bold uppercase focus:outline-none focus:border-ares-gold"
+                              className="bg-black/60 border border-white/20 text-white rounded px-2 py-0.5 text-[10px] font-bold uppercase focus:outline-none focus:border-ares-gold font-mono"
                             />
                           ) : (
                             <span 
                               onDoubleClick={() => handleStartRename(item.id, item.title)}
-                              className="font-heading text-white cursor-pointer hover:text-ares-gold flex items-center gap-1.5"
+                              className="font-heading text-white cursor-pointer hover:text-ares-gold flex items-center gap-1.5 font-bold"
                               title="Double click to rename card"
                             >
                               {item.title}
@@ -1721,38 +2005,6 @@ export default function ScopeDashboard() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <select
-                            value={item.colSpan}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value);
-                              setDashboardLayout(dashboardLayout.map(l => 
-                                l.id === item.id ? { ...l, colSpan: val } : l
-                              ));
-                            }}
-                            className="bg-black/65 border border-white/10 rounded px-1 py-0.5 text-[8px] text-white focus:outline-none font-bold cursor-pointer"
-                            title="Grid column span"
-                          >
-                            <option value={1}>1 Col</option>
-                            <option value={2}>2 Col</option>
-                            <option value={3}>3 Col</option>
-                          </select>
-
-                          <select
-                            value={item.height}
-                            onChange={(e) => {
-                              const val = e.target.value as "short" | "medium" | "tall";
-                              setDashboardLayout(dashboardLayout.map(l => 
-                                l.id === item.id ? { ...l, height: val } : l
-                              ));
-                            }}
-                            className="bg-black/65 border border-white/10 rounded px-1 py-0.5 text-[8px] text-white focus:outline-none font-bold cursor-pointer"
-                            title="Card vertical height"
-                          >
-                            <option value="short">Short</option>
-                            <option value="medium">Medium</option>
-                            <option value="tall">Tall</option>
-                          </select>
-
                           <button
                             onClick={() => handleToggleFullscreen(item.id)}
                             className="text-marble/45 hover:text-white transition-colors cursor-pointer"
@@ -1771,24 +2023,33 @@ export default function ScopeDashboard() {
                             </button>
                           )}
 
-                          {item.type === "charts" && dashboardLayout.filter(l => l.type === "charts").length > 1 && (
-                            <button
-                              onClick={() => handleDeleteChart(item.id)}
-                              className="text-ares-red hover:text-ares-red-light transition-colors cursor-pointer"
-                              title="Delete chart panel"
-                            >
-                              <Trash2 size={10} />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleDeleteWidget(item.id)}
+                            className="text-ares-red hover:text-ares-red-light transition-colors cursor-pointer"
+                            title="Delete panel"
+                          >
+                            <Trash2 size={10} />
+                          </button>
                         </div>
                       </div>
                     )}
 
+                    {/* Resize Handle for Edit Mode */}
+                    {isEditMode && !isMobile && (
+                      <div
+                        onPointerDown={(e) => handlePointerDown(e, item.id, "resize")}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-end justify-end text-marble/35 hover:text-ares-gold transition-colors select-none z-30 font-sans"
+                        title="Drag to resize panel"
+                      >
+                        ◢
+                      </div>
+                    )}
+
                     {/* Card Body containing actual component */}
-                    <div className="flex-grow overflow-hidden relative rounded-b-2xl">
+                    <div className="flex-grow overflow-hidden relative">
                       {item.type === "visualizer" && (
                         <div className="flex flex-col gap-4 h-full p-4 overflow-y-auto">
-                          <div className="flex-grow">
+                          <div className="flex-grow min-h-[280px]">
                             <WebGLReplayCanvas />
                           </div>
                           {videoUrl && (
@@ -1822,79 +2083,7 @@ export default function ScopeDashboard() {
                       
                       {item.type === "inspector" && <StateInspector />}
                       
-                      {item.type === "logs" && (
-                        <div className="flex flex-col gap-4 h-full p-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-                            <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
-                              <Terminal size={14} className="text-ares-gold" />
-                              System Console Logs
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <input
-                                type="text"
-                                placeholder="Filter logs..."
-                                value={logFilter}
-                                onChange={(e) => setLogFilter(e.target.value)}
-                                className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
-                                aria-label="Filter logs"
-                              />
-                              <select
-                                value={logLevelFilter}
-                                onChange={(e) => setLogLevelFilter(e.target.value as any)}
-                                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan"
-                              >
-                                <option value="ALL" className="bg-neutral-900 text-marble/60">ALL LEVELS</option>
-                                <option value="INFO" className="bg-neutral-900 text-white">INFO</option>
-                                <option value="WARN" className="bg-neutral-900 text-ares-gold">WARN</option>
-                                <option value="ERROR" className="bg-neutral-900 text-ares-red-light">ERROR</option>
-                              </select>
-                              <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={autoScrollLogs}
-                                  onChange={(e) => setAutoScrollLogs(e.target.checked)}
-                                  className="accent-ares-gold cursor-pointer rounded border-white/10"
-                                />
-                                Auto-scroll
-                              </label>
-                            </div>
-                          </div>
-
-                          <div 
-                            ref={logContainerRef}
-                            className="flex-grow overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
-                          >
-                            {filteredLogs.length === 0 ? (
-                              <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
-                                {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
-                              </div>
-                            ) : (
-                              filteredLogs.map((entry, idx) => {
-                                let levelColor = "text-marble/70";
-                                let levelBg = "bg-transparent";
-                                if (entry.level === "WARN") {
-                                  levelColor = "text-ares-gold";
-                                  levelBg = "bg-ares-gold/5 border border-ares-gold/10";
-                                } else if (entry.level === "ERROR") {
-                                  levelColor = "text-ares-red-light";
-                                  levelBg = "bg-ares-red/5 border border-ares-red/10";
-                                }
-                                return (
-                                  <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
-                                    <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
-                                    <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider ${
-                                      entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
-                                      entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
-                                      "bg-white/10 text-marble/60"
-                                    }`}>{entry.level}</span>
-                                    <span className={`break-all ${levelColor}`}>{entry.message}</span>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      {item.type === "logs" && renderConsoleLogsWidget(true)}
                       
                       {item.type === "charts" && (
                         <TelemetryCharts 
@@ -1913,6 +2102,172 @@ export default function ScopeDashboard() {
                             }));
                           }}
                         />
+                      )}
+
+                      {item.type === "tuner" && (
+                        <VariablesTuner
+                          isStreaming={isStreaming}
+                          onPublishValue={(key, value, type) => {
+                            if (ntClientRef.current) {
+                              ntClientRef.current.publishValue(key, value, type);
+                            } else {
+                              console.log(`[Tuner Offline] Tuning ${key} to ${value} (${type})`);
+                            }
+                          }}
+                          savedConstants={tuningConstants}
+                          onConstantsChange={(consts) => setTuningConstants(consts)}
+                        />
+                      )}
+
+                      {item.type === "group" && (
+                        <div className="flex flex-col h-full bg-obsidian-light p-4">
+                          {/* Tabs list inside group */}
+                          <div className="flex flex-wrap items-center gap-1.5 border-b border-white/5 pb-2 mb-2.5 shrink-0">
+                            {(item.childrenIds || []).map(childId => {
+                              const child = dashboardLayout.find(l => l.id === childId);
+                              if (!child) return null;
+                              const isActive = item.activeTabId === childId;
+                              return (
+                                <div 
+                                  key={childId}
+                                  className={`flex items-center gap-1 px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all border cursor-pointer font-heading ${
+                                    isActive
+                                      ? "bg-ares-gold/15 border-ares-gold/25 text-ares-gold"
+                                      : "bg-transparent border-transparent text-marble/55 hover:text-white"
+                                  }`}
+                                  onClick={() => {
+                                    setDashboardLayout(prev => prev.map(l => 
+                                      l.id === item.id ? { ...l, activeTabId: childId } : l
+                                    ));
+                                  }}
+                                >
+                                  <span>{child.title}</span>
+                                  {isEditMode && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveFromGroup(item.id, childId);
+                                      }}
+                                      className="text-marble/35 hover:text-ares-red ml-1.5 transition-colors cursor-pointer"
+                                      title="Remove from group"
+                                    >
+                                      <X size={8} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            
+                            {/* Group editing: Add child dropdown */}
+                            {isEditMode && (
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val) {
+                                    handleAddToGroup(item.id, val);
+                                  }
+                                }}
+                                className="bg-black/60 border border-white/10 rounded px-1.5 py-0.5 text-[8px] text-marble/70 focus:outline-none font-bold cursor-pointer ml-auto font-heading"
+                              >
+                                <option value="">+ Add to Group</option>
+                                {dashboardLayout
+                                  .filter(l => l.id !== item.id && l.visible && !dashboardLayout.some(other => other.type === "group" && other.childrenIds?.includes(l.id)))
+                                  .map(l => (
+                                    <option key={l.id} value={l.id} className="bg-neutral-900 text-white">{l.title}</option>
+                                  ))
+                                }
+                              </select>
+                            )}
+                          </div>
+
+                          {/* Group tab content viewer */}
+                          <div className="flex-grow overflow-hidden relative">
+                            {(() => {
+                              const activeChild = dashboardLayout.find(l => l.id === item.activeTabId);
+                              if (!activeChild) {
+                                return (
+                                  <div className="flex items-center justify-center h-full text-marble/30 text-[10px] font-heading uppercase tracking-widest text-center">
+                                    No widgets in group. Add one above.
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="h-full w-full overflow-hidden">
+                                  {activeChild.type === "visualizer" && (
+                                    <div className="flex flex-col gap-4 h-full overflow-y-auto">
+                                      <div className="flex-grow min-h-[220px]">
+                                        <WebGLReplayCanvas />
+                                      </div>
+                                      {videoUrl && (
+                                        <div className="glass-card p-4 border border-white/10 flex flex-col gap-3 relative shrink-0">
+                                          <button
+                                            onClick={() => setVideoUrl(null)}
+                                            className="absolute top-2 right-2 text-marble/40 hover:text-white cursor-pointer transition-colors"
+                                          >
+                                            <X size={14} />
+                                          </button>
+                                          <h3 className="text-[10px] font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-2">
+                                            🎥 Synchronized Match Video
+                                          </h3>
+                                          <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-white/5 shadow-inner">
+                                            <video
+                                              ref={videoRef}
+                                              src={videoUrl}
+                                              className="w-full h-full object-contain"
+                                              controls={false}
+                                              muted
+                                              playsInline
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {activeChild.type === "diagnostics" && <HealthDiagnostics />}
+                                  
+                                  {activeChild.type === "inspector" && <StateInspector />}
+                                  
+                                  {activeChild.type === "logs" && renderConsoleLogsWidget(false)}
+                                  
+                                  {activeChild.type === "charts" && (
+                                    <TelemetryCharts 
+                                      chartId={activeChild.id}
+                                      selectedKeys={chartConfigs.find(c => c.id === activeChild.id)?.selectedKeys || []}
+                                      onToggleKey={(key) => {
+                                        setChartConfigs(chartConfigs.map(c => {
+                                          if (c.id === activeChild.id) {
+                                            const isSelected = c.selectedKeys.includes(key);
+                                            const nextKeys = isSelected
+                                              ? c.selectedKeys.filter(k => k !== key)
+                                              : [...c.selectedKeys, key];
+                                            return { ...c, selectedKeys: nextKeys };
+                                          }
+                                          return c;
+                                        }));
+                                      }}
+                                    />
+                                  )}
+
+                                  {activeChild.type === "tuner" && (
+                                    <VariablesTuner
+                                      isStreaming={isStreaming}
+                                      onPublishValue={(key, value, type) => {
+                                        if (ntClientRef.current) {
+                                          ntClientRef.current.publishValue(key, value, type);
+                                        }
+                                      }}
+                                      savedConstants={tuningConstants}
+                                      onConstantsChange={(consts) => setTuningConstants(consts)}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>

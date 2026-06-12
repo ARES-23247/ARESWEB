@@ -210,4 +210,54 @@ export class NT4Client {
 
     this.onFrame(frame);
   }
+
+  publishValue(key: string, value: any, type: string = "double") {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    const pubuid = Math.floor(Math.random() * 1000000);
+    const cleanKey = key.startsWith("/") ? key : `/${key}`;
+
+    const pubMsg = [
+      {
+        method: "publish",
+        params: {
+          name: cleanKey,
+          type: type,
+          pubuid: pubuid
+        },
+        uid: Math.floor(Math.random() * 10000)
+      }
+    ];
+
+    try {
+      this.ws.send(JSON.stringify(pubMsg));
+
+      const setMsg = [
+        {
+          method: "set",
+          params: {
+            pubuid: pubuid,
+            value: value
+          },
+          uid: Math.floor(Math.random() * 10000)
+        }
+      ];
+      this.ws.send(JSON.stringify(setMsg));
+
+      const unpubMsg = [
+        {
+          method: "unpublish",
+          params: {
+            pubuid: pubuid
+          },
+          uid: Math.floor(Math.random() * 10000)
+        }
+      ];
+      this.ws.send(JSON.stringify(unpubMsg));
+      console.log(`[NT4Client] Published value ${value} to key ${cleanKey}`);
+    } catch (e) {
+      console.error("[NT4Client] Failed to send publish messages over WebSocket:", e);
+    }
+  }
 }
+
