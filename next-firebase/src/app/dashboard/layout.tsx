@@ -21,7 +21,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
        window.location.hostname.startsWith("192.168.") ||
        window.location.hostname.startsWith("10.") ||
        window.location.hostname.endsWith(".local") ||
-       window.location.protocol === "http:" ||
        process.env.NODE_ENV === "development")
     );
   }, []);
@@ -81,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             
             <span className="text-ares-gold font-bold uppercase tracking-[0.4em] text-[10px] font-heading mb-3">
-              FIRST Tech Challenge #23247
+              <em>FIRST</em>® Tech Challenge #23247
             </span>
             
             <h2 className="text-2xl md:text-3xl font-extrabold text-white uppercase font-heading mb-3 tracking-tighter">

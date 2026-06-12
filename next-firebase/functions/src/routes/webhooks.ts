@@ -64,9 +64,13 @@ router.post("/zulip", async (req, res) => {
       source: "zulip",
     };
 
-    await taskRef.update({
-      comments: admin.firestore.FieldValue.arrayUnion(newComment),
+    const batch = adminDb.batch();
+    const commentRef = taskRef.collection("comments").doc(newComment.id);
+    batch.set(commentRef, newComment);
+    batch.update(taskRef, {
+      commentsCount: admin.firestore.FieldValue.increment(1)
     });
+    await batch.commit();
 
     console.log(`[Zulip Webhook] Synced comment from Zulip to Task "${taskId}"`);
     res.json({ content: "" });

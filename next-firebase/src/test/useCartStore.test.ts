@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useCartStore, Product } from "../store/useCartStore";
+import { useCartStore, Product, selectCartTotal, selectCartCount } from "../store/useCartStore";
 
 describe("useCartStore", () => {
   const mockProduct: Product = {
@@ -27,8 +27,8 @@ describe("useCartStore", () => {
     const state = useCartStore.getState();
     expect(state.items).toEqual([]);
     expect(state.isOpen).toBe(false);
-    expect(state.getCartCount()).toBe(0);
-    expect(state.getCartTotal()).toBe(0);
+    expect(selectCartCount(state)).toBe(0);
+    expect(selectCartTotal(state)).toBe(0);
   });
 
   it("should add an item to the cart", () => {
@@ -37,8 +37,8 @@ describe("useCartStore", () => {
     expect(state.items).toHaveLength(1);
     expect(state.items[0]).toEqual({ product: mockProduct, quantity: 2 });
     expect(state.isOpen).toBe(true);
-    expect(state.getCartCount()).toBe(2);
-    expect(state.getCartTotal()).toBe(3000);
+    expect(selectCartCount(state)).toBe(2);
+    expect(selectCartTotal(state)).toBe(3000);
   });
 
   it("should increment quantity when adding an existing product", () => {
@@ -47,8 +47,8 @@ describe("useCartStore", () => {
     const state = useCartStore.getState();
     expect(state.items).toHaveLength(1);
     expect(state.items[0].quantity).toBe(5);
-    expect(state.getCartCount()).toBe(5);
-    expect(state.getCartTotal()).toBe(7500);
+    expect(selectCartCount(state)).toBe(5);
+    expect(selectCartTotal(state)).toBe(7500);
   });
 
   it("should remove an item from the cart", () => {
@@ -58,7 +58,7 @@ describe("useCartStore", () => {
     const state = useCartStore.getState();
     expect(state.items).toHaveLength(1);
     expect(state.items[0].product.id).toBe("prod_2");
-    expect(state.getCartCount()).toBe(1);
+    expect(selectCartCount(state)).toBe(1);
   });
 
   it("should update quantity of an item", () => {

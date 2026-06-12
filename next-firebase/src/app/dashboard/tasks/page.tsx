@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
@@ -35,6 +35,7 @@ interface TaskItem {
   subtasks: SubTask[];
   createdAt: string;
   comments?: TaskComment[];
+  commentsCount?: number;
 }
 
 interface MemberProfile {
@@ -90,9 +91,29 @@ const MOCK_TASKS: TaskItem[] = [
 ];
 
 function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: TaskItem; canEdit: boolean; user: any; teamProfiles: MemberProfile[] }) {
+  const [comments, setComments] = useState<TaskComment[]>([]);
   const [expanded, setExpanded] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const commentsRef = collection(db, "tasks", task.id, "comments");
+    const unsubscribe = onSnapshot(commentsRef, (snapshot) => {
+      const list = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          author: data.author || "Team Member",
+          content: data.content || "",
+          createdAt: data.createdAt || new Date().toISOString(),
+          source: data.source || "web",
+        } as TaskComment;
+      });
+      list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      setComments(list);
+    });
+    return () => unsubscribe();
+  }, [task.id]);
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,8 +123,9 @@ function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: Task
     const myProfile = teamProfiles.find(p => p.uid === user?.uid || (user?.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()));
     const authorNickname = myProfile?.nickname || "Team Member";
 
+    const commentId = `comment_${Date.now()}`;
     const commentPayload = {
-      id: `comment_${Date.now()}`,
+      id: commentId,
       author: authorNickname,
       content: newComment.trim(),
       createdAt: new Date().toISOString(),
@@ -112,8 +134,12 @@ function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: Task
 
     try {
       const taskRef = doc(db, "tasks", task.id);
-      const updatedComments = [...(task.comments || []), commentPayload];
-      await updateDoc(taskRef, { comments: updatedComments });
+      const commentRef = doc(db, "tasks", task.id, "comments", commentId);
+      
+      await setDoc(commentRef, commentPayload);
+      await updateDoc(taskRef, {
+        commentsCount: increment(1)
+      });
       setNewComment("");
 
       // Forward to Zulip stream
@@ -134,7 +160,7 @@ function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: Task
     }
   };
 
-  const commentsCount = task.comments?.length || 0;
+  const commentsCount = comments.length;
 
   return (
     <div className="mt-4 border-t border-white/5 pt-4">
@@ -151,7 +177,7 @@ function TaskCommentsSection({ task, canEdit, user, teamProfiles }: { task: Task
         <div className="mt-3 space-y-3">
           {commentsCount > 0 && (
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-              {task.comments?.map((comment) => (
+              {comments.map((comment) => (
                 <div key={comment.id} className="text-[11px] bg-black/45 p-2.5 rounded-lg border border-white/5">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="font-extrabold text-white">{comment.author?.includes("@") ? "Team Member" : comment.author || "Team Member"}</span>
@@ -555,7 +581,7 @@ export default function KanbanPage() {
               assignees: data.assignees || [],
               subtasks: data.subtasks || [],
               createdAt: data.createdAt || new Date().toISOString(),
-              comments: data.comments || []
+              commentsCount: data.commentsCount || (data.comments?.length || 0)
             } as TaskItem;
           });
           setTasks(list);
@@ -900,7 +926,7 @@ export default function KanbanPage() {
                   const totalSub = task.subtasks?.length || 0;
                   const doneSub = task.subtasks?.filter((s) => s.done).length || 0;
                   const progressPercent = totalSub > 0 ? (doneSub / totalSub) * 100 : 0;
-                  const commentsCount = task.comments?.length || 0;
+                  const commentsCount = task.commentsCount ?? (task.comments?.length || 0);
 
                   return (
                     <div

@@ -382,10 +382,11 @@ export default function DashboardProfilePage() {
                   <Sparkles size={14} /> Identity Details
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Nickname *</label>
+                    <label htmlFor="profile-nickname" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Nickname *</label>
                     <input
+                      id="profile-nickname"
                       type="text"
                       required
                       value={nickname}
@@ -395,8 +396,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">First Name</label>
+                    <label htmlFor="profile-first-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">First Name</label>
                     <input
+                      id="profile-first-name"
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -405,8 +407,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Last Name</label>
+                    <label htmlFor="profile-last-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Last Name</label>
                     <input
+                      id="profile-last-name"
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -416,10 +419,11 @@ export default function DashboardProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pronouns</label>
+                    <label htmlFor="profile-pronouns" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pronouns</label>
                     <input
+                      id="profile-pronouns"
                       type="text"
                       value={pronouns}
                       onChange={(e) => setPronouns(e.target.value)}
@@ -428,7 +432,7 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Avatar Image URL</label>
+                    <label htmlFor="profile-avatar-url" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Avatar Image URL</label>
                     <div className="flex flex-col sm:flex-row gap-4">
                       {avatar && (
                         <div className="w-12 h-12 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center p-1 shrink-0">
@@ -437,6 +441,7 @@ export default function DashboardProfilePage() {
                       )}
                       <div className="flex-1 space-y-2">
                         <input
+                          id="profile-avatar-url"
                           type="url"
                           value={avatar}
                           onChange={(e) => setAvatar(e.target.value)}
@@ -456,8 +461,9 @@ export default function DashboardProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Biography</label>
+                  <label htmlFor="profile-bio" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Biography</label>
                   <textarea
+                    id="profile-bio"
                     rows={4}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
@@ -472,10 +478,11 @@ export default function DashboardProfilePage() {
                   <Info size={14} /> Fun & Trivia
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite thing about FIRST</label>
+                    <label htmlFor="profile-favorite-first" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite thing about *FIRST*®</label>
                     <input
+                      id="profile-favorite-first"
                       type="text"
                       value={favoriteFirstThing}
                       onChange={(e) => setFavoriteFirstThing(e.target.value)}
@@ -484,8 +491,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite Robot Mechanism</label>
+                    <label htmlFor="profile-favorite-mech" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite Robot Mechanism</label>
                     <input
+                      id="profile-favorite-mech"
                       type="text"
                       value={favoriteRobotMechanism}
                       onChange={(e) => setFavoriteRobotMechanism(e.target.value)}
@@ -494,8 +502,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pre-match superstition</label>
+                    <label htmlFor="profile-superstition" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pre-match superstition</label>
                     <input
+                      id="profile-superstition"
                       type="text"
                       value={preMatchSuperstition}
                       onChange={(e) => setPreMatchSuperstition(e.target.value)}
@@ -504,8 +513,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Fun Fact</label>
+                    <label htmlFor="profile-fun-fact" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Fun Fact</label>
                     <input
+                      id="profile-fun-fact"
                       type="text"
                       value={funFact}
                       onChange={(e) => setFunFact(e.target.value)}
@@ -547,10 +557,11 @@ export default function DashboardProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Rookie Year</label>
+                    <label htmlFor="profile-rookie-year" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Rookie Year</label>
                     <input
+                      id="profile-rookie-year"
                       type="text"
                       value={rookieYear}
                       onChange={(e) => setRookieYear(e.target.value)}
@@ -559,8 +570,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Leadership / Custom Role</label>
+                    <label htmlFor="profile-leadership-role" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Leadership / Custom Role</label>
                     <input
+                      id="profile-leadership-role"
                       type="text"
                       value={leadershipRole}
                       onChange={(e) => setLeadershipRole(e.target.value)}
@@ -570,8 +582,9 @@ export default function DashboardProfilePage() {
                   </div>
                   {isAdmin && (
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-ares-red/80 tracking-wider mb-2">Member Type (Admin Only)</label>
+                      <label htmlFor="profile-member-type" className="block text-[10px] uppercase font-bold text-ares-red/80 tracking-wider mb-2">Member Type (Admin Only)</label>
                       <select
+                        id="profile-member-type"
                         value={memberType}
                         onChange={(e) => setMemberType(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
@@ -622,8 +635,9 @@ export default function DashboardProfilePage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
                     <div className="sm:col-span-2">
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">College/University Name</label>
+                      <label htmlFor="new-col-name" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">College/University Name</label>
                       <input
+                        id="new-col-name"
                         type="text"
                         value={newColName}
                         onChange={(e) => setNewColName(e.target.value)}
@@ -632,8 +646,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
+                      <label htmlFor="new-col-domain" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
                       <input
+                        id="new-col-domain"
                         type="text"
                         value={newColDomain}
                         onChange={(e) => setNewColDomain(e.target.value)}
@@ -642,8 +657,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Degree / Major</label>
+                      <label htmlFor="new-col-degree" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Degree / Major</label>
                       <input
+                        id="new-col-degree"
                         type="text"
                         value={newColDegree}
                         onChange={(e) => setNewColDegree(e.target.value)}
@@ -652,8 +668,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Attended</label>
+                      <label htmlFor="new-col-years" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Attended</label>
                       <input
+                        id="new-col-years"
                         type="text"
                         value={newColYears}
                         onChange={(e) => setNewColYears(e.target.value)}
@@ -705,8 +722,9 @@ export default function DashboardProfilePage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
                     <div className="sm:col-span-2">
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Company / Organization</label>
+                      <label htmlFor="new-emp-name" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Company / Organization</label>
                       <input
+                        id="new-emp-name"
                         type="text"
                         value={newEmpName}
                         onChange={(e) => setNewEmpName(e.target.value)}
@@ -715,8 +733,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
+                      <label htmlFor="new-emp-domain" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
                       <input
+                        id="new-emp-domain"
                         type="text"
                         value={newEmpDomain}
                         onChange={(e) => setNewEmpDomain(e.target.value)}
@@ -725,8 +744,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Job Title</label>
+                      <label htmlFor="new-emp-title" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Job Title</label>
                       <input
+                        id="new-emp-title"
                         type="text"
                         value={newEmpTitle}
                         onChange={(e) => setNewEmpTitle(e.target.value)}
@@ -735,8 +755,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Active</label>
+                      <label htmlFor="new-emp-years" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Active</label>
                       <input
+                        id="new-emp-years"
                         type="text"
                         value={newEmpYears}
                         onChange={(e) => setNewEmpYears(e.target.value)}
@@ -745,8 +766,9 @@ export default function DashboardProfilePage() {
                       />
                     </div>
                     <div className="sm:col-span-4 flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-xs font-bold text-marble/70 select-none cursor-pointer">
+                      <label htmlFor="new-emp-current" className="flex items-center gap-2 text-xs font-bold text-marble/70 select-none cursor-pointer">
                         <input
+                          id="new-emp-current"
                           type="checkbox"
                           checked={newEmpCurrent}
                           onChange={(e) => setNewEmpCurrent(e.target.checked)}
@@ -774,10 +796,11 @@ export default function DashboardProfilePage() {
                   <User size={14} /> Contact Information
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Contact Email</label>
+                    <label htmlFor="profile-contact-email" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Contact Email</label>
                     <input
+                      id="profile-contact-email"
                       type="email"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
@@ -786,8 +809,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Phone Number</label>
+                    <label htmlFor="profile-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Phone Number</label>
                     <input
+                      id="profile-phone"
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -804,8 +828,9 @@ export default function DashboardProfilePage() {
                 </h3>
 
                 <div className="space-y-4 bg-black/20 border border-white/5 p-5 rounded-xl">
-                  <label className="flex items-start gap-3 select-none cursor-pointer">
+                  <label htmlFor="show-on-about" className="flex items-start gap-3 select-none cursor-pointer">
                     <input
+                      id="show-on-about"
                       type="checkbox"
                       checked={showOnAbout}
                       onChange={(e) => setShowOnAbout(e.target.checked)}
@@ -817,8 +842,9 @@ export default function DashboardProfilePage() {
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3 select-none cursor-pointer">
+                  <label htmlFor="show-email" className="flex items-start gap-3 select-none cursor-pointer">
                     <input
+                      id="show-email"
                       type="checkbox"
                       checked={showEmail}
                       onChange={(e) => setShowEmail(e.target.checked)}
@@ -830,8 +856,9 @@ export default function DashboardProfilePage() {
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3 select-none cursor-pointer">
+                  <label htmlFor="show-phone" className="flex items-start gap-3 select-none cursor-pointer">
                     <input
+                      id="show-phone"
                       type="checkbox"
                       checked={showPhone}
                       onChange={(e) => setShowPhone(e.target.checked)}
@@ -855,8 +882,9 @@ export default function DashboardProfilePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">T-shirt Size</label>
+                    <label htmlFor="profile-tshirt-size" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">T-shirt Size</label>
                     <select
+                      id="profile-tshirt-size"
                       value={tshirtSize}
                       onChange={(e) => setTshirtSize(e.target.value)}
                       className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
@@ -902,10 +930,11 @@ export default function DashboardProfilePage() {
                   <Info size={14} /> Emergency Contacts
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Name</label>
+                    <label htmlFor="profile-emergency-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Name</label>
                     <input
+                      id="profile-emergency-name"
                       type="text"
                       value={emergencyContactName}
                       onChange={(e) => setEmergencyContactName(e.target.value)}
@@ -914,8 +943,9 @@ export default function DashboardProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Phone</label>
+                    <label htmlFor="profile-emergency-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Phone</label>
                     <input
+                      id="profile-emergency-phone"
                       type="tel"
                       value={emergencyContactPhone}
                       onChange={(e) => setEmergencyContactPhone(e.target.value)}

@@ -51,7 +51,7 @@ export default function MarkdownEditor({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentText = textarea.value;
-    console.log("COMPONENT DEBUG (insertMarkdown): start =", start, "end =", end);
+
 
     const selectedText = currentText.substring(start, end);
     const insertText = selectedText || placeholderText;
@@ -77,7 +77,7 @@ export default function MarkdownEditor({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentText = textarea.value;
-    console.log("COMPONENT DEBUG (insertBlock): start =", start, "end =", end);
+
 
     // Find start of current line (supporting both \n and \r)
     const lastNewline = Math.max(
@@ -85,7 +85,7 @@ export default function MarkdownEditor({
       currentText.lastIndexOf("\r", start - 1)
     );
     const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
-    console.log("COMPONENT DEBUG (insertBlock ranges): char codes =", Array.from(currentText).map(c => c.charCodeAt(0)), "lastNewline =", lastNewline, "lineStart =", lineStart);
+
 
     const beforeLine = currentText.substring(0, lineStart);
     const restText = currentText.substring(lineStart);

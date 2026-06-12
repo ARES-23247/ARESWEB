@@ -1,6 +1,6 @@
 import express from "express";
 import crypto from "crypto";
-import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
+import { adminDb, adminStorage } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAuth, ensureAdmin } from "../middleware/auth";
@@ -297,29 +297,10 @@ router.post("/import", ensureAdmin, async (req, res) => {
   }
 });
 
-// GET /api/photos/auth/init
+// POST /api/photos/auth/init
 // Secure route to generate anti-CSRF token and return redirect URL
-router.get("/auth/init", async (req, res) => {
+router.post("/auth/init", ensureAdmin, async (req, res) => {
   try {
-    const token = req.query.token as string | undefined;
-    if (!token) {
-      res.status(401).json({ error: "Unauthorized: Missing authentication token" });
-      return;
-    }
-
-    // Verify admin identity
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
-    if (!userDoc.exists) {
-      res.status(403).json({ error: "Forbidden: User not authorized" });
-      return;
-    }
-    const userData = userDoc.data();
-    if (userData?.role !== "admin" && userData?.role !== "coach" && userData?.role !== "mentor") {
-      res.status(403).json({ error: "Forbidden: Insufficient privileges" });
-      return;
-    }
-
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
@@ -348,7 +329,7 @@ router.get("/auth/init", async (req, res) => {
     googleAuthUrl.searchParams.set("prompt", "consent");
     googleAuthUrl.searchParams.set("state", state);
 
-    res.redirect(googleAuthUrl.toString());
+    res.json({ redirectUrl: googleAuthUrl.toString() });
   } catch (error: any) {
     console.error("[Google OAuth Init Error]:", error);
     res.status(500).json({ error: "Internal server error." });

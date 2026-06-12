@@ -16,7 +16,7 @@ export interface CartItem {
   quantity: number;
 }
 
-interface CartState {
+export interface CartState {
   items: CartItem[];
   isOpen: boolean;
   addItem: (product: Product, quantity?: number) => void;
@@ -24,8 +24,6 @@ interface CartState {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   setIsOpen: (isOpen: boolean) => void;
-  getCartTotal: () => number;
-  getCartCount: () => number;
 }
 
 export const useCartStore = create<CartState>()(
@@ -33,12 +31,12 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
-      addItem: (product: Product, quantity = 1) => {
-        set((state: CartState) => {
-          const existingItem = state.items.find((i: CartItem) => i.product.id === product.id);
+      addItem: (product, quantity = 1) => {
+        set((state) => {
+          const existingItem = state.items.find((i) => i.product.id === product.id);
           if (existingItem) {
             return {
-              items: state.items.map((i: CartItem) =>
+              items: state.items.map((i) =>
                 i.product.id === product.id
                   ? { ...i, quantity: i.quantity + quantity }
                   : i
@@ -49,30 +47,24 @@ export const useCartStore = create<CartState>()(
           return { items: [...state.items, { product, quantity }], isOpen: true };
         });
       },
-      removeItem: (productId: string) => {
-        set((state: CartState) => ({
-          items: state.items.filter((i: CartItem) => i.product.id !== productId),
+      removeItem: (productId) => {
+        set((state) => ({
+          items: state.items.filter((i) => i.product.id !== productId),
         }));
       },
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (productId, quantity) => {
         if (quantity <= 0) {
           get().removeItem(productId);
           return;
         }
-        set((state: CartState) => ({
-          items: state.items.map((i: CartItem) =>
+        set((state) => ({
+          items: state.items.map((i) =>
             i.product.id === productId ? { ...i, quantity } : i
           ),
         }));
       },
-      clearCart: () => set({ items: [] } as Partial<CartState>),
-      setIsOpen: (isOpen: boolean) => set({ isOpen } as Partial<CartState>),
-      getCartTotal: () => {
-        return get().items.reduce((total: number, item: CartItem) => total + item.product.priceCents * item.quantity, 0);
-      },
-      getCartCount: () => {
-        return get().items.reduce((count: number, item: CartItem) => count + item.quantity, 0);
-      },
+      clearCart: () => set({ items: [] }),
+      setIsOpen: (isOpen) => set({ isOpen }),
     }),
     {
       name: "ares-cart-storage",
@@ -80,3 +72,10 @@ export const useCartStore = create<CartState>()(
     }
   )
 );
+
+// Derived state selectors to avoid unnecessary re-renders
+export const selectCartTotal = (state: CartState) =>
+  state.items.reduce((total, item) => total + item.product.priceCents * item.quantity, 0);
+
+export const selectCartCount = (state: CartState) =>
+  state.items.reduce((count, item) => count + item.quantity, 0);

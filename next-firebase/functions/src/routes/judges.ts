@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { adminDb } from "../lib/firebase-admin";
+import admin, { adminDb } from "../lib/firebase-admin";
 import { ensureAdmin } from "../middleware/auth";
 import crypto from "crypto";
 
@@ -42,7 +42,25 @@ router.post("/login", loginLimiter, async (req, res) => {
     const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
     const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
 
-    if (recaptchaToken && !isBypass) {
+    if (isProd) {
+      if (!recaptchaToken) {
+        res.status(400).json({ error: "Security verification token required" });
+        return;
+      }
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+      if (secretKey) {
+        const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`
+        });
+        const verifyData = (await verifyRes.json()) as { success: boolean };
+        if (!verifyData.success) {
+          res.status(403).json({ error: "Security verification failed" });
+          return;
+        }
+      }
+    } else if (recaptchaToken && !isBypass) {
       const secretKey = process.env.RECAPTCHA_SECRET_KEY;
       if (secretKey) {
         const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
@@ -121,15 +139,24 @@ router.get("/portfolio", portfolioLimiter, async (req, res) => {
       adminDb.collection("docs")
         .where("status", "==", "published")
         .where("isDeleted", "==", 0)
+        .where(
+          admin.firestore.Filter.or(
+            admin.firestore.Filter.where("isPortfolio", "==", 1),
+            admin.firestore.Filter.where("isExecutiveSummary", "==", 1)
+          )
+        )
         .get(),
       adminDb.collection("outreach_logs")
         .where("isDeleted", "==", 0)
+        .limit(100)
         .get(),
       adminDb.collection("awards")
         .where("isDeleted", "==", 0)
+        .limit(100)
         .get(),
       adminDb.collection("sponsors")
         .where("isActive", "==", true)
+        .limit(100)
         .get()
     ]);
 

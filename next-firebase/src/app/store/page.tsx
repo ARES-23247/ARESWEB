@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { ShoppingCart, Search, CheckCircle2, Plus, Minus, X, ShoppingBag, Loader2, Sparkles, CreditCard, Tag } from "lucide-react";
-import { useCartStore, Product } from "@/store/useCartStore";
+import { useCartStore, Product, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { collection, setDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +48,9 @@ const MOCK_PRODUCTS: Product[] = [
 
 export default function StorePage() {
   const { user } = useAuth();
-  const { items, isOpen, setIsOpen, addItem, removeItem, updateQuantity, clearCart, getCartTotal, getCartCount } = useCartStore();
+  const { items, isOpen, setIsOpen, addItem, removeItem, updateQuantity, clearCart } = useCartStore();
+  const cartTotal = useCartStore(selectCartTotal);
+  const cartCount = useCartStore(selectCartCount);
   
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +82,7 @@ export default function StorePage() {
     // Simulate robust checkout / Stripe routing with self-healing Firestore order logs
     try {
       const orderId = `order_${Date.now()}`;
-      const total = getCartTotal();
+      const total = cartTotal;
       
       const orderRecord = {
         id: orderId,
@@ -136,9 +138,9 @@ export default function StorePage() {
           >
             <ShoppingCart className="w-5 h-5 text-ares-gold" />
             <span>View Cart</span>
-            {getCartCount() > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-ares-red text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg border border-ares-bronze/40">
-                {getCartCount()}
+                {cartCount}
               </span>
             )}
           </button>
@@ -327,7 +329,7 @@ export default function StorePage() {
                 <div className="flex items-center justify-between">
                   <span className="text-marble/70 text-sm">Estimated Subtotal</span>
                   <span className="text-xl font-bold text-white font-mono">
-                    ${(getCartTotal() / 100).toFixed(2)}
+                    ${(cartTotal / 100).toFixed(2)}
                   </span>
                 </div>
                 <button

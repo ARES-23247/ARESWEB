@@ -1970,8 +1970,9 @@ export default function AresPlanner({
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[9px] font-mono uppercase text-marble/50">Field Season</label>
+                <label htmlFor="field-season-select" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Field Season</label>
                 <select
+                  id="field-season-select"
                   value={season}
                   onChange={(e) => setSeason(e.target.value)}
                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1.5 text-xs text-white uppercase font-bold focus:outline-none"
@@ -1986,10 +1987,11 @@ export default function AresPlanner({
               </div>
 
               <div>
-                <label className="text-[9px] font-mono uppercase text-marble/50">Upload Custom Image</label>
-                <label className="w-full bg-white/5 border border-white/10 border-dashed rounded px-2.5 py-1.5 text-xs text-marble hover:text-white hover:bg-white/10 flex items-center justify-center font-bold cursor-pointer transition-all">
+                <span className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Upload Custom Image</span>
+                <label htmlFor="custom-field-bg-upload" className="w-full bg-white/5 border border-white/10 border-dashed rounded px-2.5 py-1.5 text-xs text-marble hover:text-white hover:bg-white/10 flex items-center justify-center font-bold cursor-pointer transition-all">
                   <Plus size={12} className="mr-1.5 text-ares-cyan" /> Upload Field
                   <input
+                    id="custom-field-bg-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleCustomBgUpload}
@@ -2120,8 +2122,9 @@ export default function AresPlanner({
                             <div className="grid grid-cols-3 gap-2">
                               {/* X Position */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">X Position ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`wp-x-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">X Position ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`wp-x-${idx}`}
                                   type="number"
                                   step="0.001"
                                   value={parseFloat((unitMode === "meters" ? wp.anchor.x * 0.0254 : wp.anchor.x).toFixed(3))}
@@ -2131,8 +2134,9 @@ export default function AresPlanner({
                               </div>
                               {/* Y Position */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Y Position ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`wp-y-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Y Position ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`wp-y-${idx}`}
                                   type="number"
                                   step="0.001"
                                   value={parseFloat((unitMode === "meters" ? wp.anchor.y * 0.0254 : wp.anchor.y).toFixed(3))}
@@ -2142,8 +2146,9 @@ export default function AresPlanner({
                               </div>
                               {/* Tangent Heading */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Heading (Deg)</label>
+                                <label htmlFor={`wp-heading-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Heading (Deg)</label>
                                 <input
+                                  id={`wp-heading-${idx}`}
                                   type="number"
                                   step="0.1"
                                   value={parseFloat(getWaypointHeadingDegrees(idx).toFixed(1))}
@@ -2158,8 +2163,9 @@ export default function AresPlanner({
                               <div className="flex flex-col gap-2 border-t border-white/[0.04] pt-2">
                                 {wp.prevControl && (
                                   <div className="flex flex-col gap-1">
-                                    <label className="text-[8px] font-mono uppercase text-marble/40 block">Prev Control Length ({unitMode === "meters" ? "M" : "In"})</label>
+                                    <label htmlFor={`wp-prev-len-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Prev Control Length ({unitMode === "meters" ? "M" : "In"})</label>
                                     <input
+                                      id={`wp-prev-len-${idx}`}
                                       type="number"
                                       step="0.001"
                                       value={parseFloat(getControlLength(idx, "prev").toFixed(3))}
@@ -2170,8 +2176,9 @@ export default function AresPlanner({
                                 )}
                                 {wp.nextControl && (
                                   <div className="flex flex-col gap-1">
-                                    <label className="text-[8px] font-mono uppercase text-marble/40 block">Next Control Length ({unitMode === "meters" ? "M" : "In"})</label>
+                                    <label htmlFor={`wp-next-len-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Next Control Length ({unitMode === "meters" ? "M" : "In"})</label>
                                     <input
+                                      id={`wp-next-len-${idx}`}
                                       type="number"
                                       step="0.001"
                                       value={parseFloat(getControlLength(idx, "next").toFixed(3))}
@@ -2432,12 +2439,13 @@ export default function AresPlanner({
 
                         {/* Target Content */}
                         {isSelected && (
-                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-xs">
+                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-marble">
                             <div className="grid grid-cols-2 gap-2">
                               {/* Linked Waypoint */}
                               <div className="flex flex-col gap-1 col-span-2">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Link to Waypoint</label>
+                                <label htmlFor={`rot-wp-link-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Link to Waypoint</label>
                                 <select
+                                  id={`rot-wp-link-${rot.id}`}
                                   value={rot.waypointIndex}
                                   onChange={(e) => handleUpdateRotationTarget(rot.id, { waypointIndex: parseInt(e.target.value) })}
                                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
@@ -2452,8 +2460,9 @@ export default function AresPlanner({
 
                               {/* Target X */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Target X ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`rot-x-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Target X ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`rot-x-${rot.id}`}
                                   type="number"
                                   step="0.01"
                                   value={parseFloat((unitMode === "meters" ? rot.x * 0.0254 : rot.x).toFixed(2))}
@@ -2469,8 +2478,9 @@ export default function AresPlanner({
 
                               {/* Target Y */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Target Y ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`rot-y-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Target Y ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`rot-y-${rot.id}`}
                                   type="number"
                                   step="0.01"
                                   value={parseFloat((unitMode === "meters" ? rot.y * 0.0254 : rot.y).toFixed(2))}
@@ -2572,8 +2582,9 @@ export default function AresPlanner({
                             <div className="grid grid-cols-2 gap-2">
                               {/* Max Velocity */}
                               <div className="flex flex-col gap-1 col-span-2">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Speed Limit (m/s)</label>
+                                <label htmlFor={`zone-speed-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Max Speed Limit (m/s)</label>
                                 <input
+                                  id={`zone-speed-${zone.id}`}
                                   type="number"
                                   step="0.1"
                                   value={zone.maxVelocity}
@@ -2586,11 +2597,12 @@ export default function AresPlanner({
                                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
- 
+
                               {/* Center X */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Center X ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`zone-x-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Center X ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`zone-x-${zone.id}`}
                                   type="number"
                                   step="0.1"
                                   value={parseFloat((unitMode === "meters" ? zone.x * 0.0254 : zone.x).toFixed(2))}
@@ -2603,11 +2615,12 @@ export default function AresPlanner({
                                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
- 
+
                               {/* Center Y */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Center Y ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`zone-y-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Center Y ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`zone-y-${zone.id}`}
                                   type="number"
                                   step="0.1"
                                   value={parseFloat((unitMode === "meters" ? zone.y * 0.0254 : zone.y).toFixed(2))}
@@ -2620,11 +2633,12 @@ export default function AresPlanner({
                                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
- 
+
                               {/* Width */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Width ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`zone-w-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Width ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`zone-w-${zone.id}`}
                                   type="number"
                                   step="0.1"
                                   value={parseFloat((unitMode === "meters" ? zone.width * 0.0254 : zone.width).toFixed(2))}
@@ -2637,11 +2651,12 @@ export default function AresPlanner({
                                   className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
                                 />
                               </div>
- 
+
                               {/* Height */}
                               <div className="flex flex-col gap-1">
-                                <label className="text-[8px] font-mono uppercase text-marble/40 block">Height ({unitMode === "meters" ? "M" : "In"})</label>
+                                <label htmlFor={`zone-h-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Height ({unitMode === "meters" ? "M" : "In"})</label>
                                 <input
+                                  id={`zone-h-${zone.id}`}
                                   type="number"
                                   step="0.1"
                                   value={parseFloat((unitMode === "meters" ? zone.height * 0.0254 : zone.height).toFixed(2))}
@@ -2687,8 +2702,9 @@ export default function AresPlanner({
                   <div className="grid grid-cols-2 gap-2.5">
                     {/* Max Velocity */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Velocity (m/s)</label>
+                      <label htmlFor="kinematics-max-vel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Velocity (m/s)</label>
                       <input
+                        id="kinematics-max-vel"
                         type="number"
                         step="0.1"
                         min="0.1"
@@ -2702,8 +2718,9 @@ export default function AresPlanner({
                     </div>
                     {/* Max Acceleration */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Acceleration (m/s²)</label>
+                      <label htmlFor="kinematics-max-accel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Acceleration (m/s²)</label>
                       <input
+                        id="kinematics-max-accel"
                         type="number"
                         step="0.1"
                         min="0.1"
@@ -2717,8 +2734,9 @@ export default function AresPlanner({
                     </div>
                     {/* Max Angular Velocity */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Velocity (°/s)</label>
+                      <label htmlFor="kinematics-max-ang-vel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Velocity (°/s)</label>
                       <input
+                        id="kinematics-max-ang-vel"
                         type="number"
                         step="5"
                         min="1"
@@ -2732,8 +2750,9 @@ export default function AresPlanner({
                     </div>
                     {/* Max Angular Acceleration */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Accel. (°/s²)</label>
+                      <label htmlFor="kinematics-max-ang-accel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Accel. (°/s²)</label>
                       <input
+                        id="kinematics-max-ang-accel"
                         type="number"
                         step="5"
                         min="1"
@@ -2770,8 +2789,9 @@ export default function AresPlanner({
                   <div className="grid grid-cols-2 gap-2">
                     {/* Start X */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start X ({unitMode === "meters" ? "M" : "In"})</label>
+                      <label htmlFor="start-x-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start X ({unitMode === "meters" ? "M" : "In"})</label>
                       <input
+                        id="start-x-input"
                         type="number"
                         step="0.001"
                         value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.x * 0.0254 : waypoints[0].anchor.x).toFixed(3)) : 0}
@@ -2782,8 +2802,9 @@ export default function AresPlanner({
                     </div>
                     {/* Start Y */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Y ({unitMode === "meters" ? "M" : "In"})</label>
+                      <label htmlFor="start-y-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Y ({unitMode === "meters" ? "M" : "In"})</label>
                       <input
+                        id="start-y-input"
                         type="number"
                         step="0.001"
                         value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.y * 0.0254 : waypoints[0].anchor.y).toFixed(3)) : 0}
@@ -2794,8 +2815,9 @@ export default function AresPlanner({
                     </div>
                     {/* Start Velocity */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Velocity (m/s)</label>
+                      <label htmlFor="start-vel-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Velocity (m/s)</label>
                       <input
+                        id="start-vel-input"
                         type="number"
                         step="0.1"
                         min="0"
@@ -2809,8 +2831,9 @@ export default function AresPlanner({
                     </div>
                     {/* Start Heading */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">Start Heading (Deg)</label>
+                      <label htmlFor="start-heading-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Heading (Deg)</label>
                       <input
+                        id="start-heading-input"
                         type="number"
                         step="1"
                         value={startHeading}
@@ -2846,8 +2869,9 @@ export default function AresPlanner({
                   <div className="grid grid-cols-2 gap-2">
                     {/* End X */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End X ({unitMode === "meters" ? "M" : "In"})</label>
+                      <label htmlFor="end-x-input" className="text-[8px] font-mono uppercase text-marble/40 block">End X ({unitMode === "meters" ? "M" : "In"})</label>
                       <input
+                        id="end-x-input"
                         type="number"
                         step="0.001"
                         value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.x * 0.0254 : waypoints[waypoints.length - 1].anchor.x).toFixed(3)) : 0}
@@ -2858,8 +2882,9 @@ export default function AresPlanner({
                     </div>
                     {/* End Y */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Y ({unitMode === "meters" ? "M" : "In"})</label>
+                      <label htmlFor="end-y-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Y ({unitMode === "meters" ? "M" : "In"})</label>
                       <input
+                        id="end-y-input"
                         type="number"
                         step="0.001"
                         value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.y * 0.0254 : waypoints[waypoints.length - 1].anchor.y).toFixed(3)) : 0}
@@ -2870,8 +2895,9 @@ export default function AresPlanner({
                     </div>
                     {/* End Velocity */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Velocity (m/s)</label>
+                      <label htmlFor="end-vel-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Velocity (m/s)</label>
                       <input
+                        id="end-vel-input"
                         type="number"
                         step="0.1"
                         min="0"
@@ -2885,8 +2911,9 @@ export default function AresPlanner({
                     </div>
                     {/* End Heading */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-mono uppercase text-marble/40 block">End Heading (Deg)</label>
+                      <label htmlFor="end-heading-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Heading (Deg)</label>
                       <input
+                        id="end-heading-input"
                         type="number"
                         step="1"
                         value={endHeading}
@@ -2938,8 +2965,9 @@ export default function AresPlanner({
 
               {cloudPaths.length > 0 && onLoadPath && (
                 <div>
-                  <label className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Load Cloud Path</label>
+                  <label htmlFor="load-cloud-path-select" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Load Cloud Path</label>
                   <select
+                    id="load-cloud-path-select"
                     onChange={(e) => {
                       if (e.target.value) onLoadPath(e.target.value);
                     }}
@@ -2967,8 +2995,9 @@ export default function AresPlanner({
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
                 <div className="flex-grow">
-                  <label className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Robot IP Address</label>
+                  <label htmlFor="robot-ip-input" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Robot IP Address</label>
                   <input
+                    id="robot-ip-input"
                     type="text"
                     value={robotIp}
                     onChange={(e) => setRobotIp(e.target.value)}
@@ -3024,9 +3053,10 @@ export default function AresPlanner({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5 select-none">
+          <label htmlFor="import-path-file-input" className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5 select-none">
             <Upload size={12} /> Import Path
             <input
+              id="import-path-file-input"
               type="file"
               accept=".json"
               onChange={handleImportJSON}

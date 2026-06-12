@@ -137,7 +137,7 @@ export default function Footer() {
             <div className="pt-4 flex items-center gap-3">
               <ShieldCheck size={24} className="text-ares-cyan opacity-40" />
               <p className="text-[9px] text-marble/60 leading-tight uppercase font-medium">
-                Official ARES Portal. All student data is protected under FIRST YPP.
+                Official ARES Portal. All student data is protected under <em>FIRST</em>® YPP.
               </p>
             </div>
           </div>

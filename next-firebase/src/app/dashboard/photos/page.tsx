@@ -299,10 +299,20 @@ export default function GoogleSyncPage() {
   const handleTriggerOAuth = async () => {
     if (!canEdit || !user) return;
     try {
-      const token = await user.getIdToken();
-      window.location.href = `/api/photos/auth/init?token=${encodeURIComponent(token)}`;
+      const res = await authenticatedFetch("/api/photos/auth/init", {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        }
+      } else {
+        const errText = await res.text();
+        alert("Failed to initiate Google authentication: " + errText);
+      }
     } catch (err: any) {
-      console.error("Failed to get ID token:", err);
+      console.error("Failed to trigger Google authentication:", err);
       alert("Failed to initiate Google authentication: " + err.message);
     }
   };

@@ -84,8 +84,13 @@ router.post("/sync", async (req, res) => {
 
     const { userId, profile, email, role, name } = req.body;
 
-    if (!userId || !profile || typeof profile !== "object") {
-      res.status(400).json({ error: "Bad Request: Missing userId or profile payload." });
+    if (!userId || typeof userId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(userId)) {
+      res.status(400).json({ error: "Bad Request: Invalid or unsafe userId." });
+      return;
+    }
+
+    if (!profile || typeof profile !== "object") {
+      res.status(400).json({ error: "Bad Request: Missing profile payload." });
       return;
     }
 
@@ -185,8 +190,10 @@ router.post("/session", ensureAuth, async (req: AuthenticatedRequest, res) => {
 
         console.log(`[Profile Session] Found legacy authorized_user for ${cleanEmail} (legacy ID: ${legacyUid}). Migrating to Firebase UID: ${uid}`);
 
+        const batch = adminDb.batch();
+
         // 1. Copy authorized_users record
-        await userRef.set(legacyData);
+        batch.set(userRef, legacyData);
 
         // 2. Copy user_profiles record if it exists
         const legacyProfileRef = adminDb.collection("user_profiles").doc(legacyUid);
@@ -194,22 +201,25 @@ router.post("/session", ensureAuth, async (req: AuthenticatedRequest, res) => {
         if (legacyProfileSnap.exists) {
           const profileData = legacyProfileSnap.data();
           if (profileData) {
-            await adminDb.collection("user_profiles").doc(uid).set(profileData);
+            batch.set(adminDb.collection("user_profiles").doc(uid), profileData);
           }
-          // Delete legacy profile
-          await legacyProfileRef.delete();
+          batch.delete(legacyProfileRef);
         }
 
-        // Delete legacy authorized_users record
-        await legacyDoc.ref.delete();
+        // 3. Delete legacy authorized_users record
+        batch.delete(legacyDoc.ref);
+
+        // Commit batch atomically
+        await batch.commit();
 
         res.json({ authorizedUser: legacyData });
         return;
       }
     }
 
-    // If no legacy doc is found, check if this is coach.david@gmail.com to bootstrap
-    if (cleanEmail === "coach.david@gmail.com") {
+    // If no legacy doc is found, check if environment bootstrap admin email is configured
+    const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+    if (bootstrapEmail && cleanEmail === bootstrapEmail.trim().toLowerCase()) {
       const bootstrapData = {
         email: cleanEmail,
         role: "admin",
