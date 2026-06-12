@@ -46,6 +46,19 @@ import DashboardVideosPage from "@/app/dashboard/videos/page";
 import DashboardFieldPage from "@/app/dashboard/field/page";
 
 export default function App() {
+  React.useEffect(() => {
+    // Only load reCAPTCHA once
+    if (document.getElementById("recaptcha-script")) return;
+    
+    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+    const script = document.createElement("script");
+    script.id = "recaptcha-script";
+    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
