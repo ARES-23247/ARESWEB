@@ -153,16 +153,26 @@ export class NT4Client {
       const typeStr = this.topicTypes.get(topicId);
       const payloadLength = buffer.byteLength - 16;
 
-      // Type mappings:
-      // In NT4 WebSocket binary format:
-      // typeId 1 = double, typeId 2 = int, typeId 3 = float, typeId 7 = double[]
-      // In WPILib NT_Type internal enum:
-      // typeId 1 = boolean, typeId 2 = double, typeId 6 = double[]
-      const isDouble = typeId === 1 || typeId === 2 || typeStr === "double";
-      const isDoubleArray = typeId === 6 || typeId === 7 || typeStr === "double[]" || name.includes("Pose") || name.includes("Swerve");
-      const isFloat = typeId === 3 || typeId === 10 || typeStr === "float";
-      const isFloatArray = typeId === 9 || typeId === 12 || typeStr === "float[]";
-      const isInt = typeId === 2 || typeId === 9 || typeStr === "int" || typeStr === "integer";
+      // Determine decoding path: prioritize announced typeStr, fallback to typeId heuristically
+      let isDouble = false;
+      let isDoubleArray = false;
+      let isFloat = false;
+      let isFloatArray = false;
+      let isInt = false;
+
+      if (typeStr) {
+        isDouble = typeStr === "double";
+        isDoubleArray = typeStr === "double[]" || name.includes("Pose") || name.includes("Swerve");
+        isFloat = typeStr === "float";
+        isFloatArray = typeStr === "float[]";
+        isInt = typeStr === "int" || typeStr === "integer";
+      } else {
+        isDoubleArray = typeId === 6 || typeId === 7 || name.includes("Pose") || name.includes("Swerve");
+        isDouble = typeId === 1 || (typeId === 2 && !isDoubleArray);
+        isFloat = typeId === 3 || typeId === 10;
+        isFloatArray = typeId === 9 || typeId === 12;
+        isInt = typeId === 2 || typeId === 9;
+      }
 
       if (isDoubleArray) {
         const arrayLength = Math.floor(payloadLength / 8);
