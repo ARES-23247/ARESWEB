@@ -181,6 +181,8 @@ export default function ScopeDashboard() {
   const [simAutoScrollLogs, setSimAutoScrollLogs] = useState(true);
   const [osTab, setOsTab] = useState<'windows' | 'mac' | 'linux'>('windows');
   const [copied, setCopied] = useState(false);
+  const [logsCopied, setLogsCopied] = useState(false);
+  const [mainLogsCopied, setMainLogsCopied] = useState(false);
   
   // EKF config overrides states
   const [visionStdDevX, setVisionStdDevX] = useState(0.05);
@@ -1498,6 +1500,47 @@ export default function ScopeDashboard() {
                 <option value="WARN" className="bg-neutral-900 text-ares-gold font-heading">WARN</option>
                 <option value="ERROR" className="bg-neutral-900 text-ares-red-light font-heading">ERROR</option>
               </select>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  if (filteredLogs.length > 0) {
+                    const logsText = filteredLogs
+                      .map((entry) => `[${formatTime(entry.timestamp)}] [${entry.level}] ${entry.message}`)
+                      .join("\n");
+                    navigator.clipboard.writeText(logsText);
+                    setMainLogsCopied(true);
+                    setTimeout(() => setMainLogsCopied(false), 2000);
+                  }
+                }}
+                disabled={filteredLogs.length === 0}
+                className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] uppercase font-black tracking-widest text-marble/55 hover:text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-heading"
+                title="Copy current filtered logs"
+              >
+                {mainLogsCopied ? (
+                  <>
+                    <Check size={10} className="text-ares-success" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={10} />
+                    <span>Copy Logs</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConsoleLogs(null)}
+                disabled={!consoleLogs || consoleLogs.length === 0}
+                className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] uppercase font-black tracking-widest text-marble/55 hover:text-white hover:bg-white/10 hover:border-ares-red/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-heading"
+                title="Clear all console logs"
+              >
+                <Trash2 size={10} />
+                <span>Clear</span>
+              </button>
+
               <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer font-heading">
                 <input
                   type="checkbox"
@@ -2662,15 +2705,52 @@ export default function ScopeDashboard() {
                   <label className="text-[9px] uppercase font-black tracking-widest text-marble/40 flex items-center gap-1.5">
                     <Terminal size={10} /> Compilation & Run Logs
                   </label>
-                  <label className="flex items-center gap-1 text-[8px] uppercase font-bold text-marble/60 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={simAutoScrollLogs}
-                      onChange={(e) => setSimAutoScrollLogs(e.target.checked)}
-                      className="rounded border-white/10 bg-black/40 text-ares-gold focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                    />
-                    Auto-scroll
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (daemonLogs.length > 0) {
+                          navigator.clipboard.writeText(daemonLogs.join("\n"));
+                          setLogsCopied(true);
+                          setTimeout(() => setLogsCopied(false), 2000);
+                        }
+                      }}
+                      disabled={daemonLogs.length === 0}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] uppercase font-bold text-marble/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Copy entire log to clipboard"
+                    >
+                      {logsCopied ? (
+                        <>
+                          <Check size={8} className="text-ares-success" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={8} />
+                          <span>Copy Logs</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDaemonLogs([])}
+                      disabled={daemonLogs.length === 0}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] uppercase font-bold text-marble/60 hover:text-white hover:bg-white/10 hover:border-ares-red/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Clear logs"
+                    >
+                      <Trash2 size={8} />
+                      <span>Clear</span>
+                    </button>
+                    <label className="flex items-center gap-1 text-[8px] uppercase font-bold text-marble/60 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={simAutoScrollLogs}
+                        onChange={(e) => setSimAutoScrollLogs(e.target.checked)}
+                        className="rounded border-white/10 bg-black/40 text-ares-gold focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                      />
+                      Auto-scroll
+                    </label>
+                  </div>
                 </div>
                 <pre className="flex-grow bg-black/60 rounded-xl border border-white/5 p-4 font-mono text-[9px] text-marble/85 overflow-y-auto shadow-inner max-h-[180px] text-left select-text whitespace-pre-wrap break-all selection:bg-ares-gold/30 selection:text-white">
                   {daemonLogs.length === 0 ? (
