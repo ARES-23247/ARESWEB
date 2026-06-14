@@ -921,9 +921,6 @@ export default function ScopeDashboard() {
       },
       (status) => {
         setConnectionStatus(status);
-        if (status === "disconnected") {
-          setStreaming(false);
-        }
       }
     );
 

@@ -9,6 +9,8 @@ export class NT4Client {
   private topicNames = new Map<number, string>();
   private currentFrameData: Record<string, any> = {};
   private lastTimestamp = 0;
+  private reconnectTimeout: any = null;
+  private destroyed = false;
 
   constructor(
     private host: string,
@@ -17,11 +19,18 @@ export class NT4Client {
   ) {}
 
   connect() {
+    if (this.destroyed) return;
     this.onStatusChange("connecting");
+
     const isLocal = this.host === "localhost" || this.host === "127.0.0.1";
     const isSecure = !isLocal && typeof window !== "undefined" && window.location.protocol === "https:";
     const scheme = isSecure ? "wss" : "ws";
     const port = isSecure ? 5811 : 5810;
+
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
 
     try {
       // Use the official networktables.org sub-protocol
@@ -37,6 +46,7 @@ export class NT4Client {
       this.ws.onclose = () => {
         this.onStatusChange("disconnected");
         console.log("[NT4Client] Disconnected from NT4 server.");
+        this.scheduleReconnect();
       };
 
       this.ws.onerror = (err) => {
@@ -54,10 +64,27 @@ export class NT4Client {
     } catch (e) {
       console.error("[NT4Client] Connection failed:", e);
       this.onStatusChange("disconnected");
+      this.scheduleReconnect();
     }
   }
 
+  private scheduleReconnect() {
+    if (this.destroyed) return;
+    if (this.reconnectTimeout) return;
+
+    console.log("[NT4Client] Scheduling reconnect in 1.5 seconds...");
+    this.reconnectTimeout = setTimeout(() => {
+      this.reconnectTimeout = null;
+      this.connect();
+    }, 1500);
+  }
+
   disconnect() {
+    this.destroyed = true;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     if (this.ws) {
       this.ws.close();
       this.ws = null;
