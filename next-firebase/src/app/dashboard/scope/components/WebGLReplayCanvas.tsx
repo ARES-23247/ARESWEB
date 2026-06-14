@@ -459,9 +459,9 @@ export default function WebGLReplayCanvas() {
     scene.background = new THREE.Color("#0A0A0A");
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 1, 1000);
-    camera.position.set(0, 110, 130);
-    camera.lookAt(0, -10, 0);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 2.8, 3.3);
+    camera.lookAt(0, -0.25, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(width, height);
@@ -485,8 +485,8 @@ export default function WebGLReplayCanvas() {
     dirLight.shadow.bias = -0.001;
     scene.add(dirLight);
 
-    const arenaLight = new THREE.PointLight(0xFFB81C, 1.2, 120);
-    arenaLight.position.set(0, 30, 0);
+    const arenaLight = new THREE.PointLight(0xFFB81C, 1.2, 3.0);
+    arenaLight.position.set(0, 0.76, 0);
     scene.add(arenaLight);
 
     // 3. FTC Floor (3.6576m x 3.6576m)
