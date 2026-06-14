@@ -33,8 +33,10 @@ export class NT4Client {
     }
 
     try {
-      // Use the official networktables.org sub-protocol
-      this.ws = new WebSocket(`${scheme}://${this.host}:${port}/nt/v4/websocket`, ["networktables.org"]);
+      // Use the official networktables.org sub-protocol (route through local daemon proxy on localhost in secure contexts)
+      const wsHost = isSecure ? "localhost" : this.host;
+      const queryParams = isSecure ? `?host=${this.host}` : "";
+      this.ws = new WebSocket(`${scheme}://${wsHost}:${port}/nt/v4/websocket${queryParams}`, ["networktables.org"]);
       this.ws.binaryType = "arraybuffer";
 
       this.ws.onopen = () => {
