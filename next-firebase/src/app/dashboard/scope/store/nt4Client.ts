@@ -130,7 +130,8 @@ export class NT4Client {
           // Value update
           const name = this.topicNames.get(msg.topic);
           if (name) {
-            this.processTelemetryKey(name, msg.value);
+            const timestampMs = msg.timestamp ? Number(msg.timestamp) / 1000 : Date.now();
+            this.processTelemetryKey(name, msg.value, timestampMs);
           }
         }
       }
@@ -148,6 +149,20 @@ export class NT4Client {
       const topicId = view.getInt32(4, true); // NT4 uses little-endian byte ordering
       const name = this.topicNames.get(topicId);
       if (!name) return;
+
+      // Bytes 8..15: NT4 timestamp in microseconds
+      let msgTimestampMs = Date.now();
+      try {
+        if (typeof view.getBigInt64 === "function") {
+          msgTimestampMs = Number(view.getBigInt64(8, true)) / 1000;
+        } else {
+          const low = view.getUint32(8, true);
+          const high = view.getUint32(12, true);
+          msgTimestampMs = (high * 4294967296 + low) / 1000;
+        }
+      } catch (e) {
+        // use Date.now() on error
+      }
 
       const typeStr = this.topicTypes.get(topicId);
       const payloadLength = buffer.byteLength - 16;
@@ -186,11 +201,11 @@ export class NT4Client {
         }
         // If it was announced as a single double, pass it as a plain number, otherwise keep it as an array
         const processedValue = (arrayLength === 1 && (typeId === 1 || typeId === 2 || typeStr === "double")) ? values[0] : values;
-        this.processTelemetryKey(name, processedValue);
+        this.processTelemetryKey(name, processedValue, msgTimestampMs);
       } else if (isDouble) {
         if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
           const val = view.getFloat64(16, true);
-          this.processTelemetryKey(name, val);
+          this.processTelemetryKey(name, val, msgTimestampMs);
         }
       } else if (isFloatArray) {
         const arrayLength = Math.floor(payloadLength / 4);
@@ -203,20 +218,20 @@ export class NT4Client {
             values.push(view.getFloat32(offset, true));
           }
         }
-        this.processTelemetryKey(name, values);
+        this.processTelemetryKey(name, values, msgTimestampMs);
       } else if (isFloat) {
         if (payloadLength >= 4 && 16 + 4 <= buffer.byteLength) {
           const val = view.getFloat32(16, true);
-          this.processTelemetryKey(name, val);
+          this.processTelemetryKey(name, val, msgTimestampMs);
         }
       } else if (isInt) {
         if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
           if (typeof view.getBigInt64 === "function") {
             const val = Number(view.getBigInt64(16, true));
-            this.processTelemetryKey(name, val);
+            this.processTelemetryKey(name, val, msgTimestampMs);
           } else {
             const val = view.getInt32(16, true);
-            this.processTelemetryKey(name, val);
+            this.processTelemetryKey(name, val, msgTimestampMs);
           }
         }
       }
@@ -225,7 +240,7 @@ export class NT4Client {
     }
   }
 
-  private processTelemetryKey(key: string, value: any) {
+  private processTelemetryKey(key: string, value: any, msgTimestampMs: number = Date.now()) {
     // Strip leading slash if present in topic name
     const cleanKey = key.startsWith("/") ? key.substring(1) : key;
     this.currentFrameData[cleanKey] = value;
@@ -236,13 +251,20 @@ export class NT4Client {
       cleanKey.endsWith("/TimestampMs") || 
       cleanKey === "drive/TimestampMs" || 
       cleanKey.endsWith("EstimatedPose") || 
-      cleanKey.endsWith("RobotState");
+      cleanKey.endsWith("RobotState") ||
+      cleanKey === "AdvantageScope/RobotPose" ||
+      cleanKey === "Drive/Pose_X";
 
     if (isFrameTrigger) {
-      let currentTimestamp = Number(value);
-      if (isNaN(currentTimestamp)) {
-        currentTimestamp = Date.now();
+      let currentTimestamp = msgTimestampMs;
+      // If we explicitly received a timestamp topic, prioritize the parsed value if valid
+      if (cleanKey === "TimestampMs" || cleanKey.endsWith("/TimestampMs") || cleanKey === "drive/TimestampMs") {
+        const parsedVal = Number(value);
+        if (!isNaN(parsedVal) && parsedVal !== 0) {
+          currentTimestamp = parsedVal;
+        }
       }
+
       if (currentTimestamp !== this.lastTimestamp) {
         this.lastTimestamp = currentTimestamp;
         this.emitFrame(currentTimestamp);
