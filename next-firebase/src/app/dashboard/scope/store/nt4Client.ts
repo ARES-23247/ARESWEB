@@ -133,9 +133,19 @@ export class NT4Client {
     const cleanKey = key.startsWith("/") ? key.substring(1) : key;
     this.currentFrameData[cleanKey] = value;
 
-    // Use TimestampMs key as the trigger to flush/emit the frame
-    if (cleanKey === "TimestampMs" || cleanKey === "drive/TimestampMs") {
-      const currentTimestamp = Number(value);
+    // Use TimestampMs key or pose updates as the trigger to flush/emit the frame
+    const isFrameTrigger = 
+      cleanKey === "TimestampMs" || 
+      cleanKey.endsWith("/TimestampMs") || 
+      cleanKey === "drive/TimestampMs" || 
+      cleanKey.endsWith("EstimatedPose") || 
+      cleanKey.endsWith("RobotState");
+
+    if (isFrameTrigger) {
+      let currentTimestamp = Number(value);
+      if (isNaN(currentTimestamp)) {
+        currentTimestamp = Date.now();
+      }
       if (currentTimestamp !== this.lastTimestamp) {
         this.lastTimestamp = currentTimestamp;
         this.emitFrame(currentTimestamp);
