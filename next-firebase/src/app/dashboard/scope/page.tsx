@@ -40,7 +40,8 @@ import {
   Save,
   Download,
   Upload,
-  RotateCcw
+  RotateCcw,
+  Info
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import VariablesTuner, { TunableConstant } from "./components/VariablesTuner";
@@ -2424,6 +2425,24 @@ export default function ScopeDashboard() {
                 </p>
               </div>
             </div>
+
+            {typeof window !== "undefined" && window.location.protocol === "https:" && (
+              <div className="bg-ares-gold/10 border border-ares-gold/20 rounded-xl p-3.5 flex flex-col gap-1.5 text-left">
+                <div className="flex items-center gap-1.5 text-ares-gold font-bold text-[10px] uppercase tracking-wider">
+                  <Info size={12} className="stroke-[2.5]" /> Secure Context (HTTPS) Active
+                </div>
+                <p className="text-[9px] text-marble/70 leading-normal">
+                  Modern browsers block direct insecure connections (<code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">ws://</code>) from HTTPS websites. To connect:
+                </p>
+                <ol className="list-decimal list-inside text-[9px] text-marble/70 flex flex-col gap-1 mt-0.5">
+                  <li>Start the local proxy daemon on your laptop (<code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">node daemon.js</code>).</li>
+                  <li>Enter the robot's IP below and click Connect.</li>
+                </ol>
+                <p className="text-[9px] text-marble/50 mt-0.5 leading-normal">
+                  The dashboard will automatically bridge telemetry securely through <code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">localhost:5811</code>.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               <label htmlFor="robotIpInput" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
