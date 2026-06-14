@@ -18,11 +18,13 @@ export class NT4Client {
 
   connect() {
     this.onStatusChange("connecting");
-    const port = 5810; // Standard NT4 port
+    const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+    const scheme = isSecure ? "wss" : "ws";
+    const port = isSecure ? 5811 : 5810;
 
     try {
       // Use the official networktables.org sub-protocol
-      this.ws = new WebSocket(`ws://${this.host}:${port}/nt/v4/websocket`, ["networktables.org"]);
+      this.ws = new WebSocket(`${scheme}://${this.host}:${port}/nt/v4/websocket`, ["networktables.org"]);
       this.ws.binaryType = "arraybuffer";
 
       this.ws.onopen = () => {

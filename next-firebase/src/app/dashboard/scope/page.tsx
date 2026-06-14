@@ -836,7 +836,7 @@ export default function ScopeDashboard() {
             setSimState(msg.status);
             if (msg.status === "running") {
               setDaemonLogs((prev) => [...prev, '[System] Simulator is running. Auto-connecting live telemetry...']);
-              handleConnectLive("127.0.0.1");
+              handleConnectLive("localhost");
             }
           } 
           
