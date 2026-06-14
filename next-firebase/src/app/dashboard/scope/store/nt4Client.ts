@@ -18,7 +18,8 @@ export class NT4Client {
 
   connect() {
     this.onStatusChange("connecting");
-    const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+    const isLocal = this.host === "localhost" || this.host === "127.0.0.1";
+    const isSecure = !isLocal && typeof window !== "undefined" && window.location.protocol === "https:";
     const scheme = isSecure ? "wss" : "ws";
     const port = isSecure ? 5811 : 5810;
 
