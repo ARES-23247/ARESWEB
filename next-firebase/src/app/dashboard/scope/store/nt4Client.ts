@@ -137,24 +137,30 @@ export class NT4Client {
   }
 
   private handleBinaryMessage(buffer: ArrayBuffer) {
-    // NT4 sends binary packets for compact double-array updates
+    // NT4 sends binary packets for compact double/double-array updates
     // Data layout: [1-byte type, 3-byte padding, 4-byte topic ID, 8-byte timestamp, binary value]
     const view = new DataView(buffer);
     if (buffer.byteLength < 16) return;
 
-    const topicId = view.getInt32(4);
+    const typeId = view.getUint8(0);
+    const topicId = view.getInt32(4, true); // NT4 uses little-endian byte ordering
     const name = this.topicNames.get(topicId);
     if (!name) return;
 
-    // Standard double array prefix or pose coordinates
-    const isPoseTopic = name.includes("Pose") || name.endsWith("EstimatedPose") || name.endsWith("TargetPose");
-    if (isPoseTopic) {
+    // Decode double (type 1) and double array (type 6) values
+    const isDoubleOrArray = typeId === 1 || typeId === 6 || name.includes("Pose") || name.includes("Swerve");
+    if (isDoubleOrArray) {
       const arrayLength = (buffer.byteLength - 16) / 8;
+      if (arrayLength <= 0) return;
+
       const values: number[] = [];
       for (let i = 0; i < arrayLength; i++) {
-        values.push(view.getFloat64(16 + i * 8));
+        values.push(view.getFloat64(16 + i * 8, true)); // Decode doubles in little-endian
       }
-      this.processTelemetryKey(name, values);
+
+      // If it is a single double, pass it as a plain number, otherwise keep it as an array
+      const processedValue = (arrayLength === 1 && typeId === 1) ? values[0] : values;
+      this.processTelemetryKey(name, processedValue);
     }
   }
 

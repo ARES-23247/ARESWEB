@@ -247,31 +247,35 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   }),
   
   getCurrentFrame: () => {
-    const { telemetryData, currentTimeMs } = get();
+    const { telemetryData, currentTimeMs, isStreaming } = get();
     if (!telemetryData || telemetryData.timestamps.length === 0) return null;
 
-    // Find closest index using binary search
-    const times = telemetryData.timestamps;
-    let low = 0;
-    let high = times.length - 1;
     let index = 0;
+    if (isStreaming) {
+      index = telemetryData.timestamps.length - 1;
+    } else {
+      // Find closest index using binary search
+      const times = telemetryData.timestamps;
+      let low = 0;
+      let high = times.length - 1;
 
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      if (times[mid] === currentTimeMs) {
-        index = mid;
-        break;
-      }
-      if (times[mid] < currentTimeMs) {
-        index = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (times[mid] === currentTimeMs) {
+          index = mid;
+          break;
+        }
+        if (times[mid] < currentTimeMs) {
+          index = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
       }
     }
 
     // Safeguard index boundaries
-    index = Math.max(0, Math.min(times.length - 1, index));
+    index = Math.max(0, Math.min(telemetryData.timestamps.length - 1, index));
 
     const values: Record<string, number> = {};
     Object.keys(telemetryData.channels).forEach((key) => {
@@ -279,7 +283,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     });
 
     return {
-      timestamp: times[index],
+      timestamp: telemetryData.timestamps[index],
       x: telemetryData.coords[index]?.x ?? 0,
       y: telemetryData.coords[index]?.y ?? 0,
       heading: telemetryData.coords[index]?.heading ?? 0,
@@ -288,30 +292,34 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   },
   
   getCurrentComparisonFrame: () => {
-    const { comparisonTelemetryData, currentTimeMs } = get();
+    const { comparisonTelemetryData, currentTimeMs, isStreaming } = get();
     if (!comparisonTelemetryData || comparisonTelemetryData.timestamps.length === 0) return null;
 
-    // Find closest index using binary search
-    const times = comparisonTelemetryData.timestamps;
-    let low = 0;
-    let high = times.length - 1;
     let index = 0;
+    if (isStreaming) {
+      index = comparisonTelemetryData.timestamps.length - 1;
+    } else {
+      // Find closest index using binary search
+      const times = comparisonTelemetryData.timestamps;
+      let low = 0;
+      let high = times.length - 1;
 
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      if (times[mid] === currentTimeMs) {
-        index = mid;
-        break;
-      }
-      if (times[mid] < currentTimeMs) {
-        index = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (times[mid] === currentTimeMs) {
+          index = mid;
+          break;
+        }
+        if (times[mid] < currentTimeMs) {
+          index = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
       }
     }
 
-    index = Math.max(0, Math.min(times.length - 1, index));
+    index = Math.max(0, Math.min(comparisonTelemetryData.timestamps.length - 1, index));
 
     const values: Record<string, number> = {};
     Object.keys(comparisonTelemetryData.channels).forEach((key) => {
@@ -319,7 +327,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     });
 
     return {
-      timestamp: times[index],
+      timestamp: comparisonTelemetryData.timestamps[index],
       x: comparisonTelemetryData.coords[index]?.x ?? 0,
       y: comparisonTelemetryData.coords[index]?.y ?? 0,
       heading: comparisonTelemetryData.coords[index]?.heading ?? 0,
