@@ -836,7 +836,16 @@ export default function ScopeDashboard() {
             setSimState(msg.status);
             if (msg.status === "running") {
               setDaemonLogs((prev) => [...prev, '[System] Simulator is running. Auto-connecting live telemetry...']);
-              handleConnectLive("127.0.0.1");
+              
+              let daemonHost = "127.0.0.1";
+              try {
+                // Ensure protocol prefix is valid for URL parser
+                const urlToParse = daemonUrl.startsWith("ws") ? daemonUrl : `ws://${daemonUrl}`;
+                const parsedUrl = new URL(urlToParse);
+                daemonHost = parsedUrl.hostname || "127.0.0.1";
+              } catch (e) {}
+              
+              handleConnectLive(daemonHost);
             }
           } 
           
