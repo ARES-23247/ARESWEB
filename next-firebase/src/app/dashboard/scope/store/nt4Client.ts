@@ -23,8 +23,7 @@ export class NT4Client {
     if (this.destroyed) return;
     this.onStatusChange("connecting");
 
-    const isLocal = this.host === "localhost" || this.host === "127.0.0.1";
-    const isSecure = !isLocal && typeof window !== "undefined" && window.location.protocol === "https:";
+    const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
     const scheme = isSecure ? "wss" : "ws";
     const port = isSecure ? 5811 : 5810;
 
