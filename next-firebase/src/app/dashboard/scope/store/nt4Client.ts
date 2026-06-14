@@ -7,6 +7,7 @@ import { TelemetryFrame } from "./scopeStore";
 export class NT4Client {
   private ws: WebSocket | null = null;
   private topicNames = new Map<number, string>();
+  private topicTypes = new Map<number, string>();
   private currentFrameData: Record<string, any> = {};
   private lastTimestamp = 0;
   private reconnectTimeout: any = null;
@@ -121,8 +122,11 @@ export class NT4Client {
       for (const msg of messages) {
         if (msg.method === "announce") {
           // Topic description metadata
-          const { name, id } = msg.params;
+          const { name, id, type } = msg.params;
           this.topicNames.set(id, name);
+          if (type) {
+            this.topicTypes.set(id, type);
+          }
         } else if (msg.topic !== undefined && msg.value !== undefined) {
           // Value update
           const name = this.topicNames.get(msg.topic);
@@ -137,30 +141,78 @@ export class NT4Client {
   }
 
   private handleBinaryMessage(buffer: ArrayBuffer) {
-    // NT4 sends binary packets for compact double/double-array updates
-    // Data layout: [1-byte type, 3-byte padding, 4-byte topic ID, 8-byte timestamp, binary value]
-    const view = new DataView(buffer);
-    if (buffer.byteLength < 16) return;
+    try {
+      const view = new DataView(buffer);
+      if (buffer.byteLength < 16) return;
 
-    const typeId = view.getUint8(0);
-    const topicId = view.getInt32(4, true); // NT4 uses little-endian byte ordering
-    const name = this.topicNames.get(topicId);
-    if (!name) return;
+      const typeId = view.getUint8(0);
+      const topicId = view.getInt32(4, true); // NT4 uses little-endian byte ordering
+      const name = this.topicNames.get(topicId);
+      if (!name) return;
 
-    // Decode double (type 1) and double array (type 6) values
-    const isDoubleOrArray = typeId === 1 || typeId === 6 || name.includes("Pose") || name.includes("Swerve");
-    if (isDoubleOrArray) {
-      const arrayLength = (buffer.byteLength - 16) / 8;
-      if (arrayLength <= 0) return;
+      const typeStr = this.topicTypes.get(topicId);
+      const payloadLength = buffer.byteLength - 16;
 
-      const values: number[] = [];
-      for (let i = 0; i < arrayLength; i++) {
-        values.push(view.getFloat64(16 + i * 8, true)); // Decode doubles in little-endian
+      // Type mappings:
+      // In NT4 WebSocket binary format:
+      // typeId 1 = double, typeId 2 = int, typeId 3 = float, typeId 7 = double[]
+      // In WPILib NT_Type internal enum:
+      // typeId 1 = boolean, typeId 2 = double, typeId 6 = double[]
+      const isDouble = typeId === 1 || typeId === 2 || typeStr === "double";
+      const isDoubleArray = typeId === 6 || typeId === 7 || typeStr === "double[]" || name.includes("Pose") || name.includes("Swerve");
+      const isFloat = typeId === 3 || typeId === 10 || typeStr === "float";
+      const isFloatArray = typeId === 9 || typeId === 12 || typeStr === "float[]";
+      const isInt = typeId === 2 || typeId === 9 || typeStr === "int" || typeStr === "integer";
+
+      if (isDoubleArray) {
+        const arrayLength = Math.floor(payloadLength / 8);
+        if (arrayLength <= 0) return;
+
+        const values: number[] = [];
+        for (let i = 0; i < arrayLength; i++) {
+          const offset = 16 + i * 8;
+          if (offset + 8 <= buffer.byteLength) {
+            values.push(view.getFloat64(offset, true));
+          }
+        }
+        // If it was announced as a single double, pass it as a plain number, otherwise keep it as an array
+        const processedValue = (arrayLength === 1 && (typeId === 1 || typeId === 2 || typeStr === "double")) ? values[0] : values;
+        this.processTelemetryKey(name, processedValue);
+      } else if (isDouble) {
+        if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
+          const val = view.getFloat64(16, true);
+          this.processTelemetryKey(name, val);
+        }
+      } else if (isFloatArray) {
+        const arrayLength = Math.floor(payloadLength / 4);
+        if (arrayLength <= 0) return;
+
+        const values: number[] = [];
+        for (let i = 0; i < arrayLength; i++) {
+          const offset = 16 + i * 4;
+          if (offset + 4 <= buffer.byteLength) {
+            values.push(view.getFloat32(offset, true));
+          }
+        }
+        this.processTelemetryKey(name, values);
+      } else if (isFloat) {
+        if (payloadLength >= 4 && 16 + 4 <= buffer.byteLength) {
+          const val = view.getFloat32(16, true);
+          this.processTelemetryKey(name, val);
+        }
+      } else if (isInt) {
+        if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
+          if (typeof view.getBigInt64 === "function") {
+            const val = Number(view.getBigInt64(16, true));
+            this.processTelemetryKey(name, val);
+          } else {
+            const val = view.getInt32(16, true);
+            this.processTelemetryKey(name, val);
+          }
+        }
       }
-
-      // If it is a single double, pass it as a plain number, otherwise keep it as an array
-      const processedValue = (arrayLength === 1 && typeId === 1) ? values[0] : values;
-      this.processTelemetryKey(name, processedValue);
+    } catch (e) {
+      console.error("[NT4Client] Error in handleBinaryMessage:", e);
     }
   }
 
