@@ -100,6 +100,7 @@ export class NT4Client {
         method: "subscribe",
         params: {
           topics: ["/"],
+          subuid: 1,
           options: {
             prefix: true,
             periodic: 0.02, // 20ms update frequency (50Hz)
