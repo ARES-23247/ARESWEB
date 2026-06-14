@@ -94,12 +94,12 @@ export class NT4Client {
   private subscribeAll() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    // Send subscribe message for all topics prefix-matched
+    // Send subscribe message for all topics prefix-matched (use "" to include non-slash topics)
     const subMsg = [
       {
         method: "subscribe",
         params: {
-          topics: ["/"],
+          topics: [""],
           subuid: 1,
           options: {
             prefix: true,
@@ -143,96 +143,16 @@ export class NT4Client {
 
   private handleBinaryMessage(buffer: ArrayBuffer) {
     try {
-      const view = new DataView(buffer);
-      if (buffer.byteLength < 16) return;
-
-      const typeId = view.getUint8(0);
-      const topicId = view.getInt32(4, true); // NT4 uses little-endian byte ordering
-      const name = this.topicNames.get(topicId);
-      if (!name) return;
-
-      // Bytes 8..15: NT4 timestamp in microseconds
-      let msgTimestampMs = Date.now();
-      try {
-        if (typeof view.getBigInt64 === "function") {
-          msgTimestampMs = Number(view.getBigInt64(8, true)) / 1000;
-        } else {
-          const low = view.getUint32(8, true);
-          const high = view.getUint32(12, true);
-          msgTimestampMs = (high * 4294967296 + low) / 1000;
-        }
-      } catch (e) {
-        // use Date.now() on error
-      }
-
-      const typeStr = this.topicTypes.get(topicId);
-      const payloadLength = buffer.byteLength - 16;
-
-      // Determine decoding path: prioritize announced typeStr, fallback to typeId heuristically
-      let isDouble = false;
-      let isDoubleArray = false;
-      let isFloat = false;
-      let isFloatArray = false;
-      let isInt = false;
-
-      if (typeStr) {
-        isDouble = typeStr === "double";
-        isDoubleArray = typeStr === "double[]" || name.includes("Pose") || name.includes("Swerve");
-        isFloat = typeStr === "float";
-        isFloatArray = typeStr === "float[]";
-        isInt = typeStr === "int" || typeStr === "integer";
-      } else {
-        isDoubleArray = typeId === 6 || typeId === 7 || name.includes("Pose") || name.includes("Swerve");
-        isDouble = typeId === 1 || (typeId === 2 && !isDoubleArray);
-        isFloat = typeId === 3 || typeId === 10;
-        isFloatArray = typeId === 9 || typeId === 12;
-        isInt = typeId === 2 || typeId === 9;
-      }
-
-      if (isDoubleArray) {
-        const arrayLength = Math.floor(payloadLength / 8);
-        if (arrayLength <= 0) return;
-
-        const values: number[] = [];
-        for (let i = 0; i < arrayLength; i++) {
-          const offset = 16 + i * 8;
-          if (offset + 8 <= buffer.byteLength) {
-            values.push(view.getFloat64(offset, true));
-          }
-        }
-        // If it was announced as a single double, pass it as a plain number, otherwise keep it as an array
-        const processedValue = (arrayLength === 1 && (typeId === 1 || typeId === 2 || typeStr === "double")) ? values[0] : values;
-        this.processTelemetryKey(name, processedValue, msgTimestampMs);
-      } else if (isDouble) {
-        if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
-          const val = view.getFloat64(16, true);
-          this.processTelemetryKey(name, val, msgTimestampMs);
-        }
-      } else if (isFloatArray) {
-        const arrayLength = Math.floor(payloadLength / 4);
-        if (arrayLength <= 0) return;
-
-        const values: number[] = [];
-        for (let i = 0; i < arrayLength; i++) {
-          const offset = 16 + i * 4;
-          if (offset + 4 <= buffer.byteLength) {
-            values.push(view.getFloat32(offset, true));
-          }
-        }
-        this.processTelemetryKey(name, values, msgTimestampMs);
-      } else if (isFloat) {
-        if (payloadLength >= 4 && 16 + 4 <= buffer.byteLength) {
-          const val = view.getFloat32(16, true);
-          this.processTelemetryKey(name, val, msgTimestampMs);
-        }
-      } else if (isInt) {
-        if (payloadLength >= 8 && 16 + 8 <= buffer.byteLength) {
-          if (typeof view.getBigInt64 === "function") {
-            const val = Number(view.getBigInt64(16, true));
-            this.processTelemetryKey(name, val, msgTimestampMs);
-          } else {
-            const val = view.getInt32(16, true);
-            this.processTelemetryKey(name, val, msgTimestampMs);
+      const decoder = new MsgPackDecoder(buffer);
+      while (decoder.hasMore()) {
+        const msg = decoder.decode();
+        if (Array.isArray(msg) && msg.length === 4) {
+          const [topicId, timestampUs, typeId, value] = msg;
+          const name = this.topicNames.get(topicId);
+          if (name) {
+            // NT4 timestamp is in microseconds, convert to milliseconds
+            const msgTimestampMs = Number(timestampUs) / 1000;
+            this.processTelemetryKey(name, value, msgTimestampMs);
           }
         }
       }
@@ -245,6 +165,26 @@ export class NT4Client {
     // Strip leading slash if present in topic name
     const cleanKey = key.startsWith("/") ? key.substring(1) : key;
     this.currentFrameData[cleanKey] = value;
+
+    // Normalization bridge for swerve module state arrays:
+    if (cleanKey === "AdvantageKit/RealOutputs/Swerve/ModuleAnglesActual" && Array.isArray(value) && value.length === 4) {
+      this.currentFrameData["Drive/Swerve/Angle_FL"] = value[0];
+      this.currentFrameData["Drive/Swerve/Angle_FR"] = value[1];
+      this.currentFrameData["Drive/Swerve/Angle_BL"] = value[2];
+      this.currentFrameData["Drive/Swerve/Angle_BR"] = value[3];
+    }
+    if (cleanKey === "AdvantageKit/RealOutputs/Swerve/ModuleAnglesTarget" && Array.isArray(value) && value.length === 4) {
+      this.currentFrameData["Drive/Swerve/AngleTarget_FL"] = value[0];
+      this.currentFrameData["Drive/Swerve/AngleTarget_FR"] = value[1];
+      this.currentFrameData["Drive/Swerve/AngleTarget_BL"] = value[2];
+      this.currentFrameData["Drive/Swerve/AngleTarget_BR"] = value[3];
+    }
+    if (cleanKey === "AdvantageKit/RealOutputs/Swerve/ModuleSpeedsActual" && Array.isArray(value) && value.length === 4) {
+      this.currentFrameData["Drive/Swerve/Speed_FL"] = value[0];
+      this.currentFrameData["Drive/Swerve/Speed_FR"] = value[1];
+      this.currentFrameData["Drive/Swerve/Speed_BL"] = value[2];
+      this.currentFrameData["Drive/Swerve/Speed_BR"] = value[3];
+    }
 
     // Use TimestampMs key or pose updates as the trigger to flush/emit the frame
     const isFrameTrigger = 
@@ -388,6 +328,242 @@ export class NT4Client {
     } catch (e) {
       console.error("[NT4Client] Failed to send publish messages over WebSocket:", e);
     }
+  }
+}
+
+class MsgPackDecoder {
+  private view: DataView;
+  private offset: number = 0;
+
+  constructor(private buffer: ArrayBuffer) {
+    this.view = new DataView(buffer);
+  }
+
+  hasMore(): boolean {
+    return this.offset < this.view.byteLength;
+  }
+
+  decode(): any {
+    if (this.offset >= this.view.byteLength) {
+      throw new Error("Out of bounds");
+    }
+
+    const b = this.view.getUint8(this.offset++);
+
+    // Positive fixint
+    if ((b & 0x80) === 0x00) {
+      return b;
+    }
+
+    // Fixmap
+    if ((b & 0xf0) === 0x80) {
+      const len = b & 0x0f;
+      const map: Record<string, any> = {};
+      for (let i = 0; i < len; i++) {
+        const key = this.decode();
+        const val = this.decode();
+        map[String(key)] = val;
+      }
+      return map;
+    }
+
+    // Fixarray
+    if ((b & 0xf0) === 0x90) {
+      const len = b & 0x0f;
+      const arr = [];
+      for (let i = 0; i < len; i++) {
+        arr.push(this.decode());
+      }
+      return arr;
+    }
+
+    // Fixstr
+    if ((b & 0xe0) === 0xa0) {
+      const len = b & 0x1f;
+      return this.decodeString(len);
+    }
+
+    // Nil
+    if (b === 0xc0) {
+      return null;
+    }
+
+    // False / True
+    if (b === 0xc2) return false;
+    if (b === 0xc3) return true;
+
+    // Bin 8, Bin 16, Bin 32
+    if (b === 0xc4) {
+      const len = this.view.getUint8(this.offset);
+      this.offset += 1;
+      return this.decodeBinary(len);
+    }
+    if (b === 0xc5) {
+      const len = this.view.getUint16(this.offset, false);
+      this.offset += 2;
+      return this.decodeBinary(len);
+    }
+    if (b === 0xc6) {
+      const len = this.view.getUint32(this.offset, false);
+      this.offset += 4;
+      return this.decodeBinary(len);
+    }
+
+    // Float 32 / 64
+    if (b === 0xca) {
+      const val = this.view.getFloat32(this.offset, false);
+      this.offset += 4;
+      return val;
+    }
+    if (b === 0xcb) {
+      const val = this.view.getFloat64(this.offset, false);
+      this.offset += 8;
+      return val;
+    }
+
+    // Uint 8, 16, 32, 64
+    if (b === 0xcc) {
+      const val = this.view.getUint8(this.offset);
+      this.offset += 1;
+      return val;
+    }
+    if (b === 0xcd) {
+      const val = this.view.getUint16(this.offset, false);
+      this.offset += 2;
+      return val;
+    }
+    if (b === 0xce) {
+      const val = this.view.getUint32(this.offset, false);
+      this.offset += 4;
+      return val;
+    }
+    if (b === 0xcf) {
+      let val = 0;
+      if (typeof this.view.getBigUint64 === "function") {
+        val = Number(this.view.getBigUint64(this.offset, false));
+      } else {
+        const high = this.view.getUint32(this.offset, false);
+        const low = this.view.getUint32(this.offset + 4, false);
+        val = high * 4294967296 + low;
+      }
+      this.offset += 8;
+      return val;
+    }
+
+    // Int 8, 16, 32, 64
+    if (b === 0xd0) {
+      const val = this.view.getInt8(this.offset);
+      this.offset += 1;
+      return val;
+    }
+    if (b === 0xd1) {
+      const val = this.view.getInt16(this.offset, false);
+      this.offset += 2;
+      return val;
+    }
+    if (b === 0xd2) {
+      const val = this.view.getInt32(this.offset, false);
+      this.offset += 4;
+      return val;
+    }
+    if (b === 0xd3) {
+      let val = 0;
+      if (typeof this.view.getBigInt64 === "function") {
+        val = Number(this.view.getBigInt64(this.offset, false));
+      } else {
+        const high = this.view.getInt32(this.offset, false);
+        const low = this.view.getUint32(this.offset + 4, false);
+        val = high * 4294967296 + low;
+      }
+      this.offset += 8;
+      return val;
+    }
+
+    // Str 8, 16, 32
+    if (b === 0xd9) {
+      const len = this.view.getUint8(this.offset);
+      this.offset += 1;
+      return this.decodeString(len);
+    }
+    if (b === 0xda) {
+      const len = this.view.getUint16(this.offset, false);
+      this.offset += 2;
+      return this.decodeString(len);
+    }
+    if (b === 0xdb) {
+      const len = this.view.getUint32(this.offset, false);
+      this.offset += 4;
+      return this.decodeString(len);
+    }
+
+    // Array 16 / 32
+    if (b === 0xdc) {
+      const len = this.view.getUint16(this.offset, false);
+      this.offset += 2;
+      const arr = [];
+      for (let i = 0; i < len; i++) {
+        arr.push(this.decode());
+      }
+      return arr;
+    }
+    if (b === 0xdd) {
+      const len = this.view.getUint32(this.offset, false);
+      this.offset += 4;
+      const arr = [];
+      for (let i = 0; i < len; i++) {
+        arr.push(this.decode());
+      }
+      return arr;
+    }
+
+    // Map 16 / 32
+    if (b === 0xde) {
+      const len = this.view.getUint16(this.offset, false);
+      this.offset += 2;
+      const map: Record<string, any> = {};
+      for (let i = 0; i < len; i++) {
+        const key = this.decode();
+        const val = this.decode();
+        map[String(key)] = val;
+      }
+      return map;
+    }
+    if (b === 0xdf) {
+      const len = this.view.getUint32(this.offset, false);
+      this.offset += 4;
+      const map: Record<string, any> = {};
+      for (let i = 0; i < len; i++) {
+        const key = this.decode();
+        const val = this.decode();
+        map[String(key)] = val;
+      }
+      return map;
+    }
+
+    // Negative fixint
+    if ((b & 0xe0) === 0xe0) {
+      return b - 256;
+    }
+
+    throw new Error(`Unsupported MsgPack type: 0x${b.toString(16)}`);
+  }
+
+  private decodeString(length: number): string {
+    if (this.offset + length > this.view.byteLength) {
+      throw new Error("String out of bounds");
+    }
+    const bytes = new Uint8Array(this.buffer, this.offset, length);
+    this.offset += length;
+    return new TextDecoder().decode(bytes);
+  }
+
+  private decodeBinary(length: number): Uint8Array {
+    if (this.offset + length > this.view.byteLength) {
+      throw new Error("Binary out of bounds");
+    }
+    const bytes = new Uint8Array(this.buffer, this.offset, length);
+    this.offset += length;
+    return bytes;
   }
 }
 
