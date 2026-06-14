@@ -2672,18 +2672,14 @@ export default function ScopeDashboard() {
                     Auto-scroll
                   </label>
                 </div>
-                <div className="flex-grow bg-black/60 rounded-xl border border-white/5 p-4 font-mono text-[9px] text-marble/85 overflow-y-auto flex flex-col gap-1.5 shadow-inner max-h-[180px]">
+                <pre className="flex-grow bg-black/60 rounded-xl border border-white/5 p-4 font-mono text-[9px] text-marble/85 overflow-y-auto shadow-inner max-h-[180px] text-left select-text whitespace-pre-wrap break-all selection:bg-ares-gold/30 selection:text-white">
                   {daemonLogs.length === 0 ? (
-                    <span className="text-marble/30 italic text-left">No logs received. Connect daemon to stream compiler stdout.</span>
+                    <span className="text-marble/30 italic block">No logs received. Connect daemon to stream compiler stdout.</span>
                   ) : (
-                    daemonLogs.map((log, index) => (
-                      <div key={index} className="leading-relaxed break-all text-left font-mono">
-                        {log}
-                      </div>
-                    ))
+                    daemonLogs.join("\n")
                   )}
-                  <div ref={simTerminalEndRef} />
-                </div>
+                  <span ref={simTerminalEndRef} className="inline-block" />
+                </pre>
               </div>
 
               {/* Commands Copy Helper */}
