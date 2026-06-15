@@ -4,12 +4,13 @@ import { adminDb, adminStorage } from "../lib/firebase-admin";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
 import { runTelemetryDiagnostics } from "../lib/vertex";
+import crypto from "crypto";
 
 const router = express.Router();
 
 const uploadLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 5, // Limit each IP to 5 uploads per 10 minutes
+  max: 10, // Limit each IP to 10 uploads per 10 minutes
   message: { error: "Too many log uploads from this IP. Please wait 10 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -50,7 +51,22 @@ router.post("/", uploadLimiter, ensureTeamMember, async (req, res) => {
       return;
     }
 
-    const runId = `run_${Date.now()}`;
+    // Generate deterministic runId using a SHA-256 hash of the CSV text
+    const csvHash = crypto.createHash("sha256").update(csvText).digest("hex").substring(0, 16);
+    const runId = `run_${csvHash}`;
+
+    // Deduplicate uploads: check if telemetry run already exists in Firestore
+    const existingRunDoc = await adminDb.collection("telemetry_runs").doc(runId).get();
+    if (existingRunDoc.exists) {
+      res.status(200).json({
+        success: true,
+        runId,
+        summary: existingRunDoc.data(),
+        message: "Telemetry log already uploaded and analyzed."
+      });
+      return;
+    }
+
     const lines = csvText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     
     if (lines.length < 2) {
