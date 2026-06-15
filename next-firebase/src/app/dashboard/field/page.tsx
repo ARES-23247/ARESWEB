@@ -112,6 +112,13 @@ export default function FieldEditor() {
   const [elements, setElements] = useState<FieldElementInstance[]>([]);
   const [selectedElementTypeId, setSelectedElementTypeId] = useState<string | null>(null);
   const [selectedElementInstanceId, setSelectedElementInstanceId] = useState<string | null>(null);
+
+  // Collapsible cards state
+  const [isLayoutSettingsExpanded, setIsLayoutSettingsExpanded] = useState<boolean>(true);
+  const [isObstaclesExpanded, setIsObstaclesExpanded] = useState<boolean>(true);
+  const [isElementCatalogExpanded, setIsElementCatalogExpanded] = useState<boolean>(true);
+  const [isPlacedElementsExpanded, setIsPlacedElementsExpanded] = useState<boolean>(true);
+  const [isLibraryExpanded, setIsLibraryExpanded] = useState<boolean>(true);
   
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -1437,844 +1444,908 @@ export default function FieldEditor() {
           </div>
 
           {/* Metadata Card */}
-          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-4">
-            <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
-              <Sliders size={14} className="text-ares-gold" /> Layout Settings
+          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLayoutSettingsExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
+            <h3 
+              onClick={() => setIsLayoutSettingsExpanded(!isLayoutSettingsExpanded)}
+              className={`text-xs font-black uppercase text-white tracking-widest font-heading flex items-center justify-between cursor-pointer hover:text-ares-gold transition-colors select-none ${
+                isLayoutSettingsExpanded ? "border-b border-white/5 pb-3" : ""
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Sliders size={14} className="text-ares-gold" /> Layout Settings
+              </span>
+              {isLayoutSettingsExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
             </h3>
             
-            <div className="flex flex-col gap-2">
-              <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
-                Layout Name
-              </label>
-              <input
-                type="text"
-                value={configName}
-                onChange={(e) => setConfigName(e.target.value)}
-                placeholder="Championship Finals layout..."
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
-                Game Year / Season
-              </label>
-              <select
-                value={["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) ? gameYear : "custom"}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "custom") {
-                    setGameYear("");
-                  } else {
-                    setGameYear(val);
-                  }
-                }}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan cursor-pointer transition-colors"
-              >
-                <option value="2025-2026">2025-2026 Season</option>
-                <option value="2024-2025">2024-2025 (Into The Deep / Reefscape)</option>
-                <option value="2023-2024">2023-2024 (Centerstage / Crescendo)</option>
-                <option value="2022-2023">2022-2023 (Powerplay / Charged Up)</option>
-                <option value="2021-2022">2021-2022 (Freight Frenzy / Rapid React)</option>
-                <option value="custom">Other / Custom Year...</option>
-              </select>
-
-              {!["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) && (
-                <input
-                  type="text"
-                  value={gameYear}
-                  onChange={(e) => setGameYear(e.target.value)}
-                  placeholder="Enter custom year (e.g., 2020-2021)..."
-                  className="w-full bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-cyan mt-1.5"
-                />
-              )}
-            </div>
-
-            {/* Field Configuration Subsection */}
-            <div className="border-t border-white/5 pt-3 space-y-3">
-              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
-                Field Parameters
-              </span>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5 col-span-2">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    Field Type
+            {isLayoutSettingsExpanded && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
+                    Layout Name
                   </label>
-                  <select
-                    value={fieldType}
-                    onChange={(e) => setFieldType(e.target.value as "ftc" | "frc")}
-                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                  >
-                    <option value="ftc">FTC (Square)</option>
-                    <option value="frc">FRC (2:1 Rect)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    Red Station
-                  </label>
-                  <select
-                    value={redDriverStation}
-                    onChange={(e) => setRedDriverStation(e.target.value as any)}
-                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                  >
-                    <option value="north">North</option>
-                    <option value="south">South</option>
-                    <option value="east">East</option>
-                    <option value="west">West</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    Blue Station
-                  </label>
-                  <select
-                    value={blueDriverStation}
-                    onChange={(e) => setBlueDriverStation(e.target.value as any)}
-                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                  >
-                    <option value="north">North</option>
-                    <option value="south">South</option>
-                    <option value="east">East</option>
-                    <option value="west">West</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    +X Direction
-                  </label>
-                  <select
-                    value={xAxisDirection}
-                    onChange={(e) => setXAxisDirection(e.target.value as any)}
-                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                  >
-                    <option value="up">Up (North)</option>
-                    <option value="down">Down (South)</option>
-                    <option value="left">Left (West)</option>
-                    <option value="right">Right (East)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    +Y Direction
-                  </label>
-                  <select
-                    value={yAxisDirection}
-                    onChange={(e) => setYAxisDirection(e.target.value as any)}
-                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                  >
-                    <option value="up">Up (North)</option>
-                    <option value="down">Down (South)</option>
-                    <option value="left">Left (West)</option>
-                    <option value="right">Right (East)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Display Options Subsection */}
-            <div className="border-t border-white/5 pt-3 space-y-2">
-              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
-                Display Options
-              </span>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
-                    id="show-grid-chk"
-                    checked={showGrid}
-                    onChange={(e) => setShowGrid(e.target.checked)}
-                    className="w-4 h-4 accent-ares-gold cursor-pointer"
+                    type="text"
+                    value={configName}
+                    onChange={(e) => setConfigName(e.target.value)}
+                    placeholder="Championship Finals layout..."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
                   />
-                  <label htmlFor="show-grid-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                    Show Grid Lines
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="show-alliance-chk"
-                    checked={showAllianceZones}
-                    onChange={(e) => setShowAllianceZones(e.target.checked)}
-                    className="w-4 h-4 accent-ares-gold cursor-pointer"
-                  />
-                  <label htmlFor="show-alliance-chk" className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
-                    Show Alliance Zones (FTC Only)
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="show-axes-chk"
-                    checked={showCoordinateAxes}
-                    onChange={(e) => setShowCoordinateAxes(e.target.checked)}
-                    className="w-4 h-4 accent-ares-gold cursor-pointer"
-                  />
-                  <label htmlFor="show-axes-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                    Show Coordinate Axes
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Field Assets Subsection */}
-            <div className="border-t border-white/5 pt-3 space-y-3">
-              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
-                Field Assets (2D/3D)
-              </span>
-              
-              <div className="space-y-3">
-                {/* 3D Model Upload */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    3D Field Model (.glb, .gltf)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".glb,.gltf"
-                    onChange={handleGlbFileChange}
-                    className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
-                  />
-                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
-                    <p className="text-[8px] font-mono text-ares-success mt-0.5">
-                      ✓ 3D Model GLB loaded
-                    </p>
-                  )}
                 </div>
 
-                {/* 2D Background Upload */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                    2D Field Image (.png, .jpg)
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
+                    Game Year / Season
                   </label>
-                  <input
-                    type="file"
-                    accept="image/*"
+                  <select
+                    value={["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) ? gameYear : "custom"}
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setLocalBgFile(file);
+                      const val = e.target.value;
+                      if (val === "custom") {
+                        setGameYear("");
+                      } else {
+                        setGameYear(val);
+                      }
                     }}
-                    className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
-                  />
-                  {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
-                    <p className="text-[8px] font-mono text-ares-success mt-0.5">
-                      ✓ 2D Background loaded
-                    </p>
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan cursor-pointer transition-colors"
+                  >
+                    <option value="2025-2026">2025-2026 Season</option>
+                    <option value="2024-2025">2024-2025 (Into The Deep / Reefscape)</option>
+                    <option value="2023-2024">2023-2024 (Centerstage / Crescendo)</option>
+                    <option value="2022-2023">2022-2023 (Powerplay / Charged Up)</option>
+                    <option value="2021-2022">2021-2022 (Freight Frenzy / Rapid React)</option>
+                    <option value="custom">Other / Custom Year...</option>
+                  </select>
+
+                  {!["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) && (
+                    <input
+                      type="text"
+                      value={gameYear}
+                      onChange={(e) => setGameYear(e.target.value)}
+                      placeholder="Enter custom year (e.g., 2020-2021)..."
+                      className="w-full bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-cyan mt-1.5"
+                    />
                   )}
                 </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                onClick={handleSaveToCloud}
-                disabled={saving}
-                className="w-full bg-ares-gold text-black hover:bg-ares-gold-soft py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <RefreshCw size={12} className="animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={12} /> Save Layout
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleDeleteLayout}
-                disabled={!selectedConfigId || loading}
-                className="w-full bg-ares-red/10 hover:bg-ares-red/20 text-ares-red-light border border-ares-red/20 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-20 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-              >
-                <Trash2 size={12} /> Delete
-              </button>
-            </div>
-          </div>
-
-          {/* Active Panel conditional rendering */}
-          {editMode === "obstacles" ? (
-            /* Active Obstacles & Selected Item Properties */
-            <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
-                  <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
-                </h3>
-                <button
-                  onClick={handleAddObstacle}
-                  className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
-                >
-                  <Plus size={10} /> Add Box
-                </button>
-              </div>
-
-              {/* List of Obstacles */}
-              <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                {obstacles.length === 0 ? (
-                  <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-6">
-                    No obstacles placed yet.
-                  </div>
-                ) : (
-                  obstacles.map((obs) => {
-                    const isSelected = obs.id === selectedObstacleId;
-                    return (
-                      <div
-                        key={obs.id}
-                        onClick={() => setSelectedObstacleId(obs.id)}
-                        className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                          isSelected 
-                            ? "bg-ares-gold/10 border-ares-gold text-white" 
-                            : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                        }`}
-                      >
-                        <span className="text-[11px] font-mono font-bold truncate">
-                          {obs.name}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteObstacle(obs.id);
-                          }}
-                          className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                          title="Delete obstacle"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Selected Obstacle Parameter Controls */}
-              {selectedObs ? (
-                <div className="border-t border-white/5 pt-4 space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                    Parameters: {selectedObs.name}
-                  </h4>
+                {/* Field Configuration Subsection */}
+                <div className="border-t border-white/5 pt-3 space-y-3">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
+                    Field Parameters
+                  </span>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5 col-span-2">
                       <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Label Name
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedObs.name}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Position X (m)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={selectedObs.x}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Position Y (m)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={selectedObs.y}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Width (m) - Y Axis
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.05"
-                        value={selectedObs.width}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Height (m) - X Axis
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.05"
-                        value={selectedObs.height}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 col-span-2">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Obstacle Type
+                        Field Type
                       </label>
                       <select
-                        value={selectedObs.obstacleType}
-                        onChange={(e) => {
-                          const newType = e.target.value as "blocking" | "ramp";
-                          handleUpdateObstacleField(selectedObs.id, "obstacleType", newType);
-                          // Automatically toggle blocking based on type, but allow overriding
-                          handleUpdateObstacleField(selectedObs.id, "isBlocking", newType === "blocking");
-                          if (newType === "ramp" && !selectedObs.rampDirection) {
-                            handleUpdateObstacleField(selectedObs.id, "rampDirection", "up");
-                          }
-                        }}
+                        value={fieldType}
+                        onChange={(e) => setFieldType(e.target.value as "ftc" | "frc")}
                         className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
                       >
-                        <option value="blocking">Blocking Wall</option>
-                        <option value="ramp">Non-Blocking Ramp</option>
+                        <option value="ftc">FTC (Square)</option>
+                        <option value="frc">FRC (2:1 Rect)</option>
                       </select>
                     </div>
 
-                    {selectedObs.obstacleType === "ramp" && (
-                      <div className="flex flex-col gap-1.5 col-span-2">
-                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Ramp Incline Direction (Screen View)
-                        </label>
-                        <select
-                          value={selectedObs.rampDirection || "up"}
-                          onChange={(e) => handleUpdateObstacleField(selectedObs.id, "rampDirection", e.target.value as any)}
-                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                        >
-                          <option value="up">North (Up)</option>
-                          <option value="down">South (Down)</option>
-                          <option value="left">West (Left)</option>
-                          <option value="right">East (Right)</option>
-                        </select>
-                      </div>
-                    )}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Red Station
+                      </label>
+                      <select
+                        value={redDriverStation}
+                        onChange={(e) => setRedDriverStation(e.target.value as any)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                      >
+                        <option value="north">North</option>
+                        <option value="south">South</option>
+                        <option value="east">East</option>
+                        <option value="west">West</option>
+                      </select>
+                    </div>
 
-                    <div className="flex items-center gap-2 col-span-2 pt-1">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Blue Station
+                      </label>
+                      <select
+                        value={blueDriverStation}
+                        onChange={(e) => setBlueDriverStation(e.target.value as any)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                      >
+                        <option value="north">North</option>
+                        <option value="south">South</option>
+                        <option value="east">East</option>
+                        <option value="west">West</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        +X Direction
+                      </label>
+                      <select
+                        value={xAxisDirection}
+                        onChange={(e) => setXAxisDirection(e.target.value as any)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                      >
+                        <option value="up">Up (North)</option>
+                        <option value="down">Down (South)</option>
+                        <option value="left">Left (West)</option>
+                        <option value="right">Right (East)</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        +Y Direction
+                      </label>
+                      <select
+                        value={yAxisDirection}
+                        onChange={(e) => setYAxisDirection(e.target.value as any)}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                      >
+                        <option value="up">Up (North)</option>
+                        <option value="down">Down (South)</option>
+                        <option value="left">Left (West)</option>
+                        <option value="right">Right (East)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Display Options Subsection */}
+                <div className="border-t border-white/5 pt-3 space-y-2">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
+                    Display Options
+                  </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id={`obs-blocking-chk-${selectedObs.id}`}
-                        checked={selectedObs.isBlocking}
-                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "isBlocking", e.target.checked)}
+                        id="show-grid-chk"
+                        checked={showGrid}
+                        onChange={(e) => setShowGrid(e.target.checked)}
                         className="w-4 h-4 accent-ares-gold cursor-pointer"
                       />
-                      <label htmlFor={`obs-blocking-chk-${selectedObs.id}`} className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
-                        Is Blocking (Physics Collider)
+                      <label htmlFor="show-grid-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                        Show Grid Lines
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="show-alliance-chk"
+                        checked={showAllianceZones}
+                        onChange={(e) => setShowAllianceZones(e.target.checked)}
+                        className="w-4 h-4 accent-ares-gold cursor-pointer"
+                      />
+                      <label htmlFor="show-alliance-chk" className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
+                        Show Alliance Zones (FTC Only)
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="show-axes-chk"
+                        checked={showCoordinateAxes}
+                        onChange={(e) => setShowCoordinateAxes(e.target.checked)}
+                        className="w-4 h-4 accent-ares-gold cursor-pointer"
+                      />
+                      <label htmlFor="show-axes-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                        Show Coordinate Axes
                       </label>
                     </div>
                   </div>
+                </div>
 
-                  <div className="text-[9px] leading-relaxed text-marble/35 font-mono pt-1">
-                    X coordinates represent North (+) / South (-).
-                    <br />
-                    Y coordinates represent West (+) / East (-).
+                {/* Field Assets Subsection */}
+                <div className="border-t border-white/5 pt-3 space-y-3">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
+                    Field Assets (2D/3D)
+                  </span>
+                  
+                  <div className="space-y-3">
+                    {/* 3D Model Upload */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        3D Field Model (.glb, .gltf)
+                      </label>
+                      <input
+                        type="file"
+                        accept=".glb,.gltf"
+                        onChange={handleGlbFileChange}
+                        className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
+                      />
+                      {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
+                        <p className="text-[8px] font-mono text-ares-success mt-0.5">
+                          ✓ 3D Model GLB loaded
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 2D Background Upload */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        2D Field Image (.png, .jpg)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setLocalBgFile(file);
+                        }}
+                        className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
+                      />
+                      {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
+                        <p className="text-[8px] font-mono text-ares-success mt-0.5">
+                          ✓ 2D Background loaded
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                  Select an obstacle to edit parameters.
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    onClick={handleSaveToCloud}
+                    disabled={saving}
+                    className="w-full bg-ares-gold text-black hover:bg-ares-gold-soft py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={12} /> Save Layout
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleDeleteLayout}
+                    disabled={!selectedConfigId || loading}
+                    className="w-full bg-ares-red/10 hover:bg-ares-red/20 text-ares-red-light border border-ares-red/20 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-20 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                  >
+                    <Trash2 size={12} /> Delete
+                  </button>
                 </div>
+              </>
+            )}
+          </div>
+
+          {/* Active Panel conditional rendering */}
+          {editMode === "obstacles" ? (
+            <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isObstaclesExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
+              <div 
+                onClick={() => setIsObstaclesExpanded(!isObstaclesExpanded)}
+                className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
+                  isObstaclesExpanded ? "border-b border-white/5 pb-3" : ""
+                }`}
+              >
+                <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
+                  <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
+                </h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddObstacle();
+                    }}
+                    className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
+                  >
+                    <Plus size={10} /> Add Box
+                  </button>
+                  {isObstaclesExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
+                </div>
+              </div>
+
+              {isObstaclesExpanded && (
+                <>
+                  {/* List of Obstacles */}
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                    {obstacles.length === 0 ? (
+                      <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-6">
+                        No obstacles placed yet.
+                      </div>
+                    ) : (
+                      obstacles.map((obs) => {
+                        const isSelected = obs.id === selectedObstacleId;
+                        return (
+                          <div
+                            key={obs.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedObstacleId(obs.id);
+                            }}
+                            className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                              isSelected 
+                                ? "bg-ares-gold/10 border-ares-gold text-white" 
+                                : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            <span className="text-[11px] font-mono font-bold truncate">
+                              {obs.name}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteObstacle(obs.id);
+                              }}
+                              className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                              title="Delete obstacle"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Selected Obstacle Parameter Controls */}
+                  {selectedObs ? (
+                    <div className="border-t border-white/5 pt-4 space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                        Parameters: {selectedObs.name}
+                      </h4>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1.5 col-span-2">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Label Name
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedObs.name}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Position X (m)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={selectedObs.x}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Position Y (m)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={selectedObs.y}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Width (m) - Y Axis
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.05"
+                            value={selectedObs.width}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Height (m) - X Axis
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.05"
+                            value={selectedObs.height}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 col-span-2">
+                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                            Obstacle Type
+                          </label>
+                          <select
+                            value={selectedObs.obstacleType}
+                            onChange={(e) => {
+                              const newType = e.target.value as "blocking" | "ramp";
+                              handleUpdateObstacleField(selectedObs.id, "obstacleType", newType);
+                              // Automatically toggle blocking based on type, but allow overriding
+                              handleUpdateObstacleField(selectedObs.id, "isBlocking", newType === "blocking");
+                              if (newType === "ramp" && !selectedObs.rampDirection) {
+                                handleUpdateObstacleField(selectedObs.id, "rampDirection", "up");
+                              }
+                            }}
+                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                          >
+                            <option value="blocking">Blocking Wall</option>
+                            <option value="ramp">Non-Blocking Ramp</option>
+                          </select>
+                        </div>
+
+                        {selectedObs.obstacleType === "ramp" && (
+                          <div className="flex flex-col gap-1.5 col-span-2">
+                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                              Ramp Incline Direction (Screen View)
+                            </label>
+                            <select
+                              value={selectedObs.rampDirection || "up"}
+                              onChange={(e) => handleUpdateObstacleField(selectedObs.id, "rampDirection", e.target.value as any)}
+                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                            >
+                              <option value="up">North (Up)</option>
+                              <option value="down">South (Down)</option>
+                              <option value="left">West (Left)</option>
+                              <option value="right">East (Right)</option>
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 col-span-2 pt-1">
+                          <input
+                            type="checkbox"
+                            id={`obs-blocking-chk-${selectedObs.id}`}
+                            checked={selectedObs.isBlocking}
+                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "isBlocking", e.target.checked)}
+                            className="w-4 h-4 accent-ares-gold cursor-pointer"
+                          />
+                          <label htmlFor={`obs-blocking-chk-${selectedObs.id}`} className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
+                            Is Blocking (Physics Collider)
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="text-[9px] leading-relaxed text-marble/35 font-mono pt-1">
+                        X coordinates represent North (+) / South (-).
+                        <br />
+                        Y coordinates represent West (+) / East (-).
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                      Select an obstacle to edit parameters.
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (
             /* Game Elements Panel */
             <div className="flex flex-col gap-6">
               {/* Element Types Catalog Card */}
-              <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
+              <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isElementCatalogExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
+                <div 
+                  onClick={() => setIsElementCatalogExpanded(!isElementCatalogExpanded)}
+                  className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
+                    isElementCatalogExpanded ? "border-b border-white/5 pb-3" : ""
+                  }`}
+                >
+                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
                     <Sliders size={14} className="text-ares-gold" /> Element Types Catalog
                   </h3>
-                  <button
-                    onClick={handleAddElementType}
-                    className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
-                  >
-                    <Plus size={10} /> New Type
-                  </button>
-                </div>
-
-                {/* List of Types */}
-                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {elementTypes.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
-                      No element types defined.
-                    </div>
-                  ) : (
-                    elementTypes.map((t) => {
-                      const isSelected = t.id === selectedElementTypeId;
-                      return (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedElementTypeId(t.id)}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/10 border-ares-gold text-white"
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: t.color }}
-                            />
-                            <span className="text-[11px] font-mono font-bold truncate">
-                              {t.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddElementInstance(t.id);
-                              }}
-                              className="px-2 py-0.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
-                              title="Place instance of this type on field"
-                            >
-                              Place
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteElementType(t.id);
-                              }}
-                              className="text-marble/45 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
-                              title="Delete type catalog template"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Selected Type Parameters */}
-                {selectedElementTypeId ? (
-                  (() => {
-                    const t = elementTypes.find((x) => x.id === selectedElementTypeId);
-                    if (!t) return null;
-                    return (
-                      <div className="border-t border-white/5 pt-4 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                          Type Properties: {t.name}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5 col-span-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Type Name
-                            </label>
-                            <input
-                              type="text"
-                              value={t.name}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "name", e.target.value)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Shape
-                            </label>
-                            <select
-                              value={t.shape}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "shape", e.target.value as any)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                            >
-                              <option value="sphere">Sphere (Circle)</option>
-                              <option value="cylinder">Cylinder (Circle)</option>
-                              <option value="box">Box (Rect)</option>
-                            </select>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Color (Hex)
-                            </label>
-                            <div className="flex gap-1.5">
-                              <input
-                                type="color"
-                                value={t.color}
-                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
-                                className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer p-0 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={t.color}
-                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
-                                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan w-full text-center"
-                              />
-                            </div>
-                          </div>
-                          {t.shape === "box" ? (
-                            <>
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                  Width (m)
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.width}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "width", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                  Height (m)
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.height}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "height", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                Diameter (m)
-                              </label>
-                              <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.diameter || 0.15}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "diameter", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                              />
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Depth/Z-Height (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={t.depth}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "depth", parseFloat(e.target.value) || 0.15)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Mass (kg)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={t.massKg}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "massKg", parseFloat(e.target.value) || 0.1)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2 col-span-2 pt-1">
-                            <input
-                              type="checkbox"
-                              id="movable-chk"
-                              checked={t.movable}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "movable", e.target.checked)}
-                              className="w-4 h-4 accent-ares-gold cursor-pointer"
-                            />
-                            <label htmlFor="movable-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                              Movable Physics Body (Dynamic)
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select a type template to edit.
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddElementType();
+                      }}
+                      className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
+                    >
+                      <Plus size={10} /> New Type
+                    </button>
+                    {isElementCatalogExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
                   </div>
+                </div>
+
+                {isElementCatalogExpanded && (
+                  <>
+                    {/* List of Types */}
+                    <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                      {elementTypes.length === 0 ? (
+                        <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
+                          No element types defined.
+                        </div>
+                      ) : (
+                        elementTypes.map((t) => {
+                          const isSelected = t.id === selectedElementTypeId;
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => setSelectedElementTypeId(t.id)}
+                              className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                                isSelected
+                                  ? "bg-ares-gold/10 border-ares-gold text-white"
+                                  : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: t.color }}
+                                />
+                                <span className="text-[11px] font-mono font-bold truncate">
+                                  {t.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddElementInstance(t.id);
+                                  }}
+                                  className="px-2 py-0.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
+                                  title="Place instance of this type on field"
+                                >
+                                  Place
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteElementType(t.id);
+                                  }}
+                                  className="text-marble/45 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                                  title="Delete type catalog template"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Selected Type Parameters */}
+                    {selectedElementTypeId ? (
+                      (() => {
+                        const t = elementTypes.find((x) => x.id === selectedElementTypeId);
+                        if (!t) return null;
+                        return (
+                          <div className="border-t border-white/5 pt-4 space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                              Type Properties: {t.name}
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="flex flex-col gap-1.5 col-span-2">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Type Name
+                                </label>
+                                <input
+                                  type="text"
+                                  value={t.name}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "name", e.target.value)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Shape
+                                </label>
+                                <select
+                                  value={t.shape}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "shape", e.target.value as any)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                                >
+                                  <option value="sphere">Sphere (Circle)</option>
+                                  <option value="cylinder">Cylinder (Circle)</option>
+                                  <option value="box">Box (Rect)</option>
+                                </select>
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Color (Hex)
+                                </label>
+                                <div className="flex gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={t.color}
+                                    onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
+                                    className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer p-0 shrink-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={t.color}
+                                    onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
+                                    className="bg-black/45 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan w-full text-center"
+                                  />
+                                </div>
+                              </div>
+                              {t.shape === "box" ? (
+                                <>
+                                  <div className="flex flex-col gap-1.5">
+                                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                      Width (m)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={t.width}
+                                      onChange={(e) => handleUpdateElementTypeField(t.id, "width", parseFloat(e.target.value) || 0.15)}
+                                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                      Height (m)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={t.height}
+                                      onChange={(e) => handleUpdateElementTypeField(t.id, "height", parseFloat(e.target.value) || 0.15)}
+                                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex flex-col gap-1.5">
+                                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                    Diameter (m)
+                                  </label>
+                                  <input
+                                      type="number"
+                                      step="0.01"
+                                      value={t.diameter || 0.15}
+                                      onChange={(e) => handleUpdateElementTypeField(t.id, "diameter", parseFloat(e.target.value) || 0.15)}
+                                      className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Depth/Z-Height (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={t.depth}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "depth", parseFloat(e.target.value) || 0.15)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Mass (kg)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={t.massKg}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "massKg", parseFloat(e.target.value) || 0.1)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 col-span-2 pt-1">
+                                <input
+                                  type="checkbox"
+                                  id="movable-chk"
+                                  checked={t.movable}
+                                  onChange={(e) => handleUpdateElementTypeField(t.id, "movable", e.target.checked)}
+                                  className="w-4 h-4 accent-ares-gold cursor-pointer"
+                                />
+                                <label htmlFor="movable-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                                  Movable Physics Body (Dynamic)
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                        Select a type template to edit.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Element Instances Inventory Card */}
-              <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-5">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2">
+              <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isPlacedElementsExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
+                <div 
+                  onClick={() => setIsPlacedElementsExpanded(!isPlacedElementsExpanded)}
+                  className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
+                    isPlacedElementsExpanded ? "border-b border-white/5 pb-3" : ""
+                  }`}
+                >
+                  <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
                     <Activity size={14} className="text-ares-gold" /> Placed Elements
                   </h3>
+                  {isPlacedElementsExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
                 </div>
 
-                {/* Placed Elements List */}
-                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {elements.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
-                      No elements placed on field.
+                {isPlacedElementsExpanded && (
+                  <>
+                    {/* Placed Elements List */}
+                    <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                      {elements.length === 0 ? (
+                        <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
+                          No elements placed on field.
+                        </div>
+                      ) : (
+                        elements.map((el, idx) => {
+                          const type = elementTypes.find((t) => t.id === el.elementTypeId);
+                          const isSelected = el.id === selectedElementInstanceId;
+                          return (
+                            <div
+                              key={el.id}
+                              onClick={() => setSelectedElementInstanceId(el.id)}
+                              className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                                isSelected
+                                  ? "bg-ares-gold/10 border-ares-gold text-white"
+                                  : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: type?.color || "#fff" }}
+                                />
+                                <span className="text-[11px] font-mono font-bold truncate">
+                                  {type?.name || "Unknown"} #{idx + 1}
+                                </span>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteElementInstance(el.id);
+                                }}
+                                className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                                title="Delete placed instance"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
-                  ) : (
-                    elements.map((el, idx) => {
-                      const type = elementTypes.find((t) => t.id === el.elementTypeId);
-                      const isSelected = el.id === selectedElementInstanceId;
-                      return (
-                        <div
-                          key={el.id}
-                          onClick={() => setSelectedElementInstanceId(el.id)}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/10 border-ares-gold text-white"
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: type?.color || "#fff" }}
-                            />
-                            <span className="text-[11px] font-mono font-bold truncate">
-                              {type?.name || "Unknown"} #{idx + 1}
-                            </span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteElementInstance(el.id);
-                            }}
-                            className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
-                            title="Delete placed instance"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
 
-                {/* Selected Instance Parameters */}
-                {selectedElementInstanceId ? (
-                  (() => {
-                    const el = elements.find((x) => x.id === selectedElementInstanceId);
-                    if (!el) return null;
-                    const type = elementTypes.find((t) => t.id === el.elementTypeId);
-                    return (
-                      <div className="border-t border-white/5 pt-4 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                          Instance: {type?.name || "Element"}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position X (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={el.x}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "x", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
+                    {/* Selected Instance Parameters */}
+                    {selectedElementInstanceId ? (
+                      (() => {
+                        const el = elements.find((x) => x.id === selectedElementInstanceId);
+                        if (!el) return null;
+                        const type = elementTypes.find((t) => t.id === el.elementTypeId);
+                        return (
+                          <div className="border-t border-white/5 pt-4 space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                              Instance: {type?.name || "Element"}
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Position X (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={el.x}
+                                  onChange={(e) => handleUpdateElementInstanceField(el.id, "x", parseFloat(e.target.value) || 0)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Position Y (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={el.y}
+                                  onChange={(e) => handleUpdateElementInstanceField(el.id, "y", parseFloat(e.target.value) || 0)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5 col-span-2">
+                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                  Rotation (deg)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="1"
+                                  value={el.rotation}
+                                  onChange={(e) => handleUpdateElementInstanceField(el.id, "rotation", parseFloat(e.target.value) || 0)}
+                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position Y (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={el.y}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "y", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5 col-span-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Rotation (deg)
-                            </label>
-                            <input
-                              type="number"
-                              step="1"
-                              value={el.rotation}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "rotation", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                        </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                        Select a placed element to edit.
                       </div>
-                    );
-                  })()
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select a placed element to edit.
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           )}
 
           {/* Saved Layout Library */}
-          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl space-y-4">
-            <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center gap-2">
-              <Map size={14} className="text-ares-gold" /> Saved Layout Library
+          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLibraryExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
+            <h3 
+              onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
+              className={`text-xs font-black uppercase text-white tracking-widest font-heading flex items-center justify-between cursor-pointer hover:text-ares-gold transition-colors select-none ${
+                isLibraryExpanded ? "border-b border-white/5 pb-3" : ""
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Map size={14} className="text-ares-gold" /> Saved Layout Library
+              </span>
+              {isLibraryExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
             </h3>
             
-            <div className="max-h-60 overflow-y-auto space-y-2.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-              {configs.length === 0 ? (
-                <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-8">
-                  No layouts saved in library.
-                </div>
-              ) : (
-                configs.map((cfg) => {
-                  const isActive = cfg.id === selectedConfigId;
-                  const formattedDate = new Date(cfg.updatedAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  });
-                  return (
-                    <div
-                      key={cfg.id}
-                      onClick={() => loadConfig(cfg)}
-                      className={`flex flex-col gap-1 p-3.5 border rounded-xl cursor-pointer transition-all ${
-                        isActive
-                          ? "bg-ares-gold/10 border-ares-gold text-white shadow-lg shadow-ares-gold/5"
-                          : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-extrabold truncate max-w-[130px] uppercase tracking-wide">
-                          {cfg.name}
-                        </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {cfg.gameYear && (
-                            <span className="text-[7.5px] font-mono bg-ares-gold/15 border border-ares-gold/25 text-ares-gold px-1.5 py-0.5 rounded uppercase font-bold">
-                              {cfg.gameYear}
-                            </span>
-                          )}
-                          <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
-                            {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
+            {isLibraryExpanded && (
+              <div className="max-h-60 overflow-y-auto space-y-2.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                {configs.length === 0 ? (
+                  <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-8">
+                    No layouts saved in library.
+                  </div>
+                ) : (
+                  configs.map((cfg) => {
+                    const isActive = cfg.id === selectedConfigId;
+                    const formattedDate = new Date(cfg.updatedAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    });
+                    return (
+                      <div
+                        key={cfg.id}
+                        onClick={() => loadConfig(cfg)}
+                        className={`flex flex-col gap-1 p-3.5 border rounded-xl cursor-pointer transition-all ${
+                          isActive
+                            ? "bg-ares-gold/10 border-ares-gold text-white shadow-lg shadow-ares-gold/5"
+                            : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-extrabold truncate max-w-[130px] uppercase tracking-wide">
+                            {cfg.name}
                           </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {cfg.gameYear && (
+                              <span className="text-[7.5px] font-mono bg-ares-gold/15 border border-ares-gold/25 text-ares-gold px-1.5 py-0.5 rounded uppercase font-bold">
+                                {cfg.gameYear}
+                              </span>
+                            )}
+                            <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
+                              {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
+                          <span>Updated: {formattedDate}</span>
+                          {isActive && <span className="text-ares-gold font-bold text-[8px] uppercase tracking-widest">Active</span>}
                         </div>
                       </div>
-                      <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
-                        <span>Updated: {formattedDate}</span>
-                        {isActive && <span className="text-ares-gold font-bold text-[8px] uppercase tracking-widest">Active</span>}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           {/* Onshape Field CAD Synchronization was moved to the unified bottom section */}
