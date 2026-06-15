@@ -1459,13 +1459,35 @@ export default function FieldEditor() {
               <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
                 Game Year / Season
               </label>
-              <input
-                type="text"
-                value={gameYear}
-                onChange={(e) => setGameYear(e.target.value)}
-                placeholder="e.g., 2025-2026..."
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
-              />
+              <select
+                value={["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) ? gameYear : "custom"}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "custom") {
+                    setGameYear("");
+                  } else {
+                    setGameYear(val);
+                  }
+                }}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan cursor-pointer transition-colors"
+              >
+                <option value="2025-2026">2025-2026 Season</option>
+                <option value="2024-2025">2024-2025 (Into The Deep / Reefscape)</option>
+                <option value="2023-2024">2023-2024 (Centerstage / Crescendo)</option>
+                <option value="2022-2023">2022-2023 (Powerplay / Charged Up)</option>
+                <option value="2021-2022">2021-2022 (Freight Frenzy / Rapid React)</option>
+                <option value="custom">Other / Custom Year...</option>
+              </select>
+
+              {!["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) && (
+                <input
+                  type="text"
+                  value={gameYear}
+                  onChange={(e) => setGameYear(e.target.value)}
+                  placeholder="Enter custom year (e.g., 2020-2021)..."
+                  className="w-full bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-cyan mt-1.5"
+                />
+              )}
             </div>
 
             {/* Field Configuration Subsection */}
