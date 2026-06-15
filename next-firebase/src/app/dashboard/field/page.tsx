@@ -39,13 +39,15 @@ import {
 interface FieldObstacle {
   id: string;
   name: string;
-  x: number;      // EKF X in meters
-  y: number;      // EKF Y in meters
+  x: number;      // EKF X in meters (centroid for polygons)
+  y: number;      // EKF Y in meters (centroid for polygons)
   width: number;  // Width in meters
   height: number; // Height in meters
   isBlocking: boolean;
   obstacleType: "blocking" | "ramp";
   rampDirection?: "up" | "down" | "left" | "right";
+  shape?: "rectangle" | "polygon";
+  points?: { x: number; y: number }[];
 }
 
 interface ElementType {
@@ -69,6 +71,14 @@ interface FieldElementInstance {
   rotation: number;      // rotation in degrees
 }
 
+interface FieldAprilTag {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  yaw: number; // in degrees
+}
+
 interface FieldConfig {
   id: string;
   name: string;
@@ -82,6 +92,7 @@ interface FieldConfig {
   obstacles: FieldObstacle[];
   elementTypes?: ElementType[];
   elements?: FieldElementInstance[];
+  apriltags?: FieldAprilTag[];
   cadUrl?: string;
   bgImageUrl?: string;
 }
@@ -117,7 +128,19 @@ export default function FieldEditor() {
   const [isObstaclesExpanded, setIsObstaclesExpanded] = useState<boolean>(true);
   const [isElementCatalogExpanded, setIsElementCatalogExpanded] = useState<boolean>(true);
   const [isPlacedElementsExpanded, setIsPlacedElementsExpanded] = useState<boolean>(true);
+  const [isTagsExpanded, setIsTagsExpanded] = useState<boolean>(true);
+
+  // AprilTags state
+  const [apriltags, setApriltags] = useState<FieldAprilTag[]>([]);
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
+
+  // Polygon Free-Drawing state
+  const [isDrawingPolygon, setIsDrawingPolygon] = useState<boolean>(false);
+  const [drawingPoints, setDrawingPoints] = useState<{ x: number; y: number }[]>([]);
+  const [polygonCoordUnit, setPolygonCoordUnit] = useState<"meters" | "inches">("meters");
   const [isLibraryExpanded, setIsLibraryExpanded] = useState<boolean>(true);
+  const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
+  const [importText, setImportText] = useState<string>("");
   
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -221,8 +244,8 @@ export default function FieldEditor() {
   const [canvasSize, setCanvasSize] = useState<number>(450);
 
   // Interaction State
-  const dragModeRef = useRef<"none" | "dragging" | "resizing">("none");
-  const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number; ow?: number; oh?: number; fixedX?: number; fixedY?: number }>({ mx: 0, my: 0, ox: 0, oy: 0 });
+  const dragModeRef = useRef<"none" | "dragging" | "resizing" | "dragging_vertex" | "dragging_tag">("none");
+  const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number; ow?: number; oh?: number; fixedX?: number; fixedY?: number; vertexIndex?: number; tagId?: number; originalPoints?: { x: number; y: number }[] }>({ mx: 0, my: 0, ox: 0, oy: 0 });
 
   const fieldW = fieldType === "ftc" ? 3.6576 : 16.542;
   const fieldH = fieldType === "ftc" ? 3.6576 : 8.007;
@@ -279,6 +302,18 @@ export default function FieldEditor() {
     } else { // "up"
       return (centerY - pxY) / scale;
     }
+  };
+
+  const isPointInPolygon = (x: number, y: number, polygon: { x: number; y: number }[]) => {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].x, yi = polygon[i].y;
+      const xj = polygon[j].x, yj = polygon[j].y;
+      const intersect = ((yi > y) !== (yj > y))
+          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
   };
 
   // Fetch all configurations from Firestore on load
@@ -424,10 +459,13 @@ export default function FieldEditor() {
     setObstacles((config.obstacles || []).map(obs => ({
       ...obs,
       isBlocking: obs.isBlocking !== undefined ? obs.isBlocking : true,
-      obstacleType: obs.obstacleType || "blocking"
+      obstacleType: obs.obstacleType || "blocking",
+      shape: obs.shape || "rectangle",
+      points: obs.points || []
     })));
     setElementTypes(config.elementTypes ? [...config.elementTypes] : []);
     setElements(config.elements ? [...config.elements] : []);
+    setApriltags(config.apriltags ? [...config.apriltags] : []);
     setFieldType(config.fieldType || "ftc");
     setGameYear(config.gameYear || "2025-2026");
     setXAxisDirection(config.xAxisDirection || "up");
@@ -437,6 +475,7 @@ export default function FieldEditor() {
     setSelectedObstacleId(null);
     setSelectedElementInstanceId(null);
     setSelectedElementTypeId(null);
+    setSelectedTagId(null);
     setLocalBgFile(null);
     setLocalGlbFile(null);
   };
@@ -473,6 +512,7 @@ export default function FieldEditor() {
     
     setElementTypes([defaultPollen, defaultArtifact]);
     setElements([]);
+    setApriltags([]);
     setFieldType("ftc");
     setGameYear("2025-2026");
     setXAxisDirection("up");
@@ -482,6 +522,7 @@ export default function FieldEditor() {
     setSelectedObstacleId(null);
     setSelectedElementInstanceId(null);
     setSelectedElementTypeId(null);
+    setSelectedTagId(null);
     setLocalBgFile(null);
     setLocalGlbFile(null);
   };
@@ -601,6 +642,174 @@ export default function FieldEditor() {
     );
   };
 
+  // AprilTag Actions
+  const handleAddAprilTag = () => {
+    let nextId = 1;
+    while (apriltags.some(t => t.id === nextId)) {
+      nextId++;
+    }
+    const newTag: FieldAprilTag = {
+      id: nextId,
+      x: 0,
+      y: 0,
+      z: 0.5,
+      yaw: 0
+    };
+    setApriltags([...apriltags, newTag]);
+    setSelectedTagId(newTag.id);
+    setSelectedObstacleId(null);
+    setSelectedElementInstanceId(null);
+  };
+
+  const handleDeleteAprilTag = (id: number) => {
+    setApriltags(apriltags.filter((t) => t.id !== id));
+    if (selectedTagId === id) {
+      setSelectedTagId(null);
+    }
+  };
+
+  const handleUpdateAprilTagField = (id: number, field: keyof FieldAprilTag, value: any) => {
+    setApriltags(
+      apriltags.map((t) => {
+        if (t.id === id) {
+          return { ...t, [field]: value };
+        }
+        return t;
+      })
+    );
+  };
+
+  const handleImportAprilTagsJson = (jsonText: string) => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      const tagsList = Array.isArray(parsed) ? parsed : (parsed.tags || []);
+      if (!Array.isArray(tagsList)) {
+        alert("Invalid JSON format. Could not find tags array.");
+        return;
+      }
+
+      const limitX = fieldH / 2;
+      const limitY = fieldW / 2;
+      const newTags: FieldAprilTag[] = [];
+
+      tagsList.forEach((t: any) => {
+        const id = t.id !== undefined ? t.id : (t.ID !== undefined ? t.ID : newTags.length + 1);
+        
+        let rawX = 0;
+        let rawY = 0;
+        let rawZ = 0;
+        let yawDeg = 0;
+
+        if (t.pose?.translation) {
+          rawX = t.pose.translation.x || 0;
+          rawY = t.pose.translation.y || 0;
+          rawZ = t.pose.translation.z || 0;
+        } else if (t.x !== undefined) {
+          rawX = t.x;
+          rawY = t.y || 0;
+          rawZ = t.z || 0;
+        }
+
+        if (t.pose?.rotation?.quaternion) {
+          const q = t.pose.rotation.quaternion;
+          const w = q.w !== undefined ? q.w : (q.W !== undefined ? q.W : 1);
+          const z = q.z !== undefined ? q.z : (q.Z !== undefined ? q.Z : 0);
+          yawDeg = (2 * Math.atan2(z, w) * 180) / Math.PI;
+        } else if (t.pose?.rotation?.yaw !== undefined) {
+          yawDeg = (t.pose.rotation.yaw * 180) / Math.PI;
+        } else if (t.yaw !== undefined) {
+          yawDeg = t.yaw;
+        }
+
+        let finalX = rawX;
+        let finalY = rawY;
+        if (Math.abs(rawX) > limitX || Math.abs(rawY) > limitY) {
+          if (rawX >= 0 && rawX <= fieldH) {
+            finalX = rawX - limitX;
+          }
+          if (rawY >= 0 && rawY <= fieldW) {
+            finalY = rawY - limitY;
+          }
+        }
+
+        newTags.push({
+          id: Number(id),
+          x: Number(finalX.toFixed(3)),
+          y: Number(finalY.toFixed(3)),
+          z: Number(rawZ.toFixed(3)),
+          yaw: Number(yawDeg.toFixed(1))
+        });
+      });
+
+      if (newTags.length > 0) {
+        setApriltags(newTags);
+        alert(`Successfully imported ${newTags.length} AprilTags.`);
+      } else {
+        alert("No valid AprilTags found in JSON.");
+      }
+    } catch (err: any) {
+      alert("Failed to parse JSON: " + err.message);
+    }
+  };
+
+  const handleMirrorObstacle = (obsId: string, axis: "x" | "y" | "center") => {
+    const obs = obstacles.find(o => o.id === obsId);
+    if (!obs) return;
+
+    const mirroredObs: FieldObstacle = {
+      ...obs,
+      id: Math.random().toString(36).substring(2, 9),
+      name: `${obs.name} (Mirrored)`
+    };
+
+    const flipRampDir = (dir?: "up" | "down" | "left" | "right", axisFlip?: "x" | "y" | "center") => {
+      if (!dir) return undefined;
+      if (axisFlip === "x") {
+        if (dir === "left") return "right";
+        if (dir === "right") return "left";
+      } else if (axisFlip === "y") {
+        if (dir === "up") return "down";
+        if (dir === "down") return "up";
+      } else if (axisFlip === "center") {
+        if (dir === "left") return "right";
+        if (dir === "right") return "left";
+        if (dir === "up") return "down";
+        if (dir === "down") return "up";
+      }
+      return dir;
+    };
+
+    if (axis === "x") {
+      mirroredObs.y = -obs.y;
+      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "x");
+      if (obs.shape === "polygon" && obs.points) {
+        mirroredObs.points = obs.points.map(p => ({ x: p.x, y: -p.y }));
+        mirroredObs.x = obs.x;
+        mirroredObs.y = -obs.y;
+      }
+    } else if (axis === "y") {
+      mirroredObs.x = -obs.x;
+      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "y");
+      if (obs.shape === "polygon" && obs.points) {
+        mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: p.y }));
+        mirroredObs.x = -obs.x;
+        mirroredObs.y = obs.y;
+      }
+    } else {
+      mirroredObs.x = -obs.x;
+      mirroredObs.y = -obs.y;
+      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "center");
+      if (obs.shape === "polygon" && obs.points) {
+        mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: -p.y }));
+        mirroredObs.x = -obs.x;
+        mirroredObs.y = -obs.y;
+      }
+    }
+
+    setObstacles([...obstacles, mirroredObs]);
+    setSelectedObstacleId(mirroredObs.id);
+  };
+
   const handleSaveToCloud = async () => {
     if (!configName.trim()) {
       alert("Please enter a layout name.");
@@ -647,7 +856,9 @@ export default function FieldEditor() {
           height: Number(obs.height),
           isBlocking: Boolean(obs.isBlocking),
           obstacleType: obs.obstacleType,
-          rampDirection: obs.rampDirection || null
+          rampDirection: obs.rampDirection || null,
+          shape: obs.shape || "rectangle",
+          points: (obs.points || []).map(p => ({ x: Number(p.x), y: Number(p.y) }))
         })),
         elementTypes: elementTypes.map((t) => ({
           id: t.id,
@@ -667,6 +878,13 @@ export default function FieldEditor() {
           x: Number(el.x),
           y: Number(el.y),
           rotation: Number(el.rotation)
+        })),
+        apriltags: apriltags.map((tag) => ({
+          id: Number(tag.id),
+          x: Number(tag.x),
+          y: Number(tag.y),
+          z: Number(tag.z),
+          yaw: Number(tag.yaw)
         }))
       };
 
@@ -907,108 +1125,163 @@ export default function FieldEditor() {
     // 7. Draw Obstacles
     obstacles.forEach((obs) => {
       const isSelected = obs.id === selectedObstacleId;
-      const obsHalfW = obs.width / 2;
-      const obsHalfH = obs.height / 2;
+      const isPolygon = obs.shape === "polygon";
 
-      // Map bounds properly using EKF coordinates to handle axis orientation changes
-      const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
-      const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
-      const leftPx = Math.min(p1.x, p2.x);
-      const topPx = Math.min(p1.y, p2.y);
-      const wPx = Math.abs(p1.x - p2.x);
-      const hPx = Math.abs(p1.y - p2.y);
-
-      // Save context in case of dashed lines for non-blocking
       ctx.save();
-
       // Configure border/dash
       if (!obs.isBlocking || obs.obstacleType === "ramp") {
         ctx.setLineDash([4, 4]);
       }
 
-      // 1. Draw Obstacle Body Fill
-      if (obs.obstacleType === "ramp" && obs.rampDirection) {
-        // Linear gradient representing the ramp incline slope
-        let grad;
-        if (obs.rampDirection === "up") {
-          grad = ctx.createLinearGradient(leftPx, topPx + hPx, leftPx, topPx);
-        } else if (obs.rampDirection === "down") {
-          grad = ctx.createLinearGradient(leftPx, topPx, leftPx, topPx + hPx);
-        } else if (obs.rampDirection === "left") {
-          grad = ctx.createLinearGradient(leftPx + wPx, topPx, leftPx, topPx);
-        } else { // "right"
-          grad = ctx.createLinearGradient(leftPx, topPx, leftPx + wPx, topPx);
-        }
-        grad.addColorStop(0, isSelected ? "rgba(245, 158, 11, 0.05)" : "rgba(255, 255, 255, 0.02)");
-        grad.addColorStop(1, isSelected ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.15)");
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.07)";
-      }
-      ctx.fillRect(leftPx, topPx, wPx, hPx);
-
-      // 2. Draw Obstacle Border
       ctx.strokeStyle = isSelected 
         ? "#F59E0B" 
         : (obs.obstacleType === "ramp" ? "rgba(245, 158, 11, 0.35)" : "rgba(255, 255, 255, 0.25)");
       ctx.lineWidth = isSelected ? 2 : 1;
-      ctx.strokeRect(leftPx, topPx, wPx, hPx);
+
+      let cx = obs.x;
+      let cy = obs.y;
+      let widthText = obs.width.toFixed(2);
+      let heightText = obs.height.toFixed(2);
+
+      if (isPolygon && obs.points && obs.points.length > 0) {
+        // Render polygon path
+        ctx.beginPath();
+        obs.points.forEach((pt, idx) => {
+          const p = ekfToScreen(pt.x, pt.y);
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+
+        ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.07)";
+        ctx.fill();
+        ctx.stroke();
+
+        // Centroid coordinates
+        cx = obs.points.reduce((acc, pt) => acc + pt.x, 0) / obs.points.length;
+        cy = obs.points.reduce((acc, pt) => acc + pt.y, 0) / obs.points.length;
+      } else {
+        // Render rectangle box
+        const obsHalfW = obs.width / 2;
+        const obsHalfH = obs.height / 2;
+        const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
+        const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
+        const leftPx = Math.min(p1.x, p2.x);
+        const topPx = Math.min(p1.y, p2.y);
+        const wPx = Math.abs(p1.x - p2.x);
+        const hPx = Math.abs(p1.y - p2.y);
+
+        if (obs.obstacleType === "ramp" && obs.rampDirection) {
+          let grad;
+          if (obs.rampDirection === "up") {
+            grad = ctx.createLinearGradient(leftPx, topPx + hPx, leftPx, topPx);
+          } else if (obs.rampDirection === "down") {
+            grad = ctx.createLinearGradient(leftPx, topPx, leftPx, topPx + hPx);
+          } else if (obs.rampDirection === "left") {
+            grad = ctx.createLinearGradient(leftPx + wPx, topPx, leftPx, topPx);
+          } else {
+            grad = ctx.createLinearGradient(leftPx, topPx, leftPx + wPx, topPx);
+          }
+          grad.addColorStop(0, isSelected ? "rgba(245, 158, 11, 0.05)" : "rgba(255, 255, 255, 0.02)");
+          grad.addColorStop(1, isSelected ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.15)");
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.07)";
+        }
+        ctx.fillRect(leftPx, topPx, wPx, hPx);
+        ctx.strokeRect(leftPx, topPx, wPx, hPx);
+
+        // Draw Incline Arrow for Ramps
+        if (obs.obstacleType === "ramp" && obs.rampDirection) {
+          ctx.save();
+          ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(245, 158, 11, 0.5)";
+          ctx.lineWidth = 1.5;
+          const ccx = leftPx + wPx / 2;
+          const ccy = topPx + hPx / 2;
+          ctx.beginPath();
+          if (obs.rampDirection === "up") {
+            ctx.moveTo(ccx, ccy + 8); ctx.lineTo(ccx, ccy - 8);
+            ctx.lineTo(ccx - 3, ccy - 5); ctx.moveTo(ccx, ccy - 8); ctx.lineTo(ccx + 3, ccy - 5);
+          } else if (obs.rampDirection === "down") {
+            ctx.moveTo(ccx, ccy - 8); ctx.lineTo(ccx, ccy + 8);
+            ctx.lineTo(ccx - 3, ccy + 5); ctx.moveTo(ccx, ccy + 8); ctx.lineTo(ccx + 3, ccy + 5);
+          } else if (obs.rampDirection === "left") {
+            ctx.moveTo(ccx + 8, ccy); ctx.lineTo(ccx - 8, ccy);
+            ctx.lineTo(ccx - 5, ccy - 3); ctx.moveTo(ccx - 8, ccy); ctx.lineTo(ccx - 5, ccy + 3);
+          } else {
+            ctx.moveTo(ccx - 8, ccy); ctx.lineTo(ccx + 8, ccy);
+            ctx.lineTo(ccx + 5, ccy - 3); ctx.moveTo(ccx + 8, ccy); ctx.lineTo(ccx + 5, ccy + 3);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
       ctx.restore();
 
-      // 3. Draw Incline Arrow for Ramps
-      if (obs.obstacleType === "ramp" && obs.rampDirection) {
-        ctx.save();
-        ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(245, 158, 11, 0.5)";
-        ctx.lineWidth = 1.5;
-        const cx = leftPx + wPx / 2;
-        const cy = topPx + hPx / 2;
-        ctx.beginPath();
-        if (obs.rampDirection === "up") {
-          ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy - 8);
-          ctx.lineTo(cx - 3, cy - 5); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx + 3, cy - 5);
-        } else if (obs.rampDirection === "down") {
-          ctx.moveTo(cx, cy - 8); ctx.lineTo(cx, cy + 8);
-          ctx.lineTo(cx - 3, cy + 5); ctx.moveTo(cx, cy + 8); ctx.lineTo(cx + 3, cy + 5);
-        } else if (obs.rampDirection === "left") {
-          ctx.moveTo(cx + 8, cy); ctx.lineTo(cx - 8, cy);
-          ctx.lineTo(cx - 5, cy - 3); ctx.moveTo(cx - 8, cy); ctx.lineTo(cx - 5, cy + 3);
-        } else { // "right"
-          ctx.moveTo(cx - 8, cy); ctx.lineTo(cx + 8, cy);
-          ctx.lineTo(cx + 5, cy - 3); ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 5, cy + 3);
-        }
-        ctx.stroke();
-        ctx.restore();
-      }
+      const pCenter = ekfToScreen(cx, cy);
 
       // Name label
       ctx.fillStyle = isSelected ? "#F59E0B" : "rgba(255, 255, 255, 0.6)";
       ctx.font = "bold 10px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(obs.name, leftPx + wPx / 2, topPx + hPx / 2 - 3);
+      ctx.fillText(obs.name, pCenter.x, pCenter.y - 3);
 
       // Bounding dimensions and type label (faint)
       ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
       ctx.font = "8px monospace";
-      ctx.fillText(
-        `${obs.width.toFixed(2)}m x ${obs.height.toFixed(2)}m`, 
-        leftPx + wPx / 2, 
-        topPx + hPx / 2 + 7
-      );
-      if (obs.obstacleType === "ramp") {
-        ctx.fillStyle = "rgba(245, 158, 11, 0.5)";
-        ctx.fillText("RAMP", leftPx + wPx / 2, topPx + hPx / 2 + 16);
+      if (isPolygon) {
+        ctx.fillText(
+          `Polygon (${obs.points?.length || 0} vertices)`, 
+          pCenter.x, 
+          pCenter.y + 7
+        );
+      } else {
+        ctx.fillText(
+          `${widthText}m x ${heightText}m`, 
+          pCenter.x, 
+          pCenter.y + 7
+        );
       }
 
-      // Resize Handle at bottom-right corner (using absolute screen coordinates)
+      if (obs.obstacleType === "ramp") {
+        ctx.fillStyle = "rgba(245, 158, 11, 0.5)";
+        ctx.fillText("RAMP", pCenter.x, pCenter.y + 16);
+      }
+
+      // Resize Handles
       if (isSelected) {
-        ctx.fillStyle = "#F59E0B";
-        ctx.beginPath();
-        ctx.arc(leftPx + wPx, topPx + hPx, 5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        if (isPolygon && obs.points) {
+          // Draw vertex handles for polygon
+          obs.points.forEach((pt) => {
+            const pv = ekfToScreen(pt.x, pt.y);
+            ctx.fillStyle = "#F59E0B";
+            ctx.beginPath();
+            ctx.arc(pv.x, pv.y, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          });
+        } else {
+          // Draw single corner resize handle for box
+          const obsHalfW = obs.width / 2;
+          const obsHalfH = obs.height / 2;
+          const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
+          const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
+          const leftPx = Math.min(p1.x, p2.x);
+          const topPx = Math.min(p1.y, p2.y);
+          const wPx = Math.abs(p1.x - p2.x);
+          const hPx = Math.abs(p1.y - p2.y);
+
+          ctx.fillStyle = "#F59E0B";
+          ctx.beginPath();
+          ctx.arc(leftPx + wPx, topPx + hPx, 5, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.strokeStyle = "#000000";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
     });
 
@@ -1033,23 +1306,22 @@ export default function FieldEditor() {
       ctx.strokeStyle = isSelected ? "#00E5FF" : "rgba(255,255,255,0.4)";
       ctx.lineWidth = isSelected ? 2.5 : 1;
 
+      const sizePx = sizeMeters * scale;
       if (type.shape === "box") {
-        const wPx = type.width * scale;
-        const hPx = type.height * scale;
-        ctx.fillRect(-wPx / 2, -hPx / 2, wPx, hPx);
-        ctx.strokeRect(-wPx / 2, -hPx / 2, wPx, hPx);
+        ctx.fillRect(-sizePx / 2, -sizePx / 2, sizePx, sizePx);
+        ctx.strokeRect(-sizePx / 2, -sizePx / 2, sizePx, sizePx);
       } else {
         // cylinder or sphere drawn as circle in 2D
-        const radiusPx = ((type.diameter || 0.15) / 2) * scale;
         ctx.beginPath();
-        ctx.arc(0, 0, radiusPx, 0, Math.PI * 2);
+        ctx.arc(0, 0, sizePx / 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(0, -radiusPx);
+        ctx.lineTo(sizePx / 2, 0);
         ctx.strokeStyle = "rgba(0,0,0,0.5)";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
@@ -1062,7 +1334,101 @@ export default function FieldEditor() {
       ctx.fillText(type.name, pxX, pxY + (sizeMeters * scale) / 2 + 10);
     });
 
-  }, [obstacles, selectedObstacleId, canvasSize, bgImage, elements, elementTypes, selectedElementInstanceId, fieldType, xAxisDirection, yAxisDirection, redDriverStation, blueDriverStation, showGrid, showAllianceZones, showCoordinateAxes, canvasW, canvasH, fieldW, fieldH, scale]);
+    // 9. Draw AprilTags
+    apriltags.forEach((tag) => {
+      const isSelected = tag.id === selectedTagId;
+      const p = ekfToScreen(tag.x, tag.y);
+      const tagSizePx = 0.16 * scale; // 16cm square size
+      
+      ctx.save();
+      // Draw yaw vector line (direction normal)
+      const yawRad = (tag.yaw * Math.PI) / 180;
+      const arrowX = tag.x + Math.cos(yawRad) * 0.18; // 18cm line
+      const arrowY = tag.y + Math.sin(yawRad) * 0.18;
+      const pArrow = ekfToScreen(arrowX, arrowY);
+      
+      ctx.strokeStyle = isSelected ? "#F59E0B" : "#10B981"; // gold if selected, green otherwise
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(pArrow.x, pArrow.y);
+      ctx.stroke();
+      
+      // Draw arrowhead
+      const headlen = 5; // length of head in pixels
+      const angle = Math.atan2(pArrow.y - p.y, pArrow.x - p.x);
+      ctx.fillStyle = isSelected ? "#F59E0B" : "#10B981";
+      ctx.beginPath();
+      ctx.moveTo(pArrow.x, pArrow.y);
+      ctx.lineTo(pArrow.x - headlen * Math.cos(angle - Math.PI / 6), pArrow.y - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(pArrow.x - headlen * Math.cos(angle + Math.PI / 6), pArrow.y - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.fill();
+
+      // Draw tag body (square)
+      ctx.translate(p.x, p.y);
+      ctx.rotate(yawRad); // rotate canvas to match tag yaw
+      
+      ctx.fillStyle = "#0A0A0A";
+      ctx.fillRect(-tagSizePx / 2, -tagSizePx / 2, tagSizePx, tagSizePx);
+      
+      ctx.strokeStyle = isSelected ? "#F59E0B" : "#10B981";
+      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.strokeRect(-tagSizePx / 2, -tagSizePx / 2, tagSizePx, tagSizePx);
+      
+      // Draw a small inner square to simulate AprilTag border pattern
+      ctx.strokeStyle = "#ffffff";
+      ctx.strokeRect(-tagSizePx / 3, -tagSizePx / 3, (tagSizePx * 2) / 3, (tagSizePx * 2) / 3);
+
+      // Draw ID number text (non-rotated for legibility, so we restore rotation first)
+      ctx.restore();
+      
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 8px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(tag.id.toString(), p.x, p.y);
+    });
+
+    // 10. Draw polygon in-progress if drawing
+    if (isDrawingPolygon && drawingPoints.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      drawingPoints.forEach((pt, idx) => {
+        const p = ekfToScreen(pt.x, pt.y);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+
+      // Draw interactive guide/hover line
+      if (hoverPoint) {
+        ctx.beginPath();
+        const lastPt = drawingPoints[drawingPoints.length - 1];
+        const lastP = ekfToScreen(lastPt.x, lastPt.y);
+        const hoverP = ekfToScreen(hoverPoint.x, hoverPoint.y);
+        ctx.moveTo(lastP.x, lastP.y);
+        ctx.lineTo(hoverP.x, hoverP.y);
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+        ctx.stroke();
+      }
+
+      // Draw vertex handles
+      drawingPoints.forEach((pt) => {
+        const p = ekfToScreen(pt.x, pt.y);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#F59E0B";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+  }, [obstacles, selectedObstacleId, canvasSize, bgImage, elements, elementTypes, selectedElementInstanceId, fieldType, xAxisDirection, yAxisDirection, redDriverStation, blueDriverStation, showGrid, showAllianceZones, showCoordinateAxes, canvasW, canvasH, fieldW, fieldH, scale, apriltags, selectedTagId, isDrawingPolygon, drawingPoints, hoverPoint]);
 
   // Mouse Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1076,10 +1442,88 @@ export default function FieldEditor() {
     const mx = toEkfX(mouseX, mouseY);
     const my = toEkfY(mouseX, mouseY);
 
-    // 1. Check if we clicked on the active obstacle's resize handle (highest priority)
+    // If drawing a polygon
+    if (isDrawingPolygon) {
+      if (drawingPoints.length >= 3) {
+        const firstPt = drawingPoints[0];
+        const firstPx = ekfToScreen(firstPt.x, firstPt.y);
+        const dist = Math.hypot(mouseX - firstPx.x, mouseY - firstPx.y);
+        if (dist <= 10) {
+          // Close and save polygon!
+          const cx = drawingPoints.reduce((sum, p) => sum + p.x, 0) / drawingPoints.length;
+          const cy = drawingPoints.reduce((sum, p) => sum + p.y, 0) / drawingPoints.length;
+          const newObs: FieldObstacle = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: `Polygon Obstacle ${obstacles.length + 1}`,
+            x: Number(cx.toFixed(3)),
+            y: Number(cy.toFixed(3)),
+            width: 0.5,
+            height: 0.5,
+            isBlocking: true,
+            obstacleType: "blocking",
+            shape: "polygon",
+            points: [...drawingPoints]
+          };
+          setObstacles([...obstacles, newObs]);
+          setSelectedObstacleId(newObs.id);
+          setIsDrawingPolygon(false);
+          setDrawingPoints([]);
+          setHoverPoint(null);
+          return;
+        }
+      }
+      setDrawingPoints([...drawingPoints, { x: Number(mx.toFixed(3)), y: Number(my.toFixed(3)) }]);
+      return;
+    }
+
+    // 1. Check if we clicked inside selected polygon vertices
     if (selectedObstacleId) {
       const obs = obstacles.find((o) => o.id === selectedObstacleId);
-      if (obs) {
+      if (obs && obs.shape === "polygon" && obs.points) {
+        for (let idx = 0; idx < obs.points.length; idx++) {
+          const pt = obs.points[idx];
+          const pv = ekfToScreen(pt.x, pt.y);
+          const dist = Math.hypot(mouseX - pv.x, mouseY - pv.y);
+          if (dist <= 10) {
+            dragModeRef.current = "dragging_vertex";
+            dragStartRef.current = {
+              mx,
+              my,
+              ox: pt.x,
+              oy: pt.y,
+              vertexIndex: idx
+            };
+            return;
+          }
+        }
+      }
+    }
+
+    // 2. Check if we clicked on an AprilTag
+    for (let i = 0; i < apriltags.length; i++) {
+      const tag = apriltags[i];
+      const pv = ekfToScreen(tag.x, tag.y);
+      const dist = Math.hypot(mouseX - pv.x, mouseY - pv.y);
+      if (dist <= 12) {
+        setSelectedTagId(tag.id);
+        setSelectedObstacleId(null);
+        setSelectedElementInstanceId(null);
+        dragModeRef.current = "dragging_tag";
+        dragStartRef.current = {
+          mx,
+          my,
+          ox: tag.x,
+          oy: tag.y,
+          tagId: tag.id
+        };
+        return;
+      }
+    }
+
+    // 3. Check if we clicked on the active obstacle's resize handle (only for rectangles)
+    if (selectedObstacleId) {
+      const obs = obstacles.find((o) => o.id === selectedObstacleId);
+      if (obs && obs.shape !== "polygon") {
         const obsHalfW = obs.width / 2;
         const obsHalfH = obs.height / 2;
         const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
@@ -1110,7 +1554,7 @@ export default function FieldEditor() {
       }
     }
 
-    // 2. Check if we clicked inside any placed game element (higher priority than overlapping obstacles)
+    // 4. Check if we clicked inside any placed game element (higher priority than overlapping obstacles)
     for (let i = elements.length - 1; i >= 0; i--) {
       const el = elements[i];
       const type = elementTypes.find((t) => t.id === el.elementTypeId);
@@ -1119,9 +1563,10 @@ export default function FieldEditor() {
       const radius = type.shape === "box" ? Math.max(type.width, type.height) / 2 : (type.diameter || 0.15) / 2;
       const dist = Math.hypot(mx - el.x, my - el.y);
 
-      if (dist <= radius + 0.08) { // 8cm click padding
+      if (dist <= radius + 0.08) {
         setSelectedElementInstanceId(el.id);
         setSelectedObstacleId(null);
+        setSelectedTagId(null);
         dragModeRef.current = "dragging";
         dragStartRef.current = {
           mx,
@@ -1133,37 +1578,45 @@ export default function FieldEditor() {
       }
     }
 
-    // 3. Check if we clicked inside any obstacle
+    // 5. Check if we clicked inside any obstacle (polygon raycasting or rect boundaries)
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const obs = obstacles[i];
-      const halfW = obs.width / 2;
-      const halfH = obs.height / 2;
+      const isPolygon = obs.shape === "polygon";
 
-      const insideX = mx >= obs.x - halfH && mx <= obs.x + halfH;
-      const insideY = my >= obs.y - halfW && my <= obs.y + halfW;
+      let clickedInside = false;
+      if (isPolygon && obs.points && obs.points.length > 0) {
+        clickedInside = isPointInPolygon(mx, my, obs.points);
+      } else {
+        const halfW = obs.width / 2;
+        const halfH = obs.height / 2;
+        clickedInside = mx >= obs.x - halfH && mx <= obs.x + halfH &&
+                        my >= obs.y - halfW && my <= obs.y + halfW;
+      }
 
-      if (insideX && insideY) {
+      if (clickedInside) {
         setSelectedObstacleId(obs.id);
         setSelectedElementInstanceId(null);
+        setSelectedTagId(null);
         dragModeRef.current = "dragging";
         dragStartRef.current = {
           mx,
           my,
           ox: obs.x,
-          oy: obs.y
+          oy: obs.y,
+          originalPoints: obs.points ? [...obs.points] : undefined
         };
         return;
       }
     }
 
-    // 4. Clicked empty space
+    // 6. Clicked empty space
     setSelectedObstacleId(null);
     setSelectedElementInstanceId(null);
+    setSelectedTagId(null);
     dragModeRef.current = "none";
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (dragModeRef.current === "none") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1173,32 +1626,70 @@ export default function FieldEditor() {
     const mx = toEkfX(mouseX, mouseY);
     const my = toEkfY(mouseX, mouseY);
 
+    if (isDrawingPolygon) {
+      setHoverPoint({ x: mx, y: my });
+      return;
+    }
+
+    if (dragModeRef.current === "none") return;
+
+    const limitX = fieldH / 2;
+    const limitY = fieldW / 2;
+
     if (dragModeRef.current === "dragging") {
       if (selectedObstacleId) {
         const diffX = mx - dragStartRef.current.mx;
         const diffY = my - dragStartRef.current.my;
 
-        const nextX = Math.max(-1.8, Math.min(1.8, dragStartRef.current.ox + diffX));
-        const nextY = Math.max(-1.8, Math.min(1.8, dragStartRef.current.oy + diffY));
+        const obs = obstacles.find((o) => o.id === selectedObstacleId);
+        if (obs) {
+          if (obs.shape === "polygon" && obs.points && dragStartRef.current.originalPoints) {
+            const origPts = dragStartRef.current.originalPoints;
+            const shiftedPoints = origPts.map(p => ({
+              x: Number(Math.max(-limitX, Math.min(limitX, p.x + diffX)).toFixed(3)),
+              y: Number(Math.max(-limitY, Math.min(limitY, p.y + diffY)).toFixed(3))
+            }));
+            
+            const nextX = shiftedPoints.reduce((sum, p) => sum + p.x, 0) / shiftedPoints.length;
+            const nextY = shiftedPoints.reduce((sum, p) => sum + p.y, 0) / shiftedPoints.length;
 
-        setObstacles(
-          obstacles.map((obs) => {
-            if (obs.id === selectedObstacleId) {
-              return {
-                ...obs,
-                x: Number(nextX.toFixed(3)),
-                y: Number(nextY.toFixed(3))
-              };
-            }
-            return obs;
-          })
-        );
+            setObstacles(
+              obstacles.map((o) => {
+                if (o.id === selectedObstacleId) {
+                  return {
+                    ...o,
+                    x: Number(nextX.toFixed(3)),
+                    y: Number(nextY.toFixed(3)),
+                    points: shiftedPoints
+                  };
+                }
+                return o;
+              })
+            );
+          } else {
+            const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
+            const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+
+            setObstacles(
+              obstacles.map((obs) => {
+                if (obs.id === selectedObstacleId) {
+                  return {
+                    ...obs,
+                    x: Number(nextX.toFixed(3)),
+                    y: Number(nextY.toFixed(3))
+                  };
+                }
+                return obs;
+              })
+            );
+          }
+        }
       } else if (selectedElementInstanceId) {
         const diffX = mx - dragStartRef.current.mx;
         const diffY = my - dragStartRef.current.my;
 
-        const nextX = Math.max(-1.8, Math.min(1.8, dragStartRef.current.ox + diffX));
-        const nextY = Math.max(-1.8, Math.min(1.8, dragStartRef.current.oy + diffY));
+        const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
+        const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
 
         setElements(
           elements.map((el) => {
@@ -1213,6 +1704,53 @@ export default function FieldEditor() {
           })
         );
       }
+    } else if (dragModeRef.current === "dragging_vertex" && selectedObstacleId) {
+      const diffX = mx - dragStartRef.current.mx;
+      const diffY = my - dragStartRef.current.my;
+      const vIdx = dragStartRef.current.vertexIndex;
+
+      if (vIdx !== undefined) {
+        const nextVx = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
+        const nextVy = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+
+        setObstacles(
+          obstacles.map((obs) => {
+            if (obs.id === selectedObstacleId && obs.points) {
+              const updatedPoints = obs.points.map((pt, idx) =>
+                idx === vIdx ? { x: Number(nextVx.toFixed(3)), y: Number(nextVy.toFixed(3)) } : pt
+              );
+              const newCx = updatedPoints.reduce((sum, p) => sum + p.x, 0) / updatedPoints.length;
+              const newCy = updatedPoints.reduce((sum, p) => sum + p.y, 0) / updatedPoints.length;
+              return {
+                ...obs,
+                x: Number(newCx.toFixed(3)),
+                y: Number(newCy.toFixed(3)),
+                points: updatedPoints
+              };
+            }
+            return obs;
+          })
+        );
+      }
+    } else if (dragModeRef.current === "dragging_tag" && selectedTagId !== null) {
+      const diffX = mx - dragStartRef.current.mx;
+      const diffY = my - dragStartRef.current.my;
+
+      const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
+      const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+
+      setApriltags(
+        apriltags.map((tag) => {
+          if (tag.id === selectedTagId) {
+            return {
+              ...tag,
+              x: Number(nextX.toFixed(3)),
+              y: Number(nextY.toFixed(3))
+            };
+          }
+          return tag;
+        })
+      );
     } else if (dragModeRef.current === "resizing" && selectedObstacleId) {
       const drag = dragStartRef.current;
       if (drag.fixedX === undefined || drag.fixedY === undefined || drag.ow === undefined || drag.oh === undefined) return;
@@ -1760,17 +2298,32 @@ export default function FieldEditor() {
                 <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
                   <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
                 </h3>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleAddObstacle();
                     }}
-                    className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
+                    className="px-2 py-0.5 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[8.5px] uppercase font-black tracking-widest rounded transition-all cursor-pointer font-bold shrink-0"
                   >
                     <Plus size={10} /> Add Box
                   </button>
-                  {isObstaclesExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDrawingPolygon(!isDrawingPolygon);
+                      setDrawingPoints([]);
+                      setHoverPoint(null);
+                    }}
+                    className={`px-2 py-0.5 text-[8.5px] uppercase font-black tracking-widest rounded transition-all cursor-pointer font-bold shrink-0 ${
+                      isDrawingPolygon 
+                        ? "bg-ares-cyan/25 border border-ares-cyan text-ares-cyan" 
+                        : "bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30"
+                    }`}
+                  >
+                    <Plus size={10} /> {isDrawingPolygon ? "Drawing" : "Draw Poly"}
+                  </button>
+                  {isObstaclesExpanded ? <ChevronUp size={14} className="text-marble/40 cursor-pointer" /> : <ChevronDown size={14} className="text-marble/40 cursor-pointer" />}
                 </div>
               </div>
 
@@ -1839,56 +2392,215 @@ export default function FieldEditor() {
 
                         <div className="flex flex-col gap-1.5">
                           <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                            Position X (m)
+                            Centroid X (m)
                           </label>
                           <input
                             type="number"
                             step="0.01"
                             value={selectedObs.x}
-                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "x", parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const newX = parseFloat(e.target.value) || 0;
+                              const diffX = newX - selectedObs.x;
+                              if (selectedObs.shape === "polygon" && selectedObs.points) {
+                                const updatedPoints = selectedObs.points.map(p => ({ x: p.x + diffX, y: p.y }));
+                                handleUpdateObstacleField(selectedObs.id, "points", updatedPoints);
+                              }
+                              handleUpdateObstacleField(selectedObs.id, "x", newX);
+                            }}
                             className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                           />
                         </div>
 
                         <div className="flex flex-col gap-1.5">
                           <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                            Position Y (m)
+                            Centroid Y (m)
                           </label>
                           <input
                             type="number"
                             step="0.01"
                             value={selectedObs.y}
-                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "y", parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const newY = parseFloat(e.target.value) || 0;
+                              const diffY = newY - selectedObs.y;
+                              if (selectedObs.shape === "polygon" && selectedObs.points) {
+                                const updatedPoints = selectedObs.points.map(p => ({ x: p.x, y: p.y + diffY }));
+                                handleUpdateObstacleField(selectedObs.id, "points", updatedPoints);
+                              }
+                              handleUpdateObstacleField(selectedObs.id, "y", newY);
+                            }}
                             className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                           />
                         </div>
 
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                            Width (m) - Y Axis
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0.05"
-                            value={selectedObs.width}
-                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
-                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                          />
-                        </div>
+                        {selectedObs.shape === "polygon" ? (
+                          <div className="col-span-2 space-y-3">
+                            <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Edit Vertices ({polygonCoordUnit})
+                              </label>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => setPolygonCoordUnit("meters")}
+                                  className={`px-1.5 py-0.5 text-[7.5px] uppercase font-black tracking-widest rounded ${
+                                    polygonCoordUnit === "meters" ? "bg-ares-gold text-black" : "bg-white/5 text-marble/55"
+                                  }`}
+                                >
+                                  M
+                                </button>
+                                <button
+                                  onClick={() => setPolygonCoordUnit("inches")}
+                                  className={`px-1.5 py-0.5 text-[7.5px] uppercase font-black tracking-widest rounded ${
+                                    polygonCoordUnit === "inches" ? "bg-ares-gold text-black" : "bg-white/5 text-marble/55"
+                                  }`}
+                                >
+                                  In
+                                </button>
+                              </div>
+                            </div>
 
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                            Height (m) - X Axis
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0.05"
-                            value={selectedObs.height}
-                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
-                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                          />
+                            <div className="space-y-1.5 border border-white/5 bg-black/20 p-2.5 rounded-xl max-h-36 overflow-y-auto">
+                              {(selectedObs.points || []).map((pt, idx) => {
+                                const factor = polygonCoordUnit === "inches" ? 39.3701 : 1;
+                                const valX = Number((pt.x * factor).toFixed(2));
+                                const valY = Number((pt.y * factor).toFixed(2));
+
+                                return (
+                                  <div key={idx} className="flex items-center gap-1.5">
+                                    <span className="text-[8px] font-mono text-marble/35 w-3.5">
+                                      #{idx + 1}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={valX}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => {
+                                        const raw = parseFloat(e.target.value) || 0;
+                                        const newX = raw / factor;
+                                        const updated = (selectedObs.points || []).map((p, i) =>
+                                          i === idx ? { ...p, x: newX } : p
+                                        );
+                                        handleUpdateObstacleField(selectedObs.id, "points", updated);
+                                        const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
+                                        handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
+                                      }}
+                                      className="w-full bg-black/45 border border-white/10 rounded-lg px-1.5 py-1 text-[10px] text-white font-mono text-center focus:outline-none focus:border-ares-cyan"
+                                      placeholder="X"
+                                    />
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={valY}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => {
+                                        const raw = parseFloat(e.target.value) || 0;
+                                        const newY = raw / factor;
+                                        const updated = (selectedObs.points || []).map((p, i) =>
+                                          i === idx ? { ...p, y: newY } : p
+                                        );
+                                        handleUpdateObstacleField(selectedObs.id, "points", updated);
+                                        const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
+                                        handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
+                                      }}
+                                      className="w-full bg-black/45 border border-white/10 rounded-lg px-1.5 py-1 text-[10px] text-white font-mono text-center focus:outline-none focus:border-ares-cyan"
+                                      placeholder="Y"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const updated = (selectedObs.points || []).filter((_, i) => i !== idx);
+                                        handleUpdateObstacleField(selectedObs.id, "points", updated);
+                                        if (updated.length > 0) {
+                                          const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
+                                          const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
+                                          handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
+                                          handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
+                                        }
+                                      }}
+                                      className="text-marble/40 hover:text-ares-red-light p-0.5 transition-colors"
+                                      title="Remove vertex"
+                                    >
+                                      <Trash2 size={10} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+
+                              <button
+                                onClick={() => {
+                                  const newPt = { x: selectedObs.x + 0.1, y: selectedObs.y + 0.1 };
+                                  const updated = [...(selectedObs.points || []), newPt];
+                                  handleUpdateObstacleField(selectedObs.id, "points", updated);
+                                  const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
+                                  const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
+                                  handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
+                                  handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
+                                }}
+                                className="w-full py-1 text-[8px] uppercase font-black tracking-widest text-ares-gold border border-dashed border-ares-gold/20 hover:border-ares-gold/40 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
+                              >
+                                Add Vertex
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Width (m) - Y Axis
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0.05"
+                                value={selectedObs.width}
+                                onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Height (m) - X Axis
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0.05"
+                                value={selectedObs.height}
+                                onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Mirror duplicate controls */}
+                        <div className="col-span-2 border-t border-white/5 pt-3 space-y-2">
+                          <span className="text-[8px] uppercase font-black tracking-widest text-marble/45 block font-semibold">
+                            Mirror Duplicate Copy
+                          </span>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => handleMirrorObstacle(selectedObs.id, "x")}
+                              className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
+                              title="Duplicate and mirror across X-axis (flips Y)"
+                            >
+                              X-Axis (Y)
+                            </button>
+                            <button
+                              onClick={() => handleMirrorObstacle(selectedObs.id, "y")}
+                              className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
+                              title="Duplicate and mirror across Y-axis (flips X)"
+                            >
+                              Y-Axis (X)
+                            </button>
+                            <button
+                              onClick={() => handleMirrorObstacle(selectedObs.id, "center")}
+                              className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
+                              title="Duplicate and mirror across center (flips X and Y)"
+                            >
+                              Center
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex flex-col gap-1.5 col-span-2">
@@ -2310,7 +3022,190 @@ export default function FieldEditor() {
                 )}
               </div>
 
+            {/* AprilTags Inventory Card */}
+            <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isTagsExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
+              <div 
+                onClick={() => setIsTagsExpanded(!isTagsExpanded)}
+                className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
+                  isTagsExpanded ? "border-b border-white/5 pb-3" : ""
+                }`}
+              >
+                <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
+                  <Compass size={14} className="text-ares-gold" /> AprilTags Inventory
+                </h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddAprilTag();
+                    }}
+                    className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold shrink-0"
+                  >
+                    <Plus size={10} /> Add Tag
+                  </button>
+                  {isTagsExpanded ? <ChevronUp size={14} className="text-marble/40 cursor-pointer" /> : <ChevronDown size={14} className="text-marble/40 cursor-pointer" />}
+                </div>
+              </div>
 
+              {isTagsExpanded && (
+                <>
+                  {/* List of Tags */}
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                    {apriltags.length === 0 ? (
+                      <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
+                        No AprilTags placed yet.
+                      </div>
+                    ) : (
+                      apriltags.map((tag) => {
+                        const isSelected = tag.id === selectedTagId;
+                        return (
+                          <div
+                            key={tag.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTagId(tag.id);
+                              setSelectedObstacleId(null);
+                              setSelectedElementInstanceId(null);
+                            }}
+                            className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
+                              isSelected
+                                ? "bg-ares-gold/10 border-ares-gold text-white"
+                                : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            <span className="text-[11px] font-mono font-bold truncate">
+                              Tag #{tag.id} ({tag.x.toFixed(2)}, {tag.y.toFixed(2)})
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAprilTag(tag.id);
+                              }}
+                              className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                              title="Delete tag"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Selected Tag Parameters */}
+                  {selectedTagId !== null ? (
+                    (() => {
+                      const tag = apriltags.find((t) => t.id === selectedTagId);
+                      if (!tag) return null;
+                      return (
+                        <div className="border-t border-white/5 pt-4 space-y-4">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold font-bold">
+                            Tag Properties: Tag #{tag.id}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Tag ID (Integer)
+                              </label>
+                              <input
+                                type="number"
+                                step="1"
+                                value={tag.id}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleUpdateAprilTagField(tag.id, "id", parseInt(e.target.value) || 0)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Height Z (m)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={tag.z}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleUpdateAprilTagField(tag.id, "z", parseFloat(e.target.value) || 0)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Position X (m)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={tag.x}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleUpdateAprilTagField(tag.id, "x", parseFloat(e.target.value) || 0)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Position Y (m)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={tag.y}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleUpdateAprilTagField(tag.id, "y", parseFloat(e.target.value) || 0)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5 col-span-2">
+                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                                Yaw Angle (degrees)
+                              </label>
+                              <input
+                                type="number"
+                                step="1"
+                                value={tag.yaw}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleUpdateAprilTagField(tag.id, "yaw", parseFloat(e.target.value) || 0)}
+                                className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
+                      Select a placed AprilTag to edit.
+                    </div>
+                  )}
+
+                  {/* WPILib JSON Importer */}
+                  <div className="border-t border-white/5 pt-4 space-y-2.5">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
+                      WPILib apriltags.json Import
+                    </span>
+                    <p className="text-[8.5px] text-marble/40 leading-relaxed font-mono">
+                      Paste the raw content of your WPILib format apriltags.json file below to import all tags automatically.
+                    </p>
+                    <textarea
+                      value={importText}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => setImportText(e.target.value)}
+                      placeholder='e.g., {"tags": [{"ID": 1, "pose": {"translation": {"x": 1.5, "y": 1.5, "z": 0.5}, "rotation": {"quaternion": {"W": 1, "X": 0, "Y": 0, "Z": 0}}}}]}'
+                      className="w-full h-16 bg-black/40 border border-white/10 rounded-lg p-2 text-[9px] font-mono text-white focus:outline-none focus:border-ares-cyan resize-none"
+                    />
+                    <button
+                      onClick={() => {
+                        handleImportAprilTagsJson(importText);
+                        setImportText("");
+                      }}
+                      className="w-full py-1.5 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg transition-all font-bold cursor-pointer"
+                    >
+                      Parse and Import
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
           {/* Onshape Field CAD Synchronization was moved to the unified bottom section */}
         </div>
