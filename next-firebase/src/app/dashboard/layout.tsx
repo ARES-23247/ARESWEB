@@ -176,7 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* ─── MAIN PORTAL VIEWPORT ─── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0">
         
         {/* Mobile top-nav header */}
         <header className="md:hidden flex items-center justify-between px-6 py-4 bg-black/40 border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">

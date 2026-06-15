@@ -73,7 +73,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 
   return (
-    <aside className="w-72 h-screen bg-black/40 border-r border-white/5 flex flex-col justify-between shadow-2xl shrink-0 sticky top-0">
+    <aside className="w-72 bg-black/40 border-r border-white/5 flex flex-col justify-between shadow-2xl shrink-0">
       
       {/* Profile Header */}
       <div className="p-6 border-b border-white/5 flex flex-col gap-4">
@@ -102,9 +102,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           </div>
         </div>
       </div>
-
+ 
       {/* Navigation list */}
-      <div className="flex-grow py-6 overflow-y-auto space-y-8 px-3">
+      <div className="flex-grow py-6 space-y-8 px-3">
         <div>
           <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
             Internal Workspace

@@ -203,7 +203,7 @@ export default function DashboardSidebar({
         </div>
 
         {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="flex-1 py-6 space-y-8">
           <div>
             <h4 className="text-xs uppercase font-black tracking-widest text-ares-gold mb-2 px-6">Navigation</h4>
             <div className="space-y-1 px-3">
