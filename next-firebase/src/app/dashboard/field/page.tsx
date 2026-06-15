@@ -687,17 +687,21 @@ export default function FieldEditor() {
     }
   };
 
-  const handleDeleteLayout = async () => {
-    if (!selectedConfigId) return;
-    if (!confirm(`Are you sure you want to delete the layout "${configName}"?`)) return;
+  const handleDeleteLayout = async (configIdOrEvent?: string | React.MouseEvent, name?: string) => {
+    const targetId = typeof configIdOrEvent === "string" ? configIdOrEvent : selectedConfigId;
+    const targetName = name || (typeof configIdOrEvent === "string" ? configs.find(c => c.id === configIdOrEvent)?.name : configName) || "this layout";
+    if (!targetId) return;
+    if (!confirm(`Are you sure you want to delete the layout "${targetName}"?`)) return;
 
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "field_configs", selectedConfigId));
-      setSelectedConfigId("");
-      setConfigName("New Field Layout");
-      setObstacles([]);
-      setSelectedObstacleId(null);
+      await deleteDoc(doc(db, "field_configs", targetId));
+      if (targetId === selectedConfigId) {
+        setSelectedConfigId("");
+        setConfigName("New Field Layout");
+        setObstacles([]);
+        setSelectedObstacleId(null);
+      }
       await fetchConfigs();
       alert("Layout deleted successfully.");
     } catch (err: any) {
@@ -1337,36 +1341,6 @@ export default function FieldEditor() {
             Visually design and configure FTC and FRC field layouts. Adjust coordinate axes, define driver's stations, place game elements, and draw blocking walls or non-blocking ramps.
           </p>
         </div>
-
-        {/* Global Save/Load Configuration Row */}
-        <div className="flex flex-wrap items-center gap-3 bg-black/40 border border-white/10 p-3 rounded-2xl shrink-0">
-          <select
-            value={selectedConfigId}
-            onChange={(e) => {
-              const cfg = configs.find((c) => c.id === e.target.value);
-              if (cfg) loadConfig(cfg);
-            }}
-            className="bg-black/50 text-white text-xs border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:border-ares-cyan uppercase font-bold cursor-pointer min-w-[150px]"
-          >
-            {configs.length === 0 ? (
-              <option value="" className="bg-neutral-900">No Layouts Saved</option>
-            ) : (
-              configs.map((c) => (
-                <option key={c.id} value={c.id} className="bg-neutral-900 text-white">
-                  {c.name}
-                </option>
-              ))
-            )}
-          </select>
-
-          <button
-            onClick={handleCreateNew}
-            className="px-3.5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all"
-            title="Create new empty configuration layout"
-          >
-            <FilePlus size={12} /> New Layout
-          </button>
-        </div>
       </header>
 
       {/* Main Workspace: Left canvas grid, Right sidebar controls */}
@@ -1413,7 +1387,94 @@ export default function FieldEditor() {
 
         {/* Configuration settings & Properties Panel */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-          
+
+          {/* Saved Layout Library */}
+          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLibraryExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
+            <h3 
+              onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
+              className={`text-xs font-black uppercase text-white tracking-widest font-heading flex items-center justify-between cursor-pointer hover:text-ares-gold transition-colors select-none ${
+                isLibraryExpanded ? "border-b border-white/5 pb-3" : ""
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Map size={14} className="text-ares-gold" /> Saved Layout Library
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCreateNew();
+                  }}
+                  className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold animate-pulse hover:animate-none"
+                  title="Create new empty configuration layout"
+                >
+                  <Plus size={10} /> New Layout
+                </button>
+                {isLibraryExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
+              </div>
+            </h3>
+            
+            {isLibraryExpanded && (
+              <div className="max-h-60 overflow-y-auto space-y-2.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
+                {configs.length === 0 ? (
+                  <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-8">
+                    No layouts saved in library.
+                  </div>
+                ) : (
+                  configs.map((cfg) => {
+                    const isActive = cfg.id === selectedConfigId;
+                    const formattedDate = new Date(cfg.updatedAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    });
+                    return (
+                      <div
+                        key={cfg.id}
+                        onClick={() => loadConfig(cfg)}
+                        className={`flex flex-col gap-1 p-3.5 border rounded-xl cursor-pointer transition-all ${
+                          isActive
+                            ? "bg-ares-gold/10 border-ares-gold text-white shadow-lg shadow-ares-gold/5"
+                            : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-extrabold truncate max-w-[130px] uppercase tracking-wide">
+                            {cfg.name}
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {cfg.gameYear && (
+                              <span className="text-[7.5px] font-mono bg-ares-gold/15 border border-ares-gold/25 text-ares-gold px-1.5 py-0.5 rounded uppercase font-bold">
+                                {cfg.gameYear}
+                              </span>
+                            )}
+                            <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
+                              {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLayout(cfg.id, cfg.name);
+                              }}
+                              className="text-marble/45 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
+                              title="Delete layout"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
+                          <span>Updated: {formattedDate}</span>
+                          {isActive && <span className="text-ares-gold font-bold text-[8px] uppercase tracking-widest">Active</span>}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Metadata Card */}
           <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLayoutSettingsExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
@@ -2249,71 +2310,7 @@ export default function FieldEditor() {
                 )}
               </div>
 
-          {/* Saved Layout Library */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLibraryExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
-            <h3 
-              onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
-              className={`text-xs font-black uppercase text-white tracking-widest font-heading flex items-center justify-between cursor-pointer hover:text-ares-gold transition-colors select-none ${
-                isLibraryExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Map size={14} className="text-ares-gold" /> Saved Layout Library
-              </span>
-              {isLibraryExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
-            </h3>
-            
-            {isLibraryExpanded && (
-              <div className="max-h-60 overflow-y-auto space-y-2.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                {configs.length === 0 ? (
-                  <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-8">
-                    No layouts saved in library.
-                  </div>
-                ) : (
-                  configs.map((cfg) => {
-                    const isActive = cfg.id === selectedConfigId;
-                    const formattedDate = new Date(cfg.updatedAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    });
-                    return (
-                      <div
-                        key={cfg.id}
-                        onClick={() => loadConfig(cfg)}
-                        className={`flex flex-col gap-1 p-3.5 border rounded-xl cursor-pointer transition-all ${
-                          isActive
-                            ? "bg-ares-gold/10 border-ares-gold text-white shadow-lg shadow-ares-gold/5"
-                            : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-extrabold truncate max-w-[130px] uppercase tracking-wide">
-                            {cfg.name}
-                          </span>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {cfg.gameYear && (
-                              <span className="text-[7.5px] font-mono bg-ares-gold/15 border border-ares-gold/25 text-ares-gold px-1.5 py-0.5 rounded uppercase font-bold">
-                                {cfg.gameYear}
-                              </span>
-                            )}
-                            <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
-                              {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
-                          <span>Updated: {formattedDate}</span>
-                          {isActive && <span className="text-ares-gold font-bold text-[8px] uppercase tracking-widest">Active</span>}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
+
 
           {/* Onshape Field CAD Synchronization was moved to the unified bottom section */}
         </div>
