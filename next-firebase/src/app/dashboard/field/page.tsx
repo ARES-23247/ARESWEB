@@ -107,7 +107,6 @@ export default function FieldEditor() {
   const [showCoordinateAxes, setShowCoordinateAxes] = useState<boolean>(true);
 
   // Custom game elements states
-  const [editMode, setEditMode] = useState<"obstacles" | "elements">("obstacles");
   const [elementTypes, setElementTypes] = useState<ElementType[]>([]);
   const [elements, setElements] = useState<FieldElementInstance[]>([]);
   const [selectedElementTypeId, setSelectedElementTypeId] = useState<string | null>(null);
@@ -1059,7 +1058,7 @@ export default function FieldEditor() {
       ctx.fillText(type.name, pxX, pxY + (sizeMeters * scale) / 2 + 10);
     });
 
-  }, [obstacles, selectedObstacleId, canvasSize, bgImage, editMode, elements, elementTypes, selectedElementInstanceId, fieldType, xAxisDirection, yAxisDirection, redDriverStation, blueDriverStation, showGrid, showAllianceZones, showCoordinateAxes, canvasW, canvasH, fieldW, fieldH, scale]);
+  }, [obstacles, selectedObstacleId, canvasSize, bgImage, elements, elementTypes, selectedElementInstanceId, fieldType, xAxisDirection, yAxisDirection, redDriverStation, blueDriverStation, showGrid, showAllianceZones, showCoordinateAxes, canvasW, canvasH, fieldW, fieldH, scale]);
 
   // Mouse Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1073,94 +1072,90 @@ export default function FieldEditor() {
     const mx = toEkfX(mouseX, mouseY);
     const my = toEkfY(mouseX, mouseY);
 
-    if (editMode === "obstacles") {
-      // 1. Check if we clicked on the active obstacle's resize handle
-      if (selectedObstacleId) {
-        const obs = obstacles.find((o) => o.id === selectedObstacleId);
-        if (obs) {
-          const obsHalfW = obs.width / 2;
-          const obsHalfH = obs.height / 2;
-          const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
-          const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
-          const leftPx = Math.min(p1.x, p2.x);
-          const topPx = Math.min(p1.y, p2.y);
-          const wPx = Math.abs(p1.x - p2.x);
-          const hPx = Math.abs(p1.y - p2.y);
+    // 1. Check if we clicked on the active obstacle's resize handle (highest priority)
+    if (selectedObstacleId) {
+      const obs = obstacles.find((o) => o.id === selectedObstacleId);
+      if (obs) {
+        const obsHalfW = obs.width / 2;
+        const obsHalfH = obs.height / 2;
+        const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
+        const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
+        const leftPx = Math.min(p1.x, p2.x);
+        const topPx = Math.min(p1.y, p2.y);
+        const wPx = Math.abs(p1.x - p2.x);
+        const hPx = Math.abs(p1.y - p2.y);
 
-          const handleX = leftPx + wPx;
-          const handleY = topPx + hPx;
-          const dist = Math.hypot(mouseX - handleX, mouseY - handleY);
+        const handleX = leftPx + wPx;
+        const handleY = topPx + hPx;
+        const dist = Math.hypot(mouseX - handleX, mouseY - handleY);
 
-          if (dist <= 10) {
-            dragModeRef.current = "resizing";
-            dragStartRef.current = {
-              mx,
-              my,
-              ox: obs.x,
-              oy: obs.y,
-              ow: obs.width,
-              oh: obs.height,
-              fixedX: toEkfX(leftPx, topPx),
-              fixedY: toEkfY(leftPx, topPx)
-            };
-            return;
-          }
-        }
-      }
-
-      // 2. Check if we clicked inside any obstacle
-      for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obs = obstacles[i];
-        const halfW = obs.width / 2;
-        const halfH = obs.height / 2;
-
-        const insideX = mx >= obs.x - halfH && mx <= obs.x + halfH;
-        const insideY = my >= obs.y - halfW && my <= obs.y + halfW;
-
-        if (insideX && insideY) {
-          setSelectedObstacleId(obs.id);
-          setSelectedElementInstanceId(null);
-          dragModeRef.current = "dragging";
+        if (dist <= 10) {
+          dragModeRef.current = "resizing";
           dragStartRef.current = {
             mx,
             my,
             ox: obs.x,
-            oy: obs.y
+            oy: obs.y,
+            ow: obs.width,
+            oh: obs.height,
+            fixedX: toEkfX(leftPx, topPx),
+            fixedY: toEkfY(leftPx, topPx)
           };
           return;
         }
       }
-
-      // 3. Clicked empty space
-      setSelectedObstacleId(null);
-      dragModeRef.current = "none";
-    } else {
-      // editMode === "elements"
-      for (let i = elements.length - 1; i >= 0; i--) {
-        const el = elements[i];
-        const type = elementTypes.find((t) => t.id === el.elementTypeId);
-        if (!type) continue;
-
-        const radius = type.shape === "box" ? Math.max(type.width, type.height) / 2 : (type.diameter || 0.15) / 2;
-        const dist = Math.hypot(mx - el.x, my - el.y);
-
-        if (dist <= radius + 0.08) { // 8cm click padding
-          setSelectedElementInstanceId(el.id);
-          setSelectedObstacleId(null);
-          dragModeRef.current = "dragging";
-          dragStartRef.current = {
-            mx,
-            my,
-            ox: el.x,
-            oy: el.y
-          };
-          return;
-        }
-      }
-
-      setSelectedElementInstanceId(null);
-      dragModeRef.current = "none";
     }
+
+    // 2. Check if we clicked inside any placed game element (higher priority than overlapping obstacles)
+    for (let i = elements.length - 1; i >= 0; i--) {
+      const el = elements[i];
+      const type = elementTypes.find((t) => t.id === el.elementTypeId);
+      if (!type) continue;
+
+      const radius = type.shape === "box" ? Math.max(type.width, type.height) / 2 : (type.diameter || 0.15) / 2;
+      const dist = Math.hypot(mx - el.x, my - el.y);
+
+      if (dist <= radius + 0.08) { // 8cm click padding
+        setSelectedElementInstanceId(el.id);
+        setSelectedObstacleId(null);
+        dragModeRef.current = "dragging";
+        dragStartRef.current = {
+          mx,
+          my,
+          ox: el.x,
+          oy: el.y
+        };
+        return;
+      }
+    }
+
+    // 3. Check if we clicked inside any obstacle
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const obs = obstacles[i];
+      const halfW = obs.width / 2;
+      const halfH = obs.height / 2;
+
+      const insideX = mx >= obs.x - halfH && mx <= obs.x + halfH;
+      const insideY = my >= obs.y - halfW && my <= obs.y + halfW;
+
+      if (insideX && insideY) {
+        setSelectedObstacleId(obs.id);
+        setSelectedElementInstanceId(null);
+        dragModeRef.current = "dragging";
+        dragStartRef.current = {
+          mx,
+          my,
+          ox: obs.x,
+          oy: obs.y
+        };
+        return;
+      }
+    }
+
+    // 4. Clicked empty space
+    setSelectedObstacleId(null);
+    setSelectedElementInstanceId(null);
+    dragModeRef.current = "none";
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1175,7 +1170,7 @@ export default function FieldEditor() {
     const my = toEkfY(mouseX, mouseY);
 
     if (dragModeRef.current === "dragging") {
-      if (editMode === "obstacles" && selectedObstacleId) {
+      if (selectedObstacleId) {
         const diffX = mx - dragStartRef.current.mx;
         const diffY = my - dragStartRef.current.my;
 
@@ -1194,7 +1189,7 @@ export default function FieldEditor() {
             return obs;
           })
         );
-      } else if (editMode === "elements" && selectedElementInstanceId) {
+      } else if (selectedElementInstanceId) {
         const diffX = mx - dragStartRef.current.mx;
         const diffY = my - dragStartRef.current.my;
 
@@ -1419,29 +1414,6 @@ export default function FieldEditor() {
         {/* Configuration settings & Properties Panel */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           
-          {/* Mode Select Tabs */}
-          <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl w-full">
-            <button
-              onClick={() => setEditMode("obstacles")}
-              className={`w-1/2 py-2 text-center text-[10px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer ${
-                editMode === "obstacles"
-                  ? "bg-ares-gold text-black font-bold"
-                  : "text-marble/60 hover:text-white"
-              }`}
-            >
-              Obstacles Mode
-            </button>
-            <button
-              onClick={() => setEditMode("elements")}
-              className={`w-1/2 py-2 text-center text-[10px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer ${
-                editMode === "elements"
-                  ? "bg-ares-gold text-black font-bold"
-                  : "text-marble/60 hover:text-white"
-              }`}
-            >
-              Game Elements Mode
-            </button>
-          </div>
 
           {/* Metadata Card */}
           <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLayoutSettingsExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
@@ -1716,9 +1688,8 @@ export default function FieldEditor() {
             )}
           </div>
 
-          {/* Active Panel conditional rendering */}
-          {editMode === "obstacles" ? (
-            <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isObstaclesExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
+          {/* Obstacle Inventory */}
+          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isObstaclesExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
               <div 
                 onClick={() => setIsObstaclesExpanded(!isObstaclesExpanded)}
                 className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
@@ -1927,10 +1898,8 @@ export default function FieldEditor() {
                 </>
               )}
             </div>
-          ) : (
-            /* Game Elements Panel */
-            <div className="flex flex-col gap-6">
-              {/* Element Types Catalog Card */}
+
+            {/* Element Types Catalog Card */}
               <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isElementCatalogExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
                 <div 
                   onClick={() => setIsElementCatalogExpanded(!isElementCatalogExpanded)}
@@ -2279,8 +2248,6 @@ export default function FieldEditor() {
                   </>
                 )}
               </div>
-            </div>
-          )}
 
           {/* Saved Layout Library */}
           <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLibraryExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
