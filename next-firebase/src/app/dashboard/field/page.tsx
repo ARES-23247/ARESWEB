@@ -74,6 +74,7 @@ interface FieldConfig {
   name: string;
   updatedAt: number;
   fieldType?: "ftc" | "frc";
+  gameYear?: string;
   xAxisDirection?: "up" | "down" | "left" | "right";
   yAxisDirection?: "up" | "down" | "left" | "right";
   redDriverStation?: "north" | "south" | "east" | "west";
@@ -94,6 +95,7 @@ export default function FieldEditor() {
 
   // Field type, coordinate axis orientations, and driver stations configuration state
   const [fieldType, setFieldType] = useState<"ftc" | "frc">("ftc");
+  const [gameYear, setGameYear] = useState<string>("2025-2026");
   const [xAxisDirection, setXAxisDirection] = useState<"up" | "down" | "left" | "right">("up");
   const [yAxisDirection, setYAxisDirection] = useState<"up" | "down" | "left" | "right">("left");
   const [redDriverStation, setRedDriverStation] = useState<"north" | "south" | "east" | "west">("south");
@@ -287,6 +289,7 @@ export default function FieldEditor() {
           name: data.name || "Untitled Layout",
           updatedAt: data.updatedAt || Date.now(),
           fieldType: data.fieldType || "ftc",
+          gameYear: data.gameYear || "2025-2026",
           xAxisDirection: data.xAxisDirection || "up",
           yAxisDirection: data.yAxisDirection || "left",
           redDriverStation: data.redDriverStation || "south",
@@ -420,6 +423,7 @@ export default function FieldEditor() {
     setElementTypes(config.elementTypes ? [...config.elementTypes] : []);
     setElements(config.elements ? [...config.elements] : []);
     setFieldType(config.fieldType || "ftc");
+    setGameYear(config.gameYear || "2025-2026");
     setXAxisDirection(config.xAxisDirection || "up");
     setYAxisDirection(config.yAxisDirection || "left");
     setRedDriverStation(config.redDriverStation || "south");
@@ -464,6 +468,7 @@ export default function FieldEditor() {
     setElementTypes([defaultPollen, defaultArtifact]);
     setElements([]);
     setFieldType("ftc");
+    setGameYear("2025-2026");
     setXAxisDirection("up");
     setYAxisDirection("left");
     setRedDriverStation("south");
@@ -622,6 +627,7 @@ export default function FieldEditor() {
         name: configName,
         updatedAt: Date.now(),
         fieldType,
+        gameYear,
         xAxisDirection,
         yAxisDirection,
         redDriverStation,
@@ -1449,6 +1455,19 @@ export default function FieldEditor() {
               />
             </div>
 
+            <div className="flex flex-col gap-2">
+              <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
+                Game Year / Season
+              </label>
+              <input
+                type="text"
+                value={gameYear}
+                onChange={(e) => setGameYear(e.target.value)}
+                placeholder="e.g., 2025-2026..."
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
+              />
+            </div>
+
             {/* Field Configuration Subsection */}
             <div className="border-t border-white/5 pt-3 space-y-3">
               <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
@@ -2211,12 +2230,19 @@ export default function FieldEditor() {
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-extrabold truncate max-w-[150px] uppercase tracking-wide">
+                        <span className="text-xs font-extrabold truncate max-w-[130px] uppercase tracking-wide">
                           {cfg.name}
                         </span>
-                        <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
-                          {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {cfg.gameYear && (
+                            <span className="text-[7.5px] font-mono bg-ares-gold/15 border border-ares-gold/25 text-ares-gold px-1.5 py-0.5 rounded uppercase font-bold">
+                              {cfg.gameYear}
+                            </span>
+                          )}
+                          <span className="text-[8px] font-mono bg-white/5 px-2 py-0.5 rounded text-marble/50">
+                            {cfg.obstacles.length} {cfg.obstacles.length === 1 ? "box" : "boxes"} | {(cfg.elements || []).length} elements
+                          </span>
+                        </div>
                       </div>
                       <div className="flex justify-between items-center text-[9px] text-marble/40 mt-1 font-medium font-mono">
                         <span>Updated: {formattedDate}</span>
