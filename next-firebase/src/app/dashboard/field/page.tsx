@@ -34,19 +34,7 @@ import {
   CheckCircle2,
   Link
 } from "lucide-react";
-import OnshapeRobotSyncCard from "./components/OnshapeRobotSyncCard";
 
-const parseOnshapeUrl = (url: string) => {
-  const match = url.match(/\/documents\/([a-zA-Z0-9_-]+)\/(?:w|v)\/([a-zA-Z0-9_-]+)\/e\/([a-zA-Z0-9_-]+)/);
-  if (match) {
-    return {
-      documentId: match[1],
-      workspaceId: match[2],
-      elementId: match[3]
-    };
-  }
-  return null;
-};
 
 interface FieldObstacle {
   id: string;
@@ -410,9 +398,9 @@ export default function FieldEditor() {
   // Set canvas size dynamically to fit container
   useEffect(() => {
     const handleResize = () => {
-      const parent = canvasRef.current?.parentElement;
+      const parent = canvasRef.current?.parentElement?.parentElement;
       if (parent) {
-        const size = Math.min(parent.clientWidth || 450, 500);
+        const size = Math.min(parent.clientWidth - 48 || 600, 750);
         setCanvasSize(size);
       }
     };
@@ -1400,7 +1388,7 @@ export default function FieldEditor() {
                 tabIndex={0}
                 role="img"
                 aria-label="Interactive 2D Field Map. Use Arrow keys to move the selected obstacle, Tab to cycle obstacles, and Escape to deselect."
-                style={{ width: `${canvasSize}px`, height: `${canvasSize}px` }}
+                style={{ width: `${canvasW}px`, height: `${canvasH}px` }}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               />
             </div>
@@ -1589,6 +1577,54 @@ export default function FieldEditor() {
                   <label htmlFor="show-axes-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
                     Show Coordinate Axes
                   </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Field Assets Subsection */}
+            <div className="border-t border-white/5 pt-3 space-y-3">
+              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
+                Field Assets (2D/3D)
+              </span>
+              
+              <div className="space-y-3">
+                {/* 3D Model Upload */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    3D Field Model (.glb, .gltf)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".glb,.gltf"
+                    onChange={handleGlbFileChange}
+                    className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
+                  />
+                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
+                    <p className="text-[8px] font-mono text-ares-success mt-0.5">
+                      ✓ 3D Model GLB loaded
+                    </p>
+                  )}
+                </div>
+
+                {/* 2D Background Upload */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    2D Field Image (.png, .jpg)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setLocalBgFile(file);
+                    }}
+                    className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
+                  />
+                  {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
+                    <p className="text-[8px] font-mono text-ares-success mt-0.5">
+                      ✓ 2D Background loaded
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -2198,83 +2234,7 @@ export default function FieldEditor() {
 
       </div>
 
-      {/* ─── FTC FIELD ASSETS INTEGRATION SECTION ─── */}
-      <section className="border-t border-white/5 pt-8 space-y-6">
-        <div>
-          <h2 className="text-lg font-black text-white uppercase tracking-tight font-heading flex items-center gap-2">
-            <Link size={18} className="text-ares-gold animate-pulse" /> Simulation Field Integrations
-          </h2>
-          <p className="text-marble/70 text-xs mt-1">
-            Manage your physical simulation environments. Upload 3D field meshes and custom 2D layouts to associate obstacle geometries with active simulation modes.
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          {/* FTC Field Asset Manager */}
-          <div className="glass-card p-6 border border-white/10 bg-black/60 shadow-2xl flex flex-col justify-between space-y-4">
-            <div>
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading border-b border-white/5 pb-3 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Map size={14} className="text-ares-gold" /> FTC Field Asset Manager
-                </span>
-                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
-                  (localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) ? "bg-ares-success/25 text-ares-success border border-ares-success/20" : "bg-ares-gold/25 text-ares-gold border border-ares-gold/20"
-                }`}>
-                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) ? "Assets Active" : "No 3D Model"}
-                </span>
-              </h3>
-
-              <div className="space-y-4 mt-4">
-                {/* 3D Model GLB File Upload */}
-                <div>
-                  <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">
-                    Upload 3D Field Model (.glb, .gltf)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".glb,.gltf"
-                    onChange={handleGlbFileChange}
-                    className="w-full text-xs text-marble/55 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:white file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-2 rounded-xl border border-white/5 focus:outline-none"
-                  />
-                  {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
-                    <p className="text-[8px] font-mono text-ares-success mt-1">
-                      ✓ 3D Model GLB associated: {localGlbFile ? localGlbFile.name : "Saved on Cloud"}
-                    </p>
-                  )}
-                </div>
-
-                {/* 2D Background Image Upload */}
-                <div>
-                  <label className="text-[9px] font-black uppercase text-marble/45 tracking-widest block mb-1">
-                    Upload 2D Field Image (.png, .jpg)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setLocalBgFile(file);
-                    }}
-                    className="w-full text-xs text-marble/55 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:white file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-2 rounded-xl border border-white/5 focus:outline-none"
-                  />
-                  {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
-                    <p className="text-[8px] font-mono text-ares-success mt-1">
-                      ✓ 2D Background associated: {localBgFile ? localBgFile.name : "Saved on Cloud"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 text-[9px] leading-relaxed text-marble/40 font-mono">
-              Note: When you select a 3D field model (.glb), ARES will automatically render a top-down orthographic snapshot on the client and set it as the background image. If you prefer, you can manually upload a custom 2D field diagram.
-            </div>
-          </div>
-
-          {/* Onshape Robot CAD Sync */}
-          <OnshapeRobotSyncCard />
-        </div>
-      </section>
 
     </div>
   );
