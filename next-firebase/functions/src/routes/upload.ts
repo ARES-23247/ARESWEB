@@ -1,13 +1,22 @@
 import express from "express";
 import { BigQuery } from "@google-cloud/bigquery";
 import { adminDb, adminStorage } from "../lib/firebase-admin";
+import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
 import { runTelemetryDiagnostics } from "../lib/vertex";
 
 const router = express.Router();
 
+const uploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5, // Limit each IP to 5 uploads per 10 minutes
+  message: { error: "Too many log uploads from this IP. Please wait 10 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/upload
-router.post("/", ensureTeamMember, async (req, res) => {
+router.post("/", uploadLimiter, ensureTeamMember, async (req, res) => {
   try {
     const contentType = req.headers["content-type"] || "";
     let csvText = "";

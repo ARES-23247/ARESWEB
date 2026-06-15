@@ -2571,7 +2571,14 @@ export default function ScopeDashboard() {
 
       {showSyncModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300 animate-fade-in">
-          <div ref={syncModalRef} tabIndex={-1} className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-md w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none animate-scale-up">
+          <div 
+            ref={syncModalRef} 
+            tabIndex={-1} 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sync-modal-title"
+            className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-md w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none animate-scale-up"
+          >
             <button
               onClick={() => setShowSyncModal(false)}
               className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
@@ -2583,7 +2590,7 @@ export default function ScopeDashboard() {
                 <Cloud size={20} />
               </div>
               <div>
-                <h3 className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
+                <h3 id="sync-modal-title" className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
                   Sync Robot Logs
                 </h3>
                 <p className="text-marble/55 text-[10px] font-bold uppercase tracking-wider">
