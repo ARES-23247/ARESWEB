@@ -247,18 +247,26 @@ export default function FieldEditor() {
   const dragModeRef = useRef<"none" | "dragging" | "resizing" | "dragging_vertex" | "dragging_tag">("none");
   const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number; ow?: number; oh?: number; fixedX?: number; fixedY?: number; vertexIndex?: number; tagId?: number; originalPoints?: { x: number; y: number }[] }>({ mx: 0, my: 0, ox: 0, oy: 0 });
 
-  const fieldW = fieldType === "ftc" ? 3.6576 : 16.542;
-  const fieldH = fieldType === "ftc" ? 3.6576 : 8.007;
+  const fieldW = fieldType === "ftc" ? 3.6576 : 8.211;   // horizontal screen dimension (Y direction)
+  const fieldH = fieldType === "ftc" ? 3.6576 : 16.541;  // vertical screen dimension (X direction)
 
-  const canvasW = fieldType === "ftc" ? canvasSize : Math.min(canvasSize * 1.6, 750);
-  const canvasH = fieldType === "ftc" ? canvasSize : canvasW / (16.542 / 8.007);
+  const canvasW = fieldType === "ftc" ? canvasSize : canvasSize * (8.211 / 16.541);
+  const canvasH = fieldType === "ftc" ? canvasSize : canvasSize;
 
-  const scale = canvasW / fieldW;
+  const scale = canvasH / fieldH;
   const centerX = canvasW / 2;
   const centerY = canvasH / 2;
 
   // Coordinate conversion helper functions
   const ekfToScreen = (x_ekf: number, y_ekf: number) => {
+    if (fieldType === "frc") {
+      // WPILib FRC standards: origin (0,0) is bottom-right corner
+      // +X points UP, +Y points LEFT
+      const px = canvasW - (y_ekf * scale);
+      const py = canvasH - (x_ekf * scale);
+      return { x: px, y: py };
+    }
+
     let px = centerX;
     let py = centerY;
 
@@ -281,6 +289,9 @@ export default function FieldEditor() {
   const toPxY = (x_ekf: number) => ekfToScreen(x_ekf, 0).y;
   
   const toEkfX = (pxX: number, pxY: number) => {
+    if (fieldType === "frc") {
+      return (canvasH - pxY) / scale;
+    }
     if (xAxisDirection === "right") {
       return (pxX - centerX) / scale;
     } else if (xAxisDirection === "left") {
@@ -293,6 +304,9 @@ export default function FieldEditor() {
   };
 
   const toEkfY = (pxX: number, pxY: number) => {
+    if (fieldType === "frc") {
+      return (canvasW - pxX) / scale;
+    }
     if (yAxisDirection === "right") {
       return (pxX - centerX) / scale;
     } else if (yAxisDirection === "left") {
@@ -531,8 +545,8 @@ export default function FieldEditor() {
     const newObs: FieldObstacle = {
       id: Math.random().toString(36).substring(2, 9),
       name: `Obstacle ${obstacles.length + 1}`,
-      x: 0, // center
-      y: 0, // center
+      x: fieldType === "frc" ? fieldH / 2 : 0,
+      y: fieldType === "frc" ? fieldW / 2 : 0,
       width: 0.4, // 0.4 meters
       height: 0.4,
       isBlocking: true,
@@ -616,8 +630,8 @@ export default function FieldEditor() {
     const newInst: FieldElementInstance = {
       id: `inst_${Math.random().toString(36).substring(2, 9)}`,
       elementTypeId,
-      x: 0,
-      y: 0,
+      x: fieldType === "frc" ? fieldH / 2 : 0,
+      y: fieldType === "frc" ? fieldW / 2 : 0,
       rotation: 0
     };
     setElements([...elements, newInst]);
@@ -650,8 +664,8 @@ export default function FieldEditor() {
     }
     const newTag: FieldAprilTag = {
       id: nextId,
-      x: 0,
-      y: 0,
+      x: fieldType === "frc" ? fieldH / 2 : 0,
+      y: fieldType === "frc" ? fieldW / 2 : 0,
       z: 0.5,
       yaw: 0
     };
@@ -723,12 +737,14 @@ export default function FieldEditor() {
 
         let finalX = rawX;
         let finalY = rawY;
-        if (Math.abs(rawX) > limitX || Math.abs(rawY) > limitY) {
-          if (rawX >= 0 && rawX <= fieldH) {
-            finalX = rawX - limitX;
-          }
-          if (rawY >= 0 && rawY <= fieldW) {
-            finalY = rawY - limitY;
+        if (fieldType !== "frc") {
+          if (Math.abs(rawX) > limitX || Math.abs(rawY) > limitY) {
+            if (rawX >= 0 && rawX <= fieldH) {
+              finalX = rawX - limitX;
+            }
+            if (rawY >= 0 && rawY <= fieldW) {
+              finalY = rawY - limitY;
+            }
           }
         }
 
@@ -779,30 +795,59 @@ export default function FieldEditor() {
       return dir;
     };
 
-    if (axis === "x") {
-      mirroredObs.y = -obs.y;
-      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "x");
-      if (obs.shape === "polygon" && obs.points) {
-        mirroredObs.points = obs.points.map(p => ({ x: p.x, y: -p.y }));
-        mirroredObs.x = obs.x;
-        mirroredObs.y = -obs.y;
-      }
-    } else if (axis === "y") {
-      mirroredObs.x = -obs.x;
-      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "y");
-      if (obs.shape === "polygon" && obs.points) {
-        mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: p.y }));
-        mirroredObs.x = -obs.x;
-        mirroredObs.y = obs.y;
+    if (fieldType === "frc") {
+      if (axis === "x") {
+        mirroredObs.y = fieldW - obs.y;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "x");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: p.x, y: fieldW - p.y }));
+          mirroredObs.x = obs.x;
+          mirroredObs.y = fieldW - obs.y;
+        }
+      } else if (axis === "y") {
+        mirroredObs.x = fieldH - obs.x;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "y");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: fieldH - p.x, y: p.y }));
+          mirroredObs.x = fieldH - obs.x;
+          mirroredObs.y = obs.y;
+        }
+      } else {
+        mirroredObs.x = fieldH - obs.x;
+        mirroredObs.y = fieldW - obs.y;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "center");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: fieldH - p.x, y: fieldW - p.y }));
+          mirroredObs.x = fieldH - obs.x;
+          mirroredObs.y = fieldW - obs.y;
+        }
       }
     } else {
-      mirroredObs.x = -obs.x;
-      mirroredObs.y = -obs.y;
-      mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "center");
-      if (obs.shape === "polygon" && obs.points) {
-        mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: -p.y }));
+      if (axis === "x") {
+        mirroredObs.y = -obs.y;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "x");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: p.x, y: -p.y }));
+          mirroredObs.x = obs.x;
+          mirroredObs.y = -obs.y;
+        }
+      } else if (axis === "y") {
+        mirroredObs.x = -obs.x;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "y");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: p.y }));
+          mirroredObs.x = -obs.x;
+          mirroredObs.y = obs.y;
+        }
+      } else {
         mirroredObs.x = -obs.x;
         mirroredObs.y = -obs.y;
+        mirroredObs.rampDirection = flipRampDir(obs.rampDirection, "center");
+        if (obs.shape === "polygon" && obs.points) {
+          mirroredObs.points = obs.points.map(p => ({ x: -p.x, y: -p.y }));
+          mirroredObs.x = -obs.x;
+          mirroredObs.y = -obs.y;
+        }
       }
     }
 
@@ -950,7 +995,6 @@ export default function FieldEditor() {
       ctx.fillRect(0, 0, canvasW, canvasH);
     }
 
-    // Helper to check if a point is within the outer border padding (12px on all sides for driver stations)
     // 2. Draw Grid Lines (Only if showGrid is enabled)
     if (showGrid) {
       ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.03)";
@@ -960,7 +1004,6 @@ export default function FieldEditor() {
         // FTC: 6x6 tape tiles of 2ft (0.6096m)
         for (let i = -3; i <= 3; i++) {
           const offset = i * 0.6096;
-          // Vertical EKF constant Y lines (from -1.8288 to 1.8288 EKF X)
           const pV1 = ekfToScreen(-1.8288, offset);
           const pV2 = ekfToScreen(1.8288, offset);
           ctx.beginPath();
@@ -968,7 +1011,6 @@ export default function FieldEditor() {
           ctx.lineTo(pV2.x, pV2.y);
           ctx.stroke();
 
-          // Horizontal EKF constant X lines (from -1.8288 to 1.8288 EKF Y)
           const pH1 = ekfToScreen(offset, -1.8288);
           const pH2 = ekfToScreen(offset, 1.8288);
           ctx.beginPath();
@@ -977,33 +1019,32 @@ export default function FieldEditor() {
           ctx.stroke();
         }
       } else {
-        // FRC: 1-meter grid spacing
-        const maxHalfX = Math.ceil(fieldH / 2);
-        const maxHalfY = Math.ceil(fieldW / 2);
-        
+        // FRC: 1-meter grid spacing (vertical rectangle)
         ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.02)";
-        for (let x = -maxHalfX; x <= maxHalfX; x++) {
-          const pV1 = ekfToScreen(x, -fieldW / 2);
-          const pV2 = ekfToScreen(x, fieldW / 2);
+        // Constant X lines: run horizontally across all Y
+        for (let x = 0; x <= 16.541; x += 1.0) {
+          const p1 = ekfToScreen(x, 0);
+          const p2 = ekfToScreen(x, 8.211);
           ctx.beginPath();
-          ctx.moveTo(pV1.x, pV1.y);
-          ctx.lineTo(pV2.x, pV2.y);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
           ctx.stroke();
         }
-        for (let y = -maxHalfY; y <= maxHalfY; y++) {
-          const pH1 = ekfToScreen(-fieldH / 2, y);
-          const pH2 = ekfToScreen(fieldH / 2, y);
+        // Constant Y lines: run vertically across all X
+        for (let y = 0; y <= 8.211; y += 1.0) {
+          const p1 = ekfToScreen(0, y);
+          const p2 = ekfToScreen(16.541, y);
           ctx.beginPath();
-          ctx.moveTo(pH1.x, pH1.y);
-          ctx.lineTo(pH2.x, pH2.y);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
           ctx.stroke();
         }
 
-        // Draw centerline (EKF X = 0 or Y = 0)
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        // Draw midfield centerline (X = 16.541 / 2 = 8.2705)
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
         ctx.lineWidth = 1.5;
-        const pC1 = ekfToScreen(0, -fieldW / 2);
-        const pC2 = ekfToScreen(0, fieldW / 2);
+        const pC1 = ekfToScreen(8.2705, 0);
+        const pC2 = ekfToScreen(8.2705, 8.211);
         ctx.beginPath();
         ctx.moveTo(pC1.x, pC1.y);
         ctx.lineTo(pC2.x, pC2.y);
@@ -1014,8 +1055,12 @@ export default function FieldEditor() {
     // 3. Draw Outer Perimeter Wall
     ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.3)" : "rgba(255, 255, 255, 0.12)";
     ctx.lineWidth = 2;
-    const c1 = ekfToScreen(-fieldH / 2, -fieldW / 2);
-    const c2 = ekfToScreen(fieldH / 2, fieldW / 2);
+    const minX = fieldType === "frc" ? 0 : -fieldH / 2;
+    const maxX = fieldType === "frc" ? fieldH : fieldH / 2;
+    const minY = fieldType === "frc" ? 0 : -fieldW / 2;
+    const maxY = fieldType === "frc" ? fieldW : fieldW / 2;
+    const c1 = ekfToScreen(minX, minY);
+    const c2 = ekfToScreen(maxX, maxY);
     const minWallX = Math.min(c1.x, c2.x);
     const maxWallX = Math.max(c1.x, c2.x);
     const minWallY = Math.min(c1.y, c2.y);
@@ -1024,48 +1069,89 @@ export default function FieldEditor() {
 
     // 4. Draw Center Origin Crosshair & EKF Axes Indicators (Only if showCoordinateAxes is enabled)
     if (showCoordinateAxes) {
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(centerX - 8, centerY);
-      ctx.lineTo(centerX + 8, centerY);
-      ctx.moveTo(centerX, centerY - 8);
-      ctx.lineTo(centerX, centerY + 8);
-      ctx.stroke();
+      if (fieldType === "frc") {
+        // Draw FRC Origin at bottom-right corner offset
+        const originX = canvasW - 24;
+        const originY = canvasH - 24;
+        
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(originX - 8, originY);
+        ctx.lineTo(originX + 8, originY);
+        ctx.moveTo(originX, originY - 8);
+        ctx.lineTo(originX, originY + 8);
+        ctx.stroke();
 
-      // +X arrow indicator (red)
-      const pXEnd = ekfToScreen(0.4, 0); // 0.4m arrow
-      ctx.strokeStyle = "#C00000"; // ares-red
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(pXEnd.x, pXEnd.y);
-      ctx.stroke();
+        // +X arrow indicator (red) points UP
+        ctx.strokeStyle = "#C00000"; // ares-red
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX, originY - 40);
+        ctx.stroke();
 
-      ctx.fillStyle = "#C00000";
-      ctx.font = "bold 8px monospace";
-      ctx.textAlign = "center";
-      // Draw +X text slightly offset
-      const xTextOffset = 8;
-      let tx = pXEnd.x;
-      let ty = pXEnd.y;
-      if (pXEnd.x > centerX) tx += xTextOffset;
-      else if (pXEnd.x < centerX) tx -= xTextOffset;
-      if (pXEnd.y > centerY) ty += xTextOffset;
-      else if (pXEnd.y < centerY) ty -= xTextOffset;
-      ctx.fillText("+X", tx, ty + 3);
+        ctx.fillStyle = "#C00000";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("+X", originX, originY - 46);
 
-      // +Y arrow indicator (blue)
-      const pYEnd = ekfToScreen(0, 0.4);
-      ctx.strokeStyle = "#00E5FF"; // ares-cyan
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(pYEnd.x, pYEnd.y);
-      ctx.stroke();
+        // +Y arrow indicator (blue) points LEFT
+        ctx.strokeStyle = "#00E5FF"; // ares-cyan
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX - 40, originY);
+        ctx.stroke();
 
-      ctx.fillStyle = "#00E5FF";
-      ctx.fillText("+Y", pYEnd.x + (pYEnd.x > centerX ? 8 : (pYEnd.x < centerX ? -8 : 0)), pYEnd.y + (pYEnd.y > centerY ? 8 : (pYEnd.y < centerY ? -8 : 0)) + 3);
+        ctx.fillStyle = "#00E5FF";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText("+Y", originX - 46, originY + 3);
+      } else {
+        // Center FTC Origin
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 8, centerY);
+        ctx.lineTo(centerX + 8, centerY);
+        ctx.moveTo(centerX, centerY - 8);
+        ctx.lineTo(centerX, centerY + 8);
+        ctx.stroke();
+
+        // +X arrow indicator (red)
+        const pXEnd = ekfToScreen(0.4, 0); // 0.4m arrow
+        ctx.strokeStyle = "#C00000"; // ares-red
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(pXEnd.x, pXEnd.y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#C00000";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        const xTextOffset = 8;
+        let tx = pXEnd.x;
+        let ty = pXEnd.y;
+        if (pXEnd.x > centerX) tx += xTextOffset;
+        else if (pXEnd.x < centerX) tx -= xTextOffset;
+        if (pXEnd.y > centerY) ty += xTextOffset;
+        else if (pXEnd.y < centerY) ty -= xTextOffset;
+        ctx.fillText("+X", tx, ty + 3);
+
+        // +Y arrow indicator (blue)
+        const pYEnd = ekfToScreen(0, 0.4);
+        ctx.strokeStyle = "#00E5FF"; // ares-cyan
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(pYEnd.x, pYEnd.y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#00E5FF";
+        ctx.fillText("+Y", pYEnd.x + (pYEnd.x > centerX ? 8 : (pYEnd.x < centerX ? -8 : 0)), pYEnd.y + (pYEnd.y > centerY ? 8 : (pYEnd.y < centerY ? -8 : 0)) + 3);
+      }
     }
 
     // 5. Draw Driver's Stations
@@ -1104,8 +1190,10 @@ export default function FieldEditor() {
       ctx.restore();
     };
 
-    drawDriverStation(redDriverStation, "rgba(192, 0, 0, 0.7)", "RED DRIVER STATION");
-    drawDriverStation(blueDriverStation, "rgba(59, 130, 246, 0.7)", "BLUE DRIVER STATION");
+    const redDS = fieldType === "frc" ? "north" : redDriverStation;
+    const blueDS = fieldType === "frc" ? "south" : blueDriverStation;
+    drawDriverStation(redDS, "rgba(192, 0, 0, 0.7)", "RED DRIVER STATION");
+    drawDriverStation(blueDS, "rgba(59, 130, 246, 0.7)", "BLUE DRIVER STATION");
 
     // 6. Draw red and blue zones/substations (Only for FTC and if no custom background image and enabled)
     if (fieldType === "ftc" && !bgImage && showAllianceZones) {
@@ -1633,8 +1721,10 @@ export default function FieldEditor() {
 
     if (dragModeRef.current === "none") return;
 
-    const limitX = fieldH / 2;
-    const limitY = fieldW / 2;
+    const limitMinX = fieldType === "frc" ? 0 : -fieldH / 2;
+    const limitMaxX = fieldType === "frc" ? fieldH : fieldH / 2;
+    const limitMinY = fieldType === "frc" ? 0 : -fieldW / 2;
+    const limitMaxY = fieldType === "frc" ? fieldW : fieldW / 2;
 
     if (dragModeRef.current === "dragging") {
       if (selectedObstacleId) {
@@ -1646,8 +1736,8 @@ export default function FieldEditor() {
           if (obs.shape === "polygon" && obs.points && dragStartRef.current.originalPoints) {
             const origPts = dragStartRef.current.originalPoints;
             const shiftedPoints = origPts.map(p => ({
-              x: Number(Math.max(-limitX, Math.min(limitX, p.x + diffX)).toFixed(3)),
-              y: Number(Math.max(-limitY, Math.min(limitY, p.y + diffY)).toFixed(3))
+              x: Number(Math.max(limitMinX, Math.min(limitMaxX, p.x + diffX)).toFixed(3)),
+              y: Number(Math.max(limitMinY, Math.min(limitMaxY, p.y + diffY)).toFixed(3))
             }));
             
             const nextX = shiftedPoints.reduce((sum, p) => sum + p.x, 0) / shiftedPoints.length;
@@ -1667,8 +1757,8 @@ export default function FieldEditor() {
               })
             );
           } else {
-            const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
-            const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+            const nextX = Math.max(limitMinX, Math.min(limitMaxX, dragStartRef.current.ox + diffX));
+            const nextY = Math.max(limitMinY, Math.min(limitMaxY, dragStartRef.current.oy + diffY));
 
             setObstacles(
               obstacles.map((obs) => {
@@ -1688,8 +1778,8 @@ export default function FieldEditor() {
         const diffX = mx - dragStartRef.current.mx;
         const diffY = my - dragStartRef.current.my;
 
-        const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
-        const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+        const nextX = Math.max(limitMinX, Math.min(limitMaxX, dragStartRef.current.ox + diffX));
+        const nextY = Math.max(limitMinY, Math.min(limitMaxY, dragStartRef.current.oy + diffY));
 
         setElements(
           elements.map((el) => {
@@ -1710,8 +1800,8 @@ export default function FieldEditor() {
       const vIdx = dragStartRef.current.vertexIndex;
 
       if (vIdx !== undefined) {
-        const nextVx = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
-        const nextVy = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+        const nextVx = Math.max(limitMinX, Math.min(limitMaxX, dragStartRef.current.ox + diffX));
+        const nextVy = Math.max(limitMinY, Math.min(limitMaxY, dragStartRef.current.oy + diffY));
 
         setObstacles(
           obstacles.map((obs) => {
@@ -1736,8 +1826,8 @@ export default function FieldEditor() {
       const diffX = mx - dragStartRef.current.mx;
       const diffY = my - dragStartRef.current.my;
 
-      const nextX = Math.max(-limitX, Math.min(limitX, dragStartRef.current.ox + diffX));
-      const nextY = Math.max(-limitY, Math.min(limitY, dragStartRef.current.oy + diffY));
+      const nextX = Math.max(limitMinX, Math.min(limitMaxX, dragStartRef.current.ox + diffX));
+      const nextY = Math.max(limitMinY, Math.min(limitMaxY, dragStartRef.current.oy + diffY));
 
       setApriltags(
         apriltags.map((tag) => {
@@ -1890,10 +1980,10 @@ export default function FieldEditor() {
             
             <div className="flex items-center justify-between w-full mb-4 border-b border-white/5 pb-3">
               <span className="text-[10px] uppercase font-black tracking-widest text-ares-gold flex items-center gap-1.5">
-                <Compass size={12} /> Interactive 2D Map View (12ft Grid)
+                <Compass size={12} /> {fieldType === "frc" ? "Interactive 2D Map View (FRC Field)" : "Interactive 2D Map View (12ft Grid)"}
               </span>
               <span className="text-[9px] font-mono text-marble/35 uppercase">
-                EKF Origin: Center (0, 0)
+                {fieldType === "frc" ? "Origin: Blue Wall Right Corner (0, 0)" : "EKF Origin: Center (0, 0)"}
               </span>
             </div>
 
