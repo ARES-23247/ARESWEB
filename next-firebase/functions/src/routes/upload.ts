@@ -1,13 +1,13 @@
 import express from "express";
 import { BigQuery } from "@google-cloud/bigquery";
 import { adminDb, adminStorage } from "../lib/firebase-admin";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureTeamMember } from "../middleware/auth";
 import { runTelemetryDiagnostics } from "../lib/vertex";
 
 const router = express.Router();
 
 // POST /api/upload
-router.post("/", ensureAdmin, async (req, res) => {
+router.post("/", ensureTeamMember, async (req, res) => {
   try {
     const contentType = req.headers["content-type"] || "";
     let csvText = "";
