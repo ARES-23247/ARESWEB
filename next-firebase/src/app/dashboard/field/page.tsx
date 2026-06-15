@@ -51,10 +51,13 @@ const parseOnshapeUrl = (url: string) => {
 interface FieldObstacle {
   id: string;
   name: string;
-  x: number;      // EKF X in meters (forward from center, positive is up)
-  y: number;      // EKF Y in meters (left from center, positive is left)
-  width: number;  // Width in meters (horizontal on screen, EKF Y axis)
-  height: number; // Height in meters (vertical on screen, EKF X axis)
+  x: number;      // EKF X in meters
+  y: number;      // EKF Y in meters
+  width: number;  // Width in meters
+  height: number; // Height in meters
+  isBlocking: boolean;
+  obstacleType: "blocking" | "ramp";
+  rampDirection?: "up" | "down" | "left" | "right";
 }
 
 interface ElementType {
@@ -82,6 +85,11 @@ interface FieldConfig {
   id: string;
   name: string;
   updatedAt: number;
+  fieldType?: "ftc" | "frc";
+  xAxisDirection?: "up" | "down" | "left" | "right";
+  yAxisDirection?: "up" | "down" | "left" | "right";
+  redDriverStation?: "north" | "south" | "east" | "west";
+  blueDriverStation?: "north" | "south" | "east" | "west";
   obstacles: FieldObstacle[];
   elementTypes?: ElementType[];
   elements?: FieldElementInstance[];
@@ -89,12 +97,24 @@ interface FieldConfig {
   bgImageUrl?: string;
 }
 
-export default function FieldObstacleEditor() {
+export default function FieldEditor() {
   const [configs, setConfigs] = useState<FieldConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string>("");
   const [configName, setConfigName] = useState<string>("New Configuration");
   const [obstacles, setObstacles] = useState<FieldObstacle[]>([]);
   const [selectedObstacleId, setSelectedObstacleId] = useState<string | null>(null);
+
+  // Field type, coordinate axis orientations, and driver stations configuration state
+  const [fieldType, setFieldType] = useState<"ftc" | "frc">("ftc");
+  const [xAxisDirection, setXAxisDirection] = useState<"up" | "down" | "left" | "right">("up");
+  const [yAxisDirection, setYAxisDirection] = useState<"up" | "down" | "left" | "right">("left");
+  const [redDriverStation, setRedDriverStation] = useState<"north" | "south" | "east" | "west">("south");
+  const [blueDriverStation, setBlueDriverStation] = useState<"north" | "south" | "east" | "west">("north");
+
+  // Display toggles
+  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const [showAllianceZones, setShowAllianceZones] = useState<boolean>(true);
+  const [showCoordinateAxes, setShowCoordinateAxes] = useState<boolean>(true);
 
   // Custom game elements states
   const [editMode, setEditMode] = useState<"obstacles" | "elements">("obstacles");
@@ -208,17 +228,62 @@ export default function FieldObstacleEditor() {
   const dragModeRef = useRef<"none" | "dragging" | "resizing">("none");
   const dragStartRef = useRef<{ mx: number; my: number; ox: number; oy: number; ow?: number; oh?: number; fixedX?: number; fixedY?: number }>({ mx: 0, my: 0, ox: 0, oy: 0 });
 
-  const fieldSizeMeters = 3.6576; // 12 feet
-  const scale = canvasSize / fieldSizeMeters;
-  const centerX = canvasSize / 2;
-  const centerY = canvasSize / 2;
+  const fieldW = fieldType === "ftc" ? 3.6576 : 16.542;
+  const fieldH = fieldType === "ftc" ? 3.6576 : 8.007;
+
+  const canvasW = fieldType === "ftc" ? canvasSize : Math.min(canvasSize * 1.6, 750);
+  const canvasH = fieldType === "ftc" ? canvasSize : canvasW / (16.542 / 8.007);
+
+  const scale = canvasW / fieldW;
+  const centerX = canvasW / 2;
+  const centerY = canvasH / 2;
 
   // Coordinate conversion helper functions
-  const toPxX = (y_ekf: number) => centerX - y_ekf * scale;
-  const toPxY = (x_ekf: number) => centerY - x_ekf * scale;
+  const ekfToScreen = (x_ekf: number, y_ekf: number) => {
+    let px = centerX;
+    let py = centerY;
+
+    // 1. Process X EKF component
+    if (xAxisDirection === "right") px += x_ekf * scale;
+    else if (xAxisDirection === "left") px -= x_ekf * scale;
+    else if (xAxisDirection === "down") py += x_ekf * scale;
+    else if (xAxisDirection === "up") py -= x_ekf * scale;
+
+    // 2. Process Y EKF component
+    if (yAxisDirection === "right") px += y_ekf * scale;
+    else if (yAxisDirection === "left") px -= y_ekf * scale;
+    else if (yAxisDirection === "down") py += y_ekf * scale;
+    else if (yAxisDirection === "up") py -= y_ekf * scale;
+
+    return { x: px, y: py };
+  };
+
+  const toPxX = (y_ekf: number) => ekfToScreen(0, y_ekf).x;
+  const toPxY = (x_ekf: number) => ekfToScreen(x_ekf, 0).y;
   
-  const toEkfX = (pxY: number) => (centerY - pxY) / scale;
-  const toEkfY = (pxX: number) => (centerX - pxX) / scale;
+  const toEkfX = (pxX: number, pxY: number) => {
+    if (xAxisDirection === "right") {
+      return (pxX - centerX) / scale;
+    } else if (xAxisDirection === "left") {
+      return (centerX - pxX) / scale;
+    } else if (xAxisDirection === "down") {
+      return (pxY - centerY) / scale;
+    } else { // "up"
+      return (centerY - pxY) / scale;
+    }
+  };
+
+  const toEkfY = (pxX: number, pxY: number) => {
+    if (yAxisDirection === "right") {
+      return (pxX - centerX) / scale;
+    } else if (yAxisDirection === "left") {
+      return (centerX - pxX) / scale;
+    } else if (yAxisDirection === "down") {
+      return (pxY - centerY) / scale;
+    } else { // "up"
+      return (centerY - pxY) / scale;
+    }
+  };
 
   // Fetch all configurations from Firestore on load
   const fetchConfigs = async () => {
@@ -233,6 +298,11 @@ export default function FieldObstacleEditor() {
           id: docSnap.id,
           name: data.name || "Untitled Layout",
           updatedAt: data.updatedAt || Date.now(),
+          fieldType: data.fieldType || "ftc",
+          xAxisDirection: data.xAxisDirection || "up",
+          yAxisDirection: data.yAxisDirection || "left",
+          redDriverStation: data.redDriverStation || "south",
+          blueDriverStation: data.blueDriverStation || "north",
           obstacles: data.obstacles || [],
           elementTypes: data.elementTypes || [],
           elements: data.elements || [],
@@ -354,9 +424,18 @@ export default function FieldObstacleEditor() {
   const loadConfig = (config: FieldConfig) => {
     setSelectedConfigId(config.id);
     setConfigName(config.name);
-    setObstacles([...config.obstacles]);
+    setObstacles((config.obstacles || []).map(obs => ({
+      ...obs,
+      isBlocking: obs.isBlocking !== undefined ? obs.isBlocking : true,
+      obstacleType: obs.obstacleType || "blocking"
+    })));
     setElementTypes(config.elementTypes ? [...config.elementTypes] : []);
     setElements(config.elements ? [...config.elements] : []);
+    setFieldType(config.fieldType || "ftc");
+    setXAxisDirection(config.xAxisDirection || "up");
+    setYAxisDirection(config.yAxisDirection || "left");
+    setRedDriverStation(config.redDriverStation || "south");
+    setBlueDriverStation(config.blueDriverStation || "north");
     setSelectedObstacleId(null);
     setSelectedElementInstanceId(null);
     setSelectedElementTypeId(null);
@@ -368,8 +447,39 @@ export default function FieldObstacleEditor() {
     setSelectedConfigId("");
     setConfigName("New Field Layout");
     setObstacles([]);
-    setElementTypes([]);
+    
+    // Pre-populate standard Element Types
+    const defaultPollen: ElementType = {
+      id: "type_pollen_" + Math.random().toString(36).substring(2, 5),
+      name: "Pollen / Ball",
+      shape: "sphere",
+      width: 0.2,
+      height: 0.2,
+      depth: 0.2,
+      diameter: 0.2,
+      color: "#FFB81C", // ares-gold
+      massKg: 0.1,
+      movable: true
+    };
+    const defaultArtifact: ElementType = {
+      id: "type_artifact_" + Math.random().toString(36).substring(2, 5),
+      name: "Artifact / Block",
+      shape: "box",
+      width: 0.15,
+      height: 0.15,
+      depth: 0.15,
+      color: "#C00000", // ares-red
+      massKg: 0.15,
+      movable: true
+    };
+    
+    setElementTypes([defaultPollen, defaultArtifact]);
     setElements([]);
+    setFieldType("ftc");
+    setXAxisDirection("up");
+    setYAxisDirection("left");
+    setRedDriverStation("south");
+    setBlueDriverStation("north");
     setSelectedObstacleId(null);
     setSelectedElementInstanceId(null);
     setSelectedElementTypeId(null);
@@ -383,8 +493,10 @@ export default function FieldObstacleEditor() {
       name: `Obstacle ${obstacles.length + 1}`,
       x: 0, // center
       y: 0, // center
-      width: 0.4, // 0.4 meters (~16 inches)
-      height: 0.4
+      width: 0.4, // 0.4 meters
+      height: 0.4,
+      isBlocking: true,
+      obstacleType: "blocking"
     };
     setObstacles([...obstacles, newObs]);
     setSelectedObstacleId(newObs.id);
@@ -521,13 +633,21 @@ export default function FieldObstacleEditor() {
         id: docId,
         name: configName,
         updatedAt: Date.now(),
+        fieldType,
+        xAxisDirection,
+        yAxisDirection,
+        redDriverStation,
+        blueDriverStation,
         obstacles: obstacles.map((obs) => ({
           id: obs.id,
           name: obs.name,
           x: Number(obs.x),
           y: Number(obs.y),
           width: Number(obs.width),
-          height: Number(obs.height)
+          height: Number(obs.height),
+          isBlocking: Boolean(obs.isBlocking),
+          obstacleType: obs.obstacleType,
+          rampDirection: obs.rampDirection || null
         })),
         elementTypes: elementTypes.map((t) => ({
           id: t.id,
@@ -596,104 +716,289 @@ export default function FieldObstacleEditor() {
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvasSize * dpr;
-    canvas.height = canvasSize * dpr;
+    canvas.width = canvasW * dpr;
+    canvas.height = canvasH * dpr;
     ctx.scale(dpr, dpr);
 
     // 1. Draw Field Background
     if (bgImage) {
-      ctx.drawImage(bgImage, 0, 0, canvasSize, canvasSize);
+      ctx.drawImage(bgImage, 0, 0, canvasW, canvasH);
     } else {
       ctx.fillStyle = "#0A0A0A";
-      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      ctx.fillRect(0, 0, canvasW, canvasH);
     }
 
-    // 2. Draw 6x6 Grid Tiles (each tape tile is 24x24 inches = 0.6096m x 0.6096m)
-    ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.03)";
-    ctx.lineWidth = 1;
-    for (let i = -3; i <= 3; i++) {
-      const offset = i * 0.6096;
-      // Vertical grid lines (constant Y_ekf)
-      ctx.beginPath();
-      ctx.moveTo(toPxX(offset), toPxY(-1.8288));
-      ctx.lineTo(toPxX(offset), toPxY(1.8288));
-      ctx.stroke();
+    // Helper to check if a point is within the outer border padding (12px on all sides for driver stations)
+    // 2. Draw Grid Lines (Only if showGrid is enabled)
+    if (showGrid) {
+      ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.03)";
+      ctx.lineWidth = 1;
+      
+      if (fieldType === "ftc") {
+        // FTC: 6x6 tape tiles of 2ft (0.6096m)
+        for (let i = -3; i <= 3; i++) {
+          const offset = i * 0.6096;
+          // Vertical EKF constant Y lines (from -1.8288 to 1.8288 EKF X)
+          const pV1 = ekfToScreen(-1.8288, offset);
+          const pV2 = ekfToScreen(1.8288, offset);
+          ctx.beginPath();
+          ctx.moveTo(pV1.x, pV1.y);
+          ctx.lineTo(pV2.x, pV2.y);
+          ctx.stroke();
 
-      // Horizontal grid lines (constant X_ekf)
-      ctx.beginPath();
-      ctx.moveTo(toPxX(-1.8288), toPxY(offset));
-      ctx.lineTo(toPxX(1.8288), toPxY(offset));
-      ctx.stroke();
+          // Horizontal EKF constant X lines (from -1.8288 to 1.8288 EKF Y)
+          const pH1 = ekfToScreen(offset, -1.8288);
+          const pH2 = ekfToScreen(offset, 1.8288);
+          ctx.beginPath();
+          ctx.moveTo(pH1.x, pH1.y);
+          ctx.lineTo(pH2.x, pH2.y);
+          ctx.stroke();
+        }
+      } else {
+        // FRC: 1-meter grid spacing
+        const maxHalfX = Math.ceil(fieldH / 2);
+        const maxHalfY = Math.ceil(fieldW / 2);
+        
+        ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.02)";
+        for (let x = -maxHalfX; x <= maxHalfX; x++) {
+          const pV1 = ekfToScreen(x, -fieldW / 2);
+          const pV2 = ekfToScreen(x, fieldW / 2);
+          ctx.beginPath();
+          ctx.moveTo(pV1.x, pV1.y);
+          ctx.lineTo(pV2.x, pV2.y);
+          ctx.stroke();
+        }
+        for (let y = -maxHalfY; y <= maxHalfY; y++) {
+          const pH1 = ekfToScreen(-fieldH / 2, y);
+          const pH2 = ekfToScreen(fieldH / 2, y);
+          ctx.beginPath();
+          ctx.moveTo(pH1.x, pH1.y);
+          ctx.lineTo(pH2.x, pH2.y);
+          ctx.stroke();
+        }
+
+        // Draw centerline (EKF X = 0 or Y = 0)
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1.5;
+        const pC1 = ekfToScreen(0, -fieldW / 2);
+        const pC2 = ekfToScreen(0, fieldW / 2);
+        ctx.beginPath();
+        ctx.moveTo(pC1.x, pC1.y);
+        ctx.lineTo(pC2.x, pC2.y);
+        ctx.stroke();
+      }
     }
 
     // 3. Draw Outer Perimeter Wall
     ctx.strokeStyle = bgImage ? "rgba(255, 255, 255, 0.3)" : "rgba(255, 255, 255, 0.12)";
     ctx.lineWidth = 2;
-    ctx.strokeRect(toPxX(1.8288), toPxY(1.8288), canvasSize - 2 * toPxX(1.8288), canvasSize - 2 * toPxY(1.8288));
+    const c1 = ekfToScreen(-fieldH / 2, -fieldW / 2);
+    const c2 = ekfToScreen(fieldH / 2, fieldW / 2);
+    const minWallX = Math.min(c1.x, c2.x);
+    const maxWallX = Math.max(c1.x, c2.x);
+    const minWallY = Math.min(c1.y, c2.y);
+    const maxWallY = Math.max(c1.y, c2.y);
+    ctx.strokeRect(minWallX, minWallY, maxWallX - minWallX, maxWallY - minWallY);
 
-    // 4. Draw Center Origin Marker
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(centerX - 10, centerY);
-    ctx.lineTo(centerX + 10, centerY);
-    ctx.moveTo(centerX, centerY - 10);
-    ctx.lineTo(centerX, centerY + 10);
-    ctx.stroke();
+    // 4. Draw Center Origin Crosshair & EKF Axes Indicators (Only if showCoordinateAxes is enabled)
+    if (showCoordinateAxes) {
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX - 8, centerY);
+      ctx.lineTo(centerX + 8, centerY);
+      ctx.moveTo(centerX, centerY - 8);
+      ctx.lineTo(centerX, centerY + 8);
+      ctx.stroke();
 
-    // 5. Draw red and blue zones/substations as faint context (only if no custom background image)
-    if (!bgImage) {
+      // +X arrow indicator (red)
+      const pXEnd = ekfToScreen(0.4, 0); // 0.4m arrow
+      ctx.strokeStyle = "#C00000"; // ares-red
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(pXEnd.x, pXEnd.y);
+      ctx.stroke();
+
+      ctx.fillStyle = "#C00000";
+      ctx.font = "bold 8px monospace";
+      ctx.textAlign = "center";
+      // Draw +X text slightly offset
+      const xTextOffset = 8;
+      let tx = pXEnd.x;
+      let ty = pXEnd.y;
+      if (pXEnd.x > centerX) tx += xTextOffset;
+      else if (pXEnd.x < centerX) tx -= xTextOffset;
+      if (pXEnd.y > centerY) ty += xTextOffset;
+      else if (pXEnd.y < centerY) ty -= xTextOffset;
+      ctx.fillText("+X", tx, ty + 3);
+
+      // +Y arrow indicator (blue)
+      const pYEnd = ekfToScreen(0, 0.4);
+      ctx.strokeStyle = "#00E5FF"; // ares-cyan
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(pYEnd.x, pYEnd.y);
+      ctx.stroke();
+
+      ctx.fillStyle = "#00E5FF";
+      ctx.fillText("+Y", pYEnd.x + (pYEnd.x > centerX ? 8 : (pYEnd.x < centerX ? -8 : 0)), pYEnd.y + (pYEnd.y > centerY ? 8 : (pYEnd.y < centerY ? -8 : 0)) + 3);
+    }
+
+    // 5. Draw Driver's Stations
+    const drawDriverStation = (side: "north" | "south" | "east" | "west", color: string, text: string) => {
+      ctx.fillStyle = color;
+      ctx.save();
+      if (side === "north") {
+        ctx.fillRect(0, 0, canvasW, 12);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(text, canvasW / 2, 9);
+      } else if (side === "south") {
+        ctx.fillRect(0, canvasH - 12, canvasW, 12);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(text, canvasW / 2, canvasH - 3);
+      } else if (side === "west") {
+        ctx.fillRect(0, 0, 12, canvasH);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.translate(9, canvasH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(text, 0, 0);
+      } else if (side === "east") {
+        ctx.fillRect(canvasW - 12, 0, 12, canvasH);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 8px monospace";
+        ctx.textAlign = "center";
+        ctx.translate(canvasW - 9, canvasH / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.fillText(text, 0, 0);
+      }
+      ctx.restore();
+    };
+
+    drawDriverStation(redDriverStation, "rgba(192, 0, 0, 0.7)", "RED DRIVER STATION");
+    drawDriverStation(blueDriverStation, "rgba(59, 130, 246, 0.7)", "BLUE DRIVER STATION");
+
+    // 6. Draw red and blue zones/substations (Only for FTC and if no custom background image and enabled)
+    if (fieldType === "ftc" && !bgImage && showAllianceZones) {
       ctx.fillStyle = "rgba(239, 68, 68, 0.05)";
       ctx.beginPath();
-      ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2);
+      const pRedCenter = ekfToScreen(1.8288, 1.8288);
+      ctx.arc(pRedCenter.x, pRedCenter.y, 0.508 * scale, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = "rgba(59, 130, 246, 0.05)";
       ctx.beginPath();
-      ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
+      const pBlueCenter = ekfToScreen(-1.8288, -1.8288);
+      ctx.arc(pBlueCenter.x, pBlueCenter.y, 0.508 * scale, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 6. Draw Obstacles
+    // 7. Draw Obstacles
     obstacles.forEach((obs) => {
       const isSelected = obs.id === selectedObstacleId;
       const obsHalfW = obs.width / 2;
       const obsHalfH = obs.height / 2;
 
-      const leftPx = toPxX(obs.y + obsHalfW);
-      const topPx = toPxY(obs.x + obsHalfH);
-      const wPx = obs.width * scale;
-      const hPx = obs.height * scale;
+      // Map bounds properly using EKF coordinates to handle axis orientation changes
+      const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
+      const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
+      const leftPx = Math.min(p1.x, p2.x);
+      const topPx = Math.min(p1.y, p2.y);
+      const wPx = Math.abs(p1.x - p2.x);
+      const hPx = Math.abs(p1.y - p2.y);
 
-      // Obstacle body
-      ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.08)";
+      // Save context in case of dashed lines for non-blocking
+      ctx.save();
+
+      // Configure border/dash
+      if (!obs.isBlocking || obs.obstacleType === "ramp") {
+        ctx.setLineDash([4, 4]);
+      }
+
+      // 1. Draw Obstacle Body Fill
+      if (obs.obstacleType === "ramp" && obs.rampDirection) {
+        // Linear gradient representing the ramp incline slope
+        let grad;
+        if (obs.rampDirection === "up") {
+          grad = ctx.createLinearGradient(leftPx, topPx + hPx, leftPx, topPx);
+        } else if (obs.rampDirection === "down") {
+          grad = ctx.createLinearGradient(leftPx, topPx, leftPx, topPx + hPx);
+        } else if (obs.rampDirection === "left") {
+          grad = ctx.createLinearGradient(leftPx + wPx, topPx, leftPx, topPx);
+        } else { // "right"
+          grad = ctx.createLinearGradient(leftPx, topPx, leftPx + wPx, topPx);
+        }
+        grad.addColorStop(0, isSelected ? "rgba(245, 158, 11, 0.05)" : "rgba(255, 255, 255, 0.02)");
+        grad.addColorStop(1, isSelected ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.15)");
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.07)";
+      }
       ctx.fillRect(leftPx, topPx, wPx, hPx);
 
-      // Obstacle border
-      ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(255, 255, 255, 0.3)";
+      // 2. Draw Obstacle Border
+      ctx.strokeStyle = isSelected 
+        ? "#F59E0B" 
+        : (obs.obstacleType === "ramp" ? "rgba(245, 158, 11, 0.35)" : "rgba(255, 255, 255, 0.25)");
       ctx.lineWidth = isSelected ? 2 : 1;
       ctx.strokeRect(leftPx, topPx, wPx, hPx);
+      ctx.restore();
+
+      // 3. Draw Incline Arrow for Ramps
+      if (obs.obstacleType === "ramp" && obs.rampDirection) {
+        ctx.save();
+        ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(245, 158, 11, 0.5)";
+        ctx.lineWidth = 1.5;
+        const cx = leftPx + wPx / 2;
+        const cy = topPx + hPx / 2;
+        ctx.beginPath();
+        if (obs.rampDirection === "up") {
+          ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy - 8);
+          ctx.lineTo(cx - 3, cy - 5); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx + 3, cy - 5);
+        } else if (obs.rampDirection === "down") {
+          ctx.moveTo(cx, cy - 8); ctx.lineTo(cx, cy + 8);
+          ctx.lineTo(cx - 3, cy + 5); ctx.moveTo(cx, cy + 8); ctx.lineTo(cx + 3, cy + 5);
+        } else if (obs.rampDirection === "left") {
+          ctx.moveTo(cx + 8, cy); ctx.lineTo(cx - 8, cy);
+          ctx.lineTo(cx - 5, cy - 3); ctx.moveTo(cx - 8, cy); ctx.lineTo(cx - 5, cy + 3);
+        } else { // "right"
+          ctx.moveTo(cx - 8, cy); ctx.lineTo(cx + 8, cy);
+          ctx.lineTo(cx + 5, cy - 3); ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 5, cy + 3);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // Name label
       ctx.fillStyle = isSelected ? "#F59E0B" : "rgba(255, 255, 255, 0.6)";
       ctx.font = "bold 10px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(obs.name, leftPx + wPx / 2, topPx + hPx / 2 + 3);
+      ctx.fillText(obs.name, leftPx + wPx / 2, topPx + hPx / 2 - 3);
 
-      // Bounding dimensions label (faint)
+      // Bounding dimensions and type label (faint)
       ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
       ctx.font = "8px monospace";
       ctx.fillText(
         `${obs.width.toFixed(2)}m x ${obs.height.toFixed(2)}m`, 
         leftPx + wPx / 2, 
-        topPx + hPx / 2 + 13
+        topPx + hPx / 2 + 7
       );
+      if (obs.obstacleType === "ramp") {
+        ctx.fillStyle = "rgba(245, 158, 11, 0.5)";
+        ctx.fillText("RAMP", leftPx + wPx / 2, topPx + hPx / 2 + 16);
+      }
 
-      // Resize Handle at bottom-right corner
+      // Resize Handle at bottom-right corner (using absolute screen coordinates)
       if (isSelected) {
         ctx.fillStyle = "#F59E0B";
         ctx.beginPath();
-        // Bottom-Right Corner in screen: leftPx + wPx, topPx + hPx
         ctx.arc(leftPx + wPx, topPx + hPx, 5, 0, Math.PI * 2);
         ctx.fill();
         
@@ -703,7 +1008,7 @@ export default function FieldObstacleEditor() {
       }
     });
 
-    // 7. Draw Field Elements
+    // 8. Draw Field Elements
     elements.forEach((el) => {
       const type = elementTypes.find((t) => t.id === el.elementTypeId);
       if (!type) return;
@@ -711,8 +1016,9 @@ export default function FieldObstacleEditor() {
       const isSelected = el.id === selectedElementInstanceId;
       const sizeMeters = type.shape === "box" ? Math.max(type.width, type.height) : (type.diameter || 0.15);
       
-      const pxX = toPxX(el.y);
-      const pxY = toPxY(el.x);
+      const pEl = ekfToScreen(el.x, el.y);
+      const pxX = pEl.x;
+      const pxY = pEl.y;
 
       ctx.save();
       ctx.translate(pxX, pxY);
@@ -752,7 +1058,7 @@ export default function FieldObstacleEditor() {
       ctx.fillText(type.name, pxX, pxY + (sizeMeters * scale) / 2 + 10);
     });
 
-  }, [obstacles, selectedObstacleId, canvasSize, bgImage, editMode, elements, elementTypes, selectedElementInstanceId]);
+  }, [obstacles, selectedObstacleId, canvasSize, bgImage, editMode, elements, elementTypes, selectedElementInstanceId, fieldType, xAxisDirection, yAxisDirection, redDriverStation, blueDriverStation, showGrid, showAllianceZones, showCoordinateAxes, canvasW, canvasH, fieldW, fieldH, scale]);
 
   // Mouse Interaction Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -763,16 +1069,25 @@ export default function FieldObstacleEditor() {
     const mouseY = e.clientY - rect.top;
 
     // Convert mouse to EKF space coordinates
-    const mx = toEkfX(mouseY);
-    const my = toEkfY(mouseX);
+    const mx = toEkfX(mouseX, mouseY);
+    const my = toEkfY(mouseX, mouseY);
 
     if (editMode === "obstacles") {
       // 1. Check if we clicked on the active obstacle's resize handle
       if (selectedObstacleId) {
         const obs = obstacles.find((o) => o.id === selectedObstacleId);
         if (obs) {
-          const handleX = toPxX(obs.y - obs.width / 2);
-          const handleY = toPxY(obs.x - obs.height / 2);
+          const obsHalfW = obs.width / 2;
+          const obsHalfH = obs.height / 2;
+          const p1 = ekfToScreen(obs.x - obsHalfH, obs.y - obsHalfW);
+          const p2 = ekfToScreen(obs.x + obsHalfH, obs.y + obsHalfW);
+          const leftPx = Math.min(p1.x, p2.x);
+          const topPx = Math.min(p1.y, p2.y);
+          const wPx = Math.abs(p1.x - p2.x);
+          const hPx = Math.abs(p1.y - p2.y);
+
+          const handleX = leftPx + wPx;
+          const handleY = topPx + hPx;
           const dist = Math.hypot(mouseX - handleX, mouseY - handleY);
 
           if (dist <= 10) {
@@ -784,8 +1099,8 @@ export default function FieldObstacleEditor() {
               oy: obs.y,
               ow: obs.width,
               oh: obs.height,
-              fixedX: obs.x + obs.height / 2,
-              fixedY: obs.y + obs.width / 2
+              fixedX: toEkfX(leftPx, topPx),
+              fixedY: toEkfY(leftPx, topPx)
             };
             return;
           }
@@ -855,8 +1170,8 @@ export default function FieldObstacleEditor() {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const mx = toEkfX(mouseY);
-    const my = toEkfY(mouseX);
+    const mx = toEkfX(mouseX, mouseY);
+    const my = toEkfY(mouseX, mouseY);
 
     if (dragModeRef.current === "dragging") {
       if (editMode === "obstacles" && selectedObstacleId) {
@@ -902,11 +1217,11 @@ export default function FieldObstacleEditor() {
       const drag = dragStartRef.current;
       if (drag.fixedX === undefined || drag.fixedY === undefined || drag.ow === undefined || drag.oh === undefined) return;
 
-      const newHeight = Math.max(0.1, drag.fixedX - mx);
-      const newWidth = Math.max(0.1, drag.fixedY - my);
+      const newHeight = Math.max(0.1, Math.abs(drag.fixedX - mx));
+      const newWidth = Math.max(0.1, Math.abs(drag.fixedY - my));
 
-      const newX = drag.fixedX - newHeight / 2;
-      const newY = drag.fixedY - newWidth / 2;
+      const newX = (drag.fixedX + mx) / 2;
+      const newY = (drag.fixedY + my) / 2;
 
       setObstacles(
         obstacles.map((obs) => {
@@ -940,23 +1255,63 @@ export default function FieldObstacleEditor() {
       return;
     }
 
-    const step = e.shiftKey ? 1.0 : 0.1;
+    const step = e.shiftKey ? 0.5 : 0.05;
     const obs = obstacles.find((o) => o.id === selectedObstacleId);
     if (!obs) return;
 
+    const pCenter = ekfToScreen(obs.x, obs.y);
+    const pXPlus = ekfToScreen(obs.x + step, obs.y);
+    const pYPlus = ekfToScreen(obs.x, obs.y + step);
+
+    const screenDX_for_ekfX = pXPlus.x - pCenter.x;
+    const screenDY_for_ekfX = pXPlus.y - pCenter.y;
+    const screenDX_for_ekfY = pYPlus.x - pCenter.x;
+    const screenDY_for_ekfY = pYPlus.y - pCenter.y;
+
+    let nextX = obs.x;
+    let nextY = obs.y;
+
     if (e.key === "ArrowUp") {
-      handleUpdateObstacleField(obs.id, "y", Number((obs.y + step).toFixed(2)));
+      if (Math.abs(screenDY_for_ekfX) > Math.abs(screenDY_for_ekfY)) {
+        nextX += screenDY_for_ekfX < 0 ? step : -step;
+      } else {
+        nextY += screenDY_for_ekfY < 0 ? step : -step;
+      }
       e.preventDefault();
     } else if (e.key === "ArrowDown") {
-      handleUpdateObstacleField(obs.id, "y", Number((obs.y - step).toFixed(2)));
+      if (Math.abs(screenDY_for_ekfX) > Math.abs(screenDY_for_ekfY)) {
+        nextX += screenDY_for_ekfX > 0 ? step : -step;
+      } else {
+        nextY += screenDY_for_ekfY > 0 ? step : -step;
+      }
       e.preventDefault();
     } else if (e.key === "ArrowLeft") {
-      handleUpdateObstacleField(obs.id, "x", Number((obs.x - step).toFixed(2)));
+      if (Math.abs(screenDX_for_ekfX) > Math.abs(screenDX_for_ekfY)) {
+        nextX += screenDX_for_ekfX < 0 ? step : -step;
+      } else {
+        nextY += screenDX_for_ekfY < 0 ? step : -step;
+      }
       e.preventDefault();
     } else if (e.key === "ArrowRight") {
-      handleUpdateObstacleField(obs.id, "x", Number((obs.x + step).toFixed(2)));
+      if (Math.abs(screenDX_for_ekfX) > Math.abs(screenDX_for_ekfY)) {
+        nextX += screenDX_for_ekfX > 0 ? step : -step;
+      } else {
+        nextY += screenDX_for_ekfY > 0 ? step : -step;
+      }
       e.preventDefault();
-    } else if (e.key === "Escape") {
+    }
+
+    if (nextX !== obs.x || nextY !== obs.y) {
+      setObstacles(
+        obstacles.map((o) =>
+          o.id === obs.id
+            ? { ...o, x: Number(nextX.toFixed(3)), y: Number(nextY.toFixed(3)) }
+            : o
+        )
+      );
+    }
+
+    if (e.key === "Escape") {
       setSelectedObstacleId(null);
       e.preventDefault();
     } else if (e.key === "Tab") {
@@ -980,10 +1335,10 @@ export default function FieldObstacleEditor() {
             <Grid size={12} /> Robot Field Config
           </p>
           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-heading">
-            Field Obstacle Editor
+            Field Editor
           </h1>
           <p className="text-marble/70 text-xs md:text-sm mt-1.5 font-medium max-w-xl">
-            Visually design dynamic obstacle layout configurations. Map bounding boxes to the EKF center-origin coordinate system and load them inside ARES-Scope replays.
+            Visually design and configure FTC and FRC field layouts. Adjust coordinate axes, define driver's stations, place game elements, and draw blocking walls or non-blocking ramps.
           </p>
         </div>
 
@@ -1104,6 +1459,138 @@ export default function FieldObstacleEditor() {
                 placeholder="Championship Finals layout..."
                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
               />
+            </div>
+
+            {/* Field Configuration Subsection */}
+            <div className="border-t border-white/5 pt-3 space-y-3">
+              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
+                Field Parameters
+              </span>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5 col-span-2">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    Field Type
+                  </label>
+                  <select
+                    value={fieldType}
+                    onChange={(e) => setFieldType(e.target.value as "ftc" | "frc")}
+                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                  >
+                    <option value="ftc">FTC (Square)</option>
+                    <option value="frc">FRC (2:1 Rect)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    Red Station
+                  </label>
+                  <select
+                    value={redDriverStation}
+                    onChange={(e) => setRedDriverStation(e.target.value as any)}
+                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                  >
+                    <option value="north">North</option>
+                    <option value="south">South</option>
+                    <option value="east">East</option>
+                    <option value="west">West</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    Blue Station
+                  </label>
+                  <select
+                    value={blueDriverStation}
+                    onChange={(e) => setBlueDriverStation(e.target.value as any)}
+                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                  >
+                    <option value="north">North</option>
+                    <option value="south">South</option>
+                    <option value="east">East</option>
+                    <option value="west">West</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    +X Direction
+                  </label>
+                  <select
+                    value={xAxisDirection}
+                    onChange={(e) => setXAxisDirection(e.target.value as any)}
+                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                  >
+                    <option value="up">Up (North)</option>
+                    <option value="down">Down (South)</option>
+                    <option value="left">Left (West)</option>
+                    <option value="right">Right (East)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                    +Y Direction
+                  </label>
+                  <select
+                    value={yAxisDirection}
+                    onChange={(e) => setYAxisDirection(e.target.value as any)}
+                    className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                  >
+                    <option value="up">Up (North)</option>
+                    <option value="down">Down (South)</option>
+                    <option value="left">Left (West)</option>
+                    <option value="right">Right (East)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Display Options Subsection */}
+            <div className="border-t border-white/5 pt-3 space-y-2">
+              <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
+                Display Options
+              </span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="show-grid-chk"
+                    checked={showGrid}
+                    onChange={(e) => setShowGrid(e.target.checked)}
+                    className="w-4 h-4 accent-ares-gold cursor-pointer"
+                  />
+                  <label htmlFor="show-grid-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                    Show Grid Lines
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="show-alliance-chk"
+                    checked={showAllianceZones}
+                    onChange={(e) => setShowAllianceZones(e.target.checked)}
+                    className="w-4 h-4 accent-ares-gold cursor-pointer"
+                  />
+                  <label htmlFor="show-alliance-chk" className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
+                    Show Alliance Zones (FTC Only)
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="show-axes-chk"
+                    checked={showCoordinateAxes}
+                    onChange={(e) => setShowCoordinateAxes(e.target.checked)}
+                    className="w-4 h-4 accent-ares-gold cursor-pointer"
+                  />
+                  <label htmlFor="show-axes-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
+                    Show Coordinate Axes
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -1259,6 +1746,59 @@ export default function FieldObstacleEditor() {
                         onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
                         className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
                       />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 col-span-2">
+                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                        Obstacle Type
+                      </label>
+                      <select
+                        value={selectedObs.obstacleType}
+                        onChange={(e) => {
+                          const newType = e.target.value as "blocking" | "ramp";
+                          handleUpdateObstacleField(selectedObs.id, "obstacleType", newType);
+                          // Automatically toggle blocking based on type, but allow overriding
+                          handleUpdateObstacleField(selectedObs.id, "isBlocking", newType === "blocking");
+                          if (newType === "ramp" && !selectedObs.rampDirection) {
+                            handleUpdateObstacleField(selectedObs.id, "rampDirection", "up");
+                          }
+                        }}
+                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                      >
+                        <option value="blocking">Blocking Wall</option>
+                        <option value="ramp">Non-Blocking Ramp</option>
+                      </select>
+                    </div>
+
+                    {selectedObs.obstacleType === "ramp" && (
+                      <div className="flex flex-col gap-1.5 col-span-2">
+                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                          Ramp Incline Direction (Screen View)
+                        </label>
+                        <select
+                          value={selectedObs.rampDirection || "up"}
+                          onChange={(e) => handleUpdateObstacleField(selectedObs.id, "rampDirection", e.target.value as any)}
+                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
+                        >
+                          <option value="up">North (Up)</option>
+                          <option value="down">South (Down)</option>
+                          <option value="left">West (Left)</option>
+                          <option value="right">East (Right)</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 col-span-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id={`obs-blocking-chk-${selectedObs.id}`}
+                        checked={selectedObs.isBlocking}
+                        onChange={(e) => handleUpdateObstacleField(selectedObs.id, "isBlocking", e.target.checked)}
+                        className="w-4 h-4 accent-ares-gold cursor-pointer"
+                      />
+                      <label htmlFor={`obs-blocking-chk-${selectedObs.id}`} className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
+                        Is Blocking (Physics Collider)
+                      </label>
                     </div>
                   </div>
 
