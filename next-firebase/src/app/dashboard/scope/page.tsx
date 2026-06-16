@@ -86,8 +86,8 @@ export interface DashboardPreset {
 }
 
 const DEFAULT_LAYOUT: LayoutItem[] = [
-  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1, x: 0, y: 1, w: 4, h: 5 },
-  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2, x: 4, y: 1, w: 8, h: 5 },
+  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1, x: 0, y: 1, w: 8, h: 5 },
+  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2, x: 8, y: 1, w: 4, h: 5 },
   { id: "charts-1", type: "charts", title: "Telemetry Chart", visible: true, colSpan: 2, height: "medium", order: 3, x: 0, y: 6, w: 8, h: 3 },
   { id: "inspector", type: "inspector", title: "State Inspector", visible: true, colSpan: 1, height: "medium", order: 4, x: 8, y: 6, w: 4, h: 3 },
   { id: "logs", type: "logs", title: "System Console Logs", visible: true, colSpan: 2, height: "medium", order: 5, x: 0, y: 9, w: 8, h: 3 },

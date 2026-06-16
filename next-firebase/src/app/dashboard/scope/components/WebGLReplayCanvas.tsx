@@ -26,9 +26,47 @@ export default function WebGLReplayCanvas() {
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
+  const [parentDimensions, setParentDimensions] = useState({ width: 360, height: 360 });
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+
+  // ResizeObserver to detect layout sizes dynamically (handling grid resizes & window scaling)
+  useEffect(() => {
+    const parent = canvas2DRef.current?.parentElement || container3DRef.current?.parentElement;
+    if (!parent) return;
+
+    const handleResize = () => {
+      setParentDimensions({
+        width: parent.clientWidth || 360,
+        height: parent.clientHeight || 360
+      });
+    };
+
+    handleResize();
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(parent);
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [viewMode]);
+
+  // Handle 3D Renderer and Camera aspect ratios dynamically when parentDimensions updates
+  useEffect(() => {
+    if (viewMode !== "3d" || !rendererRef.current || !cameraRef.current || !container3DRef.current) return;
+    const w = parentDimensions.width;
+    const h = parentDimensions.height;
+    cameraRef.current.aspect = w / h;
+    cameraRef.current.updateProjectionMatrix();
+    rendererRef.current.setSize(w, h);
+  }, [parentDimensions, viewMode]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (!telemetryData || !telemetryData.maxTimeMs) return;
@@ -141,9 +179,11 @@ export default function WebGLReplayCanvas() {
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const size = Math.min(canvas.parentElement?.clientWidth || 360, 420);
+    const size = Math.min(parentDimensions.width, parentDimensions.height);
     canvas.width = size * dpr;
     canvas.height = size * dpr;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
     ctx.scale(dpr, dpr);
 
     const width = size;
@@ -443,7 +483,7 @@ export default function WebGLReplayCanvas() {
 
       ctx.restore();
     }
-  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles]);
+  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles, parentDimensions]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -462,6 +502,7 @@ export default function WebGLReplayCanvas() {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 2.8, 3.3);
     camera.lookAt(0, -0.25, 0);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(width, height);
@@ -799,20 +840,8 @@ export default function WebGLReplayCanvas() {
     };
     animate();
 
-    // 9. Resize Listener
-    const handleResize = () => {
-      if (!container || !renderer || !camera) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener("resize", handleResize);
-
     return () => {
       active = false;
-      window.removeEventListener("resize", handleResize);
       
       scene.traverse((object: any) => {
         if (object.geometry) {
@@ -1139,7 +1168,7 @@ export default function WebGLReplayCanvas() {
       </div>
 
       {/* Main WebGL Replay Viewport */}
-      <div className="relative aspect-square w-full max-w-[360px] bg-black/85 rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center shadow-inner self-center">
+      <div className="relative flex-grow w-full h-0 bg-black/85 rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center shadow-inner">
         {viewMode === "2d" ? (
           <canvas 
             ref={canvas2DRef} 
@@ -1153,8 +1182,7 @@ export default function WebGLReplayCanvas() {
         ) : (
           <div 
             ref={container3DRef} 
-            className="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" 
-            style={{ minHeight: "360px" }}
+            className="w-full h-full absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" 
             tabIndex={0}
             onKeyDown={handleKeyDown}
             role="img"
