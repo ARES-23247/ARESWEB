@@ -191,13 +191,16 @@ export default function SyncRobotLogsModal({
                     <span className="text-[9px] font-black uppercase text-ares-gold tracking-widest flex items-center gap-1 animate-pulse">
                       <RefreshCw size={10} className="animate-spin" /> Syncing...
                     </span>
+                  ) : status === "error" ? (
+                    <span className="text-[9px] font-black uppercase text-ares-red tracking-widest flex items-center gap-1">
+                      <X size={10} className="stroke-[3]" /> Error
+                    </span>
                   ) : (
                     <button
                       onClick={() => syncLogToCloud(file)}
-                      disabled={status === "syncing"}
-                      className="px-2.5 py-1.5 bg-ares-gold hover:bg-ares-gold-soft text-black text-[9px] uppercase font-black tracking-widest rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      className="text-[9px] font-black uppercase text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded transition-colors"
                     >
-                      <Upload size={8} className="stroke-[3]" /> Sync
+                      Sync
                     </button>
                   )}
                 </div>

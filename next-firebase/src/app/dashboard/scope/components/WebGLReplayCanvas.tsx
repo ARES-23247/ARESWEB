@@ -22,7 +22,8 @@ export default function WebGLReplayCanvas() {
     fieldObstacles,
     fieldElements,
     fieldElementTypes,
-    fieldCadUrl
+    fieldCadUrl,
+    fieldBgImageUrl
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
@@ -57,6 +58,31 @@ export default function WebGLReplayCanvas() {
       window.removeEventListener("resize", handleResize);
     };
   }, [viewMode]);
+
+  // Load background image from fieldBgImageUrl
+  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
+  const [bgImageLoaded, setBgImageLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!fieldBgImageUrl) {
+      setBgImage(null);
+      setBgImageLoaded(false);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setBgImage(img);
+      setBgImageLoaded(true);
+    };
+    img.onerror = () => {
+      console.warn("[WebGLReplayCanvas] Failed to load background image:", fieldBgImageUrl);
+      setBgImage(null);
+      setBgImageLoaded(false);
+    };
+    img.src = fieldBgImageUrl;
+  }, [fieldBgImageUrl]);
 
   // Handle 3D Renderer and Camera aspect ratios dynamically when parentDimensions updates
   useEffect(() => {
@@ -200,12 +226,16 @@ export default function WebGLReplayCanvas() {
     const toPxX = (y_ekf: number) => centerX - y_ekf * scale; // Left is positive Y, maps to screen left
     const toPxY = (x_ekf: number) => centerY - x_ekf * scale; // Forward is positive X, maps to screen top
 
-    // Background
-    ctx.fillStyle = "#0D0D0D";
-    ctx.fillRect(0, 0, width, height);
+    // Background Image or Solid Color
+    if (bgImage && bgImageLoaded) {
+      ctx.drawImage(bgImage, toPxX(1.8288), toPxY(1.8288), mapSize, mapSize);
+    } else {
+      ctx.fillStyle = "#0D0D0D";
+      ctx.fillRect(0, 0, width, height);
+    }
 
     // 6x6 Grid Tiles (each is 24x24 inches = 0.6096m x 0.6096m)
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.strokeStyle = bgImage && bgImageLoaded ? "rgba(255, 255, 255, 0.015)" : "rgba(255, 255, 255, 0.04)";
     ctx.lineWidth = 1;
     for (let i = -3; i <= 3; i++) {
       const offset = i * 0.6096;
@@ -223,34 +253,36 @@ export default function WebGLReplayCanvas() {
     }
 
     // Outer Perimeter Wall
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.strokeStyle = bgImage && bgImageLoaded ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.15)";
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.rect(toPxX(1.8288), toPxY(1.8288), mapSize, mapSize);
     ctx.stroke();
 
-    // Red Basket Corner (Top-Left on screen, EKF X = 1.8288, Y = 1.8288)
-    ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
-    ctx.beginPath();
-    ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2); // 20 inches = 0.508m
-    ctx.fill();
+    if (!bgImage || !bgImageLoaded) {
+      // Red Basket Corner (Top-Left on screen, EKF X = 1.8288, Y = 1.8288)
+      ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
+      ctx.beginPath();
+      ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2); // 20 inches = 0.508m
+      ctx.fill();
 
-    // Blue Basket Corner (Bottom-Right on screen, EKF X = -1.8288, Y = -1.8288)
-    ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
-    ctx.beginPath();
-    ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
-    ctx.fill();
+      // Blue Basket Corner (Bottom-Right on screen, EKF X = -1.8288, Y = -1.8288)
+      ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
+      ctx.beginPath();
+      ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Substations (Red bottom-left screen, Blue top-right screen)
-    ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
-    ctx.fillRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale); // 24 inches = 0.6096m
-    ctx.strokeStyle = "rgba(239, 68, 68, 0.2)";
-    ctx.strokeRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale);
+      // Substations (Red bottom-left screen, Blue top-right screen)
+      ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+      ctx.fillRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale); // 24 inches = 0.6096m
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.2)";
+      ctx.strokeRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale);
 
-    ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
-    ctx.fillRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
-    ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
-    ctx.strokeRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
+      ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+      ctx.fillRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
+      ctx.strokeRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
+    }
 
     // Custom Obstacles from Field Config
     if (fieldObstacles && fieldObstacles.length > 0) {
@@ -483,7 +515,7 @@ export default function WebGLReplayCanvas() {
 
       ctx.restore();
     }
-  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles, parentDimensions]);
+  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles, parentDimensions, bgImage, bgImageLoaded]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -1077,7 +1109,7 @@ export default function WebGLReplayCanvas() {
   }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov]);
 
   return (
-    <div className="flex flex-col gap-5 justify-between h-full p-6">
+    <div className="flex flex-col gap-5 justify-between h-full p-4">
       {/* HUD Metrics & Selector Header */}
       <div className="w-full border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">

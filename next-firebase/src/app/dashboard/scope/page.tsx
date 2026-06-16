@@ -160,7 +160,8 @@ export default function ScopeDashboard() {
     setFieldObstacles,
     setFieldElements,
     setFieldElementTypes,
-    setFieldCadUrl
+    setFieldCadUrl,
+    setFieldBgImageUrl
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
@@ -196,7 +197,7 @@ export default function ScopeDashboard() {
   const [visionStdDevTheta, setVisionStdDevTheta] = useState(0.1);
 
   // Field Obstacle Configuration States
-  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[]; cadUrl?: string }[]>([]);
+  const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[]; cadUrl?: string; bgImageUrl?: string }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
 
   // authentication
@@ -349,18 +350,20 @@ export default function ScopeDashboard() {
           setFieldElements(configs[0].elements || []);
           setFieldElementTypes(configs[0].elementTypes || []);
           setFieldCadUrl(configs[0].cadUrl || null);
+          setFieldBgImageUrl(configs[0].bgImageUrl || null);
         } else {
           setFieldObstacles(null);
           setFieldElements(null);
           setFieldElementTypes(null);
           setFieldCadUrl(null);
+          setFieldBgImageUrl(null);
         }
       } catch (err) {
         console.error("Failed to fetch field configurations:", err);
       }
     };
     fetchFieldConfigs();
-  }, [setFieldObstacles, setFieldElements, setFieldElementTypes, setFieldCadUrl]);
+  }, [setFieldObstacles, setFieldElements, setFieldElementTypes, setFieldCadUrl, setFieldBgImageUrl]);
 
   const handleFieldConfigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const configId = e.target.value;
@@ -370,6 +373,7 @@ export default function ScopeDashboard() {
       setFieldElements(null);
       setFieldElementTypes(null);
       setFieldCadUrl(null);
+      setFieldBgImageUrl(null);
       return;
     }
     const config = fieldConfigs.find((c) => c.id === configId);
@@ -378,11 +382,13 @@ export default function ScopeDashboard() {
       setFieldElements(config.elements || []);
       setFieldElementTypes(config.elementTypes || []);
       setFieldCadUrl(config.cadUrl || null);
+      setFieldBgImageUrl(config.bgImageUrl || null);
     } else {
       setFieldObstacles(null);
       setFieldElements(null);
       setFieldElementTypes(null);
       setFieldCadUrl(null);
+      setFieldBgImageUrl(null);
     }
   };
 
@@ -484,8 +490,8 @@ export default function ScopeDashboard() {
         const group = prev.find(g => g.id === groupId);
         return {
           ...item,
-          x: group ? group.x : 0,
-          y: group ? (group.y + group.h) : 10,
+          x: group ? (group.x ?? 0) : 0,
+          y: group ? ((group.y ?? 1) + (group.h ?? 3)) : 10,
           w: 4,
           h: 3
         };
@@ -1722,7 +1728,6 @@ export default function ScopeDashboard() {
           <button
             onClick={() => {
               setShowSyncModal(true);
-              fetchRobotLogs();
             }}
             className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md focus:ring-2 focus:ring-ares-cyan focus:outline-none"
           >
@@ -2115,8 +2120,8 @@ export default function ScopeDashboard() {
                     {/* Card Body containing actual component */}
                     <div className="flex-grow overflow-hidden relative">
                       {item.type === "visualizer" && (
-                        <div className="flex flex-col gap-4 h-full p-4 overflow-y-auto">
-                          <div className="flex-grow min-h-[280px]">
+                        <div className={`flex flex-col gap-4 h-full p-4 ${videoUrl ? "overflow-y-auto" : "overflow-hidden"}`}>
+                          <div className="flex-grow h-full w-full min-h-[200px]">
                             <WebGLReplayCanvas />
                           </div>
                           {videoUrl && (
@@ -2263,8 +2268,8 @@ export default function ScopeDashboard() {
                               return (
                                 <div className="h-full w-full overflow-hidden">
                                   {activeChild.type === "visualizer" && (
-                                    <div className="flex flex-col gap-4 h-full overflow-y-auto">
-                                      <div className="flex-grow min-h-[220px]">
+                                    <div className={`flex flex-col gap-4 h-full ${videoUrl ? "overflow-y-auto" : "overflow-hidden"}`}>
+                                      <div className="flex-grow h-full w-full min-h-[200px]">
                                         <WebGLReplayCanvas />
                                       </div>
                                       {videoUrl && (

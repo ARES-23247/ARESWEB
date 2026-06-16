@@ -73,6 +73,7 @@ interface ScopeState {
   fieldElements: FieldElementInstance[] | null;
   fieldElementTypes: FieldElementType[] | null;
   fieldCadUrl: string | null;
+  fieldBgImageUrl: string | null;
   
   // Streaming States
   isStreaming: boolean;
@@ -91,6 +92,7 @@ interface ScopeState {
   setFieldElements: (elements: FieldElementInstance[] | null) => void;
   setFieldElementTypes: (types: FieldElementType[] | null) => void;
   setFieldCadUrl: (url: string | null) => void;
+  setFieldBgImageUrl: (url: string | null) => void;
   setSelectedKeys: (keys: string[]) => void;
   toggleSelectedKey: (key: string) => void;
   setDriveMode: (mode: "mecanum" | "swerve") => void;
@@ -118,6 +120,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   fieldElements: null,
   fieldElementTypes: null,
   fieldCadUrl: null,
+  fieldBgImageUrl: null,
   
   isStreaming: false,
   streamSource: null,
@@ -179,6 +182,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   setFieldElements: (fieldElements) => set({ fieldElements }),
   setFieldElementTypes: (fieldElementTypes) => set({ fieldElementTypes }),
   setFieldCadUrl: (fieldCadUrl) => set({ fieldCadUrl }),
+  setFieldBgImageUrl: (fieldBgImageUrl) => set({ fieldBgImageUrl }),
   setSelectedKeys: (selectedKeys) => set({ selectedKeys }),
   toggleSelectedKey: (key) => set((state) => {
     const isSelected = state.selectedKeys.includes(key);
