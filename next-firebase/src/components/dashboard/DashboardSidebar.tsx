@@ -186,16 +186,15 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* Sidebar Footer / Sign Out */}
-      <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
-        <button
-          onClick={logout}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
-        >
-          <LogOut size={14} /> Sign Out
-        </button>
+        <div className="pt-4 border-t border-white/5">
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
+          >
+            <LogOut size={14} /> Sign Out
+          </button>
+        </div>
       </div>
 
     </aside>
