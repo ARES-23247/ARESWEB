@@ -13,9 +13,22 @@ if (!admin.apps.length) {
   } else {
     // Fall back to local emulator credentials or default credentials
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || "aresfirst-portal";
+    
+    let storageBucket = `${projectId}.appspot.com`;
+    if (process.env.FIREBASE_CONFIG) {
+      try {
+        const config = JSON.parse(process.env.FIREBASE_CONFIG);
+        if (config.storageBucket) {
+          storageBucket = config.storageBucket;
+        }
+      } catch (err) {
+        // Fallback to default bucket domain if config parsing fails
+      }
+    }
+
     admin.initializeApp({
       projectId,
-      storageBucket: `${projectId}.appspot.com`
+      storageBucket
     });
   }
 }

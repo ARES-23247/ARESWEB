@@ -166,8 +166,15 @@ router.post("/import", ensureAdmin, async (req, res) => {
       await Promise.all(
         chunk.map(async (item) => {
           const baseUrl = item.baseUrl || item.mediaFile?.baseUrl;
-          const filename = item.filename || item.mediaFile?.filename || `photo-${item.id}.jpg`;
-          const mimeType = item.mimeType || item.mediaFile?.mimeType || "image/jpeg";
+          let filename = item.filename || item.mediaFile?.filename || `photo-${item.id}.jpg`;
+
+          // Google Photos API returns a JPEG when downscaling via =w2048-h2048.
+          // Force mimeType to image/jpeg and map extensions to .jpg (including HEIC/PNG/WEBP).
+          const lowerName = filename.toLowerCase();
+          if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif") || lowerName.endsWith(".png") || lowerName.endsWith(".webp") || lowerName.endsWith(".jpeg")) {
+            filename = filename.replace(/\.(heic|heif|png|webp|jpeg)$/i, ".jpg");
+          }
+          const mimeType = "image/jpeg";
 
           try {
             const docSnap = docMap.get(item.id);
@@ -189,7 +196,8 @@ router.post("/import", ensureAdmin, async (req, res) => {
               throw new Error("No download URL provided for photo.");
             }
 
-            const downloadUrl = `${baseUrl}=d`;
+            // Downscale to max 2048px on Google Photos side (which also transcodes to JPEG)
+            const downloadUrl = `${baseUrl}=w2048-h2048`;
             const downloadRes = await fetch(downloadUrl, {
               headers: { Authorization: `Bearer ${googleToken}` },
             });
