@@ -150,7 +150,7 @@ export default function GoogleSyncPage() {
       }
       const data = await res.json();
       setPickerSessionId(data.id);
-      setPickerSessionStatus(data.status || "ACTIVE");
+      setPickerSessionStatus(data.mediaItemsSet ? "COMPLETED" : "ACTIVE");
       setPickerUri(data.pickerUri);
       setPickerItems([]);
       
@@ -166,33 +166,30 @@ export default function GoogleSyncPage() {
       setIsPickerLoading(false);
     }
   };
-
+ 
   // 4. Poll Google Photos Picker Session Status
   useEffect(() => {
     if (!isPolling || !pickerSessionId) return;
-
+ 
     const intervalId = setInterval(async () => {
       try {
         const res = await authenticatedFetch(`/api/photos/picker/${pickerSessionId}`);
         if (!res.ok) return;
         
         const data = await res.json();
-        setPickerSessionStatus(data.status);
-
-        if (data.status === "COMPLETED") {
+        const mappedStatus = data.mediaItemsSet ? "COMPLETED" : "ACTIVE";
+        setPickerSessionStatus(mappedStatus);
+ 
+        if (data.mediaItemsSet) {
           clearInterval(intervalId);
           setIsPolling(false);
           await fetchPickerItems(pickerSessionId);
-        } else if (data.status === "CLOSED") {
-          clearInterval(intervalId);
-          setIsPolling(false);
-          setImportStatus("Session closed. No photos selected.");
         }
       } catch (err) {
         console.error("Error polling picker session:", err);
       }
     }, 3000);
-
+ 
     return () => clearInterval(intervalId);
   }, [isPolling, pickerSessionId]);
 
