@@ -387,9 +387,9 @@ const app4 = app3p.openapi(getPickerItemsRoute, async (c) => {
   const data = await response.json() as {
     mediaItems?: Array<{
       id: string;
-      baseUrl: string;
-      mimeType: string;
       mediaFile?: {
+        baseUrl: string;
+        mimeType: string;
         filename?: string;
         fileSize?: string;
         mediaFileMetadata?: {
@@ -403,12 +403,23 @@ const app4 = app3p.openapi(getPickerItemsRoute, async (c) => {
   };
 
   return c.json({
-    mediaItems: (data.mediaItems ?? []).map((item) => ({
-      id: item.id,
-      baseUrl: item.baseUrl,
-      mimeType: item.mimeType,
-      mediaFile: item.mediaFile,
-    })),
+    mediaItems: (data.mediaItems ?? []).map((item) => {
+      const mediaFile = item.mediaFile;
+      const baseUrl = mediaFile?.baseUrl ?? "https://lh3.googleusercontent.com/placeholder";
+      const mimeType = mediaFile?.mimeType ?? "image/jpeg";
+      return {
+        id: item.id,
+        baseUrl,
+        mimeType,
+        mediaFile: mediaFile ? {
+          baseUrl,
+          mimeType,
+          filename: mediaFile.filename,
+          fileSize: mediaFile.fileSize,
+          mediaFileMetadata: mediaFile.mediaFileMetadata,
+        } : undefined,
+      };
+    }),
   }, 200);
 });
 

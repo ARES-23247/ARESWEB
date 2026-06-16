@@ -60,6 +60,14 @@ export const pickedMediaItemSchema = z.object({
     example: "image/jpeg",
   }),
   mediaFile: z.object({
+    baseUrl: z.string().url().openapi({
+      description: "Base URL for photo access (valid for 60 minutes)",
+      example: "https://lh3.googleusercontent.com/pw/abc123",
+    }),
+    mimeType: z.string().openapi({
+      description: "MIME type of the media item",
+      example: "image/jpeg",
+    }),
     filename: z.string().optional().openapi({
       description: "Original filename",
       example: "IMG_20240115.jpg",

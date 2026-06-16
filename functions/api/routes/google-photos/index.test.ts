@@ -248,15 +248,20 @@ describe("google-photos router (Picker API)", () => {
       const mockItems = [
         {
           id: "item-1",
-          baseUrl: "https://lh3.googleusercontent.com/abc",
-          mimeType: "image/jpeg",
-          mediaFile: { filename: "photo1.jpg", fileSize: "1024" },
+          mediaFile: {
+            baseUrl: "https://lh3.googleusercontent.com/abc",
+            mimeType: "image/jpeg",
+            filename: "photo1.jpg",
+            fileSize: "1024",
+          },
         },
         {
           id: "item-2",
-          baseUrl: "https://lh3.googleusercontent.com/def",
-          mimeType: "image/png",
-          mediaFile: { filename: "photo2.png" },
+          mediaFile: {
+            baseUrl: "https://lh3.googleusercontent.com/def",
+            mimeType: "image/png",
+            filename: "photo2.png",
+          },
         },
       ];
 
