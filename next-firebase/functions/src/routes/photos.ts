@@ -1,6 +1,6 @@
 import express from "express";
 import crypto from "crypto";
-import { adminDb, adminStorage } from "../lib/firebase-admin";
+import { adminDb, adminStorage, adminAuth } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAuth, ensureAdmin } from "../middleware/auth";
@@ -63,7 +63,7 @@ router.post("/albums", ensureAdmin, async (req, res) => {
     const { title, description, category, coverImageUrl } = req.body as {
       title: string;
       description?: string;
-      category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design";
+      category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
       coverImageUrl?: string;
     };
 
@@ -195,7 +195,8 @@ router.post("/import", ensureAdmin, async (req, res) => {
             });
 
             if (!downloadRes.ok) {
-              throw new Error(`Google Photos download failed with status ${downloadRes.status}`);
+              const errorText = await downloadRes.text().catch(() => "");
+              throw new Error(`Google Photos download failed with status ${downloadRes.status}: ${errorText}`);
             }
 
             const buffer = await downloadRes.arrayBuffer();
@@ -254,6 +255,7 @@ router.post("/import", ensureAdmin, async (req, res) => {
 
             successCount++;
           } catch (err: any) {
+            console.error(`[Photo Import Item Error] Item ID: ${item.id}, Filename: ${filename}. Error details:`, err);
             results.push({
               mediaItemId: item.id,
               status: "failed",
@@ -458,11 +460,43 @@ router.get("/auth", async (req, res) => {
 });
 
 // GET /api/photos/picker/media-proxy
-router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
+router.get("/picker/media-proxy", async (req, res) => {
   try {
     const url = req.query.url as string | undefined;
     if (!url) {
       res.status(400).json({ error: "Missing 'url' query parameter" });
+      return;
+    }
+
+    // Authenticate: support header or query parameter
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split("Bearer ")[1];
+    } else if (req.query.token && typeof req.query.token === "string") {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      res.status(401).json({ error: "Unauthorized: Missing token" });
+      return;
+    }
+
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
+      if (!userDoc.exists) {
+        res.status(403).json({ error: "Forbidden: User not authorized" });
+        return;
+      }
+      const userData = userDoc.data();
+      if (userData?.role !== "admin" && userData?.role !== "coach" && userData?.role !== "mentor") {
+        res.status(403).json({ error: "Forbidden: Insufficient privileges" });
+        return;
+      }
+    } catch (authErr: any) {
+      console.error("[media-proxy] Token verification failed:", authErr.message);
+      res.status(401).json({ error: "Unauthorized: Invalid token" });
       return;
     }
 
@@ -474,10 +508,12 @@ router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
         host.endsWith(".googleusercontent.com") ||
         host === "lh3.googleusercontent.com";
       if (!isAllowedHost) {
+        console.error(`[media-proxy] Forbidden: Host '${host}' is not in the allowed list.`);
         res.status(400).json({ error: "Forbidden: Target host is not authorized" });
         return;
       }
-    } catch {
+    } catch (error: any) {
+      console.error(`[media-proxy] Invalid URL format provided: '${url}'. Error:`, error.message);
       res.status(400).json({ error: "Invalid URL format" });
       return;
     }
@@ -488,7 +524,9 @@ router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
     });
 
     if (!response.ok) {
-      res.status(response.status).json({ error: "Failed to proxy media" });
+      const errorText = await response.text();
+      console.error(`[media-proxy] Failed to fetch raw media from url: ${url}. Status: ${response.status}. Error: ${errorText}`);
+      res.status(response.status).json({ error: `Failed to proxy media: ${errorText}` });
       return;
     }
 
@@ -499,6 +537,7 @@ router.get("/picker/media-proxy", ensureAdmin, async (req, res) => {
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(Buffer.from(buffer));
   } catch (error: any) {
+    console.error("[media-proxy] Internal proxy error:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 });

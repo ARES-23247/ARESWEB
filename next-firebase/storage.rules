@@ -30,5 +30,10 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAuthorized();
     }
+
+    match /field/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthorized();
+    }
   }
 }

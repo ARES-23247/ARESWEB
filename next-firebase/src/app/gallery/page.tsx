@@ -8,7 +8,7 @@ import { GreekMeander } from "@/components/GreekMeander";
 interface GalleryPhoto {
   id: number;
   title: string;
-  category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design";
+  category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
   date: string;
   location: string;
   desc: string;
@@ -111,6 +111,7 @@ export default function GalleryPage() {
               else if (p.albumId === "outreach" || p.albumId === "Outreach") category = "Outreach";
               else if (p.albumId === "competition" || p.albumId === "Competition") category = "Competition";
               else if (p.albumId === "cad-design" || p.albumId === "CAD Design") category = "CAD Design";
+              else if (p.albumId === "practice" || p.albumId === "Practice") category = "Practice";
 
               return {
                 id: p.id,
@@ -178,7 +179,7 @@ export default function GalleryPage() {
           {/* Header Controls & Dynamic Filter Selector */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 border-b border-white/5 pb-6">
             <div className="flex flex-wrap gap-2">
-              {["all", "Robot Specs", "Outreach", "Competition", "CAD Design"].map(cat => (
+              {["all", "Robot Specs", "Outreach", "Competition", "CAD Design", "Practice"].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}

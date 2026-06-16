@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { 
@@ -63,9 +63,10 @@ export default function GoogleSyncPage() {
 
   // Album & Category states
   const [albumName, setAlbumName] = useState("");
-  const [albumCategory, setAlbumCategory] = useState<"Robot Specs" | "Outreach" | "Competition" | "CAD Design">("Robot Specs");
+  const [albumCategory, setAlbumCategory] = useState<"Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice">("Robot Specs");
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState("");
+  const [authToken, setAuthToken] = useState<string>("");
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -114,6 +115,32 @@ export default function GoogleSyncPage() {
       setIsLive(false);
     }
   }, []);
+
+  // 1.5. Synchronize Firebase ID Token
+  useEffect(() => {
+    let active = true;
+    const fetchToken = async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (active) setAuthToken(token || "");
+      } catch (err) {
+        console.error("Error fetching ID token:", err);
+      }
+    };
+    fetchToken();
+    const unsubscribe = auth.onIdTokenChanged(async (currentUser) => {
+      try {
+        const token = currentUser ? await currentUser.getIdToken() : "";
+        if (active) setAuthToken(token);
+      } catch (err) {
+        console.error("Error fetching token on change:", err);
+      }
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [user]);
 
   // 2. Fetch already imported photos
   const fetchImportedPhotos = async () => {
@@ -272,13 +299,18 @@ export default function GoogleSyncPage() {
       }
 
       const result = await importRes.json();
-      setImportStatus(`Successfully ingested ${result.imported} photos to cloud database!`);
-      
-      // Cleanup picker session states
-      setPickerSessionId("");
-      setPickerSessionStatus("");
-      setPickerItems([]);
-      setAlbumName("");
+      if (result.failed > 0) {
+        const failedItems = result.results?.filter((r: any) => r.status === "failed") || [];
+        const errorMessages = failedItems.map((r: any) => `${r.filename}: ${r.error}`).join(", ");
+        setImportStatus(`Ingested ${result.imported} photos. Failed to ingest ${result.failed} photos: ${errorMessages}`);
+      } else {
+        setImportStatus(`Successfully ingested ${result.imported} photos to cloud database!`);
+        // Cleanup picker session states
+        setPickerSessionId("");
+        setPickerSessionStatus("");
+        setPickerItems([]);
+        setAlbumName("");
+      }
       
       // Refresh the imported photos listing
       fetchImportedPhotos();
@@ -510,7 +542,7 @@ export default function GoogleSyncPage() {
                             {pickerItems.map((item, idx) => (
                               <div key={item.id || idx} className="aspect-square relative rounded border border-white/10 overflow-hidden bg-black">
                                 <img
-                                  src={`/api/photos/picker/media-proxy?url=${encodeURIComponent(item.mediaFile?.baseUrl || item.baseUrl || "")}`}
+                                  src={`/api/photos/picker/media-proxy?url=${encodeURIComponent(`${item.mediaFile?.baseUrl || item.baseUrl || ""}=w400-h400-c`)}&token=${encodeURIComponent(authToken)}`}
                                   alt=""
                                   className="w-full h-full object-cover"
                                 />
@@ -546,6 +578,7 @@ export default function GoogleSyncPage() {
                               <option value="Outreach">Outreach</option>
                               <option value="Competition">Competition</option>
                               <option value="CAD Design">CAD Design</option>
+                              <option value="Practice">Practice</option>
                             </select>
                           </div>
                         </div>
