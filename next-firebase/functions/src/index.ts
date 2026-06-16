@@ -51,7 +51,7 @@ app.use("/api/profiles", profilesRouter);
 app.use("/api/judges", judgesRouter);
 
 // Export Cloud Function
-export const api2 = onRequest({ 
+export const api = onRequest({ 
   cors: true, 
   maxInstances: 10, 
   secrets: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] 
