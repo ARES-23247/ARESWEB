@@ -258,7 +258,12 @@ export default function GoogleSyncPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: pickerItems,
+          items: pickerItems.map((item) => ({
+            id: item.id,
+            baseUrl: item.mediaFile?.baseUrl || item.baseUrl,
+            filename: item.mediaFile?.filename || item.filename,
+            mimeType: item.mediaFile?.mimeType || item.mimeType,
+          })),
           albumId: albumId || null,
           albumName: albumName || null
         })
@@ -508,7 +513,7 @@ export default function GoogleSyncPage() {
                             {pickerItems.map((item, idx) => (
                               <div key={item.id || idx} className="aspect-square relative rounded border border-white/10 overflow-hidden bg-black">
                                 <img
-                                  src={`/api/photos/picker/media-proxy?url=${encodeURIComponent(item.baseUrl)}`}
+                                  src={`/api/photos/picker/media-proxy?url=${encodeURIComponent(item.mediaFile?.baseUrl || item.baseUrl || "")}`}
                                   alt=""
                                   className="w-full h-full object-cover"
                                 />

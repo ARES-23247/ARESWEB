@@ -112,9 +112,14 @@ router.post("/import", ensureAdmin, async (req, res) => {
     const { items, albumId, albumName } = req.body as {
       items: Array<{
         id: string;
-        baseUrl: string;
+        baseUrl?: string;
         filename?: string;
         mimeType?: string;
+        mediaFile?: {
+          baseUrl?: string;
+          filename?: string;
+          mimeType?: string;
+        };
       }>;
       albumId?: string;
       albumName?: string;
@@ -160,8 +165,9 @@ router.post("/import", ensureAdmin, async (req, res) => {
     for (const chunk of itemChunks) {
       await Promise.all(
         chunk.map(async (item) => {
-          const filename = item.filename ?? `photo-${item.id}.jpg`;
-          const mimeType = item.mimeType ?? "image/jpeg";
+          const baseUrl = item.baseUrl || item.mediaFile?.baseUrl;
+          const filename = item.filename || item.mediaFile?.filename || `photo-${item.id}.jpg`;
+          const mimeType = item.mimeType || item.mediaFile?.mimeType || "image/jpeg";
 
           try {
             const docSnap = docMap.get(item.id);
@@ -179,7 +185,11 @@ router.post("/import", ensureAdmin, async (req, res) => {
               return;
             }
 
-            const downloadUrl = `${item.baseUrl}=d`;
+            if (!baseUrl) {
+              throw new Error("No download URL provided for photo.");
+            }
+
+            const downloadUrl = `${baseUrl}=d`;
             const downloadRes = await fetch(downloadUrl, {
               headers: { Authorization: `Bearer ${googleToken}` },
             });

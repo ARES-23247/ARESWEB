@@ -73,7 +73,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 
   return (
-    <aside className="w-72 bg-black/40 border-r border-white/5 flex flex-col justify-between shadow-2xl shrink-0">
+    <aside className="w-72 h-full bg-black/40 border-r border-white/5 flex flex-col justify-between shadow-2xl shrink-0">
       
       {/* Profile Header */}
       <div className="p-6 border-b border-white/5 flex flex-col gap-4">

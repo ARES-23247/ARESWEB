@@ -148,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <div className="hidden md:block">
+      <div className="hidden md:block shrink-0 self-stretch">
         <DashboardSidebar />
       </div>
 
