@@ -437,8 +437,8 @@ export default function WebGLReplayCanvas() {
       
       ctx.beginPath();
       ctx.moveTo(0, -robotSizePx * 0.7);
-      ctx.lineTo(-4 * scale, -robotSizePx * 0.5);
-      ctx.lineTo(4 * scale, -robotSizePx * 0.5);
+      ctx.lineTo(-0.04 * scale, -robotSizePx * 0.5);
+      ctx.lineTo(0.04 * scale, -robotSizePx * 0.5);
       ctx.closePath();
       ctx.fill();
 
