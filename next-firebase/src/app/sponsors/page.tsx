@@ -148,7 +148,8 @@ export default function SponsorsPage() {
       };
 
       recaptcha.ready(() => {
-        const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+        const isDev = import.meta.env.DEV || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (isDev ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
         recaptcha.execute(siteKey, { action: "submit" })
           .then(async (token) => {
             await submitInquiry(token);

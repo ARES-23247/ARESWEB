@@ -150,7 +150,7 @@ export default function BlogManagementPage() {
     setFormSlug("");
     setFormSnippet("");
     setFormContent("");
-    setFormAuthor(userNickname || user?.displayName || "ARES Member");
+    setFormAuthor(userNickname || "ARES Member");
     setFormThumbnail("https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=60");
     setFormStatus("draft");
     setIsEditorOpen(true);

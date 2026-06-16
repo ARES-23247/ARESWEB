@@ -50,7 +50,8 @@ export default function App() {
     // Only load reCAPTCHA once
     if (document.getElementById("recaptcha-script")) return;
     
-    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+    const isDev = import.meta.env.DEV || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (isDev ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
     const script = document.createElement("script");
     script.id = "recaptcha-script";
     script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
