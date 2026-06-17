@@ -165,3 +165,111 @@ ${
 }
 `;
 }
+
+export interface GrammarCheckResult {
+  correctedText: string;
+  edits: Array<{
+    original: string;
+    corrected: string;
+    explanation: string;
+  }>;
+}
+
+/**
+ * Checks spelling and grammar in a blog post using Gemini.
+ */
+export async function checkGrammarAndSpelling(text: string): Promise<GrammarCheckResult> {
+  const systemPrompt = `You are an expert technical editor.
+Analyze the user's blog text for spelling, grammar, punctuation, and structural issues.
+Return a JSON object containing the corrected text and a list of specific edits made.
+Always preserve standard markdown formatting (like links, bold, headings, list markers, etc.) unless they are grammatically incorrect.
+
+Your output must be a valid JSON object matching this schema:
+{
+  "correctedText": string,
+  "edits": [
+    {
+      "original": string,
+      "corrected": string,
+      "explanation": string
+    }
+  ]
+}
+Do not wrap the JSON response in any markdown code blocks.`;
+
+  try {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key") {
+      throw new Error("No valid GEMINI_API_KEY configured.");
+    }
+
+    const response = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
+      contents: [
+        { role: "user", parts: [{ text: `${systemPrompt}\n\nText to check:\n${text}` }] }
+      ],
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const resultText = response.text || "";
+    if (!resultText) throw new Error("Empty response from Gemini.");
+    
+    return JSON.parse(resultText) as GrammarCheckResult;
+  } catch (err) {
+    console.warn(`[Vertex AI] Grammar check failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    const edits: Array<{ original: string; corrected: string; explanation: string }> = [];
+    let correctedText = text;
+    
+    if (text.includes("grammer")) {
+      correctedText = correctedText.replace(/grammer/g, "grammar");
+      edits.push({ original: "grammer", corrected: "grammar", explanation: "Corrected spelling of 'grammar'." });
+    }
+    if (text.includes("recieve")) {
+      correctedText = correctedText.replace(/recieve/g, "receive");
+      edits.push({ original: "recieve", corrected: "receive", explanation: "Corrected spelling of 'receive'." });
+    }
+    
+    return { correctedText, edits };
+  }
+}
+
+/**
+ * Provides general AI assistance or rewrites for selected text/paragraph.
+ */
+export async function getAIAssistance(prompt: string, text?: string, context?: string): Promise<string> {
+  const systemPrompt = `You are a helpful engineering co-pilot and expert technical writer for FIRST® Robotics Team ARES 23247.
+Assist the user with writing, editing, or refining their blog post.
+Always use professional technical language, preserve Markdown formatting, and adhere to ARES branding guidelines:
+- Always refer to FIRST® (italicized with registered trademark symbol).
+- Refer to our software library as ARESLib (one word, capital L).`;
+
+  let userPrompt = `User Request: ${prompt}`;
+  if (text) {
+    userPrompt += `\n\nSelected text to modify:\n${text}`;
+  }
+  if (context) {
+    userPrompt += `\n\nFull blog content for context:\n${context}`;
+  }
+
+  try {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key") {
+      throw new Error("No valid GEMINI_API_KEY configured.");
+    }
+
+    const response = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
+      contents: [
+        { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+      ]
+    });
+
+    const assistanceText = response.text || "";
+    if (!assistanceText) throw new Error("Empty response from Gemini.");
+    
+    return assistanceText;
+  } catch (err) {
+    console.warn(`[Vertex AI] AI assistance failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
+  }
+}

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 
 interface BlogPostDetails {
   slug: string;
@@ -12,6 +13,7 @@ interface BlogPostDetails {
   snippet?: string;
   thumbnail?: string;
   author?: string;
+  authorAvatar?: string;
   content: string;
 }
 
@@ -104,6 +106,7 @@ export default function BlogPostPage() {
           snippet: data.snippet || "",
           thumbnail: data.thumbnail || "",
           author: data.author || "ARES Member",
+          authorAvatar: data.authorAvatar || "",
           content: data.content || data.snippet || ""
         });
       } catch (error) {
@@ -163,7 +166,13 @@ export default function BlogPostPage() {
             </span>
             <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
               <img 
-                src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`}
+                src={
+                  post.authorAvatar
+                    ? (post.authorAvatar.startsWith("http") || post.authorAvatar.includes("/")
+                        ? post.authorAvatar
+                        : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`)
+                    : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
+                }
                 alt=""
                 className="w-6 h-6 rounded-full object-cover border border-white/20"
               />
@@ -178,8 +187,8 @@ export default function BlogPostPage() {
 
       {/* ─── BLOG CONTENT BODY ─── */}
       <div className="w-full max-w-4xl mx-auto px-6 py-16 md:py-24">
-        <article className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-white prose-p:text-white/90 prose-a:text-ares-gold prose-a:focus-visible:outline-none prose-a:focus-visible:ring-2 prose-a:focus-visible:ring-ares-cyan prose-a:rounded leading-relaxed whitespace-pre-line">
-          {post.content}
+        <article className="prose prose-invert lg:prose-lg max-w-none prose-headings:text-white prose-p:text-white/90 prose-a:text-ares-gold prose-a:focus-visible:outline-none prose-a:focus-visible:ring-2 prose-a:focus-visible:ring-ares-cyan prose-a:rounded leading-relaxed">
+          <DocsMarkdownRenderer content={post.content} />
         </article>
       </div>
     </div>

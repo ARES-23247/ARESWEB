@@ -1,9 +1,30 @@
 import React, { useState, useRef } from "react";
-import { Bold, Italic, Heading3, Code, List, ListOrdered, Quote, Link, Eye, Edit3, Image as ImageIcon, X, AlertCircle, Upload, Search } from "lucide-react";
+import {
+  Bold,
+  Italic,
+  Heading3,
+  Code,
+  List,
+  ListOrdered,
+  Quote,
+  Link,
+  Eye,
+  Edit3,
+  Image as ImageIcon,
+  Video,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Underline,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  Table
+} from "lucide-react";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
-import { authenticatedFetch } from "@/lib/api";
+import PhotoPickerModal from "./PhotoPickerModal";
+import VideoPickerModal from "./VideoPickerModal";
 
 interface MarkdownEditorProps {
   id?: string;
@@ -26,24 +47,12 @@ export default function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [mode, setMode] = useState<"write" | "preview">("write");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Image Modal States
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [imageTab, setImageTab] = useState<"upload" | "url" | "gallery">("upload");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageAlt, setImageAlt] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
+  // Modal open states
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
 
-  // Gallery Picker States
-  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
-  const [loadingGallery, setLoadingGallery] = useState(false);
-  const [galleryError, setGalleryError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGalleryUrl, setSelectedGalleryUrl] = useState("");
-
+  // Helper: insert Markdown syntax at cursor selection
   const insertMarkdown = (prefix: string, suffix: string, placeholderText = "") => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -51,7 +60,6 @@ export default function MarkdownEditor({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentText = textarea.value;
-
 
     const selectedText = currentText.substring(start, end);
     const insertText = selectedText || placeholderText;
@@ -61,7 +69,7 @@ export default function MarkdownEditor({
     const newValue = beforeText + prefix + insertText + suffix + afterText;
     onChange(newValue);
 
-    // Restore focus and selection
+    // Restore focus and cursor selection
     requestAnimationFrame(() => {
       textarea.focus();
       const newStart = start + prefix.length;
@@ -70,6 +78,7 @@ export default function MarkdownEditor({
     });
   };
 
+  // Helper: toggle block prefix on current line
   const insertBlock = (prefix: string, placeholderText = "") => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -78,14 +87,11 @@ export default function MarkdownEditor({
     const end = textarea.selectionEnd;
     const currentText = textarea.value;
 
-
-    // Find start of current line (supporting both \n and \r)
     const lastNewline = Math.max(
       currentText.lastIndexOf("\n", start - 1),
       currentText.lastIndexOf("\r", start - 1)
     );
     const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
-
 
     const beforeLine = currentText.substring(0, lineStart);
     const restText = currentText.substring(lineStart);
@@ -127,253 +133,236 @@ export default function MarkdownEditor({
       onChange(newValue);
       requestAnimationFrame(() => {
         textarea.focus();
-        textarea.setSelectionRange(start + 1, start + 10); // select "Link Text"
+        textarea.setSelectionRange(start + 1, start + 10);
       });
     } else {
       insertMarkdown("[", "](https://)", "link text");
     }
   };
 
-  // Image Embedding Handlers
-  const insertImageMarkdown = (url: string, altText: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentText = textarea.value;
-
-    const beforeText = currentText.substring(0, start);
-    const afterText = currentText.substring(end);
-    const imageMarkdown = `![${altText || "image"}](${url})`;
-
-    const newValue = beforeText + imageMarkdown + afterText;
-    onChange(newValue);
-
-    setIsImageModalOpen(false);
-    setImageUrl("");
-    setImageAlt("");
-    setSelectedGalleryUrl("");
-    setSearchQuery("");
-    setUploadError(null);
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const newCursorPos = start + imageMarkdown.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    });
+  // Embed Image selection
+  const handleInsertImage = (url: string, alt?: string) => {
+    const altText = alt || "image";
+    insertMarkdown(`![${altText}](`, ")", url);
   };
 
-  const handleImageSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (imageTab === "url" && imageUrl.trim()) {
-      insertImageMarkdown(imageUrl.trim(), imageAlt.trim());
-    } else if (imageTab === "gallery" && selectedGalleryUrl.trim()) {
-      insertImageMarkdown(selectedGalleryUrl.trim(), imageAlt.trim());
-    }
+  // Embed YouTube Video selection
+  const handleInsertVideo = (videoId: string) => {
+    const embedCode = `\n<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>\n`;
+    insertMarkdown(embedCode, "");
   };
 
-  const handleUploadFile = async (file: File) => {
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Only image files are permitted.");
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      setUploadError("Image size exceeds the 8MB limit.");
-      return;
-    }
-
-    setUploadError(null);
-    setIsUploading(true);
-
-    try {
-      if (!storage) {
-        throw new Error("Firebase Storage client SDK is not initialized.");
-      }
-
-      const storagePath = `editor/uploads/${Date.now()}_${file.name}`;
-      const imageRef = ref(storage, storagePath);
-      const snapshot = await uploadBytes(imageRef, file);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-
-      insertImageMarkdown(downloadUrl, imageAlt.trim() || file.name.split(".")[0]);
-    } catch (err: any) {
-      console.error("MarkdownEditor: image upload failed", err);
-      setUploadError(
-        err.message || "Failed to upload image. Storage permissions or configuration error."
-      );
-    } finally {
-      setIsUploading(false);
-    }
+  // Text Alignment wrappers
+  const handleAlign = (alignment: "left" | "center" | "right" | "justify") => {
+    insertMarkdown(`<div style="text-align: ${alignment}">\n\n`, "\n\n</div>", "aligned text");
   };
 
-  const fetchGalleryPhotos = async () => {
-    if (galleryPhotos.length > 0) return; // already loaded
-    setLoadingGallery(true);
-    setGalleryError(null);
-    try {
-      const res = await authenticatedFetch("/api/photos");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.photos) {
-          setGalleryPhotos(data.photos);
-        } else {
-          setGalleryPhotos([]);
-        }
-      } else {
-        throw new Error(`Failed to load photos (HTTP ${res.status})`);
-      }
-    } catch (err: any) {
-      console.error("MarkdownEditor: failed to fetch gallery photos", err);
-      setGalleryError(err.message || "Failed to load synced media gallery.");
-    } finally {
-      setLoadingGallery(false);
-    }
+  // Markdown extensions helpers
+  const handleUnderline = () => insertMarkdown("<u>", "</u>", "underlined text");
+  const handleStrikethrough = () => insertMarkdown("~~", "~~", "strikethrough text");
+  const handleSubscript = () => insertMarkdown("<sub>", "</sub>", "subscript");
+  const handleSuperscript = () => insertMarkdown("<sup>", "</sup>", "superscript");
+  const handleTable = () => {
+    const tableTemplate = `\n| Column 1 | Column 2 | Column 3 |\n| :--- | :---: | ---: |\n| Row 1 Left | Row 1 Center | Row 1 Right |\n| Row 2 Left | Row 2 Center | Row 2 Right |\n`;
+    insertMarkdown(tableTemplate, "");
   };
-
-  const handleTabChange = (tab: "upload" | "url" | "gallery") => {
-    setImageTab(tab);
-    setUploadError(null);
-    if (tab === "gallery") {
-      fetchGalleryPhotos();
-    }
-  };
-
-  const handleSelectGalleryPhoto = (photo: any) => {
-    setSelectedGalleryUrl(photo.publicUrl);
-    if (!imageAlt.trim()) {
-      let titleClean = photo.originalFilename || "image";
-      titleClean = titleClean.replace(/\.[^/.]+$/, "");
-      setImageAlt(titleClean);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUploadFile(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleUploadFile(file);
-  };
-
-  const filteredPhotos = galleryPhotos.filter((photo: any) => {
-    const filename = (photo.originalFilename || "").toLowerCase();
-    const album = (photo.albumId || "").toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return filename.includes(query) || album.includes(query);
-  });
 
   return (
     <div className="flex flex-col w-full bg-black/60 border border-white/10 rounded-lg overflow-hidden focus-within:border-ares-red/60 focus-within:ring-1 focus-within:ring-ares-red/60 transition-all">
+      
       {/* Editor Toolbar Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 bg-black/45 border-b border-white/10 select-none">
-        {/* Formatting Actions (disabled in preview mode) */}
-        <div className="flex items-center gap-0.5">
+        
+        {/* Formatting Actions */}
+        <div className="flex flex-wrap items-center gap-0.5">
           <button
             type="button"
             onClick={() => insertMarkdown("**", "**", "bold text")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Bold (**)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Bold"
             aria-label="Insert bold text"
           >
-            <Bold size={14} />
+            <Bold size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertMarkdown("*", "*", "italic text")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Italic (*)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Italic"
             aria-label="Insert italic text"
           >
-            <Italic size={14} />
+            <Italic size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertBlock("### ", "Heading")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Heading 3 (###)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Heading 3"
             aria-label="Insert Heading 3"
           >
-            <Heading3 size={14} />
+            <Heading3 size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertMarkdown("\n```\n", "\n```\n", "code")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Code Block (```)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Code Block"
             aria-label="Insert code block"
           >
-            <Code size={14} />
+            <Code size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertBlock("- ", "List item")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Bullet List (-)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Bullet List"
             aria-label="Insert bullet list"
           >
-            <List size={14} />
+            <List size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertBlock("1. ", "List item")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Numbered List (1.)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Numbered List"
             aria-label="Insert numbered list"
           >
-            <ListOrdered size={14} />
+            <ListOrdered size={13} />
           </button>
           <button
             type="button"
             onClick={() => insertBlock("> ", "Quote")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Quote (>)"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Quote"
             aria-label="Insert blockquote"
           >
-            <Quote size={14} />
+            <Quote size={13} />
           </button>
           <button
             type="button"
             onClick={handleLink}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none"
-            title="Link ([text](url))"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Link"
             aria-label="Insert link"
           >
-            <Link size={14} />
+            <Link size={13} />
+          </button>
+
+          {/* Underline & Strikethrough & Sub/Sup */}
+          <div className="w-[1px] h-4 bg-white/10 mx-1.5" />
+          <button
+            type="button"
+            onClick={handleUnderline}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Underline"
+          >
+            <Underline size={13} />
           </button>
           <button
             type="button"
-            onClick={() => setIsImageModalOpen(true)}
+            onClick={handleStrikethrough}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-ares-cyan disabled:opacity-20 disabled:pointer-events-none border-l border-white/5 pl-1.5"
-            title="Insert Image (![alt](url))"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Strikethrough"
+          >
+            <Strikethrough size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={handleSubscript}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Subscript"
+          >
+            <Subscript size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={handleSuperscript}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Superscript"
+          >
+            <Superscript size={13} />
+          </button>
+
+          {/* Alignment */}
+          <div className="w-[1px] h-4 bg-white/10 mx-1.5" />
+          <button
+            type="button"
+            onClick={() => handleAlign("left")}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Align Left"
+          >
+            <AlignLeft size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAlign("center")}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Align Center"
+          >
+            <AlignCenter size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAlign("right")}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Align Right"
+          >
+            <AlignRight size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAlign("justify")}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Align Justify"
+          >
+            <AlignJustify size={13} />
+          </button>
+
+          {/* Tables & Media pickers */}
+          <div className="w-[1px] h-4 bg-white/10 mx-1.5" />
+          <button
+            type="button"
+            onClick={handleTable}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            title="Insert Table"
+          >
+            <Table size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsPhotoOpen(true)}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-ares-gold/90"
+            title="Insert Image"
             aria-label="Insert image"
           >
-            <ImageIcon size={14} />
+            <ImageIcon size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsVideoOpen(true)}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-ares-cyan/90"
+            title="Insert Video"
+          >
+            <Video size={13} />
           </button>
         </div>
 
@@ -382,10 +371,8 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => setMode("write")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-all cursor-pointer ${
-              mode === "write"
-                ? "bg-ares-red text-white shadow"
-                : "text-marble/60 hover:text-white"
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              mode === "write" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
             }`}
           >
             <Edit3 size={10} />
@@ -394,10 +381,8 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => setMode("preview")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-all cursor-pointer ${
-              mode === "preview"
-                ? "bg-ares-red text-white shadow"
-                : "text-marble/60 hover:text-white"
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              mode === "preview" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
             }`}
           >
             <Eye size={10} />
@@ -432,219 +417,19 @@ export default function MarkdownEditor({
         )}
       </div>
 
-      {/* Premium Embed Image Modal */}
-      {isImageModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          {/* Modal Backdrop click */}
-          <div className="absolute inset-0" onClick={() => setIsImageModalOpen(false)} />
-          
-          <div className="relative w-full max-w-md bg-obsidian border border-white/10 p-6 shadow-2xl ares-cut-lg flex flex-col gap-4 text-marble z-10 text-left">
-            <header className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <ImageIcon size={16} className="text-ares-red" /> Embed Image
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsImageModalOpen(false)}
-                className="text-marble/55 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </header>
+      {/* Reusable Photo Modal */}
+      <PhotoPickerModal
+        isOpen={isPhotoOpen}
+        onClose={() => setIsPhotoOpen(false)}
+        onSelect={handleInsertImage}
+      />
 
-            {/* Modal Tabs */}
-            <div className="flex bg-black/35 p-0.5 rounded border border-white/5 text-[9px] font-black uppercase tracking-widest w-fit mb-2">
-              <button
-                type="button"
-                onClick={() => handleTabChange("upload")}
-                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
-                  imageTab === "upload"
-                    ? "bg-ares-red text-white shadow"
-                    : "text-marble/60 hover:text-white"
-                }`}
-              >
-                Upload File
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTabChange("gallery")}
-                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
-                  imageTab === "gallery"
-                    ? "bg-ares-red text-white shadow"
-                    : "text-marble/60 hover:text-white"
-                }`}
-              >
-                ARES Gallery
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTabChange("url")}
-                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
-                  imageTab === "url"
-                    ? "bg-ares-red text-white shadow"
-                    : "text-marble/60 hover:text-white"
-                }`}
-              >
-                Image URL
-              </button>
-            </div>
-
-            {/* Alert Box for Errors */}
-            {uploadError && (
-              <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded flex items-start gap-2 leading-relaxed">
-                <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                <span>{uploadError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleImageSubmit} className="space-y-4">
-              {/* Tab Contents */}
-              {imageTab === "upload" ? (
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
-                    dragActive
-                      ? "border-ares-cyan bg-ares-cyan/5"
-                      : "border-white/10 hover:border-ares-red/40 bg-black/25"
-                  } ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                  />
-                  {isUploading ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <span className="w-6 h-6 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
-                      <span className="text-[11px] text-marble/70">Uploading to Firebase Storage...</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <Upload size={20} className="text-marble/40" />
-                      <span className="text-xs font-bold text-white">Drag & drop image, or click to browse</span>
-                      <span className="text-[9px] text-marble/40 uppercase font-mono">Supports JPG, PNG, GIF up to 8MB</span>
-                    </div>
-                  )}
-                </div>
-              ) : imageTab === "gallery" ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
-                    <input
-                      type="text"
-                      placeholder="Search synced media..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
-                    />
-                  </div>
-
-                  {loadingGallery ? (
-                    <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <span className="w-5 h-5 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
-                      <span className="text-[10px] text-marble/55">Loading gallery files...</span>
-                    </div>
-                  ) : galleryError ? (
-                    <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded leading-relaxed text-center">
-                      {galleryError}
-                    </div>
-                  ) : filteredPhotos.length === 0 ? (
-                    <div className="py-8 text-center text-[10px] font-mono text-marble/35 border border-dashed border-white/10 rounded">
-                      No matching gallery photos found
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-                      {filteredPhotos.map((photo: any) => (
-                        <div
-                          key={photo.id}
-                          onClick={() => handleSelectGalleryPhoto(photo)}
-                          className={`aspect-square relative overflow-hidden rounded border transition-all cursor-pointer bg-black/40 ${
-                            selectedGalleryUrl === photo.publicUrl
-                              ? "border-ares-gold ring-1 ring-ares-gold"
-                              : "border-white/15 hover:border-white/45"
-                          }`}
-                        >
-                          <img
-                            src={photo.publicUrl}
-                            alt={photo.originalFilename}
-                            className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
-                            loading="lazy"
-                          />
-                          {photo.albumId && (
-                            <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/75 text-ares-cyan text-[5px] font-black uppercase tracking-wider rounded truncate max-w-[95%]">
-                              {photo.albumId}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Image URL</label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com/image.png"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/20 font-mono"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Alt Text / Caption */}
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
-                <input
-                  type="text"
-                  placeholder="Describe image contents"
-                  value={imageAlt}
-                  onChange={(e) => setImageAlt(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
-                  disabled={isUploading}
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setIsImageModalOpen(false)}
-                  className="px-4 py-2 border border-white/10 hover:bg-white/5 text-marble text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-colors cursor-pointer"
-                  disabled={isUploading}
-                >
-                  Cancel
-                </button>
-                {(imageTab === "url" || imageTab === "gallery") && (
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-ares-gold hover:brightness-110 text-black text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer shadow-lg disabled:opacity-40"
-                    disabled={
-                      (imageTab === "url" && !imageUrl.trim()) ||
-                      (imageTab === "gallery" && !selectedGalleryUrl.trim()) ||
-                      isUploading
-                    }
-                  >
-                    Insert Image
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Reusable Video Modal */}
+      <VideoPickerModal
+        isOpen={isVideoOpen}
+        onClose={() => setIsVideoOpen(false)}
+        onSelect={handleInsertVideo}
+      />
     </div>
   );
 }
-
-

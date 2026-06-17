@@ -12,6 +12,7 @@ interface BlogPost {
   snippet?: string;
   thumbnail?: string;
   author?: string;
+  authorAvatar?: string;
 }
 
 const MOCK_POSTS: BlogPost[] = [
@@ -60,7 +61,8 @@ export default function BlogFeedPage() {
             date: data.date || "",
             snippet: data.snippet || "",
             thumbnail: data.thumbnail || "",
-            author: data.author || "ARES Member"
+            author: data.author || "ARES Member",
+            authorAvatar: data.authorAvatar || ""
           };
         });
         setPosts(postsList);
@@ -127,7 +129,13 @@ export default function BlogFeedPage() {
                       <p className="text-xs text-white/50">{post.date}</p>
                       <div className="flex items-center gap-1.5">
                         <img
-                          src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`}
+                          src={
+                            post.authorAvatar
+                              ? (post.authorAvatar.startsWith("http") || post.authorAvatar.includes("/")
+                                  ? post.authorAvatar
+                                  : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`)
+                              : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
+                          }
                           alt=""
                           className="w-5 h-5 rounded-full object-cover border border-white/10"
                         />

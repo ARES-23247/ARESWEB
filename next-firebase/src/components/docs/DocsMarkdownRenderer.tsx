@@ -56,12 +56,31 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           ...defaultSchema,
           tagNames: [
             ...(defaultSchema.tagNames || []),
+            "iframe",
             // Non-sim components
             "configvisualizer", "simulationplayground", "codeplayground",
             "screenshotgallery", "interactivetutorial",
             // All sims from SIM_COMPONENTS (auto-populated)
             ...SIM_TAG_NAMES
-          ]
+          ],
+          attributes: {
+            ...(defaultSchema.attributes || {}),
+            "*": ["className", "style"],
+            iframe: [
+              "src",
+              "width",
+              "height",
+              "frameborder",
+              "allow",
+              "allowfullscreen",
+              "className",
+              "style"
+            ]
+          },
+          protocols: {
+            ...(defaultSchema.protocols || {}),
+            src: ["http", "https"]
+          }
         }]
       ]}
       components={{
@@ -163,6 +182,12 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
             alt={alt || ""}
             className="my-6 rounded-lg border border-white/10 max-w-full h-auto"
             loading="lazy"
+          />
+        ),
+        iframe: (props) => (
+          <iframe
+            {...props}
+            className={`w-full aspect-video rounded-lg my-6 border-none shadow-xl ${props.className || ""}`}
           />
         ),
       }}

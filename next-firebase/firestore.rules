@@ -34,6 +34,11 @@ service cloud.firestore {
     match /posts/{postSlug} {
       allow read: if true; // Publicly readable
       allow write: if isAuthorized(); // Only team members can create or edit
+
+      match /revisions/{revisionId} {
+        allow read: if isAuthorized();
+        allow write: if isAuthorized();
+      }
     }
 
     match /events/{eventId} {
