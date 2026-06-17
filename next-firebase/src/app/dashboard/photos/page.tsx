@@ -26,6 +26,7 @@ import {
   Upload,
   Search,
   Trash2,
+  Save,
   FolderOpen,
   X,
   FileImage,
@@ -95,6 +96,15 @@ export default function DashboardPhotosPage() {
   const [runAiIngest, setRunAiIngest] = useState(true);
   const [uploadStatusList, setUploadStatusList] = useState<Array<{ name: string; status: "pending" | "uploading" | "success" | "error"; error?: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Photo detail editing states
+  const [selectedPhoto, setSelectedPhoto] = useState<ImportedPhoto | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const [editAltText, setEditAltText] = useState("");
+  const [editAlbumId, setEditAlbumId] = useState<string>("");
+  const [editLabels, setEditLabels] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   // Google Photos Picker session states (legacy picker sync)
   const [isPickerLoading, setIsPickerLoading] = useState(false);
@@ -455,6 +465,62 @@ export default function DashboardPhotosPage() {
         });
       };
     });
+  };
+
+  const handleOpenPhotoDetails = (photo: ImportedPhoto) => {
+    setSelectedPhoto(photo);
+    setEditCaption(photo.caption || "");
+    setEditAltText(photo.altText || "");
+    setEditAlbumId(photo.albumId || "");
+    setEditLabels(photo.labels || []);
+    setNewTagInput("");
+  };
+
+  const handleSavePhotoDetails = async () => {
+    if (!selectedPhoto || !canEdit) return;
+    setIsSavingDetails(true);
+    try {
+      const res = await authenticatedFetch(`/api/photos/${selectedPhoto.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          albumId: editAlbumId || null,
+          caption: editCaption,
+          altText: editAltText,
+          labels: editLabels
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Failed to update photo details");
+      }
+
+      const data = await res.json();
+      // Update local state
+      setImportedPhotos((prev) => prev.map((p) => p.id === selectedPhoto.id ? data.photo : p));
+      setSelectedPhoto(data.photo);
+      fetchAlbums(); // Update album counts
+      alert("Photo details updated successfully!");
+    } catch (err: any) {
+      console.error("Save details error:", err);
+      alert(err.message || "Failed to save photo details");
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+
+  const handleAddLabel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanTag = newTagInput.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (cleanTag && !editLabels.includes(cleanTag)) {
+      setEditLabels((prev) => [...prev, cleanTag]);
+      setNewTagInput("");
+    }
+  };
+
+  const handleRemoveLabel = (tagToRemove: string) => {
+    setEditLabels((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
   // 6. Google OAuth handshake
@@ -883,7 +949,8 @@ export default function DashboardPhotosPage() {
                       key={photo.id}
                       onMouseEnter={() => setHoveredPhotoId(photo.id)}
                       onMouseLeave={() => setHoveredPhotoId(null)}
-                      className="group border border-white/5 hover:border-white/15 bg-black/20 hover:bg-black/35 rounded-xl overflow-hidden transition-all flex flex-col justify-between relative shadow-lg"
+                      onClick={() => handleOpenPhotoDetails(photo)}
+                      className="group border border-white/5 hover:border-white/15 bg-black/20 hover:bg-black/35 rounded-xl overflow-hidden transition-all flex flex-col justify-between relative shadow-lg cursor-pointer"
                     >
                       {/* Image Preview Container */}
                       <div className="aspect-video relative overflow-hidden bg-black border-b border-white/5">
@@ -943,13 +1010,17 @@ export default function DashboardPhotosPage() {
                               href={photo.publicUrl}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
                               className="text-ares-cyan hover:underline"
                             >
                               View
                             </a>
                             {canEdit && (
                               <button
-                                onClick={() => handleDeletePhoto(photo.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePhoto(photo.id);
+                                }}
                                 className="text-ares-red/80 hover:text-ares-red cursor-pointer"
                                 title="Delete Photo"
                               >
@@ -1362,6 +1433,241 @@ export default function DashboardPhotosPage() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Photo Details Sidebar / Drawer */}
+      {selectedPhoto && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-300" 
+            onClick={() => setSelectedPhoto(null)} 
+          />
+          
+          {/* Drawer Panel */}
+          <div className="relative w-full max-w-lg h-full bg-obsidian border-l border-white/10 flex flex-col shadow-2xl overflow-y-auto scrollbar-thin">
+            {/* Header */}
+            <header className="p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-obsidian/95 backdrop-blur-md z-10">
+              <div className="min-w-0">
+                <h3 className="text-sm font-black text-white uppercase tracking-wider font-heading truncate" title={selectedPhoto.originalFilename}>
+                  Manage Photo
+                </h3>
+                <p className="text-[9px] text-marble/40 font-bold uppercase tracking-wider mt-0.5">
+                  ID: {selectedPhoto.id}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="text-marble/55 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            {/* Content */}
+            <div className="p-6 flex-1 space-y-6">
+              {/* Image Preview */}
+              <div className="border border-white/10 rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center relative shadow-inner">
+                <img 
+                  src={selectedPhoto.publicUrl} 
+                  alt={selectedPhoto.altText || selectedPhoto.originalFilename} 
+                  className="w-full h-full object-contain"
+                />
+                <a
+                  href={selectedPhoto.publicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute bottom-3 right-3 px-3 py-1 bg-black/70 hover:bg-black text-white rounded text-[10px] font-bold border border-white/10 transition-colors uppercase tracking-wider"
+                >
+                  Full Size
+                </a>
+              </div>
+
+              {/* Edit Details Form */}
+              <div className="space-y-4">
+                {/* Album Selection */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
+                    Assign to Album
+                  </label>
+                  <select
+                    value={editAlbumId}
+                    onChange={(e) => setEditAlbumId(e.target.value)}
+                    disabled={!canEdit}
+                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none cursor-pointer"
+                  >
+                    <option value="">Unassigned (No Album)</option>
+                    {albums.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.title} ({a.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Alt Text Description */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50 flex items-center justify-between">
+                    <span>Accessibility Alt Text</span>
+                    <span className="text-[8px] font-medium text-marble/35">For screen readers</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editAltText}
+                    onChange={(e) => setEditAltText(e.target.value)}
+                    disabled={!canEdit}
+                    placeholder="Describe what is in the photo for accessibility..."
+                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none"
+                  />
+                </div>
+
+                {/* Image Caption */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
+                    Description / Caption
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editCaption}
+                    onChange={(e) => setEditCaption(e.target.value)}
+                    disabled={!canEdit}
+                    placeholder="Enter a description or write a caption for the photo gallery..."
+                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none resize-none"
+                  />
+                </div>
+
+                {/* Labels/Tags Manager */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
+                    AI & Custom Labels
+                  </label>
+                  
+                  {/* Tag List */}
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {editLabels.length === 0 ? (
+                      <span className="text-[10px] text-marble/35 italic">No labels added yet.</span>
+                    ) : (
+                      editLabels.map((tag) => (
+                        <span 
+                          key={tag} 
+                          className="inline-flex items-center gap-1 text-[9px] bg-white/10 px-2 py-0.5 rounded text-ares-cyan font-bold border border-white/5"
+                        >
+                          {tag}
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveLabel(tag)}
+                              className="text-marble/40 hover:text-ares-red text-[8px] cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </span>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Tag Input */}
+                  {canEdit && (
+                    <form onSubmit={handleAddLabel} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        placeholder="Add tag (e.g. outreach, chassis)..."
+                        className="flex-1 bg-black/60 border border-white/10 rounded px-3 py-1.5 text-[11px] text-white focus:border-ares-red outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3.5 bg-white text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer hover:bg-ares-gold transition-colors"
+                      >
+                        Add
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+
+              {/* Read-Only Stats/Metadata */}
+              <div className="border-t border-white/5 pt-5 space-y-2.5">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">Photo File Metadata</h4>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold">
+                  <div>
+                    <span className="text-marble/40 block">Dimensions / Format</span>
+                    <span className="text-white uppercase truncate">{selectedPhoto.mimeType}</span>
+                  </div>
+                  <div>
+                    <span className="text-marble/40 block">File Size</span>
+                    <span className="text-white">{(selectedPhoto.fileSize / 1024).toFixed(1)} KB</span>
+                  </div>
+                  <div>
+                    <span className="text-marble/40 block">Uploaded On</span>
+                    <span className="text-white">{new Date(selectedPhoto.importedAt).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-marble/40 block">Google Photos Sync</span>
+                    {selectedPhoto.googleMediaItemId ? (
+                      <span className="text-ares-cyan truncate block" title={selectedPhoto.googleMediaItemId}>
+                        ✓ Synced ({selectedPhoto.googleMediaItemId.substring(0, 8)}...)
+                      </span>
+                    ) : (
+                      <span className="text-marble/35">Not Synced</span>
+                    )}
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-marble/40 block">Storage Reference Path</span>
+                    <span className="text-marble/60 font-mono text-[9px] break-all select-all block mt-0.5">
+                      {selectedPhoto.storagePath}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <footer className="p-5 border-t border-white/5 sticky bottom-0 bg-obsidian/95 backdrop-blur-md flex items-center justify-between gap-3 z-10">
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to permanently delete this photo from the library?")) {
+                      handleDeletePhoto(selectedPhoto.id);
+                      setSelectedPhoto(null);
+                    }
+                  }}
+                  className="py-2 px-4 border border-ares-red/25 hover:bg-ares-red/10 text-ares-red font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg"
+                >
+                  <Trash2 size={11} /> Delete
+                </button>
+              )}
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedPhoto(null)}
+                  className="py-2 px-4 border border-white/10 hover:bg-white/5 text-marble/70 hover:text-white font-bold text-[10px] uppercase tracking-wider rounded transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                {canEdit && (
+                  <button
+                    onClick={handleSavePhotoDetails}
+                    disabled={isSavingDetails}
+                    className="py-2 px-5 bg-ares-red hover:bg-ares-red-dark text-white font-black text-[10px] uppercase tracking-wider ares-cut transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-98 disabled:opacity-50"
+                  >
+                    {isSavingDetails ? (
+                      <>
+                        <Loader2 className="animate-spin" size={10} /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={10} /> Save Changes
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </footer>
+          </div>
         </div>
       )}
 

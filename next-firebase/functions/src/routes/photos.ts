@@ -808,6 +808,86 @@ router.post("/upload-unified", ensureTeamMember, async (req, res) => {
   }
 });
 
+// PATCH /api/photos/:photoId
+// Update photo metadata: albumId, caption, labels, altText
+router.patch("/:photoId", ensureTeamMember, async (req, res) => {
+  try {
+    const { photoId } = req.params;
+    const { albumId, caption, labels, altText } = req.body as {
+      albumId?: string | null;
+      caption?: string;
+      labels?: string[];
+      altText?: string;
+    };
+
+    const photoRef = adminDb.collection("imported_photos").doc(photoId);
+    const photoSnap = await photoRef.get();
+
+    if (!photoSnap.exists) {
+      res.status(404).json({ error: "Photo not found." });
+      return;
+    }
+
+    const currentPhoto = photoSnap.data()!;
+    const oldAlbumId = currentPhoto.albumId || null;
+    const newAlbumId = albumId !== undefined ? albumId : oldAlbumId;
+
+    // Build updated metadata object
+    const updatedPhoto = {
+      ...currentPhoto,
+      caption: caption !== undefined ? caption : (currentPhoto.caption || ""),
+      labels: labels !== undefined ? labels : (currentPhoto.labels || []),
+      altText: altText !== undefined ? altText : (currentPhoto.altText || ""),
+      albumId: newAlbumId
+    };
+
+    // Update in root imported_photos collection
+    await photoRef.set(updatedPhoto);
+
+    // Handle album association changes
+    if (oldAlbumId !== newAlbumId) {
+      // 1. Decrement old album count and delete subcollection doc
+      if (oldAlbumId) {
+        const oldAlbumRef = adminDb.collection("albums").doc(oldAlbumId);
+        const oldAlbumSnap = await oldAlbumRef.get();
+        if (oldAlbumSnap.exists) {
+          const currentCount = oldAlbumSnap.data()?.mediaCount ?? 0;
+          await oldAlbumRef.update({
+            mediaCount: Math.max(0, currentCount - 1),
+            updatedAt: new Date().toISOString()
+          });
+        }
+        await oldAlbumRef.collection("photos").doc(photoId).delete();
+      }
+
+      // 2. Increment new album count and set subcollection doc
+      if (newAlbumId) {
+        const newAlbumRef = adminDb.collection("albums").doc(newAlbumId);
+        const newAlbumSnap = await newAlbumRef.get();
+        if (newAlbumSnap.exists) {
+          const currentCount = newAlbumSnap.data()?.mediaCount ?? 0;
+          await newAlbumRef.update({
+            mediaCount: currentCount + 1,
+            updatedAt: new Date().toISOString()
+          });
+        }
+        await newAlbumRef.collection("photos").doc(photoId).set(updatedPhoto);
+      }
+    } else {
+      // If album is unchanged and exists, update the copy inside the album's photos subcollection
+      if (newAlbumId) {
+        const albumRef = adminDb.collection("albums").doc(newAlbumId);
+        await albumRef.collection("photos").doc(photoId).set(updatedPhoto);
+      }
+    }
+
+    res.json({ success: true, photo: updatedPhoto });
+  } catch (error: any) {
+    console.error("[Update Photo Error]:", error);
+    res.status(500).json({ error: error.message || "Internal server error." });
+  }
+});
+
 // DELETE /api/photos/:photoId
 router.delete("/:photoId", ensureAdmin, async (req, res) => {
   try {
