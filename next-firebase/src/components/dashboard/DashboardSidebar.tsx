@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -137,6 +137,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="documents" icon={BookOpen} label="Manage Docs" currentPath={pathname} />
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             <NavButton tab="photos" icon={Settings} label="Google Sync" currentPath={pathname} />
+            {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
+              <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} />
+            )}
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             

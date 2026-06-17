@@ -144,7 +144,7 @@ export default function WebGLReplayCanvas() {
     const interval = setInterval(() => {
       publishKeyboardSpeeds();
       heartbeatCounter.current = (heartbeatCounter.current + 1) % 1000000;
-      ntClient.publishPersistent("ARES/Input/heartbeat", heartbeatCounter.current, "integer");
+      ntClient.publishPersistent("ARES/Input/heartbeat", heartbeatCounter.current, "int");
     }, 100);
 
     return () => {

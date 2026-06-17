@@ -1,8 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
-import { encrypt } from "../lib/crypto";
+import { encrypt, decrypt } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
+import { ensureAdmin } from "../middleware/auth";
 
 const router = express.Router();
 
@@ -107,6 +108,97 @@ router.post("/", inquiryLimiter, async (req, res) => {
     });
   } catch (error: any) {
     console.error("Error submitting inquiry API:", error);
+    res.status(500).json({ success: false, error: "Internal server error." });
+  }
+});
+
+// GET /api/inquiries
+router.get("/", ensureAdmin, async (req, res) => {
+  try {
+    const snapshot = await adminDb.collection("inquiries").orderBy("createdAt", "desc").get();
+    const secret = getEncryptionSecret();
+
+    const inquiries = await Promise.all(snapshot.docs.map(async (doc) => {
+      const data = doc.data();
+      let name = data.name;
+      let email = data.email;
+
+      try {
+        if (name && name.includes(":")) {
+          name = await decrypt(name, secret);
+        }
+      } catch (e) {
+        name = "[Decryption Failed]";
+      }
+
+      try {
+        if (email && email.includes(":")) {
+          email = await decrypt(email, secret);
+        }
+      } catch (e) {
+        email = "[Decryption Failed]";
+      }
+
+      return {
+        id: doc.id,
+        type: data.type,
+        name,
+        email,
+        status: data.status,
+        metadata: data.metadata,
+        createdAt: data.createdAt,
+      };
+    }));
+
+    res.json({ success: true, inquiries });
+  } catch (error: any) {
+    console.error("Error listing inquiries:", error);
+    res.status(500).json({ success: false, error: "Internal server error." });
+  }
+});
+
+// PATCH /api/inquiries/:id/status
+router.patch("/:id/status", ensureAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body as { status: string };
+
+    if (!status) {
+      res.status(400).json({ success: false, error: "Status is required." });
+      return;
+    }
+
+    const docRef = adminDb.collection("inquiries").doc(id);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      res.status(404).json({ success: false, error: "Inquiry not found." });
+      return;
+    }
+
+    await docRef.update({ status });
+    res.json({ success: true, message: "Status updated successfully." });
+  } catch (error: any) {
+    console.error("Error updating inquiry status:", error);
+    res.status(500).json({ success: false, error: "Internal server error." });
+  }
+});
+
+// DELETE /api/inquiries/:id
+router.delete("/:id", ensureAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const docRef = adminDb.collection("inquiries").doc(id);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      res.status(404).json({ success: false, error: "Inquiry not found." });
+      return;
+    }
+
+    await docRef.delete();
+    res.json({ success: true, message: "Inquiry deleted successfully." });
+  } catch (error: any) {
+    console.error("Error deleting inquiry:", error);
     res.status(500).json({ success: false, error: "Internal server error." });
   }
 });

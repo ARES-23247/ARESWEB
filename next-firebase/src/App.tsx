@@ -44,14 +44,14 @@ import DashboardScopePage from "@/app/dashboard/scope/page";
 import DashboardTasksPage from "@/app/dashboard/tasks/page";
 import DashboardVideosPage from "@/app/dashboard/videos/page";
 import DashboardFieldPage from "@/app/dashboard/field/page";
+import DashboardInquiriesPage from "@/app/dashboard/inquiries/page";
 
 export default function App() {
   React.useEffect(() => {
     // Only load reCAPTCHA once
     if (document.getElementById("recaptcha-script")) return;
     
-    const isDev = import.meta.env.DEV || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (isDev ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
+    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
     const script = document.createElement("script");
     script.id = "recaptcha-script";
     script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
@@ -106,6 +106,7 @@ export default function App() {
               <Route path="videos" element={<DashboardVideosPage />} />
               <Route path="photos" element={<DashboardPhotosPage />} />
               <Route path="field" element={<DashboardFieldPage />} />
+              <Route path="inquiries" element={<DashboardInquiriesPage />} />
             </Route>
             
             {/* 404 Route */}
