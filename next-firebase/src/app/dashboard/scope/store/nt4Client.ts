@@ -13,6 +13,8 @@ export class NT4Client {
   private reconnectTimeout: any = null;
   private destroyed = false;
   private activePubs = new Map<string, number>();
+  private serverTimeOffsetUs = 0;
+  private timeSyncInterval: any = null;
 
   constructor(
     private host: string,
@@ -43,12 +45,14 @@ export class NT4Client {
       this.ws.onopen = () => {
         this.onStatusChange("connected");
         this.subscribeAll();
+        this.startTimeSync();
         console.log(`[NT4Client] Connected to NT4 server at ${this.host}:${port}`);
       };
 
       this.ws.onclose = () => {
         this.onStatusChange("disconnected");
         this.activePubs.clear();
+        this.stopTimeSync();
         console.log("[NT4Client] Disconnected from NT4 server.");
         this.scheduleReconnect();
       };
@@ -86,6 +90,7 @@ export class NT4Client {
   disconnect() {
     this.destroyed = true;
     this.activePubs.clear();
+    this.stopTimeSync();
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -153,11 +158,20 @@ export class NT4Client {
         const msg = decoder.decode();
         if (Array.isArray(msg) && msg.length === 4) {
           const [topicId, timestampUs, typeId, value] = msg;
-          const name = this.topicNames.get(topicId);
-          if (name) {
-            // NT4 timestamp is in microseconds, convert to milliseconds
-            const msgTimestampMs = Number(timestampUs) / 1000;
-            this.processTelemetryKey(name, value, msgTimestampMs);
+          if (topicId === -1) {
+            // Time sync response from server
+            const t_start = Number(value);
+            const t_end = Date.now() * 1000;
+            const rtt = t_end - t_start;
+            const serverTimeEquivalent = Number(timestampUs) + rtt / 2;
+            this.serverTimeOffsetUs = serverTimeEquivalent - t_end;
+          } else {
+            const name = this.topicNames.get(topicId);
+            if (name) {
+              // NT4 timestamp is in microseconds, convert to milliseconds
+              const msgTimestampMs = Number(timestampUs) / 1000;
+              this.processTelemetryKey(name, value, msgTimestampMs);
+            }
           }
         }
       }
@@ -307,17 +321,19 @@ export class NT4Client {
     try {
       this.ws.send(JSON.stringify(pubMsg));
 
-      const setMsg = [
-        {
-          method: "set",
-          params: {
-            pubuid: pubuid,
-            value: value
-          },
-          uid: Math.floor(Math.random() * 10000)
-        }
-      ];
-      this.ws.send(JSON.stringify(setMsg));
+      let typeId = 1;
+      if (type === "boolean") typeId = 0;
+      else if (type === "double") typeId = 1;
+      else if (type === "int" || type === "integer") typeId = 2;
+      else if (type === "float") typeId = 3;
+      else if (type === "string") typeId = 4;
+      else if (type === "raw") typeId = 5;
+
+      const timestampUs = Math.floor(Date.now() * 1000 + this.serverTimeOffsetUs);
+
+      const encoder = new MsgPackEncoder();
+      encoder.write([pubuid, timestampUs, typeId, value]);
+      this.ws.send(encoder.getBuffer());
 
       const unpubMsg = [
         {
@@ -365,21 +381,204 @@ export class NT4Client {
       }
     }
 
-    const setMsg = [
-      {
-        method: "set",
-        params: {
-          pubuid: pubuid,
-          value: value
-        },
-        uid: Math.floor(Math.random() * 10000)
-      }
-    ];
+    let typeId = 1;
+    if (type === "boolean") typeId = 0;
+    else if (type === "double") typeId = 1;
+    else if (type === "int" || type === "integer") typeId = 2;
+    else if (type === "float") typeId = 3;
+    else if (type === "string") typeId = 4;
+    else if (type === "raw") typeId = 5;
+
+    const timestampUs = Math.floor(Date.now() * 1000 + this.serverTimeOffsetUs);
+
+    const encoder = new MsgPackEncoder();
+    encoder.write([pubuid, timestampUs, typeId, value]);
     try {
-      this.ws.send(JSON.stringify(setMsg));
+      this.ws.send(encoder.getBuffer());
     } catch (e) {
-      console.error("[NT4Client] Failed to send set message:", e);
+      console.error("[NT4Client] Failed to send binary set message:", e);
     }
+  }
+
+  private startTimeSync() {
+    this.stopTimeSync();
+    this.sendTimeSyncPing();
+    this.timeSyncInterval = setInterval(() => {
+      this.sendTimeSyncPing();
+    }, 2000);
+  }
+
+  private stopTimeSync() {
+    if (this.timeSyncInterval) {
+      clearInterval(this.timeSyncInterval);
+      this.timeSyncInterval = null;
+    }
+  }
+
+  private sendTimeSyncPing() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    const localTimeUs = Math.floor(Date.now() * 1000);
+    const encoder = new MsgPackEncoder();
+    encoder.write([-1, 0, 2, localTimeUs]);
+    try {
+      this.ws.send(encoder.getBuffer());
+    } catch (e) {
+      console.error("[NT4Client] Failed to send time sync ping:", e);
+    }
+  }
+}
+
+class MsgPackEncoder {
+  private bytes: number[] = [];
+
+  write(val: any) {
+    if (val === null || val === undefined) {
+      this.bytes.push(0xc0);
+    } else if (typeof val === "boolean") {
+      this.bytes.push(val ? 0xc3 : 0xc2);
+    } else if (typeof val === "number") {
+      if (Number.isInteger(val)) {
+        this.writeInteger(val);
+      } else {
+        this.writeDouble(val);
+      }
+    } else if (typeof val === "string") {
+      this.writeString(val);
+    } else if (val instanceof Uint8Array) {
+      this.writeBinary(val);
+    } else if (Array.isArray(val)) {
+      this.writeArray(val);
+    } else if (typeof val === "object") {
+      this.writeMap(val);
+    } else {
+      throw new Error("Unsupported type for MsgPack encoding: " + typeof val);
+    }
+  }
+
+  private writeInteger(val: number) {
+    if (val >= 0) {
+      if (val <= 127) {
+        this.bytes.push(val);
+      } else if (val <= 0xff) {
+        this.bytes.push(0xcc, val);
+      } else if (val <= 0xffff) {
+        this.bytes.push(0xcd, (val >> 8) & 0xff, val & 0xff);
+      } else if (val <= 0xffffffff) {
+        this.bytes.push(0xce, (val >> 24) & 0xff, (val >> 16) & 0xff, (val >> 8) & 0xff, val & 0xff);
+      } else {
+        this.bytes.push(0xcf);
+        this.writeUint64(val);
+      }
+    } else {
+      if (val >= -32) {
+        this.bytes.push(0xe0 | (val + 32));
+      } else if (val >= -128) {
+        this.bytes.push(0xd0, val & 0xff);
+      } else if (val >= -32768) {
+        this.bytes.push(0xd1, (val >> 8) & 0xff, val & 0xff);
+      } else if (val >= -2147483648) {
+        this.bytes.push(0xd2, (val >> 24) & 0xff, (val >> 16) & 0xff, (val >> 8) & 0xff, val & 0xff);
+      } else {
+        this.bytes.push(0xd3);
+        this.writeInt64(val);
+      }
+    }
+  }
+
+  private writeUint64(val: number) {
+    const high = Math.floor(val / 4294967296);
+    const low = val % 4294967296;
+    this.bytes.push(
+      (high >> 24) & 0xff, (high >> 16) & 0xff, (high >> 8) & 0xff, high & 0xff,
+      (low >> 24) & 0xff, (low >> 16) & 0xff, (low >> 8) & 0xff, low & 0xff
+    );
+  }
+
+  private writeInt64(val: number) {
+    let high = Math.floor(val / 4294967296);
+    let low = val % 4294967296;
+    if (low < 0) {
+      low += 4294967296;
+    }
+    this.bytes.push(
+      (high >> 24) & 0xff, (high >> 16) & 0xff, (high >> 8) & 0xff, high & 0xff,
+      (low >> 24) & 0xff, (low >> 16) & 0xff, (low >> 8) & 0xff, low & 0xff
+    );
+  }
+
+  private writeDouble(val: number) {
+    const buf = new ArrayBuffer(8);
+    const view = new DataView(buf);
+    view.setFloat64(0, val, false);
+    this.bytes.push(0xcb);
+    for (let i = 0; i < 8; i++) {
+      this.bytes.push(view.getUint8(i));
+    }
+  }
+
+  private writeString(val: string) {
+    const encoded = new TextEncoder().encode(val);
+    const len = encoded.length;
+    if (len <= 31) {
+      this.bytes.push(0xa0 | len);
+    } else if (len <= 0xff) {
+      this.bytes.push(0xd9, len);
+    } else if (len <= 0xffff) {
+      this.bytes.push(0xda, (len >> 8) & 0xff, len & 0xff);
+    } else {
+      this.bytes.push(0xdb, (len >> 24) & 0xff, (len >> 16) & 0xff, (len >> 8) & 0xff, len & 0xff);
+    }
+    for (let i = 0; i < len; i++) {
+      this.bytes.push(encoded[i]);
+    }
+  }
+
+  private writeBinary(val: Uint8Array) {
+    const len = val.length;
+    if (len <= 0xff) {
+      this.bytes.push(0xc4, len);
+    } else if (len <= 0xffff) {
+      this.bytes.push(0xc5, (len >> 8) & 0xff, len & 0xff);
+    } else {
+      this.bytes.push(0xc6, (len >> 24) & 0xff, (len >> 16) & 0xff, (len >> 8) & 0xff, len & 0xff);
+    }
+    for (let i = 0; i < len; i++) {
+      this.bytes.push(val[i]);
+    }
+  }
+
+  private writeArray(val: any[]) {
+    const len = val.length;
+    if (len <= 15) {
+      this.bytes.push(0x90 | len);
+    } else if (len <= 0xffff) {
+      this.bytes.push(0xdc, (len >> 8) & 0xff, len & 0xff);
+    } else {
+      this.bytes.push(0xdd, (len >> 24) & 0xff, (len >> 16) & 0xff, (len >> 8) & 0xff, len & 0xff);
+    }
+    for (const item of val) {
+      this.write(item);
+    }
+  }
+
+  private writeMap(val: any) {
+    const keys = Object.keys(val);
+    const len = keys.length;
+    if (len <= 15) {
+      this.bytes.push(0x80 | len);
+    } else if (len <= 0xffff) {
+      this.bytes.push(0xde, (len >> 8) & 0xff, len & 0xff);
+    } else {
+      this.bytes.push(0xdf, (len >> 24) & 0xff, (len >> 16) & 0xff, (len >> 8) & 0xff, len & 0xff);
+    }
+    for (const key of keys) {
+      this.writeString(key);
+      this.write(val[key]);
+    }
+  }
+
+  getBuffer(): Uint8Array {
+    return new Uint8Array(this.bytes);
   }
 }
 

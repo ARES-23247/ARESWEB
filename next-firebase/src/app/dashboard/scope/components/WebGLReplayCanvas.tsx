@@ -35,6 +35,7 @@ export default function WebGLReplayCanvas() {
   // --- WEB KEYBOARD CONTROLLER FOR SIMULATOR ---
   const pressedKeys = useRef<Set<string>>(new Set());
   const currentFrameRef = useRef(currentFrame);
+  const heartbeatCounter = useRef(0);
 
   useEffect(() => {
     currentFrameRef.current = currentFrame;
@@ -139,9 +140,11 @@ export default function WebGLReplayCanvas() {
     window.addEventListener("keyup", handleWebKeyUp);
     window.addEventListener("blur", handleWindowBlur);
 
-    // Also publish a heartbeat interval to keep the daemon refreshed
+    // Also publish a heartbeat interval to keep the daemon refreshed and inputs active
     const interval = setInterval(() => {
       publishKeyboardSpeeds();
+      heartbeatCounter.current = (heartbeatCounter.current + 1) % 1000000;
+      ntClient.publishPersistent("ARES/Input/heartbeat", heartbeatCounter.current, "integer");
     }, 100);
 
     return () => {
@@ -151,6 +154,13 @@ export default function WebGLReplayCanvas() {
       clearInterval(interval);
     };
   }, [ntClient]);
+
+  // Publish active obstacles list to the simulator whenever it changes or on connection
+  useEffect(() => {
+    if (!ntClient) return;
+    const obstaclesJson = JSON.stringify({ obstacles: fieldObstacles || [] });
+    ntClient.publishPersistent("ARES/Input/obstacles", obstaclesJson, "string");
+  }, [ntClient, fieldObstacles]);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
