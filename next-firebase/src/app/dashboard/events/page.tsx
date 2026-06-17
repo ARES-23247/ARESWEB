@@ -75,6 +75,7 @@ interface EventPhoto {
   uploadedBy: string;
   uploadedAt: string;
   filename: string;
+  googleMediaItemId?: string;
 }
 
 export default function EventsManagementPage() {
@@ -538,20 +539,49 @@ export default function EventsManagementPage() {
     setUploadingImage(true);
     setUploadError(null);
     try {
-      const photoId = `photo_${Date.now()}`;
-      const storageRef = ref(storage, `events/${editId}/photos/${photoId}_${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-      
+      // Helper to read file as base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = (reader.result as string).split(",")[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await authenticatedFetch("/api/photos/upload-unified", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: base64,
+          filename: file.name,
+          mimeType: file.type || "image/jpeg",
+          uploadToGoogle: true, // Auto cross-post to Google Photos
+          runAiLabeling: false
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Backend unified upload failed");
+      }
+
+      const data = await res.json();
+      const photoId = data.photo.id || `photo_${Date.now()}`;
+
       const photoData: EventPhoto = {
         id: photoId,
-        url: downloadUrl,
+        url: data.photo.publicUrl,
         uploadedBy: userNickname || user.displayName || "Anonymous Member",
         uploadedAt: new Date().toISOString(),
-        filename: file.name
+        filename: file.name,
+        googleMediaItemId: data.photo.googleMediaItemId || undefined
       };
+      
+      // Save inside event's photos subcollection
       await setDoc(doc(db, "events", editId, "photos", photoId), photoData);
-      setRevertAlert("Photo uploaded successfully!");
+      setRevertAlert("Photo uploaded to event gallery and synced to team Google Photos!");
     } catch (err: any) {
       setUploadError(err.message || "Failed to upload image.");
     } finally {

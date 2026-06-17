@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { adminDb, adminStorage, adminAuth } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
-import { ensureAuth, ensureAdmin } from "../middleware/auth";
+import { ensureAuth, ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { encrypt } from "../lib/crypto";
 import { generatePhotoCaptionAndLabels } from "../lib/vertex";
 
@@ -645,7 +645,7 @@ router.delete("/picker/:sessionId", ensureAdmin, async (req, res) => {
 
 // POST /api/photos/upload-unified
 // Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
-router.post("/upload-unified", ensureAdmin, async (req, res) => {
+router.post("/upload-unified", ensureTeamMember, async (req, res) => {
   try {
     const { fileBase64, filename, mimeType, albumId, uploadToGoogle, runAiLabeling } = req.body as {
       fileBase64: string;
