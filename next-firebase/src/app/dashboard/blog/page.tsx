@@ -91,7 +91,8 @@ export default function BlogManagementPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editSlug, setEditSlug] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"edit" | "revisions" | "ai">("edit");
+  const [activeTab, setActiveTab] = useState<"edit" | "revisions">("edit");
+  const [showAiSidebar, setShowAiSidebar] = useState(true);
   
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
@@ -601,37 +602,44 @@ export default function BlogManagementPage() {
             </header>
 
             {/* Sub-Header: Tabs Switcher */}
-            <div className="px-6 border-b border-white/5 bg-black/10 flex gap-4 text-xs font-bold uppercase tracking-wider shrink-0 select-none">
-              <button
-                type="button"
-                onClick={() => setActiveTab("edit")}
-                className={`py-3 border-b-2 transition-all cursor-pointer ${
-                  activeTab === "edit" ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"
-                }`}
-              >
-                ✏️ Edit Article
-              </button>
-              {editSlug && (
+            <div className="px-6 border-b border-white/5 bg-black/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none">
+              <div className="flex gap-4">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("revisions")}
+                  onClick={() => setActiveTab("edit")}
                   className={`py-3 border-b-2 transition-all cursor-pointer ${
-                    activeTab === "revisions" ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"
+                    activeTab === "edit" ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"
                   }`}
                 >
-                  📜 Revision History
+                  ✏️ Edit Article
+                </button>
+                {editSlug && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("revisions")}
+                    className={`py-3 border-b-2 transition-all cursor-pointer ${
+                      activeTab === "revisions" ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"
+                    }`}
+                  >
+                    📜 Revision History
+                  </button>
+                )}
+              </div>
+              
+              {activeTab === "edit" && (
+                <button
+                  type="button"
+                  onClick={() => setShowAiSidebar(!showAiSidebar)}
+                  className={`py-1.5 px-3 border rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-[10px] ${
+                    showAiSidebar 
+                      ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan" 
+                      : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
+                  }`}
+                >
+                  <Sparkles size={11} className={aiLoading ? "animate-spin" : ""} />
+                  {showAiSidebar ? "Hide AI Copilot" : "Show AI Copilot"}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setActiveTab("ai")}
-                className={`py-3 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === "ai" ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"
-                }`}
-              >
-                <Sparkles size={11} className={aiLoading ? "animate-spin text-ares-gold" : "text-ares-gold"} />
-                AI Copilot
-              </button>
             </div>
 
             {/* Revert Alert banner */}
@@ -648,11 +656,17 @@ export default function BlogManagementPage() {
             )}
 
             {/* Content canvas - changes depending on active tab */}
-            <div className="flex-1 overflow-y-auto bg-black/10 p-6 flex flex-col">
+            <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
               
               {/* Tab 1: EDIT FORM */}
               {activeTab === "edit" && (
-                <form onSubmit={handleSavePost} className="space-y-6 flex-1 flex flex-col justify-between">
+                <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
+                  <form
+                    onSubmit={handleSavePost}
+                    className={`space-y-6 flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 transition-all duration-300 ${
+                      showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
+                    }`}
+                  >
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -739,13 +753,15 @@ export default function BlogManagementPage() {
                         placeholder="Summarize the core technical findings or community outcomes in 2-3 sentences..."
                         value={formSnippet}
                         onChange={(e) => setFormSnippet(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
+                        className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors mb-4"
                         required
                       />
                     </div>
 
-                    <div className="flex flex-col flex-grow">
-                      <label htmlFor="blog-content" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Body Content (Markdown)</label>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label htmlFor="blog-content" className="block text-[10px] font-bold uppercase tracking-wider text-marble/60">Article Body</label>
+                      </div>
                       <MarkdownEditor
                         id="blog-content"
                         placeholder={`### Heading 3\nWrite blog content using standard markdown syntax. Code syntax blocks are supported...`}
@@ -756,28 +772,206 @@ export default function BlogManagementPage() {
                       />
                     </div>
 
-                    <div className="bg-black/45 border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                      <div>
-                        <label htmlFor="blog-status" className="text-white text-xs font-bold uppercase tracking-wide cursor-pointer">Publish Status</label>
-                        <p className="text-[10px] text-marble/60">Drafts are hidden from the public feed</p>
+                      <div className="bg-black/45 border border-white/5 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                          <label htmlFor="blog-status" className="text-white text-xs font-bold uppercase tracking-wide cursor-pointer">Publish Status</label>
+                          <p className="text-[10px] text-marble/60">Drafts are hidden from the public feed</p>
+                        </div>
+                        <select
+                          id="blog-status"
+                          value={formStatus}
+                          onChange={(e) => setFormStatus(e.target.value as any)}
+                          className="bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer"
+                        >
+                          <option value="draft">🟡 Draft</option>
+                          <option value="published">🟢 Published</option>
+                        </select>
                       </div>
-                      <select
-                        id="blog-status"
-                        value={formStatus}
-                        onChange={(e) => setFormStatus(e.target.value as any)}
-                        className="bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer"
-                      >
-                        <option value="draft">🟡 Draft</option>
-                        <option value="published">🟢 Published</option>
-                      </select>
                     </div>
-                  </div>
-                </form>
+                  </form>
+
+                  {showAiSidebar && (
+                    <div className="hidden lg:flex lg:w-[30%] bg-black/30 border border-white/15 rounded-xl p-4 flex-col gap-4 overflow-y-auto shrink-0 select-none scrollbar-thin scrollbar-thumb-white/5">
+                      {/* Section 1: Spelling & Grammar Checker */}
+                      <div className="space-y-4">
+                        <div className="bg-black/20 border border-white/5 p-3.5 rounded-lg">
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-ares-gold flex items-center gap-2 mb-1.5">
+                            <Sparkles size={11} /> Spelling & Grammar
+                          </h4>
+                          <p className="text-[9px] text-marble/60 leading-normal mb-2.5">
+                            Gemini will scan the current editor contents for spelling errors and technical tone issues.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleGrammarCheck}
+                            disabled={aiLoading || !formContent}
+                            className="w-full py-2 bg-white/5 border border-white/10 hover:border-ares-gold hover:text-ares-gold transition-all text-white text-[9px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-40"
+                          >
+                            {aiLoading ? "Checking..." : "Verify Spelling & Grammar"}
+                          </button>
+                        </div>
+
+                        {/* Section 2: AI Writer Prompts */}
+                        <div className="bg-black/20 border border-white/5 p-3.5 rounded-lg flex flex-col gap-2.5">
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-ares-cyan flex items-center gap-2">
+                            <Sparkles size={11} /> AI Writer Prompts
+                          </h4>
+                          
+                          <textarea
+                            placeholder="Tell Gemini what to write, expand, or adjust..."
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            className="w-full h-16 bg-black/60 border border-white/10 rounded p-2.5 text-xs text-white placeholder:text-marble/25 focus:outline-none focus:border-ares-cyan font-mono leading-relaxed resize-none"
+                          />
+
+                          {/* Presets Grid */}
+                          <div className="grid grid-cols-2 gap-1.5 text-[8px] font-black uppercase tracking-wider">
+                            <button
+                              type="button"
+                              onClick={() => handleAiAssistant("Rewrite the content to make it sound more professional and academic.", "Improve Writing")}
+                              disabled={aiLoading}
+                              className="p-1.5 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
+                            >
+                              💼 Professional
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAiAssistant("Expand this article, adding more technical details about odometry calculations and loop timers.", "Expand Content")}
+                              disabled={aiLoading}
+                              className="p-1.5 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
+                            >
+                              ➕ Expand
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAiAssistant("Summarize the entire article, extracting key highlights suitable for a 2-sentence snippet.", "Summarize")}
+                              disabled={aiLoading}
+                              className="p-1.5 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
+                            >
+                              ✂️ Summarize
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAiAssistant(aiPrompt)}
+                              disabled={aiLoading || !aiPrompt.trim()}
+                              className="p-1.5 bg-ares-cyan text-black hover:brightness-110 rounded text-center transition-all cursor-pointer font-bold disabled:opacity-40"
+                            >
+                              🚀 Ask AI
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Output Sandbox */}
+                      <div className="bg-black/30 border border-white/10 rounded-lg p-3.5 flex flex-col justify-between overflow-hidden min-h-[200px] flex-grow">
+                        <div className="flex-grow overflow-y-auto pr-0.5 space-y-3.5 scrollbar-thin scrollbar-thumb-white/5">
+                          <h4 className="text-[9px] font-bold uppercase tracking-wider text-marble/55">
+                            Copilot Sandbox Output
+                          </h4>
+
+                          {aiLoading && (
+                            <div className="flex flex-col items-center justify-center py-12 gap-2.5">
+                              <span className="w-5 h-5 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
+                              <span className="text-[9px] text-marble/55 uppercase font-mono tracking-wider animate-pulse">
+                                Brainstorming...
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Render spelling corrections */}
+                          {!aiLoading && grammarEdits.length > 0 && (
+                            <div className="space-y-3">
+                              <div className="p-2.5 bg-ares-gold/10 border border-ares-gold/20 text-ares-gold rounded text-[10px] leading-normal font-semibold">
+                                Review corrections. Click <strong>Apply Correction</strong> below to insert.
+                              </div>
+                              
+                              <div className="space-y-2">
+                                {grammarEdits.map((edit, idx) => (
+                                  <div key={idx} className="bg-black/45 border border-white/5 p-2 rounded text-[10px] leading-relaxed">
+                                    <div className="flex flex-wrap gap-1 items-center mb-1 text-[8px] font-black uppercase tracking-wider">
+                                      <span className="bg-ares-red/25 text-ares-red border border-ares-red/35 px-1 py-0.5 rounded line-through">
+                                        {edit.original}
+                                      </span>
+                                      <span className="text-marble/55">➜</span>
+                                      <span className="bg-ares-success/25 text-ares-success border border-ares-success/35 px-1 py-0.5 rounded">
+                                        {edit.corrected}
+                                      </span>
+                                    </div>
+                                    <p className="text-marble/75 mt-0.5">{edit.explanation}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Render assistant text */}
+                          {!aiLoading && aiResponse && (
+                            <div className="text-[11px] leading-relaxed font-mono whitespace-pre-wrap text-marble bg-black/45 border border-white/5 p-3 rounded-lg overflow-x-auto">
+                              {aiResponse}
+                            </div>
+                          )}
+
+                          {!aiLoading && !aiResponse && grammarEdits.length === 0 && (
+                            <div className="py-16 text-center text-[9px] font-mono text-marble/30 uppercase tracking-widest border border-dashed border-white/10 rounded-lg">
+                              Output empty
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action buttons for outputs */}
+                        {!aiLoading && (aiResponse || suggestedCorrection) && (
+                          <div className="border-t border-white/5 pt-3 mt-3 flex flex-col gap-2 shrink-0">
+                            {suggestedCorrection && grammarEdits.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormContent(suggestedCorrection);
+                                  setGrammarEdits([]);
+                                  setSuggestedCorrection("");
+                                  setRevertAlert("Applied grammar and spelling corrections to the draft!");
+                                }}
+                                className="w-full py-2.5 bg-ares-success text-white font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:brightness-105 transition-all"
+                              >
+                                Apply Correction
+                              </button>
+                            )}
+                            {aiResponse && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormContent(aiResponse);
+                                    setAiResponse("");
+                                    setRevertAlert("Replaced draft with Gemini generated text!");
+                                  }}
+                                  className="py-2.5 bg-ares-cyan text-black font-black uppercase tracking-widest text-[8px] ares-cut-sm cursor-pointer shadow-lg hover:brightness-105 transition-all"
+                                >
+                                  Replace Draft
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormContent(formContent + "\n\n" + aiResponse);
+                                    setAiResponse("");
+                                    setRevertAlert("Appended Gemini response to draft!");
+                                  }}
+                                  className="py-2.5 bg-white/5 border border-white/15 text-white font-black uppercase tracking-widest text-[8px] ares-cut-sm cursor-pointer shadow-lg hover:bg-white/10 transition-all"
+                                >
+                                  Append to Draft
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Tab 2: REVISIONS LOGS */}
               {activeTab === "revisions" && (
-                <div className="flex-grow space-y-4">
+                <div className="flex-grow space-y-4 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">
                     Past Revisions ({revisions.length})
                   </h4>
@@ -839,189 +1033,6 @@ export default function BlogManagementPage() {
                       })}
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Tab 3: AI WRITING COPILOT */}
-              {activeTab === "ai" && (
-                <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
-                  
-                  {/* Left column: AI prompts & controls */}
-                  <div className="w-full md:w-1/2 flex flex-col justify-between gap-4">
-                    <div className="space-y-5">
-                      <div className="bg-black/20 border border-white/5 p-4 rounded-xl">
-                        <h4 className="text-[10px] font-black uppercase tracking-wider text-ares-gold flex items-center gap-2 mb-2">
-                          <Sparkles size={11} /> Spelling & Grammar Checker
-                        </h4>
-                        <p className="text-[10px] text-marble/60 leading-normal mb-3">
-                          Gemini will scan the current editor contents for spelling errors, formatting blunders, and technical tone issues.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleGrammarCheck}
-                          disabled={aiLoading || !formContent}
-                          className="px-4 py-2 bg-white/5 border border-white/10 hover:border-ares-gold hover:text-ares-gold transition-all text-white text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-40"
-                        >
-                          {aiLoading ? "Checking..." : "Verify Spelling & Grammar"}
-                        </button>
-                      </div>
-
-                      <div className="bg-black/20 border border-white/5 p-4 rounded-xl flex flex-col gap-3">
-                        <h4 className="text-[10px] font-black uppercase tracking-wider text-ares-cyan flex items-center gap-2">
-                          <Sparkles size={11} /> AI Writer Prompts
-                        </h4>
-                        
-                        <textarea
-                          placeholder="Tell Gemini what to write, expand, or adjust... (e.g. Write a brief overview on how we calibrated the kS friction parameter to 0.05)"
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          className="w-full h-20 bg-black/60 border border-white/10 rounded p-3 text-xs text-white placeholder:text-marble/25 focus:outline-none focus:border-ares-cyan font-mono leading-relaxed resize-none"
-                        />
-
-                        {/* Presets Grid */}
-                        <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase tracking-wider">
-                          <button
-                            type="button"
-                            onClick={() => handleAiAssistant("Rewrite the content to make it sound more professional and academic.", "Improve Writing")}
-                            disabled={aiLoading}
-                            className="p-2 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
-                          >
-                            💼 Make Professional
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAiAssistant("Expand this article, adding more technical details about odometry calculations and loop timers.", "Expand Content")}
-                            disabled={aiLoading}
-                            className="p-2 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
-                          >
-                            ➕ Expand Content
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAiAssistant("Summarize the entire article, extracting key highlights suitable for a 2-sentence snippet.", "Summarize")}
-                            disabled={aiLoading}
-                            className="p-2 border border-white/5 bg-white/3 hover:bg-white/10 text-marble/80 hover:text-white rounded text-left transition-colors cursor-pointer"
-                          >
-                            ✂️ Summarize Post
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAiAssistant(aiPrompt)}
-                            disabled={aiLoading || !aiPrompt.trim()}
-                            className="p-2 bg-ares-cyan text-black hover:brightness-110 rounded text-center transition-all cursor-pointer font-bold disabled:opacity-40"
-                          >
-                            🚀 Ask Copilot
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right column: AI output / recommendations display */}
-                  <div className="w-full md:w-1/2 bg-black/30 border border-white/15 rounded-xl p-4 flex flex-col justify-between overflow-hidden">
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-thin scrollbar-thumb-white/5">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/55">
-                        Copilot Sandbox Output
-                      </h4>
-
-                      {aiLoading && (
-                        <div className="flex flex-col items-center justify-center py-20 gap-3">
-                          <span className="w-7 h-7 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
-                          <span className="text-[10px] text-marble/55 uppercase font-mono tracking-wider animate-pulse">
-                            Gemini is brainstorming...
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Render spelling corrections */}
-                      {!aiLoading && grammarEdits.length > 0 && (
-                        <div className="space-y-3.5">
-                          <div className="p-3 bg-ares-gold/10 border border-ares-gold/25 text-ares-gold rounded-lg text-xs leading-normal">
-                            Spelling review complete. Click <strong>Apply Correction</strong> below to insert edits into the draft body.
-                          </div>
-                          
-                          <div className="space-y-2.5">
-                            {grammarEdits.map((edit, idx) => (
-                              <div key={idx} className="bg-black/45 border border-white/5 p-3 rounded-lg text-[11px] leading-relaxed">
-                                <div className="flex flex-wrap gap-2 items-center mb-1 text-[9px] font-black uppercase tracking-wider">
-                                  <span className="bg-ares-red/25 text-ares-red border border-ares-red/35 px-1.5 py-0.5 rounded line-through">
-                                    {edit.original}
-                                  </span>
-                                  <span className="text-marble/55">➜</span>
-                                  <span className="bg-ares-success/25 text-ares-success border border-ares-success/35 px-1.5 py-0.5 rounded">
-                                    {edit.corrected}
-                                  </span>
-                                </div>
-                                <p className="text-marble/75 mt-1">{edit.explanation}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Render assistant text */}
-                      {!aiLoading && aiResponse && (
-                        <div className="text-xs leading-relaxed font-mono whitespace-pre-wrap text-marble bg-black/45 border border-white/5 p-4 rounded-lg overflow-x-auto">
-                          {aiResponse}
-                        </div>
-                      )}
-
-                      {!aiLoading && !aiResponse && grammarEdits.length === 0 && (
-                        <div className="py-24 text-center text-[10px] font-mono text-marble/30 uppercase tracking-widest border border-dashed border-white/10 rounded-lg">
-                          Copilot output empty
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action buttons for outputs */}
-                    {!aiLoading && (aiResponse || suggestedCorrection) && (
-                      <div className="border-t border-white/5 pt-4 mt-4 flex justify-end gap-2 shrink-0">
-                        {suggestedCorrection && grammarEdits.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormContent(suggestedCorrection);
-                              setGrammarEdits([]);
-                              setSuggestedCorrection("");
-                              setRevertAlert("Applied grammar and spelling corrections to the draft body!");
-                              setActiveTab("edit");
-                            }}
-                            className="px-4 py-2 bg-ares-success text-white font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:brightness-105"
-                          >
-                            Apply Correction
-                          </button>
-                        )}
-                        {aiResponse && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormContent(aiResponse);
-                                setAiResponse("");
-                                setRevertAlert("Replaced drafts contents with Gemini generated text!");
-                                setActiveTab("edit");
-                              }}
-                              className="px-3.5 py-2 bg-ares-cyan text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:brightness-105"
-                            >
-                              Replace Draft
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormContent(formContent + "\n\n" + aiResponse);
-                                setAiResponse("");
-                                setRevertAlert("Appended Gemini response to draft contents!");
-                                setActiveTab("edit");
-                              }}
-                              className="px-3.5 py-2 bg-white/5 border border-white/15 text-white font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:bg-white/10"
-                            >
-                              Append to Draft
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 
