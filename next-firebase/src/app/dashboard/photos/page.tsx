@@ -167,6 +167,14 @@ export default function GoogleSyncPage() {
     if (!canEdit) return;
     setIsPickerLoading(true);
     setImportStatus("");
+
+    // Open a blank window synchronously to prevent browser popup blockers from blocking it
+    const popup = window.open(
+      "about:blank",
+      "GooglePhotosPicker",
+      "width=600,height=700,status=yes,resizable=yes,scrollbars=yes"
+    );
+
     try {
       const res = await authenticatedFetch("/api/photos/picker", {
         method: "POST"
@@ -181,12 +189,17 @@ export default function GoogleSyncPage() {
       setPickerUri(data.pickerUri);
       setPickerItems([]);
       
-      // Open Google Photos Picker in a new tab
-      window.open(data.pickerUri, "_blank");
+      // Redirect the synchronous popup
+      if (popup) {
+        popup.location.href = data.pickerUri;
+      }
       
       // Start polling status
       setIsPolling(true);
     } catch (err: any) {
+      if (popup) {
+        popup.close();
+      }
       console.error("Error creating picker session:", err);
       setImportStatus(`Picker Init Failed: ${err.message}`);
     } finally {

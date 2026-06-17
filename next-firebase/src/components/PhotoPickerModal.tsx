@@ -75,6 +75,14 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
     setLoading(true);
     setError(null);
     setImportStatus("");
+
+    // Open a blank window synchronously to prevent browser popup blockers from blocking it
+    const popup = window.open(
+      "about:blank",
+      "GooglePhotosPicker",
+      "width=600,height=700,status=yes,resizable=yes,scrollbars=yes"
+    );
+
     try {
       const res = await authenticatedFetch("/api/photos/picker", {
         method: "POST",
@@ -84,10 +92,18 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
       }
       const data = await res.json();
       setPickerSessionId(data.id);
-      window.open(data.pickerUri, "_blank");
+
+      // Redirect the synchronous popup
+      if (popup) {
+        popup.location.href = data.pickerUri;
+      }
+
       setIsPolling(true);
       setImportStatus("Session active. Select photos in the opened tab...");
     } catch (err: any) {
+      if (popup) {
+        popup.close();
+      }
       setError(err.message);
       setLoading(false);
     }
