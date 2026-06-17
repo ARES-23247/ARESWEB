@@ -15,9 +15,18 @@ interface TelemetrySummary {
   };
 }
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "dummy-gemini-key"
-});
+const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key";
+
+const clientConfig: any = {};
+if (useVertex) {
+  clientConfig.vertexai = true;
+  clientConfig.project = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || "aresfirst-portal";
+  clientConfig.location = process.env.GCP_LOCATION || "us-central1";
+} else {
+  clientConfig.apiKey = process.env.GEMINI_API_KEY;
+}
+
+const ai = new GoogleGenAI(clientConfig);
 
 /**
  * Runs hardware and sensor diagnostics on robot run telemetry.
@@ -49,9 +58,9 @@ Ensure that all team and organizational references follow the ARES branding guid
   * Right Rear (RR): ${summary.avgMotorCurrentAmps.rr}A`;
 
   try {
-    // If the API key is a dummy or not set, skip directly to fallback to prevent slow network timeouts
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key") {
-      throw new Error("No valid GEMINI_API_KEY configured.");
+    // If neither Vertex AI nor an API Key is set, skip to fallback to prevent slow network timeouts
+    if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
+      throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
     }
 
     const response = await ai.models.generateContent({
@@ -198,8 +207,8 @@ Your output must be a valid JSON object matching this schema:
 Do not wrap the JSON response in any markdown code blocks.`;
 
   try {
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key") {
-      throw new Error("No valid GEMINI_API_KEY configured.");
+    if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
+      throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
     }
 
     const response = await ai.models.generateContent({
@@ -253,8 +262,8 @@ Always use professional technical language, preserve Markdown formatting, and ad
   }
 
   try {
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key") {
-      throw new Error("No valid GEMINI_API_KEY configured.");
+    if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
+      throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
     }
 
     const response = await ai.models.generateContent({

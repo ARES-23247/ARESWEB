@@ -56,5 +56,5 @@ app.use("/api/ai", aiRouter);
 export const api = onRequest({ 
   cors: true, 
   maxInstances: 10, 
-  secrets: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GEMINI_API_KEY"] 
+  secrets: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] 
 }, app);
