@@ -176,6 +176,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
               <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} hasAlert={hasPendingInquiries} />
             )}
+            {userRole === "admin" && (
+              <NavButton tab="users" icon={ShieldAlert} label="Manage Users" currentPath={pathname} />
+            )}
             
             <div className="h-px bg-white/5 mx-2 my-2" />
             

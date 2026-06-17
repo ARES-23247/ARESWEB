@@ -45,6 +45,7 @@ import DashboardTasksPage from "@/app/dashboard/tasks/page";
 import DashboardVideosPage from "@/app/dashboard/videos/page";
 import DashboardFieldPage from "@/app/dashboard/field/page";
 import DashboardInquiriesPage from "@/app/dashboard/inquiries/page";
+import DashboardUsersPage from "@/app/dashboard/users/page";
 
 export default function App() {
   React.useEffect(() => {
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="photos" element={<DashboardPhotosPage />} />
               <Route path="field" element={<DashboardFieldPage />} />
               <Route path="inquiries" element={<DashboardInquiriesPage />} />
+              <Route path="users" element={<DashboardUsersPage />} />
             </Route>
             
             {/* 404 Route */}

@@ -1,7 +1,8 @@
 import express from "express";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
-import { ensureAuth, AuthenticatedRequest } from "../middleware/auth";
+import { ensureAuth, ensureAdmin, AuthenticatedRequest } from "../middleware/auth";
 import crypto from "crypto";
+import { getZulipUsers, createZulipUser } from "../lib/zulip";
 
 const router = express.Router();
 
@@ -233,6 +234,45 @@ router.post("/session", ensureAuth, async (req: AuthenticatedRequest, res) => {
     res.json({ authorizedUser: null });
   } catch (error) {
     console.error("Error in profile session route:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// GET /api/profiles/zulip/users
+// Fetches all users from Zulip workspace
+router.get("/zulip/users", ensureAdmin, async (req, res) => {
+  try {
+    const users = await getZulipUsers();
+    if (users === null) {
+      res.status(503).json({ error: "Zulip integration is inactive or configured incorrectly." });
+      return;
+    }
+    res.json({ success: true, users });
+  } catch (error: any) {
+    console.error("Error fetching Zulip users:", error);
+    res.status(500).json({ error: "Failed to fetch Zulip users." });
+  }
+});
+
+// POST /api/profiles/zulip/users
+// Creates a new user in the Zulip workspace
+router.post("/zulip/users", ensureAdmin, async (req, res) => {
+  try {
+    const { email, fullName } = req.body;
+    if (!email || !fullName) {
+      res.status(400).json({ error: "Email and Full Name are required." });
+      return;
+    }
+
+    const result = await createZulipUser(email, fullName);
+    if (!result.success) {
+      res.status(500).json({ error: result.error || "Failed to create Zulip user." });
+      return;
+    }
+
+    res.json({ success: true, message: "Zulip account created successfully." });
+  } catch (error: any) {
+    console.error("Error creating Zulip user:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 });

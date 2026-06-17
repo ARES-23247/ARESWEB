@@ -1,12 +1,34 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import React, { useEffect, useState, useMemo } from "react";
+import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, addDoc, query, orderBy } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Pencil, Shield, Activity, MapPin, Calendar, Clock, X } from "lucide-react";
+import { 
+  Plus, 
+  Trash2, 
+  Pencil, 
+  Shield, 
+  Activity, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  X, 
+  Maximize2, 
+  Minimize2, 
+  Sparkles, 
+  AlertCircle, 
+  CheckCircle2, 
+  Circle, 
+  Upload, 
+  Users, 
+  Image as ImageIcon 
+} from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import PhotoPickerModal from "@/components/PhotoPickerModal";
+import { authenticatedFetch } from "@/lib/api";
 
 interface TeamEvent {
   id: string;
@@ -16,37 +38,44 @@ interface TeamEvent {
   location?: string;
   description?: string;
   category: "internal" | "outreach";
+  coverImage?: string;
+  isPotluck?: number;
+  isVolunteer?: number;
 }
 
-const MOCK_EVENTS: TeamEvent[] = [
-  {
-    id: "event_1",
-    title: "Spark! Goes WILD Exhibition",
-    dateStart: "2026-05-24T09:30:00",
-    dateEnd: "2026-05-24T14:30:00",
-    location: "SPARK! WV Museum",
-    description: "Team outreach, STEM workshops, and public science bridge exhibits.",
-    category: "outreach"
-  },
-  {
-    id: "event_2",
-    title: "Sunday Night Driver Practice",
-    dateStart: "2026-05-24T18:00:00",
-    dateEnd: "2026-05-24T20:30:00",
-    location: "MARS Laboratory",
-    description: "Weekly telemetry calibrations and driver practice on standard field.",
-    category: "internal"
-  },
-  {
-    id: "event_3",
-    title: "Overnight Scrimmage & Prep",
-    dateStart: "2026-06-12T18:00:00",
-    dateEnd: "2026-06-13T01:00:00",
-    location: "Championship Scrimmage Field",
-    description: "Extended overnight competition prep and match simulation.",
-    category: "internal"
-  }
-];
+interface EventRevision {
+  id: string;
+  title: string;
+  dateStart: string;
+  dateEnd?: string;
+  location?: string;
+  description?: string;
+  category: "internal" | "outreach";
+  coverImage?: string;
+  isPotluck?: number;
+  isVolunteer?: number;
+  editedBy: string;
+  editedByName: string;
+  editedByAvatar: string;
+  timestamp: string;
+}
+
+interface EventSignup {
+  userId: string;
+  nickname: string;
+  bringing?: string;
+  notes?: string;
+  prepHours?: number;
+  attended?: boolean;
+}
+
+interface EventPhoto {
+  id: string;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  filename: string;
+}
 
 export default function EventsManagementPage() {
   const { user, authorizedUser } = useAuth();
@@ -62,9 +91,171 @@ export default function EventsManagementPage() {
   const [formLocation, setFormLocation] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState<"internal" | "outreach">("internal");
-  const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+  const [formCoverImage, setFormCoverImage] = useState("");
+  const [formIsPotluck, setFormIsPotluck] = useState<number>(0);
+  const [formIsVolunteer, setFormIsVolunteer] = useState<number>(0);
+  
+  // New upgraded modal states
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"edit" | "roster" | "photos" | "revisions">("edit");
+  const [showAiSidebar, setShowAiSidebar] = useState(false);
+  const [revertAlert, setRevertAlert] = useState<string | null>(null);
 
+  // Roster, Profile, and Signups / Photos states
+  const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string; }[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userNickname, setUserNickname] = useState("");
+  const [signups, setSignups] = useState<EventSignup[]>([]);
+  const [photos, setPhotos] = useState<EventPhoto[]>([]);
+  const [revisions, setRevisions] = useState<EventRevision[]>([]);
+  const [loadingRevisions, setLoadingRevisions] = useState(false);
+
+  // RSVP Form state
+  const [bringing, setBringing] = useState("");
+  const [notes, setNotes] = useState("");
+  const [prepHours, setPrepHours] = useState(0);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [submittingRsvp, setSubmittingRsvp] = useState(false);
+
+  // Photo uploads & Lightbox state
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<EventPhoto | null>(null);
+  const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
+  const [selectedMemberIdToCheckin, setSelectedMemberIdToCheckin] = useState("");
+
+  // AI Copilot States
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
+  const [suggestedCorrection, setSuggestedCorrection] = useState("");
+
+  const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+  const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
+
+  // Fetch team roster for quick check-ins
+  useEffect(() => {
+    const fetchRoster = async () => {
+      try {
+        const res = await authenticatedFetch("/api/profiles/team-roster");
+        if (res.ok) {
+          const data = await res.json();
+          setTeamMembers(data.members || []);
+        }
+      } catch (err) {
+        console.error("Failed to load team roster:", err);
+      }
+    };
+    fetchRoster();
+  }, []);
+
+  // Fetch user profile for nickname and avatar (used in revision logging)
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      try {
+        const userProfileRef = doc(db, "user_profiles", user.uid);
+        const userProfileSnap = await getDoc(userProfileRef);
+        if (userProfileSnap.exists()) {
+          const profileData = userProfileSnap.data();
+          setUserProfile(profileData);
+          if (profileData.nickname) {
+            setUserNickname(profileData.nickname);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not retrieve user profile:", err);
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  // Fetch active event signups list in real-time
+  useEffect(() => {
+    if (!editId) return;
+    const signupsRef = collection(db, "events", editId, "signups");
+    const unsubscribe = onSnapshot(
+      signupsRef,
+      (snapshot) => {
+        const list = snapshot.docs.map((docSnap) => ({
+          userId: docSnap.id,
+          ...docSnap.data()
+        })) as EventSignup[];
+        setSignups(list);
+      },
+      (err) => {
+        console.warn("Unable to fetch event signups:", err);
+      }
+    );
+    return () => unsubscribe();
+  }, [editId]);
+
+  // Fetch active event photos in real-time
+  useEffect(() => {
+    if (!editId) return;
+    const photosRef = collection(db, "events", editId, "photos");
+    const q = query(photosRef, orderBy("uploadedAt", "desc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        })) as EventPhoto[];
+        setPhotos(list);
+      },
+      (err) => {
+        console.warn("Unable to fetch event photos:", err);
+      }
+    );
+    return () => unsubscribe();
+  }, [editId]);
+
+  // Fetch event revisions list when tab shifts
+  useEffect(() => {
+    if (activeTab === "revisions" && editId) {
+      fetchRevisionsList();
+    }
+  }, [activeTab, editId]);
+
+  const fetchRevisionsList = async () => {
+    if (!editId) return;
+    setLoadingRevisions(true);
+    try {
+      const q = query(collection(db, "events", editId, "revisions"), orderBy("timestamp", "desc"));
+      const snap = await getDocs(q);
+      const list = snap.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      })) as EventRevision[];
+      setRevisions(list);
+    } catch (err) {
+      console.warn("Could not load revision logs:", err);
+    } finally {
+      setLoadingRevisions(false);
+    }
+  };
+
+  // Find if current user is signed up for active event
+  const mySignup = useMemo(() => {
+    if (!user) return null;
+    return signups.find((s) => s.userId === user.uid) || null;
+  }, [signups, user]);
+
+  // Prefill active RSVP details
+  useEffect(() => {
+    if (mySignup) {
+      setBringing(mySignup.bringing || "");
+      setNotes(mySignup.notes || "");
+      setPrepHours(mySignup.prepHours || 0);
+    } else {
+      setBringing("");
+      setNotes("");
+      setPrepHours(0);
+    }
+  }, [mySignup]);
 
   // 1. Listen for real-time calendar event updates
   useEffect(() => {
@@ -87,7 +278,10 @@ export default function EventsManagementPage() {
               dateEnd: data.dateEnd || "",
               location: data.location || "",
               description: data.description || "",
-              category: data.category || "internal"
+              category: data.category || "internal",
+              coverImage: data.coverImage || "",
+              isPotluck: data.isPotluck || 0,
+              isVolunteer: data.isVolunteer || 0
             } as TeamEvent;
           });
           
@@ -119,6 +313,26 @@ export default function EventsManagementPage() {
     setFormLocation("MARS Laboratory");
     setFormDescription("");
     setFormCategory("internal");
+    setFormCoverImage("");
+    setFormIsPotluck(0);
+    setFormIsVolunteer(0);
+
+    // Reset modal and additional states
+    setIsFullScreen(false);
+    setActiveTab("edit");
+    setShowAiSidebar(false);
+    setRevertAlert(null);
+    setGrammarEdits([]);
+    setAiResponse("");
+    setSignups([]);
+    setPhotos([]);
+    setRevisions([]);
+    setBringing("");
+    setNotes("");
+    setPrepHours(0);
+    setSignupError(null);
+    setSelectedMemberIdToCheckin("");
+    
     setIsEditorOpen(true);
   };
 
@@ -131,6 +345,26 @@ export default function EventsManagementPage() {
     setFormLocation(evt.location || "");
     setFormDescription(evt.description || "");
     setFormCategory(evt.category);
+    setFormCoverImage(evt.coverImage || "");
+    setFormIsPotluck(evt.isPotluck || 0);
+    setFormIsVolunteer(evt.isVolunteer || 0);
+
+    // Reset modal and additional states
+    setIsFullScreen(false);
+    setActiveTab("edit");
+    setShowAiSidebar(false);
+    setRevertAlert(null);
+    setGrammarEdits([]);
+    setAiResponse("");
+    setSignups([]);
+    setPhotos([]);
+    setRevisions([]);
+    setBringing("");
+    setNotes("");
+    setPrepHours(0);
+    setSignupError(null);
+    setSelectedMemberIdToCheckin("");
+    
     setIsEditorOpen(true);
   };
 
