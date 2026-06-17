@@ -942,6 +942,42 @@ router.delete("/:photoId", ensureAdmin, async (req, res) => {
   }
 });
 
+// PATCH /api/photos/albums/:albumId
+// Update album details: title, description, category
+router.patch("/albums/:albumId", ensureAdmin, async (req, res) => {
+  try {
+    const { albumId } = req.params;
+    const { title, description, category } = req.body as {
+      title?: string;
+      description?: string;
+      category?: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
+    };
+
+    const albumRef = adminDb.collection("albums").doc(albumId);
+    const albumSnap = await albumRef.get();
+
+    if (!albumSnap.exists) {
+      res.status(404).json({ error: "Album not found." });
+      return;
+    }
+
+    const currentAlbum = albumSnap.data()!;
+    const updatedAlbum = {
+      ...currentAlbum,
+      title: title !== undefined ? title : currentAlbum.title,
+      description: description !== undefined ? description : currentAlbum.description,
+      category: category !== undefined ? category : currentAlbum.category,
+      updatedAt: new Date().toISOString()
+    };
+
+    await albumRef.set(updatedAlbum);
+    res.json({ success: true, album: updatedAlbum });
+  } catch (error: any) {
+    console.error("[Albums PATCH Endpoint Error]:", error);
+    res.status(500).json({ error: error.message || "Internal server error." });
+  }
+});
+
 // DELETE /api/photos/albums/:albumId
 router.delete("/albums/:albumId", ensureAdmin, async (req, res) => {
   try {

@@ -85,6 +85,7 @@ export default function DashboardPhotosPage() {
   const [albums, setAlbums] = useState<PhotoAlbum[]>([]);
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(true);
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState<PhotoAlbum | null>(null);
   const [newAlbumTitle, setNewAlbumTitle] = useState("");
   const [newAlbumDesc, setNewAlbumDesc] = useState("");
   const [newAlbumCategory, setNewAlbumCategory] = useState<"Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice">("Robot Specs");
@@ -235,31 +236,65 @@ export default function DashboardPhotosPage() {
     setIsCreatingAlbum(true);
 
     try {
-      const res = await authenticatedFetch("/api/photos/albums", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: newAlbumTitle.trim(),
-          description: newAlbumDesc.trim(),
-          category: newAlbumCategory
-        })
-      });
+      if (editingAlbum) {
+        // Edit mode (PATCH)
+        const res = await authenticatedFetch(`/api/photos/albums/${editingAlbum.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: newAlbumTitle.trim(),
+            description: newAlbumDesc.trim(),
+            category: newAlbumCategory
+          })
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        setAlbums((prev) => [data.album, ...prev]);
-        setIsCreateAlbumOpen(false);
-        setNewAlbumTitle("");
-        setNewAlbumDesc("");
+        if (res.ok) {
+          const data = await res.json();
+          setAlbums((prev) => prev.map((a) => a.id === editingAlbum.id ? data.album : a));
+          setIsCreateAlbumOpen(false);
+          setEditingAlbum(null);
+          setNewAlbumTitle("");
+          setNewAlbumDesc("");
+        } else {
+          const errText = await res.text();
+          alert("Failed to update album: " + errText);
+        }
       } else {
-        const errText = await res.text();
-        alert("Failed to create album: " + errText);
+        // Create mode (POST)
+        const res = await authenticatedFetch("/api/photos/albums", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: newAlbumTitle.trim(),
+            description: newAlbumDesc.trim(),
+            category: newAlbumCategory
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAlbums((prev) => [data.album, ...prev]);
+          setIsCreateAlbumOpen(false);
+          setNewAlbumTitle("");
+          setNewAlbumDesc("");
+        } else {
+          const errText = await res.text();
+          alert("Failed to create album: " + errText);
+        }
       }
     } catch (err: any) {
-      alert("Error creating album: " + err.message);
+      alert("Error saving album: " + err.message);
     } finally {
       setIsCreatingAlbum(false);
     }
+  };
+
+  const handleOpenEditAlbum = (album: PhotoAlbum) => {
+    setEditingAlbum(album);
+    setNewAlbumTitle(album.title);
+    setNewAlbumDesc(album.description || "");
+    setNewAlbumCategory(album.category);
+    setIsCreateAlbumOpen(true);
   };
 
   const handleDeleteAlbum = async (albumId: string) => {
@@ -1047,7 +1082,13 @@ export default function DashboardPhotosPage() {
           {canEdit && (
             <div className="flex justify-end">
               <button
-                onClick={() => setIsCreateAlbumOpen(true)}
+                onClick={() => {
+                  setEditingAlbum(null);
+                  setNewAlbumTitle("");
+                  setNewAlbumDesc("");
+                  setNewAlbumCategory("Robot Specs");
+                  setIsCreateAlbumOpen(true);
+                }}
                 className="py-2 px-5 bg-ares-red hover:bg-ares-red-dark text-white font-black text-xs uppercase tracking-wider ares-cut transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-98"
               >
                 <Plus size={14} /> Create New Album
@@ -1123,12 +1164,20 @@ export default function DashboardPhotosPage() {
                       </button>
 
                       {canEdit && (
-                        <button
-                          onClick={() => handleDeleteAlbum(album.id)}
-                          className="text-ares-red/70 hover:text-ares-red flex items-center gap-1 cursor-pointer"
-                        >
-                          <Trash2 size={11} /> Delete
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleOpenEditAlbum(album)}
+                            className="text-ares-gold/70 hover:text-ares-gold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Settings size={11} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAlbum(album.id)}
+                            className="text-ares-red/70 hover:text-ares-red flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Trash2 size={11} /> Delete
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1144,7 +1193,7 @@ export default function DashboardPhotosPage() {
               <div className="glass-card w-full max-w-md border border-white/10 p-6 relative z-10 space-y-6 bg-obsidian">
                 <div className="flex justify-between items-center border-b border-white/5 pb-3">
                   <h3 className="text-lg font-black text-white uppercase tracking-tight font-heading">
-                    Create New Album
+                    {editingAlbum ? "Edit Album Details" : "Create New Album"}
                   </h3>
                   <button onClick={() => setIsCreateAlbumOpen(false)} className="text-marble/55 hover:text-white cursor-pointer">
                     <X size={16} />
@@ -1203,7 +1252,7 @@ export default function DashboardPhotosPage() {
                       disabled={isCreatingAlbum}
                       className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white rounded font-black text-[10px] uppercase tracking-wider ares-cut-sm cursor-pointer shadow disabled:opacity-50"
                     >
-                      {isCreatingAlbum ? "Saving..." : "Create Album"}
+                      {isCreatingAlbum ? "Saving..." : editingAlbum ? "Save Changes" : "Create Album"}
                     </button>
                   </div>
                 </form>
