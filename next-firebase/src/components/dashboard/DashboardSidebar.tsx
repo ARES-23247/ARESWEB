@@ -5,20 +5,22 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
 
 interface NavButtonProps {
   tab: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
   currentPath: string;
+  hasAlert?: boolean;
 }
 
 const NavButton: React.FC<NavButtonProps> = ({
   tab,
   icon: Icon,
   label,
-  currentPath
+  currentPath,
+  hasAlert
 }) => {
   const targetPath = tab === "" ? "/dashboard" : `/dashboard/${tab}`;
   const isActive = currentPath === targetPath;
@@ -26,7 +28,7 @@ const NavButton: React.FC<NavButtonProps> = ({
   return (
     <Link
       to={targetPath}
-      className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
+      className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border relative ${
         isActive
           ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
           : "text-marble hover:bg-white/5 hover:text-white border-transparent"
@@ -36,6 +38,12 @@ const NavButton: React.FC<NavButtonProps> = ({
         <Icon size={16} className={isActive ? "text-white animate-pulse" : "text-marble/55"} />
         <span className="truncate">{label}</span>
       </div>
+      {hasAlert && (
+        <span className="flex h-2.5 w-2.5 shrink-0 relative mr-1">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
+        </span>
+      )}
     </Link>
   );
 };
@@ -45,6 +53,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const { user, authorizedUser, logout } = useAuth();
   const [profileAvatar, setProfileAvatar] = useState<string>("");
   const [profileNickname, setProfileNickname] = useState<string>("");
+  const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean>(false);
+
+  const userRole = authorizedUser?.role || "Pending Verification";
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -67,7 +78,26 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
     return () => unsubscribe();
   }, [user?.uid]);
 
-  const userRole = authorizedUser?.role || "Pending Verification";
+  useEffect(() => {
+    if (!user?.uid || (userRole !== "admin" && userRole !== "coach" && userRole !== "mentor")) {
+      setHasPendingInquiries(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "inquiries"),
+      where("status", "==", "pending")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setHasPendingInquiries(!snapshot.empty);
+    }, (error) => {
+      console.error("Error subscribing to pending inquiries in sidebar:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid, userRole]);
+
   const userImage = profileAvatar || user?.photoURL;
   const displayName = profileNickname || user?.displayName || "ARES Member";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
@@ -84,6 +114,12 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               alt=""
               className="w-full h-full object-cover"
             />
+            {hasPendingInquiries && (
+              <span className="absolute top-0 right-0 flex h-2.5 w-2.5 z-10">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
+              </span>
+            )}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-white text-sm font-bold truncate tracking-tight">
@@ -138,7 +174,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             <NavButton tab="photos" icon={Settings} label="Google Sync" currentPath={pathname} />
             {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
-              <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} />
+              <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} hasAlert={hasPendingInquiries} />
             )}
             
             <div className="h-px bg-white/5 mx-2 my-2" />

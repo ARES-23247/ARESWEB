@@ -26,16 +26,39 @@ import {
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
 import { maskEmail } from "@/lib/utils";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean>(false);
   const navbarRef = useRef<HTMLDivElement>(null);
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
 
   const isSignedIn = !!user;
   const userImage = user?.photoURL;
   const userRole = authorizedUser?.role || "Pending Verification";
+
+  useEffect(() => {
+    if (!user?.uid || (userRole !== "admin" && userRole !== "coach" && userRole !== "mentor")) {
+      setHasPendingInquiries(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "inquiries"),
+      where("status", "==", "pending")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setHasPendingInquiries(!snapshot.empty);
+    }, (error) => {
+      console.error("Error subscribing to pending inquiries in navbar:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid, userRole]);
 
   // Close dropdowns when clicking outside navbar
   useEffect(() => {
@@ -195,6 +218,12 @@ export default function Navbar() {
                     className="w-6 h-6 rounded-full bg-black/40 border border-ares-bronze/40"
                   />
                   <span className="text-xs font-bold text-white uppercase tracking-wider hidden sm:inline">Portal</span>
+                  {hasPendingInquiries && (
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-10">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
+                    </span>
+                  )}
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-48 bg-obsidian border border-ares-bronze/20 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-2">
                   <div className="px-3 py-2 border-b border-white/5">
@@ -203,9 +232,17 @@ export default function Navbar() {
                   </div>
                   <Link
                     to="/dashboard"
-                    className="w-full text-left block mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
+                    className="w-full text-left mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center justify-between gap-2"
                   >
-                    <LayoutDashboard size={12} /> Command Center
+                    <div className="flex items-center gap-2">
+                      <LayoutDashboard size={12} /> Command Center
+                    </div>
+                    {hasPendingInquiries && (
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-red"></span>
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/dashboard/profile"
@@ -332,9 +369,15 @@ export default function Navbar() {
               <Link
                 to="/dashboard"
                 onClick={() => setOpen(false)}
-                className="w-full mt-2 text-center py-2 text-xs text-white bg-white/5 hover:bg-white/10 rounded transition-colors font-bold uppercase tracking-wider border border-white/10 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full mt-2 text-center py-2 text-xs text-white bg-white/5 hover:bg-white/10 rounded transition-colors font-bold uppercase tracking-wider border border-white/10 flex items-center justify-center gap-2 cursor-pointer relative"
               >
                 <LayoutDashboard size={12} className="text-ares-gold" /> Command Center
+                {hasPendingInquiries && (
+                  <span className="absolute top-2 right-4 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-red"></span>
+                  </span>
+                )}
               </Link>
               <button
                 onClick={() => {
