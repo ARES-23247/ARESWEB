@@ -5,6 +5,7 @@ import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAuth, ensureAdmin } from "../middleware/auth";
 import { encrypt } from "../lib/crypto";
+import { generatePhotoCaptionAndLabels } from "../lib/vertex";
 
 const router = express.Router();
 const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
@@ -353,7 +354,7 @@ router.post("/auth/init", ensureAdmin, async (req, res) => {
     googleAuthUrl.searchParams.set("client_id", clientId);
     googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
     googleAuthUrl.searchParams.set("response_type", "code");
-    googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly");
+    googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly https://www.googleapis.com/auth/photoslibrary.appendonly https://www.googleapis.com/auth/photoslibrary.readonly");
     googleAuthUrl.searchParams.set("access_type", "offline");
     googleAuthUrl.searchParams.set("prompt", "consent");
     googleAuthUrl.searchParams.set("state", state);
@@ -638,6 +639,340 @@ router.delete("/picker/:sessionId", ensureAdmin, async (req, res) => {
 
     res.json({ success: true });
   } catch (error: any) {
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// POST /api/photos/upload-unified
+// Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
+router.post("/upload-unified", ensureAdmin, async (req, res) => {
+  try {
+    const { fileBase64, filename, mimeType, albumId, uploadToGoogle, runAiLabeling } = req.body as {
+      fileBase64: string;
+      filename: string;
+      mimeType: string;
+      albumId?: string | null;
+      uploadToGoogle?: boolean;
+      runAiLabeling?: boolean;
+    };
+
+    if (!fileBase64 || !filename || !mimeType) {
+      res.status(400).json({ error: "Missing required fields: fileBase64, filename, mimeType" });
+      return;
+    }
+
+    const buffer = Buffer.from(fileBase64, "base64");
+
+    // Validate image magic bytes
+    const validation = validateImageMagicBytes(
+      buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+    );
+    if (!validation.valid) {
+      res.status(400).json({ error: validation.error || "File did not pass magic bytes verification." });
+      return;
+    }
+
+    // Save to Firebase Storage
+    const dateStr = new Date().toISOString().split("T")[0];
+    const sanitizedFilename = filename.toLowerCase().replace(/[^a-z0-9.]/g, "-");
+    const docId = `photo-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`;
+    const storageKey = `gallery/uploads/${dateStr}/${docId}-${sanitizedFilename}`;
+    const bucket = adminStorage.bucket();
+    const storageFile = bucket.file(storageKey);
+
+    await storageFile.save(buffer, {
+      metadata: {
+        contentType: mimeType,
+        metadata: {
+          importedBy: "ARES Unified Uploader",
+        },
+      },
+      resumable: false,
+    });
+
+    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storageKey)}?alt=media`;
+
+    // AI auto-labeling and caption
+    let caption = "";
+    let labels: string[] = [];
+    if (runAiLabeling) {
+      try {
+        const aiResult = await generatePhotoCaptionAndLabels(buffer, mimeType);
+        caption = aiResult.caption;
+        labels = aiResult.labels;
+      } catch (aiErr: any) {
+        console.warn("[Photo Upload AI Error]:", aiErr);
+      }
+    }
+
+    // Optional Google Photos upload
+    let googleMediaItemId: string | null = null;
+    if (uploadToGoogle) {
+      try {
+        const googleToken = await getGooglePhotosAccessToken();
+        
+        // 1. Upload raw bytes
+        const uploadRes = await fetch("https://photoslibrary.googleapis.com/v1/uploads", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${googleToken}`,
+            "Content-Type": "application/octet-stream",
+            "X-Goog-Upload-File-Name": filename,
+            "X-Goog-Upload-Protocol": "raw"
+          },
+          body: buffer
+        });
+
+        if (!uploadRes.ok) {
+          const errorText = await uploadRes.text();
+          throw new Error(`Google upload failed: ${uploadRes.status} ${errorText}`);
+        }
+
+        const uploadToken = await uploadRes.text();
+
+        // 2. Register media item in Google Photos library
+        const batchCreateBody: any = {
+          newMediaItems: [
+            {
+              description: caption || "Uploaded via ARES Portal",
+              simpleMediaItem: {
+                uploadToken,
+                fileName: filename
+              }
+            }
+          ]
+        };
+
+        const batchRes = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${googleToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(batchCreateBody)
+        });
+
+        if (!batchRes.ok) {
+          const errorText = await batchRes.text();
+          throw new Error(`Google batch create failed: ${batchRes.status} ${errorText}`);
+        }
+
+        const batchData = await batchRes.json();
+        const creationResult = batchData.newMediaItemResults?.[0];
+        if (creationResult?.status?.message && creationResult.status.message !== "Success") {
+          throw new Error(`Google creation status not success: ${creationResult.status.message}`);
+        }
+        googleMediaItemId = creationResult?.mediaItem?.id || null;
+      } catch (gErr: any) {
+        console.warn("[Google Photos Sync Upload Error]:", gErr.message || gErr);
+      }
+    }
+
+    // Save metadata in Firestore imported_photos
+    const photoMeta = {
+      id: docId,
+      storagePath: storageKey,
+      publicUrl,
+      originalFilename: filename,
+      mimeType,
+      fileSize: buffer.byteLength,
+      importedAt: new Date().toISOString(),
+      albumId: albumId || null,
+      caption,
+      labels,
+      googleMediaItemId
+    };
+
+    await adminDb.collection("imported_photos").doc(docId).set(photoMeta);
+
+    // If album is specified, link and increment count
+    if (albumId) {
+      const albumRef = adminDb.collection("albums").doc(albumId);
+      const albumSnap = await albumRef.get();
+      if (albumSnap.exists) {
+        const currentCount = albumSnap.data()?.mediaCount ?? 0;
+        await albumRef.update({
+          mediaCount: currentCount + 1,
+          updatedAt: new Date().toISOString()
+        });
+      }
+      
+      // Save inside album's photos subcollection for compatibility
+      await albumRef.collection("photos").doc(docId).set(photoMeta);
+    }
+
+    res.json({ success: true, photo: photoMeta });
+  } catch (error: any) {
+    console.error("[Upload Unified Error]:", error);
+    res.status(500).json({ error: error.message || "Internal server error." });
+  }
+});
+
+// DELETE /api/photos/:photoId
+router.delete("/:photoId", ensureAdmin, async (req, res) => {
+  try {
+    const { photoId } = req.params;
+    const photoRef = adminDb.collection("imported_photos").doc(photoId);
+    const photoSnap = await photoRef.get();
+
+    if (!photoSnap.exists) {
+      res.status(404).json({ error: "Photo not found." });
+      return;
+    }
+
+    const photoData = photoSnap.data();
+    const storagePath = photoData?.storagePath;
+    const albumId = photoData?.albumId;
+
+    // 1. Delete from Firebase Storage
+    if (storagePath) {
+      try {
+        const bucket = adminStorage.bucket();
+        await bucket.file(storagePath).delete();
+      } catch (storageErr: any) {
+        console.warn("[Photo Delete] Storage file delete failed or didn't exist:", storageErr.message);
+      }
+    }
+
+    // 2. If part of an album, decrement count and delete from subcollection
+    if (albumId) {
+      try {
+        const albumRef = adminDb.collection("albums").doc(albumId);
+        const albumSnap = await albumRef.get();
+        if (albumSnap.exists) {
+          const currentCount = albumSnap.data()?.mediaCount ?? 0;
+          await albumRef.update({
+            mediaCount: Math.max(0, currentCount - 1),
+            updatedAt: new Date().toISOString()
+          });
+        }
+        await albumRef.collection("photos").doc(photoId).delete();
+      } catch (albumErr: any) {
+        console.warn("[Photo Delete] Failed to update album metadata:", albumErr.message);
+      }
+    }
+
+    // 3. Delete from Firestore imported_photos
+    await photoRef.delete();
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("[Delete Photo Error]:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// DELETE /api/photos/albums/:albumId
+router.delete("/albums/:albumId", ensureAdmin, async (req, res) => {
+  try {
+    const { albumId } = req.params;
+    const albumRef = adminDb.collection("albums").doc(albumId);
+    const albumSnap = await albumRef.get();
+
+    if (!albumSnap.exists) {
+      res.status(404).json({ error: "Album not found." });
+      return;
+    }
+
+    // 1. Unassign all photos associated with this album
+    const photosSnap = await adminDb
+      .collection("imported_photos")
+      .where("albumId", "==", albumId)
+      .get();
+
+    if (!photosSnap.empty) {
+      const batch = adminDb.batch();
+      photosSnap.docs.forEach((doc) => {
+        batch.update(doc.ref, { albumId: null });
+      });
+      await batch.commit();
+    }
+
+    // 2. Delete album from Firestore
+    await albumRef.delete();
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("[Delete Album Error]:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// POST /api/photos/albums/:albumId/add-photos
+// Associate a list of photo IDs with an album
+router.post("/albums/:albumId/add-photos", ensureAdmin, async (req, res) => {
+  try {
+    const { albumId } = req.params;
+    const { photoIds } = req.body as { photoIds: string[] };
+
+    if (!photoIds || !Array.isArray(photoIds) || photoIds.length === 0) {
+      res.status(400).json({ error: "Missing or invalid 'photoIds' array." });
+      return;
+    }
+
+    const albumRef = adminDb.collection("albums").doc(albumId);
+    const albumSnap = await albumRef.get();
+
+    if (!albumSnap.exists) {
+      res.status(404).json({ error: "Album not found." });
+      return;
+    }
+
+    let updatedCount = 0;
+    const batch = adminDb.batch();
+
+    for (const photoId of photoIds) {
+      const photoRef = adminDb.collection("imported_photos").doc(photoId);
+      const photoSnap = await photoRef.get();
+
+      if (photoSnap.exists) {
+        const photoData = photoSnap.data();
+        const oldAlbumId = photoData?.albumId;
+
+        if (oldAlbumId !== albumId) {
+          // Decrement count in old album
+          if (oldAlbumId) {
+            try {
+              const oldAlbumRef = adminDb.collection("albums").doc(oldAlbumId);
+              const oldAlbumSnap = await oldAlbumRef.get();
+              if (oldAlbumSnap.exists) {
+                const currentCount = oldAlbumSnap.data()?.mediaCount ?? 0;
+                await oldAlbumRef.update({
+                  mediaCount: Math.max(0, currentCount - 1),
+                  updatedAt: new Date().toISOString()
+                });
+              }
+              await oldAlbumRef.collection("photos").doc(photoId).delete();
+            } catch (err) {
+              console.warn(`[Add-Photos] Failed to decrement count for old album ${oldAlbumId}:`, err);
+            }
+          }
+
+          // Update photo doc
+          batch.update(photoRef, { albumId });
+
+          // Copy to new album's photos subcollection
+          const newAlbumPhotoRef = albumRef.collection("photos").doc(photoId);
+          batch.set(newAlbumPhotoRef, { ...photoData, albumId });
+
+          updatedCount++;
+        }
+      }
+    }
+
+    if (updatedCount > 0) {
+      await batch.commit();
+      
+      const currentCount = albumSnap.data()?.mediaCount ?? 0;
+      await albumRef.update({
+        mediaCount: currentCount + updatedCount,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    res.json({ success: true, addedCount: updatedCount });
+  } catch (error: any) {
+    console.error("[Add Photos to Album Error]:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 });

@@ -293,3 +293,59 @@ Always use professional technical language, preserve Markdown formatting, and ad
     return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
   }
 }
+
+/**
+ * Uses Gemini to automatically label and generate a caption for an uploaded photo.
+ */
+export async function generatePhotoCaptionAndLabels(imageBuffer: Buffer, mimeType: string): Promise<{ caption: string; labels: string[] }> {
+  const systemPrompt = `You are an AI photo assistant for FIRST® Robotics Team ARES 23247.
+Analyze the provided image and generate:
+1. A concise, descriptive, action-oriented caption (1-2 sentences).
+2. A list of 4-8 descriptive tags/labels (e.g. "robot", "intake", "chassis", "competition", "outreach", "drivetrain", "coding").
+
+Your output must be a valid JSON object matching this schema:
+{
+  "caption": string,
+  "labels": string[]
+}
+Do not wrap the JSON response in any markdown code blocks.`;
+
+  try {
+    if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
+      throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
+    }
+
+    const response = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: systemPrompt },
+            {
+              inlineData: {
+                data: imageBuffer.toString("base64"),
+                mimeType: mimeType
+              }
+            }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const resultText = response.text || "";
+    if (!resultText) throw new Error("Empty response from Gemini.");
+    
+    return JSON.parse(resultText) as { caption: string; labels: string[] };
+  } catch (err) {
+    console.warn(`[Vertex AI] Photo analysis failed: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    return {
+      caption: "ARES robotics team members working on robot assemblies.",
+      labels: ["robot", "ares-team", "workshop"]
+    };
+  }
+}
+
