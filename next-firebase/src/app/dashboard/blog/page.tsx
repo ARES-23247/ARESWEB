@@ -39,6 +39,7 @@ interface BlogPost {
   isDeleted: number;
   authorUid?: string;
   authorAvatar?: string;
+  authorUids?: string[];
 }
 
 interface Revision {
@@ -109,6 +110,11 @@ export default function BlogManagementPage() {
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
 
+  // Team Roster & Multi-Author States
+  const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string; }[]>([]);
+  const [selectedAuthorUids, setSelectedAuthorUids] = useState<string[]>([]);
+  const [isAuthorDropdownOpen, setIsAuthorDropdownOpen] = useState(false);
+
   // AI Copilot States
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
@@ -117,6 +123,22 @@ export default function BlogManagementPage() {
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
 
   const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+
+  // Fetch team roster for author selection
+  useEffect(() => {
+    const fetchRoster = async () => {
+      try {
+        const res = await authenticatedFetch("/api/profiles/team-roster");
+        if (res.ok) {
+          const data = await res.json();
+          setTeamMembers(data.members || []);
+        }
+      } catch (err) {
+        console.error("Failed to load team roster:", err);
+      }
+    };
+    fetchRoster();
+  }, []);
 
   // Fetch full user profile for avatar and nickname
   useEffect(() => {
@@ -167,7 +189,8 @@ export default function BlogManagementPage() {
                 status: data.status || "draft",
                 isDeleted: data.isDeleted || 0,
                 authorUid: data.authorUid || "",
-                authorAvatar: data.authorAvatar || ""
+                authorAvatar: data.authorAvatar || "",
+                authorUids: data.authorUids || []
               } as BlogPost;
             })
             .filter((p) => p.isDeleted === 0);
@@ -233,6 +256,8 @@ export default function BlogManagementPage() {
     setFormSnippet("");
     setFormContent("");
     setFormAuthor(userNickname || "ARES Member");
+    setSelectedAuthorUids(user ? [user.uid] : []);
+    setIsAuthorDropdownOpen(false);
     setFormThumbnail("");
     setFormStatus("draft");
     setRevisions([]);
@@ -251,6 +276,17 @@ export default function BlogManagementPage() {
     setFormSnippet(post.snippet);
     setFormContent(post.content);
     setFormAuthor(post.author);
+    if (post.authorUids && post.authorUids.length > 0) {
+      setSelectedAuthorUids(post.authorUids);
+    } else if (post.authorUid) {
+      setSelectedAuthorUids([post.authorUid]);
+    } else {
+      const matchingMember = teamMembers.find(
+        (m) => m.nickname.toLowerCase() === post.author.toLowerCase()
+      );
+      setSelectedAuthorUids(matchingMember ? [matchingMember.uid] : []);
+    }
+    setIsAuthorDropdownOpen(false);
     setFormThumbnail(post.thumbnail);
     setFormStatus(post.status);
     setRevisions([]);
@@ -268,6 +304,35 @@ export default function BlogManagementPage() {
     if (!canEdit) return;
 
     const targetSlug = formSlug.trim();
+    const currentEditorId = user?.uid;
+    const uidsToSave = [...selectedAuthorUids];
+    if (currentEditorId && !uidsToSave.includes(currentEditorId)) {
+      uidsToSave.push(currentEditorId);
+    }
+
+    const namesToSave = uidsToSave.map((uid) => {
+      const match = teamMembers.find((m) => m.uid === uid);
+      if (match) return match.nickname;
+      if (uid === user?.uid) {
+        return userNickname || authorizedUser?.name || user?.displayName || "ARES Member";
+      }
+      return "ARES Member";
+    });
+    const finalAuthorString = Array.from(new Set(namesToSave)).filter(Boolean).join(", ") || "ARES Member";
+
+    let finalAvatar = "";
+    if (uidsToSave.length > 0) {
+      const firstAuthor = teamMembers.find((m) => m.uid === uidsToSave[0]);
+      if (firstAuthor) {
+        finalAvatar = firstAuthor.avatar;
+      } else if (uidsToSave[0] === user?.uid) {
+        finalAvatar = userProfile?.avatar || user?.photoURL || "";
+      }
+    }
+    if (!finalAvatar) {
+      finalAvatar = userProfile?.avatar || user?.photoURL || "";
+    }
+
     const currentAvatar = userProfile?.avatar || user?.photoURL || "";
     const currentAuthorName = userNickname || authorizedUser?.name || user?.displayName || formAuthor || "ARES Member";
 
@@ -276,13 +341,14 @@ export default function BlogManagementPage() {
       title: formTitle.trim(),
       snippet: formSnippet.trim(),
       content: formContent,
-      author: currentAuthorName,
+      author: finalAuthorString,
       date: new Date().toISOString().split("T")[0],
       thumbnail: formThumbnail.trim(),
       status: formStatus,
       isDeleted: 0,
-      authorUid: user?.uid || "",
-      authorAvatar: currentAvatar
+      authorUid: uidsToSave[0] || user?.uid || "",
+      authorAvatar: finalAvatar,
+      authorUids: uidsToSave
     };
 
     try {
@@ -397,6 +463,16 @@ export default function BlogManagementPage() {
       p.snippet.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.author.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Ensure the logged-in user is always present in the displayed checklist
+  const displayedMembers = [...teamMembers];
+  if (user && !displayedMembers.some((m) => m.uid === user.uid)) {
+    displayedMembers.unshift({
+      uid: user.uid,
+      nickname: userNickname || authorizedUser?.name || user.displayName || "ARES Member",
+      avatar: userProfile?.avatar || user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`
+    });
+  }
 
   return (
     <div className="space-y-10 w-full text-left">
@@ -732,16 +808,73 @@ export default function BlogManagementPage() {
                         )}
                       </div>
 
-                      <div>
-                        <label htmlFor="blog-author" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Author Name</label>
-                        <input
-                          id="blog-author"
-                          type="text"
-                          value={formAuthor}
-                          onChange={(e) => setFormAuthor(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-colors"
-                          required
-                        />
+                      <div className="relative">
+                        <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Author(s)</label>
+                        <button
+                          type="button"
+                          onClick={() => setIsAuthorDropdownOpen(!isAuthorDropdownOpen)}
+                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-red focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian transition-all cursor-pointer text-left h-10"
+                        >
+                          <span className="truncate">
+                            {selectedAuthorUids.length === 0
+                              ? "Select Author(s)..."
+                              : selectedAuthorUids
+                                  .map((uid) => displayedMembers.find((m) => m.uid === uid)?.nickname || "Unknown")
+                                  .filter(Boolean)
+                                  .join(", ")}
+                          </span>
+                          <span className="text-marble/40 ml-2 select-none">▼</span>
+                        </button>
+
+                        {isAuthorDropdownOpen && (
+                          <>
+                            {/* Backdrop to close dropdown */}
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setIsAuthorDropdownOpen(false)}
+                            />
+                            <div className="absolute left-0 right-0 mt-1.5 bg-obsidian border border-white/15 rounded-lg shadow-2xl max-h-56 overflow-y-auto z-20 p-2 space-y-1 scrollbar-thin scrollbar-thumb-white/5">
+                              {displayedMembers.map((member) => {
+                                const isChecked = selectedAuthorUids.includes(member.uid);
+                                return (
+                                  <label
+                                    key={member.uid}
+                                    className="flex items-center gap-2.5 px-2.5 py-1.5 hover:bg-white/5 rounded-md cursor-pointer transition-colors text-xs text-marble/90 hover:text-white select-none"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setSelectedAuthorUids(selectedAuthorUids.filter((id) => id !== member.uid));
+                                        } else {
+                                          setSelectedAuthorUids([...selectedAuthorUids, member.uid]);
+                                        }
+                                      }}
+                                      className="rounded border-white/10 text-ares-red focus:ring-ares-red bg-black/40 cursor-pointer w-4 h-4"
+                                    />
+                                    <img
+                                      src={member.avatar}
+                                      alt=""
+                                      className="w-5 h-5 rounded-full object-cover border border-white/5"
+                                    />
+                                    <span className="font-semibold">{member.nickname}</span>
+                                    {member.uid === user?.uid && (
+                                      <span className="text-[8px] uppercase tracking-wider font-extrabold text-ares-gold bg-ares-gold/15 px-1.5 py-0.5 rounded border border-ares-gold/25 ml-auto">
+                                        You
+                                      </span>
+                                    )}
+                                  </label>
+                                );
+                              })}
+                              {displayedMembers.length === 0 && (
+                                <div className="text-center py-4 text-[10px] text-marble/40 uppercase tracking-wider">
+                                  No members found
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
