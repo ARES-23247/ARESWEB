@@ -106,16 +106,14 @@ export default function BlogFeedPage() {
                 className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
-                  {post.thumbnail && (
-                    <div className="relative h-56 w-full overflow-hidden">
-                      <img
-                        src={cleanThumbnailUrl(post.thumbnail)}
-                        alt={post.title}
-                        className="w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                    </div>
-                  )}
+                  <div className="relative h-56 w-full overflow-hidden bg-black/30 flex items-center justify-center border-b border-white/5">
+                    <img
+                      src={cleanThumbnailUrl(post.thumbnail || "/favicon.png")}
+                      alt={post.title}
+                      className={post.thumbnail ? "w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover" : "w-16 h-16 object-contain opacity-30 group-hover:scale-110 transition-transform duration-500 m-auto"}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  </div>
                   <div className="p-6 flex-grow flex flex-col justify-between">
                     <div>
                       <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red transition-colors">

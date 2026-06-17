@@ -145,13 +145,11 @@ export default function BlogPostPage() {
     <div className="w-full min-h-screen bg-obsidian text-marble">
       {/* ─── STANDALONE BLOG HERO ─── */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
-        {post.thumbnail && (
-          <img
-            src={cleanThumbnailUrl(post.thumbnail)}
-            alt={post.title}
-            className="absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity object-cover"
-          />
-        )}
+        <img
+          src={cleanThumbnailUrl(post.thumbnail || "/favicon.png")}
+          alt={post.title}
+          className={post.thumbnail ? "absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity object-cover" : "absolute inset-0 m-auto w-32 h-32 opacity-25 mix-blend-luminosity object-contain"}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
         
         {/* Motif: Glowing orb overlay */}

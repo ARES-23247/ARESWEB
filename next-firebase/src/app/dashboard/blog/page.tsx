@@ -552,26 +552,24 @@ export default function BlogManagementPage() {
               key={post.slug}
               className="glass-card hero-card flex flex-col justify-between overflow-hidden border border-white/10 group"
             >
-              {post.thumbnail && (
-                <div className="relative h-44 w-full overflow-hidden bg-black/40 border-b border-white/5">
-                  <img
-                    src={cleanThumbnailUrl(post.thumbnail)}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    <span
-                      className={`text-[8px] font-black uppercase px-2 py-1 border rounded shadow ${
-                        post.status === "published"
-                          ? "bg-ares-success/25 border-ares-success/40 text-ares-success"
-                          : "bg-ares-gold/25 border-ares-gold/40 text-ares-gold animate-pulse"
-                      }`}
-                    >
-                      {post.status}
-                    </span>
-                  </div>
+              <div className="relative h-44 w-full overflow-hidden bg-black/40 border-b border-white/5 flex items-center justify-center">
+                <img
+                  src={cleanThumbnailUrl(post.thumbnail || "/favicon.png")}
+                  alt={post.title}
+                  className={post.thumbnail ? "w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" : "w-12 h-12 object-contain opacity-25 group-hover:scale-110 transition-transform duration-300 m-auto"}
+                />
+                <div className="absolute top-3 right-3 flex gap-2">
+                  <span
+                    className={`text-[8px] font-black uppercase px-2 py-1 border rounded shadow ${
+                      post.status === "published"
+                        ? "bg-ares-success/25 border-ares-success/40 text-ares-success"
+                        : "bg-ares-gold/25 border-ares-gold/40 text-ares-gold animate-pulse"
+                    }`}
+                  >
+                    {post.status}
+                  </span>
                 </div>
-              )}
+              </div>
               
               <div className="p-5 flex-grow flex flex-col justify-between">
                 <div>

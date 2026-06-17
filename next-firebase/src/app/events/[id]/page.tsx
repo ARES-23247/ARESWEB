@@ -385,15 +385,11 @@ export default function EventDetailPage() {
       <section className="relative w-full h-[45vh] min-h-[350px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
         <GreekMeander variant="thick" opacity="opacity-50" className="absolute bottom-[-1px] left-0 z-10" />
         
-        {event.coverImage ? (
-          <img
-            src={event.coverImage}
-            alt={event.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-ares-red/10 to-obsidian opacity-80" />
-        )}
+        <img
+          src={event.coverImage || "/favicon.png"}
+          alt={event.title}
+          className={event.coverImage ? "absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity" : "absolute inset-0 m-auto w-32 h-32 opacity-25 mix-blend-luminosity object-contain"}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/60 to-transparent"></div>
         
         <div className="relative z-10 max-w-5xl mx-auto px-6 w-full mt-16">
