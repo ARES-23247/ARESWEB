@@ -23,11 +23,134 @@ export default function WebGLReplayCanvas() {
     fieldElements,
     fieldElementTypes,
     fieldCadUrl,
-    fieldBgImageUrl
+    fieldBgImageUrl,
+    ntClient
   } = useScopeStore();
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [showFov, setShowFov] = useState<boolean>(true);
   const [parentDimensions, setParentDimensions] = useState({ width: 360, height: 360 });
+
+  const currentFrame = getCurrentFrame();
+
+  // --- WEB KEYBOARD CONTROLLER FOR SIMULATOR ---
+  const pressedKeys = useRef<Set<string>>(new Set());
+  const currentFrameRef = useRef(currentFrame);
+
+  useEffect(() => {
+    currentFrameRef.current = currentFrame;
+  }, [currentFrame]);
+
+  useEffect(() => {
+    if (!ntClient) return;
+
+    const publishKeyboardSpeeds = () => {
+      const MAX_LINEAR_SPEED = 4.0;
+      const MAX_ANGULAR_SPEED = 4.0;
+
+      let vx = 0;
+      let vy = 0;
+      let omega = 0;
+
+      if (pressedKeys.current.has("w")) vx += MAX_LINEAR_SPEED;
+      if (pressedKeys.current.has("s")) vx -= MAX_LINEAR_SPEED;
+      if (pressedKeys.current.has("a")) vy += MAX_LINEAR_SPEED;
+      if (pressedKeys.current.has("d")) vy -= MAX_LINEAR_SPEED;
+      if (pressedKeys.current.has("q")) omega += MAX_ANGULAR_SPEED;
+      if (pressedKeys.current.has("e")) omega -= MAX_ANGULAR_SPEED;
+
+      ntClient.publishValue("ARES/Input/vx", vx, "double");
+      ntClient.publishValue("ARES/Input/vy", vy, "double");
+      ntClient.publishValue("ARES/Input/omega", omega, "double");
+    };
+
+    const handleWebKeyDown = (e: KeyboardEvent) => {
+      // Ignore keyboard if typing in form inputs/textareas
+      const isTyping = document.activeElement && (
+        document.activeElement.tagName === "INPUT" ||
+        document.activeElement.tagName === "TEXTAREA" ||
+        document.activeElement.getAttribute("contenteditable") === "true"
+      );
+      if (isTyping) return;
+
+      const key = e.key.toLowerCase();
+
+      // Movement keys
+      if (["w", "s", "a", "d", "q", "e"].includes(key)) {
+        if (pressedKeys.current.has(key)) return; // prevent key repeat spam
+        pressedKeys.current.add(key);
+        e.preventDefault();
+        publishKeyboardSpeeds();
+        return;
+      }
+
+      // Toggles check current frame values
+      const getVal = (topic: string, def: boolean) => {
+        const frame = currentFrameRef.current;
+        if (!frame || !frame.values) return def;
+        const val = frame.values[topic];
+        return val !== undefined ? val === 1 : def;
+      };
+
+      if (e.key === " ") {
+        const currentTeleop = getVal("AdvantageKit/RealOutputs/Drive/TeleopMode", true);
+        ntClient.publishValue("ARES/Input/isTeleopMode", !currentTeleop, "boolean");
+        e.preventDefault();
+      } else if (key === "c") {
+        const currentFC = getVal("AdvantageKit/RealOutputs/Drive/FieldCentric", false);
+        ntClient.publishValue("ARES/Input/isFieldCentric", !currentFC, "boolean");
+        e.preventDefault();
+      } else if (key === "r") {
+        const currentRed = getVal("AdvantageKit/RealOutputs/Drive/RedAlliance", false);
+        ntClient.publishValue("ARES/Input/isRedAlliance", !currentRed, "boolean");
+        e.preventDefault();
+      } else if (e.key === "Shift") {
+        const currentIntake = getVal("AdvantageKit/RealOutputs/Superstructure/IntakeActive", false);
+        ntClient.publishValue("ARES/Input/isIntaking", !currentIntake, "boolean");
+        e.preventDefault();
+      } else if (key === "f") {
+        const currentFlywheel = getVal("AdvantageKit/RealOutputs/Superstructure/FlywheelActive", false);
+        ntClient.publishValue("ARES/Input/isFlywheelOn", !currentFlywheel, "boolean");
+        e.preventDefault();
+      } else if (e.key === "Enter") {
+        ntClient.publishValue("ARES/Input/isTransferring", true, "boolean");
+        e.preventDefault();
+      }
+    };
+
+    const handleWebKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (["w", "s", "a", "d", "q", "e"].includes(key)) {
+        pressedKeys.current.delete(key);
+        publishKeyboardSpeeds();
+      } else if (e.key === "Enter") {
+        ntClient.publishValue("ARES/Input/isTransferring", false, "boolean");
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (pressedKeys.current.size > 0) {
+        pressedKeys.current.clear();
+        publishKeyboardSpeeds();
+      }
+      ntClient.publishValue("ARES/Input/isTransferring", false, "boolean");
+    };
+
+    window.addEventListener("keydown", handleWebKeyDown);
+    window.addEventListener("keyup", handleWebKeyUp);
+    window.addEventListener("blur", handleWindowBlur);
+
+    // Also publish a heartbeat interval to keep the daemon refreshed
+    const interval = setInterval(() => {
+      publishKeyboardSpeeds();
+    }, 100);
+
+    return () => {
+      window.removeEventListener("keydown", handleWebKeyDown);
+      window.removeEventListener("keyup", handleWebKeyUp);
+      window.removeEventListener("blur", handleWindowBlur);
+      clearInterval(interval);
+    };
+  }, [ntClient]);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
@@ -134,8 +257,6 @@ export default function WebGLReplayCanvas() {
   const moduleRFRef = useRef<THREE.Group | null>(null);
   const moduleBLRef = useRef<THREE.Group | null>(null);
   const moduleBRRef = useRef<THREE.Group | null>(null);
-
-  const currentFrame = getCurrentFrame();
 
   // Helper to extract camera poses from telemetry frame values dynamically
   interface CameraPose {

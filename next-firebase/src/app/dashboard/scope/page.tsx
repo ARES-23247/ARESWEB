@@ -161,7 +161,8 @@ export default function ScopeDashboard() {
     setFieldElements,
     setFieldElementTypes,
     setFieldCadUrl,
-    setFieldBgImageUrl
+    setFieldBgImageUrl,
+    setNtClient
   } = useScopeStore();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
@@ -793,6 +794,7 @@ export default function ScopeDashboard() {
       if (ntClientRef.current) {
         ntClientRef.current.disconnect();
       }
+      setNtClient(null);
     };
   }, []);
 
@@ -948,6 +950,7 @@ export default function ScopeDashboard() {
     );
 
     ntClientRef.current = client;
+    setNtClient(client);
     client.connect();
     setShowLiveModal(false);
   };
@@ -957,6 +960,7 @@ export default function ScopeDashboard() {
       ntClientRef.current.disconnect();
       ntClientRef.current = null;
     }
+    setNtClient(null);
     setStreaming(false);
     setStreamSource(null);
     setConnectionStatus("disconnected");

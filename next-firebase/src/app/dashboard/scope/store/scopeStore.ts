@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { NT4Client } from "./nt4Client";
 
 export interface TelemetryFrame {
   timestamp: number;
@@ -79,6 +80,7 @@ interface ScopeState {
   isStreaming: boolean;
   streamSource: "local" | "cloud" | null;
   connectionStatus: "disconnected" | "connecting" | "connected";
+  ntClient: NT4Client | null;
   
   // Actions
   setPlaying: (isPlaying: boolean) => void;
@@ -100,6 +102,7 @@ interface ScopeState {
   setStreaming: (isStreaming: boolean) => void;
   setStreamSource: (source: "local" | "cloud" | null) => void;
   setConnectionStatus: (status: "disconnected" | "connecting" | "connected") => void;
+  setNtClient: (client: NT4Client | null) => void;
   addLiveFrame: (frame: TelemetryFrame) => void;
 
   getCurrentFrame: () => TelemetryFrame | null;
@@ -125,6 +128,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   isStreaming: false,
   streamSource: null,
   connectionStatus: "disconnected",
+  ntClient: null,
 
   setPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTimeMs: (currentTimeMs) => {
@@ -196,6 +200,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
   setStreaming: (isStreaming) => set({ isStreaming }),
   setStreamSource: (streamSource) => set({ streamSource }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+  setNtClient: (ntClient) => set({ ntClient }),
   addLiveFrame: (frame) => set((state) => {
     const currentData = state.telemetryData || {
       runId: "live",
