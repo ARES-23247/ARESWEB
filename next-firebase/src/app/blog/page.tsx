@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { cleanThumbnailUrl } from "@/lib/utils";
 
 interface BlogPost {
   slug: string;
@@ -108,7 +109,7 @@ export default function BlogFeedPage() {
                   {post.thumbnail && (
                     <div className="relative h-56 w-full overflow-hidden">
                       <img
-                        src={post.thumbnail}
+                        src={cleanThumbnailUrl(post.thumbnail)}
                         alt={post.title}
                         className="w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover"
                       />

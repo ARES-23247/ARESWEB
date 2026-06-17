@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Search, Play } from "lucide-react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { cleanThumbnailUrl } from "@/lib/utils";
 
 interface Video {
   id: string;
@@ -113,7 +114,7 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
                   <div className="relative w-28 h-18 bg-black/55 rounded border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
                     {video.thumbnailUrl ? (
                       <img
-                        src={video.thumbnailUrl}
+                        src={cleanThumbnailUrl(video.thumbnailUrl)}
                         alt=""
                         className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
                         loading="lazy"

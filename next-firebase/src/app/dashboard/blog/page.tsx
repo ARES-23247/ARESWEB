@@ -26,6 +26,7 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { authenticatedFetch } from "@/lib/api";
+import { cleanThumbnailUrl } from "@/lib/utils";
 
 interface BlogPost {
   slug: string;
@@ -185,7 +186,7 @@ export default function BlogManagementPage() {
                 content: data.content || "",
                 author: data.author || "ARES Member",
                 date: data.date || new Date().toISOString().split("T")[0],
-                thumbnail: data.thumbnail || "",
+                thumbnail: cleanThumbnailUrl(data.thumbnail || ""),
                 status: data.status || "draft",
                 isDeleted: data.isDeleted || 0,
                 authorUid: data.authorUid || "",
@@ -384,7 +385,7 @@ export default function BlogManagementPage() {
     setFormTitle(revision.title);
     setFormSnippet(revision.snippet);
     setFormContent(revision.content);
-    setFormThumbnail(revision.thumbnail);
+    setFormThumbnail(cleanThumbnailUrl(revision.thumbnail));
     setFormStatus(revision.status);
     setRevertAlert(`Restored contents from revision (${new Date(revision.timestamp).toLocaleString()})! Click "Update Entry" below to commit these changes.`);
     setActiveTab("edit");
@@ -554,7 +555,7 @@ export default function BlogManagementPage() {
               {post.thumbnail && (
                 <div className="relative h-44 w-full overflow-hidden bg-black/40 border-b border-white/5">
                   <img
-                    src={post.thumbnail}
+                    src={cleanThumbnailUrl(post.thumbnail)}
                     alt={post.title}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                   />
@@ -781,7 +782,7 @@ export default function BlogManagementPage() {
                         {formThumbnail ? (
                           <div className="relative w-full h-[120px] rounded-lg border border-white/15 overflow-hidden group/thumb bg-black/40">
                             <img
-                              src={formThumbnail}
+                              src={cleanThumbnailUrl(formThumbnail)}
                               alt="Thumbnail Preview"
                               className="w-full h-full object-cover opacity-90 group-hover/thumb:opacity-75 transition-opacity"
                             />

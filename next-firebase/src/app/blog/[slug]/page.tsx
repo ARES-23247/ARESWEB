@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
+import { cleanThumbnailUrl } from "@/lib/utils";
 
 interface BlogPostDetails {
   slug: string;
@@ -146,7 +147,7 @@ export default function BlogPostPage() {
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
         {post.thumbnail && (
           <img
-            src={post.thumbnail}
+            src={cleanThumbnailUrl(post.thumbnail)}
             alt={post.title}
             className="absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity object-cover"
           />

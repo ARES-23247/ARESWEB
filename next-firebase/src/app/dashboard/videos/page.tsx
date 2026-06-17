@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, X, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import { cleanThumbnailUrl } from "@/lib/utils";
 
 function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
@@ -424,7 +425,7 @@ export default function VideosManagementPage() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={video.thumbnailUrl}
+                  src={cleanThumbnailUrl(video.thumbnailUrl)}
                   alt={video.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-102"
                   loading="lazy"
