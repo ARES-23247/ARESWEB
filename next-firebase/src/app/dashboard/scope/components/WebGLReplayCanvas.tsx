@@ -58,9 +58,9 @@ export default function WebGLReplayCanvas() {
       if (pressedKeys.current.has("q")) omega += MAX_ANGULAR_SPEED;
       if (pressedKeys.current.has("e")) omega -= MAX_ANGULAR_SPEED;
 
-      ntClient.publishValue("ARES/Input/vx", vx, "double");
-      ntClient.publishValue("ARES/Input/vy", vy, "double");
-      ntClient.publishValue("ARES/Input/omega", omega, "double");
+      ntClient.publishPersistent("ARES/Input/vx", vx, "double");
+      ntClient.publishPersistent("ARES/Input/vy", vy, "double");
+      ntClient.publishPersistent("ARES/Input/omega", omega, "double");
     };
 
     const handleWebKeyDown = (e: KeyboardEvent) => {
@@ -93,26 +93,26 @@ export default function WebGLReplayCanvas() {
 
       if (e.key === " ") {
         const currentTeleop = getVal("AdvantageKit/RealOutputs/Drive/TeleopMode", true);
-        ntClient.publishValue("ARES/Input/isTeleopMode", !currentTeleop, "boolean");
+        ntClient.publishPersistent("ARES/Input/isTeleopMode", !currentTeleop, "boolean");
         e.preventDefault();
       } else if (key === "c") {
         const currentFC = getVal("AdvantageKit/RealOutputs/Drive/FieldCentric", false);
-        ntClient.publishValue("ARES/Input/isFieldCentric", !currentFC, "boolean");
+        ntClient.publishPersistent("ARES/Input/isFieldCentric", !currentFC, "boolean");
         e.preventDefault();
       } else if (key === "r") {
         const currentRed = getVal("AdvantageKit/RealOutputs/Drive/RedAlliance", false);
-        ntClient.publishValue("ARES/Input/isRedAlliance", !currentRed, "boolean");
+        ntClient.publishPersistent("ARES/Input/isRedAlliance", !currentRed, "boolean");
         e.preventDefault();
       } else if (e.key === "Shift") {
         const currentIntake = getVal("AdvantageKit/RealOutputs/Superstructure/IntakeActive", false);
-        ntClient.publishValue("ARES/Input/isIntaking", !currentIntake, "boolean");
+        ntClient.publishPersistent("ARES/Input/isIntaking", !currentIntake, "boolean");
         e.preventDefault();
       } else if (key === "f") {
         const currentFlywheel = getVal("AdvantageKit/RealOutputs/Superstructure/FlywheelActive", false);
-        ntClient.publishValue("ARES/Input/isFlywheelOn", !currentFlywheel, "boolean");
+        ntClient.publishPersistent("ARES/Input/isFlywheelOn", !currentFlywheel, "boolean");
         e.preventDefault();
       } else if (e.key === "Enter") {
-        ntClient.publishValue("ARES/Input/isTransferring", true, "boolean");
+        ntClient.publishPersistent("ARES/Input/isTransferring", true, "boolean");
         e.preventDefault();
       }
     };
@@ -123,7 +123,7 @@ export default function WebGLReplayCanvas() {
         pressedKeys.current.delete(key);
         publishKeyboardSpeeds();
       } else if (e.key === "Enter") {
-        ntClient.publishValue("ARES/Input/isTransferring", false, "boolean");
+        ntClient.publishPersistent("ARES/Input/isTransferring", false, "boolean");
       }
     };
 
@@ -132,7 +132,7 @@ export default function WebGLReplayCanvas() {
         pressedKeys.current.clear();
         publishKeyboardSpeeds();
       }
-      ntClient.publishValue("ARES/Input/isTransferring", false, "boolean");
+      ntClient.publishPersistent("ARES/Input/isTransferring", false, "boolean");
     };
 
     window.addEventListener("keydown", handleWebKeyDown);

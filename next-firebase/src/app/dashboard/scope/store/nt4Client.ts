@@ -12,6 +12,7 @@ export class NT4Client {
   private lastTimestamp = 0;
   private reconnectTimeout: any = null;
   private destroyed = false;
+  private activePubs = new Map<string, number>();
 
   constructor(
     private host: string,
@@ -47,6 +48,7 @@ export class NT4Client {
 
       this.ws.onclose = () => {
         this.onStatusChange("disconnected");
+        this.activePubs.clear();
         console.log("[NT4Client] Disconnected from NT4 server.");
         this.scheduleReconnect();
       };
@@ -83,6 +85,7 @@ export class NT4Client {
 
   disconnect() {
     this.destroyed = true;
+    this.activePubs.clear();
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -329,6 +332,53 @@ export class NT4Client {
       console.log(`[NT4Client] Published value ${value} to key ${cleanKey}`);
     } catch (e) {
       console.error("[NT4Client] Failed to send publish messages over WebSocket:", e);
+    }
+  }
+
+  publishPersistent(key: string, value: any, type: string = "double") {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    const cleanKey = key.startsWith("/") ? key : `/${key}`;
+    let pubuid = this.activePubs.get(cleanKey);
+
+    if (pubuid === undefined) {
+      pubuid = Math.floor(Math.random() * 1000000);
+      this.activePubs.set(cleanKey, pubuid);
+
+      const pubMsg = [
+        {
+          method: "publish",
+          params: {
+            name: cleanKey,
+            type: type,
+            pubuid: pubuid
+          },
+          uid: Math.floor(Math.random() * 10000)
+        }
+      ];
+      try {
+        this.ws.send(JSON.stringify(pubMsg));
+      } catch (e) {
+        console.error("[NT4Client] Failed to send publish message:", e);
+        this.activePubs.delete(cleanKey);
+        return;
+      }
+    }
+
+    const setMsg = [
+      {
+        method: "set",
+        params: {
+          pubuid: pubuid,
+          value: value
+        },
+        uid: Math.floor(Math.random() * 10000)
+      }
+    ];
+    try {
+      this.ws.send(JSON.stringify(setMsg));
+    } catch (e) {
+      console.error("[NT4Client] Failed to send set message:", e);
     }
   }
 }
