@@ -341,7 +341,6 @@ export default function BlogManagementPage() {
     if (!prompt.trim()) return;
     setAiLoading(true);
     setAiResponse("");
-    setError(null);
     try {
       const res = await authenticatedFetch("/api/ai/assistant", {
         method: "POST",

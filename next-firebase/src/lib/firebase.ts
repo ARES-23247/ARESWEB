@@ -3,23 +3,36 @@ import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 
-const getEnv = (key: string): string => {
-  if (typeof import.meta !== "undefined" && import.meta.env?.[key]) {
-    return import.meta.env[key] as string;
+const getFirebaseConfig = () => {
+  if (typeof import.meta !== "undefined") {
+    return {
+      apiKey: import.meta.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: import.meta.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    };
   }
-  if (typeof process !== "undefined" && process.env?.[key]) {
-    return process.env[key] as string;
-  }
-  return "";
+  return {
+    apiKey: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_API_KEY : undefined,
+    authDomain: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN : undefined,
+    projectId: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID : undefined,
+    storageBucket: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET : undefined,
+    messagingSenderId: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID : undefined,
+    appId: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_FIREBASE_APP_ID : undefined,
+  };
 };
 
+const config = getFirebaseConfig();
+
 const firebaseConfig = {
-  apiKey: getEnv("NEXT_PUBLIC_FIREBASE_API_KEY") || "dummy-api-key",
-  authDomain: getEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN") || "ares-web-preview.firebaseapp.com",
-  projectId: getEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID") || "ares-web-preview",
-  storageBucket: getEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") || "ares-web-preview.appspot.com",
-  messagingSenderId: getEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || "123456789",
-  appId: getEnv("NEXT_PUBLIC_FIREBASE_APP_ID") || "1:123456789:web:abcdef12345"
+  apiKey: config.apiKey || "dummy-api-key",
+  authDomain: config.authDomain || "ares-web-preview.firebaseapp.com",
+  projectId: config.projectId || "ares-web-preview",
+  storageBucket: config.storageBucket || "ares-web-preview.appspot.com",
+  messagingSenderId: config.messagingSenderId || "123456789",
+  appId: config.appId || "1:123456789:web:abcdef12345"
 };
 
 // Handle SSR check: only initialize on client or once globally
