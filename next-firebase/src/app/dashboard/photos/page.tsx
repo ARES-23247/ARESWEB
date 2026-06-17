@@ -330,14 +330,30 @@ export default function DashboardPhotosPage() {
       setUploadStatusList(prev => prev.map(s => s.name === file.name ? { ...s, status: "uploading" } : s));
       
       try {
-        const base64 = await readFileAsBase64(file);
+        const { base64, mimeType } = await resizeAndCompressImage(file);
+        
+        // If we converted/resized HEIC/HEIF or PNG to JPEG, adjust the file name extension
+        const originalName = file.name;
+        let finalFilename = originalName;
+        if (mimeType === "image/jpeg") {
+          const dotIdx = originalName.lastIndexOf(".");
+          if (dotIdx !== -1) {
+            const ext = originalName.substring(dotIdx).toLowerCase();
+            if (ext !== ".jpg" && ext !== ".jpeg") {
+              finalFilename = originalName.substring(0, dotIdx) + ".jpg";
+            }
+          } else {
+            finalFilename = originalName + ".jpg";
+          }
+        }
+
         const res = await authenticatedFetch("/api/photos/upload-unified", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileBase64: base64,
-            filename: file.name,
-            mimeType: file.type || "image/jpeg",
+            filename: finalFilename,
+            mimeType,
             albumId: uploadAlbumId || null,
             uploadToGoogle: crossPostToGoogle && isLive,
             runAiLabeling: runAiIngest
@@ -369,6 +385,76 @@ export default function DashboardPhotosPage() {
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
+    });
+  };
+
+  const resizeAndCompressImage = (
+    file: File,
+    maxWidth = 2048,
+    maxHeight = 2048,
+    quality = 0.85
+  ): Promise<{ base64: string; mimeType: string }> => {
+    return new Promise((resolve) => {
+      // Keep animated GIFs and vector SVGs as-is to preserve behavior
+      if (file.type === "image/gif" || file.type === "image/svg+xml") {
+        readFileAsBase64(file)
+          .then((base64) => resolve({ base64, mimeType: file.type }))
+          .catch(() => resolve({ base64: "", mimeType: file.type }));
+        return;
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        // Scale proportionally if image dimensions exceed maximum bounds
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          // Fallback to original file
+          readFileAsBase64(file).then((base64) => {
+            resolve({ base64, mimeType: file.type });
+          });
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Export as web-friendly high-quality JPEG
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        const base64 = dataUrl.split(",")[1];
+        resolve({ base64, mimeType: "image/jpeg" });
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        // Fallback to original file
+        readFileAsBase64(file).then((base64) => {
+          resolve({ base64, mimeType: file.type });
+        });
+      };
     });
   };
 
