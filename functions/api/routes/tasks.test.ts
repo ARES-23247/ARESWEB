@@ -66,8 +66,12 @@ vi.mock('../middleware/auth', async () => {
 };
 });
 
-// Import tasksRouter after mocking
-import tasksRouter from './tasks';
+ vi.mock('../../utils/zulipSync', () => ({
+   sendZulipMessage: vi.fn().mockResolvedValue(true),
+ }));
+ 
+ // Import tasksRouter after mocking
+ import tasksRouter from './tasks';
 
 
 
