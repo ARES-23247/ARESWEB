@@ -92,7 +92,6 @@ export default function DashboardPhotosPage() {
   // Drag and Drop Upload States
   const [isDragging, setIsDragging] = useState(false);
   const [uploadAlbumId, setUploadAlbumId] = useState<string>("");
-  const [crossPostToGoogle, setCrossPostToGoogle] = useState(false);
   const [runAiIngest, setRunAiIngest] = useState(true);
   const [uploadStatusList, setUploadStatusList] = useState<Array<{ name: string; status: "pending" | "uploading" | "success" | "error"; error?: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -355,7 +354,7 @@ export default function DashboardPhotosPage() {
             filename: finalFilename,
             mimeType,
             albumId: uploadAlbumId || null,
-            uploadToGoogle: crossPostToGoogle && isLive,
+            uploadToGoogle: isLive,
             runAiLabeling: runAiIngest
           })
         });
@@ -795,19 +794,6 @@ export default function DashboardPhotosPage() {
 
                     {/* Checkboxes */}
                     <div className="space-y-2 pt-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={crossPostToGoogle}
-                          disabled={!isLive}
-                          onChange={(e) => setCrossPostToGoogle(e.target.checked)}
-                          className="accent-ares-red h-3.5 w-3.5"
-                        />
-                        <span className={`text-[10px] font-bold uppercase ${isLive ? "text-marble/75" : "text-marble/35"}`} title={!isLive ? "Connect Google OAuth first under Google Cloud Sync tab" : ""}>
-                          Cross-post to Google Photos {!isLive && "⚠️"}
-                        </span>
-                      </label>
-
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
