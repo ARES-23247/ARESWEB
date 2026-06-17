@@ -29,11 +29,40 @@ describe("Image Import Pipeline Utilities", () => {
     });
 
     it("should reject files with invalid magic bytes", () => {
-      const buffer = new Uint8Array([0x00, 0x00, 0x00, 0x00]).buffer;
+      const buffer = new Uint8Array([0x11, 0x22, 0x33, 0x44]).buffer;
       const result = validateImageMagicBytes(buffer);
       expect(result.valid).toBe(false);
       expect(result.format).toBe("unknown");
-      expect(result.error).toBe("Invalid image format (must be JPG, PNG, or WEBP)");
+      expect(result.error).toBe("Invalid image format (must be JPG, PNG, WEBP, GIF, SVG, BMP, or ICO)");
+    });
+
+    it("should accept valid GIF files", () => {
+      const buffer = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]).buffer;
+      const result = validateImageMagicBytes(buffer);
+      expect(result.valid).toBe(true);
+      expect(result.format).toBe("gif");
+    });
+
+    it("should accept valid SVG files", () => {
+      const svgText = "<svg xmlns='http://www.w3.org/2000/svg'><path d='M0 0h10v10H0z'/></svg>";
+      const buffer = new TextEncoder().encode(svgText).buffer;
+      const result = validateImageMagicBytes(buffer);
+      expect(result.valid).toBe(true);
+      expect(result.format).toBe("svg");
+    });
+
+    it("should accept valid BMP files", () => {
+      const buffer = new Uint8Array([0x42, 0x4D, 0x00, 0x00, 0x00, 0x00]).buffer;
+      const result = validateImageMagicBytes(buffer);
+      expect(result.valid).toBe(true);
+      expect(result.format).toBe("bmp");
+    });
+
+    it("should accept valid ICO files", () => {
+      const buffer = new Uint8Array([0x00, 0x00, 0x01, 0x00, 0x00, 0x00]).buffer;
+      const result = validateImageMagicBytes(buffer);
+      expect(result.valid).toBe(true);
+      expect(result.format).toBe("ico");
     });
 
     it("should reject files exceeding the maximum size limit", () => {

@@ -88,6 +88,7 @@ export default function DashboardPhotosPage() {
   const [editingAlbum, setEditingAlbum] = useState<PhotoAlbum | null>(null);
   const [newAlbumTitle, setNewAlbumTitle] = useState("");
   const [newAlbumDesc, setNewAlbumDesc] = useState("");
+  const [newAlbumCoverUrl, setNewAlbumCoverUrl] = useState("");
   const [newAlbumCategory, setNewAlbumCategory] = useState<"Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice">("Robot Specs");
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
 
@@ -244,7 +245,8 @@ export default function DashboardPhotosPage() {
           body: JSON.stringify({
             title: newAlbumTitle.trim(),
             description: newAlbumDesc.trim(),
-            category: newAlbumCategory
+            category: newAlbumCategory,
+            coverImageUrl: newAlbumCoverUrl.trim()
           })
         });
 
@@ -255,6 +257,7 @@ export default function DashboardPhotosPage() {
           setEditingAlbum(null);
           setNewAlbumTitle("");
           setNewAlbumDesc("");
+          setNewAlbumCoverUrl("");
         } else {
           const errText = await res.text();
           alert("Failed to update album: " + errText);
@@ -267,7 +270,8 @@ export default function DashboardPhotosPage() {
           body: JSON.stringify({
             title: newAlbumTitle.trim(),
             description: newAlbumDesc.trim(),
-            category: newAlbumCategory
+            category: newAlbumCategory,
+            coverImageUrl: newAlbumCoverUrl.trim()
           })
         });
 
@@ -277,6 +281,7 @@ export default function DashboardPhotosPage() {
           setIsCreateAlbumOpen(false);
           setNewAlbumTitle("");
           setNewAlbumDesc("");
+          setNewAlbumCoverUrl("");
         } else {
           const errText = await res.text();
           alert("Failed to create album: " + errText);
@@ -293,6 +298,7 @@ export default function DashboardPhotosPage() {
     setEditingAlbum(album);
     setNewAlbumTitle(album.title);
     setNewAlbumDesc(album.description || "");
+    setNewAlbumCoverUrl(album.coverImageUrl || "");
     setNewAlbumCategory(album.category);
     setIsCreateAlbumOpen(true);
   };
@@ -1086,6 +1092,7 @@ export default function DashboardPhotosPage() {
                   setEditingAlbum(null);
                   setNewAlbumTitle("");
                   setNewAlbumDesc("");
+                  setNewAlbumCoverUrl("");
                   setNewAlbumCategory("Robot Specs");
                   setIsCreateAlbumOpen(true);
                 }}
@@ -1226,6 +1233,17 @@ export default function DashboardPhotosPage() {
                       <option value="CAD Design">CAD Design</option>
                       <option value="Practice">Practice</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Cover Image URL (Optional)</label>
+                    <input
+                      type="url"
+                      value={newAlbumCoverUrl}
+                      onChange={(e) => setNewAlbumCoverUrl(e.target.value)}
+                      placeholder="e.g. https://storage.googleapis.com/... or paste image URL"
+                      className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red"
+                    />
                   </div>
 
                   <div>
@@ -1676,19 +1694,57 @@ export default function DashboardPhotosPage() {
 
             {/* Footer actions */}
             <footer className="p-5 border-t border-white/5 sticky bottom-0 bg-obsidian/95 backdrop-blur-md flex items-center justify-between gap-3 z-10">
-              {canEdit && (
-                <button
-                  onClick={() => {
-                    if (confirm("Are you sure you want to permanently delete this photo from the library?")) {
-                      handleDeletePhoto(selectedPhoto.id);
-                      setSelectedPhoto(null);
-                    }
-                  }}
-                  className="py-2 px-4 border border-ares-red/25 hover:bg-ares-red/10 text-ares-red font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg"
-                >
-                  <Trash2 size={11} /> Delete
-                </button>
-              )}
+              <div className="flex gap-2">
+                {canEdit && selectedPhoto.albumId && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const album = albums.find(a => a.id === selectedPhoto.albumId);
+                      if (!album) return;
+                      try {
+                        setIsSavingDetails(true);
+                        const res = await authenticatedFetch(`/api/photos/albums/${album.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            coverImageUrl: selectedPhoto.publicUrl
+                          })
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setAlbums(prev => prev.map(a => a.id === album.id ? data.album : a));
+                          alert("Cover image updated successfully!");
+                        } else {
+                          const err = await res.text();
+                          alert("Failed to update cover image: " + err);
+                        }
+                      } catch (err: any) {
+                        alert("Error: " + err.message);
+                      } finally {
+                        setIsSavingDetails(false);
+                      }
+                    }}
+                    disabled={isSavingDetails || albums.find(a => a.id === selectedPhoto.albumId)?.coverImageUrl === selectedPhoto.publicUrl}
+                    className="py-2 px-3 border border-ares-gold/25 hover:bg-ares-gold/10 text-ares-gold font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg disabled:opacity-50 disabled:hover:bg-transparent"
+                  >
+                    {albums.find(a => a.id === selectedPhoto.albumId)?.coverImageUrl === selectedPhoto.publicUrl ? "✓ Album Cover" : "Set Album Cover"}
+                  </button>
+                )}
+
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Are you sure you want to permanently delete this photo from the library?")) {
+                        handleDeletePhoto(selectedPhoto.id);
+                        setSelectedPhoto(null);
+                      }
+                    }}
+                    className="py-2 px-4 border border-ares-red/25 hover:bg-ares-red/10 text-ares-red font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg"
+                  >
+                    <Trash2 size={11} /> Delete
+                  </button>
+                )}
+              </div>
               
               <div className="flex gap-2">
                 <button

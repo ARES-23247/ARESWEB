@@ -3,15 +3,11 @@
  * Handles magic bytes verification and album name path sanitization.
  */
 
-const MAGIC_BYTES = {
-  JPG: [0xFF, 0xD8, 0xFF],
-  PNG: [0x89, 0x50, 0x4E, 0x47],
-  WEBP: [0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50],
-} as const;
+
 
 /**
  * Validate image magic bytes and file size
- * Checks for JPG, PNG, WEBP signatures. Size limit 50MB.
+ * Checks for JPG, PNG, WEBP, GIF, BMP, ICO, and SVG signatures. Size limit 50MB.
  */
 export function validateImageMagicBytes(
   buffer: ArrayBuffer,
@@ -28,35 +24,64 @@ export function validateImageMagicBytes(
   const bytes = new Uint8Array(buffer);
 
   // JPG: FF D8 FF
-  if (bytes[0] === MAGIC_BYTES.JPG[0] && bytes[1] === MAGIC_BYTES.JPG[1] && bytes[2] === MAGIC_BYTES.JPG[2]) {
+  if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
     return { valid: true, format: "jpg" };
   }
 
   // PNG: 89 50 4E 47
   if (
-    bytes[0] === MAGIC_BYTES.PNG[0] &&
-    bytes[1] === MAGIC_BYTES.PNG[1] &&
-    bytes[2] === MAGIC_BYTES.PNG[2] &&
-    bytes[3] === MAGIC_BYTES.PNG[3]
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4E &&
+    bytes[3] === 0x47
   ) {
     return { valid: true, format: "png" };
   }
 
   // WEBP: RIFF...WEBP
   if (
-    bytes[0] === MAGIC_BYTES.WEBP[0] &&
-    bytes[1] === MAGIC_BYTES.WEBP[1] &&
-    bytes[2] === MAGIC_BYTES.WEBP[2] &&
-    bytes[3] === MAGIC_BYTES.WEBP[3] &&
-    bytes[8] === MAGIC_BYTES.WEBP[8] &&
-    bytes[9] === MAGIC_BYTES.WEBP[9] &&
-    bytes[10] === MAGIC_BYTES.WEBP[10] &&
-    bytes[11] === MAGIC_BYTES.WEBP[11]
+    bytes[0] === 0x52 && // 'R'
+    bytes[1] === 0x49 && // 'I'
+    bytes[2] === 0x46 && // 'F'
+    bytes[3] === 0x46 && // 'F'
+    bytes[8] === 0x57 && // 'W'
+    bytes[9] === 0x45 && // 'E'
+    bytes[10] === 0x42 && // 'B'
+    bytes[11] === 0x50 // 'P'
   ) {
     return { valid: true, format: "webp" };
   }
 
-  return { valid: false, format: "unknown", error: "Invalid image format (must be JPG, PNG, or WEBP)" };
+  // GIF: 'G' 'I' 'F' (47 49 46)
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+    return { valid: true, format: "gif" };
+  }
+
+  // BMP: 'B' 'M' (42 4D)
+  if (bytes[0] === 0x42 && bytes[1] === 0x4D) {
+    return { valid: true, format: "bmp" };
+  }
+
+  // ICO: 00 00 01 00
+  if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x01 && bytes[3] === 0x00) {
+    return { valid: true, format: "ico" };
+  }
+
+  // SVG detection: check for XML/SVG tag signatures
+  try {
+    const textSample = new TextDecoder("utf-8").decode(bytes.slice(0, 1000)).trim().toLowerCase();
+    if (
+      textSample.includes("<svg") || 
+      textSample.includes("xmlns=\"http://www.w3.org/2000/svg\"") || 
+      textSample.includes("xmlns='http://www.w3.org/2000/svg'")
+    ) {
+      return { valid: true, format: "svg" };
+    }
+  } catch (e) {
+    // Decoding failed, not a text SVG
+  }
+
+  return { valid: false, format: "unknown", error: "Invalid image format (must be JPG, PNG, WEBP, GIF, SVG, BMP, or ICO)" };
 }
 
 /**

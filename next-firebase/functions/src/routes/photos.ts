@@ -943,14 +943,15 @@ router.delete("/:photoId", ensureAdmin, async (req, res) => {
 });
 
 // PATCH /api/photos/albums/:albumId
-// Update album details: title, description, category
+// Update album details: title, description, category, coverImageUrl
 router.patch("/albums/:albumId", ensureAdmin, async (req, res) => {
   try {
     const { albumId } = req.params;
-    const { title, description, category } = req.body as {
+    const { title, description, category, coverImageUrl } = req.body as {
       title?: string;
       description?: string;
       category?: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
+      coverImageUrl?: string;
     };
 
     const albumRef = adminDb.collection("albums").doc(albumId);
@@ -967,6 +968,7 @@ router.patch("/albums/:albumId", ensureAdmin, async (req, res) => {
       title: title !== undefined ? title : currentAlbum.title,
       description: description !== undefined ? description : currentAlbum.description,
       category: category !== undefined ? category : currentAlbum.category,
+      coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : (currentAlbum.coverImageUrl || ""),
       updatedAt: new Date().toISOString()
     };
 
