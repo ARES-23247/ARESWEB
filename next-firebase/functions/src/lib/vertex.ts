@@ -17,6 +17,17 @@ interface TelemetrySummary {
 
 const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key";
 
+// Local Firebase emulator compatibility: the emulator environment sanitizes standard user environment variables,
+// which prevents the Google GenAI SDK from resolving the path to David's local Application Default Credentials (ADC).
+// Explicitly inject the path if we are running in the emulator and the credentials env variable is not set.
+if (process.env.FUNCTIONS_EMULATOR === "true" && useVertex) {
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const defaultCredentialsPath = "C:\\Users\\david\\AppData\\Roaming\\gcloud\\application_default_credentials.json";
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = defaultCredentialsPath;
+    console.log(`[Vertex AI Emulator Support] Injected GOOGLE_APPLICATION_CREDENTIALS path: ${defaultCredentialsPath}`);
+  }
+}
+
 const clientConfig: any = {};
 if (useVertex) {
   clientConfig.vertexai = true;
