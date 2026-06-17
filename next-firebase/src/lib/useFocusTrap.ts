@@ -2,13 +2,19 @@ import { useEffect, useRef } from "react";
 
 export function useFocusTrap(isOpen: boolean, onClose?: () => void) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  // Keep the callback ref up-to-date
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && onClose) {
-        onClose();
+      if (e.key === "Escape" && onCloseRef.current) {
+        onCloseRef.current();
         return;
       }
 
@@ -63,7 +69,7 @@ export function useFocusTrap(isOpen: boolean, onClose?: () => void) {
         previousActiveElement.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return ref;
 }
