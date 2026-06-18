@@ -19,7 +19,8 @@ import {
   Circle, 
   Upload, 
   Users, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  RotateCcw
 } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
@@ -377,14 +378,56 @@ export default function EventEditorDrawer({
 
   const handleDeleteEvent = async () => {
     if (!canEdit || !editId) return;
-    if (!confirm("Are you sure you want to delete this event from the calendar?")) return;
+    if (!confirm("Are you sure you want to move this event to the Trash? (It will be hidden from the calendar, but visible to managers)")) return;
+
+    try {
+      const docRef = doc(db, "events", editId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const currentData = docSnap.data();
+        await setDoc(docRef, cleanUndefined({
+          ...currentData,
+          isDeleted: 1
+        }));
+      }
+      onClose();
+    } catch (err: any) {
+      console.error("Error soft deleting event:", err);
+      alert("Failed to delete event: " + err.message);
+    }
+  };
+
+  const handleRestoreEvent = async () => {
+    if (!canEdit || !editId) return;
+    if (!confirm("Are you sure you want to restore this event to the calendar?")) return;
+
+    try {
+      const docRef = doc(db, "events", editId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const currentData = docSnap.data();
+        await setDoc(docRef, cleanUndefined({
+          ...currentData,
+          isDeleted: 0
+        }));
+      }
+      onClose();
+    } catch (err: any) {
+      console.error("Error restoring event:", err);
+      alert("Failed to restore event: " + err.message);
+    }
+  };
+
+  const handlePermanentDeleteEvent = async () => {
+    if (!canPublishDirectly || !editId) return;
+    if (!confirm("WARNING: Are you sure you want to PERMANENTLY delete this event? This action cannot be undone and will delete all RSVPs and photos!")) return;
 
     try {
       await deleteDoc(doc(db, "events", editId));
       onClose();
     } catch (err: any) {
-      console.error("Error deleting event:", err);
-      alert("Failed to delete event: " + err.message);
+      console.error("Error permanently deleting event:", err);
+      alert("Failed to permanently delete event: " + err.message);
     }
   };
 
@@ -1059,16 +1102,39 @@ export default function EventEditorDrawer({
                 </div>
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
-                  <div>
+                  <div className="flex gap-2">
                     {editId && canEdit && (
-                      <button
-                        type="button"
-                        onClick={handleDeleteEvent}
-                        className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
-                      >
-                        <Trash2 size={14} />
-                        Delete Event
-                      </button>
+                      eventToEdit?.isDeleted === 1 ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleRestoreEvent}
+                            className="px-5 py-3 border border-ares-success/35 hover:bg-ares-success/10 text-ares-success rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                          >
+                            <RotateCcw size={14} />
+                            Restore Event
+                          </button>
+                          {canPublishDirectly && (
+                            <button
+                              type="button"
+                              onClick={handlePermanentDeleteEvent}
+                              className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                            >
+                              <Trash2 size={14} />
+                              Permanently Delete
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleDeleteEvent}
+                          className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                        >
+                          <Trash2 size={14} />
+                          Delete Event
+                        </button>
+                      )
                     )}
                   </div>
                   <div className="flex gap-2">

@@ -13,7 +13,8 @@ import {
   MapPin, 
   Calendar, 
   Clock,
-  Check
+  Check,
+  RotateCcw
 } from "lucide-react";
 import { cleanUndefined } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api";
@@ -96,6 +97,7 @@ export default function EventsManagementPage({
               coverImage: data.coverImage || "",
               isPotluck: data.isPotluck || 0,
               isVolunteer: data.isVolunteer || 0,
+              isDeleted: data.isDeleted || 0,
               status: data.status || "published"
             } as TeamEvent;
           });
@@ -193,9 +195,39 @@ export default function EventsManagementPage({
     setIsEditorOpen(true);
   };
 
-  const handleDeleteEvent = async (id: string) => {
+  const handleDeleteEvent = async (evt: TeamEvent) => {
     if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this event from the calendar?")) return;
+    if (!confirm(`Are you sure you want to move "${evt.title}" to the Trash? (It will be hidden from the calendar, but visible to managers)`)) return;
+
+    try {
+      await setDoc(doc(db, "events", evt.id), cleanUndefined({
+        ...evt,
+        isDeleted: 1
+      }));
+    } catch (err) {
+      console.warn("Firestore offline, soft-deleting event locally.", err);
+      setEvents(events.map(ev => ev.id === evt.id ? { ...ev, isDeleted: 1 } : ev));
+    }
+  };
+
+  const handleRestoreEvent = async (evt: TeamEvent) => {
+    if (!canEdit) return;
+    if (!confirm(`Are you sure you want to restore "${evt.title}"?`)) return;
+
+    try {
+      await setDoc(doc(db, "events", evt.id), cleanUndefined({
+        ...evt,
+        isDeleted: 0
+      }));
+    } catch (err) {
+      console.warn("Firestore offline, restoring event locally.", err);
+      setEvents(events.map(ev => ev.id === evt.id ? { ...ev, isDeleted: 0 } : ev));
+    }
+  };
+
+  const handlePermanentDeleteEvent = async (id: string) => {
+    if (!canPublishDirectly) return;
+    if (!confirm("WARNING: Are you sure you want to PERMANENTLY delete this event? This action cannot be undone and will delete all RSVPs and photos!")) return;
 
     try {
       await deleteDoc(doc(db, "events", id));
@@ -290,7 +322,9 @@ export default function EventsManagementPage({
                   return (
                     <div
                       key={evt.id}
-                      className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-white/5 transition-colors"
+                      className={`p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-white/5 transition-colors ${
+                        evt.isDeleted === 1 ? "opacity-60 bg-ares-red/5 border-l-2 border-ares-red/40" : ""
+                      }`}
                     >
                       <div className="flex gap-4.5 items-start">
                         <div
@@ -311,6 +345,11 @@ export default function EventsManagementPage({
                             >
                               {evt.category}
                             </span>
+                            {evt.isDeleted === 1 && (
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-red/25 border-ares-red/35 text-ares-red-light rounded">
+                                Trash / Deleted
+                              </span>
+                            )}
                             {evt.status === "pending" && (
                               <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-amber-500/10 border-amber-500/30 text-amber-500 rounded">
                                 Pending Approval
@@ -355,35 +394,60 @@ export default function EventsManagementPage({
                       {/* Actions */}
                       <div className="flex gap-2 self-end md:self-auto shrink-0">
                         {canEdit ? (
-                          <>
-                             {canPublishDirectly && evt.status === "pending" && (
+                          evt.isDeleted === 1 ? (
+                            <>
                               <button
-                                onClick={() => handleApproveEvent(evt)}
+                                onClick={() => handleRestoreEvent(evt)}
                                 className="p-2 bg-ares-success/15 hover:bg-ares-success/30 text-ares-success border border-ares-success/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
-                                title="Approve & Publish Event"
-                                aria-label={`Approve and publish event ${evt.title}`}
+                                title="Restore Event"
+                                aria-label={`Restore event ${evt.title}`}
                               >
-                                <Check size={13} />
-                                <span className="text-[9px] font-black uppercase tracking-wider pr-1">Approve</span>
+                                <RotateCcw size={13} />
+                                <span className="text-[9px] font-black uppercase tracking-wider pr-1">Restore</span>
                               </button>
-                            )}
-                            <button
-                              onClick={() => handleOpenEdit(evt)}
-                              className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                              title="Edit Event"
-                              aria-label={`Edit event ${evt.title}`}
-                            >
-                              <Pencil size={13} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEvent(evt.id)}
-                              className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                              title="Delete Event"
-                              aria-label={`Delete event ${evt.title}`}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </>
+                              {canPublishDirectly && (
+                                <button
+                                  onClick={() => handlePermanentDeleteEvent(evt.id)}
+                                  className="p-2 bg-ares-red/15 hover:bg-ares-red/30 text-ares-red-light border border-ares-red/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                                  title="Permanently Delete Event"
+                                  aria-label={`Permanently delete event ${evt.title}`}
+                                >
+                                  <Trash2 size={13} />
+                                  <span className="text-[9px] font-black uppercase tracking-wider pr-1">Purge</span>
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {canPublishDirectly && evt.status === "pending" && (
+                                <button
+                                  onClick={() => handleApproveEvent(evt)}
+                                  className="p-2 bg-ares-success/15 hover:bg-ares-success/30 text-ares-success border border-ares-success/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                                  title="Approve & Publish Event"
+                                  aria-label={`Approve and publish event ${evt.title}`}
+                                >
+                                  <Check size={13} />
+                                  <span className="text-[9px] font-black uppercase tracking-wider pr-1">Approve</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleOpenEdit(evt)}
+                                className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                                title="Edit Event"
+                                aria-label={`Edit event ${evt.title}`}
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEvent(evt)}
+                                className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                                title="Delete Event"
+                                aria-label={`Delete event ${evt.title}`}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </>
+                          )
                         ) : (
                           <span className="text-[9px] text-marble/40 uppercase font-black tracking-widest">🔒 Locked</span>
                         )}
