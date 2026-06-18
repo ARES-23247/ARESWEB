@@ -1,5 +1,4 @@
-﻿import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 
 interface Contributor {
   id: number;
@@ -14,16 +13,34 @@ interface ContributorStackProps {
 }
 
 export function ContributorStack({ roomId, max = 5 }: ContributorStackProps) {
-  const { data: contributors = [], isLoading } = useQuery<Contributor[]>({
-    queryKey: ['contributors', roomId],
-    queryFn: async () => {
-      const res = await fetch(`/api/liveblocks/contributors/${roomId}`);
-      if (!res.ok) throw new Error('Failed to fetch contributors');
-      const data = await res.json() as { contributors?: Contributor[] };
-      return data.contributors || [];
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    fetch(`/api/liveblocks/contributors/${roomId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch contributors');
+        return res.json() as Promise<{ contributors?: Contributor[] }>;
+      })
+      .then(data => {
+        if (active) {
+          setContributors(data.contributors || []);
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch contributors:', err);
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [roomId]);
 
   if (isLoading || contributors.length === 0) return null;
 

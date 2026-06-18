@@ -1,12 +1,28 @@
 import { memo, useCallback } from "react";
-import { siteConfig } from "../../site.config";
-import { Link } from "@tanstack/react-router";
+import { siteConfig } from "@/lib/site-config";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
-import { useGetPublicSettings } from "../../api/settings";
-import { useSidebarStore } from "../../store/sidebarStore";
+import { useSidebarStore } from "@/store/sidebarStore";
 
-import { type DocRecord } from "../../hooks/useDocs";
+export interface DocRecord {
+  slug: string;
+  title: string;
+  category: string;
+  sortOrder: number;
+  description: string;
+  content: string;
+  status: string;
+  isDeleted: number;
+  isPortfolio: number;
+  isExecutiveSummary: number;
+  displayInAreslib: number;
+  displayInMathCorner: number;
+  displayInScienceCorner: number;
+  updatedAt?: string;
+  original_authorNickname?: string;
+  original_authorAvatar?: string;
+}
 
 interface DocsSidebarProps {
   groupedDocs: [string, DocRecord[]][];
@@ -53,8 +69,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
     if (changed) setDocsExpandedCategories(newCats);
   }
 
-  const { data: settingsRes } = useGetPublicSettings();
-  const docsDriveUrl = settingsRes?.settings?.["COMMUNITY_DOCS_URL"] || null;
+  const docsDriveUrl = null;
 
   const toggleCat = useCallback((cat: string) => {
     toggleDocsCategory(cat);
@@ -133,7 +148,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                         to={`${basePath}/${doc.slug}` as any}
                         className={`block pl-6 pr-2 py-1.5 text-sm ares-cut-sm transition-colors ${
                           currentSlug === doc.slug
-                            ? "bg-ares-red/15 text-ares-red font-bold border-l-2 border-ares-red"
+                            ? "bg-ares-red text-white font-bold"
                             : "text-white/60 hover:text-white hover:bg-white/5"
                         }`}
                         onClick={() => {

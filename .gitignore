@@ -1,61 +1,56 @@
 # Dependencies
 node_modules/
-package-lock.json
+.pnp
+.pnp.*
 
-# Build output
+# Build outputs
 dist/
-.wrangler/
+build/
+/functions/lib/
+/out/
 _worker.bundle
 functions_out/
 
-# IDE
+# Cache and build info
+.next/
+.wrangler/
+.eslintcache
+*.tsbuildinfo
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE / OS
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Environment
+# Environment variables
 .env
 .env.local
+.env.test
 .dev.vars
 
-# Build / lint / test artifacts
-*.log
-*.txt
-eslint-report.*
-eslint-utf8.txt
-eslint_errors.txt
-eslint-results.json
-vitest_*.txt
-.tsbuildinfo
-.eslintcache
-tsc_*.txt
-tsc_output_*.txt
+# Firebase logs and cache
+.firebase/
+firebase-debug.log*
 
-# pa11y reports
+# Testing coverage & reports
+coverage/
+test-results/
+playwright-report/
+admin-dashboard.png
 pa11y_report*.json
 pa11y_report*.txt
 pa11y_errors*.log
 pa11y_utf8*.log
 
-# Debug / migration scripts (should not be in production tracking)
-*.cjs
-*.mjs
-*.py
-debug_*.json
-testGcal.ts
-test-bsky.ts
-test-insert.ts
-auth.cli.ts
-# NOTE: eslint.config.js and eslint.config.mjs are intentionally tracked — project linting configs.
-!eslint.config.js
-!eslint.config.mjs
-# NOTE: .pa11yci.cjs is intentionally tracked — it is the accessibility CI config.
-!.pa11yci.cjs
-
-# Temp data dumps
+# Scratch / Temp files
+scratch/
+scratch_migration/
 all_docs.json
 quiz_content*.json
 quiz_content.md
@@ -65,7 +60,7 @@ trouble_sample.json
 large_files.json
 remote_docs*.json
 
-# SQL migration / hotfix files
+# SQL migration / hotfix files (historical ignores)
 docs-content-fix.sql
 docs-seed-fixed.sql
 docs-schema.sql
@@ -84,26 +79,8 @@ test_admin_query.sql
 test.sql
 chunk.sql
 min.sql
-# NOTE: schema.sql and original_schema.sql are intentionally tracked — authoritative DB schema for CI.
 
-# Coverage / test reports
-coverage/
-test-results/
-playwright-report/
-admin-dashboard.png
-
-# Scratch directories
-scratch/
-scratch_migration/
-
-# Archived audit reports
-archive/audits/
-
-# Wrangler
-wrangler*.log
-*.timestamp-*.mjs
-
-# Next-Firebase Build Cache
-next-firebase/.firebase/
-next-firebase/.next/
-
+# Explicitly track files we want
+!eslint.config.js
+!eslint.config.mjs
+!.pa11yci.cjs

@@ -1,13 +1,11 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RefreshCw, Save, Image as ImageIcon, Shuffle, ToggleLeft, ToggleRight } from "lucide-react";
-import { authClient } from "../utils/auth-client";
-import { logger } from "../utils/logger";
 
 interface AvatarEditorProps {
   currentImage?: string | null;
   onClose: () => void;
-  onSave?: () => void;
+  onSave: (imageUrl: string) => void;
 }
 
 /* ─── DiceBear 9.x Official Parameters ──────────────────────────── */
@@ -46,19 +44,17 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
     try {
       if (!currentImage) return new URLSearchParams();
       const url = new URL(currentImage);
-      // SEC-WR-12: Validate URL is from allowed DiceBear domain to prevent malicious avatar URLs
       if (!url.hostname.endsWith('dicebear.com') && !url.hostname.endsWith('api.dicebear.com')) {
-        logger.warn('Avatar URL must be from dicebear.com domain');
+        console.warn('Avatar URL must be from dicebear.com domain');
         return new URLSearchParams();
       }
-      // Ensure it's https
       if (url.protocol !== 'https:') {
-        logger.warn('Avatar URL must use HTTPS');
+        console.warn('Avatar URL must use HTTPS');
         return new URLSearchParams();
       }
       return new URLSearchParams(url.search);
     } catch {
-      logger.warn('Invalid avatar URL format');
+      console.warn('Invalid avatar URL format');
       return new URLSearchParams();
     }
   };
@@ -103,14 +99,8 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
     baseColor: isBottts ? getParam("baseColor", BOTTTS_OPTIONS.baseColor) : getRandom(BOTTTS_OPTIONS.baseColor),
   });
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // IN-05: Debounce for randomizeAll to prevent rapid DiceBear API calls
-  // when users click the randomize button multiple times quickly
   const randomizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const randomizeAll = useCallback(() => {
     if (styleMode === "avataaars") {
       setAvaState({
@@ -141,14 +131,12 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
       });
     }
 
-    // Clear any pending randomize calls
     if (randomizeDebounceRef.current) {
       clearTimeout(randomizeDebounceRef.current);
       randomizeDebounceRef.current = null;
     }
   }, [styleMode]);
 
-  // Debounced version of randomizeAll for rapid clicks
   const debouncedRandomize = useCallback(() => {
     if (randomizeDebounceRef.current) {
       clearTimeout(randomizeDebounceRef.current);
@@ -171,7 +159,6 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
       params.set("clothing", avaState.clothing);
       params.set("clothesColor", avaState.clothesColor);
       params.set("skinColor", avaState.skinColor);
-      // Probability-gated features
       if (avaState.showAccessories) {
         params.set("accessories", avaState.accessories);
         params.set("accessoriesColor", avaState.accessoriesColor);
@@ -204,33 +191,21 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
     }
   }, [styleMode, avaState, botState]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setError(null);
-    try {
-      const { error: apiError } = await authClient.updateUser({
-        image: currentUrl
-      });
-      if (apiError) throw new Error(apiError.message || "Failed to update profile image");
-      // Call onSave callback to refresh session data instead of full page reload
-      if (onSave) onSave();
-      onClose();
-    } catch (err) {
-      setError(String(err));
-      setIsSaving(false);
-    }
+  const handleSave = () => {
+    onSave(currentUrl);
+    onClose();
   };
 
   const renderSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-black/50 border border-white/10 ares-cut-sm px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-red appearance-none custom-select"
+        className="bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-gold/50 appearance-none custom-select"
       >
         {options.map((opt) => (
-          <option key={opt} value={opt}>{opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</option>
+          <option key={opt} value={opt} className="bg-ares-gray-deep">{opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</option>
         ))}
       </select>
     </div>
@@ -238,13 +213,14 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
 
   const renderColorSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map((hex) => (
           <button
             key={hex}
+            type="button"
             onClick={() => onChange(hex)}
-            className={`w-7 h-7 ares-cut-sm border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/60"}`}
+            className={`w-7 h-7 rounded-lg border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/60"}`}
             style={{ backgroundColor: `#${hex}` }}
             aria-label={`Color #${hex}`}
           />
@@ -255,8 +231,8 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
 
   const renderToggle = (label: string, value: boolean, onChange: (val: boolean) => void) => (
     <div className="flex items-center justify-between py-2">
-      <label className="text-xs font-bold text-white/60 uppercase tracking-wider">{label}</label>
-      <button onClick={() => onChange(!value)} className="text-white">
+      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider">{label}</label>
+      <button type="button" onClick={() => onChange(!value)} className="text-white">
         {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/60" />}
       </button>
     </div>
@@ -267,21 +243,25 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-[8px]">
         <style>{`
           .custom-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1rem; padding-right: 2.5rem; }
+          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
         `}</style>
         
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-4xl bg-ares-gray-deep border border-white/10 ares-cut-lg shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative"
+          className="w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative"
         >
           {/* Left Panel: Preview */}
-          <div className="w-full md:w-2/5 p-4 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0 bg-ares-gray-dark/40">
+          <div className="w-full md:w-2/5 p-4 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0 bg-neutral-950/40">
             <div className="absolute inset-0 bg-gradient-to-br from-ares-red/10 to-transparent pointer-events-none" />
             
             <div className="relative group w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
               <div className="absolute inset-0 bg-gradient-to-br from-ares-red/30 to-ares-gold/30 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-full h-full ares-cut md:ares-cut-lg bg-ares-gray-dark border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
+              <div className="relative w-full h-full rounded-2xl bg-neutral-950 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
                 <img
                   src={currentUrl}
                   alt="Interactive Avatar Preview"
@@ -291,8 +271,9 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
             </div>
 
             <button
+              type="button"
               onClick={debouncedRandomize}
-              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm md:ares-cut text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px]"
+              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px]"
             >
               <Shuffle size={14} className="text-ares-gold md:w-4 md:h-4" />
               Randomize
@@ -300,29 +281,31 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
           </div>
 
           {/* Right Panel: Editor Controls */}
-          <div className="w-full md:w-3/5 flex flex-col h-full bg-ares-gray-dark/50 min-h-0">
-            <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/5 sticky top-0 bg-ares-gray-dark/90 backdrop-blur-md z-20">
+          <div className="w-full md:w-3/5 flex flex-col h-full bg-neutral-950/20 min-h-0">
+            <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/5 sticky top-0 bg-neutral-900 z-20">
               <h2 className="text-base md:text-lg font-black flex items-center gap-2 tracking-tight">
                 <ImageIcon className="text-ares-red" size={18} />
                 Character Creator
               </h2>
-              <button onClick={onClose} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors">
+              <button type="button" onClick={onClose} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
               {/* Archetype Selector */}
-              <div className="flex bg-black/50 p-1 ares-cut-sm md:ares-cut mb-4 md:mb-6 border border-white/5">
+              <div className="flex bg-black/50 p-1 rounded-xl mb-4 md:mb-6 border border-white/5">
                 <button
+                  type="button"
                   onClick={() => setStyleMode("avataaars")}
-                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-white/60 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${styleMode === "avataaars" ? "bg-ares-red text-white shadow-lg" : "text-white/60 hover:text-white"}`}
                 >
                   👤 Human
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStyleMode("bottts")}
-                  className={`flex-1 py-1.5 md:py-2 ares-cut-sm md:ares-cut-sm text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-white/60 hover:text-white"}`}
+                  className={`flex-1 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${styleMode === "bottts" ? "bg-ares-gold text-black shadow-lg" : "text-white/60 hover:text-white"}`}
                 >
                   🤖 Robot
                 </button>
@@ -378,22 +361,16 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
                   </>
                 )}
               </div>
-
-              {error && (
-                <div className="mt-4 p-4 bg-ares-red text-white font-bold ares-cut-sm text-sm shadow-lg shadow-ares-red/20">
-                  {error}
-                </div>
-              )}
             </div>
 
             <div className="p-4 md:p-5 border-t border-white/5 bg-black/40 sticky bottom-0 z-20">
               <button
+                type="button"
                 onClick={handleSave}
-                disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white ares-cut-sm md:ares-cut shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-lg shadow-[0_0_30px_rgba(220,38,38,0.3)] transition-all"
               >
-                {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                {isSaving ? "Flashing Firmware..." : "Confirm Identity"}
+                <Save size={18} />
+                Confirm Avatar
               </button>
             </div>
           </div>

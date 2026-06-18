@@ -56,12 +56,31 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           ...defaultSchema,
           tagNames: [
             ...(defaultSchema.tagNames || []),
+            "iframe",
             // Non-sim components
             "configvisualizer", "simulationplayground", "codeplayground",
             "screenshotgallery", "interactivetutorial",
             // All sims from SIM_COMPONENTS (auto-populated)
             ...SIM_TAG_NAMES
-          ]
+          ],
+          attributes: {
+            ...(defaultSchema.attributes || {}),
+            "*": ["className", "style"],
+            iframe: [
+              "src",
+              "width",
+              "height",
+              "frameborder",
+              "allow",
+              "allowfullscreen",
+              "className",
+              "style"
+            ]
+          },
+          protocols: {
+            ...(defaultSchema.protocols || {}),
+            src: ["http", "https"]
+          }
         }]
       ]}
       components={{
@@ -70,7 +89,6 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         simulationplayground: () => <LazyWrap><SimulationPlayground /></LazyWrap>,
         codeplayground: () => <LazyWrap><CodePlayground /></LazyWrap>,
         screenshotgallery: () => <LazyWrap><ScreenshotGallery /></LazyWrap>,
-        // @ts-expect-error Custom component tag names
         interactivetutorial: () => <LazyWrap><InteractiveTutorial /></LazyWrap>,
         // All sims from SIM_COMPONENTS (auto-populated)
         ...Object.fromEntries(
@@ -96,7 +114,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           const text = String(children);
           const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           return (
-            <h3 id={id} className="text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative">
+            <h3 id={id} className="inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-6 mb-2 scroll-m-24 group relative">
               <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan" aria-label="Link to section">
                 <LinkIcon size={16} />
               </a>
@@ -164,6 +182,12 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
             alt={alt || ""}
             className="my-6 rounded-lg border border-white/10 max-w-full h-auto"
             loading="lazy"
+          />
+        ),
+        iframe: (props) => (
+          <iframe
+            {...props}
+            className={`w-full aspect-video rounded-lg my-6 border-none shadow-xl ${props.className || ""}`}
           />
         ),
       }}

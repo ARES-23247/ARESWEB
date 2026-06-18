@@ -20,7 +20,6 @@ export default class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: unknown): State {
-    // Type narrow from unknown to extract error information safely
     const getErrorMessage = (err: unknown): string => {
       if (err instanceof Error) {
         return err.message || "";
@@ -61,9 +60,10 @@ export default class ErrorBoundary extends Component<Props, State> {
       errorMessage.includes("cross-origin") ||
       errorMessage.includes("Blocked a frame");
 
-    const correlationId = crypto.randomUUID().split('-')[0].toUpperCase();
+    const correlationId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 10)).split('-')[0].toUpperCase();
 
-    // Extract status code with proper type guards
     const getStatusCode = (err: unknown): number | undefined => {
       if (err instanceof Error && "status" in err && typeof err.status === "number") {
         return err.status;
@@ -80,7 +80,6 @@ export default class ErrorBoundary extends Component<Props, State> {
       return undefined;
     };
 
-    // Extract error details with type narrowing
     const getErrorDetails = (err: unknown): { stack: string; toString: string } => {
       if (err instanceof Error) {
         return {
@@ -106,16 +105,6 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ARES React Error Boundary Intercepted Fault:", error, errorInfo);
-
-    // Report to Sentry if available
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof window !== "undefined" && (window as any).Sentry) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).Sentry.captureException(error, {
-        tags: { component: "ErrorBoundary", correlationId: this.state.correlationId },
-        extra: { errorInfo, statusCode: this.state.statusCode },
-      });
-    }
   }
 
   public render() {

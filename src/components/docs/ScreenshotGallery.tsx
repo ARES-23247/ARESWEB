@@ -1,21 +1,40 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useGetMedia } from "../../api";
+import { authenticatedFetch } from "@/lib/api";
 
 export default function ScreenshotGallery() {
-  const { data: mediaRes, isLoading } = useGetMedia();
-
-  const data = mediaRes || null;
-
+  const [images, setImages] = useState<string[]>([
+    "https://api.dicebear.com/7.x/bottts/svg?seed=robotics1",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=robotics2",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=robotics3"
+  ]);
+  const [isLoading, setIsLoading] = useState(true);
   const [index, setIndex] = useState(0);
 
-  // Filter only images and reverse to show newest first
-  const images = data?.media
-    ?.filter((m: { httpMetadata?: { contentType?: string } }) => m.httpMetadata?.contentType?.startsWith("image/"))
-    ?.reverse()
-    .map((m: { key: string }) => `/api/media/${m.key}`) || ["/hero_bg.png", "/gallery_4.png", "/news_1.png"]; // fallbacks
+  useEffect(() => {
+    async function loadPhotos() {
+      try {
+        const res = await authenticatedFetch("/api/photos");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.photos && data.photos.length > 0) {
+            const urls = data.photos
+              .map((p: any) => p.publicUrl)
+              .filter(Boolean);
+            if (urls.length > 0) {
+              setImages(urls);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load screenshots from API:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadPhotos();
+  }, []);
 
   const next = () => setIndex((i) => (i + 1) % images.length);
   const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);

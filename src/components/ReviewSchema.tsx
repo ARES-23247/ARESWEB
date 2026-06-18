@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { siteConfig } from "../site.config";
+import { siteConfig } from "@/lib/site-config";
 
 interface Review {
   author: string;

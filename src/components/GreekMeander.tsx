@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../utils/cn";
+import { cn } from "@/lib/utils";
 
 interface GreekMeanderProps {
   /**
@@ -19,9 +19,6 @@ interface GreekMeanderProps {
 
 /**
  * ARES 23247 Standard Greek Meander branding element.
- * 
- * This component standardizes the "Greek Key" pattern across the portal,
- * ensuring consistent color (ares-bronze) and line weight.
  */
 export const GreekMeander: React.FC<GreekMeanderProps> = ({
   variant = "thin",
@@ -29,7 +26,7 @@ export const GreekMeander: React.FC<GreekMeanderProps> = ({
   className,
 }) => {
   return (
-    <div 
+    <div
       className={cn(
         "w-full bg-repeat-x pointer-events-none",
         variant === "thin" ? "h-2 meander-border" : "h-3 meander-divider",

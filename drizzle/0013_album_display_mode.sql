@@ -1,1 +1,0 @@
-ALTER TABLE `albums` ADD `display_mode` text DEFAULT 'masonry' NOT NULL;

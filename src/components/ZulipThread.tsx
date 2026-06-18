@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, RefreshCw, Send } from 'lucide-react';
-import { sanitizeHtml } from '../utils/security';
+import { sanitizeHtml } from '../lib/security';
 
 interface ZulipMessage {
   id: number;

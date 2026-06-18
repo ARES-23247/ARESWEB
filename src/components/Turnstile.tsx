@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
-import { siteConfig } from "../site.config";
+import { siteConfig } from "@/lib/site-config";
 
 /**
  * Turnstile CAPTCHA Component
