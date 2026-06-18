@@ -140,7 +140,8 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
       </div>
  
       {/* Navigation list */}
-      <div className="flex-grow py-6 space-y-8 px-3">
+      <div className="flex-grow py-6 space-y-8 px-3 overflow-y-auto scrollbar-thin">
+        {/* Internal Workspace */}
         <div>
           <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
             Internal Workspace
@@ -149,8 +150,16 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="" icon={LayoutDashboard} label="Command Center" currentPath={pathname} />
             <NavButton tab="profile" icon={User} label="My Profile" currentPath={pathname} />
             <NavButton tab="tasks" icon={ClipboardList} label="Kanban Tasks" currentPath={pathname} />
+          </div>
+        </div>
+
+        {/* Robot Tools */}
+        <div>
+          <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
+            Robot Tools
+          </h4>
+          <div className="space-y-1">
             <NavButton tab="scope" icon={Cpu} label="ARES-Scope" currentPath={pathname} />
-            <NavButton tab="field" icon={Grid} label="Field Editor" currentPath={pathname} />
             <Link
               to="/dashboard/scope?sim=true"
               onClick={onCloseMobile}
@@ -165,34 +174,56 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
                 <span className="truncate">Robot Simulator</span>
               </div>
             </Link>
-            
-            <div className="h-px bg-white/5 mx-2 my-2" />
-            
+            <Link
+              to="/aresplanner"
+              onClick={onCloseMobile}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
+                pathname === "/aresplanner"
+                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
+                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
+              }`}
+            >
+              <div className="flex items-center gap-3 truncate">
+                <Compass size={16} className={pathname === "/aresplanner" ? "text-white animate-pulse" : "text-marble/55"} />
+                <span className="truncate">ARES Pathplanning</span>
+              </div>
+            </Link>
+            <NavButton tab="field" icon={Grid} label="Field Editor" currentPath={pathname} />
+          </div>
+        </div>
+
+        {/* Media Management */}
+        <div>
+          <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
+            Media Management
+          </h4>
+          <div className="space-y-1">
             <NavButton tab="blog" icon={PenTool} label="Manage Blogs" currentPath={pathname} />
             <NavButton tab="events" icon={Calendar} label="Manage Events" currentPath={pathname} />
             <NavButton tab="documents" icon={BookOpen} label="Manage Docs" currentPath={pathname} />
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             <NavButton tab="photos" icon={ImageIcon} label="Manage Photos" currentPath={pathname} />
-            {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
-              <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} hasAlert={hasPendingInquiries} />
-            )}
-            {userRole === "admin" && (
-              <NavButton tab="users" icon={ShieldAlert} label="Manage Users" currentPath={pathname} />
-            )}
-            
-            <div className="h-px bg-white/5 mx-2 my-2" />
-            
-            <Link
-              to="/"
-              onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
-            >
-              <Globe size={16} className="text-ares-cyan/85" />
-              <span className="truncate">Public Portal</span>
-            </Link>
           </div>
         </div>
 
+        {/* Administrative */}
+        {((userRole === "admin" || userRole === "coach" || userRole === "mentor") || userRole === "admin") && (
+          <div>
+            <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
+              Administrative
+            </h4>
+            <div className="space-y-1">
+              {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
+                <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} hasAlert={hasPendingInquiries} />
+              )}
+              {userRole === "admin" && (
+                <NavButton tab="users" icon={ShieldAlert} label="Manage Users" currentPath={pathname} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Archival Indices */}
         <div>
           <h4 className="text-[10px] uppercase font-black tracking-widest text-marble/45 mb-2.5 px-4 font-heading">
             Archival Indices
@@ -201,30 +232,25 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <Link
               to="/robots"
               onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
+                pathname === "/robots"
+                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
+                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
+              }`}
             >
-              <Cpu size={14} className="text-marble/40" /> Fleet Archive
+              <div className="flex items-center gap-3 truncate">
+                <Cpu size={16} className={pathname === "/robots" ? "text-white animate-pulse" : "text-marble/55"} />
+                <span className="truncate">Fleet Archive</span>
+              </div>
             </Link>
+
             <Link
-              to="/aresplanner"
+              to="/"
               onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
             >
-              <Compass size={14} className="text-marble/40" /> ARES Trajectory Planner
-            </Link>
-            <Link
-              to="/dashboard/scope?sim=true"
-              onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
-            >
-              <Sparkles size={14} className="text-marble/40" /> Robot Simulator
-            </Link>
-            <Link
-              to="/blog"
-              onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-marble/80 hover:bg-white/5 hover:text-white rounded transition-all"
-            >
-              <BookOpen size={14} className="text-marble/40" /> Blog Articles
+              <Globe size={16} className="text-ares-cyan/85" />
+              <span className="truncate">Public Portal</span>
             </Link>
           </div>
         </div>
