@@ -375,6 +375,19 @@ export default function EventEditorDrawer({
     }
   };
 
+  const handleDeleteEvent = async () => {
+    if (!canEdit || !editId) return;
+    if (!confirm("Are you sure you want to delete this event from the calendar?")) return;
+
+    try {
+      await deleteDoc(doc(db, "events", editId));
+      onClose();
+    } catch (err: any) {
+      console.error("Error deleting event:", err);
+      alert("Failed to delete event: " + err.message);
+    }
+  };
+
   // Action: Revert To Revision
   const handleRevertToRevision = (rev: EventRevision) => {
     setFormTitle(rev.title);
@@ -1045,22 +1058,36 @@ export default function EventEditorDrawer({
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/5 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-5 py-3 border border-white/10 hover:bg-white/5 text-marble/70 hover:text-white rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all"
-                  >
-                    Cancel
-                  </button>
-                  {canEdit && (
+                <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
+                  <div>
+                    {editId && canEdit && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteEvent}
+                        className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                      >
+                        <Trash2 size={14} />
+                        Delete Event
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
                     <button
-                      type="submit"
-                      className="px-6 py-3 bg-ares-red text-white hover:bg-ares-red-dark font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer"
+                      type="button"
+                      onClick={onClose}
+                      className="px-5 py-3 border border-white/10 hover:bg-white/5 text-marble/70 hover:text-white rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all"
                     >
-                      {editId ? "Save Changes" : "Create Event"}
+                      Cancel
                     </button>
-                  )}
+                    {canEdit && (
+                      <button
+                        type="submit"
+                        className="px-6 py-3 bg-ares-red text-white hover:bg-ares-red-dark font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer"
+                      >
+                        {editId ? "Save Changes" : "Create Event"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
 
