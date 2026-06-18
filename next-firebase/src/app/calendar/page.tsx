@@ -259,9 +259,9 @@ export default function CalendarPage() {
 
   const selectedDayEvents = getEventsForDay(selectedDate);
 
-  const localToday = new Date(2026, 5, 2); // Reference operational date June 2, 2026
-
-  // Group events into upcoming and past relative to June 2, 2026
+  // Group events into upcoming and past relative to the current date (start of today)
+  const localToday = new Date();
+  localToday.setHours(0, 0, 0, 0);
   const upcomingEvents = filteredEvents
     .filter((event) => {
       if (!event.dateStart) return false;
