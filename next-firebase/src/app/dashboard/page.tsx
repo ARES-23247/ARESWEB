@@ -120,6 +120,28 @@ export default function DashboardHome() {
         </div>
       )}
 
+      {/* ─── RECAPTCHA PROTECTION WARNING ─── */}
+      {!import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+        <div className="glass-card border border-ares-gold/40 bg-ares-gold/5 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 rounded-xl bg-ares-gold/10 border border-ares-gold/30 flex items-center justify-center text-ares-gold shrink-0">
+              <Zap size={24} className="animate-pulse" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-white text-base tracking-tight uppercase font-heading">
+                Security Alert: Site Forms Unprotected
+              </h3>
+              <p className="text-marble/75 text-xs mt-1 max-w-xl">
+                The public forms (Join, Sponsors) are running in <strong className="text-ares-gold">Bypass Mode</strong> because no custom reCAPTCHA site key is configured in the production environment. Please configure `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` to activate spam protection.
+              </p>
+            </div>
+          </div>
+          <span className="px-4 py-2 bg-ares-gold/10 text-ares-gold border border-ares-gold/30 ares-cut-sm text-[10px] uppercase font-black tracking-widest shrink-0 animate-pulse">
+            Bypass Active
+          </span>
+        </div>
+      )}
+
       {/* ─── STATS GRID ─── */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         

@@ -1,9 +1,10 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { Request, Response, NextFunction } from "express";
 
 /**
- * Standard utility for merging Tailwind CSS classes with conditional logic.
+ * Express wrapper helper to automatically catch promise rejections and forward them to the global error middleware.
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};

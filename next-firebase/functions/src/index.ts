@@ -11,6 +11,7 @@ import uploadRouter from "./routes/upload";
 import profilesRouter from "./routes/profiles";
 import judgesRouter from "./routes/judges";
 import aiRouter from "./routes/ai";
+import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -51,6 +52,9 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/profiles", profilesRouter);
 app.use("/api/judges", judgesRouter);
 app.use("/api/ai", aiRouter);
+
+// Global Error Handler
+app.use(globalErrorHandler);
 
 // Export Cloud Function
 export const api = onRequest({ 
