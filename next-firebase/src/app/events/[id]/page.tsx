@@ -254,6 +254,15 @@ export default function EventDetailPage() {
     return signups.find((s) => s.userId === user.uid) || null;
   }, [signups, user]);
 
+  // Resolve Google Maps URL for top header location link
+  const topGmapsUrl = useMemo(() => {
+    if (!event || !event.location) return "";
+    const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
+    const venueName = selected ? selected.name : event.location;
+    const address = selected ? selected.address : (event.locationId === "mars-building" || event.location === "MARS Building") ? "123 Science Way, Morgantown, WV" : "";
+    return selected?.gmapsUrl || `https://maps.google.com/maps?q=${encodeURIComponent(address || venueName)}`;
+  }, [event, locations]);
+
   // Prefill RSVP form
   useEffect(() => {
     if (mySignup) {
@@ -535,7 +544,7 @@ export default function EventDetailPage() {
               <div className="flex items-start md:items-center gap-1.5">
                 <span className="text-white font-extrabold uppercase text-xs tracking-wider">Location:</span>
                 <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}`}
+                  href={topGmapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 text-ares-bronze hover:text-white transition-colors"
