@@ -13,7 +13,7 @@ import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
-import { toastApiError } from "../api/honoClient";
+import { toastApiError } from "../api/apiClient";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));

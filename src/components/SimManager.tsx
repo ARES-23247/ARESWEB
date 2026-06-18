@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FolderOpen, AlertCircle, Code, Zap, Check, Copy, Plus, Folder, RefreshCw, Play, X, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { toastApiError } from "../api/honoClient";
+import { toastApiError } from "../api/apiClient";
 import { SIM_METADATA, SIM_COMPONENTS } from "./generated/sim-registry";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Suspense } from "react";
