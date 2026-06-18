@@ -42,7 +42,7 @@ export interface TeamEvent {
   isPotluck?: number;
   isVolunteer?: number;
   isDeleted?: number;
-  status?: "published" | "draft";
+  status?: "published" | "draft" | "pending";
 }
 
 export interface EventRevision {
@@ -57,7 +57,7 @@ export interface EventRevision {
   isPotluck?: number;
   isVolunteer?: number;
   isDeleted?: number;
-  status?: "published" | "draft";
+  status?: "published" | "draft" | "pending";
   editedBy: string;
   editedByName: string;
   editedByAvatar: string;
@@ -111,6 +111,7 @@ export default function EventEditorDrawer({
   const [formCoverImage, setFormCoverImage] = useState("");
   const [formIsPotluck, setFormIsPotluck] = useState<number>(0);
   const [formIsVolunteer, setFormIsVolunteer] = useState<number>(0);
+  const [formStatus, setFormStatus] = useState<"published" | "pending" | "draft">("published");
 
   // Modal display states
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -154,6 +155,9 @@ export default function EventEditorDrawer({
   const editorRef = useFocusTrap(isOpen, onClose);
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
+  const canPublishDirectly = useMemo(() => {
+    return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
+  }, [user, authorizedUser]);
 
   // Fetch user profile for nickname and avatar (used in revision logging)
   useEffect(() => {
@@ -189,6 +193,7 @@ export default function EventEditorDrawer({
         setFormCoverImage(eventToEdit.coverImage || "");
         setFormIsPotluck(eventToEdit.isPotluck || 0);
         setFormIsVolunteer(eventToEdit.isVolunteer || 0);
+        setFormStatus(eventToEdit.status || "published");
       } else {
         // Create Mode
         setFormTitle("");
@@ -200,6 +205,7 @@ export default function EventEditorDrawer({
         setFormCoverImage("");
         setFormIsPotluck(0);
         setFormIsVolunteer(0);
+        setFormStatus(canPublishDirectly ? "published" : "pending");
       }
 
       // Reset modal UI states
@@ -336,7 +342,7 @@ export default function EventEditorDrawer({
       isPotluck: formIsPotluck,
       isVolunteer: formIsVolunteer,
       isDeleted: eventToEdit?.isDeleted ?? 0,
-      status: eventToEdit?.status ?? "published"
+      status: canPublishDirectly ? formStatus : "pending"
     };
 
     try {
@@ -988,6 +994,39 @@ export default function EventEditorDrawer({
                           </button>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Publish Status (Approval Workflow) */}
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Shield size={12} className="text-ares-gold" />
+                        Event Publishing Status
+                      </h4>
+                      <p className="text-[10px] text-marble/60 mt-1 leading-relaxed">
+                        {canPublishDirectly
+                          ? "You have Coach/Mentor authorization to directly publish to the public calendar."
+                          : "Events created by students require approval from a Coach or Mentor before appearing on the public calendar."}
+                      </p>
+                    </div>
+
+                    <div className="min-w-[160px] shrink-0">
+                      {canPublishDirectly ? (
+                        <select
+                          value={formStatus}
+                          onChange={(e) => setFormStatus(e.target.value as any)}
+                          className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan font-bold"
+                        >
+                          <option value="published" className="bg-neutral-900 text-white font-bold">Published</option>
+                          <option value="pending" className="bg-neutral-900 text-white font-bold">Pending Review</option>
+                          <option value="draft" className="bg-neutral-900 text-white font-bold">Draft</option>
+                        </select>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">
+                          ● Pending Review
+                        </span>
+                      )}
                     </div>
                   </div>
 

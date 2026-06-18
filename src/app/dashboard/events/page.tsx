@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, deleteDoc } from "firebase/firestore";
+import React, { useEffect, useState, useMemo } from "react";
+import { collection, doc, onSnapshot, deleteDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -12,8 +12,10 @@ import {
   Activity, 
   MapPin, 
   Calendar, 
-  Clock 
+  Clock,
+  Check
 } from "lucide-react";
+import { cleanUndefined } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api";
 
 import LocationManagerModal, { TeamLocation, MOCK_LOCATIONS } from "./components/LocationManagerModal";
@@ -49,6 +51,9 @@ export default function EventsManagementPage({
   const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string; }[]>([]);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+  const canPublishDirectly = useMemo(() => {
+    return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
+  }, [user, authorizedUser]);
 
   // Fetch team roster for quick check-ins
   useEffect(() => {
@@ -90,7 +95,8 @@ export default function EventsManagementPage({
               category: data.category || "internal",
               coverImage: data.coverImage || "",
               isPotluck: data.isPotluck || 0,
-              isVolunteer: data.isVolunteer || 0
+              isVolunteer: data.isVolunteer || 0,
+              status: data.status || "published"
             } as TeamEvent;
           });
           
@@ -199,6 +205,17 @@ export default function EventsManagementPage({
     }
   };
 
+  const handleApproveEvent = async (evt: TeamEvent) => {
+    if (!canPublishDirectly) return;
+    try {
+      const docRef = doc(db, "events", evt.id);
+      await setDoc(docRef, cleanUndefined({ ...evt, status: "published" }));
+    } catch (err: any) {
+      console.error("Error approving event:", err);
+      alert("Failed to approve event: " + err.message);
+    }
+  };
+
   return (
     <div className={editorOnly ? "" : "space-y-10 w-full text-left"}>
       {!editorOnly && (
@@ -284,15 +301,32 @@ export default function EventsManagementPage({
                         />
 
                         <div className="space-y-1.5 max-w-2xl">
-                          <span
-                            className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
-                              isOutreach
-                                ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
-                                : "bg-ares-red/15 border-ares-red/30 text-white"
-                            }`}
-                          >
-                            {evt.category}
-                          </span>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            <span
+                              className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
+                                isOutreach
+                                  ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
+                                  : "bg-ares-red/15 border-ares-red/30 text-white"
+                              }`}
+                            >
+                              {evt.category}
+                            </span>
+                            {evt.status === "pending" && (
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-amber-500/10 border-amber-500/30 text-amber-500 rounded">
+                                Pending Approval
+                              </span>
+                            )}
+                            {evt.status === "draft" && (
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-white/5 border-white/20 text-marble/60 rounded">
+                                Draft
+                              </span>
+                            )}
+                            {evt.status === "published" && (
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-success/15 border-ares-success/30 text-ares-success rounded">
+                                Published
+                              </span>
+                            )}
+                          </div>
                           <h3 className="text-lg font-bold text-white font-heading uppercase tracking-tight">
                             {evt.title}
                           </h3>
@@ -322,6 +356,17 @@ export default function EventsManagementPage({
                       <div className="flex gap-2 self-end md:self-auto shrink-0">
                         {canEdit ? (
                           <>
+                             {canPublishDirectly && evt.status === "pending" && (
+                              <button
+                                onClick={() => handleApproveEvent(evt)}
+                                className="p-2 bg-ares-success/15 hover:bg-ares-success/30 text-ares-success border border-ares-success/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                                title="Approve & Publish Event"
+                                aria-label={`Approve and publish event ${evt.title}`}
+                              >
+                                <Check size={13} />
+                                <span className="text-[9px] font-black uppercase tracking-wider pr-1">Approve</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => handleOpenEdit(evt)}
                               className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"

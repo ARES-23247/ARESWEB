@@ -43,7 +43,11 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true; // Publicly readable
-      allow write: if isAuthorized(); // Only team members can create or edit
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
 
       match /signups/{userId} {
         allow read: if isAuthorized();
