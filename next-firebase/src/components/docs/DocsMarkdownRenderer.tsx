@@ -114,7 +114,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           const text = String(children);
           const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           return (
-            <h3 id={id} className="text-xl font-bold font-heading mt-6 mb-2 text-ares-red scroll-m-24 group relative">
+            <h3 id={id} className="inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-6 mb-2 scroll-m-24 group relative">
               <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan" aria-label="Link to section">
                 <LinkIcon size={16} />
               </a>

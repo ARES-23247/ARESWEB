@@ -88,7 +88,7 @@ export default function RevisionHistoryTable<T extends GenericRevision>({
                 <span
                   className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded ${
                     rev.status === "published"
-                      ? "bg-ares-success/15 border-ares-success/30 text-ares-success"
+                      ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
                       : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                   }`}
                 >

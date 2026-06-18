@@ -148,7 +148,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                         to={`${basePath}/${doc.slug}` as any}
                         className={`block pl-6 pr-2 py-1.5 text-sm ares-cut-sm transition-colors ${
                           currentSlug === doc.slug
-                            ? "bg-ares-red/15 text-ares-red font-bold border-l-2 border-ares-red"
+                            ? "bg-ares-red text-white font-bold"
                             : "text-white/60 hover:text-white hover:bg-white/5"
                         }`}
                         onClick={() => {

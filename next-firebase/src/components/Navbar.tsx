@@ -192,7 +192,7 @@ export default function Navbar() {
                 <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
               </Link>
               <Link to="/docs" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <BookOpen size={12} className="text-ares-red" /> ARES Lib
+                <BookOpen size={12} className="text-ares-red" /> <span className="text-ares-red">ARES</span>Lib
               </Link>
               <Link to="/store" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <ShoppingBag size={12} className="text-ares-bronze" /> Official Store
@@ -366,7 +366,7 @@ export default function Navbar() {
                 <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
               </Link>
               <Link to="/docs" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <BookOpen size={12} className="text-ares-red" /> ARES Lib
+                <BookOpen size={12} className="text-ares-red" /> <span className="text-ares-red">ARES</span>Lib
               </Link>
               <Link to="/store" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <ShoppingBag size={12} className="text-ares-bronze" /> Official Store

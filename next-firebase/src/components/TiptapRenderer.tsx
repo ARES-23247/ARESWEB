@@ -70,7 +70,7 @@ const renderHeading = (node: ASTNode, children: ReactNode) => {
   let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2";
   if (level === 1) className = "text-3xl " + className + " mt-8";
   if (level === 2) className = "text-2xl font-bold font-heading mt-6 mb-3 text-ares-gold border-none pb-0";
-  if (level === 3) className = "text-xl font-bold font-heading mt-5 mb-2 text-ares-red border-none pb-0";
+  if (level === 3) className = "inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-5 mb-2 border-none pb-0";
   if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
 
   return <Tag className={className}>{children}</Tag>;
