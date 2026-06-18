@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
+import { authenticatedFetch } from "@/lib/api";
 import { 
   collection, 
   getDocs, 
@@ -85,12 +86,7 @@ export default function DashboardUsersPage() {
       // 3. Fetch Zulip users from Functions Backend
       let zulipUsers: any[] = [];
       try {
-        const idToken = await user.getIdToken();
-        const res = await fetch("/api/profiles/zulip/users", {
-          headers: {
-            Authorization: `Bearer ${idToken}`
-          }
-        });
+        const res = await authenticatedFetch("/api/profiles/zulip/users");
         if (res.ok) {
           const data = await res.json();
           zulipUsers = data.users || [];
@@ -249,12 +245,10 @@ export default function DashboardUsersPage() {
     setError(null);
 
     try {
-      const idToken = await user.getIdToken();
-      const res = await fetch("/api/profiles/zulip/users", {
+      const res = await authenticatedFetch("/api/profiles/zulip/users", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           email: targetUser.email,
@@ -341,12 +335,10 @@ export default function DashboardUsersPage() {
       // 3. Optionally provision Zulip account
       if (createZulipCheckbox) {
         try {
-          const idToken = await user.getIdToken();
-          const res = await fetch("/api/profiles/zulip/users", {
+          const res = await authenticatedFetch("/api/profiles/zulip/users", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               email: emailClean,

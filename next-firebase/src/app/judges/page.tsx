@@ -6,7 +6,7 @@ import { format } from "date-fns";
 
 import SEO from "@/components/SEO";
 import Turnstile from "@/components/Turnstile";
-import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 
 interface PortfolioDoc {
   slug: string;

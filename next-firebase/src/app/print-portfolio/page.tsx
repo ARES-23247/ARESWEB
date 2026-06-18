@@ -5,7 +5,7 @@ import { ShieldCheck, Calendar } from "lucide-react";
 
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import TiptapRenderer from "@/components/TiptapRenderer";
-import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 
 interface PortfolioDoc {
   slug: string;

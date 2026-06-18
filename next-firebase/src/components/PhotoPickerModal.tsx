@@ -12,7 +12,7 @@ interface PhotoPickerModalProps {
 }
 
 export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPickerModalProps) {
-  const [tab, setTab] = useState<"upload" | "gallery" | "google" | "url">("upload");
+  const [tab, setTab] = useState<"upload" | "gallery" | "albums" | "google" | "url">("upload");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +24,10 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
   // Gallery
   const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Albums
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string>("");
 
   // Google Photos Picker session state
   const [isPolling, setIsPolling] = useState(false);
@@ -45,17 +49,26 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
   const isTestEnv = typeof window !== "undefined" && 
     ((window as any).__vitest_worker__ || (window as any).process?.env?.NODE_ENV === "test");
 
-  // Fetch gallery photos
+  // Fetch gallery photos and albums
   const fetchGalleryPhotos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authenticatedFetch("/api/photos");
-      if (res.ok) {
-        const data = await res.json();
+      const [photosRes, albumsRes] = await Promise.all([
+        authenticatedFetch("/api/photos"),
+        authenticatedFetch("/api/photos/albums")
+      ]);
+
+      if (photosRes.ok) {
+        const data = await photosRes.json();
         setGalleryPhotos(data.photos || []);
       } else {
         throw new Error("Failed to load team photos gallery.");
+      }
+
+      if (albumsRes.ok) {
+        const data = await albumsRes.json();
+        setAlbums(data.albums || []);
       }
     } catch (err: any) {
       setError(err.message || "Failed to load media gallery.");
@@ -65,7 +78,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
   };
 
   useEffect(() => {
-    if (isOpen && tab === "gallery") {
+    if (isOpen && (tab === "gallery" || tab === "albums")) {
       fetchGalleryPhotos();
     }
   }, [isOpen, tab]);
@@ -391,9 +404,11 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
 
   if (!isOpen) return null;
 
-  const filteredPhotos = galleryPhotos.filter((photo) =>
-    (photo.originalFilename || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPhotos = galleryPhotos.filter((photo) => {
+    const matchesSearch = (photo.originalFilename || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesAlbum = !selectedAlbumId || photo.albumId === selectedAlbumId;
+    return matchesSearch && matchesAlbum;
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
@@ -520,6 +535,15 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
               </button>
               <button
                 type="button"
+                onClick={() => setTab("albums")}
+                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                  tab === "albums" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
+                }`}
+              >
+                Insert Albums
+              </button>
+              <button
+                type="button"
                 onClick={() => setTab("google")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "google" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
@@ -572,15 +596,34 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
               ) : tab === "gallery" ? (
                 <div className="space-y-4 flex flex-col justify-between h-full min-h-[300px]">
                   <div className="space-y-4">
-                    <div className="relative">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
-                      <input
-                        type="text"
-                        placeholder="Search gallery photos..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
-                      />
+                    <div className="flex gap-2.5">
+                      <div className="relative flex-1">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
+                        <input
+                          type="text"
+                          placeholder="Search gallery photos..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <label htmlFor="filter-album" className="text-[10px] font-black uppercase tracking-wider text-marble/50 shrink-0">Filter by Album</label>
+                        <select
+                          id="filter-album"
+                          value={selectedAlbumId}
+                          onChange={(e) => setSelectedAlbumId(e.target.value)}
+                          className="bg-black/60 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red cursor-pointer max-w-[150px]"
+                        >
+                          <option value="">All Albums</option>
+                          {albums.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.title} ({a.category})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {loading ? (
@@ -644,6 +687,58 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                         Insert Image
                       </button>
                     </div>
+                  </div>
+                </div>
+              ) : tab === "albums" ? (
+                <div className="space-y-4 flex flex-col justify-between h-full min-h-[300px]">
+                  <div className="space-y-4">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-20 gap-2">
+                        <span className="w-5 h-5 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
+                        <span className="text-[10px] text-marble/55">Loading albums...</span>
+                      </div>
+                    ) : albums.length === 0 ? (
+                      <div className="py-16 text-center text-[10px] font-mono text-marble/35 border border-dashed border-white/10 rounded">
+                        No albums found
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 max-h-[200px] overflow-y-auto scrollbar-thin">
+                        {albums.map((album: any) => (
+                          <div
+                            key={album.id}
+                            className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between hover:border-ares-gold transition-colors"
+                          >
+                            <div className="flex gap-2.5 items-start">
+                              {album.coverImageUrl ? (
+                                <img
+                                  src={album.coverImageUrl}
+                                  alt=""
+                                  className="w-12 h-12 rounded object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded bg-black/60 border border-dashed border-white/5 flex items-center justify-center text-marble/20 shrink-0">
+                                  📂
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-black text-white uppercase truncate">{album.title}</h4>
+                                <span className="text-[8px] font-black uppercase text-ares-gold/75 tracking-wider block mt-0.5">{album.category}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onSelect(`[album:${album.id}]`, album.title);
+                                onClose();
+                              }}
+                              className="mt-3 w-full py-1 bg-white text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm hover:bg-ares-gold transition-colors cursor-pointer"
+                            >
+                              Insert Album
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : tab === "google" ? (

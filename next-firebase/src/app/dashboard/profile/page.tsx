@@ -20,21 +20,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AvatarEditor from "@/components/AvatarEditor";
-
-interface College {
-  name: string;
-  domain: string;
-  years: string;
-  degree: string;
-}
-
-interface Employer {
-  name: string;
-  domain: string;
-  title: string;
-  current: boolean;
-  years: string;
-}
+import IdentityTab from "./components/IdentityTab";
+import SubteamsTab from "./components/SubteamsTab";
+import CareerTab, { College, Employer } from "./components/CareerTab";
+import PrivacyTab from "./components/PrivacyTab";
+import SafetyTab from "./components/SafetyTab";
 
 export default function DashboardProfilePage() {
   const { user, authorizedUser } = useAuth();
@@ -375,586 +365,103 @@ export default function DashboardProfilePage() {
         <form onSubmit={handleSubmit} className="lg:col-span-3 space-y-8">
           <div className="glass-card p-8 border border-white/10 flex flex-col gap-6">
             
-            {/* Tab 1: Identity & Bio */}
             {activeTab === "identity" && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                  <Sparkles size={14} /> Identity Details
-                </h3>
-                
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label htmlFor="profile-nickname" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Nickname *</label>
-                    <input
-                      id="profile-nickname"
-                      type="text"
-                      required
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. David"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-first-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">First Name</label>
-                    <input
-                      id="profile-first-name"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="Legal first name"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-last-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Last Name</label>
-                    <input
-                      id="profile-last-name"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="Legal last name"
-                    />
-                  </div>
-                </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="profile-pronouns" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pronouns</label>
-                    <input
-                      id="profile-pronouns"
-                      type="text"
-                      value={pronouns}
-                      onChange={(e) => setPronouns(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. he/him"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-avatar-url" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Avatar Image URL</label>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      {avatar && (
-                        <div className="w-12 h-12 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center p-1 shrink-0">
-                          <img src={avatar} alt="Avatar Preview" className="w-full h-full object-contain" />
-                        </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <input
-                          id="profile-avatar-url"
-                          type="url"
-                          value={avatar}
-                          onChange={(e) => setAvatar(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                          placeholder="https://..."
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setIsAvatarCreatorOpen(true)}
-                          className="px-3 py-1.5 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          Customize Avatar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="profile-bio" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Biography</label>
-                  <textarea
-                    id="profile-bio"
-                    rows={4}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors resize-none"
-                    placeholder="Tell us about your interest in robotics, engineering, or team role..."
-                  />
-                </div>
-
-                <div className="h-px bg-white/5 my-4" />
-
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest pb-2.5 flex items-center gap-2">
-                  <Info size={14} /> Fun & Trivia
-                </h3>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="profile-favorite-first" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite thing about *FIRST*®</label>
-                    <input
-                      id="profile-favorite-first"
-                      type="text"
-                      value={favoriteFirstThing}
-                      onChange={(e) => setFavoriteFirstThing(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. Gracious Professionalism, building code..."
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-favorite-mech" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite Robot Mechanism</label>
-                    <input
-                      id="profile-favorite-mech"
-                      type="text"
-                      value={favoriteRobotMechanism}
-                      onChange={(e) => setFavoriteRobotMechanism(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. Virtual Pivot Intake, active hang assembly..."
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-superstition" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Pre-match superstition</label>
-                    <input
-                      id="profile-superstition"
-                      type="text"
-                      value={preMatchSuperstition}
-                      onChange={(e) => setPreMatchSuperstition(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. fist-bumping drive coach, checking telemetry offsets..."
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-fun-fact" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Fun Fact</label>
-                    <input
-                      id="profile-fun-fact"
-                      type="text"
-                      value={funFact}
-                      onChange={(e) => setFunFact(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="A strange or unique fact about you..."
-                    />
-                  </div>
-                </div>
-              </div>
+              <IdentityTab
+                nickname={nickname}
+                setNickname={setNickname}
+                firstName={firstName}
+                setFirstName={setFirstName}
+                lastName={lastName}
+                setLastName={setLastName}
+                pronouns={pronouns}
+                setPronouns={setPronouns}
+                avatar={avatar}
+                setAvatar={setAvatar}
+                setIsAvatarCreatorOpen={setIsAvatarCreatorOpen}
+                bio={bio}
+                setBio={setBio}
+                favoriteFirstThing={favoriteFirstThing}
+                setFavoriteFirstThing={setFavoriteFirstThing}
+                favoriteRobotMechanism={favoriteRobotMechanism}
+                setFavoriteRobotMechanism={setFavoriteRobotMechanism}
+                preMatchSuperstition={preMatchSuperstition}
+                setPreMatchSuperstition={setPreMatchSuperstition}
+                funFact={funFact}
+                setFunFact={setFunFact}
+              />
             )}
 
-            {/* Tab 2: Subteams & Roles */}
             {activeTab === "subteams" && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                  <User size={14} /> Subteam Assignments
-                </h3>
-                
-                <div className="bg-black/25 border border-white/5 p-4 rounded-xl">
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Subteams (Select all that apply)</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableSubteams.map((team) => {
-                      const isSelected = subteams.includes(team);
-                      return (
-                        <button
-                          key={team}
-                          type="button"
-                          onClick={() => handleSubteamToggle(team)}
-                          className={`px-4 py-3 ares-cut-sm border text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/20 text-ares-gold border-ares-gold/50"
-                              : "bg-white/5 text-marble/65 border-transparent hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          {team}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label htmlFor="profile-rookie-year" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Rookie Year</label>
-                    <input
-                      id="profile-rookie-year"
-                      type="text"
-                      value={rookieYear}
-                      onChange={(e) => setRookieYear(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. 2024"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-leadership-role" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Leadership / Custom Role</label>
-                    <input
-                      id="profile-leadership-role"
-                      type="text"
-                      value={leadershipRole}
-                      onChange={(e) => setLeadershipRole(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. Programming Lead"
-                    />
-                  </div>
-                  {isAdmin && (
-                    <div>
-                      <label htmlFor="profile-member-type" className="block text-[10px] uppercase font-bold text-ares-red/80 tracking-wider mb-2">Member Type (Admin Only)</label>
-                      <select
-                        id="profile-member-type"
-                        value={memberType}
-                        onChange={(e) => setMemberType(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      >
-                        <option value="student">Student</option>
-                        <option value="alumni">Alumni</option>
-                        <option value="mentor">Mentor</option>
-                        <option value="coach">Coach</option>
-                        <option value="parent">Parent</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <SubteamsTab
+                availableSubteams={availableSubteams}
+                subteams={subteams}
+                handleSubteamToggle={handleSubteamToggle}
+                rookieYear={rookieYear}
+                setRookieYear={setRookieYear}
+                leadershipRole={leadershipRole}
+                setLeadershipRole={setLeadershipRole}
+                isAdmin={isAdmin}
+                memberType={memberType}
+                setMemberType={setMemberType}
+              />
             )}
 
-            {/* Tab 3: Colleges & Employers */}
             {activeTab === "career" && (
-              <div className="space-y-8">
-                
-                {/* College Sub-form */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                    <GraduationCap size={14} /> Higher Education
-                  </h3>
-                  
-                  {colleges.length > 0 && (
-                    <div className="space-y-2 mb-4">
-                      {colleges.map((col, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-black/30 border border-white/5 p-3 rounded-lg">
-                          <div>
-                            <p className="text-sm font-bold text-white">{col.name}</p>
-                            <p className="text-marble/60 text-xs">
-                              {col.degree} &middot; {col.years} &middot; Domain: {col.domain}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeCollege(idx)}
-                            className="p-1.5 bg-ares-red/10 border border-ares-red/20 text-ares-red hover:bg-ares-red hover:text-white rounded transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
-                    <div className="sm:col-span-2">
-                      <label htmlFor="new-col-name" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">College/University Name</label>
-                      <input
-                        id="new-col-name"
-                        type="text"
-                        value={newColName}
-                        onChange={(e) => setNewColName(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. West Virginia University"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-col-domain" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
-                      <input
-                        id="new-col-domain"
-                        type="text"
-                        value={newColDomain}
-                        onChange={(e) => setNewColDomain(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. wvu.edu"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-col-degree" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Degree / Major</label>
-                      <input
-                        id="new-col-degree"
-                        type="text"
-                        value={newColDegree}
-                        onChange={(e) => setNewColDegree(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. B.S. Computer Science"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-col-years" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Attended</label>
-                      <input
-                        id="new-col-years"
-                        type="text"
-                        value={newColYears}
-                        onChange={(e) => setNewColYears(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. 2021-2025"
-                      />
-                    </div>
-                    <div className="sm:col-span-4 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={addCollege}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/25 border border-ares-gold/45 text-white rounded text-xs font-bold uppercase hover:bg-ares-gold transition-colors cursor-pointer"
-                      >
-                        <Plus size={12} /> Add College
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Employer Sub-form */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                    <Briefcase size={14} /> Career & Employment
-                  </h3>
-                  
-                  {employers.length > 0 && (
-                    <div className="space-y-2 mb-4">
-                      {employers.map((emp, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-black/30 border border-white/5 p-3 rounded-lg">
-                          <div>
-                            <p className="text-sm font-bold text-white">
-                              {emp.name} {emp.current && <span className="text-[10px] text-ares-gold ml-1 font-mono uppercase bg-ares-gold/10 border border-ares-gold/20 px-1 rounded">Current</span>}
-                            </p>
-                            <p className="text-marble/60 text-xs">
-                              {emp.title} &middot; {emp.years} &middot; Domain: {emp.domain}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeEmployer(idx)}
-                            className="p-1.5 bg-ares-red/10 border border-ares-red/20 text-ares-red hover:bg-ares-red hover:text-white rounded transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 border border-white/10 p-4 rounded-xl">
-                    <div className="sm:col-span-2">
-                      <label htmlFor="new-emp-name" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Company / Organization</label>
-                      <input
-                        id="new-emp-name"
-                        type="text"
-                        value={newEmpName}
-                        onChange={(e) => setNewEmpName(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. NASA Goddard"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-emp-domain" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Web Domain</label>
-                      <input
-                        id="new-emp-domain"
-                        type="text"
-                        value={newEmpDomain}
-                        onChange={(e) => setNewEmpDomain(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. nasa.gov"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-emp-title" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Job Title</label>
-                      <input
-                        id="new-emp-title"
-                        type="text"
-                        value={newEmpTitle}
-                        onChange={(e) => setNewEmpTitle(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. Guidance Controls Intern"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="new-emp-years" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Years Active</label>
-                      <input
-                        id="new-emp-years"
-                        type="text"
-                        value={newEmpYears}
-                        onChange={(e) => setNewEmpYears(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
-                        placeholder="e.g. 2024-Present"
-                      />
-                    </div>
-                    <div className="sm:col-span-4 flex items-center justify-between">
-                      <label htmlFor="new-emp-current" className="flex items-center gap-2 text-xs font-bold text-marble/70 select-none cursor-pointer">
-                        <input
-                          id="new-emp-current"
-                          type="checkbox"
-                          checked={newEmpCurrent}
-                          onChange={(e) => setNewEmpCurrent(e.target.checked)}
-                          className="w-4 h-4 rounded border-white/10 bg-black/40 text-ares-gold focus:ring-ares-gold"
-                        />
-                        <span>Current Employer</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={addEmployer}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/25 border border-ares-gold/45 text-white rounded text-xs font-bold uppercase hover:bg-ares-gold transition-colors cursor-pointer"
-                      >
-                        <Plus size={12} /> Add Employer
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CareerTab
+                colleges={colleges}
+                employers={employers}
+                removeCollege={removeCollege}
+                removeEmployer={removeEmployer}
+                newColName={newColName}
+                setNewColName={setNewColName}
+                newColDomain={newColDomain}
+                setNewColDomain={setNewColDomain}
+                newColYears={newColYears}
+                setNewColYears={setNewColYears}
+                newColDegree={newColDegree}
+                setNewColDegree={setNewColDegree}
+                addCollege={addCollege}
+                newEmpName={newEmpName}
+                setNewEmpName={setNewEmpName}
+                newEmpDomain={newEmpDomain}
+                setNewEmpDomain={setNewEmpDomain}
+                newEmpTitle={newEmpTitle}
+                setNewEmpTitle={setNewEmpTitle}
+                newEmpCurrent={newEmpCurrent}
+                setNewEmpCurrent={setNewEmpCurrent}
+                newEmpYears={newEmpYears}
+                setNewEmpYears={setNewEmpYears}
+                addEmployer={addEmployer}
+              />
             )}
 
-            {/* Tab 4: Contact & Privacy */}
             {activeTab === "privacy" && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                  <User size={14} /> Contact Information
-                </h3>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="profile-contact-email" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Contact Email</label>
-                    <input
-                      id="profile-contact-email"
-                      type="email"
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. contact@email.com"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Phone Number</label>
-                    <input
-                      id="profile-phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. 304-555-0199"
-                    />
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/5 my-4" />
-
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest pb-2.5 flex items-center gap-2">
-                  <Info size={14} /> Roster & Privacy Options
-                </h3>
-
-                <div className="space-y-4 bg-black/20 border border-white/5 p-5 rounded-xl">
-                  <label htmlFor="show-on-about" className="flex items-start gap-3 select-none cursor-pointer">
-                    <input
-                      id="show-on-about"
-                      type="checkbox"
-                      checked={showOnAbout}
-                      onChange={(e) => setShowOnAbout(e.target.checked)}
-                      className="w-4.5 h-4.5 rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-red mt-0.5 shrink-0"
-                    />
-                    <div>
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider block">Display on Public Roster</span>
-                      <span className="text-[10px] text-marble/60 leading-normal block mt-0.5">Allow your profile biography, nickname, and subteams to be listed on the public About page.</span>
-                    </div>
-                  </label>
-
-                  <label htmlFor="show-email" className="flex items-start gap-3 select-none cursor-pointer">
-                    <input
-                      id="show-email"
-                      type="checkbox"
-                      checked={showEmail}
-                      onChange={(e) => setShowEmail(e.target.checked)}
-                      className="w-4.5 h-4.5 rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-red mt-0.5 shrink-0"
-                    />
-                    <div>
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider block">Show Email to Verified Members</span>
-                      <span className="text-[10px] text-marble/60 leading-normal block mt-0.5">Expose your contact email to other logged-in team members in the internal directory.</span>
-                    </div>
-                  </label>
-
-                  <label htmlFor="show-phone" className="flex items-start gap-3 select-none cursor-pointer">
-                    <input
-                      id="show-phone"
-                      type="checkbox"
-                      checked={showPhone}
-                      onChange={(e) => setShowPhone(e.target.checked)}
-                      className="w-4.5 h-4.5 rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-red mt-0.5 shrink-0"
-                    />
-                    <div>
-                      <span className="text-xs font-extrabold text-white uppercase tracking-wider block">Show Phone to Verified Members</span>
-                      <span className="text-[10px] text-marble/60 leading-normal block mt-0.5">Expose your phone number to other logged-in team members in the internal directory.</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
+              <PrivacyTab
+                contactEmail={contactEmail}
+                setContactEmail={setContactEmail}
+                phone={phone}
+                setPhone={setPhone}
+                showOnAbout={showOnAbout}
+                setShowOnAbout={setShowOnAbout}
+                showEmail={showEmail}
+                setShowEmail={setShowEmail}
+                showPhone={showPhone}
+                setShowPhone={setShowPhone}
+              />
             )}
 
-            {/* Tab 5: Logistics & Safety */}
             {activeTab === "safety" && (
-              <div className="space-y-6">
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-                  <User size={14} /> Logistics Details
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="profile-tshirt-size" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">T-shirt Size</label>
-                    <select
-                      id="profile-tshirt-size"
-                      value={tshirtSize}
-                      onChange={(e) => setTshirtSize(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                    >
-                      <option value="">Select size...</option>
-                      <option value="xs">XS</option>
-                      <option value="s">S</option>
-                      <option value="m">M</option>
-                      <option value="l">L</option>
-                      <option value="xl">XL</option>
-                      <option value="xxl">XXL</option>
-                      <option value="3xl">3XL</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="bg-black/25 border border-white/5 p-4 rounded-xl">
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Dietary Restrictions</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableDietary.map((item) => {
-                      const isSelected = dietaryRestrictions.includes(item);
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleDietaryToggle(item)}
-                          className={`px-4 py-3 ares-cut-sm border text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/20 text-ares-gold border-ares-gold/50"
-                              : "bg-white/5 text-marble/65 border-transparent hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/5 my-4" />
-
-                <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest pb-2.5 flex items-center gap-2">
-                  <Info size={14} /> Emergency Contacts
-                </h3>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="profile-emergency-name" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Name</label>
-                    <input
-                      id="profile-emergency-name"
-                      type="text"
-                      value={emergencyContactName}
-                      onChange={(e) => setEmergencyContactName(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. Jane Doe"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-emergency-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Emergency Contact Phone</label>
-                    <input
-                      id="profile-emergency-phone"
-                      type="tel"
-                      value={emergencyContactPhone}
-                      onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
-                      placeholder="e.g. 304-555-0100"
-                    />
-                  </div>
-                </div>
-              </div>
+              <SafetyTab
+                tshirtSize={tshirtSize}
+                setTshirtSize={setTshirtSize}
+                availableDietary={availableDietary}
+                dietaryRestrictions={dietaryRestrictions}
+                handleDietaryToggle={handleDietaryToggle}
+                emergencyContactName={emergencyContactName}
+                setEmergencyContactName={setEmergencyContactName}
+                emergencyContactPhone={emergencyContactPhone}
+                setEmergencyContactPhone={setEmergencyContactPhone}
+              />
             )}
 
             {/* Save Buttons Footer */}

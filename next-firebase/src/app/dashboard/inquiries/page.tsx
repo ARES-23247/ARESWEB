@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { authenticatedFetch } from "@/lib/api";
 import { 
   MessageSquare, 
   Trash2, 
@@ -41,12 +42,7 @@ export default function InquiriesPage() {
     setIsLoading(true);
     setError("");
     try {
-      const idToken = await user.getIdToken();
-      const res = await fetch("/api/inquiries", {
-        headers: {
-          "Authorization": `Bearer ${idToken}`
-        }
-      });
+      const res = await authenticatedFetch("/api/inquiries");
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch inquiries.");
@@ -67,12 +63,10 @@ export default function InquiriesPage() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     if (!user) return;
     try {
-      const idToken = await user.getIdToken();
-      const res = await fetch(`/api/inquiries/${id}/status`, {
+      const res = await authenticatedFetch(`/api/inquiries/${id}/status`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ status: newStatus })
       });
@@ -92,12 +86,8 @@ export default function InquiriesPage() {
   const handleDeleteInquiry = async (id: string) => {
     if (!user || !window.confirm("Are you sure you want to permanently delete this inquiry?")) return;
     try {
-      const idToken = await user.getIdToken();
-      const res = await fetch(`/api/inquiries/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${idToken}`
-        }
+      const res = await authenticatedFetch(`/api/inquiries/${id}`, {
+        method: "DELETE"
       });
       const data = await res.json();
       if (!res.ok) {

@@ -1,51 +1,63 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 
-// Import all pages using the @ alias
-import Home from "@/app/page";
-import AboutPage from "@/app/about/page";
-import AcademyPage from "@/app/academy/page";
-import AccessibilityPage from "@/app/accessibility/page";
-import AresPlannerPage from "@/app/aresplanner/page";
-import BlogFeedPage from "@/app/blog/page";
-import BlogPostPage from "@/app/blog/[slug]/page";
-import CalendarPage from "@/app/calendar/page";
-import DeveloperApiPage from "@/app/developer-api/page";
-import EventDetailPage from "@/app/events/[id]/page";
-import FinanceLedgerPage from "@/app/finance/page";
-import GalleryPage from "@/app/gallery/page";
-import JoinPage from "@/app/join/page";
-import JudgesPage from "@/app/judges/page";
-import LeaderboardPage from "@/app/leaderboard/page";
-import LocationMorgantownPage from "@/app/location-morgantown/page";
-import OutreachPage from "@/app/outreach/page";
-import PrintPortfolioPage from "@/app/print-portfolio/page";
-import PrivacyPage from "@/app/privacy/page";
-import RobotsFeedPage from "@/app/robots/page";
-import RobotDetailPage from "@/app/robots/[id]/page";
-import SeasonsPage from "@/app/seasons/page";
-import SponsorsPage from "@/app/sponsors/page";
-import StorePage from "@/app/store/page";
-import TasksRedirect from "@/app/tasks/page";
-import TechStackPage from "@/app/tech-stack/page";
-import TermsPage from "@/app/terms/page";
+// Lazy-load public pages for optimal bundle splitting
+const Home = lazy(() => import("@/app/page"));
+const AboutPage = lazy(() => import("@/app/about/page"));
+const AcademyPage = lazy(() => import("@/app/academy/page"));
+const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
+const AresPlannerPage = lazy(() => import("@/app/aresplanner/page"));
+const BlogFeedPage = lazy(() => import("@/app/blog/page"));
+const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
+const CalendarPage = lazy(() => import("@/app/calendar/page"));
+const DeveloperApiPage = lazy(() => import("@/app/developer-api/page"));
+const EventDetailPage = lazy(() => import("@/app/events/[id]/page"));
+const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
+const GalleryPage = lazy(() => import("@/app/gallery/page"));
+const JoinPage = lazy(() => import("@/app/join/page"));
+const JudgesPage = lazy(() => import("@/app/judges/page"));
+const LeaderboardPage = lazy(() => import("@/app/leaderboard/page"));
+const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page"));
+const OutreachPage = lazy(() => import("@/app/outreach/page"));
+const PrintPortfolioPage = lazy(() => import("@/app/print-portfolio/page"));
+const PrivacyPage = lazy(() => import("@/app/privacy/page"));
+const RobotsFeedPage = lazy(() => import("@/app/robots/page"));
+const RobotDetailPage = lazy(() => import("@/app/robots/[id]/page"));
+const SeasonsPage = lazy(() => import("@/app/seasons/page"));
+const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
+const StorePage = lazy(() => import("@/app/store/page"));
+const TasksRedirect = lazy(() => import("@/app/tasks/page"));
+const TechStackPage = lazy(() => import("@/app/tech-stack/page"));
+const TermsPage = lazy(() => import("@/app/terms/page"));
 
-// Dashboard
-import DashboardLayout from "@/app/dashboard/layout";
-import DashboardPage from "@/app/dashboard/page";
-import DashboardProfilePage from "@/app/dashboard/profile/page";
-import DashboardBlogPage from "@/app/dashboard/blog/page";
-import DashboardDocumentsPage from "@/app/dashboard/documents/page";
-import DashboardEventsPage from "@/app/dashboard/events/page";
-import DashboardPhotosPage from "@/app/dashboard/photos/page";
-import DashboardScopePage from "@/app/dashboard/scope/page";
-import DashboardTasksPage from "@/app/dashboard/tasks/page";
-import DashboardVideosPage from "@/app/dashboard/videos/page";
-import DashboardFieldPage from "@/app/dashboard/field/page";
-import DashboardInquiriesPage from "@/app/dashboard/inquiries/page";
-import DashboardUsersPage from "@/app/dashboard/users/page";
+// Lazy-load dashboard pages
+const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));
+const DashboardPage = lazy(() => import("@/app/dashboard/page"));
+const DashboardProfilePage = lazy(() => import("@/app/dashboard/profile/page"));
+const DashboardBlogPage = lazy(() => import("@/app/dashboard/blog/page"));
+const DashboardDocumentsPage = lazy(() => import("@/app/dashboard/documents/page"));
+const DashboardEventsPage = lazy(() => import("@/app/dashboard/events/page"));
+const DashboardPhotosPage = lazy(() => import("@/app/dashboard/photos/page"));
+const DashboardScopePage = lazy(() => import("@/app/dashboard/scope/page"));
+const DashboardTasksPage = lazy(() => import("@/app/dashboard/tasks/page"));
+const DashboardVideosPage = lazy(() => import("@/app/dashboard/videos/page"));
+const DashboardFieldPage = lazy(() => import("@/app/dashboard/field/page"));
+const DashboardInquiriesPage = lazy(() => import("@/app/dashboard/inquiries/page"));
+const DashboardUsersPage = lazy(() => import("@/app/dashboard/users/page"));
+
+// Premium fallback loader with ARES branding
+function AppLoading() {
+  return (
+    <div className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
+      <div className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
+      <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 animate-pulse font-heading">
+        Synchronizing Systems...
+      </p>
+    </div>
+  );
+}
 
 export default function App() {
   React.useEffect(() => {
@@ -65,61 +77,63 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <LayoutWrapper>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/academy" element={<AcademyPage />} />
-            <Route path="/academy/:slug" element={<AcademyPage />} />
-            <Route path="/accessibility" element={<AccessibilityPage />} />
-            <Route path="/aresplanner" element={<AresPlannerPage />} />
-            <Route path="/blog" element={<BlogFeedPage />} />
-            <Route path="/blog/:slug" element={<BlogPostPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/developer-api" element={<DeveloperApiPage />} />
-            <Route path="/events/:id" element={<EventDetailPage />} />
-            <Route path="/finance" element={<FinanceLedgerPage />} />
-            <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/join" element={<JoinPage />} />
-            <Route path="/judges" element={<JudgesPage />} />
-            <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
-            <Route path="/outreach" element={<OutreachPage />} />
-            <Route path="/print-portfolio" element={<PrintPortfolioPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/robots" element={<RobotsFeedPage />} />
-            <Route path="/robots/:id" element={<RobotDetailPage />} />
-            <Route path="/seasons" element={<SeasonsPage />} />
-            <Route path="/sponsors" element={<SponsorsPage />} />
-            <Route path="/store" element={<StorePage />} />
-            <Route path="/tasks" element={<TasksRedirect />} />
-            <Route path="/tech-stack" element={<TechStackPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            
-            {/* Dashboard routes nested under DashboardLayout */}
-            <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
-              <Route index element={<DashboardPage />} />
-              <Route path="profile" element={<DashboardProfilePage />} />
-              <Route path="tasks" element={<DashboardTasksPage />} />
-              <Route path="scope" element={<DashboardScopePage />} />
-              <Route path="blog" element={<DashboardBlogPage />} />
-              <Route path="events" element={<DashboardEventsPage />} />
-              <Route path="documents" element={<DashboardDocumentsPage />} />
-              <Route path="videos" element={<DashboardVideosPage />} />
-              <Route path="photos" element={<DashboardPhotosPage />} />
-              <Route path="field" element={<DashboardFieldPage />} />
-              <Route path="inquiries" element={<DashboardInquiriesPage />} />
-              <Route path="users" element={<DashboardUsersPage />} />
-            </Route>
-            
-            {/* 404 Route */}
-            <Route path="*" element={
-              <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
-                <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
-                <p className="text-marble/60 text-sm mb-8">Page not found.</p>
-                <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
-              </div>
-            } />
-          </Routes>
+          <Suspense fallback={<AppLoading />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/academy" element={<AcademyPage />} />
+              <Route path="/academy/:slug" element={<AcademyPage />} />
+              <Route path="/accessibility" element={<AccessibilityPage />} />
+              <Route path="/aresplanner" element={<AresPlannerPage />} />
+              <Route path="/blog" element={<BlogFeedPage />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/developer-api" element={<DeveloperApiPage />} />
+              <Route path="/events/:id" element={<EventDetailPage />} />
+              <Route path="/finance" element={<FinanceLedgerPage />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/join" element={<JoinPage />} />
+              <Route path="/judges" element={<JudgesPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
+              <Route path="/outreach" element={<OutreachPage />} />
+              <Route path="/print-portfolio" element={<PrintPortfolioPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/robots" element={<RobotsFeedPage />} />
+              <Route path="/robots/:id" element={<RobotDetailPage />} />
+              <Route path="/seasons" element={<SeasonsPage />} />
+              <Route path="/sponsors" element={<SponsorsPage />} />
+              <Route path="/store" element={<StorePage />} />
+              <Route path="/tasks" element={<TasksRedirect />} />
+              <Route path="/tech-stack" element={<TechStackPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              
+              {/* Dashboard routes nested under DashboardLayout */}
+              <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
+                <Route index element={<DashboardPage />} />
+                <Route path="profile" element={<DashboardProfilePage />} />
+                <Route path="tasks" element={<DashboardTasksPage />} />
+                <Route path="scope" element={<DashboardScopePage />} />
+                <Route path="blog" element={<DashboardBlogPage />} />
+                <Route path="events" element={<DashboardEventsPage />} />
+                <Route path="documents" element={<DashboardDocumentsPage />} />
+                <Route path="videos" element={<DashboardVideosPage />} />
+                <Route path="photos" element={<DashboardPhotosPage />} />
+                <Route path="field" element={<DashboardFieldPage />} />
+                <Route path="inquiries" element={<DashboardInquiriesPage />} />
+                <Route path="users" element={<DashboardUsersPage />} />
+              </Route>
+              
+              {/* 404 Route */}
+              <Route path="*" element={
+                <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
+                  <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
+                  <p className="text-marble/60 text-sm mb-8">Page not found.</p>
+                  <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
+                </div>
+              } />
+            </Routes>
+          </Suspense>
         </LayoutWrapper>
       </AuthProvider>
     </BrowserRouter>

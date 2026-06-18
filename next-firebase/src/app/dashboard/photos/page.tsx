@@ -5,6 +5,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
+import { resizeAndCompressImage, readFileAsBase64 } from "@/lib/image";
 import { 
   Shield, 
   Activity, 
@@ -40,29 +41,10 @@ interface GoogleAuthConfig {
   tokenType?: string;
 }
 
-interface ImportedPhoto {
-  id: string;
-  storagePath: string;
-  publicUrl: string;
-  originalFilename: string;
-  mimeType: string;
-  fileSize: number;
-  importedAt: string;
-  albumId?: string | null;
-  caption?: string;
-  labels?: string[];
-  googleMediaItemId?: string | null;
-}
+import AlbumEditModal, { AlbumItem } from "./components/AlbumEditModal";
+import PhotoDetailsDrawer, { ImportedPhoto } from "./components/PhotoDetailsDrawer";
 
-interface PhotoAlbum {
-  id: string;
-  title: string;
-  description: string;
-  category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
-  coverImageUrl?: string;
-  mediaCount: number;
-  createdAt: string;
-}
+type PhotoAlbum = AlbumItem;
 
 export default function DashboardPhotosPage() {
   const { user, authorizedUser } = useAuth();
@@ -426,87 +408,7 @@ export default function DashboardPhotosPage() {
     }
   };
 
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64String = (reader.result as string).split(",")[1];
-        resolve(base64String);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
 
-  const resizeAndCompressImage = (
-    file: File,
-    maxWidth = 2048,
-    maxHeight = 2048,
-    quality = 0.85
-  ): Promise<{ base64: string; mimeType: string }> => {
-    return new Promise((resolve) => {
-      // Keep animated GIFs and vector SVGs as-is to preserve behavior
-      if (file.type === "image/gif" || file.type === "image/svg+xml") {
-        readFileAsBase64(file)
-          .then((base64) => resolve({ base64, mimeType: file.type }))
-          .catch(() => resolve({ base64: "", mimeType: file.type }));
-        return;
-      }
-
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
-      img.src = objectUrl;
-
-      img.onload = () => {
-        URL.revokeObjectURL(objectUrl);
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-
-        // Scale proportionally if image dimensions exceed maximum bounds
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          // Fallback to original file
-          readFileAsBase64(file).then((base64) => {
-            resolve({ base64, mimeType: file.type });
-          });
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Export as web-friendly high-quality JPEG
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        const base64 = dataUrl.split(",")[1];
-        resolve({ base64, mimeType: "image/jpeg" });
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        // Fallback to original file
-        readFileAsBase64(file).then((base64) => {
-          resolve({ base64, mimeType: file.type });
-        });
-      };
-    });
-  };
 
   const handleOpenPhotoDetails = (photo: ImportedPhoto) => {
     setSelectedPhoto(photo);
@@ -546,6 +448,34 @@ export default function DashboardPhotosPage() {
     } catch (err: any) {
       console.error("Save details error:", err);
       alert(err.message || "Failed to save photo details");
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+  
+  const handleSetAlbumCover = async () => {
+    if (!selectedPhoto || !selectedPhoto.albumId) return;
+    const album = albums.find(a => a.id === selectedPhoto.albumId);
+    if (!album) return;
+    try {
+      setIsSavingDetails(true);
+      const res = await authenticatedFetch(`/api/photos/albums/${album.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coverImageUrl: selectedPhoto.publicUrl
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlbums(prev => prev.map(a => a.id === album.id ? data.album : a));
+        alert("Cover image updated successfully!");
+      } else {
+        const err = await res.text();
+        alert("Failed to update cover image: " + err);
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
     } finally {
       setIsSavingDetails(false);
     }
@@ -1193,90 +1123,21 @@ export default function DashboardPhotosPage() {
             </div>
           )}
 
-          {/* Create Album Overlay Modal */}
-          {isCreateAlbumOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCreateAlbumOpen(false)} />
-              <div className="glass-card w-full max-w-md border border-white/10 p-6 relative z-10 space-y-6 bg-obsidian">
-                <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                  <h3 className="text-lg font-black text-white uppercase tracking-tight font-heading">
-                    {editingAlbum ? "Edit Album Details" : "Create New Album"}
-                  </h3>
-                  <button onClick={() => setIsCreateAlbumOpen(false)} className="text-marble/55 hover:text-white cursor-pointer">
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleCreateAlbum} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Album Title</label>
-                    <input
-                      type="text"
-                      required
-                      value={newAlbumTitle}
-                      onChange={(e) => setNewAlbumTitle(e.target.value)}
-                      placeholder="e.g. Kickoff 2026, WV State Tournament"
-                      className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Category Type</label>
-                    <select
-                      value={newAlbumCategory}
-                      onChange={(e) => setNewAlbumCategory(e.target.value as any)}
-                      className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red"
-                    >
-                      <option value="Robot Specs">Robot Specs</option>
-                      <option value="Outreach">Outreach</option>
-                      <option value="Competition">Competition</option>
-                      <option value="CAD Design">CAD Design</option>
-                      <option value="Practice">Practice</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Cover Image URL (Optional)</label>
-                    <input
-                      type="url"
-                      value={newAlbumCoverUrl}
-                      onChange={(e) => setNewAlbumCoverUrl(e.target.value)}
-                      placeholder="e.g. https://storage.googleapis.com/... or paste image URL"
-                      className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Description</label>
-                    <textarea
-                      rows={3}
-                      value={newAlbumDesc}
-                      onChange={(e) => setNewAlbumDesc(e.target.value)}
-                      placeholder="Summary details for public view page..."
-                      className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red resize-none"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-3 border-t border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateAlbumOpen(false)}
-                      className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded text-marble/70 hover:text-white font-black text-[10px] uppercase tracking-wider cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isCreatingAlbum}
-                      className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white rounded font-black text-[10px] uppercase tracking-wider ares-cut-sm cursor-pointer shadow disabled:opacity-50"
-                    >
-                      {isCreatingAlbum ? "Saving..." : editingAlbum ? "Save Changes" : "Create Album"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          <AlbumEditModal
+            isOpen={isCreateAlbumOpen}
+            onClose={() => setIsCreateAlbumOpen(false)}
+            editingAlbum={editingAlbum}
+            newAlbumTitle={newAlbumTitle}
+            setNewAlbumTitle={setNewAlbumTitle}
+            newAlbumCategory={newAlbumCategory}
+            setNewAlbumCategory={setNewAlbumCategory}
+            newAlbumCoverUrl={newAlbumCoverUrl}
+            setNewAlbumCoverUrl={setNewAlbumCoverUrl}
+            newAlbumDesc={newAlbumDesc}
+            setNewAlbumDesc={setNewAlbumDesc}
+            onSubmit={handleCreateAlbum}
+            isSubmitting={isCreatingAlbum}
+          />
 
         </div>
       )}
@@ -1504,277 +1365,30 @@ export default function DashboardPhotosPage() {
       )}
 
       {/* Photo Details Sidebar / Drawer */}
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-300" 
-            onClick={() => setSelectedPhoto(null)} 
-          />
-          
-          {/* Drawer Panel */}
-          <div className="relative w-full max-w-lg h-full bg-obsidian border-l border-white/10 flex flex-col shadow-2xl overflow-y-auto scrollbar-thin">
-            {/* Header */}
-            <header className="p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-obsidian/95 backdrop-blur-md z-10">
-              <div className="min-w-0">
-                <h3 className="text-sm font-black text-white uppercase tracking-wider font-heading truncate" title={selectedPhoto.originalFilename}>
-                  Manage Photo
-                </h3>
-                <p className="text-[9px] text-marble/40 font-bold uppercase tracking-wider mt-0.5">
-                  ID: {selectedPhoto.id}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="text-marble/55 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </header>
-
-            {/* Content */}
-            <div className="p-6 flex-1 space-y-6">
-              {/* Image Preview */}
-              <div className="border border-white/10 rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center relative shadow-inner">
-                <img 
-                  src={selectedPhoto.publicUrl} 
-                  alt={selectedPhoto.altText || selectedPhoto.originalFilename} 
-                  className="w-full h-full object-contain"
-                />
-                <a
-                  href={selectedPhoto.publicUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute bottom-3 right-3 px-3 py-1 bg-black/70 hover:bg-black text-white rounded text-[10px] font-bold border border-white/10 transition-colors uppercase tracking-wider"
-                >
-                  Full Size
-                </a>
-              </div>
-
-              {/* Edit Details Form */}
-              <div className="space-y-4">
-                {/* Album Selection */}
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
-                    Assign to Album
-                  </label>
-                  <select
-                    value={editAlbumId}
-                    onChange={(e) => setEditAlbumId(e.target.value)}
-                    disabled={!canEdit}
-                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none cursor-pointer"
-                  >
-                    <option value="">Unassigned (No Album)</option>
-                    {albums.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.title} ({a.category})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Alt Text Description */}
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50 flex items-center justify-between">
-                    <span>Accessibility Alt Text</span>
-                    <span className="text-[8px] font-medium text-marble/35">For screen readers</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={editAltText}
-                    onChange={(e) => setEditAltText(e.target.value)}
-                    disabled={!canEdit}
-                    placeholder="Describe what is in the photo for accessibility..."
-                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none"
-                  />
-                </div>
-
-                {/* Image Caption */}
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
-                    Description / Caption
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={editCaption}
-                    onChange={(e) => setEditCaption(e.target.value)}
-                    disabled={!canEdit}
-                    placeholder="Enter a description or write a caption for the photo gallery..."
-                    className="w-full bg-black/60 border border-white/10 rounded px-3.5 py-2 text-xs text-white focus:border-ares-red outline-none resize-none"
-                  />
-                </div>
-
-                {/* Labels/Tags Manager */}
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest mb-1.5 text-marble/50">
-                    AI & Custom Labels
-                  </label>
-                  
-                  {/* Tag List */}
-                  <div className="flex flex-wrap gap-1.5 mb-2.5">
-                    {editLabels.length === 0 ? (
-                      <span className="text-[10px] text-marble/35 italic">No labels added yet.</span>
-                    ) : (
-                      editLabels.map((tag) => (
-                        <span 
-                          key={tag} 
-                          className="inline-flex items-center gap-1 text-[9px] bg-white/10 px-2 py-0.5 rounded text-ares-cyan font-bold border border-white/5"
-                        >
-                          {tag}
-                          {canEdit && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveLabel(tag)}
-                              className="text-marble/40 hover:text-ares-red text-[8px] cursor-pointer"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </span>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Add Tag Input */}
-                  {canEdit && (
-                    <form onSubmit={handleAddLabel} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTagInput}
-                        onChange={(e) => setNewTagInput(e.target.value)}
-                        placeholder="Add tag (e.g. outreach, chassis)..."
-                        className="flex-1 bg-black/60 border border-white/10 rounded px-3 py-1.5 text-[11px] text-white focus:border-ares-red outline-none"
-                      />
-                      <button
-                        type="submit"
-                        className="px-3.5 bg-white text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer hover:bg-ares-gold transition-colors"
-                      >
-                        Add
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </div>
-
-              {/* Read-Only Stats/Metadata */}
-              <div className="border-t border-white/5 pt-5 space-y-2.5">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">Photo File Metadata</h4>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold">
-                  <div>
-                    <span className="text-marble/40 block">Dimensions / Format</span>
-                    <span className="text-white uppercase truncate">{selectedPhoto.mimeType}</span>
-                  </div>
-                  <div>
-                    <span className="text-marble/40 block">File Size</span>
-                    <span className="text-white">{(selectedPhoto.fileSize / 1024).toFixed(1)} KB</span>
-                  </div>
-                  <div>
-                    <span className="text-marble/40 block">Uploaded On</span>
-                    <span className="text-white">{new Date(selectedPhoto.importedAt).toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-marble/40 block">Google Photos Sync</span>
-                    {selectedPhoto.googleMediaItemId ? (
-                      <span className="text-ares-cyan truncate block" title={selectedPhoto.googleMediaItemId}>
-                        ✓ Synced ({selectedPhoto.googleMediaItemId.substring(0, 8)}...)
-                      </span>
-                    ) : (
-                      <span className="text-marble/35">Not Synced</span>
-                    )}
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-marble/40 block">Storage Reference Path</span>
-                    <span className="text-marble/60 font-mono text-[9px] break-all select-all block mt-0.5">
-                      {selectedPhoto.storagePath}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer actions */}
-            <footer className="p-5 border-t border-white/5 sticky bottom-0 bg-obsidian/95 backdrop-blur-md flex items-center justify-between gap-3 z-10">
-              <div className="flex gap-2">
-                {canEdit && selectedPhoto.albumId && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const album = albums.find(a => a.id === selectedPhoto.albumId);
-                      if (!album) return;
-                      try {
-                        setIsSavingDetails(true);
-                        const res = await authenticatedFetch(`/api/photos/albums/${album.id}`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            coverImageUrl: selectedPhoto.publicUrl
-                          })
-                        });
-                        if (res.ok) {
-                          const data = await res.json();
-                          setAlbums(prev => prev.map(a => a.id === album.id ? data.album : a));
-                          alert("Cover image updated successfully!");
-                        } else {
-                          const err = await res.text();
-                          alert("Failed to update cover image: " + err);
-                        }
-                      } catch (err: any) {
-                        alert("Error: " + err.message);
-                      } finally {
-                        setIsSavingDetails(false);
-                      }
-                    }}
-                    disabled={isSavingDetails || albums.find(a => a.id === selectedPhoto.albumId)?.coverImageUrl === selectedPhoto.publicUrl}
-                    className="py-2 px-3 border border-ares-gold/25 hover:bg-ares-gold/10 text-ares-gold font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg disabled:opacity-50 disabled:hover:bg-transparent"
-                  >
-                    {albums.find(a => a.id === selectedPhoto.albumId)?.coverImageUrl === selectedPhoto.publicUrl ? "✓ Album Cover" : "Set Album Cover"}
-                  </button>
-                )}
-
-                {canEdit && (
-                  <button
-                    onClick={() => {
-                      if (confirm("Are you sure you want to permanently delete this photo from the library?")) {
-                        handleDeletePhoto(selectedPhoto.id);
-                        setSelectedPhoto(null);
-                      }
-                    }}
-                    className="py-2 px-4 border border-ares-red/25 hover:bg-ares-red/10 text-ares-red font-black text-[10px] uppercase tracking-wider ares-cut transition-all cursor-pointer flex items-center gap-1 shadow-lg"
-                  >
-                    <Trash2 size={11} /> Delete
-                  </button>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedPhoto(null)}
-                  className="py-2 px-4 border border-white/10 hover:bg-white/5 text-marble/70 hover:text-white font-bold text-[10px] uppercase tracking-wider rounded transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                {canEdit && (
-                  <button
-                    onClick={handleSavePhotoDetails}
-                    disabled={isSavingDetails}
-                    className="py-2 px-5 bg-ares-red hover:bg-ares-red-dark text-white font-black text-[10px] uppercase tracking-wider ares-cut transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-98 disabled:opacity-50"
-                  >
-                    {isSavingDetails ? (
-                      <>
-                        <Loader2 className="animate-spin" size={10} /> Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={10} /> Save Changes
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </footer>
-          </div>
-        </div>
-      )}
+      <PhotoDetailsDrawer
+        selectedPhoto={selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        canEdit={canEdit}
+        albums={albums}
+        editAlbumId={editAlbumId}
+        setEditAlbumId={setEditAlbumId}
+        editAltText={editAltText}
+        setEditAltText={setEditAltText}
+        editCaption={editCaption}
+        setEditCaption={setEditCaption}
+        editLabels={editLabels}
+        newTagInput={newTagInput}
+        setNewTagInput={setNewTagInput}
+        onAddLabel={handleAddLabel}
+        onRemoveLabel={handleRemoveLabel}
+        onSetAlbumCover={handleSetAlbumCover}
+        onDeletePhoto={(id) => {
+          handleDeletePhoto(id);
+          setSelectedPhoto(null);
+        }}
+        onSaveDetails={handleSavePhotoDetails}
+        isSavingDetails={isSavingDetails}
+      />
 
     </div>
   );
