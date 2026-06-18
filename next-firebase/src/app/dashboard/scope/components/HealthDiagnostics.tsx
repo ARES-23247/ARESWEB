@@ -49,8 +49,15 @@ export default function HealthDiagnostics() {
     const motorRR = getChannel(["Drive/MotorPower_BR", "motors/rr", "power/current/motor_rr", "rr"]);
     const slideCurrent = getChannel(["Drive/MotorCurrent_FL", "slideCurrent", "mechanisms/slide/current"]);
 
-    // 1. Evaluate Battery Sags
-    const minBattery = battery.length > 0 ? Math.min(...battery) : 12.6;
+    // 1. Evaluate Battery Sags without stack overflow risk
+    let minBattery = 12.6;
+    if (battery.length > 0) {
+      let min = battery[0];
+      for (let i = 1; i < battery.length; i++) {
+        if (battery[i] < min) min = battery[i];
+      }
+      minBattery = min;
+    }
     let battStatus: "healthy" | "warning" | "critical" = "healthy";
     let battMsg = "Nominal cell voltages. Grid holds charge perfectly under acceleration.";
     if (battery.length > 0) {
@@ -103,8 +110,15 @@ export default function HealthDiagnostics() {
       lpMsg = "Control loop timing keys not found. Skipping software frequency audits.";
     }
 
-    // 4. Evaluate Slide Stall
-    const maxSlideCur = slideCurrent.length > 0 ? Math.max(...slideCurrent) : 0.0;
+    // 4. Evaluate Slide Stall without stack overflow risk
+    let maxSlideCur = 0.0;
+    if (slideCurrent.length > 0) {
+      let max = slideCurrent[0];
+      for (let i = 1; i < slideCurrent.length; i++) {
+        if (slideCurrent[i] > max) max = slideCurrent[i];
+      }
+      maxSlideCur = max;
+    }
     let sStatus: "healthy" | "stall" = "healthy";
     let sMsg = "Slide currents remain within safe operational bounds. Limit switches operating correctly.";
     if (slideCurrent.length > 0) {

@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthorizedUser(null);
         }
       } else {
-        // Only reset authorizedUser if user is actually null (not when using mock user)
-        if (!user || user.uid !== "mock_user_123") {
+        // Only reset authorizedUser if we are not in mock user mode
+        if (!isMockRef.current) {
           setAuthorizedUser(null);
         }
       }

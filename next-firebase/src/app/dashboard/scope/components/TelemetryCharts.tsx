@@ -180,9 +180,14 @@ export default function TelemetryCharts({ chartId, selectedKeys: propSelectedKey
 
       const color = getSignalColor(sigKey, idx);
 
-      // Compute min/max dynamically
-      let minVal = Math.min(...dataPoints);
-      let maxVal = Math.max(...dataPoints);
+      // Compute min/max dynamically without stack overflow risk
+      let minVal = dataPoints[0];
+      let maxVal = dataPoints[0];
+      for (let i = 1; i < dataPoints.length; i++) {
+        const val = dataPoints[i];
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
       const range = maxVal - minVal;
       const padding = range === 0 ? 1.0 : range * 0.1;
       minVal -= padding;
