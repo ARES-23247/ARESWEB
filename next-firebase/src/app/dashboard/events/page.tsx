@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, addDoc, query, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
@@ -116,6 +116,7 @@ export default function EventsManagementPage({
   const [formLocation, setFormLocation] = useState("");
   const [formLocationId, setFormLocationId] = useState("");
   const [locations, setLocations] = useState<TeamLocation[]>(MOCK_LOCATIONS);
+  const hasAttemptedSeedingRef = useRef(false);
 
   // Locations Manager modal states
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
@@ -347,9 +348,22 @@ export default function EventsManagementPage({
       const locationsRef = collection(db, "locations");
       const unsubscribe = onSnapshot(
         locationsRef,
-        (snapshot) => {
+        async (snapshot) => {
           if (snapshot.empty) {
             setLocations(MOCK_LOCATIONS);
+            if (!hasAttemptedSeedingRef.current) {
+              hasAttemptedSeedingRef.current = true;
+              console.log("Locations collection is empty. Auto-seeding default locations...");
+              try {
+                for (const loc of MOCK_LOCATIONS) {
+                  const { id, ...locData } = loc;
+                  await addDoc(locationsRef, locData);
+                }
+                console.log("Successfully seeded default locations.");
+              } catch (seedingErr) {
+                console.error("Failed to seed default locations:", seedingErr);
+              }
+            }
             return;
           }
           const list = snapshot.docs.map((doc) => {
