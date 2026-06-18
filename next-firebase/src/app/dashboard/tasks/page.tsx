@@ -112,6 +112,7 @@ export default function KanbanPage() {
   const [newTaskAssignees, setNewTaskAssignees] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"newest" | "priority">("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -425,6 +426,17 @@ export default function KanbanPage() {
 
         {/* Sort, Archive and Subteam Controls */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center shrink-0 w-full lg:w-auto">
+          {/* Create Task Trigger Button */}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="clipped-button-sm bg-ares-red text-white hover:bg-ares-red-dark transition-all cursor-pointer text-xs font-bold px-4 py-2 flex items-center gap-1.5 shrink-0"
+            >
+              <Plus size={14} /> Create Task
+            </button>
+          )}
+
           {/* Sort & Archive Controls */}
           <div className="flex items-center gap-3 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
             {/* Sort Dropdown */}
@@ -474,119 +486,7 @@ export default function KanbanPage() {
         </div>
       </header>
 
-      {/* Create Task Form */}
-      {canEdit ? (
-        <form onSubmit={handleCreateTask} className="glass-card ares-cut-lg text-marble mb-12 max-w-3xl mx-auto p-8 space-y-6 border border-white/10">
-          <h3 className="text-lg font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
-            <Plus size={18} /> Create New Task Card
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="new-task-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Title</label>
-              <input
-                id="new-task-title"
-                type="text"
-                placeholder="e.g. Calibrate pinpoint pod parameters"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="new-task-subteam" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
-                <select
-                  id="new-task-subteam"
-                  value={newTaskSubteam}
-                  onChange={(e) => setNewTaskSubteam(e.target.value as any)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
-                >
-                  <option value="software">Software</option>
-                  <option value="hardware">Hardware</option>
-                  <option value="business">Business</option>
-                  <option value="outreach">Outreach</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="new-task-priority" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
-                <select
-                  id="new-task-priority"
-                  value={newTaskPriority}
-                  onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                  className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-              Assign Task To ({newTaskAssignees.length})
-            </label>
-            <div className="flex flex-wrap gap-2 bg-black/40 border border-white/10 rounded p-3 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-              {teamProfiles.length === 0 ? (
-                <p className="text-[10px] text-marble/40 italic">Loading team members...</p>
-              ) : (
-                teamProfiles.map((member) => {
-                  const isAssigned = newTaskAssignees.includes(member.uid);
-                  return (
-                    <button
-                      key={member.uid}
-                      type="button"
-                      onClick={() => {
-                        if (isAssigned) {
-                          setNewTaskAssignees(newTaskAssignees.filter((uid) => uid !== member.uid));
-                        } else {
-                          setNewTaskAssignees([...newTaskAssignees, member.uid]);
-                        }
-                      }}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all cursor-pointer ${
-                        isAssigned
-                          ? "bg-ares-red/25 border-ares-red text-white shadow-sm"
-                          : "bg-black/50 border-white/10 text-marble/70 hover:border-white/20 hover:text-white"
-                      }`}
-                    >
-                      <img
-                        src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.uid}`}
-                        alt={member.nickname}
-                        className="w-3.5 h-3.5 rounded-full object-contain bg-black/50"
-                      />
-                      <span>{member.nickname}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-          <div>
-            <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
-            <MarkdownEditor
-              id="new-task-desc"
-              placeholder="Detail technical calibration thresholds, subsystem specs, etc..."
-              value={newTaskDesc}
-              onChange={setNewTaskDesc}
-              className="h-28"
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="clipped-button-sm bg-ares-red text-white hover:bg-ares-red-dark transition-all cursor-pointer text-xs"
-            >
-              Add Task Card
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 text-center text-xs font-semibold max-w-lg mx-auto mb-12 flex items-center gap-3 justify-center">
-          <Shield size={16} className="text-ares-gold shrink-0" />
-          <span>🔒 Guest View Mode: Please request developer clearance to manage task cards.</span>
-        </div>
-      )}
+
 
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
@@ -807,6 +707,146 @@ export default function KanbanPage() {
           onArchiveTask={handleArchiveTask}
           setSyncState={setSyncState}
         />
+      )}
+
+      {/* Create Task Modal Overlay */}
+      {isCreateOpen && canEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCreateOpen(false)} />
+          <form
+            onSubmit={(e) => {
+              handleCreateTask(e);
+              setIsCreateOpen(false);
+            }}
+            className="relative w-full max-w-3xl bg-obsidian border border-white/10 ares-cut-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none p-6 sm:p-8 space-y-6 text-marble"
+          >
+            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <h3 className="text-lg font-bold text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
+                <Plus size={18} /> Create New Task Card
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="text-marble/40 hover:text-white transition-colors cursor-pointer text-xl p-1"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-6 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="new-task-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Title</label>
+                  <input
+                    id="new-task-title"
+                    type="text"
+                    placeholder="e.g. Calibrate pinpoint pod parameters"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="new-task-subteam" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
+                    <select
+                      id="new-task-subteam"
+                      value={newTaskSubteam}
+                      onChange={(e) => setNewTaskSubteam(e.target.value as any)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+                    >
+                      <option value="software">Software</option>
+                      <option value="hardware">Hardware</option>
+                      <option value="business">Business</option>
+                      <option value="outreach">Outreach</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="new-task-priority" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
+                    <select
+                      id="new-task-priority"
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+                  Assign Task To ({newTaskAssignees.length})
+                </label>
+                <div className="flex flex-wrap gap-2 bg-black/40 border border-white/10 rounded p-3 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                  {teamProfiles.length === 0 ? (
+                    <p className="text-[10px] text-marble/40 italic">Loading team members...</p>
+                  ) : (
+                    teamProfiles.map((member) => {
+                      const isAssigned = newTaskAssignees.includes(member.uid);
+                      return (
+                        <button
+                          key={member.uid}
+                          type="button"
+                          onClick={() => {
+                            if (isAssigned) {
+                              setNewTaskAssignees(newTaskAssignees.filter((uid) => uid !== member.uid));
+                            } else {
+                              setNewTaskAssignees([...newTaskAssignees, member.uid]);
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all cursor-pointer ${
+                            isAssigned
+                              ? "bg-ares-red/25 border-ares-red text-white shadow-sm"
+                              : "bg-black/50 border-white/10 text-marble/70 hover:border-white/20 hover:text-white"
+                          }`}
+                        >
+                          <img
+                            src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.uid}`}
+                            alt={member.nickname}
+                            className="w-3.5 h-3.5 rounded-full object-contain bg-black/50"
+                          />
+                          <span>{member.nickname}</span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
+                <MarkdownEditor
+                  id="new-task-desc"
+                  placeholder="Detail technical calibration thresholds, subsystem specs, etc..."
+                  value={newTaskDesc}
+                  onChange={setNewTaskDesc}
+                  className="h-28"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-white/5 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="bg-black/40 hover:bg-white/5 border border-white/10 text-marble/60 hover:text-white text-xs font-bold py-2 px-4 rounded transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-ares-red hover:bg-ares-red-dark text-white text-xs font-bold py-2 px-4 rounded transition-colors cursor-pointer"
+              >
+                Add Task Card
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );
