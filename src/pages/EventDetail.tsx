@@ -152,7 +152,7 @@ export default function EventDetail() {
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 decoration-ares-bronze/50 hover:text-white hover:decoration-white transition-colors"
                 >
-                  {event.location} <span className="sr-only">(Opens in Google Maps)</span> &nearr;
+                  {event.location} <span className="sr-only">(Opens in Google Maps)</span> ↗
                 </a>
               </p>
             )}

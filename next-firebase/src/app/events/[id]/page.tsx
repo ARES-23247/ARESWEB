@@ -540,7 +540,7 @@ export default function EventDetailPage() {
                   rel="noopener noreferrer"
                   className="underline underline-offset-2 text-ares-bronze hover:text-white transition-colors"
                 >
-                  {event.location} &nearr;
+                  {event.location} ↗
                 </a>
               </div>
             )}
@@ -577,7 +577,7 @@ export default function EventDetailPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold hover:brightness-110 text-black text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-md mt-2"
                 >
-                  Open Zulip Thread &nearr;
+                  Open Zulip Thread ↗
                 </a>
               </div>
             </div>
@@ -871,7 +871,7 @@ export default function EventDetailPage() {
                         rel="noopener noreferrer"
                         className="w-full text-center block py-2 bg-white/5 hover:bg-ares-gold border border-white/10 hover:border-ares-gold text-marble hover:text-black text-[9px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer shadow-md"
                       >
-                        Get Directions &nearr;
+                        Get Directions ↗
                       </a>
                     )}
                   </div>
@@ -918,7 +918,7 @@ export default function EventDetailPage() {
                 rel="noopener noreferrer"
                 className="px-3.5 py-1.5 border border-white/10 hover:border-ares-gold text-marble hover:text-ares-gold text-[9px] font-black uppercase tracking-widest transition-colors"
               >
-                Open Original &nearr;
+                Open Original ↗
               </a>
             </footer>
           </div>
