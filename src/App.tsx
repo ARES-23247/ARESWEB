@@ -1,19 +1,9 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TechStackPage from "@/app/tech-stack/page";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 // Lazy-load public pages for optimal bundle splitting
 const Home = lazy(() => import("@/app/page"));
@@ -93,71 +83,69 @@ export default function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <LayoutWrapper>
-            <ErrorBoundary>
-              <Suspense fallback={<AppLoading />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/academy" element={<AcademyPage />} />
-                  <Route path="/academy/:slug" element={<AcademyPage />} />
-                  <Route path="/accessibility" element={<AccessibilityPage />} />
-                  <Route path="/aresplanner" element={<AresPlannerPage />} />
-                  <Route path="/blog" element={<BlogFeedPage />} />
-                  <Route path="/blog/:slug" element={<BlogPostPage />} />
-                  <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/developer-api" element={<DeveloperApiPage />} />
-                  <Route path="/events/:id" element={<EventDetailPage />} />
-                  <Route path="/finance" element={<FinanceLedgerPage />} />
-                  <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/videos" element={<VideosPage />} />
-                  <Route path="/join" element={<JoinPage />} />
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
-                  <Route path="/outreach" element={<OutreachPage />} />
-                  <Route path="/privacy" element={<PrivacyPage />} />
-                  <Route path="/robots" element={<RobotsFeedPage />} />
-                  <Route path="/robots/:id" element={<RobotDetailPage />} />
-                  <Route path="/seasons" element={<SeasonsPage />} />
-                  <Route path="/sponsors" element={<SponsorsPage />} />
-                  <Route path="/store" element={<StorePage />} />
-                  <Route path="/tasks" element={<TasksRedirect />} />
-                  <Route path="/tech-stack" element={<TechStackPage />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  
-                  {/* Dashboard routes nested under DashboardLayout */}
-                  <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
-                    <Route index element={<DashboardPage />} />
-                    <Route path="profile" element={<DashboardProfilePage />} />
-                    <Route path="tasks" element={<DashboardTasksPage />} />
-                    <Route path="scope" element={<DashboardScopePage />} />
-                    <Route path="blog" element={<DashboardBlogPage />} />
-                    <Route path="events" element={<DashboardEventsPage />} />
-                    <Route path="documents" element={<DashboardDocumentsPage />} />
-                    <Route path="videos" element={<DashboardVideosPage />} />
-                    <Route path="photos" element={<DashboardPhotosPage />} />
-                    <Route path="field" element={<DashboardFieldPage />} />
-                    <Route path="inquiries" element={<DashboardInquiriesPage />} />
-                    <Route path="users" element={<DashboardUsersPage />} />
-                  </Route>
-                  
-                  {/* 404 Route */}
-                  <Route path="*" element={
-                    <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
-                      <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
-                      <p className="text-marble/60 text-sm mb-8">Page not found.</p>
-                      <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
-                    </div>
-                  } />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </LayoutWrapper>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <LayoutWrapper>
+          <ErrorBoundary>
+            <Suspense fallback={<AppLoading />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/academy" element={<AcademyPage />} />
+                <Route path="/academy/:slug" element={<AcademyPage />} />
+                <Route path="/accessibility" element={<AccessibilityPage />} />
+                <Route path="/aresplanner" element={<AresPlannerPage />} />
+                <Route path="/blog" element={<BlogFeedPage />} />
+                <Route path="/blog/:slug" element={<BlogPostPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/developer-api" element={<DeveloperApiPage />} />
+                <Route path="/events/:id" element={<EventDetailPage />} />
+                <Route path="/finance" element={<FinanceLedgerPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/videos" element={<VideosPage />} />
+                <Route path="/join" element={<JoinPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
+                <Route path="/outreach" element={<OutreachPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/robots" element={<RobotsFeedPage />} />
+                <Route path="/robots/:id" element={<RobotDetailPage />} />
+                <Route path="/seasons" element={<SeasonsPage />} />
+                <Route path="/sponsors" element={<SponsorsPage />} />
+                <Route path="/store" element={<StorePage />} />
+                <Route path="/tasks" element={<TasksRedirect />} />
+                <Route path="/tech-stack" element={<TechStackPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                
+                {/* Dashboard routes nested under DashboardLayout */}
+                <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="profile" element={<DashboardProfilePage />} />
+                  <Route path="tasks" element={<DashboardTasksPage />} />
+                  <Route path="scope" element={<DashboardScopePage />} />
+                  <Route path="blog" element={<DashboardBlogPage />} />
+                  <Route path="events" element={<DashboardEventsPage />} />
+                  <Route path="documents" element={<DashboardDocumentsPage />} />
+                  <Route path="videos" element={<DashboardVideosPage />} />
+                  <Route path="photos" element={<DashboardPhotosPage />} />
+                  <Route path="field" element={<DashboardFieldPage />} />
+                  <Route path="inquiries" element={<DashboardInquiriesPage />} />
+                  <Route path="users" element={<DashboardUsersPage />} />
+                </Route>
+                
+                {/* 404 Route */}
+                <Route path="*" element={
+                  <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
+                    <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
+                    <p className="text-marble/60 text-sm mb-8">Page not found.</p>
+                    <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
+                  </div>
+                } />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </LayoutWrapper>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

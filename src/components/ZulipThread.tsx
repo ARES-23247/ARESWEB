@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, RefreshCw, Send } from 'lucide-react';
 import { sanitizeHtml } from '../lib/security';
 
@@ -20,12 +19,19 @@ interface ZulipThreadProps {
 }
 
 export default function ZulipThread({ stream, topic, className }: ZulipThreadProps) {
-  const queryClient = useQueryClient();
+  const [messages, setMessages] = useState<ZulipMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['zulip-messages', stream, topic],
-    queryFn: async () => {
+  const fetchMessages = async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
+    setError(null);
+    try {
       const res = await fetch(`/api/zulip/topic?stream=${encodeURIComponent(stream)}&topic=${encodeURIComponent(topic)}`);
       if (!res.ok) {
         if (res.status === 403) throw new Error("Bot not subscribed to this stream.");
@@ -42,18 +48,31 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
         throw new Error(errorMsg);
       }
       const json = await res.json() as { success: boolean, messages: ZulipMessage[] };
-      return json.messages || [];
-    },
-    refetchOnWindowFocus: false,
-    retry: 1
-  });
+      setMessages(json.messages || []);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch messages.");
+    } finally {
+      if (showLoading) {
+        setIsLoading(false);
+      }
+    }
+  };
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+  useEffect(() => {
+    fetchMessages(true);
+  }, [stream, topic]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || isSending) return;
+
+    setIsSending(true);
+    setSendError(null);
+    try {
       const res = await fetch("/api/zulip/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream, topic, content })
+        body: JSON.stringify({ stream, topic, content: message })
       });
       if (!res.ok) {
         let errorMsg = "Failed to send message";
@@ -67,25 +86,20 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
         }
         throw new Error(errorMsg);
       }
-      return res.json();
-    },
-    onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: ['zulip-messages', stream, topic] });
+      await fetchMessages(false);
+    } catch (err: any) {
+      setSendError(err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
     }
-  });
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-    sendMessageMutation.mutate(message);
   };
 
   if (isLoading) {
     return (
       <div className={`border border-white/10 rounded-lg p-6 bg-black/40 glass-card animate-pulse ${className || "my-8"}`}>
         <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
-          <MessageSquare className="text-ares-gray" size={20} />
+          <span className="w-5 h-5 bg-white/10 rounded" />
           <h3 className="font-heading font-bold text-ares-gray">Zulip Thread: {topic}</h3>
         </div>
         <div className="space-y-4">
@@ -103,12 +117,12 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
           <MessageSquare className="text-ares-cyan" size={20} />
           <h3 className="font-heading font-bold text-white">Zulip Discussion: {topic}</h3>
           <span className="bg-ares-cyan/20 text-ares-cyan text-xs font-bold px-2 py-0.5 rounded-full">
-            {data ? data.length : 0}
+            {messages.length}
           </span>
         </div>
         <button 
           type="button"
-          onClick={() => refetch()}
+          onClick={() => fetchMessages(true)}
           className="text-ares-gray hover:text-white transition-colors"
           title="Refresh Messages"
           aria-label="Refresh Messages"
@@ -118,20 +132,20 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
       </div>
       
       <div className="p-4 space-y-6 overflow-y-auto custom-scrollbar flex-grow bg-black/20">
-        {error || !data || data.length === 0 ? (
+        {error || messages.length === 0 ? (
           <div className="text-center py-6">
-            <p className={`mb-4 ${error ? "text-red-400 font-bold" : "text-ares-gray"}`}>
-              {error ? `Error: ${(error as Error).message}` : "No messages found for this topic yet. Start the conversation!"}
+            <p className={`mb-4 ${error ? "text-red-400 font-bold" : "text-marble/60"}`}>
+              {error ? `Error: ${error}` : "No messages found for this topic yet. Start the conversation!"}
             </p>
           </div>
         ) : (
-          data.map((msg) => (
+          messages.map((msg) => (
             <div key={msg.id} className="flex gap-4">
               <div className="flex-shrink-0">
                 {msg.avatar_url ? (
                   <img src={msg.avatar_url} alt={msg.sender_full_name} className="w-10 h-10 rounded-full border border-white/10" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-ares-gray flex items-center justify-center font-bold text-black">
+                  <div className="w-10 h-10 rounded-full bg-ares-cyan/10 border border-ares-cyan/25 flex items-center justify-center font-bold text-ares-cyan">
                     {(msg.sender_full_name || "?").charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -139,7 +153,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
               <div className="flex-grow min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="font-bold text-white">{msg.sender_full_name}</span>
-                  <span className="text-xs text-ares-gray">{new Date(msg.timestamp * 1000).toLocaleString()}</span>
+                  <span className="text-xs text-marble/40">{new Date(msg.timestamp * 1000).toLocaleString()}</span>
                 </div>
                 <div
                   className="prose prose-sm prose-invert max-w-none text-marble/80 prose-p:my-1 prose-a:text-ares-cyan prose-a:no-underline hover:prose-a:underline"
@@ -152,9 +166,9 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
       </div>
 
       <div className="p-4 border-t border-white/10 bg-white/5 shrink-0">
-        {sendMessageMutation.isError && (
+        {sendError && (
           <div className="text-red-400 text-sm mb-2 px-2 font-bold">
-            Failed to send: {sendMessageMutation.error.message}
+            Failed to send: {sendError}
           </div>
         )}
         <form onSubmit={handleSend} className="flex gap-2">
@@ -165,12 +179,12 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
             placeholder={`Reply to #${stream} > ${topic}...`}
             aria-label="Message content"
             className="flex-grow bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-ares-cyan"
-            disabled={sendMessageMutation.isPending}
+            disabled={isSending}
           />
           <button
             type="submit"
-            disabled={!message.trim() || sendMessageMutation.isPending}
-            className="bg-ares-cyan hover:bg-ares-cyan/80 text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!message.trim() || isSending}
+            className="bg-ares-cyan hover:bg-ares-cyan/85 text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={16} />
             Send
