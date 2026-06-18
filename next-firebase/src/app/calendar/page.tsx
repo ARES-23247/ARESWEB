@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -16,7 +16,9 @@ import {
   Award,
   LayoutGrid,
   List,
-  Plus
+  Plus,
+  X,
+  Loader2
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
@@ -105,6 +107,82 @@ export default function CalendarPage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Inline Event Creation modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState("");
+  const [formCategory, setFormCategory] = useState<"internal" | "outreach">("internal");
+  const [formDateStart, setFormDateStart] = useState("");
+  const [formDateEnd, setFormDateEnd] = useState("");
+  const [formLocation, setFormLocation] = useState("MARS Laboratory");
+  const [formDescription, setFormDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleOpenInlineCreate = (date?: Date) => {
+    const targetDate = date || selectedDate || new Date();
+    // Offset local timezone date to ISO YYYY-MM-DD
+    const tzOffset = targetDate.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localISODate = new Date(targetDate.getTime() - tzOffset);
+    const dateStr = localISODate.toISOString().split("T")[0];
+    
+    setFormTitle("");
+    setFormCategory("internal");
+    setFormDateStart(`${dateStr}T18:00`);
+    setFormDateEnd(`${dateStr}T20:00`);
+    setFormLocation("MARS Laboratory");
+    setFormDescription("");
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSaveInlineEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim() || !formDateStart || isSaving) return;
+    if (!canEdit) return;
+
+    setIsSaving(true);
+    const targetId = `event_${Date.now()}`;
+    const newEvent = {
+      id: targetId,
+      title: formTitle.trim(),
+      dateStart: formDateStart,
+      dateEnd: formDateEnd || null,
+      location: formLocation.trim() || "TBD",
+      description: formDescription.trim() || "",
+      category: formCategory,
+      isDeleted: 0,
+      status: "published"
+    };
+
+    try {
+      await setDoc(doc(db, "events", targetId), newEvent);
+
+      // Save Revision Document
+      if (user) {
+        const revId = `rev_${Date.now()}`;
+        const revisionData = {
+          id: revId,
+          title: formTitle.trim(),
+          dateStart: formDateStart,
+          dateEnd: formDateEnd || null,
+          location: formLocation.trim() || "TBD",
+          description: formDescription.trim() || "",
+          category: formCategory,
+          editedBy: user.uid,
+          editedByName: authorizedUser?.name || user.displayName || "Anonymous Member",
+          editedByAvatar: user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed={user.uid}`,
+          timestamp: new Date().toISOString()
+        };
+        await setDoc(doc(db, "events", targetId, "revisions", revId), revisionData);
+      }
+
+      setIsCreateModalOpen(false);
+      alert("Event scheduled successfully!");
+    } catch (err: any) {
+      alert("Error saving event: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -300,12 +378,13 @@ export default function CalendarPage() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0 relative z-10">
             {canEdit && (
-              <a
-                href={`/dashboard/events?action=create&date=${selectedDate.toISOString().split('T')[0]}`}
+              <button
+                type="button"
+                onClick={() => handleOpenInlineCreate(selectedDate)}
                 className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg flex items-center gap-1.5"
               >
                 <Plus size={11} /> New Event
-              </a>
+              </button>
             )}
 
             <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5">
@@ -484,12 +563,13 @@ export default function CalendarPage() {
               
               {canEdit && (
                 <div className="mt-4 pt-4 border-t border-white/5">
-                  <a
-                    href={`/dashboard/events?action=create&date=${selectedDate.toISOString().split('T')[0]}`}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenInlineCreate(selectedDate)}
                     className="w-full py-2 bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/30 text-white hover:text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow active:scale-98"
                   >
                     <Plus size={11} /> Schedule Event
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -640,6 +720,128 @@ export default function CalendarPage() {
         </div>
 
       </div>
+
+      {/* ─── INLINE CREATE EVENT MODAL ─── */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/85 backdrop-blur-sm animate-fade-in">
+          <div className="glass-card ares-cut border border-white/10 w-full max-w-lg overflow-hidden shadow-2xl animate-scale-in flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <header className="p-5 border-b border-white/5 bg-black/30 flex justify-between items-center">
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-ares-gold flex items-center gap-1.5">
+                  <CalendarIcon size={10} className="text-ares-red" /> Operational Timelines
+                </span>
+                <h3 className="text-lg font-black text-white uppercase tracking-wider mt-1 font-heading">Schedule New Event</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="w-7 h-7 rounded bg-white/5 border border-white/5 hover:bg-white/10 text-marble/60 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </header>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveInlineEvent} className="p-6 space-y-4 overflow-y-auto flex-grow text-left">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Event Title</label>
+                <input
+                  type="text"
+                  required
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  placeholder="e.g. Sunday Night Driver Practice"
+                  className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Category</label>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value as any)}
+                    className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25"
+                  >
+                    <option value="internal">Practice (Internal)</option>
+                    <option value="outreach">Outreach (External)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Location</label>
+                  <input
+                    type="text"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    placeholder="MARS Laboratory"
+                    className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={formDateStart}
+                    onChange={(e) => setFormDateStart(e.target.value)}
+                    className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={formDateEnd}
+                    onChange={(e) => setFormDateEnd(e.target.value)}
+                    className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Description & Goals</label>
+                <textarea
+                  rows={3}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Summarize target operational goals, tuning benchmarks, or logistics requirements..."
+                  className="w-full bg-black/45 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/25 resize-none"
+                />
+              </div>
+
+              {/* Modal Footer actions */}
+              <footer className="pt-4 border-t border-white/5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="py-2 px-4 border border-white/10 hover:bg-white/5 text-marble/70 hover:text-white font-bold text-[10px] uppercase tracking-wider rounded transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="py-2 px-5 bg-ares-red hover:bg-ares-red-dark text-white font-black text-[10px] uppercase tracking-wider ares-cut transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-98 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={10} /> Saving...
+                    </>
+                  ) : (
+                    "Create Event"
+                  )}
+                </button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
