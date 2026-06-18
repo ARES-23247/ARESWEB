@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import TaskDetailsModal from "./components/TaskDetailsModal";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface TaskComment {
   id: string;
