@@ -30,6 +30,7 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { authenticatedFetch } from "@/lib/api";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
+import { resizeAndCompressImage } from "@/lib/image";
 
 export interface TeamLocation {
   id: string;
@@ -719,16 +720,10 @@ export default function EventsManagementPage({
     setUploadingImage(true);
     setUploadError(null);
     try {
-      // Helper to read file as base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64String = (reader.result as string).split(",")[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Compress and resize the image client-side to optimize uploads
+      const compressed = await resizeAndCompressImage(file);
+      const base64 = compressed.base64;
+      const mimeType = compressed.mimeType;
 
       const res = await authenticatedFetch("/api/photos/upload-unified", {
         method: "POST",
@@ -736,7 +731,7 @@ export default function EventsManagementPage({
         body: JSON.stringify({
           fileBase64: base64,
           filename: file.name,
-          mimeType: file.type || "image/jpeg",
+          mimeType: mimeType || file.type || "image/jpeg",
           uploadToGoogle: true, // Auto cross-post to Google Photos
           runAiLabeling: false
         })

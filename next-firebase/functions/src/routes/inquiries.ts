@@ -4,6 +4,8 @@ import { adminDb } from "../lib/firebase-admin";
 import { encrypt, decrypt } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
+import { asyncHandler } from "../lib/utils";
+import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
@@ -24,180 +26,155 @@ function getEncryptionSecret(): string {
 }
 
 // POST /api/inquiries
-router.post("/", inquiryLimiter, async (req, res) => {
-  try {
-    const { type, name, email, metadata, recaptchaToken } = req.body as {
-      type: string;
-      name: string;
-      email: string;
-      metadata: any;
-      recaptchaToken: string;
-    };
+router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
+  const { type, name, email, metadata, recaptchaToken } = req.body as {
+    type: string;
+    name: string;
+    email: string;
+    metadata: any;
+    recaptchaToken: string;
+  };
 
-    if (!type || !name || !email || !recaptchaToken) {
-      res.status(400).json({ success: false, error: "Missing required fields." });
-      return;
-    }
+  if (!type || !name || !email || !recaptchaToken) {
+    throw new ApiError(400, "Missing required fields.");
+  }
 
-    // Disable reCAPTCHA bypass token in production environment
-    const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
-    const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
+  // Disable reCAPTCHA bypass token in production environment
+  const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
+  const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
 
-    if (!isBypass) {
-      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-      if (!secretKey) {
-        console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY is missing, bypassing verification.");
-      } else {
-        const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
-        });
+  if (!isBypass) {
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secretKey) {
+      console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY is missing, bypassing verification.");
+    } else {
+      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
+      });
 
-        const verifyData = (await verifyRes.json()) as { success: boolean; score?: number };
-        if (!verifyData.success || (verifyData.score !== undefined && verifyData.score < 0.5)) {
-          res.status(400).json({ success: false, error: "Spam check verification failed. Please try again." });
-          return;
-        }
+      const verifyData = (await verifyRes.json()) as { success: boolean; score?: number };
+      if (!verifyData.success || (verifyData.score !== undefined && verifyData.score < 0.5)) {
+        throw new ApiError(400, "Spam check verification failed. Please try again.");
       }
     }
+  }
 
-    const secret = getEncryptionSecret();
-    const encryptedName = await encrypt(name.trim(), secret);
-    const encryptedEmail = await encrypt(email.trim().toLowerCase(), secret);
+  const secret = getEncryptionSecret();
+  const encryptedName = await encrypt(name.trim(), secret);
+  const encryptedEmail = await encrypt(email.trim().toLowerCase(), secret);
 
-    const inquiryId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    const newInquiry = {
-      id: inquiryId,
-      type,
-      name: encryptedName,
-      email: encryptedEmail,
-      status: "pending",
-      metadata: metadata || {},
-      createdAt: new Date().toISOString(),
-    };
+  const inquiryId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  const newInquiry = {
+    id: inquiryId,
+    type,
+    name: encryptedName,
+    email: encryptedEmail,
+    status: "pending",
+    metadata: metadata || {},
+    createdAt: new Date().toISOString(),
+  };
 
-    await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
+  await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
 
-    try {
-      const nameVal = name.trim();
-      const maskedName = nameVal.charAt(0) + "***" + nameVal.charAt(nameVal.length - 1);
-      const emailVal = email.trim().toLowerCase();
-      const emailParts = emailVal.split("@");
-      const maskedEmail = emailParts[0].charAt(0) + "***@" + emailParts[1];
+  try {
+    const nameVal = name.trim();
+    const maskedName = nameVal.charAt(0) + "***" + nameVal.charAt(nameVal.length - 1);
+    const emailVal = email.trim().toLowerCase();
+    const emailParts = emailVal.split("@");
+    const maskedEmail = emailParts[0].charAt(0) + "***@" + emailParts[1];
 
-      const messageBody = `**Name:** ${maskedName}
+    const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}
 **Type:** ${type}
 **Message:** ${metadata?.message ? (metadata.message.length > 80 ? metadata.message.substring(0, 80) + "..." : metadata.message) : "(no message payload)"}
 [Open Command Center to view applicant details](https://aresfirst.org/dashboard)`;
 
-      // Await Zulip Sync
-      await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
-    } catch (e) {
-      console.error("[Zulip Inquiries Alert] error:", e);
-    }
-
-    res.json({
-      success: true,
-      message: "Application submitted successfully.",
-      id: inquiryId,
-    });
-  } catch (error: any) {
-    console.error("Error submitting inquiry API:", error);
-    res.status(500).json({ success: false, error: "Internal server error." });
+    // Await Zulip Sync
+    await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
+  } catch (e) {
+    console.error("[Zulip Inquiries Alert] error:", e);
   }
-});
+
+  res.json({
+    success: true,
+    message: "Application submitted successfully.",
+    id: inquiryId,
+  });
+}));
 
 // GET /api/inquiries
-router.get("/", ensureAdmin, async (req, res) => {
-  try {
-    const snapshot = await adminDb.collection("inquiries").orderBy("createdAt", "desc").get();
-    const secret = getEncryptionSecret();
+router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
+  const snapshot = await adminDb.collection("inquiries").orderBy("createdAt", "desc").get();
+  const secret = getEncryptionSecret();
 
-    const inquiries = await Promise.all(snapshot.docs.map(async (doc) => {
-      const data = doc.data();
-      let name = data.name;
-      let email = data.email;
+  const inquiries = await Promise.all(snapshot.docs.map(async (doc) => {
+    const data = doc.data();
+    let name = data.name;
+    let email = data.email;
 
-      try {
-        if (name && name.includes(":")) {
-          name = await decrypt(name, secret);
-        }
-      } catch (e) {
-        name = "[Decryption Failed]";
+    try {
+      if (name && name.includes(":")) {
+        name = await decrypt(name, secret);
       }
+    } catch (e) {
+      name = "[Decryption Failed]";
+    }
 
-      try {
-        if (email && email.includes(":")) {
-          email = await decrypt(email, secret);
-        }
-      } catch (e) {
-        email = "[Decryption Failed]";
+    try {
+      if (email && email.includes(":")) {
+        email = await decrypt(email, secret);
       }
+    } catch (e) {
+      email = "[Decryption Failed]";
+    }
 
-      return {
-        id: doc.id,
-        type: data.type,
-        name,
-        email,
-        status: data.status,
-        metadata: data.metadata,
-        createdAt: data.createdAt,
-      };
-    }));
+    return {
+      id: doc.id,
+      type: data.type,
+      name,
+      email,
+      status: data.status,
+      metadata: data.metadata,
+      createdAt: data.createdAt,
+    };
+  }));
 
-    res.json({ success: true, inquiries });
-  } catch (error: any) {
-    console.error("Error listing inquiries:", error);
-    res.status(500).json({ success: false, error: "Internal server error." });
-  }
-});
+  res.json({ success: true, inquiries });
+}));
 
 // PATCH /api/inquiries/:id/status
-router.patch("/:id/status", ensureAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body as { status: string };
+router.patch("/:id/status", ensureAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body as { status: string };
 
-    if (!status) {
-      res.status(400).json({ success: false, error: "Status is required." });
-      return;
-    }
-
-    const docRef = adminDb.collection("inquiries").doc(id);
-    const docSnap = await docRef.get();
-    if (!docSnap.exists) {
-      res.status(404).json({ success: false, error: "Inquiry not found." });
-      return;
-    }
-
-    await docRef.update({ status });
-    res.json({ success: true, message: "Status updated successfully." });
-  } catch (error: any) {
-    console.error("Error updating inquiry status:", error);
-    res.status(500).json({ success: false, error: "Internal server error." });
+  if (!status) {
+    throw new ApiError(400, "Status is required.");
   }
-});
+
+  const docRef = adminDb.collection("inquiries").doc(id);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new ApiError(404, "Inquiry not found.");
+  }
+
+  await docRef.update({ status });
+  res.json({ success: true, message: "Status updated successfully." });
+}));
 
 // DELETE /api/inquiries/:id
-router.delete("/:id", ensureAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
+router.delete("/:id", ensureAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-    const docRef = adminDb.collection("inquiries").doc(id);
-    const docSnap = await docRef.get();
-    if (!docSnap.exists) {
-      res.status(404).json({ success: false, error: "Inquiry not found." });
-      return;
-    }
-
-    await docRef.delete();
-    res.json({ success: true, message: "Inquiry deleted successfully." });
-  } catch (error: any) {
-    console.error("Error deleting inquiry:", error);
-    res.status(500).json({ success: false, error: "Internal server error." });
+  const docRef = adminDb.collection("inquiries").doc(id);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new ApiError(404, "Inquiry not found.");
   }
-});
+
+  await docRef.delete();
+  res.json({ success: true, message: "Inquiry deleted successfully." });
+}));
 
 export default router;
