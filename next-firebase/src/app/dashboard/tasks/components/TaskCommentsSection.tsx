@@ -28,6 +28,7 @@ export interface TaskItem {
   subteam: "software" | "hardware" | "business" | "outreach";
   assignees: string[];
   subtasks: any[];
+  archived?: boolean;
   createdAt: string;
   comments?: TaskComment[];
   commentsCount?: number;
@@ -38,6 +39,7 @@ interface TaskCommentsSectionProps {
   canEdit: boolean;
   user: any;
   teamProfiles: MemberProfile[];
+  setSyncState?: (state: "idle" | "syncing" | "success" | "error") => void;
 }
 
 export default function TaskCommentsSection({
@@ -45,6 +47,7 @@ export default function TaskCommentsSection({
   canEdit,
   user,
   teamProfiles,
+  setSyncState,
 }: TaskCommentsSectionProps) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [expanded, setExpanded] = useState(true);
@@ -102,7 +105,8 @@ export default function TaskCommentsSection({
       setNewComment("");
 
       // Forward to Zulip stream
-      await authenticatedFetch("/api/tasks/comment", {
+      if (setSyncState) setSyncState("syncing");
+      authenticatedFetch("/api/tasks/comment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,6 +115,21 @@ export default function TaskCommentsSection({
           author: commentPayload.author,
           content: commentPayload.content,
         }),
+      }).then((res) => {
+        if (res.ok) {
+          if (setSyncState) setSyncState("success");
+        } else {
+          if (setSyncState) setSyncState("error");
+        }
+        setTimeout(() => {
+          if (setSyncState) setSyncState("idle");
+        }, 3000);
+      }).catch((err) => {
+        console.error("Zulip notification failed:", err);
+        if (setSyncState) setSyncState("error");
+        setTimeout(() => {
+          if (setSyncState) setSyncState("idle");
+        }, 3000);
       });
     } catch (err) {
       console.error("Failed to add comment:", err);

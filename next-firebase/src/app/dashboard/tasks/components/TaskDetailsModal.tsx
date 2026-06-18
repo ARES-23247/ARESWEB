@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Trash2 } from "lucide-react";
+import { Trash2, Archive } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { Drawer } from "vaul";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -19,6 +19,8 @@ interface TaskDetailsModalProps {
   onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
+  onArchiveTask: (taskId: string, isArchived: boolean) => Promise<void>;
+  setSyncState?: (state: "idle" | "syncing" | "success" | "error") => void;
 }
 
 export default function TaskDetailsModal({
@@ -32,6 +34,8 @@ export default function TaskDetailsModal({
   onDeleteSubtask,
   onAddSubtask,
   onDeleteTask,
+  onArchiveTask,
+  setSyncState,
 }: TaskDetailsModalProps) {
   const task = tasks.find((t) => t.id === taskId);
   if (!task) return null;
@@ -77,6 +81,7 @@ export default function TaskDetailsModal({
         assignees: modalAssignees,
       });
 
+      if (setSyncState) setSyncState("syncing");
       authenticatedFetch("/api/tasks/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,7 +93,22 @@ export default function TaskDetailsModal({
           subteam: modalSubteam,
           status: modalStatus,
         }),
-      }).catch((err) => console.error("Zulip notification failed:", err));
+      }).then((res) => {
+        if (res.ok) {
+          if (setSyncState) setSyncState("success");
+        } else {
+          if (setSyncState) setSyncState("error");
+        }
+        setTimeout(() => {
+          if (setSyncState) setSyncState("idle");
+        }, 3000);
+      }).catch((err) => {
+        console.error("Zulip notification failed:", err);
+        if (setSyncState) setSyncState("error");
+        setTimeout(() => {
+          if (setSyncState) setSyncState("idle");
+        }, 3000);
+      });
 
       onClose();
     } catch (e) {
@@ -197,7 +217,7 @@ export default function TaskDetailsModal({
             )}
           </div>
 
-          <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} />
+          <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} setSyncState={setSyncState} />
         </div>
 
         <div className="space-y-5 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
@@ -289,6 +309,19 @@ export default function TaskDetailsModal({
               >
                 Save Changes
               </button>
+              
+              {(task.status === "completed" || task.archived) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onArchiveTask(task.id, !task.archived);
+                  }}
+                  className="w-full bg-black/40 hover:bg-ares-gold/10 border border-white/10 hover:border-ares-gold/35 text-marble/60 hover:text-ares-gold text-xs font-bold py-2 px-3 rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Archive size={12} /> {task.archived ? "Restore Card" : "Archive Card"}
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   if (confirm("Are you sure you want to delete this task card?")) {

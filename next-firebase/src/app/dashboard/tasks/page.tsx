@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare } from "lucide-react";
+import { Plus, Trash2, Shield, Activity, MessageSquare, CheckSquare, Archive } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 import MarkdownEditor from "@/components/MarkdownEditor";
@@ -32,6 +32,7 @@ interface TaskItem {
   subteam: "software" | "hardware" | "business" | "outreach";
   assignees: string[];
   subtasks: SubTask[];
+  archived?: boolean;
   createdAt: string;
   comments?: TaskComment[];
   commentsCount?: number;
@@ -106,7 +107,30 @@ export default function KanbanPage() {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
+  // Operational state extensions
+  const [showArchived, setShowArchived] = useState(false);
+  const [newTaskAssignees, setNewTaskAssignees] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"newest" | "priority">("newest");
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
+
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+
+  const runZulipSync = async (fetchPromise: Promise<Response>) => {
+    setSyncState("syncing");
+    try {
+      const res = await fetchPromise;
+      if (res.ok) {
+        setSyncState("success");
+      } else {
+        setSyncState("error");
+      }
+      setTimeout(() => setSyncState("idle"), 3000);
+    } catch (err) {
+      console.error("Zulip sync error:", err);
+      setSyncState("error");
+      setTimeout(() => setSyncState("idle"), 3000);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -130,6 +154,7 @@ export default function KanbanPage() {
               subteam: data.subteam || "software",
               assignees: data.assignees || [],
               subtasks: data.subtasks || [],
+              archived: data.archived || false,
               createdAt: data.createdAt || new Date().toISOString(),
               commentsCount: data.commentsCount || (data.comments?.length || 0)
             } as TaskItem;
@@ -178,8 +203,9 @@ export default function KanbanPage() {
       status: "todo",
       priority: newTaskPriority,
       subteam: newTaskSubteam,
-      assignees: [user?.uid || "anonymous"],
+      assignees: newTaskAssignees.length > 0 ? newTaskAssignees : [user?.uid || "anonymous"],
       subtasks: [],
+      archived: false,
       createdAt: new Date().toISOString()
     };
 
@@ -187,8 +213,9 @@ export default function KanbanPage() {
       await setDoc(doc(db, "tasks", taskId), newTask);
       setNewTaskTitle("");
       setNewTaskDesc("");
+      setNewTaskAssignees([]);
 
-      authenticatedFetch("/api/tasks/notify", {
+      const syncPromise = authenticatedFetch("/api/tasks/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -199,7 +226,8 @@ export default function KanbanPage() {
           priority: newTask.priority,
           subteam: newTask.subteam,
         }),
-      }).catch((err) => console.error("Zulip notification failed:", err));
+      });
+      runZulipSync(syncPromise);
     } catch (err) {
       console.warn("Unable to save task online, updating local UI array.", err);
       setTasks([newTask, ...tasks]);
@@ -214,7 +242,7 @@ export default function KanbanPage() {
       await updateDoc(taskRef, { status: newStatus });
 
       if (task) {
-        authenticatedFetch("/api/tasks/notify", {
+        const syncPromise = authenticatedFetch("/api/tasks/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -223,11 +251,38 @@ export default function KanbanPage() {
             title: task.title,
             status: newStatus,
           }),
-        }).catch((err) => console.error("Zulip notification failed:", err));
+        });
+        runZulipSync(syncPromise);
       }
     } catch (err) {
       console.warn("Firestore offline, moving card locally.", err);
       setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+    }
+  };
+
+  const handleArchiveTask = async (taskId: string, isArchived: boolean) => {
+    if (!canEdit) return;
+    try {
+      const taskRef = doc(db, "tasks", taskId);
+      await updateDoc(taskRef, { archived: isArchived });
+    } catch (err) {
+      console.warn("Firestore offline, archiving card locally.", err);
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, archived: isArchived } : t)));
+    }
+  };
+
+  const handleArchiveAllCompleted = async () => {
+    if (!canEdit) return;
+    const completedTasks = tasks.filter((t) => t.status === "completed" && !t.archived);
+    try {
+      const promises = completedTasks.map((t) => {
+        const taskRef = doc(db, "tasks", t.id);
+        return updateDoc(taskRef, { archived: true });
+      });
+      await Promise.all(promises);
+    } catch (err) {
+      console.warn("Firestore offline, archiving all completed locally.", err);
+      setTasks(tasks.map((t) => (t.status === "completed" ? { ...t, archived: true } : t)));
     }
   };
 
@@ -316,7 +371,7 @@ export default function KanbanPage() {
   };
 
   const filteredTasks = tasks.filter(
-    (t) => filterSubteam === "all" || t.subteam === filterSubteam
+    (t) => (filterSubteam === "all" || t.subteam === filterSubteam) && (!t.archived || showArchived)
   );
 
   const columns: { id: TaskItem["status"]; title: string; emoji: string }[] = [
@@ -345,27 +400,77 @@ export default function KanbanPage() {
                 ● Offline Mode
               </span>
             )}
+            
+            {/* Zulip synchronization states */}
+            {syncState === "syncing" && (
+              <span className="inline-flex items-center rounded-full bg-ares-cyan/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-cyan ring-1 ring-inset ring-ares-cyan/30 ml-2 animate-pulse">
+                ● Zulip Syncing...
+              </span>
+            )}
+            {syncState === "success" && (
+              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
+                ✓ Zulip Synced
+              </span>
+            )}
+            {syncState === "error" && (
+              <span className="inline-flex items-center rounded-full bg-ares-red/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-red ring-1 ring-inset ring-ares-red/30 ml-2">
+                ⚠️ Sync Error
+              </span>
+            )}
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
             Collaborative subteam Kanban dashboard. Create cards, assign responsibilities, and update status blocks in real-time.
           </p>
         </div>
 
-        {/* Subteam Filters */}
-        <div className="flex flex-wrap gap-1.5 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
-          {["all", "software", "hardware", "business", "outreach"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setFilterSubteam(st)}
-              className={`px-3 py-1.5 text-[10px] font-black uppercase rounded transition-all duration-200 cursor-pointer ${
-                filterSubteam === st
-                  ? "bg-ares-red text-white shadow-md"
-                  : "text-marble/75 hover:text-white"
-              }`}
-            >
-              {st}
-            </button>
-          ))}
+        {/* Sort, Archive and Subteam Controls */}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center shrink-0 w-full lg:w-auto">
+          {/* Sort & Archive Controls */}
+          <div className="flex items-center gap-3 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="board-sort" className="text-[10px] font-bold uppercase tracking-wider text-marble/55">Sort:</label>
+              <select
+                id="board-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-black/60 border border-white/10 rounded px-2.5 py-1 text-[10px] font-bold uppercase text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="priority">Priority (High-Low)</option>
+              </select>
+            </div>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            {/* Show Archived Toggle */}
+            <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-marble/75 hover:text-white cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 cursor-pointer"
+              />
+              Show Archived
+            </label>
+          </div>
+
+          {/* Subteam Filters */}
+          <div className="flex flex-wrap gap-1.5 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
+            {["all", "software", "hardware", "business", "outreach"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setFilterSubteam(st)}
+                className={`px-3 py-1.5 text-[10px] font-black uppercase rounded transition-all duration-200 cursor-pointer ${
+                  filterSubteam === st
+                    ? "bg-ares-red text-white shadow-md"
+                    : "text-marble/75 hover:text-white"
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -419,6 +524,45 @@ export default function KanbanPage() {
             </div>
           </div>
           <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+              Assign Task To ({newTaskAssignees.length})
+            </label>
+            <div className="flex flex-wrap gap-2 bg-black/40 border border-white/10 rounded p-3 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+              {teamProfiles.length === 0 ? (
+                <p className="text-[10px] text-marble/40 italic">Loading team members...</p>
+              ) : (
+                teamProfiles.map((member) => {
+                  const isAssigned = newTaskAssignees.includes(member.uid);
+                  return (
+                    <button
+                      key={member.uid}
+                      type="button"
+                      onClick={() => {
+                        if (isAssigned) {
+                          setNewTaskAssignees(newTaskAssignees.filter((uid) => uid !== member.uid));
+                        } else {
+                          setNewTaskAssignees([...newTaskAssignees, member.uid]);
+                        }
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all cursor-pointer ${
+                        isAssigned
+                          ? "bg-ares-red/25 border-ares-red text-white shadow-sm"
+                          : "bg-black/50 border-white/10 text-marble/70 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      <img
+                        src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.uid}`}
+                        alt={member.nickname}
+                        className="w-3.5 h-3.5 rounded-full object-contain bg-black/50"
+                      />
+                      <span>{member.nickname}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+          <div>
             <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
             <MarkdownEditor
               id="new-task-desc"
@@ -447,7 +591,22 @@ export default function KanbanPage() {
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {columns.map((col) => {
-          const colTasks = filteredTasks.filter((t) => t.status === col.id);
+          let colTasks = filteredTasks.filter((t) => t.status === col.id);
+
+          // Apply client-side sorting logic
+          colTasks = [...colTasks].sort((a, b) => {
+            if (sortBy === "priority") {
+              const priorityMap = { high: 3, medium: 2, low: 1 };
+              const priorityA = priorityMap[a.priority] || 0;
+              const priorityB = priorityMap[b.priority] || 0;
+              if (priorityA !== priorityB) {
+                return priorityB - priorityA;
+              }
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            } else {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+          });
 
           return (
             <div
@@ -458,9 +617,21 @@ export default function KanbanPage() {
                 <span className="flex items-center gap-2">
                   <span className="text-lg">{col.emoji}</span> {col.title}
                 </span>
-                <span className="bg-ares-red/20 border border-ares-red/35 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                  {colTasks.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  {col.id === "completed" && canEdit && colTasks.filter(t => !t.archived).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleArchiveAllCompleted}
+                      title="Archive all active completed tasks"
+                      className="text-[9px] bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold px-2 py-0.5 rounded transition-all cursor-pointer font-bold uppercase tracking-wider"
+                    >
+                      Archive All
+                    </button>
+                  )}
+                  <span className="bg-ares-red/20 border border-ares-red/35 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                    {colTasks.length}
+                  </span>
+                </div>
               </h3>
 
               <div
@@ -513,20 +684,42 @@ export default function KanbanPage() {
                       <div className={draggingTaskId ? "pointer-events-none" : ""}>
                         {/* Card tags */}
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-[9px] bg-white/5 border border-white/10 px-2 py-0.5 rounded font-black uppercase tracking-wider text-marble/80">
-                            {task.subteam}
-                          </span>
-                          <span
-                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                              task.priority === "high"
-                                ? "bg-ares-gold/20 text-ares-gold border-ares-gold/30"
-                                : task.priority === "medium"
-                                ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
-                                : "bg-ares-success/10 text-ares-success border-ares-success/20"
-                            }`}
-                          >
-                            {task.priority}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] bg-white/5 border border-white/10 px-2 py-0.5 rounded font-black uppercase tracking-wider text-marble/80">
+                              {task.subteam}
+                            </span>
+                            {task.archived && (
+                              <span className="text-[9px] bg-ares-gold/20 border border-ares-gold/30 px-2 py-0.5 rounded font-black uppercase tracking-wider text-ares-gold animate-pulse">
+                                Archived
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {task.status === "completed" && canEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchiveTask(task.id, !task.archived);
+                                }}
+                                title={task.archived ? "Restore Task" : "Archive Task"}
+                                className="text-marble/55 hover:text-ares-gold transition-colors p-1 cursor-pointer bg-white/5 hover:bg-white/10 rounded border border-white/10 hover:border-ares-gold/30 flex items-center justify-center shrink-0"
+                              >
+                                <Archive size={10} />
+                              </button>
+                            )}
+                            <span
+                              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
+                                task.priority === "high"
+                                  ? "bg-ares-gold/20 text-ares-gold border-ares-gold/30"
+                                  : task.priority === "medium"
+                                  ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
+                                  : "bg-ares-success/10 text-ares-success border-ares-success/20"
+                              }`}
+                            >
+                              {task.priority}
+                            </span>
+                          </div>
                         </div>
 
                         <h4 className="font-bold text-white leading-snug mb-2 font-heading text-sm hover:text-ares-gold transition-colors">
@@ -611,6 +804,8 @@ export default function KanbanPage() {
           onDeleteSubtask={handleDeleteSubtask}
           onAddSubtask={handleAddSubtaskDirect}
           onDeleteTask={handleDeleteTask}
+          onArchiveTask={handleArchiveTask}
+          setSyncState={setSyncState}
         />
       )}
     </div>
