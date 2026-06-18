@@ -18,7 +18,7 @@ export default function TechStackPage() {
             Our Tech <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-xl text-white">Stack</span>
           </h1>
           <p className="text-marble/85 text-base md:text-lg max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-6 mt-6">
-            ARES #23247&apos;s portal is built on a highly sustainable, serverless Edge architecture. By leveraging global Cloudflare networks, we maintain sub-50ms loads with zero monthly operating costs.
+            ARES #23247&apos;s portal is built on a highly sustainable, serverless cloud architecture. By leveraging Firebase Hosting and Google Cloud Edge networks, we maintain sub-50ms loads with zero monthly operating costs.
           </p>
         </div>
       </section>
@@ -28,49 +28,49 @@ export default function TechStackPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black uppercase text-white font-heading tracking-tight">
-              Edge Infrastructure
+              Core Infrastructure
             </h2>
             <p className="text-xs text-marble/60 uppercase tracking-widest mt-2 font-semibold">
-              Serverless core systems powering the ARES portal
+              Serverless cloud systems powering the ARES portal
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
             {[
               {
-                title: "Cloudflare Pages & Edge",
+                title: "Firebase Hosting & CDN",
                 icon: <Cloud className="text-ares-red" size={24} />,
-                desc: "Our React frontend is globally compiled and distributed as static assets across Cloudflare Edge datacenters, providing ultra-low latencies with zero server cold starts.",
+                desc: "Our React frontend is compiled with Vite and distributed globally via Firebase Hosting's CDN edge networks, guaranteeing sub-50ms static delivery and immediate rollbacks.",
                 cost: "Free Tier"
               },
               {
-                title: "Workers AI Vision & NLP",
+                title: "Gemini & Vertex AI",
                 icon: <Zap className="text-ares-gold" size={24} />,
-                desc: "We integrate Llama 3.1 & LLaVA directly into Edge function endpoints, automatically scanning uploaded photos to construct YPP-compliant descriptions and alt tags.",
+                desc: "We run Gemini 2.5 models via Vertex AI in Cloud Functions to inspect uploaded photos for safety compliance, auto-generate ALT tags, and run real-time sensor analytics.",
                 cost: "Free Tier"
               },
               {
-                title: "Cloudflare D1 SQL",
+                title: "Cloud Firestore (NoSQL)",
                 icon: <Database className="text-ares-bronze" size={24} />,
-                desc: "All blog articles, telemetry log metadata, and custom simulation templates are securely cached using Cloudflare D1—a serverless SQLite database native to the Edge.",
+                desc: "All events, blog entries, Kanban cards, and user session permissions are stored in Cloud Firestore, using real-time document listener queries for zero-latency UI updates.",
                 cost: "Free Tier"
               },
               {
-                title: "Cloudflare R2 Objects",
+                title: "Firebase Storage",
                 icon: <HardDrive className="text-white" size={24} />,
-                desc: "Our high-resolution build galleries and ZIP spec sheets are stored on R2, providing Amazon S3 compatibility with zero bandwidth egress cost bounds.",
+                desc: "High-resolution build photos, team slide decks, and member avatars are stored securely on Firebase Storage with custom rule-based access controls.",
                 cost: "Free Tier"
               },
               {
-                title: "Next.js & Hono Contracts",
+                title: "React, Vite, & Hono",
                 icon: <Code className="text-ares-red" size={24} />,
-                desc: "Built with React and Hono, leveraging OpenAPI type inferencing to guarantee absolute end-to-end static compilation safety under Next.js App Router.",
+                desc: "Built as a React Single-Page Application (SPA) bundled with Vite for near-instant client boot, paired with Hono RPC schemas to guarantee end-to-end type safety.",
                 cost: "Open Source"
               },
               {
-                title: "Liveblocks PartyKit",
+                title: "Firestore Live Listeners",
                 icon: <Users className="text-ares-gold" size={24} />,
-                desc: "Real-time task description collaboration and cursors are powered by Yjs CRDTs on PartyKit WebSockets, ensuring seamless sync across multiple browsers.",
+                desc: "Real-time synchronization for Kanban tasks and check-ins is powered directly by Firestore reactive subscriptions, eliminating manual page-refresh delays in the pits.",
                 cost: "Free Tier"
               },
               {
@@ -132,7 +132,7 @@ export default function TechStackPage() {
             {
               title: "Continuous Integration Gating",
               icon: <Award className="text-ares-red" size={28} />,
-              desc: "Every commit triggered on master runs through strict automated builds. Our Cloudflare pipelines enforce zero ESLint warnings and zero TypeScript errors during static page compilation, guaranteeing stable deployments."
+              desc: "Every commit triggered on master runs through strict automated builds. Our GitHub Actions workflows enforce zero ESLint warnings and zero TypeScript errors during static page compilation, guaranteeing stable deployments."
             },
             {
               title: "100% Core Function Coverage",

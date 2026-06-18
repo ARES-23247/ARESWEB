@@ -24,7 +24,6 @@ import seasonsRouter from "./routes/seasons";
 import docsRouter from "./routes/docs";
 import mediaRouter from "./routes/media/index";
 import settingsRouter from "./routes/settings";
-import judgesRouter from "./routes/judges";
 import profilesRouter from "./routes/profiles";
 import logisticsRouter from "./routes/logistics";
 import usersRouter from "./routes/users";
@@ -238,7 +237,6 @@ export const group2 = new OpenAPIHono<AppEnv>()
   .route("/outreach", outreachRouter)
   .route("/seasons", seasonsRouter)
   .route("/tba", ftcRouter)
-  .route("/judges", judgesRouter)
   .route("/profile", profilesRouter)
   .route("/profiles", profilesRouter)
   .route("/logistics", logisticsRouter)

@@ -161,9 +161,6 @@ export default function Navbar() {
               <Link to="/tech-stack" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Cpu size={12} className="text-ares-cyan" /> Tech Stack
               </Link>
-              <Link to="/judges" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <ShieldCheck size={12} className="text-ares-gold" /> Judges Hub
-              </Link>
               <div className="h-px bg-white/5 my-1"></div>
               <Link to="/robots" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
@@ -314,9 +311,6 @@ export default function Navbar() {
               </Link>
               <Link to="/tech-stack" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Layers size={12} className="text-ares-cyan" /> Tech Stack
-              </Link>
-              <Link to="/judges" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <ShieldCheck size={12} className="text-ares-gold" /> Judges Hub
               </Link>
               <Link to="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet

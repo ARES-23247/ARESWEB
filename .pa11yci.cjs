@@ -21,12 +21,10 @@ module.exports = () => {
     '/accessibility',
     '/privacy',
     '/join',
-    '/leaderboard',
     '/bug-report',
     '/blog',
     '/events',
     '/docs',
-    '/judges',
   ].map(path => `${baseUrl}${path}`);
 
   return {

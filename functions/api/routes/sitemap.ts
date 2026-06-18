@@ -58,7 +58,6 @@ export const sitemapRouter = _sitemapRouter
           "/sim-runner",
           "/join",
           "/store",
-          "/leaderboard",
           "/locations/morgantown"
         ];
 

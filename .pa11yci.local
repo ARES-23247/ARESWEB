@@ -19,11 +19,9 @@
     "http://127.0.0.1:8788/accessibility",
     "http://127.0.0.1:8788/privacy",
     "http://127.0.0.1:8788/join",
-    "http://127.0.0.1:8788/leaderboard",
     "http://127.0.0.1:8788/bug-report",
     "http://127.0.0.1:8788/blog",
     "http://127.0.0.1:8788/events",
-    "http://127.0.0.1:8788/docs",
-    "http://127.0.0.1:8788/judges"
+    "http://127.0.0.1:8788/docs"
   ]
 }

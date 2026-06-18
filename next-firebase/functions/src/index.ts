@@ -9,7 +9,6 @@ import analyticsRouter from "./routes/analytics";
 import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
 import profilesRouter from "./routes/profiles";
-import judgesRouter from "./routes/judges";
 import aiRouter from "./routes/ai";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
@@ -50,7 +49,6 @@ app.use("/api/analytics", analyticsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/profiles", profilesRouter);
-app.use("/api/judges", judgesRouter);
 app.use("/api/ai", aiRouter);
 
 // Global Error Handler

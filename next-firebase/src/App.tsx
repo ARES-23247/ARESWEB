@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
+import TechStackPage from "@/app/tech-stack/page";
 
 // Lazy-load public pages for optimal bundle splitting
 const Home = lazy(() => import("@/app/page"));
@@ -17,11 +18,9 @@ const EventDetailPage = lazy(() => import("@/app/events/[id]/page"));
 const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
 const GalleryPage = lazy(() => import("@/app/gallery/page"));
 const JoinPage = lazy(() => import("@/app/join/page"));
-const JudgesPage = lazy(() => import("@/app/judges/page"));
 const LeaderboardPage = lazy(() => import("@/app/leaderboard/page"));
 const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page"));
 const OutreachPage = lazy(() => import("@/app/outreach/page"));
-const PrintPortfolioPage = lazy(() => import("@/app/print-portfolio/page"));
 const PrivacyPage = lazy(() => import("@/app/privacy/page"));
 const RobotsFeedPage = lazy(() => import("@/app/robots/page"));
 const RobotDetailPage = lazy(() => import("@/app/robots/[id]/page"));
@@ -29,7 +28,6 @@ const SeasonsPage = lazy(() => import("@/app/seasons/page"));
 const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
 const StorePage = lazy(() => import("@/app/store/page"));
 const TasksRedirect = lazy(() => import("@/app/tasks/page"));
-const TechStackPage = lazy(() => import("@/app/tech-stack/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
 
 // Lazy-load dashboard pages
@@ -102,11 +100,9 @@ export default function App() {
               <Route path="/finance" element={<FinanceLedgerPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/join" element={<JoinPage />} />
-              <Route path="/judges" element={<JudgesPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
               <Route path="/outreach" element={<OutreachPage />} />
-              <Route path="/print-portfolio" element={<PrintPortfolioPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/robots" element={<RobotsFeedPage />} />
               <Route path="/robots/:id" element={<RobotDetailPage />} />

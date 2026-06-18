@@ -49,9 +49,6 @@ export * from "./finance";
 // Inquiries
 export * from "./inquiries";
 
-// Judges
-export * from "./judges";
-
 // Outreach
 export * from "./outreach";
 
