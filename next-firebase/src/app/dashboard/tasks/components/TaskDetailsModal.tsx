@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Trash2, Archive, X } from "lucide-react";
+import { Trash2, Archive, X, Maximize2, Minimize2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
-import { Drawer } from "vaul";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import TaskCommentsSection, { MemberProfile, TaskItem } from "./TaskCommentsSection";
@@ -48,15 +47,8 @@ export default function TaskDetailsModal({
   const [modalAssignees, setModalAssignees] = useState<string[]>(task.assignees || []);
   const [submitting, setSubmitting] = useState(false);
   const [newSubTitle, setNewSubTitle] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
-  const modalRef = useFocusTrap(!isMobile, onClose);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const modalRef = useFocusTrap(true, onClose);
 
   useEffect(() => {
     setModalTitle(task.title);
@@ -127,17 +119,37 @@ export default function TaskDetailsModal({
 
   const renderInnerContent = () => (
     <>
-      <div className="flex justify-between items-center px-6 py-4 border-b border-white/5 shrink-0">
+      <header className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/20 shrink-0">
         <div>
-          <h3 className="text-lg font-black text-white uppercase tracking-tight font-heading flex items-center gap-2">
+          <h3 className="text-white font-extrabold text-lg font-heading uppercase tracking-tight flex items-center gap-2">
             Edit Task Details
           </h3>
-          <span className="text-[8px] font-mono text-marble/40 uppercase tracking-widest block mt-0.5">Task ID: {task.id}</span>
+          <p className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
+            Synchronizes with Zulip chat stream
+          </p>
         </div>
-        <button onClick={onClose} className="text-marble/55 hover:text-white cursor-pointer transition-colors p-1" aria-label="Close dialog">
-          <X size={16} />
-        </button>
-      </div>
+
+        <div className="flex items-center gap-2">
+          {/* Full screen toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+            title={isFullScreen ? "Minimize Editor" : "Maximize Editor"}
+          >
+            {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+          
+          {/* Close */}
+          <button
+            onClick={onClose}
+            aria-label="Close editor"
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </header>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
         <div>
@@ -308,7 +320,7 @@ export default function TaskDetailsModal({
         <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} setSyncState={setSyncState} />
       </div>
 
-      <div className="flex justify-between items-center p-6 border-t border-white/5 shrink-0">
+      <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
         {canEdit ? (
           <button
             type="button"
@@ -330,7 +342,7 @@ export default function TaskDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded text-marble/70 hover:text-white font-black text-[10px] uppercase tracking-wider cursor-pointer transition-colors"
+            className="px-4 py-2 border border-white/10 text-white font-semibold text-xs rounded hover:bg-white/5 transition-all cursor-pointer"
           >
             Cancel
           </button>
@@ -352,34 +364,29 @@ export default function TaskDetailsModal({
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white rounded font-black text-[10px] uppercase tracking-wider ares-cut-sm cursor-pointer shadow disabled:opacity-50 transition-colors"
+              className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-50"
             >
               Save Changes
             </button>
           )}
         </div>
-      </div>
+      </footer>
     </>
   );
 
-  if (isMobile) {
-    return (
-      <Drawer.Root open={true} onOpenChange={(open) => !open && onClose()}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" />
-          <Drawer.Content className="bg-obsidian border-t border-white/10 flex flex-col rounded-t-[20px] max-h-[92vh] fixed bottom-0 left-0 right-0 z-50 focus:outline-none overflow-hidden">
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-white/20 my-4" />
-            {renderInnerContent()}
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div ref={modalRef} tabIndex={-1} className="glass-card relative w-full max-w-2xl bg-obsidian border border-white/10 ares-cut-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-end">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} />
+      
+      {/* Editor Drawer container */}
+      <div 
+        ref={modalRef} 
+        tabIndex={-1} 
+        className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 ${
+          isFullScreen ? "w-full max-w-full" : "w-full max-w-3xl"
+        }`}
+      >
         {renderInnerContent()}
       </div>
     </div>
