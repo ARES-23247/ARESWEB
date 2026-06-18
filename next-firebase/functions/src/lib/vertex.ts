@@ -75,7 +75,7 @@ Ensure that all team and organizational references follow the ARES branding guid
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
       ]
@@ -223,7 +223,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\nText to check:\n${text}` }] }
       ],
@@ -278,7 +278,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
       ]
@@ -316,7 +316,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         {
           role: "user",
