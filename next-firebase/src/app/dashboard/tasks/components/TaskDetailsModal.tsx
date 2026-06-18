@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle } from "lucide-react";
+import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import TaskCommentsSection, { MemberProfile, TaskItem } from "./TaskCommentsSection";
 
 interface TaskDetailsModalProps {
-  taskId: string;
+  taskId: string | null;
   tasks: TaskItem[];
   teamProfiles: MemberProfile[];
   canEdit: boolean;
@@ -19,6 +19,7 @@ interface TaskDetailsModalProps {
   onAddSubtask: (taskId: string, title: string) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
   onArchiveTask: (taskId: string, isArchived: boolean) => Promise<void>;
+  onCreateTask?: (task: TaskItem) => Promise<void>;
   setSyncState?: (state: "idle" | "syncing" | "success" | "error") => void;
 }
 
@@ -34,17 +35,20 @@ export default function TaskDetailsModal({
   onAddSubtask,
   onDeleteTask,
   onArchiveTask,
+  onCreateTask,
   setSyncState,
 }: TaskDetailsModalProps) {
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) return null;
+  const task = taskId ? tasks.find((t) => t.id === taskId) : null;
+  const isCreateMode = !taskId;
 
-  const [modalTitle, setModalTitle] = useState(task.title);
-  const [modalDesc, setModalDesc] = useState(task.description);
-  const [modalPriority, setModalPriority] = useState(task.priority);
-  const [modalSubteam, setModalSubteam] = useState(task.subteam);
-  const [modalStatus, setModalStatus] = useState(task.status);
-  const [modalAssignees, setModalAssignees] = useState<string[]>(task.assignees || []);
+  if (taskId && !task) return null;
+
+  const [modalTitle, setModalTitle] = useState(task?.title || "");
+  const [modalDesc, setModalDesc] = useState(task?.description || "");
+  const [modalPriority, setModalPriority] = useState(task?.priority || "medium");
+  const [modalSubteam, setModalSubteam] = useState(task?.subteam || "software");
+  const [modalStatus, setModalStatus] = useState(task?.status || "todo");
+  const [modalAssignees, setModalAssignees] = useState<string[]>(task?.assignees || []);
   const [submitting, setSubmitting] = useState(false);
   const [newSubTitle, setNewSubTitle] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -58,60 +62,121 @@ export default function TaskDetailsModal({
   const modalRef = useFocusTrap(true, onClose);
 
   useEffect(() => {
-    setModalTitle(task.title);
-    setModalDesc(task.description);
-    setModalPriority(task.priority);
-    setModalSubteam(task.subteam);
-    setModalStatus(task.status);
-    setModalAssignees(task.assignees || []);
-  }, [task.id, task.title, task.description, task.priority, task.subteam, task.status, task.assignees]);
+    if (task) {
+      setModalTitle(task.title);
+      setModalDesc(task.description);
+      setModalPriority(task.priority);
+      setModalSubteam(task.subteam);
+      setModalStatus(task.status);
+      setModalAssignees(task.assignees || []);
+    } else {
+      setModalTitle("");
+      setModalDesc("");
+      setModalPriority("medium");
+      setModalSubteam("software");
+      setModalStatus("todo");
+      setModalAssignees([]);
+    }
+  }, [task?.id, task?.title, task?.description, task?.priority, task?.subteam, task?.status, task?.assignees]);
 
   const handleSave = async () => {
     if (!canEdit || submitting) return;
     setSubmitting(true);
     try {
-      const taskRef = doc(db, "tasks", task.id);
-      await updateDoc(taskRef, {
-        title: modalTitle.trim(),
-        description: modalDesc.trim(),
-        priority: modalPriority,
-        subteam: modalSubteam,
-        status: modalStatus,
-        assignees: modalAssignees,
-      });
-
-      if (setSyncState) setSyncState("syncing");
-      authenticatedFetch("/api/tasks/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskId: task.id,
-          action: "update",
+      if (isCreateMode) {
+        const newTaskId = `task_${Date.now()}`;
+        const newTaskData: TaskItem = {
+          id: newTaskId,
           title: modalTitle.trim(),
+          description: modalDesc.trim(),
+          status: modalStatus,
+          priority: modalPriority,
+          subteam: modalSubteam,
+          assignees: modalAssignees.length > 0 ? modalAssignees : [user?.uid || "anonymous"],
+          subtasks: [],
+          archived: false,
+          createdAt: new Date().toISOString()
+        };
+
+        if (onCreateTask) {
+          await onCreateTask(newTaskData);
+        } else {
+          await setDoc(doc(db, "tasks", newTaskId), newTaskData);
+        }
+
+        if (setSyncState) setSyncState("syncing");
+        authenticatedFetch("/api/tasks/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: newTaskId,
+            action: "create",
+            title: newTaskData.title,
+            description: newTaskData.description,
+            priority: newTaskData.priority,
+            subteam: newTaskData.subteam,
+          }),
+        }).then((res) => {
+          if (res.ok) {
+            if (setSyncState) setSyncState("success");
+          } else {
+            if (setSyncState) setSyncState("error");
+          }
+          setTimeout(() => {
+            if (setSyncState) setSyncState("idle");
+          }, 3000);
+        }).catch((err) => {
+          console.error("Zulip notification failed:", err);
+          if (setSyncState) setSyncState("error");
+          setTimeout(() => {
+            if (setSyncState) setSyncState("idle");
+          }, 3000);
+        });
+
+      } else if (task) {
+        const taskRef = doc(db, "tasks", task.id);
+        await updateDoc(taskRef, {
+          title: modalTitle.trim(),
+          description: modalDesc.trim(),
           priority: modalPriority,
           subteam: modalSubteam,
           status: modalStatus,
-        }),
-      }).then((res) => {
-        if (res.ok) {
-          if (setSyncState) setSyncState("success");
-        } else {
+          assignees: modalAssignees,
+        });
+
+        if (setSyncState) setSyncState("syncing");
+        authenticatedFetch("/api/tasks/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: task.id,
+            action: "update",
+            title: modalTitle.trim(),
+            priority: modalPriority,
+            subteam: modalSubteam,
+            status: modalStatus,
+          }),
+        }).then((res) => {
+          if (res.ok) {
+            if (setSyncState) setSyncState("success");
+          } else {
+            if (setSyncState) setSyncState("error");
+          }
+          setTimeout(() => {
+            if (setSyncState) setSyncState("idle");
+          }, 3000);
+        }).catch((err) => {
+          console.error("Zulip notification failed:", err);
           if (setSyncState) setSyncState("error");
-        }
-        setTimeout(() => {
-          if (setSyncState) setSyncState("idle");
-        }, 3000);
-      }).catch((err) => {
-        console.error("Zulip notification failed:", err);
-        if (setSyncState) setSyncState("error");
-        setTimeout(() => {
-          if (setSyncState) setSyncState("idle");
-        }, 3000);
-      });
+          setTimeout(() => {
+            if (setSyncState) setSyncState("idle");
+          }, 3000);
+        });
+      }
 
       onClose();
     } catch (e) {
-      console.error("Failed to update task", e);
+      console.error("Failed to save task", e);
     } finally {
       setSubmitting(false);
     }
@@ -173,7 +238,7 @@ export default function TaskDetailsModal({
 
   const handleAddSub = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSubTitle.trim() || !canEdit) return;
+    if (!newSubTitle.trim() || !canEdit || !task) return;
     await onAddSubtask(task.id, newSubTitle.trim());
     setNewSubTitle("");
   };
@@ -183,27 +248,29 @@ export default function TaskDetailsModal({
       <header className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/20 shrink-0">
         <div>
           <h3 className="text-white font-extrabold text-lg font-heading uppercase tracking-tight flex items-center gap-2">
-            Edit Task Details
+            {isCreateMode ? <Plus size={18} /> : null} {isCreateMode ? "Create New Task Card" : "Edit Task Details"}
           </h3>
           <p className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
-            Synchronizes with Zulip chat stream
+            {isCreateMode ? "Populates on task boards dynamically" : "Synchronizes with Zulip chat stream"}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* AI Copilot Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAiSidebar(!showAiSidebar)}
-            className={`h-8 px-3 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
-              showAiSidebar 
-                ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan" 
-                : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
-            }`}
-          >
-            <Sparkles size={11} className={aiLoading ? "animate-spin" : ""} />
-            {showAiSidebar ? "Hide AI" : "AI Copilot"}
-          </button>
+          {!isCreateMode && (
+            <button
+              type="button"
+              onClick={() => setShowAiSidebar(!showAiSidebar)}
+              className={`h-8 px-3 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
+                showAiSidebar 
+                  ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan" 
+                  : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
+              }`}
+            >
+              <Sparkles size={11} className={aiLoading ? "animate-spin" : ""} />
+              {showAiSidebar ? "Hide AI" : "AI Copilot"}
+            </button>
+          )}
 
           {/* Full screen toggle */}
           <button
@@ -242,7 +309,7 @@ export default function TaskDetailsModal({
 
         <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
           <div className={`space-y-6 flex-grow overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent transition-all duration-300 ${
-            showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
+            !isCreateMode && showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
           }`}>
         <div>
           <label htmlFor="modal-title" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Task Title</label>
@@ -325,7 +392,7 @@ export default function TaskDetailsModal({
                     disabled={!canEdit}
                     onChange={() => {
                       if (isAssigned) {
-                        setModalAssignees(modalAssignees.filter((uid) => uid !== member.uid));
+                        setModalAssignees(modalAssignees.filter((uid: string) => uid !== member.uid));
                       } else {
                         setModalAssignees([...modalAssignees, member.uid]);
                       }
@@ -352,67 +419,71 @@ export default function TaskDetailsModal({
           />
         </div>
 
-        <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
-          <h4 className="text-xs font-black text-ares-gold uppercase tracking-wider">
-            Subtasks Checklist
-          </h4>
+        {!isCreateMode && task && (
+          <>
+            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
+              <h4 className="text-xs font-black text-ares-gold uppercase tracking-wider">
+                Subtasks Checklist
+              </h4>
 
-          {task.subtasks?.length > 0 ? (
-            <div className="space-y-2">
-              {task.subtasks.map((sub) => (
-                <div key={sub.id} className="flex justify-between items-center group/sub">
-                  <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
-                    <input
-                      type="checkbox"
-                      checked={sub.done}
-                      disabled={!canEdit}
-                      onChange={() => onToggleSubtask(task.id, sub.id)}
-                      className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                    />
-                    <span className={sub.done ? "line-through text-marble/40" : ""}>
-                      {sub.title}
-                    </span>
-                  </label>
-                  {canEdit && (
-                    <button
-                      onClick={() => onDeleteSubtask(task.id, sub.id)}
-                      className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
-                      title="Delete subtask"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
+              {task.subtasks?.length > 0 ? (
+                <div className="space-y-2">
+                  {task.subtasks.map((sub) => (
+                    <div key={sub.id} className="flex justify-between items-center group/sub">
+                      <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
+                        <input
+                          type="checkbox"
+                          checked={sub.done}
+                          disabled={!canEdit}
+                          onChange={() => onToggleSubtask(task.id, sub.id)}
+                          className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                        />
+                        <span className={sub.done ? "line-through text-marble/40" : ""}>
+                          {sub.title}
+                        </span>
+                      </label>
+                      {canEdit && (
+                        <button
+                          onClick={() => onDeleteSubtask(task.id, sub.id)}
+                          className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
+                          title="Delete subtask"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
-          )}
+              ) : (
+                <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
+              )}
 
-          {canEdit && (
-            <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
-              <input
-                type="text"
-                value={newSubTitle}
-                onChange={(e) => setNewSubTitle(e.target.value)}
-                placeholder="New subtask..."
-                className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
-              />
-              <button
-                type="submit"
-                disabled={!newSubTitle.trim()}
-                className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
-              >
-                Add
-              </button>
-            </form>
-          )}
-        </div>
+              {canEdit && (
+                <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
+                  <input
+                    type="text"
+                    value={newSubTitle}
+                    onChange={(e) => setNewSubTitle(e.target.value)}
+                    placeholder="New subtask..."
+                    className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newSubTitle.trim()}
+                    className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    Add
+                  </button>
+                </form>
+              )}
+            </div>
 
             <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} setSyncState={setSyncState} />
+          </>
+        )}
           </div>
 
-          {showAiSidebar && (
+          {!isCreateMode && showAiSidebar && (
             <div className="hidden lg:flex lg:w-[30%] bg-black/30 border border-white/15 rounded-xl p-4 flex-col gap-4 overflow-y-auto shrink-0 select-none scrollbar-thin scrollbar-thumb-white/5 animate-slide-in">
               {/* Spelling & Grammar */}
               <div className="space-y-4">
@@ -507,7 +578,7 @@ export default function TaskDetailsModal({
                       </div>
                       
                       <div className="space-y-2">
-                        {grammarEdits.map((edit, idx) => (
+                        {grammarEdits.map((edit: any, idx: number) => (
                           <div key={idx} className="bg-black/45 border border-white/5 p-2 rounded text-[10px] leading-relaxed">
                             <div className="flex flex-wrap gap-1 items-center mb-1 text-[8px] font-black uppercase tracking-wider">
                               <span className="bg-ares-red/25 text-ares-red border border-ares-red/35 px-1 py-0.5 rounded line-through">
@@ -589,7 +660,7 @@ export default function TaskDetailsModal({
       </div>
 
       <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
-        {canEdit ? (
+        {canEdit && !isCreateMode && task ? (
           <button
             type="button"
             onClick={() => {
@@ -615,7 +686,7 @@ export default function TaskDetailsModal({
             Cancel
           </button>
           
-          {canEdit && (task.status === "completed" || task.archived) && (
+          {canEdit && !isCreateMode && task && (task.status === "completed" || task.archived) && (
             <button
               type="button"
               onClick={async () => {
@@ -634,7 +705,7 @@ export default function TaskDetailsModal({
               onClick={handleSave}
               className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-50"
             >
-              Save Changes
+              {isCreateMode ? "Add Task Card" : "Save Changes"}
             </button>
           )}
         </div>

@@ -97,10 +97,6 @@ export default function KanbanPage() {
   const [tasks, setTasks] = useState<TaskItem[]>(MOCK_TASKS);
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDesc, setNewTaskDesc] = useState("");
-  const [newTaskSubteam, setNewTaskSubteam] = useState<"software" | "hardware" | "business" | "outreach">("software");
-  const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [isLive, setIsLive] = useState(false);
 
   const [draggedOverCol, setDraggedOverCol] = useState<string | null>(null);
@@ -109,7 +105,6 @@ export default function KanbanPage() {
 
   // Operational state extensions
   const [showArchived, setShowArchived] = useState(false);
-  const [newTaskAssignees, setNewTaskAssignees] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"newest" | "priority">("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -191,49 +186,7 @@ export default function KanbanPage() {
     fetchTeamRoster();
   }, []);
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-    if (!canEdit) return;
 
-    const taskId = `task_${Date.now()}`;
-    const newTask: TaskItem = {
-      id: taskId,
-      title: newTaskTitle.trim(),
-      description: newTaskDesc.trim(),
-      status: "todo",
-      priority: newTaskPriority,
-      subteam: newTaskSubteam,
-      assignees: newTaskAssignees.length > 0 ? newTaskAssignees : [user?.uid || "anonymous"],
-      subtasks: [],
-      archived: false,
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      await setDoc(doc(db, "tasks", taskId), newTask);
-      setNewTaskTitle("");
-      setNewTaskDesc("");
-      setNewTaskAssignees([]);
-
-      const syncPromise = authenticatedFetch("/api/tasks/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskId,
-          action: "create",
-          title: newTask.title,
-          description: newTask.description,
-          priority: newTask.priority,
-          subteam: newTask.subteam,
-        }),
-      });
-      runZulipSync(syncPromise);
-    } catch (err) {
-      console.warn("Unable to save task online, updating local UI array.", err);
-      setTasks([newTask, ...tasks]);
-    }
-  };
 
   const handleMoveStatus = async (taskId: string, newStatus: TaskItem["status"]) => {
     if (!canEdit) return;
@@ -711,142 +664,28 @@ export default function KanbanPage() {
 
       {/* Create Task Modal Overlay */}
       {isCreateOpen && canEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCreateOpen(false)} />
-          <form
-            onSubmit={(e) => {
-              handleCreateTask(e);
-              setIsCreateOpen(false);
-            }}
-            className="relative w-full max-w-3xl bg-obsidian border border-white/10 ares-cut-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden focus:outline-none p-6 sm:p-8 space-y-6 text-marble"
-          >
-            <div className="flex justify-between items-center border-b border-white/5 pb-4">
-              <h3 className="text-lg font-bold text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
-                <Plus size={18} /> Create New Task Card
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                className="text-marble/40 hover:text-white transition-colors cursor-pointer text-xl p-1"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-6 pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="new-task-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Title</label>
-                  <input
-                    id="new-task-title"
-                    type="text"
-                    placeholder="e.g. Calibrate pinpoint pod parameters"
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="new-task-subteam" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Subteam</label>
-                    <select
-                      id="new-task-subteam"
-                      value={newTaskSubteam}
-                      onChange={(e) => setNewTaskSubteam(e.target.value as any)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
-                    >
-                      <option value="software">Software</option>
-                      <option value="hardware">Hardware</option>
-                      <option value="business">Business</option>
-                      <option value="outreach">Outreach</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="new-task-priority" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Priority</label>
-                    <select
-                      id="new-task-priority"
-                      value={newTaskPriority}
-                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                  Assign Task To ({newTaskAssignees.length})
-                </label>
-                <div className="flex flex-wrap gap-2 bg-black/40 border border-white/10 rounded p-3 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-                  {teamProfiles.length === 0 ? (
-                    <p className="text-[10px] text-marble/40 italic">Loading team members...</p>
-                  ) : (
-                    teamProfiles.map((member) => {
-                      const isAssigned = newTaskAssignees.includes(member.uid);
-                      return (
-                        <button
-                          key={member.uid}
-                          type="button"
-                          onClick={() => {
-                            if (isAssigned) {
-                              setNewTaskAssignees(newTaskAssignees.filter((uid) => uid !== member.uid));
-                            } else {
-                              setNewTaskAssignees([...newTaskAssignees, member.uid]);
-                            }
-                          }}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all cursor-pointer ${
-                            isAssigned
-                              ? "bg-ares-red/25 border-ares-red text-white shadow-sm"
-                              : "bg-black/50 border-white/10 text-marble/70 hover:border-white/20 hover:text-white"
-                          }`}
-                        >
-                          <img
-                            src={member.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${member.uid}`}
-                            alt={member.nickname}
-                            className="w-3.5 h-3.5 rounded-full object-contain bg-black/50"
-                          />
-                          <span>{member.nickname}</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="new-task-desc" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Description</label>
-                <MarkdownEditor
-                  id="new-task-desc"
-                  placeholder="Detail technical calibration thresholds, subsystem specs, etc..."
-                  value={newTaskDesc}
-                  onChange={setNewTaskDesc}
-                  className="h-28"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-white/5 pt-4">
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                className="bg-black/40 hover:bg-white/5 border border-white/10 text-marble/60 hover:text-white text-xs font-bold py-2 px-4 rounded transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="bg-ares-red hover:bg-ares-red-dark text-white text-xs font-bold py-2 px-4 rounded transition-colors cursor-pointer"
-              >
-                Add Task Card
-              </button>
-            </div>
-          </form>
-        </div>
+        <TaskDetailsModal
+          taskId={null}
+          tasks={tasks}
+          teamProfiles={teamProfiles}
+          canEdit={canEdit}
+          user={user}
+          onClose={() => setIsCreateOpen(false)}
+          onToggleSubtask={handleToggleSubtask}
+          onDeleteSubtask={handleDeleteSubtask}
+          onAddSubtask={handleAddSubtaskDirect}
+          onDeleteTask={handleDeleteTask}
+          onArchiveTask={handleArchiveTask}
+          onCreateTask={async (newTask) => {
+            try {
+              await setDoc(doc(db, "tasks", newTask.id), newTask);
+            } catch (err) {
+              console.warn("Unable to save task online, updating local UI array.", err);
+              setTasks([newTask, ...tasks]);
+            }
+          }}
+          setSyncState={setSyncState}
+        />
       )}
     </div>
   );
