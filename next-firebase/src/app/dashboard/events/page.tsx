@@ -78,7 +78,19 @@ interface EventPhoto {
   googleMediaItemId?: string;
 }
 
-export default function EventsManagementPage() {
+export default function EventsManagementPage({
+  editorOnly = false,
+  onEditorClose,
+  prefilledDate,
+  prefilledAction,
+  prefilledEventId
+}: {
+  editorOnly?: boolean;
+  onEditorClose?: () => void;
+  prefilledDate?: Date;
+  prefilledAction?: "create" | "edit" | null;
+  prefilledEventId?: string | null;
+} = {}) {
   const { user, authorizedUser } = useAuth();
   const [events, setEvents] = useState<TeamEvent[]>(MOCK_EVENTS);
   const [isLive, setIsLive] = useState(false);
@@ -132,7 +144,7 @@ export default function EventsManagementPage() {
   const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
 
-  const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+  const editorRef = useFocusTrap(isEditorOpen, () => handleCloseEditor());
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
 
@@ -305,8 +317,26 @@ export default function EventsManagementPage() {
     }
   }, []);
 
-  // Handle opening create modal via query parameters
+  // Handle opening create or edit modal via query parameters or props
   useEffect(() => {
+    if (editorOnly) {
+      if (prefilledAction === "create") {
+        handleOpenCreate();
+        if (prefilledDate) {
+          const tzOffset = prefilledDate.getTimezoneOffset() * 60000;
+          const localISODate = new Date(prefilledDate.getTime() - tzOffset);
+          const dateStr = localISODate.toISOString().split("T")[0];
+          setFormDateStart(`${dateStr}T18:00`);
+          setFormDateEnd(`${dateStr}T20:00`);
+        }
+      } else if (prefilledAction === "edit" && prefilledEventId) {
+        const evt = events.find((e) => e.id === prefilledEventId);
+        if (evt) {
+          handleOpenEdit(evt);
+        }
+      }
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     if (params.get("action") === "create") {
       handleOpenCreate();
@@ -317,7 +347,12 @@ export default function EventsManagementPage() {
       }
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [editorOnly, prefilledAction, prefilledDate, prefilledEventId, events]);
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    onEditorClose?.();
+  };
 
   // Open editor for creating
   const handleOpenCreate = () => {
@@ -428,7 +463,7 @@ export default function EventsManagementPage() {
         await setDoc(doc(db, "events", targetId, "revisions", revId), revisionData);
       }
       
-      setIsEditorOpen(false);
+      handleCloseEditor();
     } catch (err) {
       console.warn("Unable to save event online, updating local array.", err);
       if (editId) {
@@ -436,7 +471,7 @@ export default function EventsManagementPage() {
       } else {
         setEvents([...events, newEvent].sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime()));
       }
-      setIsEditorOpen(false);
+      handleCloseEditor();
     }
   };
 
@@ -681,7 +716,9 @@ export default function EventsManagementPage() {
   }, [teamMembers, user, userNickname, userProfile, authorizedUser]);
 
   return (
-    <div className="space-y-10 w-full text-left">
+    <div className={editorOnly ? "" : "space-y-10 w-full text-left"}>
+      {!editorOnly && (
+        <>
       
       {/* Header */}
       <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
@@ -823,6 +860,8 @@ export default function EventsManagementPage() {
           )}
         </div>
       </div>
+    </>
+  )}
 
       {/* Slide-out / Modal Event Editor Overlay */}
       {isEditorOpen && (
@@ -830,7 +869,7 @@ export default function EventsManagementPage() {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
-            onClick={() => setIsEditorOpen(false)}
+            onClick={handleCloseEditor}
           />
 
           {/* Editor Drawer */}
@@ -860,7 +899,7 @@ export default function EventsManagementPage() {
                   {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                 </button>
                 <button
-                  onClick={() => setIsEditorOpen(false)}
+                  onClick={handleCloseEditor}
                   className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                   aria-label="Close editor"
                 >
@@ -1617,7 +1656,7 @@ export default function EventsManagementPage() {
               <footer className="px-6 py-4 border-t border-white/10 flex justify-end gap-3 bg-black/20 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsEditorOpen(false)}
+                  onClick={handleCloseEditor}
                   className="px-4 py-2 border border-white/10 text-white font-semibold text-xs rounded hover:bg-white/5 transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   Cancel
