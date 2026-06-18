@@ -103,9 +103,8 @@ export default function CalendarPage() {
   const [filter, setFilter] = useState<"all" | "internal" | "outreach">("all");
   const [isLive, setIsLive] = useState(false);
 
-  // Calendar navigation state (defaulting to June 2026 to showcase upcoming events)
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 2)); // Month is 0-indexed (5 = June)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 5, 2));
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     try {
@@ -371,7 +370,7 @@ export default function CalendarPage() {
                 {calendarDays.map((dayCell, idx) => {
                   const dayEvents = getEventsForDay(dayCell.date);
                   const isSelected = isSameDay(dayCell.date, selectedDate);
-                  const isToday = isSameDay(dayCell.date, new Date(2026, 5, 2)); // Sync to local current date 2026-06-02
+                  const isToday = isSameDay(dayCell.date, new Date());
 
                   return (
                     <button
