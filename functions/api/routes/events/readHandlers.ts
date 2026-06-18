@@ -101,17 +101,23 @@ export const readHandlers = {
         if (!row) throw new ApiError("Event not found", 404);
 
         let locationAddress: string | null = null;
+        let locationMapsUrl: string | null = null;
         if (row.location) {
             const loc = await db.select({
                 address: schema.locations.address,
+                mapsUrl: schema.locations.mapsUrl,
             })
                 .from(schema.locations)
                 .where(eq(schema.locations.name, row.location))
                 .get();
             locationAddress = loc?.address || null;
+            locationMapsUrl = loc?.mapsUrl || null;
         }
 
-        const event = mapToEventResponse(row, row.location ? { [row.location]: locationAddress ?? "" } : {});
+        const event = mapToEventResponse(
+            row,
+            row.location ? { [row.location]: { address: locationAddress, mapsUrl: locationMapsUrl } } : {}
+        );
 
         if (!user || user.role === "unverified") {
             event.meetingNotes = null;

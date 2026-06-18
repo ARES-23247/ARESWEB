@@ -10,6 +10,7 @@ export const eventResponseSchema = toCamelCaseResponse(
   selectEventSchema
 ).extend({
   locationAddress: z.string().nullable().optional(),
+  locationMapsUrl: z.string().nullable().optional(),
 }).openapi({
   example: {
     id: "abc123",

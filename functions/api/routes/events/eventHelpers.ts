@@ -103,7 +103,11 @@ export const sanitizeFtsQuery = (query: string): string => {
 /**
  * Maps a database event row to the standard API response format.
  */
-export function mapToEventResponse(e: Record<string, unknown>, locationMap: Record<string, string> = {}): FormattedEvent {
+export function mapToEventResponse(
+    e: Record<string, unknown>,
+    locationMap: Record<string, { address: string | null; mapsUrl: string | null }> = {}
+): FormattedEvent {
+    const loc = e.location ? locationMap[e.location as string] : null;
     return {
         id: String(e.id),
         title: String(e.title || ""),
@@ -111,7 +115,8 @@ export function mapToEventResponse(e: Record<string, unknown>, locationMap: Reco
         dateStart: normalizeDateTime(e.dateStart as string) ?? "",
         dateEnd: normalizeDateTime(e.dateEnd as string),
         location: (e.location as string) ?? null,
-        locationAddress: e.location ? (locationMap[e.location as string] || null) : null,
+        locationAddress: loc ? loc.address : null,
+        locationMapsUrl: loc ? loc.mapsUrl : null,
         description: (e.description as string) ?? null,
         coverImage: (e.coverImage as string) ?? null,
         status: (e.status ?? "published") as FormattedEvent["status"],

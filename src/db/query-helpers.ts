@@ -643,14 +643,18 @@ export const queryHelpers = {
 				.select({
 					name: schema.locations.name,
 					address: schema.locations.address,
+					mapsUrl: schema.locations.mapsUrl,
 				})
 				.from(schema.locations)
 				.where(inArray(schema.locations.name, locationNames))
 				.all();
 
-			const locationMap: Record<string, string> = {};
+			const locationMap: Record<string, { address: string | null; mapsUrl: string | null }> = {};
 			locs.forEach((l) => {
-				if (l.address) locationMap[l.name] = l.address;
+				locationMap[l.name] = {
+					address: l.address || null,
+					mapsUrl: l.mapsUrl || null,
+				};
 			});
 			return locationMap;
 		} catch {
