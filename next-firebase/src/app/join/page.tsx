@@ -68,9 +68,11 @@ export default function JoinPage() {
         window.location.protocol === "http:"
       );
       const hasBypass = typeof window !== "undefined" && window.ARES_E2E_BYPASS;
+      const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
+        (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
 
-      // Handle E2E bypass or local dev submit directly if grecaptcha not loaded
-      if (((isLocal && isDev) || hasBypass) && (typeof window === "undefined" || !window.grecaptcha)) {
+      // Handle E2E bypass, local dev, or missing site key directly
+      if (!siteKey || ((isLocal && isDev) || hasBypass) && (typeof window === "undefined" || !window.grecaptcha)) {
         await submitApplication("test-bypass-token");
         return;
       }

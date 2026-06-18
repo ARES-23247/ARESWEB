@@ -35,10 +35,12 @@ export default function RootLayout({
           <LayoutWrapper>
             {children}
           </LayoutWrapper>
-          <Script
-            src={`https://www.google.com/recaptcha/api.js?render=${import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "")}`}
-            strategy="lazyOnload"
-          />
+          {(import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || import.meta.env.DEV) && (
+            <Script
+              src={`https://www.google.com/recaptcha/api.js?render=${import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}`}
+              strategy="lazyOnload"
+            />
+          )}
         </AuthProvider>
       </body>
     </html>
