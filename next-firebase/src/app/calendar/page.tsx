@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Calendar as CalendarIcon, 
   MapPin, 
@@ -14,7 +15,8 @@ import {
   Sparkles,
   Award,
   LayoutGrid,
-  List
+  List,
+  Plus
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
@@ -95,6 +97,7 @@ const MOCK_EVENTS: TeamEvent[] = [
 ];
 
 export default function CalendarPage() {
+  const { canEdit } = useAuth();
   const [events, setEvents] = useState<TeamEvent[]>(MOCK_EVENTS);
   const [filter, setFilter] = useState<"all" | "internal" | "outreach">("all");
   const [isLive, setIsLive] = useState(false);
@@ -295,20 +298,31 @@ export default function CalendarPage() {
             </p>
           </div>
 
-          <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5 shrink-0 relative z-10">
-            {["all", "internal", "outreach"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilter(cat as any)}
-                className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer ${
-                  filter === cat
-                    ? "bg-ares-red text-white"
-                    : "text-marble/55 hover:text-white hover:bg-white/5"
-                }`}
+          <div className="flex flex-wrap items-center gap-3 shrink-0 relative z-10">
+            {canEdit && (
+              <a
+                href={`/dashboard/events?action=create&date=${selectedDate.toISOString().split('T')[0]}`}
+                className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg flex items-center gap-1.5"
               >
-                {cat === "all" ? "All Events" : cat === "internal" ? "Practices" : "Outreach"}
-              </button>
-            ))}
+                <Plus size={11} /> New Event
+              </a>
+            )}
+
+            <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5">
+              {["all", "internal", "outreach"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFilter(cat as any)}
+                  className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer ${
+                    filter === cat
+                      ? "bg-ares-red text-white"
+                      : "text-marble/55 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {cat === "all" ? "All Events" : cat === "internal" ? "Practices" : "Outreach"}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
@@ -467,6 +481,17 @@ export default function CalendarPage() {
                   ))
                 )}
               </div>
+              
+              {canEdit && (
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <a
+                    href={`/dashboard/events?action=create&date=${selectedDate.toISOString().split('T')[0]}`}
+                    className="w-full py-2 bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/30 text-white hover:text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow active:scale-98"
+                  >
+                    <Plus size={11} /> Schedule Event
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Sync Subscription Panel */}

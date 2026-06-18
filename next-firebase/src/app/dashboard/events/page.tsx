@@ -305,6 +305,20 @@ export default function EventsManagementPage() {
     }
   }, []);
 
+  // Handle opening create modal via query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "create") {
+      handleOpenCreate();
+      const dateParam = params.get("date");
+      if (dateParam) {
+        setFormDateStart(`${dateParam}T18:00`);
+        setFormDateEnd(`${dateParam}T20:00`);
+      }
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Open editor for creating
   const handleOpenCreate = () => {
     setEditId(null);
