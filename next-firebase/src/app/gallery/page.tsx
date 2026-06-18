@@ -82,7 +82,7 @@ export default function GalleryPage() {
   useEffect(() => {
     async function loadPhotos() {
       try {
-        const res = await authenticatedFetch("/api/photos");
+        const res = await fetch("/api/photos/public");
         if (res.ok) {
           const data = await res.json();
           if (data.photos && data.photos.length > 0) {
@@ -124,11 +124,16 @@ export default function GalleryPage() {
                 imageUrl: p.publicUrl,
               };
             });
-            setPhotos([...mapped, ...MOCK_PHOTOS]);
+            setPhotos(mapped);
+          } else {
+            setPhotos(MOCK_PHOTOS);
           }
+        } else {
+          setPhotos(MOCK_PHOTOS);
         }
       } catch (err) {
         console.warn("Failed to load synced photos from API:", err);
+        setPhotos(MOCK_PHOTOS);
       } finally {
         setIsLoading(false);
       }
@@ -194,15 +199,7 @@ export default function GalleryPage() {
               ))}
             </div>
 
-            <a
-              href="https://photos.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase tracking-widest ares-cut-sm flex items-center gap-2 hover:border-ares-gold transition-colors"
-            >
-              <LinkIcon size={10} className="text-ares-gold" />
-              Community Google Photos Album
-            </a>
+            {/* Removed obsolete Community Google Photos Album link */}
           </div>
 
           {/* CSS Columns Masonry Grid (Zero CLS) */}

@@ -21,7 +21,8 @@ import {
   Layers,
   ShieldCheck,
   Cpu,
-  Compass
+  Compass,
+  Play
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
@@ -136,6 +137,9 @@ export default function Navbar() {
               </Link>
               <Link to="/gallery" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
+              </Link>
+              <Link to="/videos" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Play size={12} className="text-ares-red" /> Video Gallery
               </Link>
               <Link to="/blog" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <BookOpen size={12} className="text-ares-bronze" /> Team Blog
@@ -320,6 +324,9 @@ export default function Navbar() {
               </Link>
               <Link to="/gallery" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
+              </Link>
+              <Link to="/videos" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Play size={12} className="text-ares-red" /> Video Gallery
               </Link>
               <Link to="/blog" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <BookOpen size={12} className="text-ares-bronze" /> Team Blog

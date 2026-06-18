@@ -72,6 +72,7 @@ export default function DashboardPhotosPage() {
   const [newAlbumDesc, setNewAlbumDesc] = useState("");
   const [newAlbumCoverUrl, setNewAlbumCoverUrl] = useState("");
   const [newAlbumCategory, setNewAlbumCategory] = useState<"Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice">("Robot Specs");
+  const [newAlbumIsPublic, setNewAlbumIsPublic] = useState(false);
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
 
   // Drag and Drop Upload States
@@ -228,7 +229,8 @@ export default function DashboardPhotosPage() {
             title: newAlbumTitle.trim(),
             description: newAlbumDesc.trim(),
             category: newAlbumCategory,
-            coverImageUrl: newAlbumCoverUrl.trim()
+            coverImageUrl: newAlbumCoverUrl.trim(),
+            isPublic: newAlbumIsPublic
           })
         });
 
@@ -240,6 +242,7 @@ export default function DashboardPhotosPage() {
           setNewAlbumTitle("");
           setNewAlbumDesc("");
           setNewAlbumCoverUrl("");
+          setNewAlbumIsPublic(false);
         } else {
           const errText = await res.text();
           alert("Failed to update album: " + errText);
@@ -253,7 +256,8 @@ export default function DashboardPhotosPage() {
             title: newAlbumTitle.trim(),
             description: newAlbumDesc.trim(),
             category: newAlbumCategory,
-            coverImageUrl: newAlbumCoverUrl.trim()
+            coverImageUrl: newAlbumCoverUrl.trim(),
+            isPublic: newAlbumIsPublic
           })
         });
 
@@ -264,6 +268,7 @@ export default function DashboardPhotosPage() {
           setNewAlbumTitle("");
           setNewAlbumDesc("");
           setNewAlbumCoverUrl("");
+          setNewAlbumIsPublic(false);
         } else {
           const errText = await res.text();
           alert("Failed to create album: " + errText);
@@ -282,6 +287,7 @@ export default function DashboardPhotosPage() {
     setNewAlbumDesc(album.description || "");
     setNewAlbumCoverUrl(album.coverImageUrl || "");
     setNewAlbumCategory(album.category);
+    setNewAlbumIsPublic(album.isPublic ?? false);
     setIsCreateAlbumOpen(true);
   };
 
@@ -1024,6 +1030,7 @@ export default function DashboardPhotosPage() {
                   setNewAlbumDesc("");
                   setNewAlbumCoverUrl("");
                   setNewAlbumCategory("Robot Specs");
+                  setNewAlbumIsPublic(false);
                   setIsCreateAlbumOpen(true);
                 }}
                 className="py-2 px-5 bg-ares-red hover:bg-ares-red-dark text-white font-black text-xs uppercase tracking-wider ares-cut transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-98"
@@ -1070,6 +1077,15 @@ export default function DashboardPhotosPage() {
                     {/* Category Label Tag */}
                     <span className="absolute top-3 left-3 text-[8px] font-black uppercase px-2 py-0.5 rounded bg-black/60 border border-white/10 text-ares-gold tracking-wider">
                       {album.category}
+                    </span>
+
+                    {/* Visibility Badge */}
+                    <span className={`absolute top-3 right-3 text-[8px] font-black uppercase px-2 py-0.5 rounded border tracking-wider ${
+                      album.isPublic 
+                        ? "bg-black/60 border-ares-gold/30 text-ares-gold animate-pulse"
+                        : "bg-black/60 border-white/10 text-marble/40"
+                    }`}>
+                      {album.isPublic ? "Public" : "Private"}
                     </span>
 
                     {/* Photo Count Tag */}
@@ -1135,6 +1151,8 @@ export default function DashboardPhotosPage() {
             setNewAlbumCoverUrl={setNewAlbumCoverUrl}
             newAlbumDesc={newAlbumDesc}
             setNewAlbumDesc={setNewAlbumDesc}
+            newAlbumIsPublic={newAlbumIsPublic}
+            setNewAlbumIsPublic={setNewAlbumIsPublic}
             onSubmit={handleCreateAlbum}
             isSubmitting={isCreatingAlbum}
           />

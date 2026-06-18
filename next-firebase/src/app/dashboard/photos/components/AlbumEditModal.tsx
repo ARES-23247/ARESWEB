@@ -8,6 +8,7 @@ export interface AlbumItem {
   coverImageUrl?: string;
   category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
   mediaCount: number;
+  isPublic?: boolean;
   createdAt: string;
 }
 
@@ -23,6 +24,8 @@ interface AlbumEditModalProps {
   setNewAlbumCoverUrl: (val: string) => void;
   newAlbumDesc: string;
   setNewAlbumDesc: (val: string) => void;
+  newAlbumIsPublic: boolean;
+  setNewAlbumIsPublic: (val: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
 }
@@ -39,6 +42,8 @@ export default function AlbumEditModal({
   setNewAlbumCoverUrl,
   newAlbumDesc,
   setNewAlbumDesc,
+  newAlbumIsPublic,
+  setNewAlbumIsPublic,
   onSubmit,
   isSubmitting,
 }: AlbumEditModalProps) {
@@ -109,6 +114,19 @@ export default function AlbumEditModal({
               placeholder="Summary details for public view page..."
               className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red resize-none"
             />
+          </div>
+
+          <div className="flex items-center gap-2 py-1">
+            <input
+              id="album-is-public"
+              type="checkbox"
+              checked={newAlbumIsPublic}
+              onChange={(e) => setNewAlbumIsPublic(e.target.checked)}
+              className="w-4 h-4 bg-black/35 border border-white/10 rounded focus:ring-ares-red text-ares-red cursor-pointer"
+            />
+            <label htmlFor="album-is-public" className="text-[10px] font-black uppercase tracking-wider text-marble/60 cursor-pointer">
+              Public Visibility (Show in Public Gallery)
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-white/5">

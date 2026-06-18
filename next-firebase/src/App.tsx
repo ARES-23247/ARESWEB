@@ -17,6 +17,7 @@ const DeveloperApiPage = lazy(() => import("@/app/developer-api/page"));
 const EventDetailPage = lazy(() => import("@/app/events/[id]/page"));
 const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
 const GalleryPage = lazy(() => import("@/app/gallery/page"));
+const VideosPage = lazy(() => import("@/app/videos/page"));
 const JoinPage = lazy(() => import("@/app/join/page"));
 const LeaderboardPage = lazy(() => import("@/app/leaderboard/page"));
 const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page"));
@@ -99,6 +100,7 @@ export default function App() {
               <Route path="/events/:id" element={<EventDetailPage />} />
               <Route path="/finance" element={<FinanceLedgerPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/videos" element={<VideosPage />} />
               <Route path="/join" element={<JoinPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/location-morgantown" element={<LocationMorgantownPage />} />

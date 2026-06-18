@@ -38,6 +38,40 @@ router.get("/", ensureAuth, async (req, res) => {
   }
 });
 
+// GET /api/photos/public
+router.get("/public", async (req, res) => {
+  try {
+    const publicAlbumsSnap = await adminDb
+      .collection("albums")
+      .where("isPublic", "==", true)
+      .get();
+
+    const publicAlbumIds = new Set(publicAlbumsSnap.docs.map(doc => doc.id));
+
+    if (publicAlbumIds.size === 0) {
+      res.json({ photos: [] });
+      return;
+    }
+
+    const photosSnap = await adminDb
+      .collection("imported_photos")
+      .orderBy("importedAt", "desc")
+      .get();
+
+    const photos = photosSnap.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data() as any,
+      }))
+      .filter((photo) => photo.albumId && publicAlbumIds.has(photo.albumId));
+
+    res.json({ photos });
+  } catch (error: any) {
+    console.error("[Public Photos GET Endpoint Error]:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 // GET /api/photos/albums
 router.get("/albums", ensureAuth, async (req, res) => {
   try {
@@ -61,11 +95,12 @@ router.get("/albums", ensureAuth, async (req, res) => {
 // POST /api/photos/albums
 router.post("/albums", ensureAdmin, async (req, res) => {
   try {
-    const { title, description, category, coverImageUrl } = req.body as {
+    const { title, description, category, coverImageUrl, isPublic } = req.body as {
       title: string;
       description?: string;
       category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
       coverImageUrl?: string;
+      isPublic?: boolean;
     };
 
     if (!title || !category) {
@@ -94,6 +129,7 @@ router.post("/albums", ensureAdmin, async (req, res) => {
       description: description || "",
       category,
       coverImageUrl: coverImageUrl || "",
+      isPublic: isPublic ?? false,
       mediaCount: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -943,15 +979,16 @@ router.delete("/:photoId", ensureAdmin, async (req, res) => {
 });
 
 // PATCH /api/photos/albums/:albumId
-// Update album details: title, description, category, coverImageUrl
+// Update album details: title, description, category, coverImageUrl, isPublic
 router.patch("/albums/:albumId", ensureAdmin, async (req, res) => {
   try {
     const { albumId } = req.params;
-    const { title, description, category, coverImageUrl } = req.body as {
+    const { title, description, category, coverImageUrl, isPublic } = req.body as {
       title?: string;
       description?: string;
       category?: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
       coverImageUrl?: string;
+      isPublic?: boolean;
     };
 
     const albumRef = adminDb.collection("albums").doc(albumId);
@@ -969,6 +1006,7 @@ router.patch("/albums/:albumId", ensureAdmin, async (req, res) => {
       description: description !== undefined ? description : currentAlbum.description,
       category: category !== undefined ? category : currentAlbum.category,
       coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : (currentAlbum.coverImageUrl || ""),
+      isPublic: isPublic !== undefined ? isPublic : (currentAlbum.isPublic ?? false),
       updatedAt: new Date().toISOString()
     };
 
