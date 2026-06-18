@@ -64,3 +64,23 @@ export function cleanThumbnailUrl(url?: string): string {
   }
 }
 
+/**
+ * Recursively removes undefined properties from an object so it can be stored in Firestore.
+ */
+export function cleanUndefined<T extends Record<string, any>>(obj: T): T {
+  const active = { ...obj } as Record<string, any>;
+  Object.keys(active).forEach((key) => {
+    if (active[key] === undefined) {
+      delete active[key];
+    } else if (
+      active[key] !== null &&
+      typeof active[key] === "object" &&
+      !Array.isArray(active[key]) &&
+      !(active[key] instanceof Date)
+    ) {
+      active[key] = cleanUndefined(active[key]);
+    }
+  });
+  return active as T;
+}
+

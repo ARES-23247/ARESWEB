@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, X, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import { cleanThumbnailUrl } from "@/lib/utils";
+import { cleanThumbnailUrl, cleanUndefined } from "@/lib/utils";
 
 function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
@@ -257,7 +257,7 @@ export default function VideosManagementPage() {
     };
 
     try {
-      await setDoc(doc(db, "videos", targetId), newVideo);
+      await setDoc(doc(db, "videos", targetId), cleanUndefined(newVideo));
       setIsEditorOpen(false);
     } catch (err) {
       console.warn("Unable to save video online, updating local array.", err);

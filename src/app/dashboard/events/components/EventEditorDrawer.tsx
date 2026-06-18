@@ -27,7 +27,8 @@ import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { authenticatedFetch } from "@/lib/api";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { resizeAndCompressImage } from "@/lib/image";
-import { TeamLocation } from "./LocationManagerModal";
+import LocationManagerModal, { TeamLocation } from "./LocationManagerModal";
+import { cleanUndefined } from "@/lib/utils";
 
 export interface TeamEvent {
   id: string;
@@ -82,6 +83,7 @@ interface EventEditorDrawerProps {
   onClose: () => void;
   eventToEdit: TeamEvent | null;
   locations: TeamLocation[];
+  setLocations: React.Dispatch<React.SetStateAction<TeamLocation[]>>;
   teamMembers: { uid: string; nickname: string; avatar: string; }[];
 }
 
@@ -90,6 +92,7 @@ export default function EventEditorDrawer({
   onClose,
   eventToEdit,
   locations,
+  setLocations,
   teamMembers
 }: EventEditorDrawerProps) {
   const { user, authorizedUser } = useAuth();
@@ -110,6 +113,7 @@ export default function EventEditorDrawer({
   const [activeTab, setActiveTab] = useState<"edit" | "roster" | "photos" | "revisions">("edit");
   const [showAiSidebar, setShowAiSidebar] = useState(false);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // RSVP, Photos, Revisions list states
   const [signups, setSignups] = useState<EventSignup[]>([]);
@@ -330,7 +334,7 @@ export default function EventEditorDrawer({
     };
 
     try {
-      await setDoc(doc(db, "events", targetId), newEvent);
+      await setDoc(doc(db, "events", targetId), cleanUndefined(newEvent));
 
       // Log audit revision if editing
       if (editId) {
@@ -346,7 +350,7 @@ export default function EventEditorDrawer({
               `https://api.dicebear.com/9.x/bottts/svg?seed=${user?.uid}`,
             timestamp: new Date().toISOString()
           };
-          await setDoc(doc(db, "events", editId, "revisions", revId), revision);
+          await setDoc(doc(db, "events", editId, "revisions", revId), cleanUndefined(revision));
         } catch (revErr) {
           console.warn("Could not log revision audit log:", revErr);
         }
@@ -393,7 +397,7 @@ export default function EventEditorDrawer({
         notes: notes.trim() || undefined,
         attended: mySignup?.attended || false
       };
-      await setDoc(doc(db, "events", editId, "signups", user.uid), signupData);
+      await setDoc(doc(db, "events", editId, "signups", user.uid), cleanUndefined(signupData));
       setRevertAlert("RSVP updated successfully!");
     } catch (err: any) {
       setSignupError(err.message || "Failed to save RSVP.");
@@ -508,7 +512,7 @@ export default function EventEditorDrawer({
         googleMediaItemId: data.photo.googleMediaItemId || undefined
       };
 
-      await setDoc(doc(db, "events", editId, "photos", photoId), photoData);
+      await setDoc(doc(db, "events", editId, "photos", photoId), cleanUndefined(photoData));
       setRevertAlert("Photo uploaded to event gallery and synced to team Google Photos!");
     } catch (err: any) {
       setUploadError(err.message || "Failed to upload image.");
@@ -787,12 +791,23 @@ export default function EventEditorDrawer({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     {/* Location selector */}
                     <div className="space-y-2">
-                      <label
-                        htmlFor="event-location-select"
-                        className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                      >
-                        Location / Venue
-                      </label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label
+                          htmlFor="event-location-select"
+                          className="block text-[10px] font-bold uppercase tracking-wider text-marble/60"
+                        >
+                          Location / Venue
+                        </label>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => setIsLocationModalOpen(true)}
+                            className="text-[9px] font-black uppercase tracking-widest text-ares-cyan hover:text-ares-cyan/80 transition-colors cursor-pointer"
+                          >
+                            + Manage Locations
+                          </button>
+                        )}
+                      </div>
                       <select
                         id="event-location-select"
                         value={formLocationId || "mars-building"}
@@ -1465,6 +1480,16 @@ export default function EventEditorDrawer({
         isOpen={isPhotoPickerOpen}
         onClose={() => setIsPhotoPickerOpen(false)}
         onSelect={(url) => setFormCoverImage(url)}
+      />
+
+      {/* Locations Manager Modal overlay */}
+      <LocationManagerModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        locations={locations}
+        setLocations={setLocations}
+        formLocationId={formLocationId}
+        setFormLocationId={setFormLocationId}
       />
     </div>
   );

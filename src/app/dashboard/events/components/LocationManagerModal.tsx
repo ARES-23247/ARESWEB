@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { MapPin, X, Pencil, Trash2 } from "lucide-react";
+import { cleanUndefined } from "@/lib/utils";
 
 export interface TeamLocation {
   id: string;
@@ -83,7 +84,7 @@ export default function LocationManagerModal({
     };
 
     try {
-      await setDoc(doc(db, "locations", targetLocId), newLoc);
+      await setDoc(doc(db, "locations", targetLocId), cleanUndefined(newLoc));
 
       // Clear form
       setEditingLocation(null);

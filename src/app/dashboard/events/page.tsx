@@ -227,12 +227,20 @@ export default function EventsManagementPage({
             </div>
 
             {canEdit && (
-              <button
-                onClick={handleOpenCreate}
-                className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-              >
-                <Plus size={16} /> New Event
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsLocationManagerOpen(true)}
+                  className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                >
+                  <MapPin size={16} className="text-ares-gold" /> Locations
+                </button>
+                <button
+                  onClick={handleOpenCreate}
+                  className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                >
+                  <Plus size={16} /> New Event
+                </button>
+              </div>
             )}
           </header>
 
@@ -350,6 +358,7 @@ export default function EventsManagementPage({
         onClose={handleCloseEditor}
         eventToEdit={selectedEvent}
         locations={locations}
+        setLocations={setLocations}
         teamMembers={teamMembers}
       />
 
