@@ -46,7 +46,7 @@ export default function TechStackPage() {
               {
                 title: "Gemini & Vertex AI",
                 icon: <Zap className="text-ares-gold" size={24} />,
-                desc: "We run Gemini 3.5 models via Vertex AI in Cloud Functions to inspect uploaded photos for safety compliance, auto-generate ALT tags, and run real-time sensor analytics.",
+                desc: "We run Gemini 3.5 models via Vertex AI in Cloud Functions to inspect uploaded photos for safety compliance, auto-generate ALT tags, and run real-time robotic log analytics.",
                 cost: "Free Tier"
               },
               {

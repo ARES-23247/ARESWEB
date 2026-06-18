@@ -28,6 +28,7 @@ import { useAuth } from "@/context/AuthContext";
 import { maskEmail } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { siteConfig } from "@/lib/site-config";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -127,15 +128,24 @@ export default function Navbar() {
               <Link to="/about" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Users size={12} className="text-ares-cyan" /> Who We Are
               </Link>
+              <Link to="/seasons" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Trophy size={12} className="text-ares-gold" /> Seasons & Legacy
+              </Link>
               <Link to="/outreach" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Sparkles size={12} className="text-ares-red" /> Our Impact
+                <Sparkles size={12} className="text-ares-red" /> Outreach & Impact
               </Link>
-              <Link to="/leaderboard" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Trophy size={12} className="text-ares-gold" /> Leaderboard
+              <Link to="/gallery" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
               </Link>
-              <div className="h-px bg-white/5 my-1"></div>
               <Link to="/blog" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <BookOpen size={12} className="text-ares-bronze" /> Team Blog
+              </Link>
+              <Link to="/join" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Check size={12} className="text-ares-cyan" /> Join the Team
+              </Link>
+              <div className="h-px bg-white/5 my-1"></div>
+              <Link to="/calendar" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <CalendarIcon size={12} className="text-ares-red" /> Team Calendar
               </Link>
             </div>
           </div>
@@ -155,13 +165,9 @@ export default function Navbar() {
             <div className={`absolute top-[calc(100%-4px)] left-0 w-48 bg-obsidian/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-lg p-1 transition-all duration-300 z-50 opacity-0 translate-y-2 pointer-events-none group-hover/resources:opacity-100 group-hover/resources:translate-y-0 group-hover/resources:pointer-events-auto group-focus-within/resources:opacity-100 group-focus-within/resources:translate-y-0 group-focus-within/resources:pointer-events-auto ${
               activeDropdown === "resources" ? "!opacity-100 !translate-y-0 !pointer-events-auto" : ""
             }`}>
-              <Link to="/gallery" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
-              </Link>
               <Link to="/tech-stack" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Cpu size={12} className="text-ares-cyan" /> Tech Stack
               </Link>
-              <div className="h-px bg-white/5 my-1"></div>
               <Link to="/robots" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
               </Link>
@@ -170,6 +176,22 @@ export default function Navbar() {
               </Link>
               <Link to="/dashboard/scope?sim=true" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
                 <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
+              </Link>
+              <a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Layers size={12} className="text-ares-red" /> 3D Models Archive
+              </a>
+              <a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <Layers size={12} className="text-ares-gold" /> CAD Workspace
+              </a>
+              <div className="h-px bg-white/5 my-1"></div>
+              <Link to="/academy" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
+              </Link>
+              <Link to="/docs" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <BookOpen size={12} className="text-ares-red" /> ARES Lib
+              </Link>
+              <Link to="/store" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
+                <ShoppingBag size={12} className="text-ares-bronze" /> Official Store
               </Link>
             </div>
           </div>
@@ -283,34 +305,40 @@ export default function Navbar() {
       {open && (
         <div className="absolute top-full left-0 w-full bg-obsidian border-b border-ares-bronze/20 shadow-2xl p-6 flex flex-col gap-5 md:hidden z-50 max-h-[80vh] overflow-y-auto">
           
-          {/* Section 1: Team Portal */}
+          {/* Section 1: Team & Organization */}
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Team Portal</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Team & Organization</p>
             <div className="flex flex-col gap-3 pl-2">
               <Link to="/about" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Users size={12} className="text-ares-cyan" /> Who We Are
               </Link>
-              <Link to="/outreach" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Sparkles size={12} className="text-ares-red" /> Our Impact
+              <Link to="/seasons" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Trophy size={12} className="text-ares-gold" /> Seasons & Legacy
               </Link>
-              <Link to="/leaderboard" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Trophy size={12} className="text-ares-gold" /> Leaderboard
+              <Link to="/outreach" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Sparkles size={12} className="text-ares-red" /> Outreach & Impact
+              </Link>
+              <Link to="/gallery" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
               </Link>
               <Link to="/blog" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <BookOpen size={12} className="text-ares-bronze" /> Team Blog
               </Link>
+              <Link to="/join" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Check size={12} className="text-ares-cyan" /> Join the Team
+              </Link>
+              <Link to="/calendar" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <CalendarIcon size={12} className="text-ares-red" /> Team Calendar
+              </Link>
             </div>
           </div>
 
-          {/* Section 2: Engineering Assets */}
+          {/* Section 2: Resources */}
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Engineering Assets</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Resources</p>
             <div className="flex flex-col gap-3 pl-2">
-              <Link to="/gallery" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
-              </Link>
               <Link to="/tech-stack" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Layers size={12} className="text-ares-cyan" /> Tech Stack
+                <Cpu size={12} className="text-ares-cyan" /> Tech Stack
               </Link>
               <Link to="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
@@ -321,24 +349,20 @@ export default function Navbar() {
               <Link to="/dashboard/scope?sim=true" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
                 <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
               </Link>
-            </div>
-          </div>
-
-          {/* Section 3: Operations */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Operations</p>
-            <div className="flex flex-col gap-3 pl-2">
-              <Link to="/calendar" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <CalendarIcon size={12} /> Calendar
-              </Link>
-              <Link to="/store" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <ShoppingBag size={12} /> Store
-              </Link>
+              <a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Layers size={12} className="text-ares-red" /> 3D Models Archive
+              </a>
+              <a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Layers size={12} className="text-ares-gold" /> CAD Workspace
+              </a>
               <Link to="/academy" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <GraduationCap size={12} /> Academy
+                <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
               </Link>
               <Link to="/docs" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                ARES Documentation Library
+                <BookOpen size={12} className="text-ares-red" /> ARES Lib
+              </Link>
+              <Link to="/store" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <ShoppingBag size={12} className="text-ares-bronze" /> Official Store
               </Link>
             </div>
           </div>

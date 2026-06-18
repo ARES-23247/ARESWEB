@@ -49,13 +49,15 @@ export default function Footer() {
             <Users size={12} className="text-ares-cyan" /> Organization
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
-            <li><Link to="/about" className="hover:text-ares-gold transition-colors flex items-center gap-2">About Us</Link></li>
-            <li><Link to="/seasons" className="hover:text-ares-gold transition-colors flex items-center gap-2">Competition History</Link></li>
+            <li><Link to="/about" className="hover:text-ares-gold transition-colors flex items-center gap-2">Who We Are</Link></li>
+            <li><Link to="/seasons" className="hover:text-ares-gold transition-colors flex items-center gap-2">Seasons & Legacy</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-gold transition-colors flex items-center gap-2">Outreach & Impact</Link></li>
-            <li><Link to="/calendar" className="hover:text-ares-red transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+            <li><Link to="/gallery" className="hover:text-ares-gold transition-colors flex items-center gap-2">Photo Gallery</Link></li>
+            <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>
+            <li><Link to="/join" className="hover:text-ares-cyan transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">Join the Team</Link></li>
+            <li><Link to="/calendar" className="hover:text-ares-red transition-colors flex items-center gap-2">
               <Calendar size={12} className="text-ares-red" /> Team Calendar
             </Link></li>
-            <li><Link to="/join" className="hover:text-ares-cyan transition-colors flex items-center gap-2">Join the Team</Link></li>
           </ul>
         </div>
 
@@ -65,17 +67,20 @@ export default function Footer() {
             <BookOpen size={12} className="text-ares-gold" /> Resources
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
-            <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>
-            <li><Link to="/academy" className="hover:text-ares-gold transition-colors flex items-center gap-2">ARES Academy</Link></li>
+            <li><Link to="/tech-stack" className="hover:text-ares-gold transition-colors flex items-center gap-2">Tech Stack</Link></li>
+            <li><Link to="/robots" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robots Fleet</Link></li>
+            <li><Link to="/aresplanner" className="hover:text-ares-gold transition-colors flex items-center gap-2">ARESPlanner</Link></li>
+            <li><Link to="/dashboard/scope?sim=true" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robot Simulator</Link></li>
+            <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">3D Models Archive</a></li>
+            <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">CAD Workspace</a></li>
+            <li><Link to="/academy" className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">ARES Academy</Link></li>
             <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2 group">
               <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden border border-white/10">
                 <span className="bg-ares-red px-2 py-0.5 text-[9px] font-heading font-black uppercase text-white tracking-wider">ARES</span>
                 <span className="bg-white/10 text-white font-heading font-bold px-2 py-0.5 text-[9px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span>
               </span>
             </Link></li>
-            <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">3D Models Archive</a></li>
-            <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">CAD Workspace</a></li>
-            <li><Link to="/store" className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+            <li><Link to="/store" className="hover:text-ares-gold transition-colors flex items-center gap-2">
               <ShoppingBag size={12} className="text-ares-gold" /> Official Store
             </Link></li>
           </ul>
