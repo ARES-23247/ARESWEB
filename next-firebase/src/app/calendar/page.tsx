@@ -97,7 +97,8 @@ const MOCK_EVENTS: TeamEvent[] = [
 ];
 
 export default function CalendarPage() {
-  const { canEdit } = useAuth();
+  const { user, authorizedUser } = useAuth();
+  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const [events, setEvents] = useState<TeamEvent[]>(MOCK_EVENTS);
   const [filter, setFilter] = useState<"all" | "internal" | "outreach">("all");
   const [isLive, setIsLive] = useState(false);
