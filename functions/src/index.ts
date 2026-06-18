@@ -10,6 +10,7 @@ import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
 import profilesRouter from "./routes/profiles";
 import aiRouter from "./routes/ai";
+import calendarRouter from "./routes/calendar";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
@@ -50,6 +51,7 @@ app.use("/api/webhooks", webhooksRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/profiles", profilesRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/calendar", calendarRouter);
 
 // Global Error Handler
 app.use(globalErrorHandler);

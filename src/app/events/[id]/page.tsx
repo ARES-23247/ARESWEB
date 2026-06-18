@@ -454,6 +454,37 @@ export default function EventDetailPage() {
     return null;
   }, [event?.description]);
 
+  const gcalSingleUrl = useMemo(() => {
+    if (!event) return "";
+    try {
+      const startStr = new Date(event.dateStart).toISOString().replace(/-|:|\.\d+/g, "");
+      let endStr = "";
+      if (event.dateEnd) {
+        endStr = new Date(event.dateEnd).toISOString().replace(/-|:|\.\d+/g, "");
+      } else {
+        const end = new Date(event.dateStart);
+        end.setHours(end.getHours() + 2);
+        endStr = end.toISOString().replace(/-|:|\.\d+/g, "");
+      }
+      
+      let plainTextDescription = event.description || "";
+      if (parsedAst) {
+        const getPlainText = (node: ASTNode): string => {
+          if (node.text) return node.text;
+          if (node.content) {
+            return node.content.map(getPlainText).join(" ");
+          }
+          return "";
+        };
+        plainTextDescription = getPlainText(parsedAst);
+      }
+
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(plainTextDescription)}&location=${encodeURIComponent(event.location || "")}`;
+    } catch {
+      return "";
+    }
+  }, [event, parsedAst]);
+
   if (loadingEvent) {
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble flex items-center justify-center">
@@ -514,12 +545,24 @@ export default function EventDetailPage() {
             </span>
             
             {!isPast && (
-              <button
-                onClick={handleDownloadIcs}
-                className="w-fit flex items-center gap-1.5 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest bg-black/80 hover:bg-ares-gold text-white hover:text-black border border-white/15 hover:border-ares-gold transition-all cursor-pointer"
-              >
-                <CalendarIcon size={12} /> Add to calendar
-              </button>
+              <>
+                <button
+                  onClick={handleDownloadIcs}
+                  className="w-fit flex items-center gap-1.5 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest bg-black/80 hover:bg-ares-gold text-white hover:text-black border border-white/15 hover:border-ares-gold transition-all cursor-pointer"
+                >
+                  <CalendarIcon size={12} /> Add to calendar (.ics)
+                </button>
+                {gcalSingleUrl && (
+                  <a
+                    href={gcalSingleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-fit flex items-center gap-1.5 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest bg-black/80 hover:bg-ares-gold text-white hover:text-black border border-white/15 hover:border-ares-gold transition-all cursor-pointer"
+                  >
+                    Add to Google Calendar
+                  </a>
+                )}
+              </>
             )}
 
             {isVerified && (
