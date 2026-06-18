@@ -294,20 +294,27 @@ export default function EventDetailPage() {
       console.warn("Could not retrieve user profile for nickname:", err);
     }
 
-    const rsvpDoc: EventSignup = {
+    const rsvpDoc: Record<string, any> = {
       userId: user.uid,
       nickname,
-      bringing: event?.isPotluck ? bringing.trim() : undefined,
-      notes: notes.trim() || undefined,
-      prepHours: event?.isVolunteer ? Number(prepHours) || 0 : undefined,
       attended: mySignup?.attended ?? false
     };
+
+    if (event?.isPotluck && bringing.trim()) {
+      rsvpDoc.bringing = bringing.trim();
+    }
+    if (notes.trim()) {
+      rsvpDoc.notes = notes.trim();
+    }
+    if (event?.isVolunteer) {
+      rsvpDoc.prepHours = Number(prepHours) || 0;
+    }
 
     try {
       await setDoc(doc(db, "events", id, "signups", user.uid), rsvpDoc);
     } catch (err: any) {
       console.error("Error submitting RSVP:", err);
-      setSignupError("RSVP failed: Permission Denied or database offline.");
+      setSignupError(`RSVP failed: ${err.message || "Permission Denied or database offline."}`);
     } finally {
       setSubmittingRsvp(false);
     }
