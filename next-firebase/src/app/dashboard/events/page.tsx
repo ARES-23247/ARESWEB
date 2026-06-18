@@ -45,7 +45,6 @@ interface TeamEvent {
   title: string;
   dateStart: string;
   dateEnd?: string;
-  location?: string;
   locationId?: string;
   description?: string;
   category: "internal" | "outreach";
@@ -59,7 +58,6 @@ interface EventRevision {
   title: string;
   dateStart: string;
   dateEnd?: string;
-  location?: string;
   locationId?: string;
   description?: string;
   category: "internal" | "outreach";
@@ -113,7 +111,6 @@ export default function EventsManagementPage({
   const [formTitle, setFormTitle] = useState("");
   const [formDateStart, setFormDateStart] = useState("");
   const [formDateEnd, setFormDateEnd] = useState("");
-  const [formLocation, setFormLocation] = useState("");
   const [formLocationId, setFormLocationId] = useState("");
   const [locations, setLocations] = useState<TeamLocation[]>(MOCK_LOCATIONS);
   const hasAttemptedSeedingRef = useRef(false);
@@ -313,8 +310,7 @@ export default function EventsManagementPage({
               title: data.title || "Untitled Event",
               dateStart: data.dateStart || "",
               dateEnd: data.dateEnd || "",
-              location: data.location || "",
-              locationId: data.locationId || "",
+              locationId: data.locationId || "mars-building",
               description: data.description || "",
               category: data.category || "internal",
               coverImage: data.coverImage || "",
@@ -357,7 +353,7 @@ export default function EventsManagementPage({
               try {
                 for (const loc of MOCK_LOCATIONS) {
                   const { id, ...locData } = loc;
-                  await addDoc(locationsRef, locData);
+                  await setDoc(doc(db, "locations", id), locData);
                 }
                 console.log("Successfully seeded default locations.");
               } catch (seedingErr) {
@@ -435,7 +431,6 @@ export default function EventsManagementPage({
     setFormTitle("");
     setFormDateStart(new Date().toISOString().slice(0, 16));
     setFormDateEnd(new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default 2 hrs later
-    setFormLocation("MARS Building");
     setFormLocationId("mars-building");
     setFormDescription("");
     setFormCategory("internal");
@@ -468,7 +463,6 @@ export default function EventsManagementPage({
     setFormTitle(evt.title);
     setFormDateStart(evt.dateStart ? evt.dateStart.slice(0, 16) : "");
     setFormDateEnd(evt.dateEnd ? evt.dateEnd.slice(0, 16) : "");
-    setFormLocation(evt.location || "MARS Building");
     setFormLocationId(evt.locationId || "mars-building");
     setFormDescription(evt.description || "");
     setFormCategory(evt.category);
@@ -507,8 +501,7 @@ export default function EventsManagementPage({
       title: formTitle.trim(),
       dateStart: formDateStart,
       dateEnd: formDateEnd || undefined,
-      location: formLocation.trim() || undefined,
-      locationId: formLocationId || undefined,
+      locationId: formLocationId || "mars-building",
       description: formDescription.trim() || undefined,
       category: formCategory,
       coverImage: formCoverImage || undefined,
@@ -527,8 +520,7 @@ export default function EventsManagementPage({
           title: formTitle.trim(),
           dateStart: formDateStart,
           dateEnd: formDateEnd || undefined,
-          location: formLocation.trim() || undefined,
-          locationId: formLocationId || undefined,
+          locationId: formLocationId || "mars-building",
           description: formDescription.trim() || undefined,
           category: formCategory,
           coverImage: formCoverImage || undefined,
@@ -594,7 +586,6 @@ export default function EventsManagementPage({
       
       // Auto-select in editor
       setFormLocationId(targetLocId);
-      setFormLocation(newLoc.name);
     } catch (err) {
       console.warn("Unable to save location online.", err);
       if (editingLocation) {
@@ -603,7 +594,6 @@ export default function EventsManagementPage({
         setLocations([...locations, newLoc]);
       }
       setFormLocationId(targetLocId);
-      setFormLocation(newLoc.name);
       
       setEditingLocation(null);
       setLocFormName("");
@@ -621,14 +611,12 @@ export default function EventsManagementPage({
       await deleteDoc(doc(db, "locations", locId));
       if (formLocationId === locId) {
         setFormLocationId("mars-building");
-        setFormLocation("MARS Building");
       }
     } catch (err) {
       console.warn("Unable to delete location online.", err);
       setLocations(locations.filter(l => l.id !== locId));
       if (formLocationId === locId) {
         setFormLocationId("mars-building");
-        setFormLocation("MARS Building");
       }
     }
   };
@@ -638,7 +626,6 @@ export default function EventsManagementPage({
     setFormTitle(rev.title);
     setFormDateStart(rev.dateStart ? rev.dateStart.slice(0, 16) : "");
     setFormDateEnd(rev.dateEnd ? rev.dateEnd.slice(0, 16) : "");
-    setFormLocation(rev.location || "MARS Building");
     setFormLocationId(rev.locationId || "mars-building");
     setFormDescription(rev.description || "");
     setFormCategory(rev.category);
@@ -802,7 +789,7 @@ export default function EventsManagementPage({
         body: JSON.stringify({
           prompt: presetName ? `${presetName}: ${prompt}` : prompt,
           text: formDescription,
-          context: `Event Title: ${formTitle}\nLocation: ${formLocation}`
+          context: `Event Title: ${formTitle}\nLocation: ${locations.find((l) => l.id === formLocationId)?.name || "MARS Building"}`
         })
       });
 
@@ -1177,19 +1164,15 @@ export default function EventsManagementPage({
                         <label htmlFor="event-location-select" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Location / Venue</label>
                         <select
                           id="event-location-select"
-                          value={formLocationId === "" ? "custom" : formLocationId}
+                          value={formLocationId || "mars-building"}
                           onChange={(e) => {
                             const val = e.target.value;
                             if (val === "manage") {
                               setIsLocationManagerOpen(true);
-                            } else if (val === "custom") {
-                              setFormLocationId("");
-                              setFormLocation("");
                             } else {
                               const selected = locations.find((l) => l.id === val);
                               if (selected) {
                                 setFormLocationId(selected.id);
-                                setFormLocation(selected.name);
                               }
                             }
                           }}
@@ -1200,26 +1183,10 @@ export default function EventsManagementPage({
                               📍 {loc.name}
                             </option>
                           ))}
-                          <option value="custom">✍️ Custom / One-off Location...</option>
                           <option value="manage" className="text-ares-gold font-bold">
                             ⚙️ Manage Saved Locations...
                           </option>
                         </select>
-
-                        {/* If Custom Location is chosen, show manual input field */}
-                        {formLocationId === "" && (
-                          <div className="mt-3">
-                            <input
-                              id="event-location-custom"
-                              type="text"
-                              placeholder="Type custom location name..."
-                              value={formLocation}
-                              onChange={(e) => setFormLocation(e.target.value)}
-                              className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                              required
-                            />
-                          </div>
-                        )}
 
                         {/* Location Preview Card */}
                         {formLocationId !== "" && (

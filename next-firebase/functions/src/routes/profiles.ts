@@ -10,7 +10,7 @@ const router = express.Router();
 router.get("/about-roster", async (req, res) => {
   try {
     const snapshot = await adminDb.collection("user_profiles").where("showOnAbout", "==", true).get();
-    const members = snapshot.docs.map(doc => {
+    const membersRaw = snapshot.docs.map(doc => {
       const data = doc.data();
       // Parents should be filtered out
       if (data.memberType === "parent") return null;
@@ -28,9 +28,39 @@ router.get("/about-roster", async (req, res) => {
         avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`,
         bio: data.bio || "",
         // PRI-F01: Redact colleges list for student accounts
-        colleges: isStudent ? [] : (data.colleges || [])
+        colleges: isStudent ? [] : (data.colleges || []),
+        contactEmail: data.contactEmail || ""
       };
-    }).filter(m => m !== null);
+    }).filter(m => m !== null) as any[];
+
+    // Deduplicate by contactEmail or nickname
+    const uniqueMembersMap = new Map<string, any>();
+    for (const member of membersRaw) {
+      const key = member.contactEmail ? member.contactEmail.trim().toLowerCase() : `nick:${member.nickname.trim().toLowerCase()}`;
+      const existing = uniqueMembersMap.get(key);
+      if (!existing) {
+        uniqueMembersMap.set(key, member);
+        continue;
+      }
+
+      // Priority: Auth UID (28 chars) > legacy UUID (32 chars) > email address > other
+      const getPriority = (id: string) => {
+        if (id.length === 28 && !id.includes("@")) return 3;
+        if (id.length === 32 && !id.includes("@")) return 2;
+        if (id.includes("@")) return 1;
+        return 0;
+      };
+
+      if (getPriority(member.userId) > getPriority(existing.userId)) {
+        uniqueMembersMap.set(key, member);
+      }
+    }
+
+    const members = Array.from(uniqueMembersMap.values()).map(m => {
+      // Strip contactEmail to protect student PII
+      const { contactEmail, ...rest } = m;
+      return rest;
+    });
     
     res.json({ members });
   } catch (error: any) {
@@ -43,14 +73,43 @@ router.get("/about-roster", async (req, res) => {
 router.get("/team-roster", ensureAuth, async (req, res) => {
   try {
     const snapshot = await adminDb.collection("user_profiles").get();
-    const members = snapshot.docs.map(doc => {
+    const membersRaw = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         uid: doc.id,
         nickname: data.nickname || data.firstName || "Team Member",
-        avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`
+        avatar: data.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${doc.id}`,
+        contactEmail: data.contactEmail || ""
       };
     });
+
+    const uniqueMembersMap = new Map<string, any>();
+    for (const member of membersRaw) {
+      const key = member.contactEmail ? member.contactEmail.trim().toLowerCase() : `nick:${member.nickname.trim().toLowerCase()}`;
+      const existing = uniqueMembersMap.get(key);
+      if (!existing) {
+        uniqueMembersMap.set(key, member);
+        continue;
+      }
+
+      const getPriority = (uid: string) => {
+        if (uid.length === 28 && !uid.includes("@")) return 3;
+        if (uid.length === 32 && !uid.includes("@")) return 2;
+        if (uid.includes("@")) return 1;
+        return 0;
+      };
+
+      if (getPriority(member.uid) > getPriority(existing.uid)) {
+        uniqueMembersMap.set(key, member);
+      }
+    }
+
+    const members = Array.from(uniqueMembersMap.values()).map(m => ({
+      uid: m.uid,
+      nickname: m.nickname,
+      avatar: m.avatar
+    }));
+
     res.json({ members });
   } catch (error: any) {
     console.error("Error fetching team-roster:", error);
@@ -145,6 +204,19 @@ router.post("/sync", async (req, res) => {
         console.log(`[Profile Sync] Cleaned up legacy documents for ${userId} after migrating to ${targetUid}`);
       } catch (deleteErr) {
         console.warn(`[Profile Sync] Could not delete legacy documents for ${userId}:`, deleteErr);
+      }
+    }
+
+    if (email) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (targetUid !== cleanEmail) {
+        try {
+          await adminDb.collection("user_profiles").doc(cleanEmail).delete();
+          await adminDb.collection("authorized_users").doc(cleanEmail).delete();
+          console.log(`[Profile Sync] Cleaned up email-based documents for ${cleanEmail} after migrating to ${targetUid}`);
+        } catch (deleteErr) {
+          console.warn(`[Profile Sync] Could not delete email-based documents for ${cleanEmail}:`, deleteErr);
+        }
       }
     }
 
