@@ -41,6 +41,8 @@ export interface TeamEvent {
   coverImage?: string;
   isPotluck?: number;
   isVolunteer?: number;
+  isDeleted?: number;
+  status?: "published" | "draft";
 }
 
 export interface EventRevision {
@@ -54,6 +56,8 @@ export interface EventRevision {
   coverImage?: string;
   isPotluck?: number;
   isVolunteer?: number;
+  isDeleted?: number;
+  status?: "published" | "draft";
   editedBy: string;
   editedByName: string;
   editedByAvatar: string;
@@ -330,7 +334,9 @@ export default function EventEditorDrawer({
       category: formCategory,
       coverImage: formCoverImage || undefined,
       isPotluck: formIsPotluck,
-      isVolunteer: formIsVolunteer
+      isVolunteer: formIsVolunteer,
+      isDeleted: eventToEdit?.isDeleted ?? 0,
+      status: eventToEdit?.status ?? "published"
     };
 
     try {
