@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cleanThumbnailUrl } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import BlogManagementPage from "@/app/dashboard/blog/page";
+import { Pencil, Plus } from "lucide-react";
 
 interface BlogPost {
   slug: string;
@@ -36,21 +39,42 @@ const MOCK_POSTS: BlogPost[] = [
 ];
 
 export default function BlogFeedPage() {
+  const { user, authorizedUser } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchBlogPosts = async () => {
-      try {
-        const q = query(
-          collection(db, "posts"),
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0)
-        );
-        const snapshot = await getDocs(q);
+  // Editor Drawer States
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorAction, setEditorAction] = useState<"create" | "edit" | null>(null);
+  const [editorSlug, setEditorSlug] = useState<string | null>(null);
 
+  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+
+  const handleOpenInlineCreate = () => {
+    setEditorAction("create");
+    setEditorSlug(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleOpenInlineEdit = (slug: string) => {
+    setEditorAction("edit");
+    setEditorSlug(slug);
+    setIsEditorOpen(true);
+  };
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "posts"),
+      where("status", "==", "published"),
+      where("isDeleted", "==", 0)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
         if (snapshot.empty) {
           setPosts(MOCK_POSTS);
+          setIsLoading(false);
           return;
         }
 
@@ -67,30 +91,41 @@ export default function BlogFeedPage() {
           };
         });
         setPosts(postsList);
-      } catch (error) {
-        console.warn("Firestore empty or not connected, using mock articles:", error);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.warn("Firestore error, using mock articles:", error);
         setPosts(MOCK_POSTS);
-      } finally {
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchBlogPosts();
+    return () => unsubscribe();
   }, []);
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
-        <div className="mb-12">
-          <p className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-4">
-            Engineering & Outreach
-          </p>
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter">
-            Team <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white font-bold">Blog</span>.
-          </h1>
-          <p className="text-marble/85 text-lg font-medium mt-4 max-w-2xl text-balance">
-            Read deep dives into our codebase, mechanical design process, and reflections on our outreach events.
-          </p>
+        <div className="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+          <div>
+            <p className="text-ares-gold font-bold uppercase tracking-widest text-sm mb-4">
+              Engineering & Outreach
+            </p>
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter">
+              Team <span className="bg-ares-red px-6 py-2 ares-cut shadow-xl mt-2 inline-block text-white font-bold">Blog</span>.
+            </h1>
+            <p className="text-marble/85 text-lg font-medium mt-4 max-w-2xl text-balance">
+              Read deep dives into our codebase, mechanical design process, and reflections on our outreach events.
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              onClick={handleOpenInlineCreate}
+              className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
+            >
+              <Plus size={16} /> New Blog Post
+            </button>
+          )}
         </div>
 
         {isLoading ? (
@@ -112,7 +147,20 @@ export default function BlogFeedPage() {
                       alt={post.title}
                       className={post.thumbnail ? "w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover" : "w-16 h-16 object-contain opacity-30 group-hover:scale-110 transition-transform duration-500 m-auto"}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent animate-fadeIn"></div>
+                    
+                    {canEdit && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenInlineEdit(post.slug);
+                        }}
+                        className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-ares-gold/80 border border-white/10 rounded-lg transition-all text-white cursor-pointer z-10 hover:scale-105 active:scale-95 shadow-lg"
+                        title="Edit Article"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
                   </div>
                   <div className="p-6 flex-grow flex flex-col justify-between">
                     <div>
@@ -156,6 +204,20 @@ export default function BlogFeedPage() {
           </div>
         )}
       </div>
+
+      {/* ─── UPGRADED FULL BLOG EDITOR DRAWER ─── */}
+      {isEditorOpen && (
+        <BlogManagementPage
+          editorOnly={true}
+          prefilledAction={editorAction}
+          prefilledSlug={editorSlug}
+          onEditorClose={() => {
+            setIsEditorOpen(false);
+            setEditorAction(null);
+            setEditorSlug(null);
+          }}
+        />
+      )}
     </div>
   );
 }

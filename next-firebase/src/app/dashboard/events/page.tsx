@@ -30,12 +30,21 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { authenticatedFetch } from "@/lib/api";
 
+export interface TeamLocation {
+  id: string;
+  name: string;
+  address: string;
+  description?: string;
+  gmapsUrl?: string;
+}
+
 interface TeamEvent {
   id: string;
   title: string;
   dateStart: string;
   dateEnd?: string;
   location?: string;
+  locationId?: string;
   description?: string;
   category: "internal" | "outreach";
   coverImage?: string;
@@ -49,6 +58,7 @@ interface EventRevision {
   dateStart: string;
   dateEnd?: string;
   location?: string;
+  locationId?: string;
   description?: string;
   category: "internal" | "outreach";
   coverImage?: string;
@@ -102,6 +112,17 @@ export default function EventsManagementPage({
   const [formDateStart, setFormDateStart] = useState("");
   const [formDateEnd, setFormDateEnd] = useState("");
   const [formLocation, setFormLocation] = useState("");
+  const [formLocationId, setFormLocationId] = useState("");
+  const [locations, setLocations] = useState<TeamLocation[]>(MOCK_LOCATIONS);
+
+  // Locations Manager modal states
+  const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<TeamLocation | null>(null);
+  const [locFormName, setLocFormName] = useState("");
+  const [locFormAddress, setLocFormAddress] = useState("");
+  const [locFormDescription, setLocFormDescription] = useState("");
+  const [locFormGmapsUrl, setLocFormGmapsUrl] = useState("");
+
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState<"internal" | "outreach">("internal");
   const [formCoverImage, setFormCoverImage] = useState("");
@@ -290,6 +311,7 @@ export default function EventsManagementPage({
               dateStart: data.dateStart || "",
               dateEnd: data.dateEnd || "",
               location: data.location || "",
+              locationId: data.locationId || "",
               description: data.description || "",
               category: data.category || "internal",
               coverImage: data.coverImage || "",
@@ -314,6 +336,43 @@ export default function EventsManagementPage({
       console.warn("Local sandbox mode, using static mock schedule.", e);
       setEvents(MOCK_EVENTS);
       setIsLive(false);
+    }
+  }, []);
+
+  // 1b. Listen for real-time location profile updates
+  useEffect(() => {
+    try {
+      const locationsRef = collection(db, "locations");
+      const unsubscribe = onSnapshot(
+        locationsRef,
+        (snapshot) => {
+          if (snapshot.empty) {
+            setLocations(MOCK_LOCATIONS);
+            return;
+          }
+          const list = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || "",
+              address: data.address || "",
+              description: data.description || "",
+              gmapsUrl: data.gmapsUrl || ""
+            } as TeamLocation;
+          });
+          // Sort locations alphabetically by name
+          list.sort((a, b) => a.name.localeCompare(b.name));
+          setLocations(list);
+        },
+        (err) => {
+          console.warn("Firestore locations query failed, streaming mocks.", err.message);
+          setLocations(MOCK_LOCATIONS);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Local sandbox mode, using static mock locations.", e);
+      setLocations(MOCK_LOCATIONS);
     }
   }, []);
 
@@ -360,7 +419,8 @@ export default function EventsManagementPage({
     setFormTitle("");
     setFormDateStart(new Date().toISOString().slice(0, 16));
     setFormDateEnd(new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default 2 hrs later
-    setFormLocation("MARS Laboratory");
+    setFormLocation("MARS Building");
+    setFormLocationId("mars-building");
     setFormDescription("");
     setFormCategory("internal");
     setFormCoverImage("");
@@ -392,7 +452,8 @@ export default function EventsManagementPage({
     setFormTitle(evt.title);
     setFormDateStart(evt.dateStart ? evt.dateStart.slice(0, 16) : "");
     setFormDateEnd(evt.dateEnd ? evt.dateEnd.slice(0, 16) : "");
-    setFormLocation(evt.location || "");
+    setFormLocation(evt.location || "MARS Building");
+    setFormLocationId(evt.locationId || "mars-building");
     setFormDescription(evt.description || "");
     setFormCategory(evt.category);
     setFormCoverImage(evt.coverImage || "");
@@ -431,6 +492,7 @@ export default function EventsManagementPage({
       dateStart: formDateStart,
       dateEnd: formDateEnd || undefined,
       location: formLocation.trim() || undefined,
+      locationId: formLocationId || undefined,
       description: formDescription.trim() || undefined,
       category: formCategory,
       coverImage: formCoverImage || undefined,
@@ -450,6 +512,7 @@ export default function EventsManagementPage({
           dateStart: formDateStart,
           dateEnd: formDateEnd || undefined,
           location: formLocation.trim() || undefined,
+          locationId: formLocationId || undefined,
           description: formDescription.trim() || undefined,
           category: formCategory,
           coverImage: formCoverImage || undefined,
@@ -488,12 +551,79 @@ export default function EventsManagementPage({
     }
   };
 
+  // Action: Save Location (Create or Update)
+  const handleSaveLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locFormName.trim() || !locFormAddress.trim()) return;
+
+    const slugify = (str: string) => str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const targetLocId = editingLocation?.id || slugify(locFormName.trim()) || `loc_${Date.now()}`;
+    const newLoc: TeamLocation = {
+      id: targetLocId,
+      name: locFormName.trim(),
+      address: locFormAddress.trim(),
+      description: locFormDescription.trim() || undefined,
+      gmapsUrl: locFormGmapsUrl.trim() || undefined
+    };
+
+    try {
+      await setDoc(doc(db, "locations", targetLocId), newLoc);
+      
+      // Clear form
+      setEditingLocation(null);
+      setLocFormName("");
+      setLocFormAddress("");
+      setLocFormDescription("");
+      setLocFormGmapsUrl("");
+      
+      // Auto-select in editor
+      setFormLocationId(targetLocId);
+      setFormLocation(newLoc.name);
+    } catch (err) {
+      console.warn("Unable to save location online.", err);
+      if (editingLocation) {
+        setLocations(locations.map(l => l.id === editingLocation.id ? newLoc : l));
+      } else {
+        setLocations([...locations, newLoc]);
+      }
+      setFormLocationId(targetLocId);
+      setFormLocation(newLoc.name);
+      
+      setEditingLocation(null);
+      setLocFormName("");
+      setLocFormAddress("");
+      setLocFormDescription("");
+      setLocFormGmapsUrl("");
+    }
+  };
+
+  // Action: Delete Location
+  const handleDeleteLocation = async (locId: string) => {
+    if (!window.confirm("Are you sure you want to delete this venue? Any event referencing this venue will default back to the MARS Building.")) return;
+    
+    try {
+      await deleteDoc(doc(db, "locations", locId));
+      if (formLocationId === locId) {
+        setFormLocationId("mars-building");
+        setFormLocation("MARS Building");
+      }
+    } catch (err) {
+      console.warn("Unable to delete location online.", err);
+      setLocations(locations.filter(l => l.id !== locId));
+      if (formLocationId === locId) {
+        setFormLocationId("mars-building");
+        setFormLocation("MARS Building");
+      }
+    }
+  };
+
   // 4. Action: Revert To Revision
   const handleRevertToRevision = (rev: EventRevision) => {
     setFormTitle(rev.title);
     setFormDateStart(rev.dateStart ? rev.dateStart.slice(0, 16) : "");
     setFormDateEnd(rev.dateEnd ? rev.dateEnd.slice(0, 16) : "");
-    setFormLocation(rev.location || "");
+    setFormLocation(rev.location || "MARS Building");
+    setFormLocationId(rev.locationId || "mars-building");
     setFormDescription(rev.description || "");
     setFormCategory(rev.category);
     setFormCoverImage(rev.coverImage || "");
@@ -1034,15 +1164,73 @@ export default function EventsManagementPage({
                       </div>
 
                       <div>
-                        <label htmlFor="event-location" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Location / Venue</label>
-                        <input
-                          id="event-location"
-                          type="text"
-                          placeholder="e.g. MARS Laboratory / ARES Workshop"
-                          value={formLocation}
-                          onChange={(e) => setFormLocation(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                        />
+                        <label htmlFor="event-location-select" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Location / Venue</label>
+                        <select
+                          id="event-location-select"
+                          value={formLocationId === "" ? "custom" : formLocationId}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "manage") {
+                              setIsLocationManagerOpen(true);
+                            } else if (val === "custom") {
+                              setFormLocationId("");
+                              setFormLocation("");
+                            } else {
+                              const selected = locations.find((l) => l.id === val);
+                              if (selected) {
+                                setFormLocationId(selected.id);
+                                setFormLocation(selected.name);
+                              }
+                            }
+                          }}
+                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
+                        >
+                          {locations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              📍 {loc.name}
+                            </option>
+                          ))}
+                          <option value="custom">✍️ Custom / One-off Location...</option>
+                          <option value="manage" className="text-ares-gold font-bold">
+                            ⚙️ Manage Saved Locations...
+                          </option>
+                        </select>
+
+                        {/* If Custom Location is chosen, show manual input field */}
+                        {formLocationId === "" && (
+                          <div className="mt-3">
+                            <input
+                              id="event-location-custom"
+                              type="text"
+                              placeholder="Type custom location name..."
+                              value={formLocation}
+                              onChange={(e) => setFormLocation(e.target.value)}
+                              className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
+                              required
+                            />
+                          </div>
+                        )}
+
+                        {/* Location Preview Card */}
+                        {formLocationId !== "" && (
+                          (() => {
+                            const selected = locations.find((l) => l.id === formLocationId);
+                            if (!selected) return null;
+                            return (
+                              <div className="mt-3 p-3.5 bg-white/5 border border-white/10 rounded-lg space-y-1 text-[11px] text-left">
+                                <div className="flex items-center gap-1.5 text-white font-bold uppercase tracking-wider">
+                                  <MapPin size={12} className="text-ares-gold shrink-0" /> {selected.name}
+                                </div>
+                                {selected.address && (
+                                  <p className="text-marble/60 font-semibold truncate">Address: {selected.address}</p>
+                                )}
+                                {selected.description && (
+                                  <p className="text-marble/40 leading-relaxed italic truncate">{selected.description}</p>
+                                )}
+                              </div>
+                            );
+                          })()
+                        )}
                       </div>
 
                       <div>
@@ -1701,6 +1889,184 @@ export default function EventsManagementPage({
         onSelect={(url) => setFormCoverImage(url)}
       />
 
+      {/* Locations Manager Modal */}
+      {isLocationManagerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-4xl bg-black/90 border border-white/10 rounded-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-extrabold text-base uppercase tracking-tight flex items-center gap-2">
+                  <MapPin size={18} className="text-ares-gold" />
+                  Manage Team Venues & Locations
+                </h3>
+                <p className="text-[10px] text-marble/50 uppercase tracking-wider mt-0.5">
+                  Configure saved locations for calendar events and directions
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLocationManagerOpen(false)}
+                className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full transition-colors cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Split Content */}
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+              {/* Left Column: Locations List */}
+              <div className="w-full md:w-1/2 border-r border-white/10 p-5 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/5">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60 mb-2">Saved Venues ({locations.length})</h4>
+                
+                {locations.length === 0 ? (
+                  <div className="py-12 text-center text-[9px] font-mono text-marble/35 uppercase tracking-widest border border-dashed border-white/10 rounded-lg">
+                    No locations saved yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {locations.map((loc) => (
+                      <div
+                        key={loc.id}
+                        className={`p-3 border rounded-lg transition-all text-left flex items-start justify-between gap-3 ${
+                          editingLocation?.id === loc.id
+                            ? "bg-ares-gold/15 border-ares-gold"
+                            : "bg-white/5 border-white/5 hover:border-white/15"
+                        }`}
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-xs font-bold text-white uppercase tracking-tight truncate flex items-center gap-1.5">
+                            {loc.name}
+                            {loc.id === "mars-building" && (
+                              <span className="bg-ares-gold/20 text-ares-gold text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-gold/30 uppercase shrink-0">
+                                Default
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[10px] text-marble/60 font-medium truncate">{loc.address}</p>
+                          {loc.description && (
+                            <p className="text-[9px] text-marble/40 line-clamp-1 italic">{loc.description}</p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingLocation(loc);
+                              setLocFormName(loc.name);
+                              setLocFormAddress(loc.address);
+                              setLocFormDescription(loc.description || "");
+                              setLocFormGmapsUrl(loc.gmapsUrl || "");
+                            }}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded border border-white/10 transition-colors cursor-pointer focus:ring-2 focus:ring-ares-cyan"
+                            title="Edit Venue"
+                          >
+                            <Pencil size={11} />
+                          </button>
+                          {loc.id !== "mars-building" && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteLocation(loc.id)}
+                              className="p-1.5 bg-white/5 hover:bg-ares-red/25 text-white/70 hover:text-white rounded border border-white/10 hover:border-ares-red/35 transition-colors cursor-pointer focus:ring-2 focus:ring-ares-cyan"
+                              title="Delete Venue"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Add/Edit Form */}
+              <form onSubmit={handleSaveLocation} className="w-full md:w-1/2 p-5 overflow-y-auto space-y-4 flex flex-col justify-between scrollbar-thin scrollbar-thumb-white/5">
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
+                    {editingLocation ? `Edit Venue: ${editingLocation.name}` : "Create New Venue"}
+                  </h4>
+
+                  <div>
+                    <label htmlFor="loc-name" className="block text-[9px] font-bold uppercase tracking-wider mb-1.5 text-marble/50">Venue Name</label>
+                    <input
+                      id="loc-name"
+                      type="text"
+                      placeholder="e.g. ARES Machine Shop"
+                      value={locFormName}
+                      onChange={(e) => setLocFormName(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-cyan"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="loc-address" className="block text-[9px] font-bold uppercase tracking-wider mb-1.5 text-marble/50">Physical Address</label>
+                    <input
+                      id="loc-address"
+                      type="text"
+                      placeholder="e.g. 456 Tech Lane, Morgantown, WV 26505"
+                      value={locFormAddress}
+                      onChange={(e) => setLocFormAddress(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-cyan"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="loc-description" className="block text-[9px] font-bold uppercase tracking-wider mb-1.5 text-marble/50">Short Description</label>
+                    <textarea
+                      id="loc-description"
+                      placeholder="e.g. CNC machining workshop and anodizing lab. Accessible via side entrance."
+                      value={locFormDescription}
+                      onChange={(e) => setLocFormDescription(e.target.value)}
+                      className="w-full h-16 bg-black/60 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-ares-red resize-none focus:ring-2 focus:ring-ares-cyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="loc-gmaps" className="block text-[9px] font-bold uppercase tracking-wider mb-1.5 text-marble/50">Google Maps Link (Optional)</label>
+                    <input
+                      id="loc-gmaps"
+                      type="url"
+                      placeholder="e.g. https://maps.google.com/?q=..."
+                      value={locFormGmapsUrl}
+                      onChange={(e) => setLocFormGmapsUrl(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-cyan"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 flex gap-2 shrink-0">
+                  {editingLocation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLocation(null);
+                        setLocFormName("");
+                        setLocFormAddress("");
+                        setLocFormDescription("");
+                        setLocFormGmapsUrl("");
+                      }}
+                      className="px-3 py-2 border border-white/10 hover:bg-white/5 text-marble/60 hover:text-white rounded text-[9px] uppercase font-black tracking-widest cursor-pointer transition-all"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="flex-grow py-2 bg-ares-gold text-black font-black uppercase tracking-widest text-[9px] rounded hover:brightness-105 transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer"
+                  >
+                    {editingLocation ? "Save Updates" : "Create Venue"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1771,5 +2137,29 @@ const MOCK_EVENTS: TeamEvent[] = [
     category: "outreach",
     isPotluck: 1,
     isVolunteer: 1
+  }
+];
+
+export const MOCK_LOCATIONS: TeamLocation[] = [
+  {
+    id: "mars-building",
+    name: "MARS Building",
+    address: "123 Science Way, Morgantown, WV 26508",
+    description: "Our primary design workshop, machining center, and practice arena.",
+    gmapsUrl: "https://maps.google.com/?q=123+Science+Way+Morgantown+WV+26508"
+  },
+  {
+    id: "ares-shop",
+    name: "ARES Machine Shop",
+    address: "456 Tech Lane, Morgantown, WV 26505",
+    description: "CNC fabrication, 3D printing farm, and anodizing workshop.",
+    gmapsUrl: "https://maps.google.com/?q=456+Tech+Lane+Morgantown+WV+26505"
+  },
+  {
+    id: "spark-museum",
+    name: "SPARK! WV Museum",
+    address: "9500 Mall Road, Morgantown, WV 26501",
+    description: "Community science museum where we host outreach events and demo days.",
+    gmapsUrl: "https://maps.google.com/?q=Morgantown+Mall+WV+26501"
   }
 ];

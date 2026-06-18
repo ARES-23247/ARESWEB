@@ -33,10 +33,44 @@ import {
   Image as ImageIcon,
   MessageSquare,
   X,
-  Maximize2
+  Maximize2,
+  Pencil
 } from "lucide-react";
 import TiptapRenderer, { ASTNode } from "@/components/TiptapRenderer";
 import { GreekMeander } from "@/components/GreekMeander";
+import EventsManagementPage from "@/app/dashboard/events/page";
+
+export interface TeamLocation {
+  id: string;
+  name: string;
+  address: string;
+  description?: string;
+  gmapsUrl?: string;
+}
+
+export const MOCK_LOCATIONS: TeamLocation[] = [
+  {
+    id: "mars-building",
+    name: "MARS Building",
+    address: "123 Science Way, Morgantown, WV 26508",
+    description: "Our primary design workshop, machining center, and practice arena.",
+    gmapsUrl: "https://maps.google.com/?q=123+Science+Way+Morgantown+WV+26508"
+  },
+  {
+    id: "ares-shop",
+    name: "ARES Machine Shop",
+    address: "456 Tech Lane, Morgantown, WV 26505",
+    description: "CNC fabrication, 3D printing farm, and anodizing workshop.",
+    gmapsUrl: "https://maps.google.com/?q=456+Tech+Lane+Morgantown+WV+26505"
+  },
+  {
+    id: "spark-museum",
+    name: "SPARK! WV Museum",
+    address: "9500 Mall Road, Morgantown, WV 26501",
+    description: "Community science museum where we host outreach events and demo days.",
+    gmapsUrl: "https://maps.google.com/?q=Morgantown+Mall+WV+26501"
+  }
+];
 
 interface EventItem {
   id: string;
@@ -44,6 +78,7 @@ interface EventItem {
   dateStart: string;
   dateEnd?: string;
   location?: string;
+  locationId?: string;
   description?: string;
   category: "internal" | "outreach";
   coverImage?: string;
@@ -80,6 +115,7 @@ export default function EventDetailPage() {
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [signups, setSignups] = useState<EventSignup[]>([]);
   const [photos, setPhotos] = useState<EventPhoto[]>([]);
+  const [locations, setLocations] = useState<TeamLocation[]>(MOCK_LOCATIONS);
 
   // RSVP Form state
   const [bringing, setBringing] = useState("");
@@ -94,6 +130,17 @@ export default function EventDetailPage() {
 
   // Lightbox state
   const [selectedPhoto, setSelectedPhoto] = useState<EventPhoto | null>(null);
+
+  // Editor Drawer States
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorAction, setEditorAction] = useState<"create" | "edit" | null>(null);
+  const [editorEventId, setEditorEventId] = useState<string | null>(null);
+
+  const handleOpenInlineEdit = () => {
+    setEditorAction("edit");
+    setEditorEventId(id || null);
+    setIsEditorOpen(true);
+  };
 
   const isVerified = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
@@ -124,6 +171,41 @@ export default function EventDetailPage() {
     );
     return () => unsubscribe();
   }, [id]);
+
+  // Fetch Locations list
+  useEffect(() => {
+    try {
+      const locationsRef = collection(db, "locations");
+      const unsubscribe = onSnapshot(
+        locationsRef,
+        (snapshot) => {
+          if (snapshot.empty) {
+            setLocations(MOCK_LOCATIONS);
+            return;
+          }
+          const list = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              name: data.name || "",
+              address: data.address || "",
+              description: data.description || "",
+              gmapsUrl: data.gmapsUrl || ""
+            } as TeamLocation;
+          });
+          setLocations(list);
+        },
+        (err) => {
+          console.warn("Unable to fetch locations in detail page:", err);
+          setLocations(MOCK_LOCATIONS);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Unable to fetch locations in detail page:", e);
+      setLocations(MOCK_LOCATIONS);
+    }
+  }, []);
 
   // 2. Fetch Signups in Real-time
   useEffect(() => {
@@ -417,6 +499,15 @@ export default function EventDetailPage() {
                 className="w-fit flex items-center gap-1.5 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest bg-black/80 hover:bg-ares-gold text-white hover:text-black border border-white/15 hover:border-ares-gold transition-all cursor-pointer"
               >
                 <CalendarIcon size={12} /> Add to calendar
+              </button>
+            )}
+
+            {isVerified && (
+              <button
+                onClick={handleOpenInlineEdit}
+                className="w-fit flex items-center gap-1.5 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest bg-black/80 hover:bg-ares-gold text-white hover:text-black border border-white/15 hover:border-ares-gold transition-all cursor-pointer"
+              >
+                <Pencil size={12} /> Edit Event
               </button>
             )}
           </div>
@@ -743,6 +834,51 @@ export default function EventDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Venue Info Card */}
+          {(event.locationId || event.location) && (
+            (() => {
+              const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
+              const venueName = selected ? selected.name : event.location || "MARS Building";
+              const address = selected ? selected.address : (event.locationId === "mars-building" || event.location === "MARS Building") ? "123 Science Way, Morgantown, WV" : "";
+              const gmapsUrl = selected?.gmapsUrl || `https://maps.google.com/maps?q=${encodeURIComponent(address || venueName)}`;
+              const description = selected?.description || "";
+              
+              return (
+                <div className="glass-card border border-white/10 p-6 rounded-2xl bg-black/20 space-y-4 text-left animate-fade-in">
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight font-heading flex items-center gap-2">
+                      <MapPin size={16} className="text-ares-gold" /> Venue Information
+                    </h3>
+                    <p className="text-[9px] text-marble/50 uppercase font-bold mt-0.5">Directions and facility details</p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">{venueName}</h4>
+                      {address && (
+                        <p className="text-[11px] text-marble/70 leading-relaxed mt-1 font-semibold">{address}</p>
+                      )}
+                      {description && (
+                        <p className="text-[10px] text-marble/40 leading-relaxed italic mt-1.5">{description}</p>
+                      )}
+                    </div>
+                    
+                    {gmapsUrl && (
+                      <a
+                        href={gmapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full text-center block py-2 bg-white/5 hover:bg-ares-gold border border-white/10 hover:border-ares-gold text-marble hover:text-black text-[9px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer shadow-md"
+                      >
+                        Get Directions &nearr;
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          )}
         </aside>
       </section>
 
@@ -787,6 +923,20 @@ export default function EventDetailPage() {
             </footer>
           </div>
         </div>
+      )}
+
+      {/* ─── UPGRADED FULL EVENT EDITOR DRAWER ─── */}
+      {isEditorOpen && (
+        <EventsManagementPage
+          editorOnly={true}
+          prefilledAction={editorAction}
+          prefilledEventId={editorEventId}
+          onEditorClose={() => {
+            setIsEditorOpen(false);
+            setEditorAction(null);
+            setEditorEventId(null);
+          }}
+        />
       )}
     </div>
   );

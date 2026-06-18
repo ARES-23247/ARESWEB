@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import { cleanThumbnailUrl } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import BlogManagementPage from "@/app/dashboard/blog/page";
+import { Pencil } from "lucide-react";
 
 interface BlogPostDetails {
   slug: string;
@@ -78,25 +81,41 @@ If you have questions about implementing this on your robot, feel free to reach 
 };
 
 export default function BlogPostPage() {
+  const { user, authorizedUser } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<BlogPostDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchPost = async () => {
-      if (!slug) return;
-      try {
-        const docRef = doc(db, "posts", slug);
-        const docSnap = await getDoc(docRef);
+  // Editor Drawer States
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorAction, setEditorAction] = useState<"create" | "edit" | null>(null);
+  const [editorSlug, setEditorSlug] = useState<string | null>(null);
 
+  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+
+  const handleOpenInlineEdit = () => {
+    setEditorAction("edit");
+    setEditorSlug(slug || null);
+    setIsEditorOpen(true);
+  };
+
+  useEffect(() => {
+    if (!slug) return;
+
+    const docRef = doc(db, "posts", slug);
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
         if (!docSnap.exists()) {
           setPost(MOCK_DETAILS[slug] || null);
+          setIsLoading(false);
           return;
         }
 
         const data = docSnap.data();
         if (!data || data.isDeleted === 1 || data.status !== "published") {
           setPost(MOCK_DETAILS[slug] || null);
+          setIsLoading(false);
           return;
         }
 
@@ -110,15 +129,16 @@ export default function BlogPostPage() {
           authorAvatar: data.authorAvatar || "",
           content: data.content || data.snippet || ""
         });
-      } catch (error) {
+        setIsLoading(false);
+      },
+      (error) => {
         console.warn(`Firestore read failed for post slug: ${slug}, using mock fallback.`, error);
         setPost(MOCK_DETAILS[slug] || null);
-      } finally {
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchPost();
+    return () => unsubscribe();
   }, [slug]);
 
   if (isLoading) {
@@ -159,24 +179,34 @@ export default function BlogPostPage() {
           <Link to="/blog" className="text-ares-gold hover:text-white uppercase tracking-widest text-xs font-bold transition-all flex items-center gap-2 mb-6 w-fit">
             <span>&larr;</span> Back to all posts
           </Link>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-            <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
-              {post.date}
-            </span>
-            <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
-              <img 
-                src={
-                  post.authorAvatar
-                    ? (post.authorAvatar.startsWith("http") || post.authorAvatar.includes("/")
-                        ? post.authorAvatar
-                        : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`)
-                    : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
-                }
-                alt=""
-                className="w-6 h-6 rounded-full object-cover border border-white/20"
-              />
-              <span className="text-sm text-white">{post.author || "ARES Member"}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
+                {post.date}
+              </span>
+              <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
+                <img 
+                  src={
+                    post.authorAvatar
+                      ? (post.authorAvatar.startsWith("http") || post.authorAvatar.includes("/")
+                          ? post.authorAvatar
+                          : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`)
+                      : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
+                  }
+                  alt=""
+                  className="w-6 h-6 rounded-full object-cover border border-white/20"
+                />
+                <span className="text-sm text-white">{post.author || "ARES Member"}</span>
+              </div>
             </div>
+            {canEdit && (
+              <button
+                onClick={handleOpenInlineEdit}
+                className="clipped-button bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/40 text-ares-gold font-bold text-xs uppercase tracking-widest py-2 px-4 flex items-center gap-2 cursor-pointer shadow-lg transition-all active:scale-95 z-20"
+              >
+                <Pencil size={12} /> Edit Blog Post
+              </button>
+            )}
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter drop-shadow-2xl mb-4 font-heading">
             {post.title}
@@ -190,6 +220,20 @@ export default function BlogPostPage() {
           <DocsMarkdownRenderer content={post.content} />
         </article>
       </div>
+
+      {/* ─── UPGRADED FULL BLOG EDITOR DRAWER ─── */}
+      {isEditorOpen && (
+        <BlogManagementPage
+          editorOnly={true}
+          prefilledAction={editorAction}
+          prefilledSlug={editorSlug}
+          onEditorClose={() => {
+            setIsEditorOpen(false);
+            setEditorAction(null);
+            setEditorSlug(null);
+          }}
+        />
+      )}
     </div>
   );
 }

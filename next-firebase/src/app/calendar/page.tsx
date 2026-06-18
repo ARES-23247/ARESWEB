@@ -30,6 +30,7 @@ interface TeamEvent {
   dateStart: string;
   dateEnd?: string;
   location?: string;
+  locationId?: string;
   description?: string;
   category: "internal" | "outreach";
 }
@@ -154,6 +155,7 @@ export default function CalendarPage() {
               dateStart: data.dateStart || "",
               dateEnd: data.dateEnd || "",
               location: data.location || "TBD",
+              locationId: data.locationId || "",
               description: data.description || "",
               category: (data.category as "internal" | "outreach") || "internal"
             };

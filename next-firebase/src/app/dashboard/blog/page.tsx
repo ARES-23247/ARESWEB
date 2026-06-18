@@ -81,7 +81,17 @@ const MOCK_POSTS: BlogPost[] = [
   }
 ];
 
-export default function BlogManagementPage() {
+export default function BlogManagementPage({
+  editorOnly = false,
+  onEditorClose,
+  prefilledAction,
+  prefilledSlug
+}: {
+  editorOnly?: boolean;
+  onEditorClose?: () => void;
+  prefilledAction?: "create" | "edit" | null;
+  prefilledSlug?: string | null;
+} = {}) {
   const { user, authorizedUser } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>(MOCK_POSTS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,7 +133,12 @@ export default function BlogManagementPage() {
   const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
 
-  const editorRef = useFocusTrap(isEditorOpen, () => setIsEditorOpen(false));
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    onEditorClose?.();
+  };
+
+  const editorRef = useFocusTrap(isEditorOpen, handleCloseEditor);
 
   // Fetch team roster for author selection
   useEffect(() => {
@@ -212,6 +227,26 @@ export default function BlogManagementPage() {
       setIsLive(false);
     }
   }, []);
+
+  // Handle opening create or edit modal via query parameters or props
+  useEffect(() => {
+    if (editorOnly) {
+      if (prefilledAction === "create") {
+        handleOpenCreate();
+      } else if (prefilledAction === "edit" && prefilledSlug) {
+        const post = posts.find((p) => p.slug === prefilledSlug);
+        if (post) {
+          handleOpenEdit(post);
+        }
+      }
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "create") {
+      handleOpenCreate();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [editorOnly, prefilledAction, prefilledSlug, posts]);
 
   // Sync slug helper
   useEffect(() => {
@@ -368,7 +403,7 @@ export default function BlogManagementPage() {
         timestamp: new Date().toISOString()
       });
 
-      setIsEditorOpen(false);
+      handleCloseEditor();
     } catch (err) {
       console.warn("Unable to save post online, updating local array.", err);
       if (editSlug) {
@@ -376,7 +411,7 @@ export default function BlogManagementPage() {
       } else {
         setPosts([newPost, ...posts]);
       }
-      setIsEditorOpen(false);
+      handleCloseEditor();
     }
   };
 
@@ -476,7 +511,9 @@ export default function BlogManagementPage() {
   }
 
   return (
-    <div className="space-y-10 w-full text-left">
+    <>
+      {!editorOnly && (
+        <div className="space-y-10 w-full text-left">
       
       {/* Header */}
       <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
@@ -626,6 +663,8 @@ export default function BlogManagementPage() {
           );
         })}
       </div>
+      </div>
+    )}
 
       {/* Upgraded Expandable Slide-out / Modal Content Editor Overlay */}
       {isEditorOpen && (
@@ -633,7 +672,7 @@ export default function BlogManagementPage() {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
-            onClick={() => setIsEditorOpen(false)}
+            onClick={handleCloseEditor}
           />
 
           {/* Editor Drawer container */}
@@ -667,7 +706,7 @@ export default function BlogManagementPage() {
                 </button>
                 {/* Close */}
                 <button
-                  onClick={() => setIsEditorOpen(false)}
+                  onClick={handleCloseEditor}
                   aria-label="Close editor"
                   className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
                 >
@@ -1175,7 +1214,7 @@ export default function BlogManagementPage() {
               <footer className="px-6 py-4 border-t border-white/10 flex justify-end gap-3 bg-black/20 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsEditorOpen(false)}
+                  onClick={handleCloseEditor}
                   className="px-4 py-2 border border-white/10 text-white font-semibold text-xs rounded hover:bg-white/5 transition-all cursor-pointer"
                 >
                   Cancel
@@ -1199,6 +1238,6 @@ export default function BlogManagementPage() {
         onSelect={(url) => setFormThumbnail(url)}
       />
 
-    </div>
+    </>
   );
 }
