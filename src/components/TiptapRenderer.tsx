@@ -1,5 +1,6 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, Suspense } from "react";
 import { Info, AlertTriangle, Lightbulb } from "lucide-react";
+import { SIM_COMPONENTS } from "./generated/sim-registry";
 
 export interface ASTMark {
   type: string;
@@ -146,6 +147,49 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       return renderCallout(node, children);
     case "horizontalRule":
       return <hr className="my-6 border-t border-white/10" />;
+    case "interactiveComponent": {
+      const componentName = node.attrs?.componentName as string;
+      if (!componentName) return null;
+      const SimComponent = SIM_COMPONENTS[componentName] || SIM_COMPONENTS[componentName.toLowerCase()];
+      if (!SimComponent) {
+        return (
+          <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-marble/55 text-xs">
+            Unknown simulator component: {componentName}
+          </div>
+        );
+      }
+      return (
+        <div className="w-full my-8">
+          <Suspense fallback={
+            <div className="h-64 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center text-marble/60 animate-pulse">
+              <div className="w-8 h-8 border-4 border-white/10 border-t-ares-cyan rounded-full animate-spin mb-3"></div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-ares-cyan">Loading Simulator...</p>
+            </div>
+          }>
+            <SimComponent />
+          </Suspense>
+        </div>
+      );
+    }
+    case "image":
+      return (
+        <div className="my-6 flex flex-col items-center gap-2">
+          <img
+            src={node.attrs?.src as string}
+            alt={(node.attrs?.alt as string) || ""}
+            className="rounded-lg max-w-full h-auto border border-white/10 shadow-lg"
+          />
+          {node.attrs?.title && (
+            <span className="text-xs text-marble/50 italic">{node.attrs.title as string}</span>
+          )}
+        </div>
+      );
+    case "codeBlock":
+      return (
+        <pre className="bg-black/50 border border-white/10 p-4 rounded-lg my-4 overflow-x-auto text-xs font-mono text-ares-cyan">
+          <code>{children}</code>
+        </pre>
+      );
     default:
       return <>{children}</>;
   }
