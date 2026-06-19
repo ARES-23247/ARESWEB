@@ -201,7 +201,7 @@ export default function SponsorsManagerPage() {
   };
 
   const handleDeleteSponsor = async (id: string) => {
-    if (!window.confirm("Are you sure you want to deactivate this sponsor? Deactivated sponsors will not appear on the public page.")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this sponsor? This action cannot be undone.")) return;
 
     try {
       const res = await authenticatedFetch(`/api/sponsors/admin/${id}`, {
@@ -210,14 +210,12 @@ export default function SponsorsManagerPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to deactivate sponsor.");
+        throw new Error(data.error || "Failed to delete sponsor.");
       }
 
-      setSponsors((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, isActive: false } : s))
-      );
+      setSponsors((prev) => prev.filter((s) => s.id !== id));
     } catch (err: any) {
-      alert(err.message || "Failed to deactivate sponsor.");
+      alert(err.message || "Failed to delete sponsor.");
     }
   };
 
@@ -398,7 +396,7 @@ export default function SponsorsManagerPage() {
                       <button
                         onClick={() => handleDeleteSponsor(sponsor.id)}
                         className="p-1.5 bg-ares-red/10 border border-ares-red/30 hover:bg-ares-red/20 text-ares-red hover:text-white ares-cut-sm transition-all cursor-pointer"
-                        title="Deactivate Sponsor"
+                        title="Delete Sponsor"
                       >
                         <Trash2 size={12} />
                       </button>

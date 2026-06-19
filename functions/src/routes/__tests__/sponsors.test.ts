@@ -7,11 +7,13 @@ vi.mock("../../lib/firebase-admin", () => {
   const mockGet = vi.fn();
   const mockSet = vi.fn();
   const mockUpdate = vi.fn();
+  const mockDelete = vi.fn();
   
   const mockDoc = vi.fn().mockReturnValue({
     get: mockGet,
     set: mockSet,
     update: mockUpdate,
+    delete: mockDelete,
   });
 
   const mockWhere = vi.fn().mockReturnValue({
@@ -251,8 +253,8 @@ describe("Sponsors Router Backend Endpoints", () => {
     });
   });
 
-  describe("DELETE /api/sponsors/admin/:id - Soft delete/deactivate sponsor", () => {
-    it("should set isActive: false to soft delete sponsor", async () => {
+  describe("DELETE /api/sponsors/admin/:id - Hard delete sponsor", () => {
+    it("should delete the sponsor permanently", async () => {
       req.params.id = "sp_delete";
 
       const mockDocRef = adminDb.collection("").doc("");
@@ -261,12 +263,8 @@ describe("Sponsors Router Backend Endpoints", () => {
       const handler = getHandler("/admin/:id", "delete");
       await handler(req, res, next);
 
-      expect(mockDocRef.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isActive: false,
-        })
-      );
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Sponsor deactivated successfully." });
+      expect(mockDocRef.delete).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Sponsor deleted successfully." });
     });
 
     it("should throw error if sponsor does not exist", async () => {

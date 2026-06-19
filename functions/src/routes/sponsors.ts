@@ -143,7 +143,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   res.json({ success: true, id: sponsorId });
 }));
 
-// DELETE /api/sponsors/admin/:id - Soft delete/deactivate sponsor (admin only)
+// DELETE /api/sponsors/admin/:id - Hard delete sponsor (admin only)
 router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -154,12 +154,9 @@ router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(404, "Sponsor not found.");
   }
 
-  await docRef.update({
-    isActive: false,
-    updatedAt: new Date().toISOString(),
-  });
+  await docRef.delete();
 
-  res.json({ success: true, message: "Sponsor deactivated successfully." });
+  res.json({ success: true, message: "Sponsor deleted successfully." });
 }));
 
 export default router;
