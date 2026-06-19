@@ -68,6 +68,7 @@ describe("Outreach Router Backend Endpoints", () => {
             hours: 10,
             peopleReached: 50,
             impactSummary: "Demonstrated claw robot",
+            eventId: "event123",
           }),
         },
         {
@@ -79,6 +80,7 @@ describe("Outreach Router Backend Endpoints", () => {
             hours: 15,
             peopleReached: 120,
             impactSummary: "Volunteered as judges",
+            eventId: null,
           }),
         },
       ];
@@ -92,8 +94,8 @@ describe("Outreach Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         logs: [
-          expect.objectContaining({ id: "out2", date: "2026-04-12", title: "Science Fair Support" }),
-          expect.objectContaining({ id: "out1", date: "2026-03-10", title: "STEM Library Day" }),
+          expect.objectContaining({ id: "out2", date: "2026-04-12", title: "Science Fair Support", eventId: null }),
+          expect.objectContaining({ id: "out1", date: "2026-03-10", title: "STEM Library Day", eventId: "event123" }),
         ],
       });
     });
@@ -138,6 +140,7 @@ describe("Outreach Router Backend Endpoints", () => {
         hours: 12,
         peopleReached: 80,
         impactSummary: "Testing update",
+        eventId: "event456",
       };
 
       const mockDocRef = adminDb.collection("").doc("");
@@ -151,6 +154,7 @@ describe("Outreach Router Backend Endpoints", () => {
           title: "Updated STEM Day",
           hours: 12,
           peopleReached: 80,
+          eventId: "event456",
         })
       );
       expect(res.json).toHaveBeenCalledWith({ success: true, id: "out_exist" });
@@ -162,6 +166,7 @@ describe("Outreach Router Backend Endpoints", () => {
         date: "2026-05-20",
         hours: 6,
         peopleReached: 45,
+        eventId: "event789",
       };
 
       const mockDocRef = adminDb.collection("").doc("");
@@ -175,6 +180,7 @@ describe("Outreach Router Backend Endpoints", () => {
           title: "New STEM Day",
           hours: 6,
           peopleReached: 45,
+          eventId: "event789",
         })
       );
       expect(res.json).toHaveBeenCalledWith(

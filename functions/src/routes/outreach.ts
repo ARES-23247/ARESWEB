@@ -20,6 +20,7 @@ router.get("/", asyncHandler(async (req, res) => {
       hours: Number(data.hours || 0),
       peopleReached: Number(data.peopleReached || 0),
       impactSummary: data.impactSummary || null,
+      eventId: data.eventId || null,
       createdAt: data.createdAt || null,
     };
   });
@@ -44,6 +45,7 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       hours: Number(data.hours || 0),
       peopleReached: Number(data.peopleReached || 0),
       impactSummary: data.impactSummary || null,
+      eventId: data.eventId || null,
       createdAt: data.createdAt || null,
     };
   });
@@ -56,7 +58,7 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 
 // POST /api/outreach/admin - Create or update outreach log (admin only)
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id, title, date, location, hours, peopleReached, impactSummary } = req.body as {
+  const { id, title, date, location, hours, peopleReached, impactSummary, eventId } = req.body as {
     id?: string;
     title: string;
     date: string;
@@ -64,6 +66,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
     hours: number;
     peopleReached: number;
     impactSummary?: string | null;
+    eventId?: string | null;
   };
 
   if (!title || !title.trim()) {
@@ -98,6 +101,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       hours: Number(hours),
       peopleReached: Number(peopleReached),
       impactSummary: impactSummary || null,
+      eventId: eventId || null,
       updatedAt: timestamp,
     });
   } else {
@@ -110,6 +114,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       hours: Number(hours),
       peopleReached: Number(peopleReached),
       impactSummary: impactSummary || null,
+      eventId: eventId || null,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
