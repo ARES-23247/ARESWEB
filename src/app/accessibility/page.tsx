@@ -48,7 +48,7 @@ export default function AccessibilityPage() {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">AI-Powered ARIA</h2>
               <p className="text-marble leading-relaxed">
-                We leverage Cloudflare Workers AI and LLava vision models directly at the edge. When authors upload media, AI autonomously evaluates the image and injects deeply descriptive screen-reader tags (ALT) before it ever hits the live database.
+                We leverage Gemini models on Google Vertex AI in Cloud Functions. When authors upload media, AI autonomously evaluates the image and injects deeply descriptive screen-reader tags (ALT) before it ever hits the live database.
               </p>
             </div>
           </motion.div>
@@ -100,7 +100,7 @@ export default function AccessibilityPage() {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">Zero Trust Architecture</h2>
               <p className="text-marble leading-relaxed">
-                Security is an absolute requirement. Administrative vectors evaluate incoming tokens on the Cloudflare Edge network to block automated bot scans and guarantee system integrity without proxy domains.
+                Security is an absolute requirement. Administrative vectors evaluate incoming tokens using Firebase App Check and Firestore security rules to block automated bot scans and guarantee system integrity.
               </p>
             </div>
           </motion.div>

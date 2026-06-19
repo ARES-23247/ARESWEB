@@ -9,7 +9,6 @@ import { collection, query, where, getDocs, doc, getDoc, addDoc } from "firebase
 import SEO from "@/components/SEO";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
 import { useAuth } from "@/context/AuthContext";
-import Turnstile from "@/components/Turnstile";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
@@ -45,7 +44,6 @@ export default function AcademyPage() {
   const [loadingAll, setLoadingAll] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [feedbackToken, setFeedbackToken] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   // Fetch all documents
@@ -475,7 +473,6 @@ export default function AcademyPage() {
                     <p className="text-white/50 text-sm mb-6 max-w-md">
                       Your feedback helps our engineering team improve the documentation for the entire community.
                     </p>
-                    <Turnstile onVerify={setFeedbackToken} theme="dark" size="compact" className="mb-4" />
                     <div className="flex flex-wrap gap-4">
                       <button
                         onClick={() => handleFeedback(true)}

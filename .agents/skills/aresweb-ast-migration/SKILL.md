@@ -1,30 +1,31 @@
 ---
 name: aresweb-ast-migration
-description: Reusable pipeline and standards for safely converting standard Markdown strings into Cloudflare D1-compatible Tiptap ProseMirror Abstract Syntax Trees (AST). Use this anytime there are malformed legacy documents or large-scale document imports.
+description: Reusable pipeline and standards for safely converting standard Markdown strings into Firestore-compatible Tiptap ProseMirror Abstract Syntax Trees (AST). Use this anytime there are malformed legacy documents or large-scale document imports.
 ---
 
 # ARESWEB Tiptap AST Migration Skill
 
-The ARES 23247 CMS publisher suite natively relies on the Tiptap/ProseMirror Abstract Syntax Tree (AST) JSON format to display technical documentation, blog posts, and interactive simulators. Because the legacy framework previously utilized Astro with standard string Markdown, raw imports directly into the Cloudflare D1 `docs` table will result in unrenderable pages and `"Untitled"` dashboard names. 
+The ARES 23247 CMS publisher suite natively relies on the Tiptap/ProseMirror Abstract Syntax Tree (AST) JSON format to display technical documentation, blog posts, and interactive simulators. Because the legacy framework previously utilized Astro with standard string Markdown, raw imports directly into the Firestore `docs` collection will result in unrenderable pages and `"Untitled"` dashboard names. 
 
-Whenever you are tasked with importing, auditing, or repairing documentation in the live D1 database, you **MUST** follow this AST conversion protocol.
+Whenever you are tasked with importing, auditing, or repairing documentation in Firestore, you **MUST** follow this AST conversion protocol.
 
-## 1. Remote Auditing Protocol
+## 1. Local Auditing and Scripting Protocol
 
-Always export the D1 dataset natively into JSON before diagnosing, as `wrangler` CLI strings will truncate large Markdown files in terminal environments:
-```bash
-npx wrangler d1 execute ares-db --remote --command="SELECT slug, title, content FROM docs;" --json > db_dump.json
-```
-*Note: PowerShell output environments may stream UTF-16LE containing BOM `\uFEFF`, so ensure your parser accounts for clean file reading before executing `JSON.parse()`.*
+To diagnose and batch-update Firestore documents, write a temporary Node.js script in the `scratch/` directory that initializes the `firebase-admin` SDK to read and update collection documents.
 
-## 2. Missing Title Resolution
+Never attempt to print large JSON representations directly to the console or CLI as they will truncate. Always write them to a JSON file first.
 
-The ARES dashboard dynamically matches routing to titles. If a database entry shows `Untitled` (often because a legacy markdown header was stripped), implement a heuristic fallback utilizing RegEx to extract the `# Heading1` string directly from the markdown representation and securely update the table row's `title` logic.
+---
 
-### 3. Tiptap AST Translation Standards
+## 2. Missing Title Heuristic
+
+If a database entry shows `Untitled` (often because a legacy markdown header was stripped), implement a heuristic fallback utilizing RegEx to extract the `# Heading1` string directly from the markdown representation and update the document's `title` field.
+
+---
+
+## 3. Tiptap AST Translation Standards
 
 Never attempt to manually structure JSON objects yourself for large files. Create a discrete sub-pipeline strictly leveraging `@tiptap/html` and `marked`. 
-Do so natively within the ARES repo context (using an isolated directory with temporary non-saved packages if resolving immediate edge-cases):
 
 ```javascript
 import { marked } from 'marked';
@@ -46,13 +47,11 @@ const jsonAst = generateJSON(html, [
 const finalContent = JSON.stringify(jsonAst);
 ```
 
-## 4. Live Edge Execution
+---
 
-All operations fixing the generated Tiptap JSON should be bulk-executed safely over the Cloudflare edge to prevent local-to-remote file wiping conflicts.
-1. Generate your transactions via Node.js into a standard `.sql` file utilizing standard `UPDATE docs SET title = '...', content = '...' WHERE slug = '...';` queries.
-2. Escape all internal apostrophes (`'`) natively for SQLite logic by rendering them as `''`.
-3. Submit the script securely via Wrangler:
-```bash
-npx wrangler d1 execute ares-db --remote --file=migration_queries.sql
-```
-4. Conclude the workflow by deleting temporary scripts to preserve zero-allocation standards inside the repository workspace.
+## 4. Firestore Execution
+
+To perform bulk updates:
+1. Write a script utilizing `adminDb.collection("docs").doc(slug).update({ content: finalContent, title: extractedTitle })`.
+2. Run it locally using environment credentials.
+3. Conclude the workflow by deleting the temporary script from the repository workspace.

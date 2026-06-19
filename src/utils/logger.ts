@@ -2,8 +2,7 @@
  * Logger utility that disables debug output in production.
  * Prevents leaking debugging information in production builds.
  *
- * SAFETY: Uses optional chaining for Cloudflare Workers compatibility.
- * In Workers runtime, import.meta.env might not have DEV replaced.
+ * SAFETY: Uses optional chaining for browser production build compatibility.
  */
 const isDev = import.meta.env?.DEV ?? false;
 

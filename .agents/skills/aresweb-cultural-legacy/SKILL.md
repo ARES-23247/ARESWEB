@@ -18,7 +18,7 @@ Always align our work and copy with the FIRST Core Values:
 
 ## 2. ARES 23247 Engineering Ethos
 - **Motto / Strategy to embed:** "Be the Inspiration." 
-- **Application:** Use this quote when discussing our high-tech approach, precision robotics, or our Next.js edge-deployed web portal.
+- **Application:** Use this quote when discussing our high-tech approach, precision robotics, or our Vite-built, Firebase-hosted web portal.
 
 ## 3. The Mountaineer Mindset
 Adopted directly from our Hall of Fame peers at MARS 2614, we embrace the "Mountaineer Mindset"—a dedication to **Grit, Determination, and Innovation**.

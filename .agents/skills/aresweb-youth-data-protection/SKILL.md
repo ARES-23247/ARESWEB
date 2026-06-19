@@ -83,7 +83,7 @@ function sanitizeProfileForPublic(profile: UserProfile, userAuthProfile: { image
 }
 ```
 
-**This filtering MUST happen server-side in the Cloudflare Worker.** Never rely on client-side filtering alone.
+**This filtering MUST happen server-side in the Firebase Cloud Function.** Never rely on client-side filtering alone.
 
 ### 5. Profile Editor UX Enforcement
 

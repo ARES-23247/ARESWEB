@@ -40,7 +40,7 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              We do not use tracking tools like Google Analytics. Instead, we use <strong>Cloudflare Web Analytics</strong>.
+              We do not use tracking tools like Google Analytics. Instead, we maintain a privacy-first web design with no analytics tracking scripts.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
               <li>No unique user IP addresses are stored or tracked to identify you.</li>
@@ -72,10 +72,10 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
                 <Server size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">3. Edge AI Processing</h2>
+              <h2 className="text-2xl font-bold font-heading">3. Secure AI Processing</h2>
             </div>
             <p className="text-marble leading-relaxed">
-              When ARES leadership uploads media via our Publisher Dashboard, we use Cloudflare Workers AI to add Accessibility tags. This processing happens on Cloudflare&apos;s servers near you. The raw data is never sold, shared, or used to train other AI.
+              When ARES leadership uploads media via our Publisher Dashboard, we use Gemini models on Google Vertex AI to add Accessibility tags. This processing happens on Google&apos;s secure cloud servers. The raw data is never sold, shared, or used to train other AI.
             </p>
           </section>
 

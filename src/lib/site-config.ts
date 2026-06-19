@@ -21,8 +21,5 @@ export const siteConfig = {
     email: "contact@aresfirst.org",
     dashboardEmail: "dashboard@aresfirst.org",
     sponsorship: "sponsors@aresfirst.org"
-  },
-  turnstile: {
-    siteKey: "0x4AAAAAADArWmWO1VgHsJWY",
   }
 };

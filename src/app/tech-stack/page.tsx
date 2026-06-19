@@ -62,9 +62,9 @@ export default function TechStackPage() {
                 cost: "Free Tier"
               },
               {
-                title: "React, Vite, & Hono",
+                title: "React, Vite, & Express",
                 icon: <Code className="text-ares-red" size={24} />,
-                desc: "Built as a React Single-Page Application (SPA) bundled with Vite for near-instant client boot, paired with Hono RPC schemas to guarantee end-to-end type safety.",
+                desc: "Built as a React Single-Page Application (SPA) bundled with Vite for near-instant client boot, paired with Express APIs in Cloud Functions to secure team transactions.",
                 cost: "Open Source"
               },
               {
