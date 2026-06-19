@@ -179,7 +179,7 @@ export default function OutreachPage() {
     hours: acc.hours + log.hours,
     reach: acc.reach + log.peopleReached,
     events: acc.events + 1
-  }), { hours: 145, reach: 680, events: 14 }); // including historical starting values
+  }), { hours: 0, reach: 0, events: 0 });
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
