@@ -157,6 +157,7 @@ export default function InquiriesPage() {
       student: "bg-ares-red/15 text-ares-red border-ares-red/20",
       mentor: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
       sponsor: "bg-ares-cyan/15 text-ares-cyan border-ares-cyan/20",
+      demo: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
     };
     const cls = colors[type] || "bg-white/5 text-marble/60 border-white/10";
     return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${cls}`}>{type}</span>;
