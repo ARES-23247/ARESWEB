@@ -39,6 +39,24 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing required fields.");
   }
 
+  // Intercept and ignore automated E2E test inquiries to prevent database pollution
+  const emailLower = email.trim().toLowerCase();
+  const nameTrim = name.trim();
+  const isTestData = 
+    emailLower.includes("playwright.test@aresfirst.org") || 
+    emailLower.includes("sponsorship.test@aresfirst.org") ||
+    nameTrim.includes("Playwright E2E Test");
+
+  if (isTestData) {
+    console.log(`[POST /api/inquiries] Intercepted E2E test inquiry (Type: ${type}, Name: ${nameTrim}, Email: ${emailLower}). Bypassing Firestore database write.`);
+    res.json({
+      success: true,
+      message: "Application submitted successfully.",
+      id: `inq_test_${Date.now()}`
+    });
+    return;
+  }
+
   // Disable reCAPTCHA bypass token in production environment
   const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
   const isBypass = recaptchaToken === "test-bypass-token" && !isProd;

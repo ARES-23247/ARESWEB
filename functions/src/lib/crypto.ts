@@ -55,8 +55,13 @@ export async function encrypt(text: string, secret: string): Promise<string> {
   return `${saltHex}:${ivHex}:${cipherHex}`;
 }
 
+const decryptionCache = new Map<string, string>();
+
 export async function decrypt(encryptedText: string, secret: string): Promise<string> {
   if (!encryptedText || !encryptedText.includes(":")) return encryptedText;
+  
+  const cached = decryptionCache.get(encryptedText);
+  if (cached) return cached;
   
   try {
     const parts = encryptedText.split(":");
@@ -85,7 +90,9 @@ export async function decrypt(encryptedText: string, secret: string): Promise<st
       ciphertext
     );
     
-    return new TextDecoder().decode(decrypted);
+    const result = new TextDecoder().decode(decrypted);
+    decryptionCache.set(encryptedText, result);
+    return result;
   } catch (err) {
     console.error("[Crypto] Decryption failed:", err);
     return "[Decryption Failed]";
