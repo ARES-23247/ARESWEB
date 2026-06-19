@@ -102,6 +102,12 @@ service cloud.firestore {
       allow write: if hasRole('admin');
     }
 
+    // Public outreach logs
+    match /outreach_logs/{logId} {
+      allow read: if true;
+      allow write: if false; // Only backend admin SDK can write
+    }
+
     // inquiries (securely gated to adminDb server writes only!)
     match /inquiries/{inquiryId} {
       allow read: if isAuthorized();

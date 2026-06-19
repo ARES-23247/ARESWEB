@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Target, Clock, Heart, MapPin, Activity, ArrowRight, X, Check } from "lucide-react";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface OutreachLog {
-  id: number;
+  id: string;
   title: string;
   date: string;
   location: string;
@@ -14,37 +16,8 @@ interface OutreachLog {
   impactSummary: string;
 }
 
-const MOCK_OUTREACH_LOGS: OutreachLog[] = [
-  {
-    id: 1,
-    title: "Morgantown Public Library STEM Day",
-    date: "2026-04-12",
-    location: "Morgantown, WV",
-    hours: 24,
-    peopleReached: 120,
-    impactSummary: "Demonstrated claw intakes and mecanum chassis maneuvers to over a hundred elementary school children, encouraging sign-ups for local middle-school FLL teams."
-  },
-  {
-    id: 2,
-    title: "Spark! WV Bridge Building Workshop",
-    date: "2026-03-20",
-    location: "Morgantown, WV",
-    hours: 32,
-    peopleReached: 85,
-    impactSummary: "Developed and executed our custom WV Bridge Design Exhibit, teaching children about structural engineering, load symmetry, and technical prototyping."
-  },
-  {
-    id: 3,
-    title: "Monongalia County Science Fair Support",
-    date: "2026-02-15",
-    location: "Westover, WV",
-    hours: 18,
-    peopleReached: 250,
-    impactSummary: "ARES students served as assistant safety wands and technical coordinators, demonstrating robot mechanisms and scoring rules during science fair break periods."
-  }
-];
-
 export default function OutreachPage() {
+  const [logs, setLogs] = useState<OutreachLog[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,6 +25,39 @@ export default function OutreachPage() {
   const [organization, setOrganization] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    try {
+      const unsubscribe = onSnapshot(collection(db, "outreach_logs"), (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title || "Outreach Event",
+              date: data.date || "",
+              location: data.location || "",
+              hours: Number(data.hours || 0),
+              peopleReached: Number(data.peopleReached || 0),
+              impactSummary: data.impactSummary || "",
+            } as OutreachLog;
+          });
+          // Sort by date desc
+          list.sort((a, b) => b.date.localeCompare(a.date));
+          setLogs(list);
+        } else {
+          setLogs([]);
+        }
+      }, (err) => {
+        console.warn("Firestore error reading outreach logs.", err.message);
+        setLogs([]);
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Firestore offline.", e);
+      setLogs([]);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +72,7 @@ export default function OutreachPage() {
     }, 1500);
   };
 
-  const totals = MOCK_OUTREACH_LOGS.reduce((acc, log) => ({
+  const totals = logs.reduce((acc, log) => ({
     hours: acc.hours + log.hours,
     reach: acc.reach + log.peopleReached,
     events: acc.events + 1
@@ -210,7 +216,7 @@ export default function OutreachPage() {
           </div>
 
           <div className="space-y-6">
-            {MOCK_OUTREACH_LOGS.map(log => (
+            {logs.map(log => (
               <div
                 key={log.id}
                 className="bg-white/5 border border-white/5 p-8 rounded-2xl ares-cut-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:border-white/10 transition-all duration-300"

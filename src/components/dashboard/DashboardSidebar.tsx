@@ -219,6 +219,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
                 <NavButton tab="sponsors" icon={Heart} label="Sponsors Manager" currentPath={pathname} />
               )}
+              {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
+                <NavButton tab="outreach" icon={Sparkles} label="Outreach Manager" currentPath={pathname} />
+              )}
               {userRole === "admin" && (
                 <NavButton tab="users" icon={ShieldAlert} label="Manage Users" currentPath={pathname} />
               )}
