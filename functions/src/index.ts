@@ -12,6 +12,7 @@ import profilesRouter from "./routes/profiles";
 import aiRouter from "./routes/ai";
 import calendarRouter from "./routes/calendar";
 import simulationsRouter from "./routes/simulations";
+import sponsorsRouter from "./routes/sponsors";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
@@ -54,6 +55,7 @@ app.use("/api/profiles", profilesRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/calendar", calendarRouter);
 app.use("/api/simulations", simulationsRouter);
+app.use("/api/sponsors", sponsorsRouter);
 
 // Global Error Handler
 app.use(globalErrorHandler);

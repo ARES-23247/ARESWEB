@@ -46,6 +46,7 @@ const DashboardVideosPage = lazy(() => import("@/app/dashboard/videos/page"));
 const DashboardFieldPage = lazy(() => import("@/app/dashboard/field/page"));
 const DashboardInquiriesPage = lazy(() => import("@/app/dashboard/inquiries/page"));
 const DashboardUsersPage = lazy(() => import("@/app/dashboard/users/page"));
+const DashboardSponsorsPage = lazy(() => import("@/app/dashboard/sponsors/page"));
 
 // Premium fallback loader with ARES branding
 function AppLoading() {
@@ -131,6 +132,7 @@ export default function App() {
                   <Route path="field" element={<DashboardFieldPage />} />
                   <Route path="inquiries" element={<DashboardInquiriesPage />} />
                   <Route path="users" element={<DashboardUsersPage />} />
+                  <Route path="sponsors" element={<DashboardSponsorsPage />} />
                 </Route>
                 
                 {/* 404 Route */}
