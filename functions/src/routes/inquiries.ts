@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { encrypt, decrypt } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
@@ -193,6 +193,98 @@ router.delete("/:id", ensureAdmin, asyncHandler(async (req, res) => {
 
   await docRef.delete();
   res.json({ success: true, message: "Inquiry deleted successfully." });
+}));
+
+// POST /api/inquiries/:id/approve-account
+router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const docRef = adminDb.collection("inquiries").doc(id);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new ApiError(404, "Inquiry not found.");
+  }
+
+  const data = docSnap.data() || {};
+  const secret = getEncryptionSecret();
+  let name = data.name;
+  let email = data.email;
+
+  try {
+    if (name && name.includes(":")) {
+      name = await decrypt(name, secret);
+    }
+  } catch (e) {
+    throw new ApiError(500, "Failed to decrypt applicant name.");
+  }
+
+  try {
+    if (email && email.includes(":")) {
+      email = await decrypt(email, secret);
+    }
+  } catch (e) {
+    throw new ApiError(500, "Failed to decrypt applicant email.");
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+  const type = data.type;
+
+  if (type !== "student" && type !== "mentor") {
+    throw new ApiError(400, "Account creation is only supported for student and mentor inquiries.");
+  }
+
+  const role = type === "mentor" ? "mentor" : "student";
+  const memberType = type === "mentor" ? "mentor" : "student";
+
+  // Check if Firebase Auth user already exists for this email
+  let targetId = cleanEmail;
+  try {
+    const authUser = await adminAuth.getUserByEmail(cleanEmail);
+    targetId = authUser.uid;
+  } catch (err: any) {
+    if (err.code !== "auth/user-not-found") {
+      console.error("[Inquiry Approve] Firebase Auth lookup error:", err);
+    }
+  }
+
+  const batch = adminDb.batch();
+
+  // 1. Create or merge authorized_users doc
+  const authRef = adminDb.collection("authorized_users").doc(targetId);
+  batch.set(authRef, {
+    email: cleanEmail,
+    role,
+    name: cleanName
+  }, { merge: true });
+
+  // 2. Create or merge user_profiles stub
+  const nameParts = cleanName.split(/\s+/);
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+
+  const profileRef = adminDb.collection("user_profiles").doc(targetId);
+  batch.set(profileRef, {
+    nickname: cleanName,
+    firstName,
+    lastName,
+    contactEmail: cleanEmail,
+    memberType,
+    avatar: `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(cleanEmail)}`,
+    showEmail: false,
+    showPhone: false,
+    showOnAbout: false,
+  }, { merge: true });
+
+  // 3. Mark inquiry as resolved
+  batch.update(docRef, { status: "resolved" });
+
+  await batch.commit();
+
+  res.json({
+    success: true,
+    message: `Pre-authorized ${type} account for ${cleanName}.`
+  });
 }));
 
 export default router;

@@ -15,7 +15,8 @@ import {
   Mail,
   Phone,
   School,
-  Briefcase
+  Briefcase,
+  UserPlus
 } from "lucide-react";
 
 interface Inquiry {
@@ -36,6 +37,7 @@ export default function InquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isProcessingId, setIsProcessingId] = useState<string | null>(null);
 
   const fetchInquiries = async () => {
     if (!user) return;
@@ -97,6 +99,30 @@ export default function InquiriesPage() {
       setInquiries((prev) => prev.filter((inq) => inq.id !== id));
     } catch (err: any) {
       alert(err.message || "Failed to delete inquiry.");
+    }
+  };
+
+  const handleApproveAccount = async (id: string) => {
+    if (!user || isProcessingId) return;
+    if (!window.confirm("Pre-authorize this applicant and create their account? This will mark the inquiry as resolved.")) return;
+    setIsProcessingId(id);
+    try {
+      const res = await authenticatedFetch(`/api/inquiries/${id}/approve-account`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create account.");
+      }
+      alert(data.message || "Account pre-authorized successfully!");
+      // Update local state: mark as resolved
+      setInquiries((prev) =>
+        prev.map((inq) => (inq.id === id ? { ...inq, status: "resolved" } : inq))
+      );
+    } catch (err: any) {
+      alert(err.message || "Failed to pre-authorize account.");
+    } finally {
+      setIsProcessingId(null);
     }
   };
 
@@ -259,6 +285,15 @@ export default function InquiriesPage() {
               <div className="flex flex-row lg:flex-col gap-2 shrink-0 self-end lg:self-center font-bold">
                 {inq.status === "pending" && (
                   <>
+                    {(inq.type === "student" || inq.type === "mentor") && (
+                      <button
+                        onClick={() => handleApproveAccount(inq.id)}
+                        disabled={isProcessingId !== null}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-ares-gold text-black text-xs font-black uppercase tracking-wider ares-cut-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <UserPlus size={14} /> Create Account
+                      </button>
+                    )}
                     <button
                       onClick={() => handleUpdateStatus(inq.id, "resolved")}
                       className="flex items-center gap-1.5 px-4 py-2 bg-ares-cyan text-black text-xs font-black uppercase tracking-wider ares-cut-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer"
