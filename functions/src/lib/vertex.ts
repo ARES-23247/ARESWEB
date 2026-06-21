@@ -344,8 +344,59 @@ Do not wrap the JSON response in any markdown code blocks.`;
     console.warn(`[Vertex AI] Photo analysis failed: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
     return {
       caption: "ARES robotics team members working on robot assemblies.",
-      labels: ["robot", "ares-team", "workshop"]
+      labels: ["robot", "ares-team", "workspace"]
     };
   }
 }
 
+/**
+ * Streams code suggestions or chat completions for the Simulation Playground.
+ */
+export async function getSimulationPlaygroundStream(
+  systemPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+  imageUrl: string | undefined,
+  onChunk: (text: string) => void
+): Promise<void> {
+  try {
+    if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
+      throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
+    }
+
+    const contents = messages.map(msg => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }]
+    }));
+
+    if (imageUrl && imageUrl.startsWith("data:image")) {
+      const [header, base64] = imageUrl.split(",");
+      const mimeType = header.split(";")[0].split(":")[1];
+      const lastUserMsg = [...contents].reverse().find(c => c.role === "user");
+      if (lastUserMsg) {
+        lastUserMsg.parts.push({
+          inlineData: {
+            data: base64,
+            mimeType: mimeType
+          }
+        } as any);
+      }
+    }
+
+    const responseStream = await ai.models.generateContentStream({
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
+      contents: contents,
+      config: {
+        systemInstruction: systemPrompt
+      }
+    });
+
+    for await (const chunk of responseStream) {
+      if (chunk.text) {
+        onChunk(chunk.text);
+      }
+    }
+  } catch (err) {
+    console.error("[Vertex AI] Simulation playground streaming failed:", err);
+    throw err;
+  }
+}
