@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare, Image as ImageIcon, Heart } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare, Image as ImageIcon, Heart, GraduationCap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -200,7 +200,8 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           <div className="space-y-1">
             <NavButton tab="blog" icon={PenTool} label="Manage Blogs" currentPath={pathname} />
             <NavButton tab="events" icon={Calendar} label="Manage Events" currentPath={pathname} />
-            <NavButton tab="documents" icon={BookOpen} label="Manage Docs" currentPath={pathname} />
+            <NavButton tab="docs" icon={GraduationCap} label="Academy Manager" currentPath={pathname} />
+            <NavButton tab="documents" icon={BookOpen} label="Cloud Resources" currentPath={pathname} />
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             <NavButton tab="photos" icon={ImageIcon} label="Manage Photos" currentPath={pathname} />
           </div>

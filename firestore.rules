@@ -78,6 +78,11 @@ service cloud.firestore {
     match /docs/{docSlug} {
       allow read: if true; // Publicly readable
       allow write: if isAuthorized(); // Only team members can create or edit
+
+      match /revisions/{revisionId} {
+        allow read: if isAuthorized();
+        allow write: if isAuthorized();
+      }
     }
 
     // Secure team collections (Kanban tasks, AI chat sessions, telemetry runs)
@@ -171,6 +176,11 @@ service cloud.firestore {
     match /documents/{docId} {
       allow read: if true;
       allow write: if isAuthorized();
+
+      match /revisions/{revisionId} {
+        allow read: if isAuthorized();
+        allow write: if isAuthorized();
+      }
     }
 
     // videos

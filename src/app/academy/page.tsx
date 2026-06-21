@@ -305,7 +305,7 @@ export default function AcademyPage() {
 
                   {isEditor && (
                     <Link
-                      to={`/dashboard/documents`}
+                      to={`/dashboard/docs?edit=${currentDoc.slug}`}
                       className="flex items-center gap-2 text-xs font-bold text-ares-cyan/70 hover:text-ares-cyan bg-ares-cyan/10 hover:bg-ares-cyan/20 px-3 py-1.5 ares-cut-sm transition-colors"
                     >
                       <Edit2 size={12} />
