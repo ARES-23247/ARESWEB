@@ -20,11 +20,13 @@ import {
   Strikethrough,
   Subscript,
   Superscript,
-  Table
+  Table,
+  TerminalSquare
 } from "lucide-react";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import PhotoPickerModal from "./PhotoPickerModal";
 import VideoPickerModal from "./VideoPickerModal";
+import SimPickerModal from "./SimPickerModal";
 
 interface MarkdownEditorProps {
   id?: string;
@@ -51,6 +53,7 @@ export default function MarkdownEditor({
   // Modal open states
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isSimPickerOpen, setIsSimPickerOpen] = useState(false);
 
   // Helper: insert Markdown syntax at cursor selection
   const insertMarkdown = (prefix: string, suffix: string, placeholderText = "") => {
@@ -150,6 +153,12 @@ export default function MarkdownEditor({
   const handleInsertVideo = (videoId: string) => {
     const embedCode = `\n<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>\n`;
     insertMarkdown(embedCode, "");
+  };
+
+  // Embed Simulator selection
+  const handleInsertSim = (simId: string) => {
+    insertMarkdown(`<${simId.toLowerCase()} />`, "");
+    setIsSimPickerOpen(false);
   };
 
   // Text Alignment wrappers
@@ -364,6 +373,16 @@ export default function MarkdownEditor({
           >
             <Video size={13} />
           </button>
+          <button
+            type="button"
+            onClick={() => setIsSimPickerOpen(true)}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-indigo-400"
+            title="Insert Simulation"
+            aria-label="Insert simulation"
+          >
+            <TerminalSquare size={13} />
+          </button>
         </div>
 
         {/* Mode Tabs (Write / Preview) */}
@@ -429,6 +448,13 @@ export default function MarkdownEditor({
         isOpen={isVideoOpen}
         onClose={() => setIsVideoOpen(false)}
         onSelect={handleInsertVideo}
+      />
+
+      {/* Reusable Simulation Picker Modal */}
+      <SimPickerModal
+        isOpen={isSimPickerOpen}
+        onClose={() => setIsSimPickerOpen(false)}
+        onSelect={handleInsertSim}
       />
     </div>
   );
