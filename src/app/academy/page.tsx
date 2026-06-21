@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
@@ -33,7 +33,11 @@ const ACADEMY_SIDEBAR_ORDER = [
 export default function AcademyPage() {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { user, authorizedUser } = useAuth();
+
+  const isAresLib = pathname.startsWith("/docs");
+  const basePath = isAresLib ? "/docs" : "/academy";
 
   const userRole = authorizedUser?.role || "member";
   const isEditor = userRole === "admin" || userRole === "coach" || userRole === "mentor" || userRole === "author";
@@ -61,9 +65,13 @@ export default function AcademyPage() {
           ...d.data()
         })) as unknown as DocRecord[];
 
-        const filtered = docsList.filter(
-          (doc) => doc.displayInMathCorner === 1 || doc.displayInScienceCorner === 1
-        );
+        const filtered = docsList.filter((doc) => {
+          if (isAresLib) {
+            return doc.displayInAreslib === 1;
+          } else {
+            return doc.displayInMathCorner === 1 || doc.displayInScienceCorner === 1;
+          }
+        });
         setAllDocs(filtered);
       } catch (err) {
         console.error("Error loading all docs:", err);
@@ -72,7 +80,7 @@ export default function AcademyPage() {
       }
     };
     fetchAllDocs();
-  }, []);
+  }, [isAresLib]);
 
   // Fetch current document details when slug changes
   useEffect(() => {
@@ -152,12 +160,12 @@ export default function AcademyPage() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Redirect to first available document if raw /academy route is opened
+  // Redirect to first available document if raw route is opened
   useEffect(() => {
     if (!slug && allDocs.length > 0) {
-      navigate(`/academy/${allDocs[0].slug}`, { replace: true });
+      navigate(`${basePath}/${allDocs[0].slug}`, { replace: true });
     }
-  }, [slug, allDocs, navigate]);
+  }, [slug, allDocs, navigate, basePath]);
 
   const handleFeedback = async (isHelpful: boolean, comment: string = "") => {
     if (!slug || isSubmittingFeedback) return;
@@ -189,8 +197,8 @@ export default function AcademyPage() {
   return (
     <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col w-full">
       <SEO
-        title={currentDoc?.title ? `${currentDoc.title} — ARES Academy` : "ARES Academy"}
-        description={currentDoc?.description || "ARES Academy lessons and interactive simulations."}
+        title={currentDoc?.title ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}` : (isAresLib ? "ARESLib Documentation" : "ARES Academy")}
+        description={currentDoc?.description || (isAresLib ? "ARESLib documentation, control loops, and API references." : "ARES Academy lessons and interactive simulations.")}
       />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
@@ -231,7 +239,7 @@ export default function AcademyPage() {
                       key={r.slug}
                       className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors cursor-pointer"
                       onClick={() => {
-                        navigate(`/academy/${r.slug}`);
+                        navigate(`${basePath}/${r.slug}`);
                         setSearchOpen(false);
                         setSearchQuery("");
                       }}
@@ -259,7 +267,7 @@ export default function AcademyPage() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onSearchOpen={() => setSearchOpen(true)}
-          basePath="/academy"
+          basePath={basePath}
         />
 
         <div className="flex-1 flex w-full">
@@ -289,12 +297,12 @@ export default function AcademyPage() {
               >
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-2 text-xs text-white/60">
-                    <Link to="/academy" className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
+                    <Link to={basePath} className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
                       <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10 flex items-center gap-1">
                         <GraduationCap size={12} /> ARES
                       </span>
                       <span className="bg-white/10 text-white font-heading font-medium px-2 py-0.5 text-xs uppercase tracking-widest group-hover:bg-white/20 transition-colors">
-                        Academy
+                        {isAresLib ? "Lib" : "Academy"}
                       </span>
                     </Link>
                     <ChevronRight size={12} />
@@ -373,7 +381,7 @@ export default function AcademyPage() {
                         <>
                           {prevDoc ? (
                             <Link
-                              to={`/academy/${prevDoc.slug}`}
+                              to={`${basePath}/${prevDoc.slug}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group"
                             >
                               <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
@@ -392,7 +400,7 @@ export default function AcademyPage() {
                           )}
                           {nextDoc ? (
                             <Link
-                              to={`/academy/${nextDoc.slug}`}
+                              to={`${basePath}/${nextDoc.slug}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end"
                             >
                               <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">

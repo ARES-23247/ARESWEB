@@ -96,6 +96,8 @@ export default function App() {
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/academy" element={<AcademyPage />} />
                 <Route path="/academy/:slug" element={<AcademyPage />} />
+                <Route path="/docs" element={<AcademyPage />} />
+                <Route path="/docs/:slug" element={<AcademyPage />} />
                 <Route path="/accessibility" element={<AccessibilityPage />} />
                 <Route path="/aresplanner" element={<AresPlannerPage />} />
                 <Route path="/blog" element={<BlogFeedPage />} />
