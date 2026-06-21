@@ -12,7 +12,6 @@ import {
   Shield, 
   Activity, 
   FileText, 
-  ExternalLink, 
   X,
   Maximize2,
   Minimize2,
@@ -75,7 +74,7 @@ const ACADEMY_CATEGORIES = [
   "Science of Outdoor Sports"
 ];
 
-export default function DocsManagementPage() {
+export default function AcademyManagementPage() {
   const { user, authorizedUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const editSlugQuery = searchParams.get("edit");
@@ -98,9 +97,9 @@ export default function DocsManagementPage() {
   const [formContent, setFormContent] = useState("");
   const [formStatus, setFormStatus] = useState("draft");
 
-  // Display destination flags
+  // Display destination flags - default Math Corner to true for Academy Manager
   const [formDisplayInAreslib, setFormDisplayInAreslib] = useState(false);
-  const [formDisplayInMathCorner, setFormDisplayInMathCorner] = useState(false);
+  const [formDisplayInMathCorner, setFormDisplayInMathCorner] = useState(true);
   const [formDisplayInScienceCorner, setFormDisplayInScienceCorner] = useState(false);
   const [formIsPortfolio, setFormIsPortfolio] = useState(false);
   const [formIsExecutiveSummary, setFormIsExecutiveSummary] = useState(false);
@@ -128,7 +127,7 @@ export default function DocsManagementPage() {
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
-  // 1. Listen for real-time docs updates
+  // 1. Listen for real-time docs updates (Filtered for Academy context)
   useEffect(() => {
     try {
       const docsRef = collection(db, "docs");
@@ -163,7 +162,7 @@ export default function DocsManagementPage() {
                 original_authorAvatar: data.original_authorAvatar || ""
               } as DocRecord;
             })
-            .filter((d) => d.isDeleted !== 1);
+            .filter((d) => d.isDeleted !== 1 && (d.displayInMathCorner === 1 || d.displayInScienceCorner === 1));
 
           setDocs(list);
           setIsLive(true);
@@ -185,7 +184,7 @@ export default function DocsManagementPage() {
     }
   }, []);
 
-  // Fetch user profile for nickname and avatar (used in revisions)
+  // Fetch user profile for nickname and avatar
   useEffect(() => {
     if (!user) return;
     const fetchProfile = async () => {
@@ -267,7 +266,7 @@ export default function DocsManagementPage() {
     setFormContent("");
     setFormStatus("draft");
     setFormDisplayInAreslib(false);
-    setFormDisplayInMathCorner(false);
+    setFormDisplayInMathCorner(true);
     setFormDisplayInScienceCorner(false);
     setFormIsPortfolio(false);
     setFormIsExecutiveSummary(false);
@@ -513,7 +512,7 @@ export default function DocsManagementPage() {
             )}
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Author and publish *FIRST*® robotics lessons, mathematical equations, and ARESLib documentation.
+            Author and publish *FIRST*® robotics lessons, mathematical equations, and science guides.
           </p>
         </div>
 
@@ -538,7 +537,7 @@ export default function DocsManagementPage() {
       {/* Docs Inventory Table */}
       <div className="glass-card border border-white/10 ares-cut-lg overflow-hidden shadow-xl">
         <div className="p-6 border-b border-white/5 bg-black/20 flex justify-between items-center text-xs font-black uppercase text-ares-gold tracking-widest">
-          <span>Active Academy & Library Content</span>
+          <span>Active Academy Content</span>
           <span>{loadingList ? "Loading..." : `${docs.length} Lessons`}</span>
         </div>
 
@@ -650,16 +649,14 @@ export default function DocsManagementPage() {
         </div>
       </div>
 
-      {/* Slide-out / Modal Document Editor Overlay */}
+      {/* Slide-out / Drawer Article Editor Overlay */}
       {isEditorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-end">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
             onClick={() => handleCloseEditor()}
           />
 
-          {/* Editor Drawer */}
           <div 
             ref={editorRef} 
             tabIndex={-1} 

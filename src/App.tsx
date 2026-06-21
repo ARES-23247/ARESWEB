@@ -38,7 +38,8 @@ const DashboardPage = lazy(() => import("@/app/dashboard/page"));
 const DashboardProfilePage = lazy(() => import("@/app/dashboard/profile/page"));
 const DashboardBlogPage = lazy(() => import("@/app/dashboard/blog/page"));
 const DashboardDocumentsPage = lazy(() => import("@/app/dashboard/documents/page"));
-const DashboardDocsPage = lazy(() => import("@/app/dashboard/docs/page"));
+const DashboardAcademyPage = lazy(() => import("@/app/dashboard/academy/page"));
+const DashboardAreslibPage = lazy(() => import("@/app/dashboard/areslib/page"));
 const DashboardEventsPage = lazy(() => import("@/app/dashboard/events/page"));
 const DashboardPhotosPage = lazy(() => import("@/app/dashboard/photos/page"));
 const DashboardScopePage = lazy(() => import("@/app/dashboard/scope/page"));
@@ -131,7 +132,8 @@ export default function App() {
                   <Route path="blog" element={<DashboardBlogPage />} />
                   <Route path="events" element={<DashboardEventsPage />} />
                   <Route path="documents" element={<DashboardDocumentsPage />} />
-                  <Route path="docs" element={<DashboardDocsPage />} />
+                  <Route path="academy" element={<DashboardAcademyPage />} />
+                  <Route path="areslib" element={<DashboardAreslibPage />} />
                   <Route path="videos" element={<DashboardVideosPage />} />
                   <Route path="photos" element={<DashboardPhotosPage />} />
                   <Route path="field" element={<DashboardFieldPage />} />
