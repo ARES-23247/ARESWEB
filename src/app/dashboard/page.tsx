@@ -13,77 +13,150 @@ import {
   Terminal,
   Activity,
   Zap,
-  BatteryCharging,
-  Wifi,
-  ExternalLink
+  ExternalLink,
+  PenTool,
+  Calendar,
+  GraduationCap,
+  TerminalSquare,
+  ArrowUpRight,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Database,
+  UploadCloud,
+  FileText
 } from "lucide-react";
+
+interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+interface TaskItem {
+  id: string;
+  title: string;
+  description: string;
+  status: "todo" | "in_progress" | "review" | "completed";
+  priority: "low" | "medium" | "high";
+  subteam: "software" | "hardware" | "business" | "outreach";
+  assignees: string[];
+  subtasks: SubTask[];
+  archived?: boolean;
+  createdAt: string;
+}
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();
+  
+  // Real-time Database Counts
   const [taskCount, setTaskCount] = useState(0);
   const [activeTasks, setActiveTasks] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
-  
+  const [blogCount, setBlogCount] = useState(0);
+  const [docCount, setDocCount] = useState(0);
+  const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
+  const [isDbConnected, setIsDbConnected] = useState(false);
+
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 
-  // Simulate scrolling live telemetry log terminal
-  useEffect(() => {
-    const logMessages = [
-      "ARES-MECANUM: Pinpoint Odometry initialising on I2C port 0...",
-      "ARES-MECANUM: Pinpoint status: OK. IMU calibration offset loaded.",
-      "AUTO-SOLVER: 2-DOF joint constraints checked: theta1=[0, 180], theta2=[-90, 90].",
-      "BATTERY: 12.87V nominal. Subsystem draw stable at 1.45A.",
-      "ZULIP-CONNECTOR: Active hook stream listening for comment replies.",
-      "TELEMETRY-NODE: Hub 1 temperature 34.2C - Nominal thresholds.",
-      "ARES-MECANUM: Applied 0.05 kS feedforward deadband compensation.",
-      "DRIVE-TRAIN: Swept motor 0-3 powers: current spikes under 15A. Standard slip.",
-      "FIRESTORE: Synchronised real-time tasks successfully.",
-      "YPP-WATCHER: Youth Protection Program filtering verified."
-    ];
-
-    setLogs([
-      `[${new Date().toLocaleTimeString()}] ADMIN: Gated terminal session open.`,
-      `[${new Date().toLocaleTimeString()}] ${logMessages[0]}`,
-      `[${new Date().toLocaleTimeString()}] ${logMessages[1]}`
-    ]);
-
-    const interval = setInterval(() => {
-      const randomMsg = logMessages[Math.floor(Math.random() * logMessages.length)];
-      setLogs((prev) => {
-        const next = [...prev, `[${new Date().toLocaleTimeString()}] ${randomMsg}`];
-        return next.slice(-6); // Keep last 6 logs
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch real task counts from Firestore
+  // Subscribe to real-time Firestore collections
   useEffect(() => {
     try {
-      const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
+      // 1. Listen to tasks
+      const unsubTasks = onSnapshot(collection(db, "tasks"), (snapshot) => {
+        setIsDbConnected(true);
         if (!snapshot.empty) {
           setTaskCount(snapshot.size);
           const active = snapshot.docs.filter(d => d.data().status !== "completed").length;
           setActiveTasks(active);
+
+          // Get top 4 active tasks sorted by priority (high first)
+          const list = snapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as TaskItem))
+            .filter(t => !t.archived && t.status !== "completed")
+            .sort((a, b) => {
+              const priorityWeight = { high: 3, medium: 2, low: 1 };
+              return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+            })
+            .slice(0, 4);
+          setRecentTasks(list);
         } else {
-          setTaskCount(4); // mock default
-          setActiveTasks(3);
+          setTaskCount(0);
+          setActiveTasks(0);
+          setRecentTasks([]);
         }
-      }, () => {
-        setTaskCount(4);
-        setActiveTasks(3);
+      }, (err) => {
+        console.error("Tasks listener error:", err);
       });
-      return () => unsubscribe();
-    } catch {
-      setTaskCount(4);
-      setActiveTasks(3);
+
+      // 2. Listen to posts (blogs)
+      const unsubPosts = onSnapshot(collection(db, "posts"), (snapshot) => {
+        setIsDbConnected(true);
+        setBlogCount(snapshot.empty ? 0 : snapshot.size);
+      }, (err) => {
+        console.error("Posts listener error:", err);
+      });
+
+      // 3. Listen to docs (lessons / API guides)
+      const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => {
+        setIsDbConnected(true);
+        setDocCount(snapshot.empty ? 0 : snapshot.docs.filter(d => d.data().isDeleted !== 1).length);
+      }, (err) => {
+        console.error("Docs listener error:", err);
+      });
+
+      return () => {
+        unsubTasks();
+        unsubPosts();
+        unsubDocs();
+      };
+    } catch (e) {
+      console.error("Error setting up dashboard listeners:", e);
     }
   }, []);
 
+  const getPriorityStyle = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-ares-red/15 text-ares-red border-ares-red/30";
+      case "medium":
+        return "bg-ares-gold/10 text-ares-gold border-ares-gold/20";
+      default:
+        return "bg-white/5 text-marble/60 border-white/5";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "todo":
+        return "To Do";
+      case "in_progress":
+        return "In Progress";
+      case "review":
+        return "In Review";
+      default:
+        return status;
+    }
+  };
+
+  const getSubteamStyle = (subteam: string) => {
+    switch (subteam) {
+      case "software":
+        return "text-ares-cyan border-ares-cyan/20 bg-ares-cyan/5";
+      case "hardware":
+        return "text-ares-red border-ares-red/20 bg-ares-red/5";
+      case "business":
+        return "text-ares-gold border-ares-gold/20 bg-ares-gold/5";
+      default:
+        return "text-ares-bronze border-ares-bronze/20 bg-ares-bronze/5";
+    }
+  };
+
+  const recaptchaActive = !!import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 text-left">
       
       {/* ─── PAGE HEADER ─── */}
       <header className="border-b border-white/5 pb-8">
@@ -94,7 +167,7 @@ export default function DashboardHome() {
           Command Center
         </h1>
         <p className="text-marble/70 text-sm md:text-base mt-2 font-medium">
-          Welcome back to the ARES administrative terminal. Access system diagnostics, task synchronisations, and operational tools below.
+          Manage system states, track active operations, publish content, and monitor portal infrastructure.
         </p>
       </header>
 
@@ -120,32 +193,10 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* ─── RECAPTCHA PROTECTION WARNING ─── */}
-      {!import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-        <div className="glass-card border border-ares-gold/40 bg-ares-gold/5 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-xl bg-ares-gold/10 border border-ares-gold/30 flex items-center justify-center text-ares-gold shrink-0">
-              <Zap size={24} className="animate-pulse" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-white text-base tracking-tight uppercase font-heading">
-                Security Alert: Site Forms Unprotected
-              </h3>
-              <p className="text-marble/75 text-xs mt-1 max-w-xl">
-                The public forms (Join, Sponsors) are running in <strong className="text-ares-gold">Bypass Mode</strong> because no custom reCAPTCHA site key is configured in the production environment. Please configure `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` to activate spam protection.
-              </p>
-            </div>
-          </div>
-          <span className="px-4 py-2 bg-ares-gold/10 text-ares-gold border border-ares-gold/30 ares-cut-sm text-[10px] uppercase font-black tracking-widest shrink-0 animate-pulse">
-            Bypass Active
-          </span>
-        </div>
-      )}
-
       {/* ─── STATS GRID ─── */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Stat 1: Role Clear */}
+        {/* Card 1: Role Clear */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Security Clear</p>
@@ -156,7 +207,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Stat 2: Active Tasks */}
+        {/* Card 2: Active Tasks */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Active Tasks</p>
@@ -167,25 +218,25 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Stat 3: Telemetry Battery */}
+        {/* Card 3: Published Blogs */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Telemetry Voltage</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">12.87 V</p>
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Published Blogs</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{blogCount}</p>
           </div>
-          <div className="w-12 h-12 bg-ares-success/15 rounded-xl flex items-center justify-center border border-ares-success/30">
-            <BatteryCharging size={20} className="text-ares-success" />
+          <div className="w-12 h-12 bg-ares-red/15 rounded-xl flex items-center justify-center border border-ares-red/30">
+            <PenTool size={20} className="text-ares-red" />
           </div>
         </div>
 
-        {/* Stat 4: Robot Uplink */}
+        {/* Card 4: Academy Articles */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Robot Uplink</p>
-            <p className="text-2xl font-black text-white mt-1.5 uppercase font-heading tracking-tight">Active (WiFi)</p>
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Academy Lessons</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{docCount}</p>
           </div>
-          <div className="w-12 h-12 bg-ares-gold/15 rounded-xl flex items-center justify-center border border-ares-gold/30">
-            <Wifi size={20} className="text-ares-gold animate-pulse" />
+          <div className="w-12 h-12 bg-ares-success/15 rounded-xl flex items-center justify-center border border-ares-success/30">
+            <GraduationCap size={20} className="text-ares-success" />
           </div>
         </div>
 
@@ -196,8 +247,8 @@ export default function DashboardHome() {
         
         {/* Profile Card & Info */}
         <div className="glass-card p-8 border border-white/10 flex flex-col gap-6 lg:col-span-1">
-          <h3 className="text-lg font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
-            <User size={18} /> User Terminal Session
+          <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
+            <User size={16} /> User Terminal Session
           </h3>
           
           <div className="flex flex-col items-center text-center py-4 gap-4">
@@ -235,86 +286,192 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Live Telemetry Log & Terminal Grid */}
+        {/* Live System Diagnostics & Shortcuts */}
         <div className="lg:col-span-2 space-y-6 flex flex-col h-full">
           
-          {/* Terminal Diagnostics */}
-          <div className="glass-card p-6 border border-white/10 flex-grow flex flex-col justify-between min-h-[300px]">
-            <div>
-              <h3 className="text-lg font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
-                <Terminal size={18} /> Active Diagnostics Uplink
-              </h3>
-              <div className="bg-black/75 border border-white/5 font-mono text-[11px] p-5 rounded-xl text-ares-success space-y-2 h-[200px] overflow-y-auto overflow-x-hidden leading-relaxed shadow-inner w-full">
-                {logs.map((log, idx) => (
-                  <div key={idx} className="truncate">
-                    <span className="text-marble/40">{log.substring(0, 10)}</span>
-                    <span className="text-ares-gold">{log.substring(10, 26)}</span>
-                    <span className="text-white">{log.substring(26)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Active Tasks Feed */}
+          <div className="glass-card p-6 border border-white/10 flex-grow flex flex-col">
+            <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
+              <ClipboardList size={16} /> Urgent Operational Tasks
+            </h3>
             
-            <div className="flex flex-wrap gap-4 items-center justify-between border-t border-white/5 pt-4 text-[10px] font-bold text-marble/55 uppercase tracking-wider mt-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-ares-success animate-ping"></span>
-                <span className="text-ares-success">Stream Connection Live</span>
-              </span>
-              <span>115200 Baudrate</span>
+            <div className="space-y-3.5 flex-1">
+              {recentTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-marble/40 font-mono text-xs border border-dashed border-white/10 rounded-xl">
+                  <span>No active tasks in progress.</span>
+                  <Link to="/dashboard/tasks" className="text-ares-cyan hover:underline mt-1 font-bold">Go to Tasks board &rarr;</Link>
+                </div>
+              ) : (
+                recentTasks.map((task) => (
+                  <Link
+                    key={task.id}
+                    to="/dashboard/tasks"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/25 border border-white/5 hover:border-white/15 rounded-xl gap-3 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-3 truncate">
+                      <div className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0 mt-2"></div>
+                      <div className="truncate">
+                        <p className="font-extrabold text-white text-xs tracking-tight group-hover:text-ares-gold transition-colors truncate">
+                          {task.title}
+                        </p>
+                        <p className="text-[10px] text-marble/50 mt-0.5 truncate leading-relaxed">
+                          {task.description || "No description provided."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getSubteamStyle(task.subteam)}`}>
+                        {task.subteam}
+                      </span>
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getPriorityStyle(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                      <span className="text-[9px] font-bold text-marble/70 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                        {getStatusLabel(task.status)}
+                      </span>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+
+            <div className="border-t border-white/5 pt-4 mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-marble/50">
+              <span>Real-Time Firestore Sync</span>
+              <Link to="/dashboard/tasks" className="text-ares-cyan hover:text-white transition-all inline-flex items-center gap-1">
+                View Kanban Board <ArrowUpRight size={12} />
+              </Link>
             </div>
           </div>
 
-          {/* Quick Shortcuts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link 
-              to="/dashboard/tasks" 
-              className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-ares-red/10 border border-ares-red/30 flex items-center justify-center text-ares-red group-hover:scale-105 transition-transform shrink-0">
-                  <ClipboardList size={18} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">Kanban Tasks</h4>
-                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Drag-and-drop board</p>
-                </div>
-              </div>
-              <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
-            </Link>
+          {/* Operational Quick Actions */}
+          <div className="glass-card p-6 border border-white/10">
+            <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
+              <Zap size={16} /> Quick Operations
+            </h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link
+                to="/dashboard/blog"
+                className="p-3 bg-white/3 border border-white/5 hover:border-ares-red/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
+              >
+                <PenTool size={16} className="text-ares-red group-hover:scale-110 transition-transform" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">New Blog</span>
+              </Link>
 
-            <Link 
-              to="/dashboard/scope" 
-              className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-ares-cyan/10 border border-ares-cyan/30 flex items-center justify-center text-ares-cyan group-hover:scale-105 transition-transform shrink-0">
-                  <Terminal size={18} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">ARES-Scope</h4>
-                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Telemetry Log Replay</p>
-                </div>
-              </div>
-              <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
-            </Link>
+              <Link
+                to="/dashboard/events"
+                className="p-3 bg-white/3 border border-white/5 hover:border-ares-gold/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
+              >
+                <Calendar size={16} className="text-ares-gold group-hover:scale-110 transition-transform" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Add Event</span>
+              </Link>
 
-            <a 
-              href="https://ftc-scout.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="bg-white/5 border border-white/5 hover:border-ares-red/30 transition-all p-5 rounded-xl flex items-center justify-between group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-ares-gold/10 border border-ares-gold/30 flex items-center justify-center text-ares-gold group-hover:scale-105 transition-transform shrink-0">
-                  <Zap size={18} />
+              <Link
+                to="/dashboard/academy"
+                className="p-3 bg-white/3 border border-white/5 hover:border-ares-success/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
+              >
+                <GraduationCap size={16} className="text-ares-success group-hover:scale-110 transition-transform" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Academy Lesson</span>
+              </Link>
+
+              <Link
+                to="/dashboard/simulations"
+                className="p-3 bg-white/3 border border-white/5 hover:border-ares-cyan/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
+              >
+                <TerminalSquare size={16} className="text-ares-cyan group-hover:scale-110 transition-transform" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Sim IDE</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Connected Services Status */}
+          <div className="glass-card p-6 border border-white/10">
+            <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
+              <Terminal size={16} /> Portal Infrastructure Status
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <Database size={14} className="text-ares-cyan" />
+                  <span className="font-semibold text-marble">Firestore Database</span>
                 </div>
-                <div>
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider group-hover:text-ares-gold transition-colors">FTC Scout</h4>
-                  <p className="text-[10px] text-marble/50 mt-0.5 font-medium">Scouting & Analytics</p>
+                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
+                  {isDbConnected ? (
+                    <>
+                      <CheckCircle2 size={12} className="text-ares-success" />
+                      <span className="text-ares-success">Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={12} className="text-ares-gold animate-pulse" />
+                      <span className="text-ares-gold">Syncing...</span>
+                    </>
+                  )}
                 </div>
               </div>
-              <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
-            </a>
+
+              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <Zap size={14} className="text-ares-gold" />
+                  <span className="font-semibold text-marble">Gemini AI Copilot</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
+                  {!isUnverified ? (
+                    <>
+                      <CheckCircle2 size={12} className="text-ares-success" />
+                      <span className="text-ares-success">Online</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle size={12} className="text-marble/40" />
+                      <span className="text-marble/40">Gated</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <Shield size={14} className="text-ares-red" />
+                  <span className="font-semibold text-marble">Spam reCAPTCHA</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
+                  {recaptchaActive ? (
+                    <>
+                      <CheckCircle2 size={12} className="text-ares-success" />
+                      <span className="text-ares-success">Active V3</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={12} className="text-ares-gold animate-pulse" />
+                      <span className="text-ares-gold">Bypass Mode</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <UploadCloud size={14} className="text-ares-success" />
+                  <span className="font-semibold text-marble">Cloud Storage Node</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
+                  {user ? (
+                    <>
+                      <CheckCircle2 size={12} className="text-ares-success" />
+                      <span className="text-ares-success">Online</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle size={12} className="text-ares-danger" />
+                      <span className="text-ares-danger">Offline</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
