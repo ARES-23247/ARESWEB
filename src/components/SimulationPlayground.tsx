@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Save, Loader2, Copy, Check, GripVertical, FolderOpen, Maximize, Minimize, Bot, Send, Sparkles, X, Globe, Clock, Download, Share2, History, GitCompare } from "lucide-react";
+import { GripVertical, Sparkles } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
@@ -14,6 +14,13 @@ import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
 import { toastApiError } from "../api/apiClient";
+
+// Sub-components
+import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
+import { SimulationLibraryOverlay } from "./simulation/SimulationLibraryOverlay";
+import { AiChangesBanner } from "./simulation/AiChangesBanner";
+import { AiChatPanel } from "./simulation/AiChatPanel";
+import { Snapshot } from "./simulation/SnapshotHistoryDropdown";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
@@ -442,169 +449,40 @@ export default function SimulationPlayground() {
           }
         }}
       >
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-obsidian">
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-ares-gold font-black text-xs uppercase tracking-[0.2em]">⚡ Sim Playground</span>
-            <input
-              type="text"
-              value={simName}
-              onChange={e => setSimName(e.target.value)}
-              className="bg-transparent border border-white/10 text-white text-sm px-3 py-1.5 rounded-md focus:border-ares-gold/50 focus:outline-none transition-colors max-w-[250px]"
-              placeholder="Simulation name..."
-            />
-            {simId && <span className="text-white/20 text-[10px] font-mono">#{simId}</span>}
-          </div>
+        <PlaygroundHeaderBar
+          simName={simName}
+          setSimName={setSimName}
+          simId={simId}
+          handleReset={handleReset}
+          handleToggleLibrary={handleToggleLibrary}
+          handleRun={handleRun}
+          handleCopy={handleCopy}
+          copied={copied}
+          handleSave={handleSave}
+          isSaving={isSaving}
+          handleDownloadZip={handleDownloadZip}
+          handleShareGist={handleShareGist}
+          isSharingGist={isSharingGist}
+          showHistory={showHistory}
+          setShowHistory={setShowHistory}
+          getSnapshots={getSnapshots}
+          restoreSnapshot={restoreSnapshot}
+          isFullscreen={isFullscreen}
+          setIsFullscreen={setIsFullscreen}
+        />
 
-          <div className="flex items-center gap-2">
-            {/* Control buttons - simplified for brevity */}
-            <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors">
-              <Sparkles className="w-3.5 h-3.5" />
-              New Sim
-            </button>
-
-            <button onClick={handleToggleLibrary} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-indigo-600/30 transition-colors">
-              <FolderOpen className="w-3.5 h-3.5" />
-              Open Library
-            </button>
-
-            <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-cyan/30 transition-colors">
-              <Play className="w-3.5 h-3.5" /> Run
-            </button>
-
-            <button onClick={handleCopy} aria-label="Copy code" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-
-            <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors disabled:opacity-50">
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {simId ? 'Update' : 'Save'}
-            </button>
-
-            <button onClick={handleDownloadZip} aria-label="Download as ZIP" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
-              <Download className="w-3.5 h-3.5" />
-            </button>
-
-            <button onClick={handleShareGist} disabled={isSharingGist} aria-label="Share as Gist" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors disabled:opacity-50">
-              {isSharingGist ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
-            </button>
-
-            <div className="relative">
-              <button onClick={() => setShowHistory(prev => !prev)} aria-label="Snapshot history" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
-                <History className="w-3.5 h-3.5" />
-              </button>
-              {showHistory && (
-                <div className="absolute right-0 top-full mt-1 w-72 bg-obsidian-surface border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
-                    <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Snapshots</span>
-                    <button onClick={() => setShowHistory(false)} className="text-zinc-500 hover:text-white transition-colors"><X className="w-3.5 h-3.5" /></button>
-                  </div>
-                  {getSnapshots().length === 0 ? (
-                    <p className="text-zinc-500 text-xs p-3">No snapshots yet. They auto-save every 60s.</p>
-                  ) : (
-                    <div className="max-h-60 overflow-y-auto">
-                      {getSnapshots().map((snap: { files: Record<string, string>; simName: string; simId: string | null; timestamp: number }, i: number) => (
-                        <button
-                          key={snap.timestamp}
-                          onClick={() => restoreSnapshot(snap)}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-white/5 transition-colors flex items-center justify-between gap-2 ${i > 0 ? 'border-t border-white/5' : ''}`}
-                        >
-                          <span className="text-white/80 truncate">{snap.simName || 'Untitled'}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono shrink-0">{new Date(snap.timestamp).toLocaleTimeString()}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <button onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? "Exit full screen" : "Enter full screen"} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-white/80 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">
-              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Simulation Library Overlay */}
-        {showLibrary && (
-          <div className="absolute inset-0 z-50 bg-obsidian/95 backdrop-blur-sm overflow-y-auto p-4 md:p-6">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-white">Simulation Library</h2>
-                <button
-                  onClick={() => setShowLibrary(false)}
-                  className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  aria-label="Close library"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Saved Simulations */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-ares-gold uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Your Saved Simulations
-                </h3>
-                {isLoadingSims ? (
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading...
-                  </div>
-                ) : savedSims.length === 0 ? (
-                  <p className="text-zinc-500 text-sm py-4">No saved simulations yet. Create one and hit Save!</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {savedSims.map((sim) => (
-                      <button
-                        key={sim.id}
-                        onClick={() => {
-                          handleLoadSim(sim.id, setFiles, setActiveFile);
-                          setShowLibrary(false);
-                        }}
-                        className="text-left p-4 bg-zinc-800/50 border border-white/10 rounded-xl hover:border-ares-gold/40 hover:bg-zinc-800 transition-all group"
-                      >
-                        <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">{sim.name}</div>
-                        <div className="text-[11px] text-zinc-500 mt-1">
-                          {sim.type && <span className="text-ares-cyan/60 mr-2">{sim.type}</span>}
-                          {new Date(sim.updatedAt).toLocaleDateString()}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* GitHub Official Sims */}
-              <div>
-                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> Official ARES Simulations
-                </h3>
-                {isLoadingGithubSims ? (
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading from GitHub...
-                  </div>
-                ) : githubSims.length === 0 ? (
-                  <p className="text-zinc-500 text-sm py-4">No official simulations found in the repository.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {githubSims.map((sim) => (
-                      <button
-                        key={sim.id}
-                        onClick={() => {
-                          handleLoadGithubSim(sim, setFiles, setActiveFile);
-                          setShowLibrary(false);
-                        }}
-                        className="text-left p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl hover:border-indigo-400/40 hover:bg-indigo-900/30 transition-all group"
-                      >
-                        <div className="font-semibold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">{sim.name}</div>
-                        <div className="text-[11px] text-zinc-500 mt-1">Official • {sim.path}</div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <SimulationLibraryOverlay
+          showLibrary={showLibrary}
+          setShowLibrary={setShowLibrary}
+          savedSims={savedSims}
+          githubSims={githubSims}
+          isLoadingSims={isLoadingSims}
+          isLoadingGithubSims={isLoadingGithubSims}
+          handleLoadSim={handleLoadSim}
+          handleLoadGithubSim={handleLoadGithubSim}
+          setFiles={setFiles}
+          setActiveFile={setActiveFile}
+        />
 
         {/* Main content panels */}
         <PanelGroup orientation="vertical" id="playground-main-v2">
@@ -627,25 +505,11 @@ export default function SimulationPlayground() {
               <Panel defaultSize={60} minSize={25}>
                 {/* Monaco Editor */}
                 <div className="h-full w-full bg-obsidian-surface flex flex-col overflow-hidden">
-                  {/* AI Changes Accept/Reject Bar */}
-                  {pendingAiChanges && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-indigo-900/30 border-b border-indigo-500/30 shrink-0">
-                      <GitCompare className="w-4 h-4 text-indigo-400" />
-                      <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex-1">AI Changes Pending — {Object.keys(pendingAiChanges).length} file(s)</span>
-                      <button
-                        onClick={handleAcceptAiChanges}
-                        className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-emerald-600/50 transition-colors"
-                      >
-                        <Check className="w-3.5 h-3.5" /> Accept
-                      </button>
-                      <button
-                        onClick={handleRejectAiChanges}
-                        className="flex items-center gap-1.5 px-3 py-1 bg-red-600/20 text-red-400 border border-red-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-red-600/40 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" /> Reject
-                      </button>
-                    </div>
-                  )}
+                  <AiChangesBanner
+                    pendingAiChanges={pendingAiChanges}
+                    handleAcceptAiChanges={handleAcceptAiChanges}
+                    handleRejectAiChanges={handleRejectAiChanges}
+                  />
                   <Suspense fallback={<textarea className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
                     {pendingAiChanges && pendingAiChanges[activeFile] ? (
                       <MonacoDiffEditor
@@ -766,62 +630,16 @@ export default function SimulationPlayground() {
                         onFixWithAI={handleFixWithAI}
                       />
                     ) : (
-                      <div className="flex flex-col h-full">
-                        {/* Chat messages */}
-                        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-zinc-700">
-                          {chatMessages.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${
-                                msg.role === 'user'
-                                  ? 'bg-indigo-600/30 text-white border border-indigo-500/20'
-                                  : 'bg-zinc-800 text-zinc-200 border border-white/5'
-                              }`}>
-                                {msg.role === 'assistant' && (
-                                  <div className="flex items-center gap-1.5 mb-1">
-                                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
-                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">z.AI</span>
-                                  </div>
-                                )}
-                                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                              </div>
-                            </div>
-                          ))}
-                          {isChatLoading && (
-                            <div className="flex justify-start">
-                              <div className="bg-zinc-800 border border-white/5 px-3 py-2 rounded-xl">
-                                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                                  Thinking...
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          <div ref={chatEndRef} />
-                        </div>
-
-                        {/* Chat input */}
-                        <div className="p-2 border-t border-white/10 bg-obsidian-dark shrink-0">
-                          <div className="flex items-end gap-2">
-                            <textarea
-                              ref={chatInputRef}
-                              value={chatInput}
-                              onChange={(e) => setChatInput(e.target.value)}
-                              onKeyDown={handleChatKeyDown}
-                              placeholder="Describe what to build or fix..."
-                              rows={1}
-                              className="flex-1 bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 resize-none focus:outline-none focus:border-indigo-500/50 transition-colors"
-                            />
-                            <button
-                              onClick={() => handleChatSend()}
-                              disabled={isChatLoading || !chatInput.trim()}
-                              className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors shrink-0"
-                              aria-label="Send message"
-                            >
-                              <Send className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <AiChatPanel
+                        chatMessages={chatMessages}
+                        isChatLoading={isChatLoading}
+                        chatInput={chatInput}
+                        setChatInput={setChatInput}
+                        handleChatKeyDown={handleChatKeyDown}
+                        handleChatSend={handleChatSend}
+                        chatEndRef={chatEndRef}
+                        chatInputRef={chatInputRef}
+                      />
                     )}
                   </div>
                 </div>
