@@ -8,6 +8,7 @@ import tasksRouter from "./routes/tasks";
 import analyticsRouter from "./routes/analytics";
 import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
+import replayRouter from "./routes/replay";
 import profilesRouter from "./routes/profiles";
 import aiRouter from "./routes/ai";
 import calendarRouter from "./routes/calendar";
@@ -34,11 +35,12 @@ const app = express();
 app.set("trust proxy", 1);
 
 // Middleware
+// Enable CORS
 app.use(cors({ origin: true }));
 
-// Use raw body parsing for the upload endpoint, and json for everything else
+// Use raw body parsing for the upload endpoints, and json for everything else
 app.use((req, res, next) => {
-  if (req.path === "/api/upload") {
+  if (req.path.startsWith("/api/upload")) {
     express.raw({ type: "*/*", limit: "50mb" })(req, res, next);
   } else {
     express.json({ limit: "10mb" })(req, res, next);
@@ -52,6 +54,7 @@ app.use("/api/tasks", tasksRouter);
 app.use("/api/analytics", analyticsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/replay", replayRouter);
 app.use("/api/profiles", profilesRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/calendar", calendarRouter);

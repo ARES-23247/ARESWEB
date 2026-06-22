@@ -422,4 +422,15 @@ router.post("/admin/generate-registry", ensureAdmin, asyncHandler(async (req, re
   }
 }));
 
+// GET /api/simulations/field-config/:id - Get a field configuration by ID
+router.get("/field-config/:id", asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const docSnap = await adminDb.collection("field_configs").doc(id).get();
+  if (!docSnap.exists) {
+    res.status(404).json({ error: "Field configuration not found" });
+    return;
+  }
+  res.json(docSnap.data());
+}));
+
 export default router;

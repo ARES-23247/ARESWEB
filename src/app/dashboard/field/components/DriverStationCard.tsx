@@ -1,7 +1,5 @@
-"use client";
-
 import React from "react";
-import { Sliders, ChevronUp, ChevronDown, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Sliders, ChevronUp, ChevronDown, RefreshCw, Save, Trash2, Download } from "lucide-react";
 
 interface DriverStationCardProps {
   isLayoutSettingsExpanded: boolean;
@@ -45,6 +43,9 @@ interface DriverStationCardProps {
   selectedConfigId: string;
   loading: boolean;
   handleDeleteLayout: () => void;
+  handleExportRobotJson: () => void;
+  handlePushToSimulator: () => void;
+  connectionStatus: "disconnected" | "connecting" | "connected";
 }
 
 export default function DriverStationCard({
@@ -86,7 +87,10 @@ export default function DriverStationCard({
   handleSaveToCloud,
   selectedConfigId,
   loading,
-  handleDeleteLayout
+  handleDeleteLayout,
+  handleExportRobotJson,
+  handlePushToSimulator,
+  connectionStatus
 }: DriverStationCardProps) {
   return (
     <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLayoutSettingsExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
@@ -369,6 +373,27 @@ export default function DriverStationCard({
             >
               <Trash2 size={12} /> Delete
             </button>
+          </div>
+
+          <div className="border-t border-white/5 pt-3 space-y-2">
+            <button
+              onClick={handleExportRobotJson}
+              className="w-full bg-black/40 hover:bg-black/60 border border-white/10 hover:border-ares-gold text-ares-gold py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer"
+            >
+              <Download size={12} /> Export to Robot JSON
+            </button>
+            <button
+              onClick={handlePushToSimulator}
+              className="w-full bg-black/40 hover:bg-black/60 border border-white/10 hover:border-ares-cyan text-ares-cyan py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer"
+            >
+              <RefreshCw size={12} className={connectionStatus === 'connected' ? 'text-ares-cyan animate-pulse' : 'text-marble/45'} /> Push to Simulator
+            </button>
+            <div className="flex items-center justify-between text-[8px] font-mono text-marble/40 mt-1 px-1 uppercase tracking-wider">
+              <span>Sim Status:</span>
+              <span className={connectionStatus === 'connected' ? 'text-ares-cyan font-bold' : 'text-marble/45 font-bold'}>
+                ● {connectionStatus}
+              </span>
+            </div>
           </div>
         </>
       )}

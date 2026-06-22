@@ -216,4 +216,248 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
   });
 }));
 
+const robotStatesSchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "tick_index", type: "INTEGER", mode: "REQUIRED" },
+  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
+  { name: "state_json", type: "STRING", mode: "REQUIRED" },
+  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
+  { name: "match_number", type: "INTEGER", mode: "NULLABLE" },
+  { name: "alliance", type: "STRING", mode: "NULLABLE" }
+];
+
+const robotActionsSchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "timestamp_us", type: "INTEGER", mode: "REQUIRED" },
+  { name: "action_type", type: "STRING", mode: "REQUIRED" },
+  { name: "payload_json", type: "STRING", mode: "REQUIRED" },
+  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
+  { name: "match_number", type: "INTEGER", mode: "NULLABLE" },
+  { name: "alliance", type: "STRING", mode: "NULLABLE" }
+];
+
+const robotInputsSchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
+  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
+  { name: "odometry_json", type: "STRING", mode: "NULLABLE" },
+  { name: "imu_json", type: "STRING", mode: "NULLABLE" },
+  { name: "vision_json", type: "STRING", mode: "NULLABLE" },
+  { name: "distance_json", type: "STRING", mode: "NULLABLE" },
+  { name: "swerve_json", type: "STRING", mode: "NULLABLE" }
+];
+
+const motorTelemetrySchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
+  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
+  { name: "motor_id", type: "STRING", mode: "REQUIRED" },
+  { name: "voltage", type: "FLOAT", mode: "NULLABLE" },
+  { name: "current", type: "FLOAT", mode: "NULLABLE" },
+  { name: "temperature", type: "FLOAT", mode: "NULLABLE" },
+  { name: "position", type: "FLOAT", mode: "NULLABLE" },
+  { name: "velocity", type: "FLOAT", mode: "NULLABLE" }
+];
+
+const visionEventsSchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
+  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
+  { name: "tag_id", type: "INTEGER", mode: "REQUIRED" },
+  { name: "camera_id", type: "STRING", mode: "NULLABLE" },
+  { name: "raw_pose_json", type: "STRING", mode: "NULLABLE" },
+  { name: "accepted", type: "BOOLEAN", mode: "REQUIRED" },
+  { name: "rejection_reason", type: "STRING", mode: "NULLABLE" },
+  { name: "covariance_json", type: "STRING", mode: "NULLABLE" }
+];
+
+async function ensureTableExists(bigquery: BigQuery, datasetId: string, tableId: string, schema: any[]) {
+  const dataset = bigquery.dataset(datasetId);
+  const [datasetExists] = await dataset.exists();
+  if (!datasetExists) {
+    await dataset.create();
+    logger.info("bigquery", `Created dataset ${datasetId}`);
+  }
+  
+  const table = dataset.table(tableId);
+  const [tableExists] = await table.exists();
+  if (!tableExists) {
+    await dataset.createTable(tableId, { schema });
+    logger.info("bigquery", `Created table ${tableId} in dataset ${datasetId}`);
+  }
+}
+
+// POST /api/upload/states
+router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+  const text = req.body.toString();
+  if (!text || text.trim().length === 0) {
+    throw new ApiError(400, "Empty payload");
+  }
+  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+  if (lines.length === 0) {
+    throw new ApiError(400, "No lines to import");
+  }
+  
+  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bigquery = new BigQuery({ projectId: bqProject });
+  await ensureTableExists(bigquery, "telemetry", "robot_states", robotStatesSchema);
+  
+  const bqRows = lines.map((line: string, index: number) => {
+    const parsed = JSON.parse(line);
+    return {
+      run_id: parsed.run_id || "",
+      tick_index: index,
+      timestamp_ms: parsed.timestampMs || 0,
+      state_json: line,
+      robot_id: parsed.robot_id || "",
+      match_number: parsed.match_number || 0,
+      alliance: parsed.alliance || "BLUE"
+    };
+  });
+  
+  await bigquery.dataset("telemetry").table("robot_states").insert(bqRows);
+  res.status(200).json({ success: true, count: bqRows.length });
+}));
+
+// POST /api/upload/actions
+router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+  const text = req.body.toString();
+  if (!text || text.trim().length === 0) {
+    throw new ApiError(400, "Empty payload");
+  }
+  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+  if (lines.length === 0) {
+    throw new ApiError(400, "No lines to import");
+  }
+  
+  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bigquery = new BigQuery({ projectId: bqProject });
+  await ensureTableExists(bigquery, "telemetry", "robot_actions", robotActionsSchema);
+  
+  const bqRows = lines.map((line: string) => {
+    const envelope = JSON.parse(line);
+    const payload = envelope.payload || {};
+    return {
+      run_id: envelope.run_id || "",
+      timestamp_us: payload.timestampMs ? payload.timestampMs * 1000 : 0,
+      action_type: envelope.type || "",
+      payload_json: JSON.stringify(payload),
+      robot_id: envelope.robot_id || "",
+      match_number: envelope.match_number || 0,
+      alliance: envelope.alliance || "BLUE"
+    };
+  });
+  
+  await bigquery.dataset("telemetry").table("robot_actions").insert(bqRows);
+  res.status(200).json({ success: true, count: bqRows.length });
+}));
+
+// POST /api/upload/inputs
+router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+  const text = req.body.toString();
+  if (!text || text.trim().length === 0) {
+    throw new ApiError(400, "Empty payload");
+  }
+  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+  if (lines.length === 0) {
+    throw new ApiError(400, "No lines to import");
+  }
+  
+  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bigquery = new BigQuery({ projectId: bqProject });
+  await ensureTableExists(bigquery, "telemetry", "robot_inputs", robotInputsSchema);
+  
+  const bqRows = lines.map((line: string) => {
+    const frame = JSON.parse(line);
+    return {
+      run_id: frame.runId || "",
+      robot_id: frame.robotId || "",
+      timestamp_ms: frame.timestampMs || 0,
+      odometry_json: JSON.stringify(frame.odometryInputs || {}),
+      imu_json: JSON.stringify(frame.imuInputs || {}),
+      vision_json: JSON.stringify(frame.visionInputs || {}),
+      distance_json: null,
+      swerve_json: JSON.stringify(frame.swerveInputs || [])
+    };
+  });
+  
+  await bigquery.dataset("telemetry").table("robot_inputs").insert(bqRows);
+  res.status(200).json({ success: true, count: bqRows.length });
+}));
+
+// POST /api/upload/motors
+router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+  const text = req.body.toString();
+  if (!text || text.trim().length === 0) {
+    throw new ApiError(400, "Empty payload");
+  }
+  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+  if (lines.length < 2) {
+    throw new ApiError(400, "Invalid CSV format: requires header and data.");
+  }
+  
+  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bigquery = new BigQuery({ projectId: bqProject });
+  await ensureTableExists(bigquery, "telemetry", "motor_telemetry", motorTelemetrySchema);
+  
+  const bqRows: any[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(",");
+    if (parts.length < 9) continue;
+    bqRows.push({
+      run_id: parts[0],
+      robot_id: parts[1],
+      timestamp_ms: parseInt(parts[2]) || 0,
+      motor_id: parts[3],
+      voltage: parseFloat(parts[4]) || 0,
+      current: parseFloat(parts[5]) || 0,
+      temperature: parseFloat(parts[6]) || 0,
+      position: parseFloat(parts[7]) || 0,
+      velocity: parseFloat(parts[8]) || 0
+    });
+  }
+  
+  if (bqRows.length > 0) {
+    await bigquery.dataset("telemetry").table("motor_telemetry").insert(bqRows);
+  }
+  res.status(200).json({ success: true, count: bqRows.length });
+}));
+
+// POST /api/upload/vision
+router.post("/vision", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+  const text = req.body.toString();
+  if (!text || text.trim().length === 0) {
+    throw new ApiError(400, "Empty payload");
+  }
+  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+  if (lines.length === 0) {
+    throw new ApiError(400, "No lines to import");
+  }
+  
+  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bigquery = new BigQuery({ projectId: bqProject });
+  await ensureTableExists(bigquery, "telemetry", "vision_events", visionEventsSchema);
+  
+  const bqRows = lines.map((line: string) => {
+    const event = JSON.parse(line);
+    return {
+      run_id: event.run_id || "",
+      robot_id: event.robot_id || "",
+      timestamp_ms: event.timestampMs || 0,
+      tag_id: event.tagId || 0,
+      camera_id: event.cameraId || "",
+      raw_pose_json: event.rawPoseJson || "",
+      accepted: event.accepted || false,
+      rejection_reason: event.rejectionReason || null,
+      covariance_json: JSON.stringify({
+        before: event.covarianceBefore || null,
+        after: event.covarianceAfter || null
+      })
+    };
+  });
+  
+  await bigquery.dataset("telemetry").table("vision_events").insert(bqRows);
+  res.status(200).json({ success: true, count: bqRows.length });
+}));
+
 export default router;

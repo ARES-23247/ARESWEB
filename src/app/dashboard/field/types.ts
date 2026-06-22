@@ -10,6 +10,9 @@ export interface FieldObstacle {
   rampDirection?: "up" | "down" | "left" | "right";
   shape?: "rectangle" | "polygon";
   points?: { x: number; y: number }[];
+  friction?: number;
+  restitution?: number;
+  rotation?: number; // in degrees
 }
 
 export interface ElementType {

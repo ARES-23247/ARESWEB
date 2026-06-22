@@ -233,11 +233,16 @@ export class NT4Client {
   }
 
   private emitFrame(timestamp: number) {
-    const values: Record<string, number> = {};
+    const values: Record<string, any> = {};
     Object.keys(this.currentFrameData).forEach((key) => {
-      const numVal = Number(this.currentFrameData[key]);
-      if (!isNaN(numVal)) {
+      const val = this.currentFrameData[key];
+      const numVal = Number(val);
+      if (typeof val === "string" && isNaN(numVal)) {
+        values[key] = val;
+      } else if (!isNaN(numVal) && val !== "" && val !== null) {
         values[key] = numVal;
+      } else {
+        values[key] = val;
       }
     });
 

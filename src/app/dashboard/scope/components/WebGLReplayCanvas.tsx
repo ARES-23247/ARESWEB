@@ -481,6 +481,35 @@ export default function WebGLReplayCanvas() {
         compTrail.visible = false;
       }
     }
+
+    // Animate dynamic elements from NT4 topic / log field elements topic
+    if (currentFrame && currentFrame.values) {
+      const elementsVal = currentFrame.values["ARES/Field/Elements"] || currentFrame.values["Field/Elements"];
+      if (typeof elementsVal === "string" && elementsVal.trim().startsWith("[")) {
+        try {
+          const poses = JSON.parse(elementsVal);
+          if (Array.isArray(poses)) {
+            poses.forEach((pose: any) => {
+              if (pose.id && pose.x !== undefined && pose.y !== undefined) {
+                const mesh = sceneRef.current?.getObjectByName(pose.id);
+                if (mesh) {
+                  // EKF coordinates mapping:
+                  // three.js X = -EKF y
+                  // three.js Z = -EKF x
+                  mesh.position.x = -pose.y;
+                  mesh.position.z = -pose.x;
+                  if (pose.rotation !== undefined) {
+                    mesh.rotation.y = (pose.rotation * Math.PI) / 180;
+                  }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
   }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov, getCurrentComparisonFrame]);
 
   return (

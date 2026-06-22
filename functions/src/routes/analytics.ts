@@ -8,6 +8,7 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+const bigquery = new BigQuery({ projectId: process.env.GCP_PROJECT_ID || "ares-web-preview" });
 
 // Helper to generate mock telemetry runs
 function generateHighFidelityMockRun(runId: string) {
@@ -785,6 +786,161 @@ router.post("/onshape-sync", ensureAdmin, asyncHandler(async (req, res) => {
     message: `Direct Onshape ${type} synchronization completed.`,
     optimizedUrl
   });
+}));
+
+// GET /api/analytics/match-comparison
+router.get("/match-comparison", ensureAuth, asyncHandler(async (req, res) => {
+  const runId1 = req.query.runId1 as string;
+  const runId2 = req.query.runId2 as string;
+  if (!runId1 || !runId2) {
+    throw new ApiError(400, "Missing runId1 or runId2 parameter");
+  }
+
+  try {
+    const qMotors = `
+      SELECT run_id, motor_id, AVG(current) as avg_current, MAX(current) as max_current, AVG(voltage) as avg_voltage
+      FROM \`telemetry.motor_telemetry\`
+      WHERE run_id IN (@runId1, @runId2)
+      GROUP BY run_id, motor_id
+    `;
+    const [motorRows] = await bigquery.query({
+      query: qMotors,
+      params: { runId1, runId2 }
+    });
+
+    const qStates = `
+      SELECT run_id, timestamp_ms, 
+             CAST(JSON_VALUE(state_json, '$.drive.pitchDegrees') AS FLOAT64) as pitch,
+             CAST(JSON_VALUE(state_json, '$.drive.rollDegrees') AS FLOAT64) as roll
+      FROM \`telemetry.robot_states\`
+      WHERE run_id IN (@runId1, @runId2)
+      ORDER BY timestamp_ms ASC
+    `;
+    const [stateRows] = await bigquery.query({
+      query: qStates,
+      params: { runId1, runId2 }
+    });
+
+    res.status(200).json({
+      motors: motorRows,
+      states: stateRows
+    });
+  } catch (err: any) {
+    throw new ApiError(500, `Comparison failed: ${err.message}`);
+  }
+}));
+
+// GET /api/analytics/trends
+router.get("/trends", ensureAuth, asyncHandler(async (req, res) => {
+  try {
+    const query = `
+      SELECT run_id, robot_id, MIN(timestamp_ms) as start_time,
+             AVG(CAST(JSON_VALUE(state_json, '$.drive.ekfDriftX') AS FLOAT64)) as avg_drift_x,
+             AVG(CAST(JSON_VALUE(state_json, '$.drive.ekfDriftY') AS FLOAT64)) as avg_drift_y,
+             MAX(CAST(JSON_VALUE(state_json, '$.drive.ekfDriftX') AS FLOAT64)) as max_drift_x,
+             MAX(CAST(JSON_VALUE(state_json, '$.drive.ekfDriftY') AS FLOAT64)) as max_drift_y
+      FROM \`telemetry.robot_states\`
+      GROUP BY run_id, robot_id
+      ORDER BY start_time DESC
+      LIMIT 20
+    `;
+    const [rows] = await bigquery.query({ query });
+    res.status(200).json(rows);
+  } catch (err: any) {
+    throw new ApiError(500, `Failed to query trends: ${err.message}`);
+  }
+}));
+
+// GET /api/analytics/path-analysis
+router.get("/path-analysis", ensureAuth, asyncHandler(async (req, res) => {
+  const runId = req.query.runId as string;
+  if (!runId) {
+    throw new ApiError(400, "Missing runId parameter");
+  }
+
+  try {
+    const query = `
+      SELECT timestamp_ms, 
+             CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.x') AS FLOAT64) as x,
+             CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.y') AS FLOAT64) as y,
+             CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.heading.radians') AS FLOAT64) as heading,
+             CAST(JSON_VALUE(state_json, '$.drive.rawOdometryX') AS FLOAT64) as odom_x,
+             CAST(JSON_VALUE(state_json, '$.drive.rawOdometryY') AS FLOAT64) as odom_y
+      FROM \`telemetry.robot_states\`
+      WHERE run_id = @runId
+      ORDER BY timestamp_ms ASC
+    `;
+    const [rows] = await bigquery.query({
+      query,
+      params: { runId }
+    });
+    res.status(200).json(rows);
+  } catch (err: any) {
+    throw new ApiError(500, `Failed to query path details: ${err.message}`);
+  }
+}));
+
+// GET /api/analytics/subsystem-health
+router.get("/subsystem-health", ensureAuth, asyncHandler(async (req, res) => {
+  const runId = req.query.runId as string;
+  if (!runId) {
+    throw new ApiError(400, "Missing runId parameter");
+  }
+
+  try {
+    const motorQuery = `
+      SELECT motor_id, AVG(current) as avg_current, MAX(current) as max_current, STDDEV(current) as stddev_current
+      FROM \`telemetry.motor_telemetry\`
+      WHERE run_id = @runId
+      GROUP BY motor_id
+    `;
+    const [motors] = await bigquery.query({
+      query: motorQuery,
+      params: { runId }
+    });
+
+    const stateQuery = `
+      SELECT timestamp_ms, 
+             CAST(JSON_VALUE(state_json, '$.drive.pitchDegrees') AS FLOAT64) as pitch,
+             CAST(JSON_VALUE(state_json, '$.drive.rollDegrees') AS FLOAT64) as roll
+      FROM \`telemetry.robot_states\`
+      WHERE run_id = @runId
+      ORDER BY timestamp_ms ASC
+    `;
+    const [states] = await bigquery.query({
+      query: stateQuery,
+      params: { runId }
+    });
+
+    res.status(200).json({ motors, states });
+  } catch (err: any) {
+    throw new ApiError(500, `Failed to query health: ${err.message}`);
+  }
+}));
+
+// GET /api/analytics/vision-quality
+router.get("/vision-quality", ensureAuth, asyncHandler(async (req, res) => {
+  const runId = req.query.runId as string;
+  if (!runId) {
+    throw new ApiError(400, "Missing runId parameter");
+  }
+
+  try {
+    const query = `
+      SELECT tag_id, camera_id, accepted, COUNT(*) as count,
+             ARRAY_AGG(rejection_reason IGNORE NULLS LIMIT 5) as sample_rejections
+      FROM \`telemetry.vision_events\`
+      WHERE run_id = @runId
+      GROUP BY tag_id, camera_id, accepted
+    `;
+    const [rows] = await bigquery.query({
+      query,
+      params: { runId }
+    });
+    res.status(200).json(rows);
+  } catch (err: any) {
+    throw new ApiError(500, `Failed to query vision quality: ${err.message}`);
+  }
 }));
 
 export default router;

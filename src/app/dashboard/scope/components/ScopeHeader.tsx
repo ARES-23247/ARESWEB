@@ -37,6 +37,7 @@ interface ScopeHeaderProps {
   consoleLogs: any;
   setConsoleLogs: (val: any) => void;
   setVideoUrl: (val: string | null) => void;
+  runs?: any[];
 
   // File Handlers
   handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -63,6 +64,7 @@ export default function ScopeHeader({
   consoleLogs,
   setConsoleLogs,
   setVideoUrl,
+  runs = [],
   handleFileInput,
   handleComparisonInput,
   handleConsoleInput,
@@ -183,11 +185,21 @@ export default function ScopeHeader({
           <select
             value={selectedRunId}
             onChange={(e) => setSelectedRunId(e.target.value)}
-            className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer"
+            className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer max-w-[160px] truncate"
           >
-            <option value="run_2026_championship_finals" className="bg-neutral-900 text-white">Championship Finals</option>
-            <option value="run_2026_qualifiers_3" className="bg-neutral-900 text-white">Qualifier Run #3</option>
-            <option value="run_2026_practice_slippage" className="bg-neutral-900 text-white">Practice Slippage Run</option>
+            {runs.length === 0 ? (
+              <>
+                <option value="run_2026_championship_finals" className="bg-neutral-900 text-white">Championship Finals</option>
+                <option value="run_2026_qualifiers_3" className="bg-neutral-900 text-white">Qualifier Run #3</option>
+                <option value="run_2026_practice_slippage" className="bg-neutral-900 text-white">Practice Slippage Run</option>
+              </>
+            ) : (
+              runs.map((r) => (
+                <option key={r.runId} value={r.runId} className="bg-neutral-900 text-white">
+                  {r.matchNumber ? `Match ${r.matchNumber}` : r.runId.substring(0, 16)}
+                </option>
+              ))
+            )}
           </select>
         </div>
 

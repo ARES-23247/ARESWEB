@@ -40,6 +40,8 @@ import ObstaclesListAccordion from "./components/ObstaclesListAccordion";
 import AprilTagRosterAccordion from "./components/AprilTagRosterAccordion";
 import PlacedElementsAccordion from "./components/PlacedElementsAccordion";
 import ElementCatalogAccordion from "./components/ElementCatalogAccordion";
+import { downloadRobotConfigJson } from "./utils/fieldConfigExporter";
+import { useScopeStore } from "../scope/store/scopeStore";
 
 
 
@@ -62,6 +64,7 @@ export interface FieldConfig {
 }
 
 export default function FieldEditor() {
+  const { ntClient, connectionStatus } = useScopeStore();
   const [configs, setConfigs] = useState<FieldConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string>("");
   const [configName, setConfigName] = useState<string>("New Configuration");
@@ -706,6 +709,66 @@ export default function FieldEditor() {
     }
   };
 
+  const handleExportRobotJson = () => {
+    const currentConfig: FieldConfig = {
+      id: selectedConfigId,
+      name: configName,
+      updatedAt: Date.now(),
+      fieldType,
+      gameYear,
+      xAxisDirection,
+      yAxisDirection,
+      redDriverStation,
+      blueDriverStation,
+      obstacles,
+      elementTypes,
+      elements,
+      apriltags
+    };
+    downloadRobotConfigJson(currentConfig);
+  };
+
+  const handlePushToSimulator = async () => {
+    // 1. Save to cloud first to make sure database is up to date
+    await handleSaveToCloud();
+    
+    // 2. Publish to NT4 if connected
+    if (ntClient) {
+      try {
+        const obstaclesPayload = obstacles.map((obs) => ({
+          id: obs.id,
+          name: obs.name,
+          x: Number(obs.x),
+          y: Number(obs.y),
+          width: Number(obs.width),
+          height: Number(obs.height),
+          isBlocking: Boolean(obs.isBlocking),
+          obstacleType: obs.obstacleType,
+          rampDirection: obs.rampDirection || null,
+          shape: obs.shape || "rectangle",
+          points: (obs.points || []).map(p => ({ x: Number(p.x), y: Number(p.y) })),
+          friction: obs.friction !== undefined ? Number(obs.friction) : 0.5,
+          restitution: obs.restitution !== undefined ? Number(obs.restitution) : 0.3,
+          rotation: obs.rotation !== undefined ? Number(obs.rotation) : 0.0
+        }));
+        
+        const payloadStr = JSON.stringify({ obstacles: obstaclesPayload });
+        ntClient.publishPersistent("ARES/Input/obstacles", payloadStr, "string");
+        
+        if (selectedConfigId) {
+          ntClient.publishPersistent("ARES/Input/configId", selectedConfigId, "string");
+        }
+        
+        alert("Pushed updated layout to the active simulator daemon over NetworkTables!");
+      } catch (err: any) {
+        console.error("Failed to push layout to simulator over NT4:", err);
+        alert("Layout saved to Firestore, but failed to push directly to simulator: " + err.message);
+      }
+    } else {
+      alert("Layout saved to Firestore. Simulator is not connected via NT4, but it will reload this layout next time it polls Firestore (if running with --watch) or on restart.");
+    }
+  };
+
   const handleDeleteLayout = async (configIdOrEvent?: string | React.MouseEvent, name?: string) => {
     const targetId = typeof configIdOrEvent === "string" ? configIdOrEvent : selectedConfigId;
     const targetName = name || (typeof configIdOrEvent === "string" ? configs.find(c => c.id === configIdOrEvent)?.name : configName) || "this layout";
@@ -913,6 +976,9 @@ export default function FieldEditor() {
             selectedConfigId={selectedConfigId}
             loading={loading}
             handleDeleteLayout={handleDeleteLayout}
+            handleExportRobotJson={handleExportRobotJson}
+            handlePushToSimulator={handlePushToSimulator}
+            connectionStatus={connectionStatus}
           />
 
           <ObstaclesListAccordion

@@ -6,7 +6,7 @@ export interface TelemetryFrame {
   x: number;
   y: number;
   heading: number;
-  values: Record<string, number>;
+  values: Record<string, any>;
 }
 
 export interface TelemetryData {
@@ -286,7 +286,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
     // Safeguard index boundaries
     index = Math.max(0, Math.min(telemetryData.timestamps.length - 1, index));
 
-    const values: Record<string, number> = {};
+    const values: Record<string, any> = {};
     Object.keys(telemetryData.channels).forEach((key) => {
       values[key] = telemetryData.channels[key][index] ?? 0;
     });
@@ -330,7 +330,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
 
     index = Math.max(0, Math.min(comparisonTelemetryData.timestamps.length - 1, index));
 
-    const values: Record<string, number> = {};
+    const values: Record<string, any> = {};
     Object.keys(comparisonTelemetryData.channels).forEach((key) => {
       values[key] = comparisonTelemetryData.channels[key][index] ?? 0;
     });

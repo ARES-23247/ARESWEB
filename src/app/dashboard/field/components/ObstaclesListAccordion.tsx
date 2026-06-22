@@ -299,6 +299,60 @@ export default function ObstaclesListAccordion({
                   </>
                 )}
 
+                <div className="flex flex-col gap-1.5 col-span-2 border-t border-white/5 pt-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                      Rotation (deg)
+                    </label>
+                    <span className="text-ares-cyan font-mono text-[10px] font-bold">{selectedObs.rotation ?? 0}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={selectedObs.rotation ?? 0}
+                    onChange={(e) => handleUpdateObstacleField(selectedObs.id, "rotation", parseInt(e.target.value) || 0)}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-ares-cyan focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                      Friction
+                    </label>
+                    <span className="text-ares-cyan font-mono text-[10px] font-bold">{(selectedObs.friction ?? 0.5).toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={selectedObs.friction ?? 0.5}
+                    onChange={(e) => handleUpdateObstacleField(selectedObs.id, "friction", parseFloat(e.target.value) || 0)}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-ares-cyan focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
+                      Restitution
+                    </label>
+                    <span className="text-ares-cyan font-mono text-[10px] font-bold">{(selectedObs.restitution ?? 0.3).toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={selectedObs.restitution ?? 0.3}
+                    onChange={(e) => handleUpdateObstacleField(selectedObs.id, "restitution", parseFloat(e.target.value) || 0)}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-ares-cyan focus:outline-none"
+                  />
+                </div>
+
                 {/* Mirror Duplicate controls */}
                 <div className="col-span-2 border-t border-white/5 pt-3 space-y-2">
                   <span className="text-[8px] uppercase font-black tracking-widest text-marble/45 block font-semibold">

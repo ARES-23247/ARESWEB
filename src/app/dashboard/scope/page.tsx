@@ -114,8 +114,61 @@ export default function ScopeDashboard() {
   } = useScopeLayout();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
+  const [runs, setRuns] = useState<any[]>([]);
+  const [actions, setActions] = useState<any[]>([]);
+  const [visionEvents, setVisionEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
+
+  // Load telemetry runs index on mount
+  useEffect(() => {
+    const fetchRuns = async () => {
+      try {
+        const q = query(collection(db, "telemetry_runs"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocsWithTimeout(q, 3000);
+        const list: any[] = [];
+        querySnapshot.forEach((docSnap: any) => {
+          list.push({ runId: docSnap.id, ...docSnap.data() });
+        });
+        setRuns(list);
+        if (list.length > 0) {
+          setSelectedRunId(list[0].runId);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch runs list, using mock defaults", err);
+      }
+    };
+    fetchRuns();
+  }, []);
+
+  // Fetch actions and vision events when selectedRunId changes
+  useEffect(() => {
+    if (!selectedRunId) return;
+    const fetchExtraData = async () => {
+      try {
+        const actRes = await authenticatedFetch(`/api/replay/${selectedRunId}/actions`);
+        if (actRes.ok) {
+          const actData = await actRes.json();
+          setActions(actData);
+        } else {
+          setActions([]);
+        }
+
+        const visRes = await authenticatedFetch(`/api/replay/${selectedRunId}/vision`);
+        if (visRes.ok) {
+          const visData = await visRes.json();
+          setVisionEvents(visData);
+        } else {
+          setVisionEvents([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch replay details:", err);
+        setActions([]);
+        setVisionEvents([]);
+      }
+    };
+    fetchExtraData();
+  }, [selectedRunId]);
 
   const {
     parseCSVText,
@@ -334,6 +387,7 @@ export default function ScopeDashboard() {
         consoleLogs={consoleLogs}
         setConsoleLogs={setConsoleLogs}
         setVideoUrl={setVideoUrl}
+        runs={runs}
         handleFileInput={handleFileInput}
         handleComparisonInput={handleComparisonInput}
         handleConsoleInput={handleConsoleInput}
@@ -398,7 +452,7 @@ export default function ScopeDashboard() {
             handlePublishValue={handlePublishValue}
           />
 
-          <TimelineDeck />
+          <TimelineDeck actions={actions} visionEvents={visionEvents} />
 
           <TelemetryLogParser
             onFileDropped={parseLocalLogFile}

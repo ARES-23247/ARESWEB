@@ -154,7 +154,8 @@ export default function LocalSimulatorPanel({
         visionStdDevTheta,
         obstacles,
         elements,
-        elementTypes
+        elementTypes,
+        configId: selectedFieldConfigId
       }
     }));
   };

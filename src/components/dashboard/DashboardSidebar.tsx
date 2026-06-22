@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, BarChart3 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -189,6 +189,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               </div>
             </Link>
             <NavButton tab="field" icon={Grid} label="Field Editor" currentPath={pathname} />
+            <NavButton tab="analytics" icon={BarChart3} label="Analytics Hub" currentPath={pathname} />
           </div>
         </div>
 

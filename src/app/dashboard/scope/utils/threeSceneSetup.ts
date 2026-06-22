@@ -210,6 +210,7 @@ export function setupThreeScene(
       });
 
       const mesh = new THREE.Mesh(geom, mat);
+      mesh.name = el.id;
       const yOffset = type.shape === "sphere" ? (type.diameter || 0.15) / 2 : thickness / 2;
       mesh.position.set(-el.y, yOffset, -el.x);
       mesh.rotation.y = el.rotation * Math.PI / 180;
