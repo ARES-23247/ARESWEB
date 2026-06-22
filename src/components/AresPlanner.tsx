@@ -1,152 +1,48 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { 
-  Play, Pause, RefreshCw, Info, HelpCircle, Compass, 
-  Download, Maximize2, Minimize2, Plus, Trash2, Save, 
-  FolderOpen, Settings, Wifi, Copy, Check, ShieldCheck,
-  ChevronDown, ChevronUp, Lock, Unlock, Link, Upload
-} from "lucide-react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { Minimize2 } from "lucide-react";
 
-// Waypoint using cubic Bezier formatting
-export type Waypoint = {
-  anchor: { x: number; y: number };       // in inches (0 to 144)
-  prevControl: { x: number; y: number } | null;  // in inches (0 to 144)
-  nextControl: { x: number; y: number } | null;  // in inches (0 to 144)
-};
+// Types
+import { Waypoint, EventMarker, ConstraintZone, RotationTarget, AresPlannerProps } from "../types/planner";
+export type { Waypoint, EventMarker, ConstraintZone, RotationTarget };
 
-// Event Marker / Action trigger along path
-export type EventMarker = {
-  id: string;
-  name: string;
-  progress: number; // 0.0 to 1.0
-  actions: string[];
-};
+// Helper math and serializers
+import { generateBezierPath } from "../lib/planner/bezierMath";
+import { computeTrajectoryAnalytics } from "../lib/planner/trajectoryAnalytics";
+import { mirrorPath, rotatePath } from "../lib/planner/pathTransforms";
+import { serializePath, deserializePath } from "../lib/planner/pathSerializer";
 
-export type ConstraintZone = {
-  id: string;
-  name: string;
-  x: number;       // Center X in inches (0-144)
-  y: number;       // Center Y in inches (0-144)
-  width: number;   // Width in inches
-  height: number;  // Height in inches
-  maxVelocity: number; // in m/s
-};
+// Custom hooks
+import { usePlannerDrag } from "../hooks/planner/usePlannerDrag";
+import { usePlannerKeyboard } from "../hooks/planner/usePlannerKeyboard";
+import { usePlannerCanvas } from "../hooks/planner/usePlannerCanvas";
+import { useRobotSync } from "../hooks/planner/useRobotSync";
 
-export type RotationTarget = {
-  id: string;
-  name: string;
-  x: number;       // Target face X in inches (0-144)
-  y: number;       // Target face Y in inches (0-144)
-  waypointIndex: number; // Waypoint index it's linked to (e.g. 0, 1, 2)
-};
-
-interface AresPlannerProps {
-  initialPathData?: {
-    name: string;
-    season: string;
-    waypoints: Waypoint[];
-    markers: EventMarker[];
-    constraintZones?: ConstraintZone[];
-    rotationTargets?: RotationTarget[];
-    maxVelocity?: number;
-    maxAcceleration?: number;
-    maxAngularVelocity?: number;
-    maxAngularAcceleration?: number;
-    startVelocity?: number;
-    startHeading?: number;
-    endVelocity?: number;
-    endHeading?: number;
-  };
-  cloudPaths?: Array<{
-    id: string;
-    name: string;
-    season: string;
-    waypoints: Waypoint[];
-    markers: EventMarker[];
-    constraintZones?: ConstraintZone[];
-    rotationTargets?: RotationTarget[];
-    maxVelocity?: number;
-    maxAcceleration?: number;
-    maxAngularVelocity?: number;
-    maxAngularAcceleration?: number;
-    startVelocity?: number;
-    startHeading?: number;
-    endVelocity?: number;
-    endHeading?: number;
-    updatedAt: any;
-  }>;
-  onSaveToCloud?: (
-    name: string,
-    season: string,
-    waypoints: Waypoint[],
-    markers: EventMarker[],
-    constraintZones?: ConstraintZone[],
-    rotationTargets?: RotationTarget[],
-    maxVelocity?: number,
-    maxAcceleration?: number,
-    maxAngularVelocity?: number,
-    maxAngularAcceleration?: number,
-    startVelocity?: number,
-    startHeading?: number,
-    endVelocity?: number,
-    endHeading?: number
-  ) => Promise<void>;
-  onLoadPath?: (pathId: string) => void;
-  isSavingCloud?: boolean;
-}
-
-// Cubic Bezier evaluation
-// B(t) = (1-t)^3*P0 + 3*(1-t)^2*t*P1 + 3*(1-t)*t^2*P2 + t^3*P3
-function getBezierPoint(p0: {x: number, y: number}, p1: {x: number, y: number}, p2: {x: number, y: number}, p3: {x: number, y: number}, t: number) {
-  const t1 = 1 - t;
-  const t1Sq = t1 * t1;
-  const t1Cb = t1Sq * t1;
-  const tSq = t * t;
-  const tCb = tSq * t;
-
-  return {
-    x: t1Cb * p0.x + 3 * t1Sq * t * p1.x + 3 * t1 * tSq * p2.x + tCb * p3.x,
-    y: t1Cb * p0.y + 3 * t1Sq * t * p1.y + 3 * t1 * tSq * p2.y + tCb * p3.y
-  };
-}
-
-// Generate dense points along the Bezier path
-function generateBezierPath(waypoints: Waypoint[]): {x: number, y: number}[] {
-  if (waypoints.length < 2) return [];
-  const points: {x: number, y: number}[] = [];
-
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const w0 = waypoints[i];
-    const w1 = waypoints[i + 1];
-
-    const p0 = w0.anchor;
-    const p1 = w0.nextControl || w0.anchor;
-    const p2 = w1.prevControl || w1.anchor;
-    const p3 = w1.anchor;
-
-    // Subdivide each segment into 40 segments for smooth rendering
-    for (let step = 0; step <= 40; step++) {
-      const t = step / 40;
-      // Avoid duplicate points at segment boundaries
-      if (step === 0 && i > 0) continue;
-      points.push(getBezierPoint(p0, p1, p2, p3, t));
-    }
-  }
-
-  return points;
-}
+// Sub-components
+import PlannerHeaderBar from "./planner/PlannerHeaderBar";
+import FieldSettingsCard from "./planner/FieldSettingsCard";
+import PathTransformsCard from "./planner/PathTransformsCard";
+import WaypointsAccordion from "./planner/WaypointsAccordion";
+import EventMarkersAccordion from "./planner/EventMarkersAccordion";
+import RotationTargetsAccordion from "./planner/RotationTargetsAccordion";
+import ConstraintZonesAccordion from "./planner/ConstraintZonesAccordion";
+import KinematicsPanel from "./planner/KinematicsPanel";
+import StartEndStatePanel from "./planner/StartEndStatePanel";
+import CloudSyncCard from "./planner/CloudSyncCard";
+import RobotSyncCard from "./planner/RobotSyncCard";
+import PlannerBottomBar from "./planner/PlannerBottomBar";
 
 export default function AresPlanner({
   initialPathData,
   cloudPaths = [],
   onSaveToCloud,
   onLoadPath,
-  isSavingCloud = false
+  isSavingCloud = false,
 }: AresPlannerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // State variables
   const [pathName, setPathName] = useState("ARES_Auto_Path");
   const [season, setSeason] = useState("decode");
@@ -154,7 +50,7 @@ export default function AresPlanner({
   const [unitMode, setUnitMode] = useState<"inches" | "meters">("meters");
   const [isZenMode, setIsZenMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   // Selected elements for config panels
   const [selectedWaypointIdx, setSelectedWaypointIdx] = useState<number | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
@@ -175,7 +71,7 @@ export default function AresPlanner({
   const [lockedWaypoints, setLockedWaypoints] = useState<Record<number, boolean>>({});
 
   const toggleLockWaypoint = (idx: number) => {
-    setLockedWaypoints(prev => ({ ...prev, [idx]: !prev[idx] }));
+    setLockedWaypoints((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   // Sidebar accordion expansion states
@@ -209,7 +105,7 @@ export default function AresPlanner({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isZenMode]);
-  
+
   // Custom uploaded background
   const [customBgImage, setCustomBgImage] = useState<HTMLImageElement | null>(null);
   const [customBgName, setCustomBgName] = useState<string>("");
@@ -230,22 +126,16 @@ export default function AresPlanner({
     }
   }, []);
 
-  // Robot Upload configs
-  const [robotIp, setRobotIp] = useState("192.168.43.1");
-  const [syncStatus, setSyncStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
-  const [syncLog, setSyncLog] = useState("");
-  const [copiedCmd, setCopiedCmd] = useState(false);
-
   // Core data arrays
   const [waypoints, setWaypoints] = useState<Waypoint[]>([
     { anchor: { x: 24, y: 120 }, prevControl: null, nextControl: { x: 48, y: 100 } },
     { anchor: { x: 72, y: 72 }, prevControl: { x: 60, y: 84 }, nextControl: { x: 84, y: 60 } },
-    { anchor: { x: 120, y: 24 }, prevControl: { x: 100, y: 36 }, nextControl: null }
+    { anchor: { x: 120, y: 24 }, prevControl: { x: 100, y: 36 }, nextControl: null },
   ]);
 
   const [markers, setMarkers] = useState<EventMarker[]>([
     { id: "1", name: "Intake Down", progress: 0.15, actions: ["LowerIntake", "StartRoller"] },
-    { id: "2", name: "Outtake Score", progress: 0.85, actions: ["RaiseSlide", "OpenClaw"] }
+    { id: "2", name: "Outtake Score", progress: 0.85, actions: ["RaiseSlide", "OpenClaw"] },
   ]);
 
   const [constraintZones, setConstraintZones] = useState<ConstraintZone[]>([]);
@@ -282,20 +172,33 @@ export default function AresPlanner({
   const rotationTargetsRef = useRef<RotationTarget[]>(rotationTargets);
   const selectedConstraintZoneIdRef = useRef<string | null>(selectedConstraintZoneId);
   const selectedRotationTargetIdRef = useRef<string | null>(selectedRotationTargetId);
-  
-  const pathRef = useRef<{x: number, y: number}[]>([]);
+
+  const pathRef = useRef<{ x: number; y: number }[]>([]);
   const robotRef = useRef({ progress: 0, x: 24, y: 120, heading: 0 });
   const isPlayingRef = useRef(isPlaying);
-  const dragInfo = useRef<{ type: "anchor" | "prev" | "next" | "rotationTarget" | "constraintZoneMove" | "constraintZoneResize"; index: number } | null>(null);
 
   // Keep references updated
-  useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
-  useEffect(() => { markersRef.current = markers; }, [markers]);
-  useEffect(() => { constraintZonesRef.current = constraintZones; }, [constraintZones]);
-  useEffect(() => { rotationTargetsRef.current = rotationTargets; }, [rotationTargets]);
-  useEffect(() => { selectedConstraintZoneIdRef.current = selectedConstraintZoneId; }, [selectedConstraintZoneId]);
-  useEffect(() => { selectedRotationTargetIdRef.current = selectedRotationTargetId; }, [selectedRotationTargetId]);
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => {
+    waypointsRef.current = waypoints;
+  }, [waypoints]);
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
+  useEffect(() => {
+    constraintZonesRef.current = constraintZones;
+  }, [constraintZones]);
+  useEffect(() => {
+    rotationTargetsRef.current = rotationTargets;
+  }, [rotationTargets]);
+  useEffect(() => {
+    selectedConstraintZoneIdRef.current = selectedConstraintZoneId;
+  }, [selectedConstraintZoneId]);
+  useEffect(() => {
+    selectedRotationTargetIdRef.current = selectedRotationTargetId;
+  }, [selectedRotationTargetId]);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // Compute actual spline points
   useEffect(() => {
@@ -303,74 +206,25 @@ export default function AresPlanner({
   }, [waypoints]);
 
   const lockedWaypointsRef = useRef<Record<number, boolean>>(lockedWaypoints);
-  useEffect(() => { lockedWaypointsRef.current = lockedWaypoints; }, [lockedWaypoints]);
+  useEffect(() => {
+    lockedWaypointsRef.current = lockedWaypoints;
+  }, [lockedWaypoints]);
 
-  const trajectoryAnalytics = React.useMemo(() => {
-    if (waypoints.length < 2) return { length: 0, duration: 0, velocities: [] };
-
-    let totalLengthInches = 0;
-    const segments: { ds: number; vMax: number }[] = [];
-
-    const pts = generateBezierPath(waypoints);
-
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const dsInches = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      totalLengthInches += dsInches;
-      const dsMeters = dsInches * 0.0254;
-
-      let segmentVMax = maxVelocity;
-      for (const zone of constraintZones) {
-        const hw = zone.width / 2;
-        const hh = zone.height / 2;
-        if (p1.x >= zone.x - hw && p1.x <= zone.x + hw &&
-            p1.y >= zone.y - hh && p1.y <= zone.y + hh) {
-          segmentVMax = Math.min(segmentVMax, zone.maxVelocity);
-        }
-      }
-      segments.push({ ds: dsMeters, vMax: segmentVMax });
-    }
-
-    const n = segments.length;
-    const v = new Array(n + 1).fill(0);
-
-    // Forward pass
-    v[0] = startVelocity;
-    for (let i = 0; i < n; i++) {
-      const limit = segments[i].vMax;
-      const ds = segments[i].ds;
-      const maxReachable = Math.sqrt(v[i] * v[i] + 2 * maxAcceleration * ds);
-      v[i + 1] = Math.min(limit, maxReachable);
-    }
-
-    // Backward pass
-    v[n] = endVelocity;
-    for (let i = n - 1; i >= 0; i--) {
-      const limit = v[i];
-      const ds = segments[i].ds;
-      const maxReachable = Math.sqrt(v[i + 1] * v[i + 1] + 2 * maxAcceleration * ds);
-      v[i] = Math.min(limit, maxReachable);
-    }
-
-    // Calculate duration
-    let totalDuration = 0;
-    for (let i = 0; i < n; i++) {
-      const ds = segments[i].ds;
-      const vAvg = (v[i] + v[i + 1]) / 2;
-      const dt = vAvg > 0.01 ? ds / vAvg : ds / 0.01;
-      totalDuration += dt;
-    }
-
-    return {
-      length: totalLengthInches,
-      duration: totalDuration,
-      velocities: v
-    };
+  const trajectoryAnalytics = useMemo(() => {
+    return computeTrajectoryAnalytics(
+      waypoints,
+      constraintZones,
+      maxVelocity,
+      maxAcceleration,
+      startVelocity,
+      endVelocity
+    );
   }, [waypoints, constraintZones, maxVelocity, maxAcceleration, startVelocity, endVelocity]);
 
   const trajectoryAnalyticsRef = useRef(trajectoryAnalytics);
-  useEffect(() => { trajectoryAnalyticsRef.current = trajectoryAnalytics; }, [trajectoryAnalytics]);
+  useEffect(() => {
+    trajectoryAnalyticsRef.current = trajectoryAnalytics;
+  }, [trajectoryAnalytics]);
 
   // Resize handler
   const [canvasDim, setCanvasDim] = useState(500);
@@ -392,785 +246,12 @@ export default function AresPlanner({
     return () => window.removeEventListener("resize", handleResize);
   }, [handleResize, isZenMode]);
 
-  // Pointer position helper (translates client coordinates to 0-144 field inches)
-  const getFieldPosFromEvent = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const clientY = e.clientY - rect.top;
-    
-    // Scale client pixels to 0-144 inches
-    const x = (clientX / canvas.width) * 144;
-    const y = 144 - (clientY / canvas.height) * 144;
-    return { x: Math.max(0, Math.min(144, x)), y: Math.max(0, Math.min(144, y)) };
-  };
-
-  // Drag handlers
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const pos = getFieldPosFromEvent(e);
-    const scale = canvasDim / 144;
-
-    // If in "Adding Marker" mode, insert marker at closest path point
-    if (isAddingMarker && pathRef.current.length > 0) {
-      let minDist = Infinity;
-      let minIdx = 0;
-      pathRef.current.forEach((pt, idx) => {
-        const d = Math.hypot(pt.x - pos.x, pt.y - pos.y);
-        if (d < minDist) {
-          minDist = d;
-          minIdx = idx;
-        }
-      });
-
-      if (minDist < 15) { // Threshold to match path
-        const progress = minIdx / (pathRef.current.length - 1);
-        const newMarker: EventMarker = {
-          id: String(Date.now()),
-          name: `Action @ ${Math.round(progress * 100)}%`,
-          progress,
-          actions: ["CustomAction"]
-        };
-        setMarkers([...markers, newMarker]);
-        setSelectedMarkerId(newMarker.id);
-        setSelectedWaypointIdx(null);
-      }
-      setIsAddingMarker(false);
-      return;
-    }
-
-    // Check hit on Waypoints/handles
-    const hitRadius = 8; // in inches
-    for (let i = 0; i < waypoints.length; i++) {
-      const wp = waypoints[i];
-      
-      // Check Anchor
-      if (Math.hypot(wp.anchor.x - pos.x, wp.anchor.y - pos.y) < hitRadius) {
-        setSelectedWaypointIdx(i);
-        setSelectedMarkerId(null);
-        setIsPlaying(false);
-        if (lockedWaypoints[i]) return;
-        dragInfo.current = { type: "anchor", index: i };
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-      
-      // Check Next Control handle
-      if (wp.nextControl && Math.hypot(wp.nextControl.x - pos.x, wp.nextControl.y - pos.y) < hitRadius) {
-        setSelectedWaypointIdx(i);
-        setSelectedMarkerId(null);
-        setIsPlaying(false);
-        if (lockedWaypoints[i]) return;
-        dragInfo.current = { type: "next", index: i };
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-
-      // Check Prev Control handle
-      if (wp.prevControl && Math.hypot(wp.prevControl.x - pos.x, wp.prevControl.y - pos.y) < hitRadius) {
-        setSelectedWaypointIdx(i);
-        setSelectedMarkerId(null);
-        setIsPlaying(false);
-        if (lockedWaypoints[i]) return;
-        dragInfo.current = { type: "prev", index: i };
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-    }
-
-    // Check hit on Event Markers
-    if (pathRef.current.length > 0) {
-      for (let i = 0; i < markers.length; i++) {
-        const m = markers[i];
-        const idx = Math.floor(m.progress * (pathRef.current.length - 1));
-        const mPos = pathRef.current[idx];
-        if (mPos && Math.hypot(mPos.x - pos.x, mPos.y - pos.y) < hitRadius) {
-          setSelectedMarkerId(m.id);
-          setSelectedWaypointIdx(null);
-          setSelectedRotationTargetId(null);
-          setSelectedConstraintZoneId(null);
-          setIsPlaying(false);
-          return;
-        }
-      }
-    }
-
-    // Check hit on Rotation Targets
-    for (let i = 0; i < rotationTargets.length; i++) {
-      const rot = rotationTargets[i];
-      if (Math.hypot(rot.x - pos.x, rot.y - pos.y) < hitRadius) {
-        dragInfo.current = { type: "rotationTarget", index: i };
-        setSelectedRotationTargetId(rot.id);
-        setSelectedWaypointIdx(null);
-        setSelectedMarkerId(null);
-        setSelectedConstraintZoneId(null);
-        setIsPlaying(false);
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-    }
-
-    // Check hit on Constraint Zones
-    for (let i = 0; i < constraintZones.length; i++) {
-      const zone = constraintZones[i];
-      const brX = zone.x + zone.width / 2;
-      const brY = zone.y - zone.height / 2;
-      if (Math.hypot(brX - pos.x, brY - pos.y) < hitRadius) {
-        dragInfo.current = { type: "constraintZoneResize", index: i };
-        setSelectedConstraintZoneId(zone.id);
-        setSelectedWaypointIdx(null);
-        setSelectedMarkerId(null);
-        setSelectedRotationTargetId(null);
-        setIsPlaying(false);
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-      if (Math.hypot(zone.x - pos.x, zone.y - pos.y) < hitRadius) {
-        dragInfo.current = { type: "constraintZoneMove", index: i };
-        setSelectedConstraintZoneId(zone.id);
-        setSelectedWaypointIdx(null);
-        setSelectedMarkerId(null);
-        setSelectedRotationTargetId(null);
-        setIsPlaying(false);
-        e.currentTarget.setPointerCapture(e.pointerId);
-        return;
-      }
-    }
-
-    // Clicked empty space
-    setSelectedWaypointIdx(null);
-    setSelectedMarkerId(null);
-    setSelectedRotationTargetId(null);
-    setSelectedConstraintZoneId(null);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragInfo.current) return;
-    const pos = getFieldPosFromEvent(e);
-    const { type, index } = dragInfo.current;
-    
-    if (type === "rotationTarget") {
-      setRotationTargets((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], x: pos.x, y: pos.y };
-        return next;
-      });
-    } else if (type === "constraintZoneMove") {
-      setConstraintZones((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], x: pos.x, y: pos.y };
-        return next;
-      });
-    } else if (type === "constraintZoneResize") {
-      setConstraintZones((prev) => {
-        const next = [...prev];
-        const zone = next[index];
-        const halfWidth = Math.max(4, Math.abs(pos.x - zone.x));
-        const halfHeight = Math.max(4, Math.abs(pos.y - zone.y));
-        next[index] = {
-          ...zone,
-          width: halfWidth * 2,
-          height: halfHeight * 2
-        };
-        return next;
-      });
-    } else {
-      setWaypoints((prev) => {
-        const nextWps = [...prev];
-        const wp = { ...nextWps[index] };
-
-        if (type === "anchor") {
-          const dx = pos.x - wp.anchor.x;
-          const dy = pos.y - wp.anchor.y;
-          
-          // Move anchor and shift control points together
-          wp.anchor = pos;
-          if (wp.prevControl) {
-            wp.prevControl = { x: wp.prevControl.x + dx, y: wp.prevControl.y + dy };
-          }
-          if (wp.nextControl) {
-            wp.nextControl = { x: wp.nextControl.x + dx, y: wp.nextControl.y + dy };
-          }
-        } else if (type === "next") {
-          wp.nextControl = pos;
-          
-          // Mirror to prevControl for C1 continuity
-          if (wp.prevControl) {
-            const dx = pos.x - wp.anchor.x;
-            const dy = pos.y - wp.anchor.y;
-            wp.prevControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
-          }
-        } else if (type === "prev") {
-          wp.prevControl = pos;
-          
-          // Mirror to nextControl for C1 continuity
-          if (wp.nextControl) {
-            const dx = pos.x - wp.anchor.x;
-            const dy = pos.y - wp.anchor.y;
-            wp.nextControl = { x: wp.anchor.x - dx, y: wp.anchor.y - dy };
-          }
-        }
-
-        nextWps[index] = wp;
-        return nextWps;
-      });
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (dragInfo.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      dragInfo.current = null;
-    }
-  };
-
-  const handleCanvasKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
-    if (selectedWaypointIdx === null) {
-      if (e.key === "Enter" || e.key === " ") {
-        if (waypoints.length > 0) {
-          setSelectedWaypointIdx(0);
-          e.preventDefault();
-        }
-      }
-      return;
-    }
-
-    const stepInches = e.shiftKey ? 5.0 : 1.0;
-    const wp = waypoints[selectedWaypointIdx];
-    if (!wp) return;
-    if (lockedWaypoints[selectedWaypointIdx]) return;
-
-    if (e.key === "ArrowUp") {
-      handleUpdateWaypointAnchor(selectedWaypointIdx, "y", (wp.anchor.y - stepInches).toString());
-      e.preventDefault();
-    } else if (e.key === "ArrowDown") {
-      handleUpdateWaypointAnchor(selectedWaypointIdx, "y", (wp.anchor.y + stepInches).toString());
-      e.preventDefault();
-    } else if (e.key === "ArrowLeft") {
-      handleUpdateWaypointAnchor(selectedWaypointIdx, "x", (wp.anchor.x - stepInches).toString());
-      e.preventDefault();
-    } else if (e.key === "ArrowRight") {
-      handleUpdateWaypointAnchor(selectedWaypointIdx, "x", (wp.anchor.x + stepInches).toString());
-      e.preventDefault();
-    } else if (e.key === "Escape") {
-      setSelectedWaypointIdx(null);
-      e.preventDefault();
-    } else if (e.key === "Tab") {
-      const nextIdx = (selectedWaypointIdx + 1) % waypoints.length;
-      setSelectedWaypointIdx(nextIdx);
-      e.preventDefault();
-    }
-  };
-
-  // Rendering Loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let animFrameId: number;
-
-    const drawField = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-      const scale = w / 144;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Draw custom background or season draw routines
-      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-      const decodeBg = isDark ? decodeDarkImage : decodeLightImage;
-
-      if (season === "custom" && customBgImage) {
-        ctx.drawImage(customBgImage, 0, 0, w, h);
-      } else if (season === "decode" && decodeBg) {
-        ctx.drawImage(decodeBg, 0, 0, w, h);
-      } else {
-        // Draw standard tiles (6x6 grid of 24" squares)
-        ctx.fillStyle = "#161618";
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-        ctx.lineWidth = 1.5;
-        const tileSize = 24 * scale;
-        for (let i = 0; i <= 6; i++) {
-          ctx.beginPath();
-          ctx.moveTo(i * tileSize, 0);
-          ctx.lineTo(i * tileSize, h);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(0, i * tileSize);
-          ctx.lineTo(w, i * tileSize);
-          ctx.stroke();
-        }
-
-        // Season Specific Renderings
-        if (season === "decode") {
-          // 1. Base Zones (Tape-marked alliance parking zones)
-          // Red Base Zone (Bottom-Left)
-          ctx.strokeStyle = "rgba(192, 0, 0, 0.7)";
-          ctx.lineWidth = 3;
-          ctx.strokeRect(0, h - 24 * scale, 24 * scale, 24 * scale);
-          ctx.fillStyle = "rgba(192, 0, 0, 0.08)";
-          ctx.fillRect(0, h - 24 * scale, 24 * scale, 24 * scale);
-          ctx.fillStyle = "rgba(192, 0, 0, 0.8)";
-          ctx.font = "bold 8px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("RED BASE", 12 * scale, h - 10 * scale);
-
-          // Blue Base Zone (Top-Right)
-          ctx.strokeStyle = "rgba(0, 136, 255, 0.7)";
-          ctx.lineWidth = 3;
-          ctx.strokeRect(w - 24 * scale, 0, 24 * scale, 24 * scale);
-          ctx.fillStyle = "rgba(0, 136, 255, 0.08)";
-          ctx.fillRect(w - 24 * scale, 0, 24 * scale, 24 * scale);
-          ctx.fillStyle = "rgba(0, 136, 255, 0.8)";
-          ctx.font = "bold 8px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("BLUE BASE", w - 12 * scale, 15 * scale);
-
-          // 2. Ramps (Tall Red/Blue ramp goals for scoring Artifacts)
-          // Red Ramp (Center-Left centered at x=36, y=72)
-          const rRampX = 36 * scale - 12 * scale;
-          const rRampY = h - 72 * scale - 12 * scale;
-          const rRampSize = 24 * scale;
-          const redGrad = ctx.createLinearGradient(rRampX, rRampY, rRampX + rRampSize, rRampY);
-          redGrad.addColorStop(0, "rgba(192, 0, 0, 0.4)");
-          redGrad.addColorStop(1, "rgba(255, 51, 68, 0.85)");
-          ctx.fillStyle = redGrad;
-          ctx.fillRect(rRampX, rRampY, rRampSize, rRampSize);
-          ctx.strokeStyle = "rgba(255, 51, 68, 0.7)";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(rRampX, rRampY, rRampSize, rRampSize);
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-          ctx.lineWidth = 1.5;
-          for (let offset = 4 * scale; offset < rRampSize; offset += 6 * scale) {
-            ctx.beginPath();
-            ctx.moveTo(rRampX + offset - 2 * scale, rRampY + 6 * scale);
-            ctx.lineTo(rRampX + offset, rRampY + 12 * scale);
-            ctx.lineTo(rRampX + offset - 2 * scale, rRampY + 18 * scale);
-            ctx.stroke();
-          }
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 9px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("RED RAMP", rRampX + rRampSize / 2, rRampY + 14 * scale);
-
-          // Blue Ramp (Center-Right centered at x=108, y=72)
-          const bRampX = 108 * scale - 12 * scale;
-          const bRampY = h - 72 * scale - 12 * scale;
-          const bRampSize = 24 * scale;
-          const blueGrad = ctx.createLinearGradient(bRampX + bRampSize, bRampY, bRampX, bRampY);
-          blueGrad.addColorStop(0, "rgba(0, 88, 192, 0.4)");
-          blueGrad.addColorStop(1, "rgba(0, 136, 255, 0.85)");
-          ctx.fillStyle = blueGrad;
-          ctx.fillRect(bRampX, bRampY, bRampSize, bRampSize);
-          ctx.strokeStyle = "rgba(0, 136, 255, 0.7)";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(bRampX, bRampY, bRampSize, bRampSize);
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-          ctx.lineWidth = 1.5;
-          for (let offset = 4 * scale; offset < bRampSize; offset += 6 * scale) {
-            ctx.beginPath();
-            ctx.moveTo(bRampX + offset + 2 * scale, bRampY + 6 * scale);
-            ctx.lineTo(bRampX + offset, bRampY + 12 * scale);
-            ctx.lineTo(bRampX + offset + 2 * scale, bRampY + 18 * scale);
-            ctx.stroke();
-          }
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 9px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("BLUE RAMP", bRampX + bRampSize / 2, bRampY + 14 * scale);
-
-          // 3. Gates (Mechanical structures to release Artifacts)
-          // Top Gate (Centered at x=72, y=138, width 24", depth 12")
-          const tGateX = 72 * scale - 12 * scale;
-          const tGateY = 0;
-          const tGateW = 24 * scale;
-          const tGateH = 12 * scale;
-          ctx.fillStyle = "rgba(45, 45, 50, 0.75)";
-          ctx.fillRect(tGateX, tGateY, tGateW, tGateH);
-          ctx.strokeStyle = "rgba(255, 184, 28, 0.5)"; // ARES Gold
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(tGateX, tGateY, tGateW, tGateH);
-          ctx.beginPath();
-          ctx.moveTo(tGateX, tGateY); ctx.lineTo(tGateX + tGateW / 2, tGateY + tGateH);
-          ctx.moveTo(tGateX + tGateW / 2, tGateY); ctx.lineTo(tGateX, tGateY + tGateH);
-          ctx.moveTo(tGateX + tGateW / 2, tGateY); ctx.lineTo(tGateX + tGateW, tGateY + tGateH);
-          ctx.moveTo(tGateX + tGateW, tGateY); ctx.lineTo(tGateX + tGateW / 2, tGateY + tGateH);
-          ctx.stroke();
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 8px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("GATE 1", tGateX + tGateW / 2, tGateY + 8 * scale);
-
-          // Bottom Gate (Centered at x=72, y=6, width 24", depth 12")
-          const bGateX = 72 * scale - 12 * scale;
-          const bGateY = h - 12 * scale;
-          const bGateW = 24 * scale;
-          const bGateH = 12 * scale;
-          ctx.fillStyle = "rgba(45, 45, 50, 0.75)";
-          ctx.fillRect(bGateX, bGateY, bGateW, bGateH);
-          ctx.strokeStyle = "rgba(255, 184, 28, 0.5)";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(bGateX, bGateY, bGateW, bGateH);
-          ctx.beginPath();
-          ctx.moveTo(bGateX, bGateY); ctx.lineTo(bGateX + bGateW / 2, bGateY + bGateH);
-          ctx.moveTo(bGateX + bGateW / 2, bGateY); ctx.lineTo(bGateX, bGateY + bGateH);
-          ctx.moveTo(bGateX + bGateW / 2, bGateY); ctx.lineTo(bGateX + bGateW, bGateY + bGateH);
-          ctx.moveTo(bGateX + bGateW, bGateY); ctx.lineTo(bGateX + bGateW / 2, bGateY + bGateH);
-          ctx.stroke();
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 8px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("GATE 2", bGateX + bGateW / 2, bGateY + 8 * scale);
-        } else if (season === "into_the_deep") {
-          // Submersible (Center 24" square)
-          ctx.strokeStyle = "#FFB81C"; // ARES Gold
-          ctx.lineWidth = 3;
-          ctx.strokeRect(w / 2 - tileSize / 2, h / 2 - tileSize / 2, tileSize, tileSize);
-          ctx.fillStyle = "rgba(255, 184, 28, 0.05)";
-          ctx.fillRect(w / 2 - tileSize / 2, h / 2 - tileSize / 2, tileSize, tileSize);
-          
-          // Ascent bars lines
-          ctx.strokeStyle = "rgba(255, 184, 28, 0.4)";
-          ctx.beginPath();
-          ctx.moveTo(w / 2 - tileSize / 2, h / 2);
-          ctx.lineTo(w / 2 + tileSize / 2, h / 2);
-          ctx.stroke();
-
-          // Observation Zones (Corners bottom-left & top-right)
-          ctx.strokeStyle = "rgba(0, 162, 232, 0.5)"; // Blue
-          ctx.strokeRect(0, h - tileSize, tileSize, tileSize);
-          ctx.fillStyle = "rgba(0, 162, 232, 0.04)";
-          ctx.fillRect(0, h - tileSize, tileSize, tileSize);
-
-          ctx.strokeStyle = "rgba(192, 0, 0, 0.5)"; // Red
-          ctx.strokeRect(w - tileSize, 0, tileSize, tileSize);
-          ctx.fillStyle = "rgba(192, 0, 0, 0.04)";
-          ctx.fillRect(w - tileSize, 0, tileSize, tileSize);
-        } else if (season === "centerstage") {
-          // Backdrops (Blue left-mid, Red right-mid)
-          ctx.strokeStyle = "rgba(0, 162, 232, 0.5)";
-          ctx.strokeRect(2 * scale, h / 2 - 12 * scale, 10 * scale, 24 * scale);
-          
-          ctx.strokeStyle = "rgba(192, 0, 0, 0.5)";
-          ctx.strokeRect(w - 12 * scale, h / 2 - 12 * scale, 10 * scale, 24 * scale);
-
-          // Center Stage Truss Bars
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(w / 2 - 24 * scale, h / 2);
-          ctx.lineTo(w / 2 + 24 * scale, h / 2);
-          ctx.stroke();
-        } else if (season === "powerplay") {
-          // Junction grid (5x5 poles layout)
-          ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-          const offsets = [24, 48, 72, 96, 120];
-          offsets.forEach((ox) => {
-            offsets.forEach((oy) => {
-              ctx.beginPath();
-              ctx.arc(ox * scale, oy * scale, 3, 0, Math.PI * 2);
-              ctx.fill();
-            });
-          });
-        }
-      }
-
-      // Draw perimeter boundary
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(0, 0, w, h);
-    };
-
-    const drawPathAndHandles = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-      const scale = w / 144;
-      const pts = pathRef.current;
-
-      // Draw Spline Line with velocity color mapping
-      if (pts.length > 0) {
-        const { velocities } = trajectoryAnalyticsRef.current;
-        ctx.lineWidth = 3.5;
-        for (let i = 0; i < pts.length - 1; i++) {
-          const p1 = pts[i];
-          const p2 = pts[i + 1];
-          const vel = velocities[i] ?? maxVelocity;
-          const ratio = maxVelocity > 0 ? Math.min(1, vel / maxVelocity) : 0;
-          
-          // Interpolate color from ARES Red (#C00000) to ARES Gold (#FFB81C)
-          // Red RGB: 192, 0, 0
-          // Gold RGB: 255, 184, 28
-          const r = Math.round(192 + (255 - 192) * ratio);
-          const g = Math.round(0 + (184 - 0) * ratio);
-          const b = Math.round(0 + (28 - 0) * ratio);
-          
-          ctx.beginPath();
-          ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-          ctx.moveTo(p1.x * scale, h - p1.y * scale);
-          ctx.lineTo(p2.x * scale, h - p2.y * scale);
-          ctx.stroke();
-        }
-      }
-
-      // Draw Control handle lines
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-      ctx.lineWidth = 1.2;
-      waypointsRef.current.forEach((wp) => {
-        const ax = wp.anchor.x * scale;
-        const ay = h - wp.anchor.y * scale;
-
-        if (wp.nextControl) {
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(wp.nextControl.x * scale, h - wp.nextControl.y * scale);
-          ctx.stroke();
-        }
-        if (wp.prevControl) {
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(wp.prevControl.x * scale, h - wp.prevControl.y * scale);
-          ctx.stroke();
-        }
-      });
-
-      // Draw control points nodes (handles)
-      waypointsRef.current.forEach((wp, idx) => {
-        const ax = wp.anchor.x * scale;
-        const ay = h - wp.anchor.y * scale;
-
-        // Anchor node (glowing red circle)
-        ctx.beginPath();
-        ctx.arc(ax, ay, 6, 0, Math.PI * 2);
-        const isLocked = lockedWaypointsRef.current[idx];
-        ctx.fillStyle = isLocked 
-          ? "rgba(100, 100, 100, 0.85)" 
-          : (selectedWaypointIdx === idx ? "#C00000" : "rgba(192, 0, 0, 0.85)");
-        ctx.fill();
-        ctx.strokeStyle = isLocked ? "#aaaaaa" : "#ffffff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Label index
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 9px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(String(idx + 1), ax, ay);
-
-        // Next Control node (cyan handle)
-        if (wp.nextControl) {
-          const cx = wp.nextControl.x * scale;
-          const cy = h - wp.nextControl.y * scale;
-          ctx.beginPath();
-          ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#00A2E8";
-          ctx.fill();
-          ctx.strokeStyle = "#ffffff";
-          ctx.stroke();
-        }
-
-        // Prev Control node (cyan handle)
-        if (wp.prevControl) {
-          const cx = wp.prevControl.x * scale;
-          const cy = h - wp.prevControl.y * scale;
-          ctx.beginPath();
-          ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#00A2E8";
-          ctx.fill();
-          ctx.strokeStyle = "#ffffff";
-          ctx.stroke();
-        }
-      });
-
-      // Draw Event Markers nodes (yellow diamonds along path)
-      markersRef.current.forEach((m) => {
-        if (pts.length === 0) return;
-        const ptIdx = Math.floor(m.progress * (pts.length - 1));
-        const pos = pts[ptIdx];
-        if (!pos) return;
-        const mx = pos.x * scale;
-        const my = h - pos.y * scale;
-
-        ctx.save();
-        ctx.translate(mx, my);
-        ctx.rotate(Math.PI / 4); // Rotate square to make a diamond
-        
-        ctx.fillStyle = selectedMarkerId === m.id ? "#FFD700" : "#FFB81C"; // ARES Gold / Highlighted Yellow
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 1.5;
-        ctx.fillRect(-5.5, -5.5, 11, 11);
-        ctx.strokeRect(-5.5, -5.5, 11, 11);
-        
-        ctx.restore();
-      });
-
-      // Draw Constraint Zones
-      constraintZonesRef.current.forEach((zone) => {
-        const cx = zone.x * scale;
-        const cy = h - zone.y * scale;
-        const zw = zone.width * scale;
-        const zh = zone.height * scale;
-        const isSelected = selectedConstraintZoneIdRef.current === zone.id;
-
-        ctx.save();
-        ctx.fillStyle = isSelected ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.12)";
-        ctx.fillRect(cx - zw / 2, cy - zh / 2, zw, zh);
-
-        ctx.strokeStyle = isSelected ? "rgba(245, 158, 11, 0.9)" : "rgba(245, 158, 11, 0.55)";
-        ctx.lineWidth = isSelected ? 2 : 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(cx - zw / 2, cy - zh / 2, zw, zh);
-        ctx.setLineDash([]);
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "#f59e0b";
-        ctx.fill();
-
-        if (isSelected) {
-          const brX = cx + zw / 2;
-          const brY = cy + zh / 2;
-          ctx.beginPath();
-          ctx.arc(brX, brY, 5, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.fill();
-          ctx.strokeStyle = "#f59e0b";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        }
-
-        ctx.fillStyle = "#f59e0b";
-        ctx.font = "bold 8px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(`${zone.name} (${zone.maxVelocity.toFixed(1)} m/s)`, cx, cy - zh / 2 - 4);
-        ctx.restore();
-      });
-
-      // Draw Rotation Targets
-      rotationTargetsRef.current.forEach((rot) => {
-        const tx = rot.x * scale;
-        const ty = h - rot.y * scale;
-        const isSelected = selectedRotationTargetIdRef.current === rot.id;
-
-        const wp = waypointsRef.current[rot.waypointIndex];
-        if (wp) {
-          const ax = wp.anchor.x * scale;
-          const ay = h - wp.anchor.y * scale;
-
-          ctx.save();
-          ctx.strokeStyle = "rgba(168, 85, 247, 0.55)";
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([3, 3]);
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(tx, ty);
-          ctx.stroke();
-          ctx.restore();
-        }
-
-        ctx.save();
-        ctx.translate(tx, ty);
-
-        ctx.strokeStyle = isSelected ? "#a855f7" : "rgba(168, 85, 247, 0.85)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, 5, 0, Math.PI * 2);
-        ctx.arc(0, 0, 10, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(-14, 0); ctx.lineTo(14, 0);
-        ctx.moveTo(0, -14); ctx.lineTo(0, 14);
-        ctx.stroke();
-
-        ctx.restore();
-
-        ctx.fillStyle = "#c084fc";
-        ctx.font = "bold 8px sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(`Target: ${rot.name}`, tx + 16, ty + 3);
-      });
-    };
-
-    const drawRobot = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-      const scale = w / 144;
-      const pts = pathRef.current;
-
-      if (isPlayingRef.current && pts.length > 0) {
-        const r = robotRef.current;
-        r.progress += 0.003;
-        if (r.progress >= 1.0) {
-          r.progress = 0;
-          setIsPlaying(false);
-        } else {
-          const idx = Math.floor(r.progress * (pts.length - 1));
-          const p1 = pts[idx];
-
-          r.x = p1.x;
-          r.y = p1.y;
-          r.heading = getInterpolatedRobotHeading(r.progress);
-        }
-      } else if (!isPlayingRef.current && pts.length > 0) {
-        robotRef.current.progress = 0;
-        robotRef.current.x = pts[0].x;
-        robotRef.current.y = pts[0].y;
-        robotRef.current.heading = getInterpolatedRobotHeading(0);
-      }
-
-      if (pts.length === 0) return;
-
-      const rx = robotRef.current.x * scale;
-      const ry = h - robotRef.current.y * scale;
-      const rh = robotRef.current.heading;
-      const rbSize = 18 * scale;
-
-      ctx.save();
-      ctx.translate(rx, ry);
-      ctx.rotate(-rh);
-
-      ctx.fillStyle = "rgba(10, 10, 10, 0.75)";
-      ctx.strokeStyle = "#FFB81C";
-      ctx.lineWidth = 2.5;
-      ctx.fillRect(-rbSize / 2, -rbSize / 2, rbSize, rbSize);
-      ctx.strokeRect(-rbSize / 2, -rbSize / 2, rbSize, rbSize);
-
-      ctx.strokeStyle = "#C00000";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(rbSize / 2 + 5, 0);
-      ctx.stroke();
-
-      ctx.restore();
-    };
-
-    const loop = () => {
-      drawField();
-      drawPathAndHandles();
-      drawRobot();
-      animFrameId = requestAnimationFrame(loop);
-    };
-
-    loop();
-
-    return () => {
-      cancelAnimationFrame(animFrameId);
-    };
-  }, [canvasDim, season, customBgImage, selectedWaypointIdx, selectedMarkerId, selectedConstraintZoneId, selectedRotationTargetId, decodeDarkImage, decodeLightImage]);
-
-  // Handle waypoint deletions
+  // Waypoint deletions
   const handleDeleteWaypoint = (idx: number) => {
     if (waypoints.length <= 2) return; // Keep minimum 2 points
     if (lockedWaypoints[idx]) return;
     const nextWps = waypoints.filter((_, i) => i !== idx);
-    
+
     // Repair controls constraints
     if (idx === 0) {
       nextWps[0].prevControl = null;
@@ -1185,11 +266,14 @@ export default function AresPlanner({
   // Add waypoint to path end
   const handleAddWaypoint = () => {
     const lastWp = waypoints[waypoints.length - 1];
-    
+
     // Position offset from last waypoint
-    const newAnchor = { x: Math.min(136, lastWp.anchor.x + 24), y: Math.max(8, lastWp.anchor.y - 24) };
+    const newAnchor = {
+      x: Math.min(136, lastWp.anchor.x + 24),
+      y: Math.max(8, lastWp.anchor.y - 24),
+    };
     const prevControl = { x: lastWp.anchor.x + 12, y: lastWp.anchor.y - 12 };
-    
+
     // Set next control on the old last waypoint
     const nextWps = waypoints.map((wp, idx) => {
       if (idx === waypoints.length - 1) {
@@ -1201,7 +285,7 @@ export default function AresPlanner({
     const newWp: Waypoint = {
       anchor: newAnchor,
       prevControl: prevControl,
-      nextControl: null
+      nextControl: null,
     };
 
     setWaypoints([...nextWps, newWp]);
@@ -1223,7 +307,7 @@ export default function AresPlanner({
 
   // Update marker parameters
   const handleUpdateMarker = (id: string, updates: Partial<EventMarker>) => {
-    setMarkers(markers.map((m) => m.id === id ? { ...m, ...updates } : m));
+    setMarkers(markers.map((m) => (m.id === id ? { ...m, ...updates } : m)));
   };
 
   // Actions for Constraint Zones
@@ -1235,7 +319,7 @@ export default function AresPlanner({
       y: 72,
       width: 24,
       height: 24,
-      maxVelocity: 1.5
+      maxVelocity: 1.5,
     };
     setConstraintZones([...constraintZones, newZone]);
     setSelectedConstraintZoneId(newZone.id);
@@ -1245,7 +329,7 @@ export default function AresPlanner({
   };
 
   const handleUpdateConstraintZone = (id: string, updates: Partial<ConstraintZone>) => {
-    setConstraintZones(constraintZones.map((z) => z.id === id ? { ...z, ...updates } : z));
+    setConstraintZones(constraintZones.map((z) => (z.id === id ? { ...z, ...updates } : z)));
   };
 
   const handleDeleteConstraintZone = (id: string) => {
@@ -1262,7 +346,7 @@ export default function AresPlanner({
       name: `Target ${rotationTargets.length + 1}`,
       x: wp ? Math.min(136, wp.anchor.x + 20) : 72,
       y: wp ? Math.min(136, wp.anchor.y + 20) : 72,
-      waypointIndex: linkedWpIdx
+      waypointIndex: linkedWpIdx,
     };
     setRotationTargets([...rotationTargets, newTarget]);
     setSelectedRotationTargetId(newTarget.id);
@@ -1272,7 +356,7 @@ export default function AresPlanner({
   };
 
   const handleUpdateRotationTarget = (id: string, updates: Partial<RotationTarget>) => {
-    setRotationTargets(rotationTargets.map((r) => r.id === id ? { ...r, ...updates } : r));
+    setRotationTargets(rotationTargets.map((r) => (r.id === id ? { ...r, ...updates } : r)));
   };
 
   const handleDeleteRotationTarget = (id: string) => {
@@ -1284,7 +368,7 @@ export default function AresPlanner({
   const getCoordinatesDisplay = (x: number, y: number) => {
     let dispX = x;
     let dispY = y;
-    
+
     if (originMode === "center") {
       dispX = x - 72;
       dispY = y - 72;
@@ -1297,6 +381,7 @@ export default function AresPlanner({
 
     const unitStr = unitMode === "inches" ? "in" : "m";
     const precision = unitMode === "meters" ? 2 : 1;
+
     return `X: ${dispX.toFixed(precision)}${unitStr}, Y: ${dispY.toFixed(precision)}${unitStr}`;
   };
 
@@ -1339,17 +424,17 @@ export default function AresPlanner({
         const dx = wp.nextControl.x - wp.anchor.x;
         const dy = wp.nextControl.y - wp.anchor.y;
         const len = Math.sqrt(dx * dx + dy * dy);
-        
+
         wp.nextControl = {
           x: wp.anchor.x + len * Math.cos(rad),
-          y: wp.anchor.y + len * Math.sin(rad)
+          y: wp.anchor.y + len * Math.sin(rad),
         };
 
         // Mirror to prevControl for C1 continuity
         if (wp.prevControl) {
           wp.prevControl = {
             x: wp.anchor.x - len * Math.cos(rad),
-            y: wp.anchor.y - len * Math.sin(rad)
+            y: wp.anchor.y - len * Math.sin(rad),
           };
         }
       } else if (wp.prevControl) {
@@ -1360,87 +445,13 @@ export default function AresPlanner({
         // Prev control is in the opposite direction of path tangent
         wp.prevControl = {
           x: wp.anchor.x - len * Math.cos(rad),
-          y: wp.anchor.y - len * Math.sin(rad)
+          y: wp.anchor.y - len * Math.sin(rad),
         };
       }
 
       nextWps[idx] = wp;
       return nextWps;
     });
-  };
-
-  const interpolateAngles = (from: number, to: number, ratio: number) => {
-    let diff = to - from;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    return from + diff * ratio;
-  };
-
-  const getWaypointRobotHeading = (idx: number) => {
-    const target = rotationTargets.find((r) => r.waypointIndex === idx);
-    if (target) {
-      const wp = waypoints[idx];
-      if (wp) {
-        const dx = target.x - wp.anchor.x;
-        const dy = target.y - wp.anchor.y;
-        return Math.atan2(dy, dx);
-      }
-    }
-
-    if (idx === 0) {
-      return startHeading * (Math.PI / 180);
-    }
-    if (idx === waypoints.length - 1) {
-      return endHeading * (Math.PI / 180);
-    }
-
-    let prevIdx = 0;
-    let prevHeading = startHeading * (Math.PI / 180);
-    for (let i = idx - 1; i >= 0; i--) {
-      const prevTarget = rotationTargets.find((r) => r.waypointIndex === i);
-      if (prevTarget || i === 0) {
-        prevIdx = i;
-        if (prevTarget) {
-          const wp = waypoints[i];
-          prevHeading = Math.atan2(prevTarget.y - wp.anchor.y, prevTarget.x - wp.anchor.x);
-        } else {
-          prevHeading = startHeading * (Math.PI / 180);
-        }
-        break;
-      }
-    }
-
-    let nextIdx = waypoints.length - 1;
-    let nextHeading = endHeading * (Math.PI / 180);
-    for (let i = idx + 1; i < waypoints.length; i++) {
-      const nextTarget = rotationTargets.find((r) => r.waypointIndex === i);
-      if (nextTarget || i === waypoints.length - 1) {
-        nextIdx = i;
-        if (nextTarget) {
-          const wp = waypoints[i];
-          nextHeading = Math.atan2(nextTarget.y - wp.anchor.y, nextTarget.x - wp.anchor.x);
-        } else {
-          nextHeading = endHeading * (Math.PI / 180);
-        }
-        break;
-      }
-    }
-
-    const ratio = (idx - prevIdx) / (nextIdx - prevIdx);
-    return interpolateAngles(prevHeading, nextHeading, ratio);
-  };
-
-  const getInterpolatedRobotHeading = (progress: number) => {
-    if (waypoints.length < 2) return 0;
-    const numSegments = waypoints.length - 1;
-    const segmentFloat = progress * numSegments;
-    const segIdx = Math.max(0, Math.min(numSegments - 1, Math.floor(segmentFloat)));
-    const segT = segmentFloat - segIdx;
-
-    const hStart = getWaypointRobotHeading(segIdx);
-    const hEnd = getWaypointRobotHeading(segIdx + 1);
-
-    return interpolateAngles(hStart, hEnd, segT);
   };
 
   const getControlLength = (idx: number, type: "prev" | "next") => {
@@ -1505,7 +516,7 @@ export default function AresPlanner({
       const scale = internalLen / currentLen;
       const updatedCtrl = {
         x: wp.anchor.x + dx * scale,
-        y: wp.anchor.y + dy * scale
+        y: wp.anchor.y + dy * scale,
       };
 
       if (type === "prev") {
@@ -1529,136 +540,46 @@ export default function AresPlanner({
   };
 
   const handleMirror = (axis: "x" | "y") => {
-    setWaypoints((prev) =>
-      prev.map((wp) => ({
-        anchor: {
-          x: axis === "x" ? 144 - wp.anchor.x : wp.anchor.x,
-          y: axis === "y" ? 144 - wp.anchor.y : wp.anchor.y
-        },
-        prevControl: wp.prevControl
-          ? {
-              x: axis === "x" ? 144 - wp.prevControl.x : wp.prevControl.x,
-              y: axis === "y" ? 144 - wp.prevControl.y : wp.prevControl.y
-            }
-          : null,
-        nextControl: wp.nextControl
-          ? {
-              x: axis === "x" ? 144 - wp.nextControl.x : wp.nextControl.x,
-              y: axis === "y" ? 144 - wp.nextControl.y : wp.nextControl.y
-            }
-          : null
-      }))
+    const transformed = mirrorPath(
+      axis,
+      waypoints,
+      rotationTargets,
+      constraintZones,
+      startHeading,
+      endHeading
     );
-
-    setRotationTargets((prev) =>
-      prev.map((r) => ({
-        ...r,
-        x: axis === "x" ? 144 - r.x : r.x,
-        y: axis === "y" ? 144 - r.y : r.y
-      }))
-    );
-
-    setConstraintZones((prev) =>
-      prev.map((z) => ({
-        ...z,
-        x: axis === "x" ? 144 - z.x : z.x,
-        y: axis === "y" ? 144 - z.y : z.y
-      }))
-    );
-
-    if (axis === "x") {
-      setStartHeading((h) => (180 - h + 360) % 360);
-      setEndHeading((h) => (180 - h + 360) % 360);
-    } else {
-      setStartHeading((h) => (360 - h) % 360);
-      setEndHeading((h) => (360 - h) % 360);
-    }
+    setWaypoints(transformed.waypoints);
+    setRotationTargets(transformed.rotationTargets);
+    setConstraintZones(transformed.constraintZones);
+    setStartHeading(transformed.startHeading);
+    setEndHeading(transformed.endHeading);
   };
 
   const handleRotate = (angleDeg: number) => {
-    const rad = angleDeg * (Math.PI / 180);
-    const rotatePoint = (x: number, y: number, cx: number, cy: number) => {
-      const cos = Math.cos(rad);
-      const sin = Math.sin(rad);
-      const dx = x - cx;
-      const dy = y - cy;
-      return {
-        x: Math.max(0, Math.min(144, cx + dx * cos - dy * sin)),
-        y: Math.max(0, Math.min(144, cy + dx * sin + dy * cos))
-      };
-    };
-
-    setWaypoints((prev) =>
-      prev.map((wp) => ({
-        anchor: rotatePoint(wp.anchor.x, wp.anchor.y, 72, 72),
-        prevControl: wp.prevControl ? rotatePoint(wp.prevControl.x, wp.prevControl.y, 72, 72) : null,
-        nextControl: wp.nextControl ? rotatePoint(wp.nextControl.x, wp.nextControl.y, 72, 72) : null
-      }))
+    const transformed = rotatePath(
+      angleDeg,
+      waypoints,
+      rotationTargets,
+      constraintZones,
+      startHeading,
+      endHeading
     );
-
-    setRotationTargets((prev) =>
-      prev.map((r) => {
-        const rotated = rotatePoint(r.x, r.y, 72, 72);
-        return { ...r, x: rotated.x, y: rotated.y };
-      })
-    );
-
-    setConstraintZones((prev) =>
-      prev.map((z) => {
-        const rotated = rotatePoint(z.x, z.y, 72, 72);
-        const shouldSwap = Math.abs(angleDeg) % 180 === 90;
-        return {
-          ...z,
-          x: rotated.x,
-          y: rotated.y,
-          width: shouldSwap ? z.height : z.width,
-          height: shouldSwap ? z.width : z.height
-        };
-      })
-    );
-
-    setStartHeading((h) => (h + angleDeg + 360) % 360);
-    setEndHeading((h) => (h + angleDeg + 360) % 360);
+    setWaypoints(transformed.waypoints);
+    setRotationTargets(transformed.rotationTargets);
+    setConstraintZones(transformed.constraintZones);
+    setStartHeading(transformed.startHeading);
+    setEndHeading(transformed.endHeading);
   };
 
   // JSON Exporter
   const handleExportJSON = () => {
-    const output = {
-      waypoints: waypoints.map((w) => ({
-        anchor: { x: parseFloat(w.anchor.x.toFixed(2)), y: parseFloat(w.anchor.y.toFixed(2)) },
-        prevControl: w.prevControl ? { x: parseFloat(w.prevControl.x.toFixed(2)), y: parseFloat(w.prevControl.y.toFixed(2)) } : null,
-        nextControl: w.nextControl ? { x: parseFloat(w.nextControl.x.toFixed(2)), y: parseFloat(w.nextControl.y.toFixed(2)) } : null
-      })),
-      eventMarkers: markers.map((m) => ({
-        name: m.name,
-        waypointRelativePos: parseFloat((m.progress * (waypoints.length - 1)).toFixed(3)),
-        command: {
-          type: "named",
-          name: m.actions[0] || m.name
-        }
-      })),
-      markers: markers.map((m) => ({
-        id: m.id,
-        name: m.name,
-        progress: parseFloat(m.progress.toFixed(3)),
-        actions: m.actions
-      })),
-      constraintZones: constraintZones.map((z) => ({
-        id: z.id,
-        name: z.name,
-        x: parseFloat(z.x.toFixed(2)),
-        y: parseFloat(z.y.toFixed(2)),
-        width: parseFloat(z.width.toFixed(2)),
-        height: parseFloat(z.height.toFixed(2)),
-        maxVelocity: z.maxVelocity
-      })),
-      rotationTargets: rotationTargets.map((r) => ({
-        id: r.id,
-        name: r.name,
-        x: parseFloat(r.x.toFixed(2)),
-        y: parseFloat(r.y.toFixed(2)),
-        waypointIndex: r.waypointIndex
-      })),
+    const jsonStr = serializePath(
+      pathName,
+      season,
+      waypoints,
+      markers,
+      constraintZones,
+      rotationTargets,
       maxVelocity,
       maxAcceleration,
       maxAngularVelocity,
@@ -1666,12 +587,10 @@ export default function AresPlanner({
       startVelocity,
       startHeading,
       endVelocity,
-      endHeading,
-      season,
-      name: pathName
-    };
+      endHeading
+    );
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(output, null, 2));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonStr);
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", `${pathName.toLowerCase().replace(/\s+/g, "_")}.json`);
@@ -1687,25 +606,23 @@ export default function AresPlanner({
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
-          const data = JSON.parse(event.target?.result as string);
-          if (data.name) setPathName(data.name);
-          if (data.season) setSeason(data.season);
-          if (data.waypoints) setWaypoints(data.waypoints);
-          if (data.markers) setMarkers(data.markers);
-          if (data.constraintZones) setConstraintZones(data.constraintZones);
-          else setConstraintZones([]);
-          if (data.rotationTargets) setRotationTargets(data.rotationTargets);
-          else setRotationTargets([]);
+          const data = deserializePath(event.target?.result as string);
+          setPathName(data.name);
+          setSeason(data.season);
+          setWaypoints(data.waypoints);
+          setMarkers(data.markers);
+          setConstraintZones(data.constraintZones);
+          setRotationTargets(data.rotationTargets);
           setLockedWaypoints({});
 
-          if (data.maxVelocity !== undefined) setMaxVelocity(data.maxVelocity);
-          if (data.maxAcceleration !== undefined) setMaxAcceleration(data.maxAcceleration);
-          if (data.maxAngularVelocity !== undefined) setMaxAngularVelocity(data.maxAngularVelocity);
-          if (data.maxAngularAcceleration !== undefined) setMaxAngularAcceleration(data.maxAngularAcceleration);
-          if (data.startVelocity !== undefined) setStartVelocity(data.startVelocity);
-          if (data.startHeading !== undefined) setStartHeading(data.startHeading);
-          if (data.endVelocity !== undefined) setEndVelocity(data.endVelocity);
-          if (data.endHeading !== undefined) setEndHeading(data.endHeading);
+          setMaxVelocity(data.maxVelocity);
+          setMaxAcceleration(data.maxAcceleration);
+          setMaxAngularVelocity(data.maxAngularVelocity);
+          setMaxAngularAcceleration(data.maxAngularAcceleration);
+          setStartVelocity(data.startVelocity);
+          setStartHeading(data.startHeading);
+          setEndVelocity(data.endVelocity);
+          setEndHeading(data.endHeading);
         } catch (err) {
           console.error("Failed to parse imported path JSON:", err);
           alert("Invalid path JSON file.");
@@ -1733,115 +650,99 @@ export default function AresPlanner({
     }
   };
 
-  // Robot Sync - HTTP POST to OnBot Java endpoint
-  const handleSyncToRobot = async () => {
-    setSyncStatus("uploading");
-    setSyncLog(`Initiating HTTP connection to Robot Controller Program & Manage server...\nTarget URL: http://${robotIp}:8080/\n\n`);
+  // Hook 1: Robot Wifi/ADB sync
+  const {
+    robotIp,
+    setRobotIp,
+    syncStatus,
+    syncLog,
+    copiedCmd,
+    handleSyncToRobot,
+    adbPushCmd,
+    copyAdbCmd,
+  } = useRobotSync({
+    pathName,
+    season,
+    waypoints,
+    markers,
+    constraintZones,
+    rotationTargets,
+    maxVelocity,
+    maxAcceleration,
+    maxAngularVelocity,
+    maxAngularAcceleration,
+    startVelocity,
+    startHeading,
+    endVelocity,
+    endHeading,
+  });
 
-    const pathData = {
-      name: pathName,
-      season,
-      waypoints: waypoints.map((w) => ({
-        anchor: { x: parseFloat(w.anchor.x.toFixed(2)), y: parseFloat(w.anchor.y.toFixed(2)) },
-        prevControl: w.prevControl ? { x: parseFloat(w.prevControl.x.toFixed(2)), y: parseFloat(w.prevControl.y.toFixed(2)) } : null,
-        nextControl: w.nextControl ? { x: parseFloat(w.nextControl.x.toFixed(2)), y: parseFloat(w.nextControl.y.toFixed(2)) } : null
-      })),
-      eventMarkers: markers.map((m) => ({
-        name: m.name,
-        waypointRelativePos: parseFloat((m.progress * (waypoints.length - 1)).toFixed(3)),
-        command: {
-          type: "named",
-          name: m.actions[0] || m.name
-        }
-      })),
-      markers: markers.map((m) => ({
-        id: m.id,
-        name: m.name,
-        progress: parseFloat(m.progress.toFixed(3)),
-        actions: m.actions
-      })),
-      constraintZones: constraintZones.map((z) => ({
-        id: z.id,
-        name: z.name,
-        x: parseFloat(z.x.toFixed(2)),
-        y: parseFloat(z.y.toFixed(2)),
-        width: parseFloat(z.width.toFixed(2)),
-        height: parseFloat(z.height.toFixed(2)),
-        maxVelocity: z.maxVelocity
-      })),
-      rotationTargets: rotationTargets.map((r) => ({
-        id: r.id,
-        name: r.name,
-        x: parseFloat(r.x.toFixed(2)),
-        y: parseFloat(r.y.toFixed(2)),
-        waypointIndex: r.waypointIndex
-      })),
-      maxVelocity,
-      maxAcceleration,
-      maxAngularVelocity,
-      maxAngularAcceleration,
-      startVelocity,
-      startHeading,
-      endVelocity,
-      endHeading
-    };
+  // Hook 2: Pointer drag gestures
+  const { handlePointerDown, handlePointerMove, handlePointerUp } = usePlannerDrag({
+    canvasRef,
+    canvasDim,
+    waypoints,
+    setWaypoints,
+    markers,
+    setMarkers,
+    constraintZones,
+    setConstraintZones,
+    rotationTargets,
+    setRotationTargets,
+    lockedWaypoints,
+    isAddingMarker,
+    setIsAddingMarker,
+    pathRef,
+    setSelectedWaypointIdx,
+    setSelectedMarkerId,
+    setSelectedRotationTargetId,
+    setSelectedConstraintZoneId,
+    setIsPlaying,
+  });
 
-    try {
-      // Endpoint typically used by OnBotJava file save POSTs
-      // If we save it as a JSON config file directly in the src folder
-      const targetUrl = `http://${robotIp}:8080/onbotjava/save?file=src/org/firstinspires/ftc/teamcode/${pathName}.json`;
-      
-      setSyncLog((prev) => prev + `Sending POST request payload to:\n${targetUrl}\n\n`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+  // Hook 3: Keyboard controls
+  const { handleCanvasKeyDown } = usePlannerKeyboard({
+    selectedWaypointIdx,
+    setSelectedWaypointIdx,
+    waypoints,
+    lockedWaypoints,
+    handleUpdateWaypointAnchor,
+  });
 
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "text/plain" // OnBot Java accepts text/plain source payloads
-        },
-        body: JSON.stringify(pathData, null, 2),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        setSyncStatus("success");
-        setSyncLog((prev) => prev + `SUCCESS: Path successfully saved to Control Hub!\nFile located at: /FIRST/java/src/org/firstinspires/ftc/teamcode/${pathName}.json\n\nYou can now load this file in your OpMode using your JSON path parser!`);
-      } else {
-        throw new Error(`Server returned HTTP status ${response.status}: ${response.statusText}`);
-      }
-    } catch (err: any) {
-      setSyncStatus("error");
-      let errorMsg = err.message || err;
-      if (err.name === "AbortError") {
-        errorMsg = "Connection timed out. Ensure your PC is connected to the Robot's Wi-Fi network.";
-      }
-      
-      setSyncLog((prev) => prev + `ERROR: Upload failed.\nDetail: ${errorMsg}\n\n` + 
-        `⚠️ TECHNICAL NOTE (Mixed Content & CORS):\n` +
-        `Modern browsers block HTTPS websites (like aresfirst-portal.web.app) from calling local HTTP addresses (like http://${robotIp}:8080). ` +
-        `If this failed, you can run the portal locally, or use the copyable ADB Command line below to push the file wirelessly!`);
-    }
-  };
-
-  const adbPushCmd = `adb connect ${robotIp}:5555 && adb push ${pathName.toLowerCase().replace(/\s+/g, "_")}.json /sdcard/FIRST/${pathName}.json`;
-
-  const copyAdbCmd = () => {
-    navigator.clipboard.writeText(adbPushCmd);
-    setCopiedCmd(true);
-    setTimeout(() => setCopiedCmd(false), 2000);
-  };
+  // Hook 4: Canvas rendering loop
+  usePlannerCanvas({
+    canvasRef,
+    canvasDim,
+    season,
+    customBgImage,
+    selectedWaypointIdx,
+    selectedMarkerId,
+    selectedConstraintZoneId,
+    selectedRotationTargetId,
+    decodeDarkImage,
+    decodeLightImage,
+    waypointsRef,
+    markersRef,
+    constraintZonesRef,
+    rotationTargetsRef,
+    pathRef,
+    robotRef,
+    isPlaying,
+    isPlayingRef,
+    setIsPlaying,
+    lockedWaypointsRef,
+    trajectoryAnalyticsRef,
+    maxVelocity,
+    startHeading,
+    endHeading,
+  });
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`w-full flex flex-col gap-6 p-4 rounded-xl border border-white/10 ${
-        isZenMode 
-          ? "fixed inset-0 z-[9999] bg-obsidian p-6 overflow-y-auto" 
+        isZenMode
+          ? "fixed inset-0 z-[9999] bg-obsidian p-6 overflow-y-auto"
           : "glass-card max-w-5xl mx-auto"
       }`}
     >
@@ -1855,60 +756,21 @@ export default function AresPlanner({
           <Minimize2 size={16} />
         </button>
       )}
+
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
-        <div className="flex items-center gap-3">
-          <Compass className="text-ares-gold w-8 h-8 shrink-0 animate-spin" style={{ animationDuration: '15s' }} />
-          <div>
-            <input 
-              type="text" 
-              value={pathName}
-              onChange={(e) => setPathName(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-              className="bg-transparent text-white font-heading font-black text-lg uppercase tracking-wider border-b border-white/10 focus:border-ares-cyan focus:outline-none w-48"
-              title="Name of the path file"
-            />
-            <p className="text-[10px] text-marble/40 font-mono mt-1">FTC Cubic Bezier Spline Editor</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Origin Mode Toggle */}
-          <button
-            onClick={() => setOriginMode(originMode === "corner" ? "center" : "corner")}
-            className="px-2.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-white font-bold rounded border border-white/10 cursor-pointer uppercase tracking-wider"
-          >
-            Origin: {originMode === "corner" ? "Corner (0,0)" : "Center (0,0)"}
-          </button>
-
-          {/* Unit Toggle */}
-          <button
-            onClick={() => setUnitMode(unitMode === "inches" ? "meters" : "inches")}
-            className="px-2.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-white font-bold rounded border border-white/10 cursor-pointer uppercase tracking-wider"
-          >
-            Units: {unitMode === "inches" ? "Inches" : "Meters"}
-          </button>
-
-          {/* Fullscreen Toggle */}
-          <button
-            onClick={() => setIsZenMode(!isZenMode)}
-            className="px-2.5 py-1 text-[10px] bg-white/5 hover:bg-white/10 text-white font-bold rounded border border-white/10 cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
-          >
-            {isZenMode ? (
-              <>
-                <Minimize2 size={12} /> Standard View
-              </>
-            ) : (
-              <>
-                <Maximize2 size={12} /> Fullscreen
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      <PlannerHeaderBar
+        pathName={pathName}
+        setPathName={setPathName}
+        originMode={originMode}
+        setOriginMode={setOriginMode}
+        unitMode={unitMode}
+        setUnitMode={setUnitMode}
+        isZenMode={isZenMode}
+        setIsZenMode={setIsZenMode}
+      />
 
       {/* Main Workspace split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
         {/* LEFT COLUMN: Visual canvas board (7 cols) */}
         <div className="lg:col-span-7 flex flex-col items-center gap-3 w-full">
           <div className="relative bg-black/60 p-2.5 rounded-xl border border-white/10 shadow-2xl max-w-full w-full flex justify-center">
@@ -1934,8 +796,8 @@ export default function AresPlanner({
               <div>
                 <span className="text-marble/40 uppercase">Length: </span>
                 <span className="text-ares-cyan font-bold">
-                  {unitMode === "meters" 
-                    ? `${(trajectoryAnalytics.length * 0.0254).toFixed(2)} m` 
+                  {unitMode === "meters"
+                    ? `${(trajectoryAnalytics.length * 0.0254).toFixed(2)} m`
                     : `${trajectoryAnalytics.length.toFixed(1)} in`}
                 </span>
               </div>
@@ -1961,1136 +823,167 @@ export default function AresPlanner({
 
         {/* RIGHT COLUMN: Controls and configurations (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-4 w-full">
-          
           {/* Card 1: Map & Paths selector */}
-          <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-            <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-1.5">
-              <Settings size={14} /> Field Settings
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="field-season-select" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Field Season</label>
-                <select
-                  id="field-season-select"
-                  value={season}
-                  onChange={(e) => setSeason(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1.5 text-xs text-white uppercase font-bold focus:outline-none"
-                >
-                  <option value="decode">DECODE (25/26)</option>
-                  <option value="into_the_deep">Into The Deep (24/25)</option>
-                  <option value="centerstage">Centerstage (23/24)</option>
-                  <option value="powerplay">Powerplay (22/23)</option>
-                  <option value="blank_grid">Generic Grid (Blank)</option>
-                  {customBgName && <option value="custom">Uploaded: {customBgName}</option>}
-                </select>
-              </div>
-
-              <div>
-                <span className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Upload Custom Image</span>
-                <label htmlFor="custom-field-bg-upload" className="w-full bg-white/5 border border-white/10 border-dashed rounded px-2.5 py-1.5 text-xs text-marble hover:text-white hover:bg-white/10 flex items-center justify-center font-bold cursor-pointer transition-all">
-                  <Plus size={12} className="mr-1.5 text-ares-cyan" /> Upload Field
-                  <input
-                    id="custom-field-bg-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCustomBgUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
+          <FieldSettingsCard
+            season={season}
+            setSeason={setSeason}
+            customBgName={customBgName}
+            handleCustomBgUpload={handleCustomBgUpload}
+          />
 
           {/* Path Transforms Utility Card */}
-          <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-            <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-1.5">
-              <RefreshCw size={14} /> Path Transforms
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => handleMirror("x")}
-                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
-              >
-                Flip Horiz (X)
-              </button>
-              <button
-                onClick={() => handleMirror("y")}
-                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
-              >
-                Flip Vert (Y)
-              </button>
-              <button
-                onClick={() => handleRotate(90)}
-                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
-              >
-                Rotate +90°
-              </button>
-              <button
-                onClick={() => handleRotate(-90)}
-                className="py-1.5 bg-white/5 hover:bg-white/10 text-white rounded text-xs font-bold uppercase tracking-wider border border-white/10 cursor-pointer transition-all duration-300"
-              >
-                Rotate -90°
-              </button>
-            </div>
-          </div>
+          <PathTransformsCard handleMirror={handleMirror} handleRotate={handleRotate} />
 
           {/* Collapsible Accordion Side Panel */}
           <div className="flex flex-col gap-3">
-            
             {/* 1. WAYPOINTS ACCORDION */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsWaypointsExpanded(!isWaypointsExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isWaypointsExpanded ? <ChevronUp size={14} className="text-ares-cyan" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-ares-cyan" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Waypoints</span>
-                </div>
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <span className="bg-ares-cyan/15 border border-ares-cyan/35 text-ares-cyan text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                    {waypoints.length}
-                  </span>
-                  <button
-                    onClick={handleAddWaypoint}
-                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
-                    title="Add waypoint"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
-
-              {isWaypointsExpanded && (
-                <div className="p-3 flex flex-col gap-2 max-h-[360px] overflow-y-auto">
-                  {waypoints.map((wp, idx) => {
-                    const isExpanded = !!expandedWaypoints[idx];
-                    const isSelected = selectedWaypointIdx === idx;
-                    const label = idx === 0 ? "Start Point" : idx === waypoints.length - 1 ? "End Point" : `Waypoint ${idx + 1}`;
-                    
-                    return (
-                      <div 
-                        key={idx}
-                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
-                          isSelected 
-                            ? "bg-ares-red/5 border-ares-red/45" 
-                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
-                        }`}
-                      >
-                        {/* Waypoint Card Header */}
-                        <div 
-                          onClick={() => {
-                            setSelectedWaypointIdx(idx);
-                            setSelectedMarkerId(null);
-                            setExpandedWaypoints(prev => ({ ...prev, [idx]: !prev[idx] }));
-                          }}
-                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] select-none"
-                        >
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? <ChevronUp size={11} className="text-marble/60" /> : <ChevronDown size={11} className="text-marble/35" />}
-                            <span className="text-xs font-bold text-white/90">{label}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                            <button 
-                              onClick={() => toggleLockWaypoint(idx)}
-                              className={`p-1 rounded cursor-pointer transition-colors ${
-                                lockedWaypoints[idx] 
-                                  ? "text-ares-red bg-ares-red/10 hover:bg-ares-red/20" 
-                                  : "text-marble/40 hover:bg-white/5 hover:text-white"
-                              }`}
-                              title={lockedWaypoints[idx] ? "Unlock waypoint" : "Lock waypoint"}
-                            >
-                              {lockedWaypoints[idx] ? <Lock size={12} /> : <Unlock size={12} />}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteWaypoint(idx)}
-                              disabled={waypoints.length <= 2 || lockedWaypoints[idx]}
-                              className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                              title="Delete waypoint"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Waypoint Card Content */}
-                        {isExpanded && (
-                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5">
-                            <div className="grid grid-cols-3 gap-2">
-                              {/* X Position */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`wp-x-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">X Position ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`wp-x-${idx}`}
-                                  type="number"
-                                  step="0.001"
-                                  value={parseFloat((unitMode === "meters" ? wp.anchor.x * 0.0254 : wp.anchor.x).toFixed(3))}
-                                  onChange={(e) => handleUpdateWaypointAnchor(idx, "x", e.target.value)}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
-                                />
-                              </div>
-                              {/* Y Position */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`wp-y-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Y Position ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`wp-y-${idx}`}
-                                  type="number"
-                                  step="0.001"
-                                  value={parseFloat((unitMode === "meters" ? wp.anchor.y * 0.0254 : wp.anchor.y).toFixed(3))}
-                                  onChange={(e) => handleUpdateWaypointAnchor(idx, "y", e.target.value)}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
-                                />
-                              </div>
-                              {/* Tangent Heading */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`wp-heading-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Heading (Deg)</label>
-                                <input
-                                  id={`wp-heading-${idx}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={parseFloat(getWaypointHeadingDegrees(idx).toFixed(1))}
-                                  onChange={(e) => handleUpdateWaypointHeading(idx, e.target.value)}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Control Tangent Lengths */}
-                            {(wp.prevControl || wp.nextControl) && (
-                              <div className="flex flex-col gap-2 border-t border-white/[0.04] pt-2">
-                                {wp.prevControl && (
-                                  <div className="flex flex-col gap-1">
-                                    <label htmlFor={`wp-prev-len-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Prev Control Length ({unitMode === "meters" ? "M" : "In"})</label>
-                                    <input
-                                      id={`wp-prev-len-${idx}`}
-                                      type="number"
-                                      step="0.001"
-                                      value={parseFloat(getControlLength(idx, "prev").toFixed(3))}
-                                      onChange={(e) => handleUpdateControlLength(idx, "prev", e.target.value)}
-                                      className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
-                                    />
-                                  </div>
-                                )}
-                                {wp.nextControl && (
-                                  <div className="flex flex-col gap-1">
-                                    <label htmlFor={`wp-next-len-${idx}`} className="text-[8px] font-mono uppercase text-marble/40 block">Next Control Length ({unitMode === "meters" ? "M" : "In"})</label>
-                                    <input
-                                      id={`wp-next-len-${idx}`}
-                                      type="number"
-                                      step="0.001"
-                                      value={parseFloat(getControlLength(idx, "next").toFixed(3))}
-                                      onChange={(e) => handleUpdateControlLength(idx, "next", e.target.value)}
-                                      className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-red"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <WaypointsAccordion
+              waypoints={waypoints}
+              expandedWaypoints={expandedWaypoints}
+              setExpandedWaypoints={setExpandedWaypoints}
+              selectedWaypointIdx={selectedWaypointIdx}
+              setSelectedWaypointIdx={setSelectedWaypointIdx}
+              setSelectedMarkerId={setSelectedMarkerId}
+              lockedWaypoints={lockedWaypoints}
+              toggleLockWaypoint={toggleLockWaypoint}
+              handleDeleteWaypoint={handleDeleteWaypoint}
+              handleAddWaypoint={handleAddWaypoint}
+              unitMode={unitMode}
+              handleUpdateWaypointAnchor={handleUpdateWaypointAnchor}
+              handleUpdateWaypointHeading={handleUpdateWaypointHeading}
+              handleUpdateControlLength={handleUpdateControlLength}
+              getWaypointHeadingDegrees={getWaypointHeadingDegrees}
+              getControlLength={getControlLength}
+              isWaypointsExpanded={isWaypointsExpanded}
+              setIsWaypointsExpanded={setIsWaypointsExpanded}
+            />
 
             {/* 2. EVENT MARKERS ACCORDION */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsEventsExpanded(!isEventsExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isEventsExpanded ? <ChevronUp size={14} className="text-ares-gold" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Settings size={14} className="text-ares-gold" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Event Markers</span>
-                </div>
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <span className="bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                    {markers.length}
-                  </span>
-                  <button
-                    onClick={handleTriggerAddMarker}
-                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
-                    title="Add event marker"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
-
-              {isEventsExpanded && (
-                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto">
-                  {markers.map((marker) => {
-                    const isSelected = selectedMarkerId === marker.id;
-                    return (
-                      <div 
-                        key={marker.id}
-                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
-                          isSelected 
-                            ? "bg-ares-gold/[0.02] border-ares-gold/45" 
-                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
-                        }`}
-                      >
-                        {/* Event Card Header */}
-                        <div 
-                          onClick={() => {
-                            setSelectedMarkerId(marker.id);
-                            setSelectedWaypointIdx(null);
-                          }}
-                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
-                        >
-                          <div className="flex items-center gap-2 flex-grow">
-                            <input
-                              type="text"
-                              value={marker.name}
-                              onChange={(e) => handleUpdateMarker(marker.id, { name: e.target.value })}
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-cyan py-0.5"
-                            />
-                            <span className="text-[10px] text-marble/30 font-mono">({Math.round(marker.progress * 100)}%)</span>
-                          </div>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMarker(marker.id);
-                            }}
-                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
-                            title="Delete marker"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-
-                        {/* Event Card Content */}
-                        {isSelected && (
-                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-3 text-xs">
-                            {/* Zoned Event Checkbox */}
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="checkbox" 
-                                id={`zoned-${marker.id}`} 
-                                className="accent-ares-gold h-3.5 w-3.5 border border-white/20 bg-obsidian rounded cursor-pointer"
-                              />
-                              <label htmlFor={`zoned-${marker.id}`} className="text-[10px] uppercase font-mono text-marble/50 cursor-pointer select-none">Zoned Event</label>
-                            </div>
-
-                            {/* Position slider */}
-                            <div className="flex flex-col gap-1.5">
-                              <div className="flex justify-between text-[9px] uppercase font-mono text-marble/40">
-                                <span>Position</span>
-                                <span className="font-bold text-white">{marker.progress.toFixed(2)}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  step="1"
-                                  value={Math.round(marker.progress * 100)}
-                                  onChange={(e) => handleUpdateMarker(marker.id, { progress: parseInt(e.target.value) / 100 })}
-                                  className="flex-grow accent-ares-gold h-1 rounded-full cursor-ew-resize bg-black/40"
-                                />
-                                <span className="bg-obsidian border border-white/10 px-2 py-0.5 rounded font-mono text-[10px] text-white">
-                                  {marker.progress.toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Actions Queue */}
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-[8px] font-mono uppercase text-marble/40 block">Actions Queue</label>
-                              <div className="flex flex-wrap gap-1 bg-obsidian/45 border border-white/5 p-2 rounded min-h-[40px]">
-                                {marker.actions.map((act, aIdx) => (
-                                  <span
-                                    key={aIdx}
-                                    className="bg-ares-gold/10 text-ares-gold text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-ares-gold/20 flex items-center gap-1 select-none"
-                                  >
-                                    {act}
-                                    <span
-                                      onClick={() => handleUpdateMarker(marker.id, { actions: marker.actions.filter((_, idx) => idx !== aIdx) })}
-                                      className="text-white hover:text-ares-red cursor-pointer font-sans font-black ml-1 text-[8px]"
-                                    >
-                                      ×
-                                    </span>
-                                  </span>
-                                ))}
-                                {marker.actions.length === 0 && (
-                                  <span className="text-[10px] text-marble/35 font-mono italic">No actions.</span>
-                                )}
-                              </div>
-
-                              <div className="flex gap-2 mt-1">
-                                <input
-                                  type="text"
-                                  id={`actionInput-${marker.id}`}
-                                  placeholder="ActionName (e.g. LiftUp)"
-                                  className="flex-grow bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      const target = e.currentTarget;
-                                      if (target.value.trim()) {
-                                        handleUpdateMarker(marker.id, { actions: [...marker.actions, target.value.trim()] });
-                                        target.value = "";
-                                      }
-                                    }
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const input = document.getElementById(`actionInput-${marker.id}`) as HTMLInputElement;
-                                    if (input && input.value.trim()) {
-                                      handleUpdateMarker(marker.id, { actions: [...marker.actions, input.value.trim()] });
-                                      input.value = "";
-                                    }
-                                  }}
-                                  className="px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] text-white font-bold cursor-pointer"
-                                >
-                                  Add
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {markers.length === 0 && (
-                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No event markers configured.</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <EventMarkersAccordion
+              markers={markers}
+              selectedMarkerId={selectedMarkerId}
+              setSelectedMarkerId={setSelectedMarkerId}
+              setSelectedWaypointIdx={setSelectedWaypointIdx}
+              setSelectedRotationTargetId={setSelectedRotationTargetId}
+              setSelectedConstraintZoneId={setSelectedConstraintZoneId}
+              handleDeleteMarker={handleDeleteMarker}
+              handleUpdateMarker={handleUpdateMarker}
+              handleTriggerAddMarker={handleTriggerAddMarker}
+              isEventsExpanded={isEventsExpanded}
+              setIsEventsExpanded={setIsEventsExpanded}
+            />
 
             {/* 3. ROTATION TARGETS EDITOR */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsRotationExpanded(!isRotationExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isRotationExpanded ? <ChevronUp size={14} className="text-purple-400" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-purple-400" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Rotation Targets</span>
-                </div>
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <span className="bg-purple-500/15 border border-purple-500/35 text-purple-400 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                    {rotationTargets.length}
-                  </span>
-                  <button
-                    onClick={handleAddRotationTarget}
-                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
-                    title="Add rotation target"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
-              
-              {isRotationExpanded && (
-                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto bg-black/5">
-                  {rotationTargets.map((rot, idx) => {
-                    const isSelected = selectedRotationTargetId === rot.id;
-                    return (
-                      <div 
-                        key={rot.id}
-                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
-                          isSelected 
-                            ? "bg-purple-500/[0.02] border-purple-500/45" 
-                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
-                        }`}
-                      >
-                        {/* Target Header */}
-                        <div 
-                          onClick={() => {
-                            setSelectedRotationTargetId(rot.id);
-                            setSelectedWaypointIdx(null);
-                            setSelectedMarkerId(null);
-                            setSelectedConstraintZoneId(null);
-                          }}
-                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
-                        >
-                          <div className="flex items-center gap-2 flex-grow">
-                            <input
-                              type="text"
-                              value={rot.name}
-                              onChange={(e) => handleUpdateRotationTarget(rot.id, { name: e.target.value })}
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-purple-400 py-0.5"
-                            />
-                            <span className="text-[10px] text-marble/30 font-mono">(WP {rot.waypointIndex + 1})</span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteRotationTarget(rot.id);
-                            }}
-                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
-                            title="Delete target"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-
-                        {/* Target Content */}
-                        {isSelected && (
-                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-marble">
-                            <div className="grid grid-cols-2 gap-2">
-                              {/* Linked Waypoint */}
-                              <div className="flex flex-col gap-1 col-span-2">
-                                <label htmlFor={`rot-wp-link-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Link to Waypoint</label>
-                                <select
-                                  id={`rot-wp-link-${rot.id}`}
-                                  value={rot.waypointIndex}
-                                  onChange={(e) => handleUpdateRotationTarget(rot.id, { waypointIndex: parseInt(e.target.value) })}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
-                                >
-                                  {waypoints.map((_, wIdx) => (
-                                    <option key={wIdx} value={wIdx} className="bg-neutral-900">
-                                      {wIdx === 0 ? "Start Point" : wIdx === waypoints.length - 1 ? "End Point" : `Waypoint ${wIdx + 1}`}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              {/* Target X */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`rot-x-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Target X ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`rot-x-${rot.id}`}
-                                  type="number"
-                                  step="0.01"
-                                  value={parseFloat((unitMode === "meters" ? rot.x * 0.0254 : rot.x).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateRotationTarget(rot.id, { x: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-purple-400"
-                                />
-                              </div>
-
-                              {/* Target Y */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`rot-y-${rot.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Target Y ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`rot-y-${rot.id}`}
-                                  type="number"
-                                  step="0.01"
-                                  value={parseFloat((unitMode === "meters" ? rot.y * 0.0254 : rot.y).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateRotationTarget(rot.id, { y: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-purple-400"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {rotationTargets.length === 0 && (
-                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No rotation targets defined.</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <RotationTargetsAccordion
+              rotationTargets={rotationTargets}
+              selectedRotationTargetId={selectedRotationTargetId}
+              setSelectedRotationTargetId={setSelectedRotationTargetId}
+              setSelectedWaypointIdx={setSelectedWaypointIdx}
+              setSelectedMarkerId={setSelectedMarkerId}
+              setSelectedConstraintZoneId={setSelectedConstraintZoneId}
+              handleAddRotationTarget={handleAddRotationTarget}
+              handleUpdateRotationTarget={handleUpdateRotationTarget}
+              handleDeleteRotationTarget={handleDeleteRotationTarget}
+              waypoints={waypoints}
+              unitMode={unitMode}
+              isRotationExpanded={isRotationExpanded}
+              setIsRotationExpanded={setIsRotationExpanded}
+            />
 
             {/* 4. CONSTRAINT ZONES EDITOR */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsPointZonesExpanded(!isPointZonesExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isPointZonesExpanded ? <ChevronUp size={14} className="text-ares-gold" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Compass size={14} className="text-ares-gold" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Constraint Zones</span>
-                </div>
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <span className="bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                    {constraintZones.length}
-                  </span>
-                  <button
-                    onClick={handleAddConstraintZone}
-                    className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white cursor-pointer"
-                    title="Add constraint zone"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
-              
-              {isPointZonesExpanded && (
-                <div className="p-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto bg-black/5">
-                  {constraintZones.map((zone, idx) => {
-                    const isSelected = selectedConstraintZoneId === zone.id;
-                    return (
-                      <div 
-                        key={zone.id}
-                        className={`border rounded-lg overflow-hidden transition-all duration-300 ${
-                          isSelected 
-                            ? "bg-ares-gold/[0.02] border-ares-gold/45" 
-                            : "bg-obsidian/30 border-white/5 hover:border-white/15"
-                        }`}
-                      >
-                        {/* Zone Header */}
-                        <div 
-                          onClick={() => {
-                            setSelectedConstraintZoneId(zone.id);
-                            setSelectedWaypointIdx(null);
-                            setSelectedMarkerId(null);
-                            setSelectedRotationTargetId(null);
-                          }}
-                          className="flex items-center justify-between px-3 py-2 cursor-pointer bg-white/[0.01] hover:bg-white/[0.04]"
-                        >
-                          <div className="flex items-center gap-2 flex-grow">
-                            <input
-                              type="text"
-                              value={zone.name}
-                              onChange={(e) => handleUpdateConstraintZone(zone.id, { name: e.target.value })}
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-transparent text-white font-bold text-xs focus:outline-none border-b border-transparent focus:border-ares-gold py-0.5"
-                            />
-                            <span className="text-[10px] text-marble/30 font-mono">({zone.maxVelocity.toFixed(1)} m/s)</span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteConstraintZone(zone.id);
-                            }}
-                            className="p-1 hover:bg-ares-red/10 rounded text-marble/30 hover:text-ares-danger cursor-pointer"
-                            title="Delete zone"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
- 
-                        {/* Zone Content */}
-                        {isSelected && (
-                          <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2.5 text-xs">
-                            <div className="grid grid-cols-2 gap-2">
-                              {/* Max Velocity */}
-                              <div className="flex flex-col gap-1 col-span-2">
-                                <label htmlFor={`zone-speed-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Max Speed Limit (m/s)</label>
-                                <input
-                                  id={`zone-speed-${zone.id}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={zone.maxVelocity}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateConstraintZone(zone.id, { maxVelocity: val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                                />
-                              </div>
-
-                              {/* Center X */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`zone-x-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Center X ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`zone-x-${zone.id}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={parseFloat((unitMode === "meters" ? zone.x * 0.0254 : zone.x).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateConstraintZone(zone.id, { x: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                                />
-                              </div>
-
-                              {/* Center Y */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`zone-y-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Center Y ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`zone-y-${zone.id}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={parseFloat((unitMode === "meters" ? zone.y * 0.0254 : zone.y).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateConstraintZone(zone.id, { y: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                                />
-                              </div>
-
-                              {/* Width */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`zone-w-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Width ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`zone-w-${zone.id}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={parseFloat((unitMode === "meters" ? zone.width * 0.0254 : zone.width).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateConstraintZone(zone.id, { width: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                                />
-                              </div>
-
-                              {/* Height */}
-                              <div className="flex flex-col gap-1">
-                                <label htmlFor={`zone-h-${zone.id}`} className="text-[8px] font-mono uppercase text-marble/40 block">Height ({unitMode === "meters" ? "M" : "In"})</label>
-                                <input
-                                  id={`zone-h-${zone.id}`}
-                                  type="number"
-                                  step="0.1"
-                                  value={parseFloat((unitMode === "meters" ? zone.height * 0.0254 : zone.height).toFixed(2))}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) {
-                                      handleUpdateConstraintZone(zone.id, { height: unitMode === "meters" ? val / 0.0254 : val });
-                                    }
-                                  }}
-                                  className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {constraintZones.length === 0 && (
-                    <p className="text-[10px] font-mono text-marble/30 text-center italic py-2">No constraint zones configured.</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <ConstraintZonesAccordion
+              constraintZones={constraintZones}
+              selectedConstraintZoneId={selectedConstraintZoneId}
+              setSelectedConstraintZoneId={setSelectedConstraintZoneId}
+              setSelectedWaypointIdx={setSelectedWaypointIdx}
+              setSelectedMarkerId={setSelectedMarkerId}
+              setSelectedRotationTargetId={setSelectedRotationTargetId}
+              handleAddConstraintZone={handleAddConstraintZone}
+              handleUpdateConstraintZone={handleUpdateConstraintZone}
+              handleDeleteConstraintZone={handleDeleteConstraintZone}
+              unitMode={unitMode}
+              isPointZonesExpanded={isPointZonesExpanded}
+              setIsPointZonesExpanded={setIsPointZonesExpanded}
+            />
 
             {/* Robot Kinematics Panel */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsKinematicsExpanded(!isKinematicsExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isKinematicsExpanded ? <ChevronUp size={14} className="text-ares-cyan" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Settings size={14} className="text-ares-cyan" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Robot Kinematics</span>
-                </div>
-                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
-                  Max: {maxVelocity.toFixed(1)} m/s | {maxAngularVelocity.toFixed(0)}°/s
-                </span>
-              </div>
-              {isKinematicsExpanded && (
-                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {/* Max Velocity */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="kinematics-max-vel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Velocity (m/s)</label>
-                      <input
-                        id="kinematics-max-vel"
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        value={maxVelocity}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setMaxVelocity(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-                    {/* Max Acceleration */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="kinematics-max-accel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Acceleration (m/s²)</label>
-                      <input
-                        id="kinematics-max-accel"
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        value={maxAcceleration}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setMaxAcceleration(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-                    {/* Max Angular Velocity */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="kinematics-max-ang-vel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Velocity (°/s)</label>
-                      <input
-                        id="kinematics-max-ang-vel"
-                        type="number"
-                        step="5"
-                        min="1"
-                        value={maxAngularVelocity}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setMaxAngularVelocity(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-                    {/* Max Angular Acceleration */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="kinematics-max-ang-accel" className="text-[8px] font-mono uppercase text-marble/40 block">Max Ang. Accel. (°/s²)</label>
-                      <input
-                        id="kinematics-max-ang-accel"
-                        type="number"
-                        step="5"
-                        min="1"
-                        value={maxAngularAcceleration}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setMaxAngularAcceleration(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-cyan"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <KinematicsPanel
+              maxVelocity={maxVelocity}
+              setMaxVelocity={setMaxVelocity}
+              maxAcceleration={maxAcceleration}
+              setMaxAcceleration={setMaxAcceleration}
+              maxAngularVelocity={maxAngularVelocity}
+              setMaxAngularVelocity={setMaxAngularVelocity}
+              maxAngularAcceleration={maxAngularAcceleration}
+              setMaxAngularAcceleration={setMaxAngularAcceleration}
+              isKinematicsExpanded={isKinematicsExpanded}
+              setIsKinematicsExpanded={setIsKinematicsExpanded}
+            />
 
-            {/* 5. IDEAL STARTING STATE */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsStartingStateExpanded(!isStartingStateExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isStartingStateExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Link size={14} className="text-marble/40" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Ideal Starting State</span>
-                </div>
-                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
-                  {startHeading.toFixed(1)}° starting with {startVelocity.toFixed(2)} M/S
-                </span>
-              </div>
-              {isStartingStateExpanded && (
-                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Start X */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="start-x-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start X ({unitMode === "meters" ? "M" : "In"})</label>
-                      <input
-                        id="start-x-input"
-                        type="number"
-                        step="0.001"
-                        value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.x * 0.0254 : waypoints[0].anchor.x).toFixed(3)) : 0}
-                        onChange={(e) => handleUpdateWaypointAnchor(0, "x", e.target.value)}
-                        disabled={lockedWaypoints[0]}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
-                      />
-                    </div>
-                    {/* Start Y */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="start-y-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Y ({unitMode === "meters" ? "M" : "In"})</label>
-                      <input
-                        id="start-y-input"
-                        type="number"
-                        step="0.001"
-                        value={waypoints[0] ? parseFloat((unitMode === "meters" ? waypoints[0].anchor.y * 0.0254 : waypoints[0].anchor.y).toFixed(3)) : 0}
-                        onChange={(e) => handleUpdateWaypointAnchor(0, "y", e.target.value)}
-                        disabled={lockedWaypoints[0]}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
-                      />
-                    </div>
-                    {/* Start Velocity */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="start-vel-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Velocity (m/s)</label>
-                      <input
-                        id="start-vel-input"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={startVelocity}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setStartVelocity(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                      />
-                    </div>
-                    {/* Start Heading */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="start-heading-input" className="text-[8px] font-mono uppercase text-marble/40 block">Start Heading (Deg)</label>
-                      <input
-                        id="start-heading-input"
-                        type="number"
-                        step="1"
-                        value={startHeading}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setStartHeading(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 6. GOAL END STATE */}
-            <div className="bg-black/20 border border-white/5 rounded-xl overflow-hidden shadow-lg">
-              <div 
-                onClick={() => setIsEndStateExpanded(!isEndStateExpanded)}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all select-none"
-              >
-                <div className="flex items-center gap-2">
-                  {isEndStateExpanded ? <ChevronUp size={14} className="text-marble/60" /> : <ChevronDown size={14} className="text-marble/40" />}
-                  <Link size={14} className="text-marble/40" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">Goal End State</span>
-                </div>
-                <span className="text-[9px] font-mono text-marble/50 bg-black/30 border border-white/5 px-2 py-0.5 rounded">
-                  {endHeading.toFixed(1)}° ending with {endVelocity.toFixed(2)} M/S
-                </span>
-              </div>
-              {isEndStateExpanded && (
-                <div className="p-3 flex flex-col gap-2.5 bg-black/10 border-t border-white/5">
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* End X */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="end-x-input" className="text-[8px] font-mono uppercase text-marble/40 block">End X ({unitMode === "meters" ? "M" : "In"})</label>
-                      <input
-                        id="end-x-input"
-                        type="number"
-                        step="0.001"
-                        value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.x * 0.0254 : waypoints[waypoints.length - 1].anchor.x).toFixed(3)) : 0}
-                        onChange={(e) => handleUpdateWaypointAnchor(waypoints.length - 1, "x", e.target.value)}
-                        disabled={lockedWaypoints[waypoints.length - 1]}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
-                      />
-                    </div>
-                    {/* End Y */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="end-y-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Y ({unitMode === "meters" ? "M" : "In"})</label>
-                      <input
-                        id="end-y-input"
-                        type="number"
-                        step="0.001"
-                        value={waypoints[waypoints.length - 1] ? parseFloat((unitMode === "meters" ? waypoints[waypoints.length - 1].anchor.y * 0.0254 : waypoints[waypoints.length - 1].anchor.y).toFixed(3)) : 0}
-                        onChange={(e) => handleUpdateWaypointAnchor(waypoints.length - 1, "y", e.target.value)}
-                        disabled={lockedWaypoints[waypoints.length - 1]}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold disabled:opacity-40"
-                      />
-                    </div>
-                    {/* End Velocity */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="end-vel-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Velocity (m/s)</label>
-                      <input
-                        id="end-vel-input"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={endVelocity}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setEndVelocity(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                      />
-                    </div>
-                    {/* End Heading */}
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor="end-heading-input" className="text-[8px] font-mono uppercase text-marble/40 block">End Heading (Deg)</label>
-                      <input
-                        id="end-heading-input"
-                        type="number"
-                        step="1"
-                        value={endHeading}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val)) setEndHeading(val);
-                        }}
-                        className="w-full bg-obsidian border border-white/10 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-ares-gold"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
+            {/* Ideal Starting & Goal End States Panel */}
+            <StartEndStatePanel
+              waypoints={waypoints}
+              lockedWaypoints={lockedWaypoints}
+              startVelocity={startVelocity}
+              setStartVelocity={setStartVelocity}
+              startHeading={startHeading}
+              setStartHeading={setStartHeading}
+              endVelocity={endVelocity}
+              setEndVelocity={setEndVelocity}
+              endHeading={endHeading}
+              setEndHeading={setEndHeading}
+              unitMode={unitMode}
+              handleUpdateWaypointAnchor={handleUpdateWaypointAnchor}
+              isStartingStateExpanded={isStartingStateExpanded}
+              setIsStartingStateExpanded={setIsStartingStateExpanded}
+              isEndStateExpanded={isEndStateExpanded}
+              setIsEndStateExpanded={setIsEndStateExpanded}
+            />
           </div>
 
-          {/* Card 3: Cloud Sync / Saving */}
-          {onSaveToCloud && (
-            <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-              <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-cyan flex items-center gap-1.5">
-                <FolderOpen size={14} /> Cloud Workspace
-              </h3>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onSaveToCloud(
-                    pathName, 
-                    season, 
-                    waypoints, 
-                    markers, 
-                    constraintZones, 
-                    rotationTargets,
-                    maxVelocity,
-                    maxAcceleration,
-                    maxAngularVelocity,
-                    maxAngularAcceleration,
-                    startVelocity,
-                    startHeading,
-                    endVelocity,
-                    endHeading
-                  )}
-                  disabled={isSavingCloud}
-                  className="flex-grow py-2 bg-ares-red hover:bg-ares-red/90 text-white rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
-                >
-                  <Save size={12} /> {isSavingCloud ? "Saving..." : "Save Path to Cloud"}
-                </button>
-              </div>
-
-              {cloudPaths.length > 0 && onLoadPath && (
-                <div>
-                  <label htmlFor="load-cloud-path-select" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Load Cloud Path</label>
-                  <select
-                    id="load-cloud-path-select"
-                    onChange={(e) => {
-                      if (e.target.value) onLoadPath(e.target.value);
-                    }}
-                    defaultValue=""
-                    className="w-full bg-obsidian border border-white/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                  >
-                    <option value="" disabled>-- Select Saved Path --</option>
-                    {cloudPaths.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.season.toUpperCase().replace(/_/g, " ")})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Card 3: Cloud Workspace Card */}
+          <CloudSyncCard
+            pathName={pathName}
+            season={season}
+            waypoints={waypoints}
+            markers={markers}
+            constraintZones={constraintZones}
+            rotationTargets={rotationTargets}
+            maxVelocity={maxVelocity}
+            maxAcceleration={maxAcceleration}
+            maxAngularVelocity={maxAngularVelocity}
+            maxAngularAcceleration={maxAngularAcceleration}
+            startVelocity={startVelocity}
+            startHeading={startHeading}
+            endVelocity={endVelocity}
+            endHeading={endHeading}
+            cloudPaths={cloudPaths}
+            onSaveToCloud={onSaveToCloud}
+            onLoadPath={onLoadPath}
+            isSavingCloud={isSavingCloud}
+          />
 
           {/* Card 4: Local Robot Sync panel */}
-          <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-            <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-red flex items-center gap-1.5">
-              <Wifi size={14} /> Connected Robot Sync
-            </h3>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <div className="flex-grow">
-                  <label htmlFor="robot-ip-input" className="text-[9px] font-mono uppercase text-marble/50 block mb-1">Robot IP Address</label>
-                  <input
-                    id="robot-ip-input"
-                    type="text"
-                    value={robotIp}
-                    onChange={(e) => setRobotIp(e.target.value)}
-                    placeholder="192.168.43.1"
-                    className="w-full bg-obsidian border border-white/10 rounded px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-ares-red"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={handleSyncToRobot}
-                    disabled={syncStatus === "uploading"}
-                    className="px-4 py-2.5 bg-ares-red hover:bg-ares-red-dark text-white rounded text-xs font-black uppercase tracking-wider cursor-pointer shadow disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Sync JSON
-                  </button>
-                </div>
-              </div>
-
-              {/* Sync Log output terminal */}
-              {syncStatus !== "idle" && (
-                <div className="bg-black/80 p-2.5 rounded border border-white/5 font-mono text-[9px] leading-relaxed text-marble/80 max-h-[110px] overflow-y-auto whitespace-pre-wrap select-text">
-                  {syncLog}
-                </div>
-              )}
-
-              {/* Copyable ADB instruction command line */}
-              <div className="bg-black/40 border border-white/5 p-2 rounded flex flex-col gap-1 mt-1">
-                <span className="text-[9px] font-mono uppercase text-marble/40">ADB Wireless Push Command:</span>
-                <div className="flex items-center justify-between gap-2 bg-obsidian/75 p-1 px-2 rounded font-mono text-[9px] text-ares-gold overflow-x-auto select-all whitespace-nowrap">
-                  <span>{adbPushCmd}</span>
-                  <button
-                    onClick={copyAdbCmd}
-                    className="p-1 text-marble/50 hover:text-white shrink-0 cursor-pointer"
-                    title="Copy ADB command"
-                  >
-                    {copiedCmd ? <Check size={10} className="text-ares-cyan" /> : <Copy size={10} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          <RobotSyncCard
+            robotIp={robotIp}
+            setRobotIp={setRobotIp}
+            syncStatus={syncStatus}
+            syncLog={syncLog}
+            copiedCmd={copiedCmd}
+            handleSyncToRobot={handleSyncToRobot}
+            adbPushCmd={adbPushCmd}
+            copyAdbCmd={copyAdbCmd}
+          />
         </div>
       </div>
 
       {/* Control Buttons bottom bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-black/20 p-4 rounded-xl border border-white/5 mt-2">
-        <div className="flex items-center gap-2">
-          <Play size={14} className="text-ares-gold" />
-          <span className="text-[10px] uppercase font-bold text-marble/60 tracking-wider">
-            Trajectory Spline Simulator
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label htmlFor="import-path-file-input" className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5 select-none">
-            <Upload size={12} /> Import Path
-            <input
-              id="import-path-file-input"
-              type="file"
-              accept=".json"
-              onChange={handleImportJSON}
-              className="hidden"
-            />
-          </label>
-
-          <button
-            onClick={handleExportJSON}
-            className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <Download size={12} /> Export Path
-          </button>
-
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className={`px-5 py-2 text-xs font-bold rounded uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
-              isPlaying
-                ? "bg-white/10 text-white hover:bg-white/20 border border-white/20"
-                : "bg-ares-red hover:bg-ares-red-dark text-white shadow-md transform hover:-translate-y-0.5"
-            }`}
-          >
-            {isPlaying ? (
-              <>
-                <Pause size={12} /> Stop Sim
-              </>
-            ) : (
-              <>
-                <Play size={12} /> Run Follower
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      <PlannerBottomBar
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+        handleImportJSON={handleImportJSON}
+        handleExportJSON={handleExportJSON}
+      />
     </div>
   );
 }
