@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 const getFirebaseConfig = () => {
@@ -61,6 +61,25 @@ if (
     console.warn("Firebase Emulators already connected or connection failed:", err);
   }
 }
+
+
+export const getDocWithTimeout = async (docRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDoc(docRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDoc timeout")), timeoutMs)
+    )
+  ]);
+};
+
+export const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDocs(queryRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDocs timeout")), timeoutMs)
+    )
+  ]);
+};
 
 export { app, auth, db, storage };
 

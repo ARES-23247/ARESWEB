@@ -11,7 +11,7 @@ import {
   createUserWithEmailAndPassword
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth, db, getDocWithTimeout } from "../lib/firebase";
 
 interface AuthorizedUser {
   email: string;
@@ -187,12 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Attempt to bootstrap the authorized_users record in the Firestore Emulator
     try {
       const userRef = doc(db, "authorized_users", mockUser.uid);
-      const userSnap = await Promise.race([
-        getDoc(userRef),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore getDoc timeout")), 1000)
-        )
-      ]);
+      const userSnap = await getDocWithTimeout(userRef, 1000);
       if (!userSnap.exists()) {
         console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
         await Promise.race([

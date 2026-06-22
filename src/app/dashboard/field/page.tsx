@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, getDocWithTimeout, getDocsWithTimeout } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   collection, 
@@ -41,24 +41,7 @@ import AprilTagRosterAccordion from "./components/AprilTagRosterAccordion";
 import PlacedElementsAccordion from "./components/PlacedElementsAccordion";
 import ElementCatalogAccordion from "./components/ElementCatalogAccordion";
 
-// Firestore timeout wrapper helpers
-const getDocWithTimeout = async (docRef: any, timeoutMs = 1500): Promise<any> => {
-  return Promise.race([
-    getDoc(docRef),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Firestore getDoc timeout")), timeoutMs)
-    )
-  ]);
-};
 
-const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promise<any> => {
-  return Promise.race([
-    getDocs(queryRef),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Firestore getDocs timeout")), timeoutMs)
-    )
-  ]);
-};
 
 export interface FieldConfig {
   id: string;
