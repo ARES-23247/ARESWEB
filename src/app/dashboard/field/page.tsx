@@ -41,6 +41,25 @@ import AprilTagRosterAccordion from "./components/AprilTagRosterAccordion";
 import PlacedElementsAccordion from "./components/PlacedElementsAccordion";
 import ElementCatalogAccordion from "./components/ElementCatalogAccordion";
 
+// Firestore timeout wrapper helpers
+const getDocWithTimeout = async (docRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDoc(docRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDoc timeout")), timeoutMs)
+    )
+  ]);
+};
+
+const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDocs(queryRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDocs timeout")), timeoutMs)
+    )
+  ]);
+};
+
 export interface FieldConfig {
   id: string;
   name: string;
@@ -136,7 +155,7 @@ export default function FieldEditor() {
   useEffect(() => {
     const fetchFieldCadSettings = async () => {
       try {
-        const fieldDocSnap = await getDoc(doc(db, "settings", "field_cad"));
+        const fieldDocSnap = await getDocWithTimeout(doc(db, "settings", "field_cad"));
         if (fieldDocSnap.exists()) {
           const fieldData = fieldDocSnap.data();
           setFieldDocId(fieldData.documentId || "");
@@ -192,9 +211,9 @@ export default function FieldEditor() {
     setLoading(true);
     try {
       const q = query(collection(db, "field_configs"), orderBy("updatedAt", "desc"));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocsWithTimeout(q);
       const fetchedConfigs: FieldConfig[] = [];
-      querySnapshot.forEach((docSnap) => {
+      querySnapshot.forEach((docSnap: any) => {
         const data = docSnap.data();
         fetchedConfigs.push({
           id: docSnap.id,

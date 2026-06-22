@@ -27,6 +27,25 @@ import {
 import { useSearchParams } from "react-router-dom";
 import VariablesTuner from "./components/VariablesTuner";
 
+// Firestore timeout wrapper helpers
+const getDocWithTimeout = async (docRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDoc(docRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDoc timeout")), timeoutMs)
+    )
+  ]);
+};
+
+const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promise<any> => {
+  return Promise.race([
+    getDocs(queryRef),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Firestore getDocs timeout")), timeoutMs)
+    )
+  ]);
+};
+
 // Custom Hooks
 import { useNT4Client } from "./hooks/useNT4Client";
 import { 
@@ -159,9 +178,9 @@ export default function ScopeDashboard() {
     const fetchFieldConfigs = async () => {
       try {
         const q = query(collection(db, "field_configs"), orderBy("updatedAt", "desc"));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocsWithTimeout(q);
         const configs: any[] = [];
-        querySnapshot.forEach((docSnap) => {
+        querySnapshot.forEach((docSnap: any) => {
           configs.push({ id: docSnap.id, ...docSnap.data() });
         });
         setFieldConfigs(configs);
@@ -594,7 +613,7 @@ export default function ScopeDashboard() {
       setLoading(true);
       try {
         const docRef = doc(db, "aresplanner_log_data", logId);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDocWithTimeout(docRef);
 
         if (!docSnap.exists()) {
           throw new Error("Telemetry log content not found in the cloud.");
@@ -607,7 +626,7 @@ export default function ScopeDashboard() {
 
         // Fetch the corresponding metadata to get the actual file name and path version
         const metaRef = doc(db, "aresplanner_logs", logId);
-        const metaSnap = await getDoc(metaRef);
+        const metaSnap = await getDocWithTimeout(metaRef);
         const metaData = metaSnap.exists() ? metaSnap.data() : null;
         const name = metaData?.name || "cloud_telemetry.csv";
 

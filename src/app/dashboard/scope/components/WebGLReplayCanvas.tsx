@@ -2,11 +2,13 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { useScopeStore } from "../store/scopeStore";
-import { Move, Compass, Eye, Map, Sliders } from "lucide-react";
+import { Move, Compass, Eye, Map } from "lucide-react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { setupThreeScene } from "../utils/threeSceneSetup";
+import { createRobotModel, createComparisonRobotModel } from "../utils/robotMeshLoader";
+import { drawTactical2D } from "../utils/drawTactical2D";
+import { getCameraPoses, getSwerveAngles } from "../utils/poseUtils";
+import { useKeyboardController } from "../hooks/useKeyboardController";
 
 export default function WebGLReplayCanvas() {
   const { 
@@ -33,134 +35,7 @@ export default function WebGLReplayCanvas() {
   const currentFrame = getCurrentFrame();
 
   // --- WEB KEYBOARD CONTROLLER FOR SIMULATOR ---
-  const pressedKeys = useRef<Set<string>>(new Set());
-  const currentFrameRef = useRef(currentFrame);
-  const heartbeatCounter = useRef(0);
-
-  useEffect(() => {
-    currentFrameRef.current = currentFrame;
-  }, [currentFrame]);
-
-  useEffect(() => {
-    if (!ntClient) return;
-
-    const publishKeyboardSpeeds = () => {
-      const MAX_LINEAR_SPEED = 4.0;
-      const MAX_ANGULAR_SPEED = 4.0;
-
-      let vx = 0;
-      let vy = 0;
-      let omega = 0;
-
-      if (pressedKeys.current.has("w")) vx += MAX_LINEAR_SPEED;
-      if (pressedKeys.current.has("s")) vx -= MAX_LINEAR_SPEED;
-      if (pressedKeys.current.has("a")) vy += MAX_LINEAR_SPEED;
-      if (pressedKeys.current.has("d")) vy -= MAX_LINEAR_SPEED;
-      if (pressedKeys.current.has("q")) omega += MAX_ANGULAR_SPEED;
-      if (pressedKeys.current.has("e")) omega -= MAX_ANGULAR_SPEED;
-
-      ntClient.publishPersistent("ARES/Input/vx", vx, "double");
-      ntClient.publishPersistent("ARES/Input/vy", vy, "double");
-      ntClient.publishPersistent("ARES/Input/omega", omega, "double");
-    };
-
-    const handleWebKeyDown = (e: KeyboardEvent) => {
-      // Ignore keyboard if typing in form inputs/textareas
-      const isTyping = document.activeElement && (
-        document.activeElement.tagName === "INPUT" ||
-        document.activeElement.tagName === "TEXTAREA" ||
-        document.activeElement.getAttribute("contenteditable") === "true"
-      );
-      if (isTyping) return;
-
-      const key = e.key.toLowerCase();
-
-      // Movement keys
-      if (["w", "s", "a", "d", "q", "e"].includes(key)) {
-        if (pressedKeys.current.has(key)) return; // prevent key repeat spam
-        pressedKeys.current.add(key);
-        e.preventDefault();
-        publishKeyboardSpeeds();
-        return;
-      }
-
-      // Toggles check current frame values
-      const getVal = (topic: string, def: boolean) => {
-        const frame = currentFrameRef.current;
-        if (!frame || !frame.values) return def;
-        const val = frame.values[topic];
-        return val !== undefined ? val === 1 : def;
-      };
-
-      if (e.key === " ") {
-        const currentTeleop = getVal("AdvantageKit/RealOutputs/Drive/TeleopMode", true);
-        ntClient.publishPersistent("ARES/Input/isTeleopMode", !currentTeleop, "boolean");
-        e.preventDefault();
-      } else if (key === "c") {
-        const currentFC = getVal("AdvantageKit/RealOutputs/Drive/FieldCentric", false);
-        ntClient.publishPersistent("ARES/Input/isFieldCentric", !currentFC, "boolean");
-        e.preventDefault();
-      } else if (key === "r") {
-        const currentRed = getVal("AdvantageKit/RealOutputs/Drive/RedAlliance", false);
-        ntClient.publishPersistent("ARES/Input/isRedAlliance", !currentRed, "boolean");
-        e.preventDefault();
-      } else if (e.key === "Shift") {
-        const currentIntake = getVal("AdvantageKit/RealOutputs/Superstructure/IntakeActive", false);
-        ntClient.publishPersistent("ARES/Input/isIntaking", !currentIntake, "boolean");
-        e.preventDefault();
-      } else if (key === "f") {
-        const currentFlywheel = getVal("AdvantageKit/RealOutputs/Superstructure/FlywheelActive", false);
-        ntClient.publishPersistent("ARES/Input/isFlywheelOn", !currentFlywheel, "boolean");
-        e.preventDefault();
-      } else if (e.key === "Enter") {
-        ntClient.publishPersistent("ARES/Input/isTransferring", true, "boolean");
-        e.preventDefault();
-      }
-    };
-
-    const handleWebKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (["w", "s", "a", "d", "q", "e"].includes(key)) {
-        pressedKeys.current.delete(key);
-        publishKeyboardSpeeds();
-      } else if (e.key === "Enter") {
-        ntClient.publishPersistent("ARES/Input/isTransferring", false, "boolean");
-      }
-    };
-
-    const handleWindowBlur = () => {
-      if (pressedKeys.current.size > 0) {
-        pressedKeys.current.clear();
-        publishKeyboardSpeeds();
-      }
-      ntClient.publishPersistent("ARES/Input/isTransferring", false, "boolean");
-    };
-
-    window.addEventListener("keydown", handleWebKeyDown);
-    window.addEventListener("keyup", handleWebKeyUp);
-    window.addEventListener("blur", handleWindowBlur);
-
-    // Also publish a heartbeat interval to keep the daemon refreshed and inputs active
-    const interval = setInterval(() => {
-      publishKeyboardSpeeds();
-      heartbeatCounter.current = (heartbeatCounter.current + 1) % 1000000;
-      ntClient.publishPersistent("ARES/Input/heartbeat", heartbeatCounter.current, "int");
-    }, 100);
-
-    return () => {
-      window.removeEventListener("keydown", handleWebKeyDown);
-      window.removeEventListener("keyup", handleWebKeyUp);
-      window.removeEventListener("blur", handleWindowBlur);
-      clearInterval(interval);
-    };
-  }, [ntClient]);
-
-  // Publish active obstacles list to the simulator whenever it changes or on connection
-  useEffect(() => {
-    if (!ntClient) return;
-    const obstaclesJson = JSON.stringify({ obstacles: fieldObstacles || [] });
-    ntClient.publishPersistent("ARES/Input/obstacles", obstaclesJson, "string");
-  }, [ntClient, fieldObstacles]);
+  useKeyboardController(ntClient, currentFrame, fieldObstacles);
   
   const canvas2DRef = useRef<HTMLCanvasElement | null>(null);
   const container3DRef = useRef<HTMLDivElement | null>(null);
@@ -268,65 +143,6 @@ export default function WebGLReplayCanvas() {
   const moduleBLRef = useRef<THREE.Group | null>(null);
   const moduleBRRef = useRef<THREE.Group | null>(null);
 
-  // Helper to extract camera poses from telemetry frame values dynamically
-  interface CameraPose {
-    x: number;
-    y: number;
-    yaw: number;
-  }
-
-  const getCameraPoses = (frame: any): CameraPose[] => {
-    const poses: CameraPose[] = [];
-    let i = 0;
-    while (true) {
-      const prefix1 = `Vision/Camera_${i}`;
-      const prefix2 = `Vision/CameraPoses/${i}`;
-      const prefix3 = `camera_pose_${i}`;
-      
-      const getValByKeywords = (keys: string[]) => {
-        for (const k of keys) {
-          if (frame.values[k] !== undefined) return frame.values[k];
-        }
-        return undefined;
-      };
-      
-      const cx = getValByKeywords([`${prefix1}_X`, `${prefix1}_x`, `${prefix2}/Translation_X`, `${prefix2}/Translation_x`, `${prefix2}/x`, `${prefix3}_x`]);
-      const cy = getValByKeywords([`${prefix1}_Y`, `${prefix1}_y`, `${prefix2}/Translation_Y`, `${prefix2}/Translation_y`, `${prefix2}/y`, `${prefix3}_y`]);
-      const cyaw = getValByKeywords([`${prefix1}_Yaw`, `${prefix1}_yaw`, `${prefix2}/Rotation_Z`, `${prefix2}/Rotation_z`, `${prefix2}/yaw`, `${prefix3}_yaw`]);
-      
-      if (cx === undefined || cy === undefined) {
-        break;
-      }
-      
-      poses.push({ x: cx, y: cy, yaw: cyaw ?? 0 });
-      i++;
-      if (i > 10) break;
-    }
-    
-    if (poses.length === 0) {
-      // Default single front camera
-      return [{ x: 0.18, y: 0.0, yaw: 0.0 }];
-    }
-    return poses;
-  };
-
-  // Helper to extract swerve module angles dynamically
-  const getSwerveAngles = (frame: any) => {
-    if (!frame || !frame.values) return { fl: 0, fr: 0, bl: 0, br: 0 };
-    const getVal = (prefixes: string[]) => {
-      for (const p of prefixes) {
-        if (frame.values[p] !== undefined) return frame.values[p];
-      }
-      return 0;
-    };
-    return {
-      fl: getVal(["Drive/Swerve/Angle_FL", "Drive/Swerve/Module_FL/Angle", "Drive/Swerve/FL_Angle", "Drive/Swerve/FL/Angle", "swerve/angle/fl", "swerve/fl/angle"]),
-      fr: getVal(["Drive/Swerve/Angle_FR", "Drive/Swerve/Module_FR/Angle", "Drive/Swerve/FR_Angle", "Drive/Swerve/FR/Angle", "swerve/angle/fr", "swerve/fr/angle"]),
-      bl: getVal(["Drive/Swerve/Angle_BL", "Drive/Swerve/Module_BL/Angle", "Drive/Swerve/BL_Angle", "Drive/Swerve/BL/Angle", "swerve/angle/bl", "swerve/bl/angle"]),
-      br: getVal(["Drive/Swerve/Angle_BR", "Drive/Swerve/Module_BR/Angle", "Drive/Swerve/BR_Angle", "Drive/Swerve/BR/Angle", "swerve/angle/br", "swerve/br/angle"])
-    };
-  };
-
   // ─── 2D TACTICAL VIEW RENDER ENGINE ───
   useEffect(() => {
     if (viewMode !== "2d") return;
@@ -343,310 +159,35 @@ export default function WebGLReplayCanvas() {
     canvas.style.height = `${size}px`;
     ctx.scale(dpr, dpr);
 
-    const width = size;
-    const height = size;
-    const fieldSizeMeters = 3.6576;
-    const padding = 15;
-    const mapSize = width - padding * 2;
-    const scale = mapSize / fieldSizeMeters; // pixels per meter
-
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    // Center-origin EKF coordinates (X forward, Y left) to canvas pixels
-    const toPxX = (y_ekf: number) => centerX - y_ekf * scale; // Left is positive Y, maps to screen left
-    const toPxY = (x_ekf: number) => centerY - x_ekf * scale; // Forward is positive X, maps to screen top
-
-    // Background Image or Solid Color
-    if (bgImage && bgImageLoaded) {
-      ctx.drawImage(bgImage, toPxX(1.8288), toPxY(1.8288), mapSize, mapSize);
-    } else {
-      ctx.fillStyle = "#0D0D0D";
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    // 6x6 Grid Tiles (each is 24x24 inches = 0.6096m x 0.6096m)
-    ctx.strokeStyle = bgImage && bgImageLoaded ? "rgba(255, 255, 255, 0.015)" : "rgba(255, 255, 255, 0.04)";
-    ctx.lineWidth = 1;
-    for (let i = -3; i <= 3; i++) {
-      const offset = i * 0.6096;
-      // Vertical grid lines (constant Y_ekf)
-      ctx.beginPath();
-      ctx.moveTo(toPxX(offset), toPxY(-1.8288));
-      ctx.lineTo(toPxX(offset), toPxY(1.8288));
-      ctx.stroke();
-
-      // Horizontal grid lines (constant X_ekf)
-      ctx.beginPath();
-      ctx.moveTo(toPxX(-1.8288), toPxY(offset));
-      ctx.lineTo(toPxX(1.8288), toPxY(offset));
-      ctx.stroke();
-    }
-
-    // Outer Perimeter Wall
-    ctx.strokeStyle = bgImage && bgImageLoaded ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.15)";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.rect(toPxX(1.8288), toPxY(1.8288), mapSize, mapSize);
-    ctx.stroke();
-
-    if (!bgImage || !bgImageLoaded) {
-      // Red Basket Corner (Top-Left on screen, EKF X = 1.8288, Y = 1.8288)
-      ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
-      ctx.beginPath();
-      ctx.arc(toPxX(1.8288), toPxY(1.8288), 0.508 * scale, 0, Math.PI * 2); // 20 inches = 0.508m
-      ctx.fill();
-
-      // Blue Basket Corner (Bottom-Right on screen, EKF X = -1.8288, Y = -1.8288)
-      ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
-      ctx.beginPath();
-      ctx.arc(toPxX(-1.8288), toPxY(-1.8288), 0.508 * scale, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Substations (Red bottom-left screen, Blue top-right screen)
-      ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
-      ctx.fillRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale); // 24 inches = 0.6096m
-      ctx.strokeStyle = "rgba(239, 68, 68, 0.2)";
-      ctx.strokeRect(toPxX(1.8288), toPxY(-1.2192), 0.6096 * scale, 0.6096 * scale);
-
-      ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
-      ctx.fillRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
-      ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
-      ctx.strokeRect(toPxX(-1.2192), toPxY(1.8288), 0.6096 * scale, 0.6096 * scale);
-    }
-
-    // Custom Obstacles from Field Config
-    if (fieldObstacles && fieldObstacles.length > 0) {
-      ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
-      ctx.strokeStyle = "#c00000";
-      ctx.lineWidth = 1.5;
-      fieldObstacles.forEach((obs) => {
-        const obsHalfW = obs.width / 2;
-        const obsHalfH = obs.height / 2;
-        const leftPx = toPxX(obs.y + obsHalfW);
-        const topPx = toPxY(obs.x + obsHalfH);
-        const wPx = obs.width * scale;
-        const hPx = obs.height * scale;
-
-        ctx.fillRect(leftPx, topPx, wPx, hPx);
-        ctx.strokeRect(leftPx, topPx, wPx, hPx);
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.font = "bold 8px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(obs.name, leftPx + wPx / 2, topPx + hPx / 2 + 3);
-      });
-    }
-
-    // Planned Path (Dashed Cyan Spline)
-    if (plannedPath && plannedPath.length > 0) {
-      ctx.strokeStyle = "rgba(6, 182, 212, 0.75)"; // Cyan-500
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      for (let i = 0; i < plannedPath.length; i++) {
-        const pt = plannedPath[i];
-        if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
-        else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
-      }
-      ctx.stroke();
-      ctx.setLineDash([]); // Reset dashed line style
-
-      // Start node (green ring)
-      ctx.fillStyle = "#22C55E"; // ARES Success
-      ctx.beginPath();
-      ctx.arc(toPxX(plannedPath[0].y), toPxY(plannedPath[0].x), 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // End node (red ring)
-      ctx.fillStyle = "#c00000"; // Red
-      ctx.beginPath();
-      ctx.arc(toPxX(plannedPath[plannedPath.length - 1].y), toPxY(plannedPath[plannedPath.length - 1].x), 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Glowing Trail
-    if (telemetryData && telemetryData.timestamps.length > 0) {
-      const times = telemetryData.timestamps;
-      let currentIndex = 0;
-      for (let i = 0; i < times.length; i++) {
-        if (times[i] <= currentTimeMs) currentIndex = i;
-        else break;
-      }
-
-      if (currentIndex > 0) {
-        ctx.strokeStyle = "rgba(245, 158, 11, 0.6)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        for (let i = 0; i <= currentIndex; i++) {
-          const pt = telemetryData.coords[i];
-          if (!pt) continue;
-          if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
-          else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
-        }
-        ctx.stroke();
-      }
-    }
-
-    // Comparison Trail (Dashed Red Line)
-    if (comparisonTelemetryData && comparisonTelemetryData.timestamps.length > 0) {
-      const times = comparisonTelemetryData.timestamps;
-      let currentIndex = 0;
-      for (let i = 0; i < times.length; i++) {
-        if (times[i] <= currentTimeMs) currentIndex = i;
-        else break;
-      }
-
-      if (currentIndex > 0) {
-        ctx.strokeStyle = "rgba(239, 68, 68, 0.5)";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        for (let i = 0; i <= currentIndex; i++) {
-          const pt = comparisonTelemetryData.coords[i];
-          if (!pt) continue;
-          if (i === 0) ctx.moveTo(toPxX(pt.y), toPxY(pt.x));
-          else ctx.lineTo(toPxX(pt.y), toPxY(pt.x));
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    }
-
-    // Camera FOV Wedges (drawn under the robot chassis)
-    if (showFov && currentFrame) {
-      const cameras = getCameraPoses(currentFrame);
-      cameras.forEach((cam) => {
-        const cx = currentFrame.x + cam.x * Math.cos(currentFrame.heading) - cam.y * Math.sin(currentFrame.heading);
-        const cy = currentFrame.y + cam.x * Math.sin(currentFrame.heading) + cam.y * Math.cos(currentFrame.heading);
-        const camHeading = currentFrame.heading + cam.yaw;
-        
-        const pxX = toPxX(cy);
-        const pxY = toPxY(cx);
-        const rangePx = 4.0 * scale;
-        const halfFov = (31.5 * Math.PI) / 180;
-        const screenAngle = -camHeading - Math.PI / 2;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(pxX, pxY);
-        ctx.arc(pxX, pxY, rangePx, screenAngle - halfFov, screenAngle + halfFov);
-        ctx.closePath();
-        ctx.fillStyle = "rgba(245, 158, 11, 0.05)";
-        ctx.fill();
-
-        ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.restore();
-      });
-    }
-
-    // Robot Chassis (0.4572m Square = 18")
-    if (currentFrame) {
-      const pxX = toPxX(currentFrame.y);
-      const pxY = toPxY(currentFrame.x);
-      const robotSizePx = 0.4572 * scale;
-
-      ctx.save();
-      ctx.translate(pxX, pxY);
-      ctx.rotate(-currentFrame.heading);
-
-      // Chassis Body
-      ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
-      ctx.beginPath();
-      ctx.rect(-robotSizePx / 2, -robotSizePx / 2, robotSizePx, robotSizePx);
-      ctx.fill();
-
-      ctx.strokeStyle = "#F59E0B";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Drivetrain Wheels (rotating module vectors if Swerve is active)
-      ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-      ctx.strokeStyle = "#F59E0B";
-      ctx.lineWidth = 1;
-
-      const wheelW = 0.1016 * scale; // 4 inches
-      const wheelH = 0.2032 * scale; // 8 inches
-      const swerveAngles = getSwerveAngles(currentFrame);
-
-      const drawWheel2D = (offsetX: number, offsetY: number, moduleAngle: number) => {
-        ctx.save();
-        ctx.translate(offsetX, offsetY);
-        if (driveMode === "swerve") {
-          ctx.rotate(-moduleAngle);
-        }
-        ctx.fillRect(-wheelH / 2, -wheelW / 2, wheelH, wheelW);
-        ctx.strokeRect(-wheelH / 2, -wheelW / 2, wheelH, wheelW);
-        ctx.restore();
-      };
-
-      // Draw 4 wheels: FL, FR, BL, BR
-      drawWheel2D(-robotSizePx / 2 + wheelH / 2, -robotSizePx / 2 - wheelW / 2, swerveAngles.fl);
-      drawWheel2D(robotSizePx / 2 - wheelH / 2, -robotSizePx / 2 - wheelW / 2, swerveAngles.fr);
-      drawWheel2D(-robotSizePx / 2 + wheelH / 2, robotSizePx / 2 + wheelW / 2, swerveAngles.bl);
-      drawWheel2D(robotSizePx / 2 - wheelH / 2, robotSizePx / 2 + wheelW / 2, swerveAngles.br);
-
-      // Heading Arrow
-      ctx.strokeStyle = "#FFB81C";
-      ctx.fillStyle = "#FFB81C";
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, -robotSizePx * 0.7);
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.moveTo(0, -robotSizePx * 0.7);
-      ctx.lineTo(-0.04 * scale, -robotSizePx * 0.5);
-      ctx.lineTo(0.04 * scale, -robotSizePx * 0.5);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.restore();
-
-      ctx.fillStyle = "#FFFFFF";
-      ctx.beginPath();
-      ctx.arc(pxX, pxY, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Comparison Ghost Robot Chassis (dashed red outline)
-    const comparisonFrame = getCurrentComparisonFrame();
-    if (comparisonFrame) {
-      const pxX = toPxX(comparisonFrame.y);
-      const pxY = toPxY(comparisonFrame.x);
-      const robotSizePx = 0.4572 * scale;
-
-      ctx.save();
-      ctx.translate(pxX, pxY);
-      ctx.rotate(-comparisonFrame.heading);
-
-      // Chassis Body (dashed red)
-      ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
-      ctx.beginPath();
-      ctx.rect(-robotSizePx / 2, -robotSizePx / 2, robotSizePx, robotSizePx);
-      ctx.fill();
-
-      ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Heading Arrow (Dashed Red)
-      ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, -robotSizePx * 0.7);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-  }, [viewMode, telemetryData, comparisonTelemetryData, currentTimeMs, currentFrame, driveMode, showFov, fieldObstacles, parentDimensions, bgImage, bgImageLoaded]);
+    drawTactical2D({
+      ctx,
+      parentDimensions: { width: size, height: size },
+      bgImage,
+      bgImageLoaded,
+      fieldObstacles,
+      plannedPath,
+      telemetryData,
+      comparisonTelemetryData,
+      currentTimeMs,
+      currentFrame,
+      comparisonFrame: getCurrentComparisonFrame(),
+      driveMode,
+      showFov,
+    });
+  }, [
+    viewMode,
+    telemetryData,
+    comparisonTelemetryData,
+    currentTimeMs,
+    currentFrame,
+    driveMode,
+    showFov,
+    fieldObstacles,
+    parentDimensions,
+    bgImage,
+    bgImageLoaded,
+    getCurrentComparisonFrame
+  ]);
 
   // ─── 3D ARENA VIEW RENDER ENGINE (THREE.JS) ───
   useEffect(() => {
@@ -655,291 +196,35 @@ export default function WebGLReplayCanvas() {
     if (!container) return;
 
     // 1. Initialise Scene, Camera, Renderer
-    const width = container.clientWidth || 360;
-    const height = container.clientHeight || 360;
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#0A0A0A");
+    const { scene, camera, renderer, cleanup } = setupThreeScene(
+      container,
+      fieldCadUrl,
+      fieldObstacles,
+      fieldElements,
+      fieldElementTypes
+    );
     sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 2.8, 3.3);
-    camera.lookAt(0, -0.25, 0);
+    rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setSize(width, height);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.innerHTML = "";
-    renderer.domElement.setAttribute("role", "img");
-    renderer.domElement.setAttribute("aria-label", "3D Arena Replay Viewport");
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // 2. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(40, 120, 40);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 1024;
-    dirLight.shadow.mapSize.height = 1024;
-    dirLight.shadow.bias = -0.001;
-    scene.add(dirLight);
-
-    const arenaLight = new THREE.PointLight(0xFFB81C, 1.2, 3.0);
-    arenaLight.position.set(0, 0.76, 0);
-    scene.add(arenaLight);
-
-    // 3. FTC Floor (3.6576m x 3.6576m)
-    const floorGeo = new THREE.PlaneGeometry(3.6576, 3.6576);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
-
-    const gridHelper = new THREE.GridHelper(3.6576, 6, 0x333333, 0x222222);
-    gridHelper.position.y = 0.001;
-    scene.add(gridHelper);
-
-    // 4. Glass Walls
-    const glassWallMat = new THREE.MeshPhysicalMaterial({
-      color: 0x555555,
-      transparent: true,
-      opacity: 0.15,
-      roughness: 0.1,
-      transmission: 0.6,
-      thickness: 0.05,
-      side: THREE.DoubleSide
-    });
-
-    const addWall = (w: number, h: number, x: number, y: number, z: number, rY = 0) => {
-      const geo = new THREE.BoxGeometry(w, h, 0.05);
-      const mesh = new THREE.Mesh(geo, glassWallMat);
-      mesh.position.set(x, y, z);
-      mesh.rotation.y = rY;
-      scene.add(mesh);
-    };
-
-    addWall(3.6576, 0.3048, 0, 0.1524, -1.8288); // North (12 inches height is 0.3048m, y-position is 0.1524m)
-    addWall(3.6576, 0.3048, 0, 0.1524, 1.8288);  // South
-    addWall(3.6576, 0.3048, -1.8288, 0.1524, 0, Math.PI / 2); // West
-    addWall(3.6576, 0.3048, 1.8288, 0.1524, 0, Math.PI / 2);  // East
-
-    // 5. Game Field elements
-    const fallbackGroup = new THREE.Group();
-    scene.add(fallbackGroup);
-
-    const renderFallbackField = () => {
-      const basketRedBase = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16), // 15" radius is 0.381m, 18" radius is 0.4572m, 1" height is 0.0254m
-        new THREE.MeshStandardMaterial({ color: 0xC00000, roughness: 0.5 })
-      );
-      basketRedBase.position.set(-1.524, 0.0127, 1.524); // (-60", 0.5", 60") becomes (-1.524m, 0.0127m, 1.524m)
-      fallbackGroup.add(basketRedBase);
-
-      const basketBlueBase = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.381, 0.4572, 0.0254, 16),
-        new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.5 })
-      );
-      basketBlueBase.position.set(1.524, 0.0127, -1.524); // (60", 0.5", -60") becomes (1.524m, 0.0127m, -1.524m)
-      fallbackGroup.add(basketBlueBase);
-
-      // Submersible Cage
-      const submersibleGroup = new THREE.Group();
-      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 });
-      const addPipe = (len: number, x: number, y: number, z: number, rot = new THREE.Euler()) => {
-        const geo = new THREE.CylinderGeometry(0.02, 0.02, len, 8); // 0.8 inches is ~0.02m
-        const mesh = new THREE.Mesh(geo, pipeMat);
-        mesh.position.set(x, y, z);
-        mesh.rotation.copy(rot);
-        submersibleGroup.add(mesh);
-      };
-      addPipe(0.4572, -0.3048, 0.2286, -0.3048); // 18", -12", 9", -12"
-      addPipe(0.4572, 0.3048, 0.2286, -0.3048);
-      addPipe(0.4572, -0.3048, 0.2286, 0.3048);
-      addPipe(0.4572, 0.3048, 0.2286, 0.3048);
-      addPipe(0.6096, 0, 0.4572, -0.3048, new THREE.Euler(0, 0, Math.PI / 2)); // 24", 0, 18", -12"
-      addPipe(0.6096, 0, 0.4572, 0.3048, new THREE.Euler(0, 0, Math.PI / 2));
-      addPipe(0.6096, -0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
-      addPipe(0.6096, 0.3048, 0.4572, 0, new THREE.Euler(Math.PI / 2, 0, 0));
-      fallbackGroup.add(submersibleGroup);
-    };
-
-    if (fieldCadUrl) {
-      console.log("[WebGL Visualizer] Attempting to load field GLB from Onshape:", fieldCadUrl);
-      const gltfLoader = new GLTFLoader();
-      gltfLoader.load(
-        fieldCadUrl,
-        (gltf) => {
-          const model = gltf.scene;
-          model.traverse((node) => {
-            if (node instanceof THREE.Mesh) {
-              node.castShadow = true;
-              node.receiveShadow = true;
-            }
-          });
-          scene.add(model);
-          console.log("[WebGL Visualizer] Synchronized field GLB loaded successfully.");
-        },
-        undefined,
-        (err) => {
-          console.warn("[WebGL Visualizer] Failed to load custom GLB. Rendering fallback field.", err);
-          renderFallbackField();
-        }
-      );
-    } else {
-      renderFallbackField();
-    }
-
-    // Custom 3D Obstacles
-    if (fieldObstacles && fieldObstacles.length > 0) {
-      const obstacleMat = new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        roughness: 0.6,
-        metalness: 0.2
-      });
-
-      fieldObstacles.forEach((obs) => {
-        const heightMeters = 0.35;
-        const obsGeo = new THREE.BoxGeometry(obs.width, heightMeters, obs.height);
-        const obsMesh = new THREE.Mesh(obsGeo, obstacleMat);
-        obsMesh.position.set(-obs.y, heightMeters / 2, -obs.x);
-        obsMesh.castShadow = true;
-        obsMesh.receiveShadow = true;
-        
-        // Red boundary outline
-        const borderGeo = new THREE.EdgesGeometry(obsGeo);
-        const borderMat = new THREE.LineBasicMaterial({ color: 0xC00000, linewidth: 2 });
-        const borderLine = new THREE.LineSegments(borderGeo, borderMat);
-        obsMesh.add(borderLine);
-
-        scene.add(obsMesh);
-      });
-    }
-
-    // Custom 3D Elements (Pollen, Artifacts, etc.)
-    if (fieldElements && fieldElements.length > 0 && fieldElementTypes && fieldElementTypes.length > 0) {
-      fieldElements.forEach((el) => {
-        const type = fieldElementTypes.find((t) => t.id === el.elementTypeId);
-        if (!type) return;
-
-        let geom: THREE.BufferGeometry;
-        const thickness = type.depth || 0.15;
-
-        if (type.shape === "box") {
-          geom = new THREE.BoxGeometry(type.width, thickness, type.height);
-        } else if (type.shape === "cylinder") {
-          const radius = (type.diameter || 0.15) / 2;
-          geom = new THREE.CylinderGeometry(radius, radius, thickness, 16);
-        } else {
-          const radius = (type.diameter || 0.15) / 2;
-          geom = new THREE.SphereGeometry(radius, 16, 16);
-        }
-
-        const mat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(type.color),
-          roughness: 0.5,
-          metalness: 0.1
-        });
-
-        const mesh = new THREE.Mesh(geom, mat);
-        const yOffset = type.shape === "sphere" ? (type.diameter || 0.15) / 2 : thickness / 2;
-        mesh.position.set(-el.y, yOffset, -el.x);
-        mesh.rotation.y = el.rotation * Math.PI / 180;
-
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-
-        const borderGeo = new THREE.EdgesGeometry(geom);
-        const borderMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
-        const borderLine = new THREE.LineSegments(borderGeo, borderMat);
-        mesh.add(borderLine);
-
-        scene.add(mesh);
-      });
-    }
-
     // 6. 3D Robot Model Group
-    const robot = new THREE.Group();
-    robotGroupRef.current = robot;
-    scene.add(robot);
-
-    // Chassis body base (0.4572m square = 18")
-    const chassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572); // 18" x 5" x 18"
-    const chassisMat = new THREE.MeshStandardMaterial({
-      color: 0xFFB81C,
-      metalness: 0.6,
-      roughness: 0.2,
-      transparent: true,
-      opacity: 0.95
-    });
-    const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-    chassis.position.y = 0.0889; // 3.5 inches
-    chassis.castShadow = true;
-    chassis.receiveShadow = true;
-    robot.add(chassis);
-
-    // Red Front indicator arrow mesh
-    const arrowGeo = new THREE.ConeGeometry(0.0635, 0.1524, 4); // 2.5" radius, 6" length
-    const arrowMat = new THREE.MeshBasicMaterial({ color: 0xC00000 });
-    const arrow = new THREE.Mesh(arrowGeo, arrowMat);
-    arrow.position.set(0, 0.1651, -0.2286); // 0, 6.5", -9"
-    arrow.rotation.x = -Math.PI / 2;
-    robot.add(arrow);
-
-    // Swerve wheel module cylinders (placed inside intermediate pivot groups)
-    const wheelGeo = new THREE.CylinderGeometry(0.0762, 0.0762, 0.0635, 16); // 3" radius, 2.5" thickness
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 });
-    
-    const create3DWheelModule = (x: number, y: number, z: number) => {
-      const pivotGroup = new THREE.Group();
-      pivotGroup.position.set(x, y, z);
-      
-      const mesh = new THREE.Mesh(wheelGeo, wheelMat);
-      mesh.rotation.z = Math.PI / 2;
-      mesh.castShadow = true;
-      pivotGroup.add(mesh);
-      
-      robot.add(pivotGroup);
-      return pivotGroup;
-    };
-
-    moduleLFRef.current = create3DWheelModule(-0.2413, 0.0762, -0.1778); // -9.5", 3", -7"
-    moduleRFRef.current = create3DWheelModule(0.2413, 0.0762, -0.1778);
-    moduleBLRef.current = create3DWheelModule(-0.2413, 0.0762, 0.1778);
-    moduleBRRef.current = create3DWheelModule(0.2413, 0.0762, 0.1778);
-
-    // Rails mechanism
-    const railMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.2 });
-    const railGeo = new THREE.BoxGeometry(0.0254, 0.6096, 0.0254); // 1" x 24" x 1"
-    
-    const railL = new THREE.Mesh(railGeo, railMat);
-    railL.position.set(-0.1016, 0.3683, 0.1016); // -4", 14.5", 4"
-    robot.add(railL);
-
-    const railR = new THREE.Mesh(railGeo, railMat);
-    railR.position.set(0.1016, 0.3683, 0.1016);
-    robot.add(railR);
-
-    // Sliding carriage
-    const carriageGeo = new THREE.BoxGeometry(0.2286, 0.0762, 0.1016); // 9" x 3" x 4"
-    const carriageMat = new THREE.MeshStandardMaterial({ color: 0xC00000, metalness: 0.3, roughness: 0.5 });
-    const carriage = new THREE.Mesh(carriageGeo, carriageMat);
-    carriage.position.set(0, 0.2032, 0.1016); // 0, 8", 4"
-    robot.add(carriage);
-    slideCarriageRef.current = carriage;
-
-    // Intake pivot arm
-    const armGeo = new THREE.BoxGeometry(0.0508, 0.0508, 0.254); // 2" x 2" x 10"
-    const armMat = new THREE.MeshStandardMaterial({ color: 0xFFB81C, metalness: 0.8 });
-    const arm = new THREE.Mesh(armGeo, armMat);
-    arm.position.set(0, 0, -0.1016); // 0, 0, -4"
-    carriage.add(arm);
-    intakeArmRef.current = arm;
+    const {
+      robotGroup,
+      moduleLF,
+      moduleRF,
+      moduleBL,
+      moduleBR,
+      slideCarriage,
+      intakeArm
+    } = createRobotModel();
+    robotGroupRef.current = robotGroup;
+    moduleLFRef.current = moduleLF;
+    moduleRFRef.current = moduleRF;
+    moduleBLRef.current = moduleBL;
+    moduleBRRef.current = moduleBR;
+    slideCarriageRef.current = slideCarriage;
+    intakeArmRef.current = intakeArm;
+    scene.add(robotGroup);
 
     // 7. Trails
     const trailGeo = new THREE.BufferGeometry();
@@ -973,26 +258,9 @@ export default function WebGLReplayCanvas() {
     plannedPathLineRef.current = plannedTrail;
 
     // 7.5 3D Comparison Ghost Robot Model Group
-    const compRobot = new THREE.Group();
+    const compRobot = createComparisonRobotModel();
     comparisonRobotGroupRef.current = compRobot;
     scene.add(compRobot);
-
-    const compChassisGeo = new THREE.BoxGeometry(0.4572, 0.127, 0.4572);
-    const compChassisMat = new THREE.MeshStandardMaterial({
-      color: 0xC00000, // Red
-      metalness: 0.3,
-      roughness: 0.5,
-      transparent: true,
-      opacity: 0.35
-    });
-    const compChassis = new THREE.Mesh(compChassisGeo, compChassisMat);
-    compChassis.position.y = 0.0889;
-    compRobot.add(compChassis);
-
-    const compArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0xC00000, transparent: true, opacity: 0.5 }));
-    compArrow.position.set(0, 0.1651, -0.2286);
-    compArrow.rotation.x = -Math.PI / 2;
-    compRobot.add(compArrow);
 
     // 8. Animation loop
     let active = true;
@@ -1005,31 +273,7 @@ export default function WebGLReplayCanvas() {
 
     return () => {
       active = false;
-      
-      scene.traverse((object: any) => {
-        if (object.geometry) {
-          object.geometry.dispose();
-        }
-        if (object.material) {
-          const disposeMaterial = (mat: any) => {
-            for (const key of Object.keys(mat)) {
-              if (mat[key] && typeof mat[key] === "object" && mat[key].isTexture) {
-                mat[key].dispose();
-              }
-            }
-            mat.dispose();
-          };
-          
-          if (Array.isArray(object.material)) {
-            object.material.forEach(disposeMaterial);
-          } else {
-            disposeMaterial(object.material);
-          }
-        }
-      });
-
-      renderer.dispose();
-      container.innerHTML = "";
+      cleanup();
     };
   }, [viewMode, fieldObstacles, fieldElements, fieldElementTypes, fieldCadUrl]);
 
@@ -1237,7 +481,7 @@ export default function WebGLReplayCanvas() {
         compTrail.visible = false;
       }
     }
-  }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov]);
+  }, [viewMode, currentFrame, currentTimeMs, telemetryData, comparisonTelemetryData, plannedPath, driveMode, showFov, getCurrentComparisonFrame]);
 
   return (
     <div className="flex flex-col gap-5 justify-between h-full p-4">

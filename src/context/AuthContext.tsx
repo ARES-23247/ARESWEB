@@ -187,14 +187,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Attempt to bootstrap the authorized_users record in the Firestore Emulator
     try {
       const userRef = doc(db, "authorized_users", mockUser.uid);
-      const userSnap = await getDoc(userRef);
+      const userSnap = await Promise.race([
+        getDoc(userRef),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Firestore getDoc timeout")), 1000)
+        )
+      ]);
       if (!userSnap.exists()) {
         console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
-        await setDoc(userRef, {
-          email: mockEmail,
-          role: role,
-          name: name || "ARES Lead"
-        });
+        await Promise.race([
+          setDoc(userRef, {
+            email: mockEmail,
+            role: role,
+            name: name || "ARES Lead"
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Firestore setDoc timeout")), 1000)
+          )
+        ]);
       }
     } catch (dbErr) {
       console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);

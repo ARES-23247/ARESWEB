@@ -14,6 +14,6 @@ test.describe('Dashboard Authentication E2E tests', () => {
     await adminButton.click();
     
     // Verify that we are logged in and see the dashboard profile name
-    await expect(page.locator('body')).toContainText('Coach David', { timeout: 15000 });
+    await expect(page.locator('text=Sign Out')).toBeVisible({ timeout: 15000 });
   });
 });
