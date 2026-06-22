@@ -16,19 +16,13 @@ import {
 import { 
   Plus, 
   Trash2, 
-  Save, 
-  FilePlus, 
   Sliders, 
   Compass, 
   Activity, 
-  RefreshCw, 
   Grid,
-  Info,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Map,
-  CheckCircle2,
   Link
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -40,9 +34,14 @@ import FieldCanvas, {
   FieldAprilTag 
 } from "./components/FieldCanvas";
 import CropModal from "./components/CropModal";
-import { generateTopDownSnapshot } from "./utils/threeSnapshot";
+import { useFieldLoader } from "./hooks/useFieldLoader";
+import DriverStationCard from "./components/DriverStationCard";
+import ObstaclesListAccordion from "./components/ObstaclesListAccordion";
+import AprilTagRosterAccordion from "./components/AprilTagRosterAccordion";
+import PlacedElementsAccordion from "./components/PlacedElementsAccordion";
+import ElementCatalogAccordion from "./components/ElementCatalogAccordion";
 
-interface FieldConfig {
+export interface FieldConfig {
   id: string;
   name: string;
   updatedAt: number;
@@ -97,16 +96,28 @@ export default function FieldEditor() {
   const [drawingPoints, setDrawingPoints] = useState<{ x: number; y: number }[]>([]);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
 
-  const [importText, setImportText] = useState<string>("[]");
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
-  const [localBgFile, setLocalBgFile] = useState<File | null>(null);
-  const [localGlbFile, setLocalGlbFile] = useState<File | null>(null);
-  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
-
-  const [rawUploadedImage, setRawUploadedImage] = useState<HTMLImageElement | null>(null);
-  const [showCropModal, setShowCropModal] = useState<boolean>(false);
+  const {
+    localBgFile,
+    setLocalBgFile,
+    localGlbFile,
+    setLocalGlbFile,
+    bgImage,
+    setBgImage,
+    rawUploadedImage,
+    setRawUploadedImage,
+    showCropModal,
+    setShowCropModal,
+    handleGlbFileChange,
+    handleBgFileChange,
+    resetLoader,
+  } = useFieldLoader({
+    configs,
+    selectedConfigId,
+    setLoading,
+  });
 
   const [fieldDocId, setFieldDocId] = useState<string>("");
   const [fieldWkId, setFieldWkId] = useState<string>("");
@@ -118,59 +129,9 @@ export default function FieldEditor() {
   const fieldW = fieldType === "ftc" ? 3.6576 : 8.211;
   const fieldH = fieldType === "ftc" ? 3.6576 : 16.541;
 
-  const handleGlbFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setLocalGlbFile(file);
-    setLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const buffer = event.target?.result as ArrayBuffer;
-        if (!buffer) return;
-        try {
-          const snapshotBlob = await generateTopDownSnapshot(buffer);
-          const snapshotFile = new File([snapshotBlob], "snapshot_bg.png", { type: "image/png" });
-          setLocalBgFile(snapshotFile);
-        } catch (snapErr) {
-          console.error("Failed to generate top-down snapshot from GLB:", snapErr);
-          alert("Selected 3D file, but failed to generate a top-down preview. You can manually upload a 2D image instead.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (err) {
-      console.error("Error reading GLB file:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchConfigs();
   }, []);
-
-  useEffect(() => {
-    if (localBgFile) {
-      const url = URL.createObjectURL(localBgFile);
-      const img = new Image();
-      img.src = url;
-      img.onload = () => setBgImage(img);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      const activeConfig = configs.find((c) => c.id === selectedConfigId);
-      const bgUrl = activeConfig?.bgImageUrl || "";
-      if (bgUrl) {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = bgUrl;
-        img.onload = () => setBgImage(img);
-        img.onerror = () => setBgImage(null);
-      } else {
-        setBgImage(null);
-      }
-    }
-  }, [localBgFile, selectedConfigId, configs]);
 
   useEffect(() => {
     const fetchFieldCadSettings = async () => {
@@ -913,1173 +874,98 @@ export default function FieldEditor() {
             )}
           </div>
 
-          {/* Layout Settings Card */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isLayoutSettingsExpanded ? "p-6 space-y-4" : "p-4 space-y-0"}`}>
-            <h3 
-              onClick={() => setIsLayoutSettingsExpanded(!isLayoutSettingsExpanded)}
-              className={`text-xs font-black uppercase text-white tracking-widest font-heading flex items-center justify-between cursor-pointer hover:text-ares-gold transition-colors select-none ${
-                isLayoutSettingsExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Sliders size={14} className="text-ares-gold" /> Layout Settings
-              </span>
-              {isLayoutSettingsExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
-            </h3>
-            
-            {isLayoutSettingsExpanded && (
-              <>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
-                    Layout Name
-                  </label>
-                  <input
-                    type="text"
-                    value={configName}
-                    onChange={(e) => setConfigName(e.target.value)}
-                    placeholder="Championship Finals layout..."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan transition-colors"
-                  />
-                </div>
+          <DriverStationCard
+            isLayoutSettingsExpanded={isLayoutSettingsExpanded}
+            setIsLayoutSettingsExpanded={setIsLayoutSettingsExpanded}
+            configName={configName}
+            setConfigName={setConfigName}
+            gameYear={gameYear}
+            setGameYear={setGameYear}
+            fieldType={fieldType}
+            setFieldType={setFieldType}
+            redDriverStation={redDriverStation}
+            setRedDriverStation={setRedDriverStation}
+            blueDriverStation={blueDriverStation}
+            setBlueDriverStation={setBlueDriverStation}
+            xAxisDirection={xAxisDirection}
+            setXAxisDirection={setXAxisDirection}
+            yAxisDirection={yAxisDirection}
+            setYAxisDirection={setYAxisDirection}
+            showGrid={showGrid}
+            setShowGrid={setShowGrid}
+            showAllianceZones={showAllianceZones}
+            setShowAllianceZones={setShowAllianceZones}
+            showCoordinateAxes={showCoordinateAxes}
+            setShowCoordinateAxes={setShowCoordinateAxes}
+            localGlbFile={localGlbFile}
+            hasGlbUrl={!!configs.find((c) => c.id === selectedConfigId)?.cadUrl}
+            handleGlbFileChange={handleGlbFileChange}
+            localBgFile={localBgFile}
+            hasBgImageUrl={!!configs.find((c) => c.id === selectedConfigId)?.bgImageUrl}
+            handleBgFileChange={handleBgFileChange}
+            bgImage={bgImage}
+            setRawUploadedImage={setRawUploadedImage}
+            setShowCropModal={setShowCropModal}
+            saving={saving}
+            handleSaveToCloud={handleSaveToCloud}
+            selectedConfigId={selectedConfigId}
+            loading={loading}
+            handleDeleteLayout={handleDeleteLayout}
+          />
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/55">
-                    Game Year / Season
-                  </label>
-                  <select
-                    value={["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) ? gameYear : "custom"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "custom") {
-                        setGameYear("");
-                      } else {
-                        setGameYear(val);
-                      }
-                    }}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-ares-cyan cursor-pointer transition-colors"
-                  >
-                    <option value="2025-2026">2025-2026 Season</option>
-                    <option value="2024-2025">2024-2025 (Into The Deep / Reefscape)</option>
-                    <option value="2023-2024">2023-2024 (Centerstage / Crescendo)</option>
-                    <option value="2022-2023">2022-2023 (Powerplay / Charged Up)</option>
-                    <option value="2021-2022">2021-2022 (Freight Frenzy / Rapid React)</option>
-                    <option value="custom">Other / Custom Year...</option>
-                  </select>
+          <ObstaclesListAccordion
+            isObstaclesExpanded={isObstaclesExpanded}
+            setIsObstaclesExpanded={setIsObstaclesExpanded}
+            obstacles={obstacles}
+            selectedObstacleId={selectedObstacleId}
+            setSelectedObstacleId={setSelectedObstacleId}
+            handleAddObstacle={handleAddObstacle}
+            handleDeleteObstacle={handleDeleteObstacle}
+            handleUpdateObstacleField={handleUpdateObstacleField}
+            isDrawingPolygon={isDrawingPolygon}
+            setIsDrawingPolygon={setIsDrawingPolygon}
+            setDrawingPoints={setDrawingPoints}
+            setHoverPoint={setHoverPoint}
+            handleMirrorObstacle={handleMirrorObstacle}
+            fieldType={fieldType}
+          />
 
-                  {!["2025-2026", "2024-2025", "2023-2024", "2022-2023", "2021-2022"].includes(gameYear) && (
-                    <input
-                      type="text"
-                      value={gameYear}
-                      onChange={(e) => setGameYear(e.target.value)}
-                      placeholder="Enter custom year (e.g., 2020-2021)..."
-                      className="w-full bg-black/45 border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-cyan mt-1.5"
-                    />
-                  )}
-                </div>
+          <ElementCatalogAccordion
+            isElementCatalogExpanded={isElementCatalogExpanded}
+            setIsElementCatalogExpanded={setIsElementCatalogExpanded}
+            elementTypes={elementTypes}
+            selectedElementTypeId={selectedElementTypeId}
+            setSelectedElementTypeId={setSelectedElementTypeId}
+            handleAddElementType={handleAddElementType}
+            handleDeleteElementType={handleDeleteElementType}
+            handleUpdateElementTypeField={handleUpdateElementTypeField}
+            handleAddElementInstance={handleAddElementInstance}
+          />
 
-                {/* Field Configuration Subsection */}
-                <div className="border-t border-white/5 pt-3 space-y-3">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
-                    Field Parameters
-                  </span>
+          <PlacedElementsAccordion
+            isPlacedElementsExpanded={isPlacedElementsExpanded}
+            setIsPlacedElementsExpanded={setIsPlacedElementsExpanded}
+            elements={elements}
+            elementTypes={elementTypes}
+            selectedElementInstanceId={selectedElementInstanceId}
+            setSelectedElementInstanceId={setSelectedElementInstanceId}
+            handleDeleteElementInstance={handleDeleteElementInstance}
+            handleUpdateElementInstanceField={handleUpdateElementInstanceField}
+          />
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5 col-span-2">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Field Type
-                      </label>
-                      <select
-                        value={fieldType}
-                        onChange={(e) => setFieldType(e.target.value as "ftc" | "frc")}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                      >
-                        <option value="ftc">FTC (Square)</option>
-                        <option value="frc">FRC (2:1 Rect)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Red Station
-                      </label>
-                      <select
-                        value={redDriverStation}
-                        onChange={(e) => setRedDriverStation(e.target.value as any)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                      >
-                        <option value="north">North</option>
-                        <option value="south">South</option>
-                        <option value="east">East</option>
-                        <option value="west">West</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        Blue Station
-                      </label>
-                      <select
-                        value={blueDriverStation}
-                        onChange={(e) => setBlueDriverStation(e.target.value as any)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                      >
-                        <option value="north">North</option>
-                        <option value="south">South</option>
-                        <option value="east">East</option>
-                        <option value="west">West</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        +X Direction
-                      </label>
-                      <select
-                        value={xAxisDirection}
-                        onChange={(e) => setXAxisDirection(e.target.value as any)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                      >
-                        <option value="up">Up (North)</option>
-                        <option value="down">Down (South)</option>
-                        <option value="left">Left (West)</option>
-                        <option value="right">Right (East)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        +Y Direction
-                      </label>
-                      <select
-                        value={yAxisDirection}
-                        onChange={(e) => setYAxisDirection(e.target.value as any)}
-                        className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                      >
-                        <option value="up">Up (North)</option>
-                        <option value="down">Down (South)</option>
-                        <option value="left">Left (West)</option>
-                        <option value="right">Right (East)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Display Options Subsection */}
-                <div className="border-t border-white/5 pt-3 space-y-2">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold">
-                    Display Options
-                  </span>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="show-grid-chk"
-                        checked={showGrid}
-                        onChange={(e) => setShowGrid(e.target.checked)}
-                        className="w-4 h-4 accent-ares-gold cursor-pointer"
-                      />
-                      <label htmlFor="show-grid-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                        Show Grid Lines
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="show-alliance-chk"
-                        checked={showAllianceZones}
-                        onChange={(e) => setShowAllianceZones(e.target.checked)}
-                        className="w-4 h-4 accent-ares-gold cursor-pointer"
-                      />
-                      <label htmlFor="show-alliance-chk" className="text-[10px] font-mono text-white cursor-pointer select-none font-medium">
-                        Show Alliance Zones (FTC Only)
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="show-axes-chk"
-                        checked={showCoordinateAxes}
-                        onChange={(e) => setShowCoordinateAxes(e.target.checked)}
-                        className="w-4 h-4 accent-ares-gold cursor-pointer"
-                      />
-                      <label htmlFor="show-axes-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                        Show Coordinate Axes
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Field Assets Subsection */}
-                <div className="border-t border-white/5 pt-3 space-y-3">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
-                    Field Assets (2D/3D)
-                  </span>
-                  
-                  <div className="space-y-3">
-                    {/* 3D Model Upload */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        3D Field Model (.glb, .gltf)
-                      </label>
-                      <input
-                        type="file"
-                        accept=".glb,.gltf"
-                        onChange={handleGlbFileChange}
-                        className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
-                      />
-                      {(localGlbFile || configs.find((c) => c.id === selectedConfigId)?.cadUrl) && (
-                        <p className="text-[8px] font-mono text-ares-success mt-0.5">
-                          ✓ 3D Model GLB loaded
-                        </p>
-                      )}
-                    </div>
-
-                    {/* 2D Background Upload */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                        2D Field Image (.png, .jpg)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const img = new Image();
-                              img.src = event.target?.result as string;
-                              img.onload = () => {
-                                setRawUploadedImage(img);
-                                setShowCropModal(true);
-                              };
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="w-full text-[10px] text-marble/55 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-ares-gold file:text-black hover:file:bg-ares-gold-soft file:cursor-pointer cursor-pointer bg-black/30 p-1.5 rounded-lg border border-white/5 focus:outline-none"
-                      />
-                      {(localBgFile || configs.find((c) => c.id === selectedConfigId)?.bgImageUrl) && (
-                        <div className="flex flex-col gap-1.5 mt-0.5">
-                          <p className="text-[8px] font-mono text-ares-success">
-                            ✓ 2D Background loaded
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (bgImage) {
-                                setRawUploadedImage(bgImage);
-                                setShowCropModal(true);
-                              } else {
-                                alert("No background image currently loaded in cache.");
-                              }
-                            }}
-                            className="text-left text-[8.5px] font-black uppercase text-ares-gold hover:text-ares-gold-soft tracking-wider cursor-pointer"
-                          >
-                            Adjust Crop & Alignment
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    onClick={handleSaveToCloud}
-                    disabled={saving}
-                    className="w-full bg-ares-gold text-black hover:bg-ares-gold-soft py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <>
-                        <RefreshCw size={12} className="animate-spin" /> Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={12} /> Save Layout
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteLayout()}
-                    disabled={!selectedConfigId || loading}
-                    className="w-full bg-ares-red/10 hover:bg-ares-red/20 text-ares-red-light border border-ares-red/20 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-20 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Obstacle Inventory */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isObstaclesExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
-            <div 
-              onClick={() => setIsObstaclesExpanded(!isObstaclesExpanded)}
-              className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
-                isObstaclesExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
-                <Activity size={14} className="text-ares-gold" /> Obstacle Inventory
-              </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddObstacle();
-                  }}
-                  className="px-2 py-0.5 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[8.5px] uppercase font-black tracking-widest rounded transition-all cursor-pointer font-bold shrink-0"
-                >
-                  <Plus size={10} /> Add Box
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsDrawingPolygon(!isDrawingPolygon);
-                    setDrawingPoints([]);
-                    setHoverPoint(null);
-                  }}
-                  className={`px-2 py-0.5 text-[8.5px] uppercase font-black tracking-widest rounded transition-all cursor-pointer font-bold shrink-0 ${
-                    isDrawingPolygon 
-                      ? "bg-ares-cyan/25 border border-ares-cyan text-ares-cyan" 
-                      : "bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30"
-                  }`}
-                >
-                  <Plus size={10} /> {isDrawingPolygon ? "Drawing" : "Draw Poly"}
-                </button>
-                {isObstaclesExpanded ? <ChevronUp size={14} className="text-marble/40 cursor-pointer" /> : <ChevronDown size={14} className="text-marble/40 cursor-pointer" />}
-              </div>
-            </div>
-
-            {isObstaclesExpanded && (
-              <>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {obstacles.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-6">
-                      No obstacles placed yet.
-                    </div>
-                  ) : (
-                    obstacles.map((obs) => {
-                      const isSelected = obs.id === selectedObstacleId;
-                      return (
-                        <div
-                          key={obs.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedObstacleId(obs.id);
-                          }}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected 
-                              ? "bg-ares-gold/10 border-ares-gold text-white" 
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <span className="text-[11px] font-mono font-bold truncate">
-                            {obs.name}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteObstacle(obs.id);
-                            }}
-                            className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                            title="Delete obstacle"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {selectedObs ? (
-                  <div className="border-t border-white/5 pt-4 space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                      Parameters: {selectedObs.name}
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1.5 col-span-2">
-                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Label Name
-                        </label>
-                        <input
-                          type="text"
-                          value={selectedObs.name}
-                          onChange={(e) => handleUpdateObstacleField(selectedObs.id, "name", e.target.value)}
-                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Centroid X (m)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={selectedObs.x}
-                          onChange={(e) => {
-                            const newX = parseFloat(e.target.value) || 0;
-                            const diffX = newX - selectedObs.x;
-                            if (selectedObs.shape === "polygon" && selectedObs.points) {
-                              const updatedPoints = selectedObs.points.map(p => ({ x: p.x + diffX, y: p.y }));
-                              handleUpdateObstacleField(selectedObs.id, "points", updatedPoints);
-                            }
-                            handleUpdateObstacleField(selectedObs.id, "x", newX);
-                          }}
-                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Centroid Y (m)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={selectedObs.y}
-                          onChange={(e) => {
-                            const newY = parseFloat(e.target.value) || 0;
-                            const diffY = newY - selectedObs.y;
-                            if (selectedObs.shape === "polygon" && selectedObs.points) {
-                              const updatedPoints = selectedObs.points.map(p => ({ x: p.x, y: p.y + diffY }));
-                              handleUpdateObstacleField(selectedObs.id, "points", updatedPoints);
-                            }
-                            handleUpdateObstacleField(selectedObs.id, "y", newY);
-                          }}
-                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                        />
-                      </div>
-
-                      {selectedObs.shape === "polygon" ? (
-                        <div className="col-span-2 space-y-3">
-                          <div className="flex items-center justify-between border-t border-white/5 pt-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Edit Vertices (meters)
-                            </label>
-                          </div>
-
-                          <div className="space-y-1.5 border border-white/5 bg-black/20 p-2.5 rounded-xl max-h-36 overflow-y-auto">
-                            {(selectedObs.points || []).map((pt, idx) => {
-                              return (
-                                <div key={idx} className="flex items-center gap-1.5">
-                                  <span className="text-[8px] font-mono text-marble/35 w-3.5">
-                                    #{idx + 1}
-                                  </span>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={pt.x}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                      const raw = parseFloat(e.target.value) || 0;
-                                      const updated = (selectedObs.points || []).map((p, i) =>
-                                        i === idx ? { ...p, x: raw } : p
-                                      );
-                                      handleUpdateObstacleField(selectedObs.id, "points", updated);
-                                      const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
-                                      handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
-                                    }}
-                                    className="w-full bg-black/45 border border-white/10 rounded-lg px-1.5 py-1 text-[10px] text-white font-mono text-center focus:outline-none focus:border-ares-cyan"
-                                    placeholder="X"
-                                  />
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={pt.y}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                      const raw = parseFloat(e.target.value) || 0;
-                                      const updated = (selectedObs.points || []).map((p, i) =>
-                                        i === idx ? { ...p, y: raw } : p
-                                      );
-                                      handleUpdateObstacleField(selectedObs.id, "points", updated);
-                                      const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
-                                      handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
-                                    }}
-                                    className="w-full bg-black/45 border border-white/10 rounded-lg px-1.5 py-1 text-[10px] text-white font-mono text-center focus:outline-none focus:border-ares-cyan"
-                                    placeholder="Y"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const updated = (selectedObs.points || []).filter((_, i) => i !== idx);
-                                      handleUpdateObstacleField(selectedObs.id, "points", updated);
-                                      if (updated.length > 0) {
-                                        const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
-                                        const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
-                                        handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
-                                        handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
-                                      }
-                                    }}
-                                    className="text-marble/40 hover:text-ares-red-light p-0.5 transition-colors"
-                                    title="Remove vertex"
-                                  >
-                                    <Trash2 size={10} />
-                                  </button>
-                                </div>
-                              );
-                            })}
-
-                            <button
-                              onClick={() => {
-                                const newPt = { x: selectedObs.x + 0.1, y: selectedObs.y + 0.1 };
-                                const updated = [...(selectedObs.points || []), newPt];
-                                handleUpdateObstacleField(selectedObs.id, "points", updated);
-                                const newCx = updated.reduce((sum, p) => sum + p.x, 0) / updated.length;
-                                const newCy = updated.reduce((sum, p) => sum + p.y, 0) / updated.length;
-                                handleUpdateObstacleField(selectedObs.id, "x", Number(newCx.toFixed(3)));
-                                handleUpdateObstacleField(selectedObs.id, "y", Number(newCy.toFixed(3)));
-                              }}
-                              className="w-full py-1 text-[8px] uppercase font-black tracking-widest text-ares-gold border border-dashed border-ares-gold/20 hover:border-ares-gold/40 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
-                            >
-                              Add Vertex
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Width (m) - Y Axis
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0.05"
-                              value={selectedObs.width}
-                              onChange={(e) => handleUpdateObstacleField(selectedObs.id, "width", parseFloat(e.target.value) || 0.1)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Height (m) - X Axis
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0.05"
-                              value={selectedObs.height}
-                              onChange={(e) => handleUpdateObstacleField(selectedObs.id, "height", parseFloat(e.target.value) || 0.1)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Mirror Duplicate controls */}
-                      <div className="col-span-2 border-t border-white/5 pt-3 space-y-2">
-                        <span className="text-[8px] uppercase font-black tracking-widest text-marble/45 block font-semibold">
-                          Mirror Duplicate Copy
-                        </span>
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            onClick={() => handleMirrorObstacle(selectedObs.id, "x")}
-                            className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
-                            title="Duplicate and mirror across X-axis"
-                          >
-                            X-Axis (Y)
-                          </button>
-                          <button
-                            onClick={() => handleMirrorObstacle(selectedObs.id, "y")}
-                            className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
-                            title="Duplicate and mirror across Y-axis"
-                          >
-                            Y-Axis (X)
-                          </button>
-                          <button
-                            onClick={() => handleMirrorObstacle(selectedObs.id, "center")}
-                            className="py-1.5 text-[8.5px] font-bold uppercase tracking-wider text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 hover:bg-ares-gold/5 rounded-lg transition-all cursor-pointer"
-                            title="Duplicate and mirror across center"
-                          >
-                            Center
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5 col-span-2">
-                        <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Obstacle Type
-                        </label>
-                        <select
-                          value={selectedObs.obstacleType}
-                          onChange={(e) => {
-                            const newType = e.target.value as "blocking" | "ramp";
-                            handleUpdateObstacleField(selectedObs.id, "obstacleType", newType);
-                            handleUpdateObstacleField(selectedObs.id, "isBlocking", newType === "blocking");
-                            if (newType === "ramp" && !selectedObs.rampDirection) {
-                              handleUpdateObstacleField(selectedObs.id, "rampDirection", "up");
-                            }
-                          }}
-                          className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                        >
-                          <option value="blocking">Blocking Wall</option>
-                          <option value="ramp">Non-Blocking Ramp</option>
-                        </select>
-                      </div>
-
-                      {selectedObs.obstacleType === "ramp" && (
-                        <div className="flex flex-col gap-1.5 col-span-2">
-                          <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                            Ramp Incline Direction
-                          </label>
-                          <select
-                            value={selectedObs.rampDirection || "up"}
-                            onChange={(e) => handleUpdateObstacleField(selectedObs.id, "rampDirection", e.target.value)}
-                            className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                          >
-                            <option value="up">North (Up)</option>
-                            <option value="down">South (Down)</option>
-                            <option value="left">West (Left)</option>
-                            <option value="right">East (Right)</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select an obstacle to edit properties.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Placed Elements Catalog template creator */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isElementCatalogExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
-            <div 
-              onClick={() => setIsElementCatalogExpanded(!isElementCatalogExpanded)}
-              className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
-                isElementCatalogExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
-                <Grid size={14} className="text-ares-gold" /> Element Catalog Types
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddElementType();
-                  }}
-                  className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold"
-                >
-                  <Plus size={10} /> New Type
-                </button>
-                {isElementCatalogExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
-              </div>
-            </div>
-
-            {isElementCatalogExpanded && (
-              <>
-                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {elementTypes.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
-                      No element types defined.
-                    </div>
-                  ) : (
-                    elementTypes.map((t) => {
-                      const isSelected = t.id === selectedElementTypeId;
-                      return (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedElementTypeId(t.id)}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/10 border-ares-gold text-white"
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: t.color }}
-                            />
-                            <span className="text-[11px] font-mono font-bold truncate">
-                              {t.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddElementInstance(t.id);
-                              }}
-                              className="px-2 py-0.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
-                              title="Place instance of this type on field"
-                            >
-                              Place
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteElementType(t.id);
-                              }}
-                              className="text-marble/45 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
-                              title="Delete type catalog template"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {selectedElementTypeId ? (
-                  (() => {
-                    const t = elementTypes.find((x) => x.id === selectedElementTypeId);
-                    if (!t) return null;
-                    return (
-                      <div className="border-t border-white/5 pt-4 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                          Type Properties: {t.name}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5 col-span-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Type Name
-                            </label>
-                            <input
-                              type="text"
-                              value={t.name}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "name", e.target.value)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Shape
-                            </label>
-                            <select
-                              value={t.shape}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "shape", e.target.value as any)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-ares-cyan cursor-pointer"
-                            >
-                              <option value="sphere">Sphere (Circle)</option>
-                              <option value="cylinder">Cylinder (Circle)</option>
-                              <option value="box">Box (Rect)</option>
-                            </select>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Color (Hex)
-                            </label>
-                            <div className="flex gap-1.5">
-                              <input
-                                type="color"
-                                value={t.color}
-                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
-                                className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer p-0 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={t.color}
-                                onChange={(e) => handleUpdateElementTypeField(t.id, "color", e.target.value)}
-                                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan w-full text-center"
-                              />
-                            </div>
-                          </div>
-                          {t.shape === "box" ? (
-                            <>
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                  Width (m)
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.width}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "width", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                  Height (m)
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.height}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "height", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                                Diameter (m)
-                              </label>
-                              <input
-                                  type="number"
-                                  step="0.01"
-                                  value={t.diameter || 0.15}
-                                  onChange={(e) => handleUpdateElementTypeField(t.id, "diameter", parseFloat(e.target.value) || 0.15)}
-                                  className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                              />
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Depth/Z-Height (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={t.depth}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "depth", parseFloat(e.target.value) || 0.15)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Mass (kg)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={t.massKg}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "massKg", parseFloat(e.target.value) || 0.1)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2 col-span-2 pt-1">
-                            <input
-                              type="checkbox"
-                              id="movable-chk"
-                              checked={t.movable}
-                              onChange={(e) => handleUpdateElementTypeField(t.id, "movable", e.target.checked)}
-                              className="w-4 h-4 accent-ares-gold cursor-pointer"
-                            />
-                            <label htmlFor="movable-chk" className="text-[10px] font-mono text-white cursor-pointer select-none">
-                              Movable Physics Body (Dynamic)
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select a type template to edit.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Placed Elements Inventory Card */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isPlacedElementsExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
-            <div 
-              onClick={() => setIsPlacedElementsExpanded(!isPlacedElementsExpanded)}
-              className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
-                isPlacedElementsExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
-                <Activity size={14} className="text-ares-gold" /> Placed Elements
-              </h3>
-              {isPlacedElementsExpanded ? <ChevronUp size={14} className="text-marble/40" /> : <ChevronDown size={14} className="text-marble/40" />}
-            </div>
-
-            {isPlacedElementsExpanded && (
-              <>
-                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {elements.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
-                      No elements placed on field.
-                    </div>
-                  ) : (
-                    elements.map((el, idx) => {
-                      const type = elementTypes.find((t) => t.id === el.elementTypeId);
-                      const isSelected = el.id === selectedElementInstanceId;
-                      return (
-                        <div
-                          key={el.id}
-                          onClick={() => setSelectedElementInstanceId(el.id)}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/10 border-ares-gold text-white"
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: type?.color || "#fff" }}
-                            />
-                            <span className="text-[11px] font-mono font-bold truncate">
-                              {type?.name || "Unknown"} #{idx + 1}
-                            </span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteElementInstance(el.id);
-                            }}
-                            className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
-                            title="Delete placed instance"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {selectedElementInstanceId ? (
-                  (() => {
-                    const el = elements.find((x) => x.id === selectedElementInstanceId);
-                    if (!el) return null;
-                    const type = elementTypes.find((t) => t.id === el.elementTypeId);
-                    return (
-                      <div className="border-t border-white/5 pt-4 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold">
-                          Instance: {type?.name || "Element"}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position X (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={el.x}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "x", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position Y (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={el.y}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "y", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5 col-span-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Rotation (deg)
-                            </label>
-                            <input
-                              type="number"
-                              step="1"
-                              value={el.rotation}
-                              onChange={(e) => handleUpdateElementInstanceField(el.id, "rotation", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select a placed element to edit.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* AprilTags Inventory Card */}
-          <div className={`glass-card border border-white/10 bg-black/60 shadow-2xl transition-all duration-200 ${isTagsExpanded ? "p-6 space-y-5" : "p-4 space-y-0"}`}>
-            <div 
-              onClick={() => setIsTagsExpanded(!isTagsExpanded)}
-              className={`flex items-center justify-between cursor-pointer hover:text-ares-gold select-none ${
-                isTagsExpanded ? "border-b border-white/5 pb-3" : ""
-              }`}
-            >
-              <h3 className="text-xs font-black uppercase text-white tracking-widest font-heading flex items-center gap-2 transition-colors">
-                <Compass size={14} className="text-ares-gold" /> AprilTags Inventory
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddAprilTag();
-                  }}
-                  className="px-2.5 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer font-bold shrink-0"
-                >
-                  <Plus size={10} /> Add Tag
-                </button>
-                {isTagsExpanded ? <ChevronUp size={14} className="text-marble/40 cursor-pointer" /> : <ChevronDown size={14} className="text-marble/40 cursor-pointer" />}
-              </div>
-            </div>
-
-            {isTagsExpanded && (
-              <>
-                <div className="max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 pr-1">
-                  {apriltags.length === 0 ? (
-                    <div className="text-[10px] font-mono text-marble/35 uppercase text-center py-4">
-                      No AprilTags placed yet.
-                    </div>
-                  ) : (
-                    apriltags.map((tag) => {
-                      const isSelected = tag.id === selectedTagId;
-                      return (
-                        <div
-                          key={tag.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTagId(tag.id);
-                            setSelectedObstacleId(null);
-                            setSelectedElementInstanceId(null);
-                          }}
-                          className={`flex items-center justify-between px-3 py-2 border rounded-xl cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-ares-gold/10 border-ares-gold text-white"
-                              : "bg-black/30 border-white/5 text-marble/70 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <span className="text-[11px] font-mono font-bold truncate">
-                            Tag #{tag.id} ({tag.x.toFixed(2)}, {tag.y.toFixed(2)})
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteAprilTag(tag.id);
-                            }}
-                            className="text-marble/40 hover:text-ares-red-light p-1 cursor-pointer transition-colors"
-                            title="Delete tag"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {selectedTagId !== null ? (
-                  (() => {
-                    const tag = apriltags.find((t) => t.id === selectedTagId);
-                    if (!tag) return null;
-                    return (
-                      <div className="border-t border-white/5 pt-4 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-ares-gold font-bold">
-                          Tag Properties: Tag #{tag.id}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Tag ID (Integer)
-                            </label>
-                            <input
-                              type="number"
-                              step="1"
-                              value={tag.id}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleUpdateAprilTagField(tag.id, "id", parseInt(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Height Z (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={tag.z}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleUpdateAprilTagField(tag.id, "z", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position X (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={tag.x}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleUpdateAprilTagField(tag.id, "x", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Position Y (m)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={tag.y}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleUpdateAprilTagField(tag.id, "y", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5 col-span-2">
-                            <label className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                              Yaw Angle (degrees)
-                            </label>
-                            <input
-                              type="number"
-                              step="1"
-                              value={tag.yaw}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleUpdateAprilTagField(tag.id, "yaw", parseFloat(e.target.value) || 0)}
-                              className="bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:border-ares-cyan"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="border-t border-white/5 pt-4 text-[10px] font-mono text-marble/35 uppercase text-center">
-                    Select a placed AprilTag to edit.
-                  </div>
-                )}
-
-                {/* WPILib JSON Importer */}
-                <div className="border-t border-white/5 pt-4 space-y-2.5">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block font-semibold font-heading">
-                    WPILib apriltags.json Import
-                  </span>
-                  <p className="text-[8.5px] text-marble/40 leading-relaxed font-mono">
-                    Paste the raw content of your WPILib format apriltags.json file below to import all tags automatically.
-                  </p>
-                  <textarea
-                    value={importText}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => setImportText(e.target.value)}
-                    placeholder='e.g., {"tags": [{"ID": 1, "pose": {"translation": {"x": 1.5, "y": 1.5, "z": 0.5}, "rotation": {"quaternion": {"W": 1, "X": 0, "Y": 0, "Z": 0}}}}]}'
-                    className="w-full h-16 bg-black/40 border border-white/10 rounded-lg p-2 text-[9px] font-mono text-white focus:outline-none focus:border-ares-cyan resize-none"
-                  />
-                  <button
-                    onClick={() => {
-                      handleImportAprilTagsJson(importText);
-                      setImportText("");
-                    }}
-                    className="w-full py-1.5 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[9px] uppercase font-black tracking-widest rounded-lg transition-all font-bold cursor-pointer"
-                  >
-                    Parse and Import
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <AprilTagRosterAccordion
+            isTagsExpanded={isTagsExpanded}
+            setIsTagsExpanded={setIsTagsExpanded}
+            apriltags={apriltags}
+            selectedTagId={selectedTagId}
+            setSelectedTagId={setSelectedTagId}
+            setSelectedObstacleId={setSelectedObstacleId}
+            setSelectedElementInstanceId={setSelectedElementInstanceId}
+            handleAddAprilTag={handleAddAprilTag}
+            handleDeleteAprilTag={handleDeleteAprilTag}
+            handleUpdateAprilTagField={handleUpdateAprilTagField}
+            handleImportAprilTagsJson={handleImportAprilTagsJson}
+          />
 
         </div>
 

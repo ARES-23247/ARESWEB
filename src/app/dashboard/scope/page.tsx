@@ -3,137 +3,41 @@
 import React, { useEffect, useState, useRef } from "react";
 import { authenticatedFetch } from "@/lib/api";
 import { useScopeStore, TelemetryData } from "./store/scopeStore";
-import { NT4Client } from "./store/nt4Client";
-import { useFocusTrap } from "@/lib/useFocusTrap";
 import WebGLReplayCanvas from "./components/WebGLReplayCanvas";
 import TelemetryCharts from "./components/TelemetryCharts";
 import StateInspector from "./components/StateInspector";
 import HealthDiagnostics from "./components/HealthDiagnostics";
 import SyncRobotLogsModal from "./components/SyncRobotLogsModal";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { 
-  Play, 
-  Pause, 
-  FastForward, 
-  FolderOpen, 
-  Activity, 
-  Database,
-  Sparkles,
-  RefreshCw,
-  Cpu,
-  Compass,
-  Wifi,
-  WifiOff,
-  X,
-  Eye,
-  Sliders,
-  Terminal,
-  Square,
-  Copy,
-  Check,
-  Plus,
-  Trash2,
-  Maximize2,
-  Edit3,
-  Layout,
-  Save,
-  Download,
-  Upload,
+  X, 
+  Maximize2, 
+  Copy, 
+  Trash2, 
+  Edit3, 
+  Layout, 
+  Save, 
+  Download, 
+  Upload, 
   RotateCcw,
-  Info,
-  Cloud
+  RefreshCw,
+  FolderOpen
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import VariablesTuner, { TunableConstant } from "./components/VariablesTuner";
+import VariablesTuner from "./components/VariablesTuner";
 
-export interface ChartConfig {
-  id: string;
-  selectedKeys: string[];
-}
+// Custom Hooks
+import { useNT4Client } from "./hooks/useNT4Client";
+import { useScopeLayout, LayoutItem } from "./hooks/useScopeLayout";
 
-export interface LayoutItem {
-  id: string;
-  type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts" | "tuner" | "group";
-  title: string;
-  visible: boolean;
-  colSpan: number;
-  height: "short" | "medium" | "tall";
-  order: number;
-  
-  // Grid layout coordinates
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  
-  // Tabbed widget groups
-  childrenIds?: string[];
-  activeTabId?: string;
-}
-
-export interface DashboardPreset {
-  id: string;
-  name: string;
-  isShared: boolean;
-  createdBy?: string;
-  creatorName?: string;
-  layout: LayoutItem[];
-  chartConfigs: ChartConfig[];
-  tuningConstants?: TunableConstant[];
-  updatedAt: any;
-}
-
-const DEFAULT_LAYOUT: LayoutItem[] = [
-  { id: "visualizer", type: "visualizer", title: "3D Field Visualizer", visible: true, colSpan: 1, height: "tall", order: 1, x: 0, y: 1, w: 8, h: 5 },
-  { id: "diagnostics", type: "diagnostics", title: "Health & Diagnostics", visible: true, colSpan: 2, height: "tall", order: 2, x: 8, y: 1, w: 4, h: 5 },
-  { id: "charts-1", type: "charts", title: "Telemetry Chart", visible: true, colSpan: 2, height: "medium", order: 3, x: 0, y: 6, w: 8, h: 3 },
-  { id: "inspector", type: "inspector", title: "State Inspector", visible: true, colSpan: 1, height: "medium", order: 4, x: 8, y: 6, w: 4, h: 3 },
-  { id: "logs", type: "logs", title: "System Console Logs", visible: true, colSpan: 2, height: "medium", order: 5, x: 0, y: 9, w: 8, h: 3 },
-  { id: "tuner", type: "tuner", title: "Variables Tuner", visible: true, colSpan: 1, height: "medium", order: 6, x: 8, y: 9, w: 4, h: 3 },
-];
-
-const DEFAULT_CHART_CONFIGS: ChartConfig[] = [
-  { id: "charts-1", selectedKeys: ["Robot/BatteryVoltage", "Robot/LoopTime"] }
-];
-
-export function migrateLayoutCoordinates(layout: LayoutItem[]): LayoutItem[] {
-  let currentY = 1;
-  let currentX = 0;
-
-  return layout.map((item) => {
-    if (
-      item.x !== undefined &&
-      item.y !== undefined &&
-      item.w !== undefined &&
-      item.h !== undefined
-    ) {
-      return item;
-    }
-
-    const w = item.colSpan === 1 ? 4 : item.colSpan === 2 ? 8 : 12;
-    const h = item.height === "short" ? 2 : item.height === "medium" ? 3 : 5;
-
-    if (currentX + w > 12) {
-      currentX = 0;
-      currentY += 4;
-    }
-
-    const x = currentX;
-    const y = currentY;
-
-    currentX += w;
-
-    return {
-      ...item,
-      x,
-      y,
-      w,
-      h
-    };
-  });
-}
+// Subcomponents
+import ScopeHeader from "./components/ScopeHeader";
+import LocalSimulatorPanel from "./components/LocalSimulatorPanel";
+import ConsoleLogsWidget from "./components/ConsoleLogsWidget";
+import LiveStreamModal from "./components/LiveStreamModal";
+import SavePresetModal from "./components/SavePresetModal";
+import TimelineDeck from "./components/TimelineDeck";
 
 export default function ScopeDashboard() {
   const { 
@@ -144,7 +48,6 @@ export default function ScopeDashboard() {
     comparisonTelemetryData,
     consoleLogs,
     isStreaming,
-    streamSource,
     connectionStatus,
     setPlaying, 
     setCurrentTimeMs, 
@@ -153,24 +56,70 @@ export default function ScopeDashboard() {
     setComparisonTelemetryData,
     setConsoleLogs,
     setPlannedPath,
-    setStreaming,
-    setStreamSource,
-    setConnectionStatus,
-    addLiveFrame,
     setFieldObstacles,
     setFieldElements,
     setFieldElementTypes,
     setFieldCadUrl,
-    setFieldBgImageUrl,
-    setNtClient
+    setFieldBgImageUrl
   } = useScopeStore();
+
+  // Custom Hooks
+  const {
+    ipAddress,
+    setIpAddress,
+    showLiveModal,
+    setShowLiveModal,
+    handleConnectLive,
+    handleDisconnectLive,
+    handlePublishValue
+  } = useNT4Client();
+
+  const {
+    isEditMode,
+    setIsEditMode,
+    gridContainerRef,
+    dashboardLayout,
+    setDashboardLayout,
+    chartConfigs,
+    setChartConfigs,
+    tuningConstants,
+    setTuningConstants,
+    cloudPresets,
+    activePresetId,
+    setActivePresetId,
+    showSavePresetModal,
+    setShowSavePresetModal,
+    newPresetName,
+    setNewPresetName,
+    isSharedToggle,
+    setIsSharedToggle,
+    savingPreset,
+    isMobile,
+    editingCardId,
+    editingTitleText,
+    setEditingTitleText,
+    handleAddWidget,
+    handleDuplicateChart,
+    handleDeleteWidget,
+    handleAddToGroup,
+    handleRemoveFromGroup,
+    handleStartRename,
+    handleSaveRename,
+    handleExportLayout,
+    handleImportLayout,
+    handleResetLayout,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleSavePreset,
+    handleLoadPreset,
+    handleDeletePresetFromCloud,
+    handleToggleFullscreen
+  } = useScopeLayout();
 
   const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [ipAddress, setIpAddress] = useState("192.168.43.1");
-  const [showLiveModal, setShowLiveModal] = useState(false);
-  const liveModalRef = useFocusTrap(showLiveModal, () => setShowLiveModal(false));
   const [searchParams] = useSearchParams();
 
   // Robot Log Sync States
@@ -181,157 +130,20 @@ export default function ScopeDashboard() {
 
   // Local Simulator Launcher States
   const [showSimDrawer, setShowSimDrawer] = useState(false);
-  const simDrawerRef = useFocusTrap(showSimDrawer, () => setShowSimDrawer(false));
-  const [daemonUrl, setDaemonUrl] = useState("ws://localhost:8080");
-  const [daemonStatus, setDaemonStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [simState, setSimState] = useState<'idle' | 'building' | 'running'>('idle');
-  const [daemonLogs, setDaemonLogs] = useState<string[]>([]);
-  const [simAutoScrollLogs, setSimAutoScrollLogs] = useState(true);
-  const [osTab, setOsTab] = useState<'windows' | 'mac' | 'linux'>('windows');
-  const [copied, setCopied] = useState(false);
-  const [logsCopied, setLogsCopied] = useState(false);
-  const [mainLogsCopied, setMainLogsCopied] = useState(false);
-  
-  // EKF config overrides states
-  const [visionStdDevX, setVisionStdDevX] = useState(0.05);
-  const [visionStdDevY, setVisionStdDevY] = useState(0.05);
-  const [visionStdDevTheta, setVisionStdDevTheta] = useState(0.1);
 
   // Field Obstacle Configuration States
   const [fieldConfigs, setFieldConfigs] = useState<{ id: string; name: string; obstacles: any[]; elements?: any[]; elementTypes?: any[]; cadUrl?: string; bgImageUrl?: string }[]>([]);
   const [selectedFieldConfigId, setSelectedFieldConfigId] = useState<string>("");
 
-  // authentication
-  const { user } = useAuth();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // layout customization state
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [dashboardLayout, setDashboardLayout] = useState<LayoutItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ares_scope_layout");
-      if (stored) {
-        try {
-          return migrateLayoutCoordinates(JSON.parse(stored));
-        } catch (e) {
-          console.error("Failed to parse stored layout:", e);
-        }
-      }
-    }
-    return migrateLayoutCoordinates(DEFAULT_LAYOUT);
-  });
-
-  const [chartConfigs, setChartConfigs] = useState<ChartConfig[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ares_scope_chart_configs");
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch (e) {
-          console.error("Failed to parse stored chart configs:", e);
-        }
-      }
-    }
-    return DEFAULT_CHART_CONFIGS;
-  });
-
-  const [tuningConstants, setTuningConstants] = useState<TunableConstant[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ares_scope_tuning_constants");
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch (e) {
-          console.error("Failed to parse stored tuning constants:", e);
-        }
-      }
-    }
-    return [];
-  });
-
-  // persisting layout changes
+  // Listen to url param ?sim=true to open drawer
   useEffect(() => {
-    localStorage.setItem("ares_scope_layout", JSON.stringify(dashboardLayout));
-  }, [dashboardLayout]);
-
-  useEffect(() => {
-    localStorage.setItem("ares_scope_chart_configs", JSON.stringify(chartConfigs));
-  }, [chartConfigs]);
-
-  useEffect(() => {
-    localStorage.setItem("ares_scope_tuning_constants", JSON.stringify(tuningConstants));
-  }, [tuningConstants]);
-
-  // presets and cloud variables
-  const [cloudPresets, setCloudPresets] = useState<DashboardPreset[]>([]);
-  const [activePresetId, setActivePresetId] = useState<string>("");
-  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
-  const [newPresetName, setNewPresetName] = useState("");
-  const [isSharedToggle, setIsSharedToggle] = useState(false);
-  const [savingPreset, setSavingPreset] = useState(false);
-
-  // pointer-based layout engine states
-  const gridContainerRef = useRef<HTMLDivElement | null>(null);
-  const [activeDrag, setActiveDrag] = useState<{
-    id: string;
-    mode: "move" | "resize";
-    startX: number;
-    startY: number;
-    startGridX: number;
-    startGridY: number;
-    startGridW: number;
-    startGridH: number;
-  } | null>(null);
-
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // card renaming state
-  const [editingCardId, setEditingCardId] = useState<string | null>(null);
-  const [editingTitleText, setEditingTitleText] = useState<string>("");
-
-  const fetchLayoutPresets = async () => {
-    const presetsList: DashboardPreset[] = [];
-    
-    // 1. Fetch team layouts
-    try {
-      const teamQuery = query(collection(db, "team_layouts"), orderBy("updatedAt", "desc"));
-      const teamSnap = await getDocs(teamQuery);
-      teamSnap.forEach(docSnap => {
-        presetsList.push({ id: docSnap.id, ...docSnap.data() } as DashboardPreset);
-      });
-    } catch (err) {
-      console.error("Failed to fetch team layouts:", err);
+    if (searchParams.get("sim") === "true") {
+      setShowSimDrawer(true);
     }
-
-    // 2. Fetch private user layouts
-    if (user) {
-      try {
-        const privateQuery = query(
-          collection(db, "user_profiles", user.uid, "layouts"),
-          orderBy("updatedAt", "desc")
-        );
-        const privateSnap = await getDocs(privateQuery);
-        privateSnap.forEach(docSnap => {
-          presetsList.push({ id: docSnap.id, ...docSnap.data() } as DashboardPreset);
-        });
-      } catch (err) {
-        console.error("Failed to fetch private layouts:", err);
-      }
-    }
-
-    setCloudPresets(presetsList);
-  };
-
-  useEffect(() => {
-    fetchLayoutPresets();
-  }, [user]);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchFieldConfigs = async () => {
@@ -393,580 +205,6 @@ export default function ScopeDashboard() {
     }
   };
 
-  // Layout Operations
-  const handleAddWidget = (type: "visualizer" | "inspector" | "diagnostics" | "logs" | "charts" | "tuner" | "group") => {
-    const newId = `${type}-${Date.now()}`;
-    const nextOrder = dashboardLayout.length > 0
-      ? Math.max(...dashboardLayout.map(item => item.order)) + 1
-      : 1;
-
-    const w = type === "charts" || type === "diagnostics" || type === "logs" ? 8 : 4;
-    const h = type === "visualizer" || type === "diagnostics" ? 5 : 3;
-
-    const maxY = dashboardLayout.length > 0
-      ? Math.max(...dashboardLayout.map(item => (item.y ?? 1) + (item.h ?? 3)))
-      : 1;
-
-    const newLayoutItem: LayoutItem = {
-      id: newId,
-      type,
-      title: 
-        type === "visualizer" ? "3D Field Visualizer" :
-        type === "inspector" ? "State Inspector" :
-        type === "diagnostics" ? "Health & Diagnostics" :
-        type === "logs" ? "System Console Logs" :
-        type === "charts" ? "Telemetry Chart" :
-        type === "tuner" ? "Variables Tuner" : "Widget Tab Group",
-      visible: true,
-      colSpan: 1,
-      height: "medium",
-      order: nextOrder,
-      x: 0,
-      y: maxY,
-      w,
-      h,
-      childrenIds: type === "group" ? [] : undefined
-    };
-
-    if (type === "charts") {
-      const newChartConfig: ChartConfig = {
-        id: newId,
-        selectedKeys: ["Robot/BatteryVoltage"]
-      };
-      setChartConfigs([...chartConfigs, newChartConfig]);
-    }
-
-    setDashboardLayout([...dashboardLayout, newLayoutItem]);
-  };
-
-  const handleDuplicateChart = (sourceId: string) => {
-    const sourceConfig = chartConfigs.find(c => c.id === sourceId);
-    const sourceLayout = dashboardLayout.find(l => l.id === sourceId);
-    if (!sourceLayout) return;
-
-    const newId = `charts-${Date.now()}`;
-    const nextOrder = Math.max(...dashboardLayout.map(item => item.order)) + 1;
-
-    const newLayoutItem: LayoutItem = {
-      ...sourceLayout,
-      id: newId,
-      title: `${sourceLayout.title} (Copy)`,
-      order: nextOrder,
-      x: 0,
-      y: (sourceLayout.y ?? 1) + (sourceLayout.h ?? 3),
-    };
-
-    const newChartConfig: ChartConfig = {
-      id: newId,
-      selectedKeys: sourceConfig ? [...sourceConfig.selectedKeys] : ["Robot/BatteryVoltage"]
-    };
-
-    setDashboardLayout([...dashboardLayout, newLayoutItem]);
-    setChartConfigs([...chartConfigs, newChartConfig]);
-  };
-
-  const handleDeleteWidget = (cardId: string) => {
-    setDashboardLayout(dashboardLayout.filter(item => item.id !== cardId));
-    setChartConfigs(chartConfigs.filter(config => config.id !== cardId));
-  };
-
-  const handleAddToGroup = (groupId: string, childId: string) => {
-    setDashboardLayout(prev => prev.map(item => {
-      if (item.id === groupId) {
-        const nextChildren = [...(item.childrenIds || []), childId];
-        return { ...item, childrenIds: nextChildren, activeTabId: childId };
-      }
-      return item;
-    }));
-  };
-
-  const handleRemoveFromGroup = (groupId: string, childId: string) => {
-    setDashboardLayout(prev => prev.map(item => {
-      if (item.id === groupId) {
-        const nextChildren = (item.childrenIds || []).filter(cid => cid !== childId);
-        const nextActive = item.activeTabId === childId ? nextChildren[0] || "" : item.activeTabId;
-        return { ...item, childrenIds: nextChildren, activeTabId: nextActive };
-      }
-      if (item.id === childId) {
-        const group = prev.find(g => g.id === groupId);
-        return {
-          ...item,
-          x: group ? (group.x ?? 0) : 0,
-          y: group ? ((group.y ?? 1) + (group.h ?? 3)) : 10,
-          w: 4,
-          h: 3
-        };
-      }
-      return item;
-    }));
-  };
-
-  const handleStartRename = (cardId: string, currentTitle: string) => {
-    setEditingCardId(cardId);
-    setEditingTitleText(currentTitle);
-  };
-
-  const handleSaveRename = (cardId: string) => {
-    if (editingTitleText.trim() === "") return;
-    setDashboardLayout(dashboardLayout.map(item => 
-      item.id === cardId ? { ...item, title: editingTitleText.trim() } : item
-    ));
-    setEditingCardId(null);
-  };
-
-  const handleExportLayout = () => {
-    const payload = {
-      layout: dashboardLayout,
-      chartConfigs: chartConfigs
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ares_scope_layout_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const importFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleImportLayout = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const payload = JSON.parse(event.target?.result as string);
-          if (payload && Array.isArray(payload.layout) && Array.isArray(payload.chartConfigs)) {
-            setDashboardLayout(migrateLayoutCoordinates(payload.layout));
-            setChartConfigs(payload.chartConfigs);
-          } else {
-            alert("Invalid layout file format.");
-          }
-        } catch (err: any) {
-          alert("Failed to parse layout JSON: " + err.message);
-        }
-      };
-      reader.readAsText(e.target.files[0]);
-    }
-  };
-
-  const handleResetLayout = () => {
-    setDashboardLayout(migrateLayoutCoordinates(DEFAULT_LAYOUT));
-    setChartConfigs(DEFAULT_CHART_CONFIGS);
-    setActivePresetId("");
-  };
-
-  // Pointer dragging and resizing handlers
-  const handlePointerDown = (
-    e: React.PointerEvent,
-    itemId: string,
-    mode: "move" | "resize"
-  ) => {
-    if (!isEditMode) return;
-    const item = dashboardLayout.find((l) => l.id === itemId);
-    if (!item) return;
-
-    try {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
-
-    setActiveDrag({
-      id: itemId,
-      mode,
-      startX: e.clientX,
-      startY: e.clientY,
-      startGridX: item.x ?? 0,
-      startGridY: item.y ?? 1,
-      startGridW: item.w ?? 4,
-      startGridH: item.h ?? 3,
-    });
-
-    e.preventDefault();
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!activeDrag || !gridContainerRef.current) return;
-
-    const containerRect = gridContainerRef.current.getBoundingClientRect();
-    const colWidth = containerRect.width / 12;
-    const rowHeight = 110;
-
-    const dx = e.clientX - activeDrag.startX;
-    const dy = e.clientY - activeDrag.startY;
-
-    const colDelta = Math.round(dx / colWidth);
-    const rowDelta = Math.round(dy / rowHeight);
-
-    setDashboardLayout((prev) =>
-      prev.map((item) => {
-        if (item.id !== activeDrag.id) return item;
-
-        if (activeDrag.mode === "move") {
-          const newX = Math.max(0, Math.min(12 - (item.w ?? 4), activeDrag.startGridX + colDelta));
-          const newY = Math.max(1, activeDrag.startGridY + rowDelta);
-          return { ...item, x: newX, y: newY };
-        } else {
-          const newW = Math.max(1, Math.min(12 - (item.x ?? 0), activeDrag.startGridW + colDelta));
-          const newH = Math.max(1, activeDrag.startGridH + rowDelta);
-          return { ...item, w: newW, h: newH };
-        }
-      })
-    );
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!activeDrag) return;
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
-    setActiveDrag(null);
-  };
-
-  // Cloud presets actions
-  const handleSavePreset = async () => {
-    if (!newPresetName.trim()) return;
-    setSavingPreset(true);
-
-    const presetId = `preset-${Date.now()}`;
-    const presetData = {
-      name: newPresetName.trim(),
-      isShared: isSharedToggle,
-      createdBy: user?.uid || "anonymous",
-      creatorName: user?.displayName || "Anonymous Team Member",
-      layout: dashboardLayout,
-      chartConfigs: chartConfigs,
-      tuningConstants: tuningConstants,
-      updatedAt: serverTimestamp()
-    };
-
-    try {
-      if (isSharedToggle) {
-        await setDoc(doc(db, "team_layouts", presetId), presetData);
-      } else if (user) {
-        await setDoc(doc(db, "user_profiles", user.uid, "layouts", presetId), presetData);
-      } else {
-        throw new Error("You must be logged in to save private presets.");
-      }
-
-      setShowSavePresetModal(false);
-      setNewPresetName("");
-      fetchLayoutPresets();
-      setActivePresetId(presetId);
-    } catch (err: any) {
-      console.error("Failed to save preset:", err);
-      alert("Failed to save preset: " + err.message);
-    } finally {
-      setSavingPreset(false);
-    }
-  };
-
-  const handleLoadPreset = (presetId: string) => {
-    const preset = cloudPresets.find(p => p.id === presetId);
-    if (preset) {
-      setDashboardLayout(migrateLayoutCoordinates(preset.layout));
-      setChartConfigs(preset.chartConfigs);
-      if (preset.tuningConstants) {
-        setTuningConstants(preset.tuningConstants);
-      }
-      setActivePresetId(presetId);
-    }
-  };
-
-  const handleDeletePresetFromCloud = async (preset: DashboardPreset, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete preset "${preset.name}"?`)) return;
-
-    try {
-      if (preset.isShared) {
-        await deleteDoc(doc(db, "team_layouts", preset.id));
-      } else if (user) {
-        await deleteDoc(doc(db, "user_profiles", user.uid, "layouts", preset.id));
-      }
-      fetchLayoutPresets();
-      if (activePresetId === preset.id) {
-        setActivePresetId("");
-      }
-    } catch (err: any) {
-      console.error("Failed to delete preset:", err);
-      alert("Failed to delete preset: " + err.message);
-    }
-  };
-
-  // Fullscreen Zoom handler
-  const handleToggleFullscreen = (cardId: string) => {
-    const element = document.getElementById(`workspace-card-${cardId}`);
-    if (!element) return;
-
-    if (!document.fullscreenElement) {
-      element.requestFullscreen().catch(err => {
-        console.error("Error attempting to enable full-screen mode:", err);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  // Console Log UI States
-  const [logFilter, setLogFilter] = useState("");
-  const [logLevelFilter, setLogLevelFilter] = useState<"ALL" | "INFO" | "WARN" | "ERROR">("ALL");
-  const [autoScrollLogs, setAutoScrollLogs] = useState(true);
-  const logContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const activeLogs = consoleLogs
-    ? consoleLogs.filter((log) => log.timestamp <= currentTimeMs)
-    : [];
-
-  const filteredLogs = activeLogs.filter((log) => {
-    const matchesLevel = logLevelFilter === "ALL" || log.level === logLevelFilter;
-    const matchesSearch = log.message.toLowerCase().includes(logFilter.toLowerCase()) || 
-                          log.level.toLowerCase().includes(logFilter.toLowerCase());
-    return matchesLevel && matchesSearch;
-  });
-
-  // Auto scroll effect
-  useEffect(() => {
-    if (autoScrollLogs && logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [activeLogs.length, autoScrollLogs]);
-  
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pathInputRef = useRef<HTMLInputElement | null>(null);
-  const videoInputRef = useRef<HTMLInputElement | null>(null);
-  const comparisonInputRef = useRef<HTMLInputElement | null>(null);
-  const consoleInputRef = useRef<HTMLInputElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const ntClientRef = useRef<NT4Client | null>(null);
-
-  // High-performance 60 FPS animation/playback loop
-  useEffect(() => {
-    if (!isPlaying || !telemetryData || isStreaming) return;
-
-    let lastTime = performance.now();
-    let animationFrameId: number;
-
-    const loop = (now: number) => {
-      const delta = now - lastTime;
-      lastTime = now;
-
-      // Advance playhead proportional to elapsed real-world time and playback speed
-      setCurrentTimeMs(currentTimeMs + delta * playbackSpeed);
-      
-      animationFrameId = requestAnimationFrame(loop);
-    };
-
-    animationFrameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData, isStreaming]);
-
-  // Sync video playback speed to master playbackSpeed
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
-    }
-  }, [playbackSpeed, videoUrl]);
-
-  // Sync play/pause states of video to master isPlaying
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isPlaying) {
-      video.play().catch(() => {});
-    } else {
-      video.pause();
-    }
-  }, [isPlaying, videoUrl]);
-
-  // Sync video current time to master currentTimeMs
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const timeSec = currentTimeMs / 1000;
-    // Only update if difference is > 0.15 seconds to avoid sync fighting / jitter
-    if (Math.abs(video.currentTime - timeSec) > 0.15) {
-      video.currentTime = timeSec;
-    }
-  }, [currentTimeMs, videoUrl]);
-
-  // Securely close any active live connections on unmount
-  useEffect(() => {
-    return () => {
-      if (ntClientRef.current) {
-        ntClientRef.current.disconnect();
-      }
-      setNtClient(null);
-    };
-  }, []);
-
-  // Listen to url param ?sim=true to open drawer
-  useEffect(() => {
-    if (searchParams.get("sim") === "true") {
-      setShowSimDrawer(true);
-    }
-  }, [searchParams]);
-
-  // WebSocket / Log refs and effects for Simulator
-  const simWsRef = useRef<WebSocket | null>(null);
-  const simTerminalEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (simAutoScrollLogs && simTerminalEndRef.current) {
-      simTerminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [daemonLogs, simAutoScrollLogs]);
-
-  const connectToDaemon = () => {
-    if (simWsRef.current) {
-      simWsRef.current.close();
-    }
-
-    setDaemonStatus('connecting');
-    setDaemonLogs((prev) => [...prev, `[System] Connecting to sim launcher daemon at ${daemonUrl}...`]);
-
-    try {
-      const ws = new WebSocket(daemonUrl);
-      simWsRef.current = ws;
-
-      ws.onopen = () => {
-        setDaemonStatus('connected');
-        setDaemonLogs((prev) => [...prev, '[System] Connected to launcher daemon successfully.']);
-      };
-
-      ws.onclose = () => {
-        setDaemonStatus('disconnected');
-        setSimState('idle');
-        setDaemonLogs((prev) => [...prev, '[System] Connection to daemon closed.']);
-        simWsRef.current = null;
-      };
-
-      ws.onerror = () => {
-        setDaemonLogs((prev) => [...prev, `[System Error] WebSocket connection failed. Verify daemon is running at ${daemonUrl}.`]);
-        setDaemonStatus('disconnected');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-
-          if (msg.type === "status") {
-            setSimState(msg.status);
-            if (msg.status === "running") {
-              setDaemonLogs((prev) => [...prev, '[System] Simulator is running. Auto-connecting live telemetry...']);
-              
-              let daemonHost = "127.0.0.1";
-              try {
-                // Ensure protocol prefix is valid for URL parser
-                const urlToParse = daemonUrl.startsWith("ws") ? daemonUrl : `ws://${daemonUrl}`;
-                const parsedUrl = new URL(urlToParse);
-                daemonHost = parsedUrl.hostname || "127.0.0.1";
-              } catch (e) {}
-              
-              handleConnectLive(daemonHost);
-            }
-          } 
-          
-          else if (msg.type === "log") {
-            setDaemonLogs((prev) => [...prev, msg.line]);
-          } 
-          
-          else if (msg.type === "exit") {
-            setSimState('idle');
-            setDaemonLogs((prev) => [...prev, `[System] Simulator exited with code ${msg.code} (Success: ${msg.success}).`]);
-          }
-        } catch (e) {
-          console.error("Failed to parse daemon message:", e);
-        }
-      };
-    } catch (err: any) {
-      setDaemonLogs((prev) => [...prev, `[System Error] Failed to create WebSocket connection: ${err.message}`]);
-      setDaemonStatus('disconnected');
-    }
-  };
-
-  const disconnectFromDaemon = () => {
-    if (simWsRef.current) {
-      simWsRef.current.close();
-      simWsRef.current = null;
-    }
-  };
-
-  const startSimulator = () => {
-    if (!simWsRef.current || daemonStatus !== 'connected') return;
-    setDaemonLogs((prev) => [...prev, '[System] Requesting simulator launch with EKF and layout config...']);
-    setSimState('building');
-    
-    const activeConfig = fieldConfigs.find(c => c.id === selectedFieldConfigId);
-    const obstacles = activeConfig ? activeConfig.obstacles : [];
-    const elements = activeConfig ? activeConfig.elements : [];
-    const elementTypes = activeConfig ? activeConfig.elementTypes : [];
-
-    simWsRef.current.send(JSON.stringify({
-      type: "start",
-      params: {
-        visionStdDevX,
-        visionStdDevY,
-        visionStdDevTheta,
-        obstacles,
-        elements,
-        elementTypes
-      }
-    }));
-  };
-
-  const stopSimulator = () => {
-    if (!simWsRef.current || daemonStatus !== 'connected') return;
-    setDaemonLogs((prev) => [...prev, '[System] Requesting simulator stop...']);
-    simWsRef.current.send(JSON.stringify({ type: "stop" }));
-  };
-
-  // Clean up simulator WebSocket on unmount
-  useEffect(() => {
-    return () => {
-      if (simWsRef.current) {
-        simWsRef.current.close();
-      }
-    };
-  }, []);
-
-  const handleConnectLive = (targetIp?: string) => {
-    const connectIp = targetIp || ipAddress;
-    if (ntClientRef.current) {
-      ntClientRef.current.disconnect();
-    }
-
-    setStreaming(true);
-    setStreamSource("local");
-    setTelemetryData(null); // Clear static log logs
-    setPlaying(false);
-
-    const client = new NT4Client(
-      connectIp,
-      (frame) => {
-        addLiveFrame(frame);
-      },
-      (status) => {
-        setConnectionStatus(status);
-      }
-    );
-
-    ntClientRef.current = client;
-    setNtClient(client);
-    client.connect();
-    setShowLiveModal(false);
-  };
-
-  const handleDisconnectLive = () => {
-    if (ntClientRef.current) {
-      ntClientRef.current.disconnect();
-      ntClientRef.current = null;
-    }
-    setNtClient(null);
-    setStreaming(false);
-    setStreamSource(null);
-    setConnectionStatus("disconnected");
-  };
-
-
   // Fetch telemetry log (BigQuery / Local Fallback)
   const fetchTelemetryRun = async (runId: string) => {
     setLoading(true);
@@ -994,14 +232,6 @@ export default function ScopeDashboard() {
       fetchTelemetryRun(selectedRunId);
     }
   }, [selectedRunId, isStreaming]);
-
-  // Format time (ms -> "M:SS.S")
-  const formatTime = (ms: number) => {
-    const totalSecs = ms / 1000;
-    const mins = Math.floor(totalSecs / 60);
-    const secs = totalSecs % 60;
-    return `${mins}:${secs.toFixed(1).padStart(4, "0")}`;
-  };
 
   // Drag and drop local CSV log parser
   const handleDrag = (e: React.DragEvent) => {
@@ -1489,362 +719,83 @@ export default function ScopeDashboard() {
     reader.readAsText(file);
   };
 
-  const renderConsoleLogsWidget = (showTitle: boolean = true) => {
-    return (
-      <div className="flex flex-col gap-4 h-full p-6 bg-obsidian-light">
-        {showTitle && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-            <h3 className="text-sm font-heading font-black uppercase text-white tracking-widest flex items-center gap-2">
-              <Terminal size={14} className="text-ares-gold" />
-              System Console Logs
-            </h3>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                placeholder="Filter logs..."
-                value={logFilter}
-                onChange={(e) => setLogFilter(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-mono placeholder:text-marble/35 focus:ring-2 focus:ring-ares-cyan"
-                aria-label="Filter logs"
-              />
-              <select
-                value={logLevelFilter}
-                onChange={(e) => setLogLevelFilter(e.target.value as any)}
-                className="bg-black/45 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-ares-gold font-bold uppercase cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:ring-offset-obsidian"
-              >
-                <option value="ALL" className="bg-neutral-900 text-marble/60 font-heading">ALL LEVELS</option>
-                <option value="INFO" className="bg-neutral-900 text-white font-heading">INFO</option>
-                <option value="WARN" className="bg-neutral-900 text-ares-gold font-heading">WARN</option>
-                <option value="ERROR" className="bg-neutral-900 text-ares-red-light font-heading">ERROR</option>
-              </select>
-              
-              <button
-                type="button"
-                onClick={() => {
-                  if (filteredLogs.length > 0) {
-                    const logsText = filteredLogs
-                      .map((entry) => `[${formatTime(entry.timestamp)}] [${entry.level}] ${entry.message}`)
-                      .join("\n");
-                    navigator.clipboard.writeText(logsText);
-                    setMainLogsCopied(true);
-                    setTimeout(() => setMainLogsCopied(false), 2000);
-                  }
-                }}
-                disabled={filteredLogs.length === 0}
-                className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] uppercase font-black tracking-widest text-marble/55 hover:text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-heading"
-                title="Copy current filtered logs"
-              >
-                {mainLogsCopied ? (
-                  <>
-                    <Check size={10} className="text-ares-success" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={10} />
-                    <span>Copy Logs</span>
-                  </>
-                )}
-              </button>
+  // High-performance 60 FPS animation/playback loop
+  useEffect(() => {
+    if (!isPlaying || !telemetryData || isStreaming) return;
 
-              <button
-                type="button"
-                onClick={() => setConsoleLogs(null)}
-                disabled={!consoleLogs || consoleLogs.length === 0}
-                className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] uppercase font-black tracking-widest text-marble/55 hover:text-white hover:bg-white/10 hover:border-ares-red/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-heading"
-                title="Clear all console logs"
-              >
-                <Trash2 size={10} />
-                <span>Clear</span>
-              </button>
+    let lastTime = performance.now();
+    let animationFrameId: number;
 
-              <label className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-marble/55 cursor-pointer font-heading">
-                <input
-                  type="checkbox"
-                  checked={autoScrollLogs}
-                  onChange={(e) => setAutoScrollLogs(e.target.checked)}
-                  className="accent-ares-gold cursor-pointer rounded border-white/10"
-                />
-                Auto-scroll
-              </label>
-            </div>
-          </div>
-        )}
+    const loop = (now: number) => {
+      const delta = now - lastTime;
+      lastTime = now;
 
-        <div 
-          ref={logContainerRef}
-          className="flex-grow overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 bg-black/30 p-4 rounded-xl border border-white/5 scrollbar-thin scrollbar-thumb-white/5"
-        >
-          {filteredLogs.length === 0 ? (
-            <div className="text-marble/35 text-center py-16 uppercase tracking-widest text-xs font-bold font-heading">
-              {consoleLogs ? "No matching log entries." : "No console logs loaded. Upload a text log above."}
-            </div>
-          ) : (
-            filteredLogs.map((entry, idx) => {
-              let levelColor = "text-marble/70";
-              let levelBg = "bg-transparent";
-              if (entry.level === "WARN") {
-                levelColor = "text-ares-gold";
-                levelBg = "bg-ares-gold/5 border border-ares-gold/10";
-              } else if (entry.level === "ERROR") {
-                levelColor = "text-ares-red-light";
-                levelBg = "bg-ares-red/5 border border-ares-red/10";
-              }
-              return (
-                <div key={idx} className={`flex items-start gap-2 p-1.5 rounded hover:bg-white/5 transition-colors ${levelBg}`}>
-                  <span className="text-marble/35 shrink-0 select-none">[{formatTime(entry.timestamp)}]</span>
-                  <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase shrink-0 tracking-wider font-heading ${
-                    entry.level === "ERROR" ? "bg-ares-red/20 text-ares-red-light" :
-                    entry.level === "WARN" ? "bg-ares-gold/20 text-ares-gold" :
-                    "bg-white/10 text-marble/60"
-                  }`}>{entry.level}</span>
-                  <span className={`break-all ${levelColor}`}>{entry.message}</span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    );
-  };
+      // Advance playhead proportional to elapsed real-world time and playback speed
+      setCurrentTimeMs(currentTimeMs + delta * playbackSpeed);
+      
+      animationFrameId = requestAnimationFrame(loop);
+    };
+
+    animationFrameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData, isStreaming]);
+
+  // Sync video playback speed to master playbackSpeed
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, videoUrl]);
+
+  // Sync play/pause states of video to master isPlaying
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isPlaying) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isPlaying, videoUrl]);
+
+  // Sync video current time to master currentTimeMs
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const timeSec = currentTimeMs / 1000;
+    // Only update if difference is > 0.15 seconds to avoid sync fighting / jitter
+    if (Math.abs(video.currentTime - timeSec) > 0.15) {
+      video.currentTime = timeSec;
+    }
+  }, [currentTimeMs, videoUrl]);
 
   return (
     <div className="space-y-8">
       
       {/* Header Deck */}
-      <header className="border-b border-white/5 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-        <div>
-          <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <Cpu size={12} className="animate-pulse" /> Diagnostic Tools
-          </p>
-          <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-heading">
-            ARES-Scope Replay
-          </h1>
-          <p className="text-marble/70 text-xs md:text-sm mt-1.5 font-medium max-w-xl">
-            High-performance browser-based AdvantageScope clone. Stream live telemetry, analyze motor binding, and review Vertex AI scouting roadmaps.
-          </p>
-        </div>
-
-        {/* Database & File Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Connection Status Badge */}
-          {isStreaming && (
-            <div className={`flex items-center gap-2 border px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider ${
-              connectionStatus === "connected"
-                ? "bg-ares-success/10 text-ares-success border-ares-success/20"
-                : connectionStatus === "connecting"
-                ? "bg-ares-gold/10 text-ares-gold border-ares-gold/20"
-                : "bg-white/5 text-marble/50 border-white/5"
-            }`}>
-              {connectionStatus === "connected" && (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-success opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-success"></span>
-                  </span>
-                  <span>Connected</span>
-                </>
-              )}
-              {connectionStatus === "connecting" && (
-                <>
-                  <RefreshCw size={12} className="animate-spin text-ares-gold" />
-                  <span>Connecting</span>
-                </>
-              )}
-              {connectionStatus === "disconnected" && (
-                <>
-                  <WifiOff size={12} className="text-marble/40" />
-                  <span>Disconnected</span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Live Stream Button */}
-          {isStreaming ? (
-            <button
-              onClick={handleDisconnectLive}
-              className="px-4 py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 hover:border-ares-red/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-            >
-              <WifiOff size={12} /> Disconnect
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowLiveModal(true)}
-              className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
-            >
-              <Wifi size={12} /> Go Live
-            </button>
-          )}
-
-          {/* Local Simulator Controls Button */}
-          <button
-            onClick={() => setShowSimDrawer(true)}
-            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none ${
-              simState !== "idle"
-                ? "bg-ares-success/15 text-ares-success border border-ares-success/20 hover:bg-ares-success/25"
-                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
-            }`}
-            title="Open local simulator controls"
-          >
-            <Play size={12} className={simState === "building" ? "animate-pulse text-ares-gold" : simState === "running" ? "text-ares-success" : ""} />
-            <span>Local Sim</span>
-          </button>
-
-          {/* Field Layout Selector */}
-          <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">
-            <Sliders size={14} className="text-ares-gold" />
-            <select
-              value={selectedFieldConfigId}
-              onChange={handleFieldConfigChange}
-              className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer"
-            >
-              {fieldConfigs.length === 0 ? (
-                <option value="" className="bg-neutral-900 text-white">No Obstacles</option>
-              ) : (
-                <>
-                  <option value="" className="bg-neutral-900 text-white">Clear Obstacles</option>
-                  {fieldConfigs.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-neutral-900 text-white">
-                      {c.name}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
-
-          {/* Active Run Selector */}
-          <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">
-            <Database size={14} className="text-ares-gold" />
-            <select
-              value={selectedRunId}
-              onChange={(e) => setSelectedRunId(e.target.value)}
-              className="bg-transparent text-white focus:outline-none font-bold uppercase cursor-pointer"
-            >
-              <option value="run_2026_championship_finals" className="bg-neutral-900 text-white">Championship Finals</option>
-              <option value="run_2026_qualifiers_3" className="bg-neutral-900 text-white">Qualifier Run #3</option>
-              <option value="run_2026_practice_slippage" className="bg-neutral-900 text-white">Practice Slippage Run</option>
-            </select>
-          </div>
-
-          {/* Sync Robot Logs over Wi-Fi */}
-          <button
-            onClick={() => {
-              setShowSyncModal(true);
-            }}
-            className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-          >
-            <Cloud size={12} /> Sync Robot Logs
-          </button>
-
-          {/* Local Log Upload */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md"
-          >
-            <FolderOpen size={12} /> Local Log
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileInput}
-            accept=".csv,.txt"
-            className="hidden"
-          />
-
-          {/* Comparison Log Upload */}
-          <button
-            onClick={() => comparisonTelemetryData ? setComparisonTelemetryData(null) : comparisonInputRef.current?.click()}
-            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md focus:ring-2 focus:ring-ares-cyan focus:outline-none ${
-              comparisonTelemetryData 
-                ? "bg-ares-red/15 text-ares-red-light border border-ares-red/25 hover:bg-ares-red/25" 
-                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
-            }`}
-            title={comparisonTelemetryData ? "Clear comparison log" : "Upload comparison CSV log"}
-          >
-            {comparisonTelemetryData ? (
-              <>
-                <X size={12} /> Comparison Active
-              </>
-            ) : (
-              <>
-                <Activity size={12} /> Compare Log
-              </>
-            )}
-          </button>
-          <input
-            type="file"
-            ref={comparisonInputRef}
-            onChange={handleComparisonInput}
-            accept=".csv,.txt"
-            className="hidden"
-          />
-
-          {/* Console Log Upload */}
-          <button
-            onClick={() => consoleLogs ? setConsoleLogs(null) : consoleInputRef.current?.click()}
-            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md ${
-              consoleLogs 
-                ? "bg-ares-gold/15 text-ares-gold border border-ares-gold/25 hover:bg-ares-gold/25" 
-                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
-            }`}
-            title={consoleLogs ? "Clear console log" : "Upload system console text log"}
-          >
-            {consoleLogs ? (
-              <>
-                <X size={12} /> Clear Console
-              </>
-            ) : (
-              <>
-                <Sliders size={12} /> System Console
-              </>
-            )}
-          </button>
-          <input
-            type="file"
-            ref={consoleInputRef}
-            onChange={handleConsoleInput}
-            accept=".txt,.log"
-            className="hidden"
-          />
-
-          {/* Planned Path Upload */}
-          <button
-            onClick={() => pathInputRef.current?.click()}
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md"
-          >
-            <Compass size={12} /> Planned Path
-          </button>
-          <input
-            type="file"
-            ref={pathInputRef}
-            onChange={handlePathInput}
-            accept=".path,.json"
-            className="hidden"
-          />
-
-          {/* Match Video Upload */}
-          <button
-            onClick={() => videoInputRef.current?.click()}
-            className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md"
-          >
-            <Eye size={12} /> Match Video
-          </button>
-          <input
-            type="file"
-            ref={videoInputRef}
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                const url = URL.createObjectURL(e.target.files[0]);
-                setVideoUrl(url);
-              }
-            }}
-            accept="video/*"
-            className="hidden"
-          />
-        </div>
-      </header>
+      <ScopeHeader
+        isStreaming={isStreaming}
+        connectionStatus={connectionStatus}
+        simState={simState}
+        fieldConfigs={fieldConfigs}
+        selectedFieldConfigId={selectedFieldConfigId}
+        handleFieldConfigChange={handleFieldConfigChange}
+        selectedRunId={selectedRunId}
+        setSelectedRunId={setSelectedRunId}
+        setShowLiveModal={setShowLiveModal}
+        setShowSimDrawer={setShowSimDrawer}
+        setShowSyncModal={setShowSyncModal}
+        handleDisconnectLive={handleDisconnectLive}
+        comparisonTelemetryData={comparisonTelemetryData}
+        setComparisonTelemetryData={setComparisonTelemetryData}
+        consoleLogs={consoleLogs}
+        setConsoleLogs={setConsoleLogs}
+        setVideoUrl={setVideoUrl}
+        handleFileInput={handleFileInput}
+        handleComparisonInput={handleComparisonInput}
+        handleConsoleInput={handleConsoleInput}
+        handlePathInput={handlePathInput}
+      />
 
       {/* Loading overlay spinner */}
       {loading && (
@@ -1957,18 +908,17 @@ export default function ScopeDashboard() {
                   </button>
 
                   <button
-                    onClick={() => importFileInputRef.current?.click()}
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.accept = ".json";
+                      input.onchange = (e) => handleImportLayout(e as any);
+                      input.click();
+                    }}
                     className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-1.5 transition-all duration-300 font-bold"
                   >
                     <Upload size={12} /> Import Layout
                   </button>
-                  <input
-                    type="file"
-                    ref={importFileInputRef}
-                    onChange={handleImportLayout}
-                    accept=".json"
-                    className="hidden"
-                  />
 
                   <button
                     onClick={() => setShowSavePresetModal(true)}
@@ -2124,7 +1074,7 @@ export default function ScopeDashboard() {
                     {/* Card Body containing actual component */}
                     <div className="flex-grow overflow-hidden relative">
                       {item.type === "visualizer" && (
-                        <div className={`flex flex-col gap-4 h-full p-4 ${videoUrl ? "overflow-y-auto" : "overflow-hidden"}`}>
+                        <div className={`flex flex-col gap-4 h-full ${videoUrl ? "overflow-y-auto" : "overflow-hidden"}`}>
                           <div className="flex-grow h-full w-full min-h-[200px]">
                             <WebGLReplayCanvas />
                           </div>
@@ -2159,7 +1109,7 @@ export default function ScopeDashboard() {
                       
                       {item.type === "inspector" && <StateInspector />}
                       
-                      {item.type === "logs" && renderConsoleLogsWidget(true)}
+                      {item.type === "logs" && <ConsoleLogsWidget showTitle={true} />}
                       
                       {item.type === "charts" && (
                         <TelemetryCharts 
@@ -2183,13 +1133,7 @@ export default function ScopeDashboard() {
                       {item.type === "tuner" && (
                         <VariablesTuner
                           isStreaming={isStreaming}
-                          onPublishValue={(key, value, type) => {
-                            if (ntClientRef.current) {
-                              ntClientRef.current.publishValue(key, value, type);
-                            } else {
-                              console.log(`[Tuner Offline] Tuning ${key} to ${value} (${type})`);
-                            }
-                          }}
+                          onPublishValue={handlePublishValue}
                           savedConstants={tuningConstants}
                           onConstantsChange={(consts) => setTuningConstants(consts)}
                         />
@@ -2262,11 +1206,11 @@ export default function ScopeDashboard() {
                             {(() => {
                               const activeChild = dashboardLayout.find(l => l.id === item.activeTabId);
                               if (!activeChild) {
-                                return (
-                                  <div className="flex items-center justify-center h-full text-marble/30 text-[10px] font-heading uppercase tracking-widest text-center">
-                                    No widgets in group. Add one above.
-                                  </div>
-                                );
+                                  return (
+                                    <div className="flex items-center justify-center h-full text-marble/30 text-[10px] font-heading uppercase tracking-widest text-center">
+                                      No widgets in group. Add one above.
+                                    </div>
+                                  );
                               }
                               
                               return (
@@ -2306,7 +1250,7 @@ export default function ScopeDashboard() {
                                   
                                   {activeChild.type === "inspector" && <StateInspector />}
                                   
-                                  {activeChild.type === "logs" && renderConsoleLogsWidget(false)}
+                                  {activeChild.type === "logs" && <ConsoleLogsWidget showTitle={false} />}
                                   
                                   {activeChild.type === "charts" && (
                                     <TelemetryCharts 
@@ -2330,11 +1274,7 @@ export default function ScopeDashboard() {
                                   {activeChild.type === "tuner" && (
                                     <VariablesTuner
                                       isStreaming={isStreaming}
-                                      onPublishValue={(key, value, type) => {
-                                        if (ntClientRef.current) {
-                                          ntClientRef.current.publishValue(key, value, type);
-                                        }
-                                      }}
+                                      onPublishValue={handlePublishValue}
                                       savedConstants={tuningConstants}
                                       onConstantsChange={(consts) => setTuningConstants(consts)}
                                     />
@@ -2352,58 +1292,7 @@ export default function ScopeDashboard() {
           </div>
 
           {/* ─── MASTER SCRUBBING TIMELINE TIMELINE DECK ─── */}
-          {telemetryData && (
-            <div className="glass-card p-6 border border-white/10 bg-neutral-950/65 flex flex-col gap-4 sticky bottom-4 z-40 shadow-2xl">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                
-                {/* Play controls */}
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    onClick={() => setPlaying(!isPlaying)}
-                    className="w-10 h-10 rounded-full bg-ares-gold hover:bg-ares-gold-soft text-black flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md transform hover:scale-105 shrink-0"
-                  >
-                    {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-                  </button>
-
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-bold text-ares-gold tracking-widest leading-none">
-                      Timeline playhead
-                    </span>
-                    <span className="text-xs text-white font-mono font-bold mt-1">
-                      {formatTime(currentTimeMs)} / <span className="text-marble/35">{formatTime(telemetryData.maxTimeMs)}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Scrubber slider */}
-                <input
-                  type="range"
-                  min="0"
-                  max={telemetryData.maxTimeMs}
-                  value={currentTimeMs}
-                  onChange={(e) => setCurrentTimeMs(parseInt(e.target.value))}
-                  className="flex-grow w-full accent-ares-gold bg-white/5 h-1.5 rounded-lg appearance-none cursor-pointer border border-white/5 outline-none"
-                />
-
-                {/* Speed buttons */}
-                <div className="flex items-center bg-black/45 border border-white/5 p-1 rounded-xl gap-1 shrink-0">
-                  {([0.5, 1.0, 1.5, 2.0] as const).map((speed) => (
-                    <button
-                      key={speed}
-                      onClick={() => setPlaybackSpeed(speed)}
-                      className={`px-3 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer ${
-                        playbackSpeed === speed
-                          ? "bg-ares-gold text-black font-extrabold"
-                          : "text-marble/45 hover:text-white"
-                      }`}
-                    >
-                      {speed.toFixed(1)}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <TimelineDeck />
 
           {/* Drag and Drop Drop-Zone overlay */}
           <div
@@ -2429,81 +1318,14 @@ export default function ScopeDashboard() {
         </div>
       )}
 
-      {showLiveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300">
-          <div ref={liveModalRef} tabIndex={-1} className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none">
-            <button
-              onClick={() => setShowLiveModal(false)}
-              className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
-            >
-              <X size={16} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center text-ares-gold">
-                <Wifi size={20} />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
-                  Connect Live Stream
-                </h3>
-                <p className="text-marble/55 text-[10px] font-bold uppercase tracking-wider">
-                  NetworkTables v4 WebSocket
-                </p>
-              </div>
-            </div>
-
-            {typeof window !== "undefined" && window.location.protocol === "https:" && (
-              <div className="bg-ares-gold/10 border border-ares-gold/20 rounded-xl p-3.5 flex flex-col gap-1.5 text-left">
-                <div className="flex items-center gap-1.5 text-ares-gold font-bold text-[10px] uppercase tracking-wider">
-                  <Info size={12} className="stroke-[2.5]" /> Secure Context (HTTPS) Active
-                </div>
-                <p className="text-[9px] text-marble/70 leading-normal">
-                  Modern browsers block direct insecure connections (<code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">ws://</code>) from HTTPS websites. To connect:
-                </p>
-                <ol className="list-decimal list-inside text-[9px] text-marble/70 flex flex-col gap-1 mt-0.5">
-                  <li>Start the local proxy daemon on your laptop (<code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">node daemon.js</code>).</li>
-                  <li>Enter the robot's IP below and click Connect.</li>
-                </ol>
-                <p className="text-[9px] text-marble/50 mt-0.5 leading-normal">
-                  The dashboard will automatically bridge telemetry securely through <code className="text-ares-gold bg-black/30 px-1 py-0.5 rounded">localhost:5811</code>.
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="robotIpInput" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
-                Robot IP Address / Host
-              </label>
-              <input
-                id="robotIpInput"
-                type="text"
-                value={ipAddress}
-                onChange={(e) => setIpAddress(e.target.value)}
-                placeholder="192.168.43.1"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-ares-gold transition-colors focus:ring-2 focus:ring-ares-cyan"
-              />
-              <p className="text-[10px] text-marble/40 mt-1 leading-normal">
-                Default for FTC Wi-Fi Direct: <code className="text-ares-gold">192.168.43.1</code>. Control Hub / ADB: <code className="text-ares-gold">localhost</code> or <code className="text-ares-gold">192.168.43.1</code>.
-              </p>
-            </div>
-
-            <div className="flex gap-3 mt-2">
-              <button
-                onClick={() => setShowLiveModal(false)}
-                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleConnectLive()}
-                className="flex-1 py-3 bg-ares-gold text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
-              >
-                <Wifi size={12} className="stroke-[3]" /> Connect
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Live Stream connection Modal */}
+      <LiveStreamModal
+        isOpen={showLiveModal}
+        onClose={() => setShowLiveModal(false)}
+        ipAddress={ipAddress}
+        setIpAddress={setIpAddress}
+        handleConnectLive={handleConnectLive}
+      />
 
       <SyncRobotLogsModal
         isOpen={showSyncModal}
@@ -2512,359 +1334,29 @@ export default function ScopeDashboard() {
         setIpAddress={setIpAddress}
       />
 
-      {showSavePresetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md transition-all duration-300">
-          <div className="glass-card border border-white/10 bg-neutral-950 p-6 max-w-sm w-full rounded-2xl flex flex-col gap-5 shadow-2xl relative focus:outline-none">
-            <button
-              onClick={() => setShowSavePresetModal(false)}
-              className="absolute top-4 right-4 text-marble/40 hover:text-white cursor-pointer transition-colors"
-            >
-              <X size={16} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-ares-gold/10 border border-ares-gold/20 flex items-center justify-center text-ares-gold">
-                <Save size={20} />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-white text-md tracking-tight uppercase font-heading">
-                  Save Layout Preset
-                </h3>
-                <p className="text-marble/55 text-[10px] font-bold uppercase tracking-wider">
-                  Cloud Workspace Sync
-                </p>
-              </div>
-            </div>
+      {/* Save presets cloud Modal */}
+      <SavePresetModal
+        isOpen={showSavePresetModal}
+        onClose={() => setShowSavePresetModal(false)}
+        newPresetName={newPresetName}
+        setNewPresetName={setNewPresetName}
+        isSharedToggle={isSharedToggle}
+        setIsSharedToggle={setIsSharedToggle}
+        savingPreset={savingPreset}
+        handleSavePreset={handleSavePreset}
+      />
 
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="presetNameInput" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
-                  Preset Name
-                </label>
-                <input
-                  id="presetNameInput"
-                  type="text"
-                  value={newPresetName}
-                  onChange={(e) => setNewPresetName(e.target.value)}
-                  placeholder="e.g. Swerve Calibrations"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-ares-gold transition-colors focus:ring-2 focus:ring-ares-cyan"
-                />
-              </div>
-
-              {/* Share Toggle */}
-              <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5">
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase font-black tracking-wider text-white">Share with Team</span>
-                  <span className="text-[8px] text-marble/40 leading-normal">Save to team collection `/team_layouts`</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isSharedToggle}
-                  onChange={(e) => setIsSharedToggle(e.target.checked)}
-                  className="accent-ares-gold w-4 h-4 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-2">
-              <button
-                onClick={() => setShowSavePresetModal(false)}
-                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/5 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSavePreset}
-                disabled={savingPreset || !newPresetName.trim()}
-                className="flex-1 py-3 bg-ares-gold disabled:opacity-50 text-black hover:bg-ares-gold-soft text-[10px] uppercase font-black tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
-              >
-                {savingPreset ? (
-                  <>
-                    <RefreshCw size={12} className="animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={12} className="stroke-[3]" /> Save Preset
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Local Simulator Slide-over Drawer */}
-      {showSimDrawer && (
-        <div className="fixed inset-0 z-modal flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="sim-drawer-title">
-          <div className="absolute inset-0" onClick={() => setShowSimDrawer(false)} />
-          
-          <div
-            ref={simDrawerRef}
-            tabIndex={-1}
-            className="relative w-full max-w-md h-full bg-obsidian border-l border-white/10 shadow-2xl flex flex-col justify-between p-6 overflow-y-auto animate-slide-in focus:outline-none"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-              <div>
-                <span className="inline-block bg-ares-red/10 text-ares-red px-2 py-0.5 ares-cut-sm font-black uppercase tracking-widest text-[8px] mb-1.5 border border-ares-red/20">
-                  Local Simulation
-                </span>
-                <h2 id="sim-drawer-title" className="text-xl font-black uppercase tracking-wider text-white font-heading">
-                  Simulator Controls
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowSimDrawer(false)}
-                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                aria-label="Close simulator panel"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Scrollable Body */}
-            <div className="flex-grow py-6 space-y-6 overflow-y-auto pr-1">
-              
-              {/* Connection Status Panel */}
-              <div className="flex flex-col gap-3">
-                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
-                  <Wifi size={14} /> Connection Setup
-                </h3>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/40">
-                    Daemon WebSocket URL
-                  </label>
-                  <input
-                    type="text"
-                    value={daemonUrl}
-                    onChange={(e) => setDaemonUrl(e.target.value)}
-                    placeholder="ws://localhost:8080"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-xs focus:outline-none focus:border-ares-gold transition-colors focus:ring-2 focus:ring-ares-cyan"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  {daemonStatus === 'connected' ? (
-                    <button
-                      onClick={disconnectFromDaemon}
-                      className="w-full py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                    >
-                      <WifiOff size={12} /> Disconnect
-                    </button>
-                  ) : (
-                    <button
-                      onClick={connectToDaemon}
-                      disabled={daemonStatus === 'connecting'}
-                      className="w-full py-2.5 bg-ares-gold text-black hover:bg-ares-gold-soft disabled:opacity-50 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
-                    >
-                      {daemonStatus === 'connecting' ? (
-                        <>
-                          <RefreshCw size={12} className="animate-spin" /> Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <Wifi size={12} /> Connect Daemon
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Launcher Controls */}
-              <div className="flex flex-col gap-3">
-                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
-                  <Sliders size={14} /> Sim Controls
-                </h3>
-                
-                <div className="flex flex-col gap-2">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/40">
-                    Select Field Layout
-                  </label>
-                  <select
-                    value={selectedFieldConfigId}
-                    onChange={handleFieldConfigChange}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-ares-gold transition-colors cursor-pointer"
-                  >
-                    {fieldConfigs.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-neutral-900 text-white">
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={startSimulator}
-                    disabled={daemonStatus !== 'connected' || simState !== 'idle'}
-                    className="flex-1 py-2.5 bg-ares-red hover:bg-ares-red-dark disabled:opacity-50 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
-                  >
-                    <Play size={12} className={simState === 'building' ? 'animate-pulse text-ares-gold' : simState === 'running' ? 'text-ares-success' : ''} />
-                    {simState === 'building' ? 'Building...' : simState === 'running' ? 'Running' : 'Start Simulator'}
-                  </button>
-                  <button
-                    onClick={stopSimulator}
-                    disabled={daemonStatus !== 'connected' || simState !== 'running'}
-                    className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white border border-white/10 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 font-bold cursor-pointer"
-                  >
-                    <Square size={12} /> Stop
-                  </button>
-                </div>
-              </div>
-
-              {/* EKF Config Overrides */}
-              <div className="flex flex-col gap-3">
-                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
-                  <Sliders size={14} /> EKF Odometry Overrides
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/40">Std Dev X (m)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={visionStdDevX}
-                      onChange={(e) => setVisionStdDevX(parseFloat(e.target.value) || 0.05)}
-                      className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs text-center font-mono focus:outline-none focus:border-ares-gold"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/40">Std Dev Y (m)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={visionStdDevY}
-                      onChange={(e) => setVisionStdDevY(parseFloat(e.target.value) || 0.05)}
-                      className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs text-center font-mono focus:outline-none focus:border-ares-gold"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] uppercase font-black tracking-widest text-marble/40">Std Dev Theta (rad)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={visionStdDevTheta}
-                      onChange={(e) => setVisionStdDevTheta(parseFloat(e.target.value) || 0.1)}
-                      className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs text-center font-mono focus:outline-none focus:border-ares-gold"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Log Terminal Console */}
-              <div className="flex flex-col gap-2 flex-1 min-h-[160px]">
-                <div className="flex items-center justify-between">
-                  <label className="text-[9px] uppercase font-black tracking-widest text-marble/40 flex items-center gap-1.5">
-                    <Terminal size={10} /> Compilation & Run Logs
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (daemonLogs.length > 0) {
-                          navigator.clipboard.writeText(daemonLogs.join("\n"));
-                          setLogsCopied(true);
-                          setTimeout(() => setLogsCopied(false), 2000);
-                        }
-                      }}
-                      disabled={daemonLogs.length === 0}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] uppercase font-bold text-marble/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Copy entire log to clipboard"
-                    >
-                      {logsCopied ? (
-                        <>
-                          <Check size={8} className="text-ares-success" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={8} />
-                          <span>Copy Logs</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDaemonLogs([])}
-                      disabled={daemonLogs.length === 0}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] uppercase font-bold text-marble/60 hover:text-white hover:bg-white/10 hover:border-ares-red/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Clear logs"
-                    >
-                      <Trash2 size={8} />
-                      <span>Clear</span>
-                    </button>
-                    <label className="flex items-center gap-1 text-[8px] uppercase font-bold text-marble/60 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={simAutoScrollLogs}
-                        onChange={(e) => setSimAutoScrollLogs(e.target.checked)}
-                        className="rounded border-white/10 bg-black/40 text-ares-gold focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                      />
-                      Auto-scroll
-                    </label>
-                  </div>
-                </div>
-                <pre className="flex-grow bg-black/60 rounded-xl border border-white/5 p-4 font-mono text-[9px] text-marble/85 overflow-y-auto shadow-inner max-h-[180px] text-left select-text whitespace-pre-wrap break-all selection:bg-ares-gold/30 selection:text-white">
-                  {daemonLogs.length === 0 ? (
-                    <span className="text-marble/30 italic block">No logs received. Connect daemon to stream compiler stdout.</span>
-                  ) : (
-                    daemonLogs.join("\n")
-                  )}
-                  <span ref={simTerminalEndRef} className="inline-block" />
-                </pre>
-              </div>
-
-              {/* Commands Copy Helper */}
-              <div className="flex flex-col gap-3">
-                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
-                  <Terminal size={14} /> Daemon Startup Commands
-                </h3>
-                
-                {/* OS Tabs */}
-                <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 gap-1">
-                  {(['windows', 'mac', 'linux'] as const).map((os) => (
-                    <button
-                      key={os}
-                      onClick={() => setOsTab(os)}
-                      className={`flex-1 py-1 text-[8px] uppercase tracking-wider font-black rounded-lg transition-all cursor-pointer ${
-                        osTab === os
-                          ? 'bg-ares-gold text-black font-black'
-                          : 'text-marble/60 hover:text-white hover:bg-white/5 font-semibold'
-                      }`}
-                    >
-                      {os === 'windows' ? 'Windows' : os === 'mac' ? 'macOS' : 'Linux'}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Command Block */}
-                <div className="relative bg-black/60 rounded-xl border border-white/5 p-3 font-mono text-[9px] text-ares-cyan flex items-center justify-between group">
-                  <span className="truncate pr-8 select-all">
-                    {osTab === 'windows' 
-                      ? 'cd tools\\sim-launcher-daemon; node daemon.js' 
-                      : 'cd tools/sim-launcher-daemon && node daemon.js'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const cmd = osTab === 'windows' 
-                        ? 'cd tools\\sim-launcher-daemon; node daemon.js' 
-                        : 'cd tools/sim-launcher-daemon && node daemon.js';
-                      navigator.clipboard.writeText(cmd);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="absolute right-2 p-1 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center"
-                    title="Copy command"
-                  >
-                    {copied ? <Check size={10} className="text-ares-success" /> : <Copy size={10} />}
-                  </button>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Local Simulator drawer Controls */}
+      <LocalSimulatorPanel
+        isOpen={showSimDrawer}
+        onClose={() => setShowSimDrawer(false)}
+        selectedFieldConfigId={selectedFieldConfigId}
+        handleFieldConfigChange={handleFieldConfigChange}
+        fieldConfigs={fieldConfigs}
+        simState={simState}
+        setSimState={setSimState}
+        handleConnectLive={handleConnectLive}
+      />
 
     </div>
   );

@@ -1,35 +1,30 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
-  Plus, 
   Trash2, 
-  Pencil, 
-  Shield, 
-  MapPin, 
   X, 
   Maximize2, 
   Minimize2, 
   Sparkles, 
   AlertCircle, 
-  CheckCircle2, 
-  Circle, 
   Upload, 
-  Users, 
-  Image as ImageIcon,
   RotateCcw
 } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { authenticatedFetch } from "@/lib/api";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { resizeAndCompressImage } from "@/lib/image";
 import LocationManagerModal, { TeamLocation } from "./LocationManagerModal";
 import { cleanUndefined } from "@/lib/utils";
+
+import ShiftScheduleEditor from "./ShiftScheduleEditor";
+import EventFormRoster from "./EventFormRoster";
+import EventEditorAiCopilot from "./EventEditorAiCopilot";
 
 export interface TeamEvent {
   id: string;
@@ -127,26 +122,11 @@ export default function EventEditorDrawer({
   const [revisions, setRevisions] = useState<EventRevision[]>([]);
   const [loadingRevisions, setLoadingRevisions] = useState(false);
 
-  // RSVP Form states
-  const [bringing, setBringing] = useState("");
-  const [notes, setNotes] = useState("");
-  const [prepHours, setPrepHours] = useState(0);
-  const [signupError, setSignupError] = useState<string | null>(null);
-  const [submittingRsvp, setSubmittingRsvp] = useState(false);
-
   // Photo uploading states
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<EventPhoto | null>(null);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
-  const [selectedMemberIdToCheckin, setSelectedMemberIdToCheckin] = useState("");
-
-  // AI states
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
-  const [suggestedCorrection, setSuggestedCorrection] = useState("");
 
   // User Profile cache for revision logs
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -214,16 +194,9 @@ export default function EventEditorDrawer({
       setActiveTab("edit");
       setShowAiSidebar(false);
       setRevertAlert(null);
-      setGrammarEdits([]);
-      setAiResponse("");
       setSignups([]);
       setPhotos([]);
       setRevisions([]);
-      setBringing("");
-      setNotes("");
-      setPrepHours(0);
-      setSignupError(null);
-      setSelectedMemberIdToCheckin("");
     }
   }, [isOpen, eventToEdit]);
 
@@ -292,25 +265,6 @@ export default function EventEditorDrawer({
       setLoadingRevisions(false);
     }
   };
-
-  // Find if current user is signed up for active event
-  const mySignup = useMemo(() => {
-    if (!user) return null;
-    return signups.find((s) => s.userId === user.uid) || null;
-  }, [signups, user]);
-
-  // Prefill active RSVP details
-  useEffect(() => {
-    if (mySignup) {
-      setBringing(mySignup.bringing || "");
-      setNotes(mySignup.notes || "");
-      setPrepHours(mySignup.prepHours || 0);
-    } else {
-      setBringing("");
-      setNotes("");
-      setPrepHours(0);
-    }
-  }, [mySignup]);
 
   const displayedMembers = useMemo(() => {
     const list = [...teamMembers];
@@ -450,96 +404,6 @@ export default function EventEditorDrawer({
     setActiveTab("edit");
   };
 
-  // Action: Submit self-RSVP
-  const handleRsvpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !editId) return;
-    setSubmittingRsvp(true);
-    setSignupError(null);
-    try {
-      const signupData: EventSignup = {
-        userId: user.uid,
-        nickname: userNickname || user.displayName || "Anonymous Member",
-        bringing: formIsPotluck === 1 ? bringing.trim() : undefined,
-        prepHours: formIsVolunteer === 1 ? prepHours : undefined,
-        notes: notes.trim() || undefined,
-        attended: mySignup?.attended || false
-      };
-      await setDoc(doc(db, "events", editId, "signups", user.uid), cleanUndefined(signupData));
-      setRevertAlert("RSVP updated successfully!");
-    } catch (err: any) {
-      setSignupError(err.message || "Failed to save RSVP.");
-    } finally {
-      setSubmittingRsvp(false);
-    }
-  };
-
-  // Action: Cancel self-RSVP
-  const handleRsvpCancel = async () => {
-    if (!user || !editId) return;
-    setSubmittingRsvp(true);
-    setSignupError(null);
-    try {
-      await deleteDoc(doc(db, "events", editId, "signups", user.uid));
-      setBringing("");
-      setNotes("");
-      setPrepHours(0);
-      setRevertAlert("RSVP cancelled.");
-    } catch (err: any) {
-      setSignupError(err.message || "Failed to cancel RSVP.");
-    } finally {
-      setSubmittingRsvp(false);
-    }
-  };
-
-  // Action: Quick Admin Check-in of another member
-  const handleQuickCheckin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editId || !selectedMemberIdToCheckin || !isAdmin) return;
-    try {
-      const member = teamMembers.find((m) => m.uid === selectedMemberIdToCheckin);
-      if (!member) return;
-
-      const checkinData: EventSignup = {
-        userId: member.uid,
-        nickname: member.nickname,
-        notes: "Admin Checked In",
-        attended: true
-      };
-      await setDoc(doc(db, "events", editId, "signups", member.uid), checkinData, { merge: true });
-      setSelectedMemberIdToCheckin("");
-      setRevertAlert(`Successfully checked in ${member.nickname}`);
-    } catch (err: any) {
-      console.error("Failed admin check-in:", err);
-    }
-  };
-
-  // Action: Toggle Attendance check-in status (Admin only)
-  const handleToggleAttendance = async (signupId: string, currentAttendedStatus: boolean) => {
-    if (!editId || !isAdmin) return;
-    try {
-      await setDoc(
-        doc(db, "events", editId, "signups", signupId),
-        { attended: !currentAttendedStatus },
-        { merge: true }
-      );
-    } catch (err: any) {
-      console.error("Failed to toggle attendance:", err);
-    }
-  };
-
-  // Action: Delete RSVP (Admin only)
-  const handleDeleteRsvp = async (targetUserId: string) => {
-    if (!editId || !isAdmin) return;
-    if (!confirm("Are you sure you want to remove this RSVP?")) return;
-    try {
-      await deleteDoc(doc(db, "events", editId, "signups", targetUserId));
-      setRevertAlert("RSVP removed by admin.");
-    } catch (err: any) {
-      console.error("Failed to remove RSVP:", err);
-    }
-  };
-
   // Action: Upload Photo
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -601,68 +465,6 @@ export default function EventEditorDrawer({
     }
   };
 
-  // AI Copilot: Assistant prompt
-  const handleAiAssistant = async (prompt: string, presetName = "") => {
-    if (!prompt.trim()) return;
-    setAiLoading(true);
-    setAiResponse("");
-    try {
-      const res = await authenticatedFetch("/api/ai/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: presetName ? `${presetName}: ${prompt}` : prompt,
-          text: formDescription,
-          context: `Event Title: ${formTitle}\nLocation: ${
-            locations.find((l) => l.id === formLocationId)?.name || "MARS Building"
-          }`
-        })
-      });
-
-      if (!res.ok) throw new Error("AI Assistant service error.");
-      const data = await res.json();
-      setAiResponse(data.response || "");
-    } catch (err: any) {
-      setAiResponse(
-        `Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`
-      );
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  // AI Copilot: Grammar check
-  const handleGrammarCheck = async () => {
-    if (!formDescription.trim()) return;
-    setAiLoading(true);
-    setGrammarEdits([]);
-    setSuggestedCorrection("");
-    try {
-      const res = await authenticatedFetch("/api/ai/grammar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: formDescription })
-      });
-
-      if (!res.ok) throw new Error("AI Grammar check service error.");
-      const data = await res.json();
-      setSuggestedCorrection(data.correctedText || "");
-      setGrammarEdits(data.edits || []);
-    } catch (err: any) {
-      console.warn(err);
-      setSuggestedCorrection(formDescription);
-      setGrammarEdits([
-        {
-          original: "offline check",
-          corrected: "online check",
-          explanation: "Connect to live sync to get full Gemini spelling check."
-        }
-      ]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -707,7 +509,7 @@ export default function EventEditorDrawer({
         </header>
 
         {/* Sub-Header: Tabs Switcher */}
-        <div className="px-6 border-b border-white/5 bg-black/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none">
+        <div className="px-6 border-b border-white/5 bg-black/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none text-left">
           <div className="flex gap-4">
             <button
               type="button"
@@ -769,7 +571,7 @@ export default function EventEditorDrawer({
                   : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
               }`}
             >
-              <Sparkles size={11} className={aiLoading ? "animate-spin" : ""} />
+              <Sparkles size={11} />
               {showAiSidebar ? "Hide AI Copilot" : "Show AI Copilot"}
             </button>
           )}
@@ -777,7 +579,7 @@ export default function EventEditorDrawer({
 
         {/* Revert Alert banner */}
         {revertAlert && activeTab === "edit" && (
-          <div className="px-6 py-3.5 bg-ares-gold/10 border-b border-ares-gold/20 text-ares-gold text-xs font-semibold flex items-center justify-between shrink-0">
+          <div className="px-6 py-3.5 bg-ares-gold/10 border-b border-ares-gold/20 text-ares-gold text-xs font-semibold flex items-center justify-between shrink-0 text-left">
             <div className="flex items-center gap-2">
               <AlertCircle size={14} className="shrink-0" />
               <span>{revertAlert}</span>
@@ -802,304 +604,33 @@ export default function EventEditorDrawer({
                   showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
                 }`}
               >
-                <div className="space-y-6">
-                  <div>
-                    <label
-                      htmlFor="event-title"
-                      className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                    >
-                      Event Title
-                    </label>
-                    <input
-                      id="event-title"
-                      type="text"
-                      placeholder="e.g. Sunday Night EKF Odometry Calibrations"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="event-start"
-                        className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                      >
-                        Start Date & Time
-                      </label>
-                      <input
-                        id="event-start"
-                        type="datetime-local"
-                        value={formDateStart}
-                        onChange={(e) => setFormDateStart(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 text-marble/95 text-xs rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="event-end"
-                        className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                      >
-                        End Date & Time (Optional)
-                      </label>
-                      <input
-                        id="event-end"
-                        type="datetime-local"
-                        value={formDateEnd}
-                        onChange={(e) => setFormDateEnd(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 text-marble/95 text-xs rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    {/* Location selector */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center mb-2">
-                        <label
-                          htmlFor="event-location-select"
-                          className="block text-[10px] font-bold uppercase tracking-wider text-marble/60"
-                        >
-                          Location / Venue
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            onClick={() => setIsLocationModalOpen(true)}
-                            className="text-[9px] font-black uppercase tracking-widest text-ares-cyan hover:text-ares-cyan/80 transition-colors cursor-pointer"
-                          >
-                            + Manage Locations
-                          </button>
-                        )}
-                      </div>
-                      <select
-                        id="event-location-select"
-                        value={formLocationId || "mars-building"}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormLocationId(val);
-                        }}
-                        className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan"
-                      >
-                        {locations.map((loc) => (
-                          <option key={loc.id} value={loc.id} className="bg-neutral-900 text-white">
-                            {loc.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] text-marble/45 font-medium leading-relaxed">
-                        Need a new location? Configure options directly using the map builder layouts.
-                      </p>
-                    </div>
-
-                    {/* Location Preview Card */}
-                    {formLocationId !== "" && (
-                      <div className="p-4 bg-white/5 border border-white/5 rounded-lg flex flex-col justify-between min-h-[100px] hover:border-white/10 transition-colors">
-                        {(() => {
-                          const selected = locations.find((l) => l.id === formLocationId);
-                          if (!selected) return <p className="text-[10px] text-marble/40">MARS Building Default</p>;
-                          return (
-                            <>
-                              <div>
-                                <h4 className="text-xs font-bold text-white uppercase tracking-tight flex items-center gap-1.5">
-                                  <MapPin size={12} className="text-ares-gold" />
-                                  {selected.name}
-                                </h4>
-                                <p className="text-[10px] text-marble/65 mt-1 font-mono">{selected.address}</p>
-                                {selected.description && (
-                                  <p className="text-[9px] text-marble/45 mt-2 leading-relaxed italic">
-                                    {selected.description}
-                                  </p>
-                                )}
-                              </div>
-                              {selected.gmapsUrl && (
-                                <a
-                                  href={selected.gmapsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[9px] text-ares-cyan hover:underline font-bold uppercase tracking-widest mt-3 block"
-                                >
-                                  Open Google Directions ↗
-                                </a>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                      Cover Image (Optional)
-                    </label>
-                    <div className="flex gap-3 items-center">
-                      <input
-                        type="url"
-                        placeholder="Paste image link, or pick from gallery..."
-                        value={formCoverImage}
-                        onChange={(e) => setFormCoverImage(e.target.value)}
-                        className="flex-grow bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsPhotoPickerOpen(true)}
-                        className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-marble/90 hover:text-white text-[10px] uppercase font-black tracking-widest rounded transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-ares-cyan focus:outline-none shrink-0"
-                      >
-                        <ImageIcon size={12} /> Gallery
-                      </button>
-                    </div>
-                    {formCoverImage && (
-                      <div className="mt-3 relative w-48 h-28 border border-white/10 rounded-lg overflow-hidden group">
-                        <img src={formCoverImage} alt="Cover preview" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setFormCoverImage("")}
-                          className="absolute top-1.5 right-1.5 p-1 bg-black/80 hover:bg-black border border-white/10 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                        Event Category
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFormCategory("internal")}
-                          className={`flex-1 py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer ${
-                            formCategory === "internal"
-                              ? "bg-ares-red/15 border-ares-red text-white font-black"
-                              : "bg-transparent border-white/10 text-marble/50 hover:text-white"
-                          }`}
-                        >
-                          Internal Practice
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormCategory("outreach")}
-                          className={`flex-1 py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer ${
-                            formCategory === "outreach"
-                              ? "bg-ares-gold/15 border-ares-gold text-ares-gold font-black"
-                              : "bg-transparent border-white/10 text-marble/50 hover:text-white"
-                          }`}
-                        >
-                          Outreach & STEM
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                          Potluck
-                        </span>
-                        <div className="flex gap-1 bg-black/20 p-1 border border-white/5 rounded">
-                          <button
-                            type="button"
-                            onClick={() => setFormIsPotluck(0)}
-                            className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
-                              formIsPotluck === 0 ? "bg-white/10 text-white" : "text-marble/40"
-                            }`}
-                          >
-                            No
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormIsPotluck(1)}
-                            className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
-                              formIsPotluck === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/40"
-                            }`}
-                          >
-                            Yes
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
-                          Volunteer Ops
-                        </span>
-                        <div className="flex gap-1 bg-black/20 p-1 border border-white/5 rounded">
-                          <button
-                            type="button"
-                            onClick={() => setFormIsVolunteer(0)}
-                            className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
-                              formIsVolunteer === 0 ? "bg-white/10 text-white" : "text-marble/40"
-                            }`}
-                          >
-                            No
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormIsVolunteer(1)}
-                            className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer ${
-                              formIsVolunteer === 1 ? "bg-ares-cyan/20 text-ares-cyan font-black" : "text-marble/40"
-                            }`}
-                          >
-                            Yes
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Publish Status (Approval Workflow) */}
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <Shield size={12} className="text-ares-gold" />
-                        Event Publishing Status
-                      </h4>
-                      <p className="text-[10px] text-marble/60 mt-1 leading-relaxed">
-                        {canPublishDirectly
-                          ? "You have Coach/Mentor authorization to directly publish to the public calendar."
-                          : "Events created by students require approval from a Coach or Mentor before appearing on the public calendar."}
-                      </p>
-                    </div>
-
-                    <div className="min-w-[160px] shrink-0">
-                      {canPublishDirectly ? (
-                        <select
-                          value={formStatus}
-                          onChange={(e) => setFormStatus(e.target.value as any)}
-                          className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan font-bold"
-                        >
-                          <option value="published" className="bg-neutral-900 text-white font-bold">Published</option>
-                          <option value="pending" className="bg-neutral-900 text-white font-bold">Pending Review</option>
-                          <option value="draft" className="bg-neutral-900 text-white font-bold">Draft</option>
-                        </select>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">
-                          ● Pending Review
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="event-desc-editor"
-                      className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                    >
-                      Description & Logistical Details (Markdown supported)
-                    </label>
-                    <MarkdownEditor
-                      value={formDescription}
-                      onChange={setFormDescription}
-                      placeholder="e.g. Schedule for driver trials. Bringing snacks: yes. Intaking linear rail repairs first."
-                    />
-                  </div>
-                </div>
+                <ShiftScheduleEditor
+                  formTitle={formTitle}
+                  setFormTitle={setFormTitle}
+                  formDateStart={formDateStart}
+                  setFormDateStart={setFormDateStart}
+                  formDateEnd={formDateEnd}
+                  setFormDateEnd={setFormDateEnd}
+                  formLocationId={formLocationId}
+                  setFormLocationId={setFormLocationId}
+                  formDescription={formDescription}
+                  setFormDescription={setFormDescription}
+                  formCategory={formCategory}
+                  setFormCategory={setFormCategory}
+                  formCoverImage={formCoverImage}
+                  setFormCoverImage={setFormCoverImage}
+                  formIsPotluck={formIsPotluck}
+                  setFormIsPotluck={setFormIsPotluck}
+                  formIsVolunteer={formIsVolunteer}
+                  setFormIsVolunteer={setFormIsVolunteer}
+                  formStatus={formStatus}
+                  setFormStatus={setFormStatus}
+                  locations={locations}
+                  canEdit={canEdit}
+                  canPublishDirectly={canPublishDirectly}
+                  setIsLocationModalOpen={setIsLocationModalOpen}
+                  setIsPhotoPickerOpen={setIsPhotoPickerOpen}
+                />
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
                   <div className="flex gap-2">
@@ -1159,350 +690,37 @@ export default function EventEditorDrawer({
 
               {/* SIDE AI PANEL */}
               {showAiSidebar && (
-                <div className="w-full lg:w-[32%] border-l border-white/10 p-5 bg-black/35 rounded-xl flex flex-col justify-between overflow-y-auto shrink-0 space-y-5 scrollbar-thin scrollbar-thumb-white/5">
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles size={16} className="text-ares-cyan" />
-                      <h4 className="text-xs font-black uppercase tracking-widest text-white">Gemini Operation Copilot</h4>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <span className="text-[9px] uppercase font-black tracking-widest text-marble/45 block">
-                        Quick Assistant Presets
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleAiAssistant(
-                              "Write a catchy announcement for our team newsletter introducing this event.",
-                              "Outreach Copywriter"
-                            )
-                          }
-                          className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
-                        >
-                          Newsletter Pitch
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleAiAssistant(
-                              "Suggest a list of safety guidelines and materials needed for this event.",
-                              "Mechanical Safety"
-                            )
-                          }
-                          className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
-                        >
-                          Safety Checklist
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleAiAssistant(
-                              "Refactor this explanation to be highly professional and engaging for FLL team parents.",
-                              "Youth Coordinator"
-                            )
-                          }
-                          className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
-                        >
-                          Parent Friendly
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Chat Prompt */}
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="ai-chat-prompt"
-                        className="block text-[8px] uppercase font-black tracking-widest text-marble/45"
-                      >
-                        Ask Custom Task
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          id="ai-chat-prompt"
-                          type="text"
-                          placeholder="e.g. List potluck snack ideas..."
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          className="flex-grow bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAiAssistant(aiPrompt)}
-                          disabled={aiLoading}
-                          className="px-3.5 bg-ares-cyan text-black rounded-lg hover:brightness-110 font-black uppercase text-[10px] tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0"
-                        >
-                          Ask
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* AI Response Output */}
-                    {aiResponse && (
-                      <div className="space-y-1.5 animate-fade-in">
-                        <span className="text-[8px] uppercase font-black tracking-widest text-ares-cyan block">
-                          Copilot Output
-                        </span>
-                        <div className="p-3 bg-black/45 border border-ares-cyan/10 rounded-lg text-xs leading-relaxed text-marble/90 font-medium font-mono max-h-[160px] overflow-y-auto scrollbar-thin whitespace-pre-wrap select-text">
-                          {aiResponse}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Grammar checker */}
-                    <div className="border-t border-white/5 pt-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] uppercase font-black tracking-widest text-marble/45">
-                          Description Grammar & Style
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleGrammarCheck}
-                          disabled={aiLoading}
-                          className="px-2.5 py-1 border border-ares-cyan/35 hover:bg-ares-cyan/15 text-ares-cyan text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
-                        >
-                          Run Spelling Audit
-                        </button>
-                      </div>
-
-                      {suggestedCorrection && (
-                        <div className="space-y-2 animate-fade-in">
-                          <p className="text-[9px] text-marble/40">Suggested edit:</p>
-                          <div className="p-2.5 bg-white/5 rounded border border-white/5 text-[11px] leading-relaxed text-white whitespace-pre-wrap">
-                            {suggestedCorrection}
-                          </div>
-                          {grammarEdits.length > 0 && (
-                            <div className="space-y-1.5">
-                              {grammarEdits.map((ed, idx) => (
-                                <div key={idx} className="p-2 bg-ares-red/10 border border-ares-red/25 rounded text-[9px] text-marble/85 font-mono">
-                                  <span className="text-ares-red line-through block">-{ed.original}</span>
-                                  <span className="text-ares-success font-bold block">+{ed.corrected}</span>
-                                  {ed.explanation && <p className="text-[8px] text-marble/45 mt-1 italic">{ed.explanation}</p>}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormDescription(suggestedCorrection);
-                              setSuggestedCorrection("");
-                              setGrammarEdits([]);
-                            }}
-                            className="w-full py-1.5 bg-ares-cyan text-black font-black uppercase tracking-widest text-[9px] rounded hover:brightness-105 transition-all cursor-pointer shadow-md"
-                          >
-                            Apply Corrections
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-[8.5px] font-mono text-marble/35 uppercase leading-normal tracking-wide mt-5">
-                    Powered by Google Gemini 1.5 Pro. Logs auto-reconciled with ARESLib rules.
-                  </p>
-                </div>
+                <EventEditorAiCopilot
+                  formTitle={formTitle}
+                  formDescription={formDescription}
+                  setFormDescription={setFormDescription}
+                  formLocationId={formLocationId}
+                  locations={locations}
+                  setRevertAlert={setRevertAlert}
+                />
               )}
             </div>
           )}
 
           {/* Tab 2: ROSTER & RSVPS */}
           {activeTab === "roster" && editId && (
-            <div className="flex-grow flex flex-col md:flex-row gap-6 overflow-hidden min-h-0">
-              {/* Roster list */}
-              <div className="flex-1 bg-black/20 border border-white/5 rounded-xl p-5 overflow-y-auto flex flex-col justify-between scrollbar-thin scrollbar-thumb-white/5">
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
-                    Operation Attendance Roster ({signups.length})
-                  </h4>
-
-                  {signups.length === 0 ? (
-                    <div className="py-12 text-center text-marble/35 font-mono text-[10px] uppercase tracking-wider">
-                      Roster is currently empty.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {signups.map((su) => (
-                        <div
-                          key={su.userId}
-                          className="p-3 bg-white/5 border border-white/5 rounded-lg flex items-center justify-between gap-4"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              onClick={() => {
-                                if (isAdmin) handleToggleAttendance(su.userId, !!su.attended);
-                              }}
-                              className={`cursor-pointer transition-colors p-1 rounded-full ${
-                                su.attended
-                                  ? "text-ares-success hover:text-ares-success/75"
-                                  : "text-marble/35 hover:text-white"
-                              }`}
-                              title={isAdmin ? "Toggle Attendance status" : "RSVP Status"}
-                            >
-                              {su.attended ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-white uppercase tracking-tight">
-                                {su.nickname}
-                              </p>
-                              {su.notes && (
-                                <p className="text-[9px] text-marble/45 italic leading-normal">
-                                  Notes: {su.notes}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-3 mt-1 text-[8.5px] font-mono text-marble/40 uppercase">
-                                {su.bringing && (
-                                  <span className="text-ares-gold">🥪 Bringing: {su.bringing}</span>
-                                )}
-                                {su.prepHours !== undefined && (
-                                  <span className="text-ares-cyan">⚙️ Prep: {su.prepHours} hrs</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {isAdmin && (
-                            <button
-                              onClick={() => handleDeleteRsvp(su.userId)}
-                              className="p-1.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 text-marble/55 hover:text-white rounded transition-all cursor-pointer"
-                              title="Remove RSVP"
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Check-in Form for Admin */}
-                {isAdmin && (
-                  <form onSubmit={handleQuickCheckin} className="border-t border-white/5 pt-4 mt-6 space-y-3">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block">
-                      Quick Admin Check-in
-                    </span>
-                    <div className="flex gap-2">
-                      <select
-                        value={selectedMemberIdToCheckin}
-                        onChange={(e) => setSelectedMemberIdToCheckin(e.target.value)}
-                        className="flex-grow bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none cursor-pointer"
-                      >
-                        <option value="">Select Team Member...</option>
-                        {displayedMembers.map((m) => (
-                          <option key={m.uid} value={m.uid}>
-                            {m.nickname}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-gold-soft rounded text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all"
-                      >
-                        Check In
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              {/* Self RSVP Card */}
-              {user && (
-                <div className="w-full md:w-80 p-5 bg-white/5 border border-white/10 rounded-xl flex flex-col justify-between shrink-0 space-y-4">
-                  <form onSubmit={handleRsvpSubmit} className="space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
-                      Submit Your Operation RSVP
-                    </h4>
-
-                    {signupError && (
-                      <p className="text-[9px] font-mono text-ares-red bg-ares-red/10 p-2 rounded border border-ares-red/20">
-                        {signupError}
-                      </p>
-                    )}
-
-                    {formIsPotluck === 1 && (
-                      <div>
-                        <label
-                          htmlFor="rsvp-bringing"
-                          className="block text-[8px] uppercase font-black tracking-widest text-marble/45 mb-1"
-                        >
-                          🥪 What will you bring? (Optional)
-                        </label>
-                        <input
-                          id="rsvp-bringing"
-                          type="text"
-                          placeholder="e.g. Case of soda, cookies..."
-                          value={bringing}
-                          onChange={(e) => setBringing(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-gold"
-                        />
-                      </div>
-                    )}
-
-                    {formIsVolunteer === 1 && (
-                      <div>
-                        <label
-                          htmlFor="rsvp-prep-hours"
-                          className="block text-[8px] uppercase font-black tracking-widest text-marble/45 mb-1"
-                        >
-                          ⚙️ Anticipated Prep Work Hours
-                        </label>
-                        <input
-                          id="rsvp-prep-hours"
-                          type="number"
-                          min="0"
-                          max="24"
-                          value={prepHours}
-                          onChange={(e) => setPrepHours(parseInt(e.target.value) || 0)}
-                          className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label
-                        htmlFor="rsvp-notes"
-                        className="block text-[8px] uppercase font-black tracking-widest text-marble/45 mb-1"
-                      >
-                        📝 RSVP Notes (Optional)
-                      </label>
-                      <textarea
-                        id="rsvp-notes"
-                        placeholder="e.g. Arriving 15 mins late. Running odometry code checks."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="w-full h-16 bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-ares-cyan resize-none"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={submittingRsvp}
-                      className="w-full py-2 bg-ares-cyan text-black hover:brightness-105 font-black uppercase text-[10px] tracking-widest rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-md"
-                    >
-                      {submittingRsvp ? "Updating..." : mySignup ? "Update RSVP" : "Confirm RSVP (Will Attend)"}
-                    </button>
-                  </form>
-
-                  {mySignup && (
-                    <button
-                      type="button"
-                      onClick={handleRsvpCancel}
-                      disabled={submittingRsvp}
-                      className="w-full py-2 bg-white/5 border border-white/5 hover:bg-ares-red/15 text-marble/55 hover:text-white text-[9px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer"
-                    >
-                      Cancel Attendance
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            <EventFormRoster
+              editId={editId}
+              signups={signups}
+              isAdmin={isAdmin}
+              formIsPotluck={formIsPotluck}
+              formIsVolunteer={formIsVolunteer}
+              user={user}
+              userNickname={userNickname}
+              teamMembers={teamMembers}
+              displayedMembers={displayedMembers}
+              setRevertAlert={setRevertAlert}
+            />
           )}
 
           {/* Tab 3: GALLERY */}
           {activeTab === "photos" && editId && (
-            <div className="flex-grow flex flex-col justify-between overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-white/5">
+            <div className="flex-grow flex flex-col justify-between overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-white/5 text-left">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
