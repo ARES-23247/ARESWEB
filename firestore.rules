@@ -215,7 +215,7 @@ service cloud.firestore {
 
     // docs_feedback
     match /docs_feedback/{feedbackId} {
-      allow create: if true;
+      allow create: if isAuthenticated();
       allow read: if isAuthorized();
     }
 

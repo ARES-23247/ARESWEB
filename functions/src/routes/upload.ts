@@ -139,6 +139,8 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
     }
   };
 
+  let bqSuccess = true;
+
   // SCA-F01: Run upload and diagnostic checks, awaiting to prevent serverless container freeze
   await (async () => {
     try {
@@ -162,7 +164,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
 
       // 2. BigQuery logging
       try {
-        const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+        const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
         const bigquery = new BigQuery({ projectId: bqProject });
         const bqRows = dataRows.map(row => ({
           run_id: runId,
@@ -180,10 +182,12 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
           loop_time_ms: row.loop_time_ms
         }));
 
+        await ensureTableExists(bigquery, "telemetry", "runs_raw", runsRawSchema);
         await bigquery.dataset("telemetry").table("runs_raw").insert(bqRows);
         logger.info("upload", `Streamed timeseries rows to BigQuery for run: ${runId}`);
       } catch (err) {
-        logger.warn("upload", "BigQuery streaming failed or bypassed");
+        bqSuccess = false;
+        logger.error("upload", `BigQuery streaming failed: ${(err as Error).message}`);
       }
 
       // 3. Gemini analysis
@@ -211,10 +215,27 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
   res.status(200).json({
     success: true,
     runId,
+    bqIngested: bqSuccess,
     summary,
     message: "Telemetry uploaded, archived, and Vertex diagnostics completed successfully."
   });
 }));
+
+const runsRawSchema = [
+  { name: "run_id", type: "STRING", mode: "REQUIRED" },
+  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
+  { name: "battery_voltage", type: "FLOAT", mode: "NULLABLE" },
+  { name: "motor_lf_current", type: "FLOAT", mode: "NULLABLE" },
+  { name: "motor_rf_current", type: "FLOAT", mode: "NULLABLE" },
+  { name: "motor_lr_current", type: "FLOAT", mode: "NULLABLE" },
+  { name: "motor_rr_current", type: "FLOAT", mode: "NULLABLE" },
+  { name: "pinpoint_x", type: "FLOAT", mode: "NULLABLE" },
+  { name: "pinpoint_y", type: "FLOAT", mode: "NULLABLE" },
+  { name: "pinpoint_heading", type: "FLOAT", mode: "NULLABLE" },
+  { name: "ekf_drift_x", type: "FLOAT", mode: "NULLABLE" },
+  { name: "ekf_drift_y", type: "FLOAT", mode: "NULLABLE" },
+  { name: "loop_time_ms", type: "FLOAT", mode: "NULLABLE" }
+];
 
 const robotStatesSchema = [
   { name: "run_id", type: "STRING", mode: "REQUIRED" },
@@ -298,12 +319,17 @@ router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_states", robotStatesSchema);
   
   const bqRows = lines.map((line: string, index: number) => {
-    const parsed = JSON.parse(line);
+    let parsed;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
+    }
     return {
       run_id: parsed.run_id || "",
       tick_index: index,
@@ -330,12 +356,17 @@ router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_actions", robotActionsSchema);
   
-  const bqRows = lines.map((line: string) => {
-    const envelope = JSON.parse(line);
+  const bqRows = lines.map((line: string, index: number) => {
+    let envelope;
+    try {
+      envelope = JSON.parse(line);
+    } catch {
+      throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
+    }
     const payload = envelope.payload || {};
     return {
       run_id: envelope.run_id || "",
@@ -363,12 +394,17 @@ router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_inputs", robotInputsSchema);
   
-  const bqRows = lines.map((line: string) => {
-    const frame = JSON.parse(line);
+  const bqRows = lines.map((line: string, index: number) => {
+    let frame;
+    try {
+      frame = JSON.parse(line);
+    } catch {
+      throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
+    }
     return {
       run_id: frame.runId || "",
       robot_id: frame.robotId || "",
@@ -396,7 +432,7 @@ router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "Invalid CSV format: requires header and data.");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "motor_telemetry", motorTelemetrySchema);
   
@@ -434,12 +470,17 @@ router.post("/vision", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "vision_events", visionEventsSchema);
   
-  const bqRows = lines.map((line: string) => {
-    const event = JSON.parse(line);
+  const bqRows = lines.map((line: string, index: number) => {
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
+    }
     return {
       run_id: event.run_id || "",
       robot_id: event.robot_id || "",

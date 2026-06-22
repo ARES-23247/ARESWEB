@@ -69,5 +69,12 @@ app.use(globalErrorHandler);
 export const api = onRequest({ 
   cors: true, 
   maxInstances: 10, 
-  secrets: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] 
+  secrets: [
+    "ENCRYPTION_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "GCP_PROJECT_ID",
+    "GEMINI_API_KEY",
+    "RECAPTCHA_SECRET_KEY"
+  ] 
 }, app);

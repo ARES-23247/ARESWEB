@@ -18,6 +18,7 @@ import {
   DashboardPreset,
   migrateLayoutCoordinates 
 } from "./hooks/useScopeLayout";
+import { useAutoLogSync } from "@/hooks/scope/useAutoLogSync";
 
 export { migrateLayoutCoordinates };
 export type { LayoutItem, ChartConfig, DashboardPreset };
@@ -68,6 +69,8 @@ export default function ScopeDashboard() {
     handleDisconnectLive,
     handlePublishValue
   } = useNT4Client();
+
+  const autoSyncState = useAutoLogSync(ipAddress);
 
   const {
     isEditMode,
@@ -392,6 +395,8 @@ export default function ScopeDashboard() {
         handleComparisonInput={handleComparisonInput}
         handleConsoleInput={handleConsoleInput}
         handlePathInput={handlePathInput}
+        ipAddress={ipAddress}
+        autoSyncState={autoSyncState}
       />
 
       {/* Loading overlay spinner */}

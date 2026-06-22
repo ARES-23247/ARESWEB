@@ -3,6 +3,15 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 import { authenticatedFetch } from "@/lib/api";
 import { Cloud, Wifi, X, RefreshCw, Check, Upload } from "lucide-react";
 
+function getUploadRoute(fileName: string): string {
+  if (fileName.startsWith("state_log_")) return "/api/upload/states";
+  if (fileName.startsWith("action_log_")) return "/api/upload/actions";
+  if (fileName.startsWith("input_log_")) return "/api/upload/inputs";
+  if (fileName.startsWith("motor_log_")) return "/api/upload/motors";
+  if (fileName.startsWith("vision_log_")) return "/api/upload/vision";
+  return "/api/upload";
+}
+
 interface SyncRobotLogsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -63,15 +72,19 @@ export default function SyncRobotLogsModal({
       if (!downloadRes.ok) throw new Error(`Failed to download from robot: HTTP ${downloadRes.status}`);
       const csvText = await downloadRes.text();
 
-      // 2. Upload file content to Firebase using authenticatedFetch
-      const opModeName = fileName.replace(".csv", "");
-      const uploadRes = await authenticatedFetch("/api/upload", {
+      // 2. Route to correct sub-endpoint based on file type
+      const route = getUploadRoute(fileName);
+      const contentType = fileName.endsWith(".jsonl")
+        ? "application/x-jsonlines"
+        : "text/csv";
+
+      const uploadRes = await authenticatedFetch(route, {
         method: "POST",
         headers: {
-          "Content-Type": "text/csv",
-          "x-opmode": opModeName
+          "Content-Type": contentType,
+          "X-FileName": fileName,
         },
-        body: csvText
+        body: csvText,
       });
 
       if (!uploadRes.ok) {

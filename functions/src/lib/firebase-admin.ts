@@ -8,7 +8,7 @@ if (!admin.apps.length) {
   if (serviceAccount) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ares-web-preview"}.appspot.com`
+      storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "aresfirst-portal"}.appspot.com`
     });
   } else {
     // Fall back to local emulator credentials or default credentials

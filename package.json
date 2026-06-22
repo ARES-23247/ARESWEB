@@ -12,8 +12,6 @@
   },
   "dependencies": {
     "@babel/standalone": "^8.0.2",
-    "@google-cloud/bigquery": "^8.3.1",
-    "@google/genai": "^2.7.0",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.101.0",
     "@xyflow/react": "^12.11.0",

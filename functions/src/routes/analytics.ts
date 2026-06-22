@@ -8,7 +8,7 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
-const bigquery = new BigQuery({ projectId: process.env.GCP_PROJECT_ID || "ares-web-preview" });
+const bigquery = new BigQuery({ projectId: process.env.GCP_PROJECT_ID || "aresfirst-portal" });
 
 // Helper to generate mock telemetry runs
 function generateHighFidelityMockRun(runId: string) {
@@ -263,19 +263,19 @@ router.get("/telemetry-log", ensureAuth, asyncHandler(async (req, res) => {
       const sqlQuery = `
         SELECT 
           timestamp_ms as timestamp,
-          robot_x as x,
-          robot_y as y,
-          robot_heading as heading,
+          pinpoint_x as x,
+          pinpoint_y as y,
+          pinpoint_heading as heading,
           battery_voltage as battery,
           loop_time_ms as loopTime,
-          motor_current_lf as lf,
-          motor_current_rf as rf,
-          motor_current_lr as lr,
-          motor_current_rr as rr,
-          slide_height as slideHeight,
-          slide_current as slideCurrent,
-          intake_current as intakeCurrent
-        FROM \`${gcpProject}.telemetry.runs\`
+          motor_lf_current as lf,
+          motor_rf_current as rf,
+          motor_lr_current as lr,
+          motor_rr_current as rr,
+          CAST(NULL AS FLOAT64) as slideHeight,
+          CAST(NULL AS FLOAT64) as slideCurrent,
+          CAST(NULL AS FLOAT64) as intakeCurrent
+        FROM \`${gcpProject}.telemetry.runs_raw\`
         WHERE run_id = @runId
         ORDER BY timestamp_ms ASC
       `;

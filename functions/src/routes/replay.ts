@@ -6,7 +6,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { ensureTeamMember } from "../middleware/auth";
 
 const router = express.Router();
-const bqProject = process.env.GCP_PROJECT_ID || "ares-web-preview";
+const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
 const bigquery = new BigQuery({ projectId: bqProject });
 
 // GET /api/replay/:runId/summary

@@ -44,6 +44,15 @@ interface ScopeHeaderProps {
   handleComparisonInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleConsoleInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePathInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+
+  // Auto-Sync Props
+  ipAddress: string;
+  autoSyncState: {
+    connected: boolean;
+    robotStatus: { enabled: boolean; opMode: string } | null;
+    syncing: boolean;
+    totalSynced: number;
+  };
 }
 
 export default function ScopeHeader({
@@ -68,7 +77,9 @@ export default function ScopeHeader({
   handleFileInput,
   handleComparisonInput,
   handleConsoleInput,
-  handlePathInput
+  handlePathInput,
+  ipAddress,
+  autoSyncState
 }: ScopeHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const comparisonInputRef = useRef<HTMLInputElement | null>(null);
@@ -202,6 +213,29 @@ export default function ScopeHeader({
             )}
           </select>
         </div>
+
+        {/* Robot Connection Indicator */}
+        {ipAddress && (
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/30 border border-white/5 text-[10px] uppercase font-bold tracking-wider text-marble/60">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              autoSyncState.connected
+                ? autoSyncState.syncing
+                  ? "bg-ares-gold animate-pulse"
+                  : "bg-ares-success"
+                : "bg-white/20"
+            }`} />
+            <span>
+              {autoSyncState.connected
+                ? autoSyncState.syncing
+                  ? "Syncing..."
+                  : autoSyncState.robotStatus?.enabled
+                    ? "Robot Active"
+                    : `Idle · ${autoSyncState.totalSynced} synced`
+                : "Robot Offline"
+              }
+            </span>
+          </div>
+        )}
 
         {/* Sync Robot Logs over Wi-Fi */}
         <button
