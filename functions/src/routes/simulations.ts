@@ -1,6 +1,6 @@
 import express from "express";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAuth, ensureAdmin } from "../middleware/auth";
+import { ensureAuth, ensureAdmin, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { exec } from "child_process";
 import path from "path";
@@ -224,7 +224,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/simulations - Save simulation to GitHub
-router.post("/", ensureAuth, asyncHandler(async (req: any, res) => {
+router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { files } = req.body as { files: Record<string, string> };
   if (!files || Object.keys(files).length === 0) {
     res.status(400).json({ error: "No files provided" });
@@ -301,7 +301,7 @@ router.post("/", ensureAuth, asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /api/simulations/:id - Delete simulation from GitHub
-router.delete("/:id", ensureAuth, asyncHandler(async (req: any, res) => {
+router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   if (!id || !id.startsWith("github:")) {
     res.status(404).json({ error: "Simulation not found" });

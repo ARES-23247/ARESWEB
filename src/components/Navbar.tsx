@@ -3,33 +3,20 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Search, 
-  LogIn,
-  User, 
-  ShoppingBag, 
   Calendar as CalendarIcon, 
-  GraduationCap, 
-  Sparkles, 
-  LogOut, 
-  Check, 
-  LayoutDashboard,
-  ChevronDown,
-  Users,
-  Trophy,
-  BookOpen,
-  Image as ImageIcon,
-  Layers,
-  ShieldCheck,
-  Cpu,
-  Compass,
-  Play
+  ShoppingBag, 
+  GraduationCap
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
-import { maskEmail } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { siteConfig } from "@/lib/site-config";
+
+// Shared data configs and subcomponents
+import { TEAM_LINKS, RESOURCE_LINKS } from "./navigation/navItems";
+import { NavDropdown } from "./navigation/NavDropdown";
+import { DesktopUserMenu } from "./navigation/DesktopUserMenu";
+import { MobileNavDrawer } from "./navigation/MobileNavDrawer";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -91,12 +78,6 @@ export default function Navbar() {
 
   return (
     <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-24 focus:left-6 bg-ares-red text-white px-6 py-3 ares-cut-sm font-bold z-modal shadow-2xl border border-white/20 transition-all"
-      >
-        Skip to Main Content
-      </a>
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
       </div>
@@ -112,93 +93,22 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
           
           {/* 1. Team Dropdown */}
-          <div className="relative py-2 group/team">
-            <button
-              onClick={() => toggleDropdown("team")}
-              aria-haspopup="true"
-              aria-expanded={activeDropdown === "team"}
-              className={`flex items-center gap-1.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 cursor-pointer ${
-                activeDropdown === "team" ? "text-ares-gold" : "text-white hover:text-ares-gold"
-              }`}
-            >
-              Team <ChevronDown size={12} className={`transition-transform duration-300 ${activeDropdown === "team" ? "rotate-180" : "group-hover/team:rotate-180"}`} />
-            </button>
-            <div className={`absolute top-[calc(100%-4px)] left-0 w-48 bg-obsidian/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-lg p-1 transition-all duration-300 z-50 opacity-0 translate-y-2 pointer-events-none group-hover/team:opacity-100 group-hover/team:translate-y-0 group-hover/team:pointer-events-auto group-focus-within/team:opacity-100 group-focus-within/team:translate-y-0 group-focus-within/team:pointer-events-auto ${
-              activeDropdown === "team" ? "!opacity-100 !translate-y-0 !pointer-events-auto" : ""
-            }`}>
-              <Link to="/about" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Users size={12} className="text-ares-cyan" /> Who We Are
-              </Link>
-              <Link to="/seasons" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Trophy size={12} className="text-ares-gold" /> Seasons & Legacy
-              </Link>
-              <Link to="/outreach" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Sparkles size={12} className="text-ares-red" /> Outreach & Impact
-              </Link>
-              <Link to="/gallery" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
-              </Link>
-              <Link to="/videos" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Play size={12} className="text-ares-red" /> Video Gallery
-              </Link>
-              <Link to="/blog" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <BookOpen size={12} className="text-ares-bronze" /> Team Blog
-              </Link>
-              <Link to="/join" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Check size={12} className="text-ares-cyan" /> Join the Team
-              </Link>
-              <div className="h-px bg-white/5 my-1"></div>
-              <Link to="/calendar" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <CalendarIcon size={12} className="text-ares-red" /> Team Calendar
-              </Link>
-            </div>
-          </div>
+          <NavDropdown
+            label="Team"
+            isOpen={activeDropdown === "team"}
+            onToggle={() => toggleDropdown("team")}
+            items={TEAM_LINKS}
+            onItemClick={() => setActiveDropdown(null)}
+          />
 
           {/* 2. Resources Dropdown */}
-          <div className="relative py-2 group/resources">
-            <button
-              onClick={() => toggleDropdown("resources")}
-              aria-haspopup="true"
-              aria-expanded={activeDropdown === "resources"}
-              className={`flex items-center gap-1.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 cursor-pointer ${
-                activeDropdown === "resources" ? "text-ares-gold" : "text-white hover:text-ares-gold"
-              }`}
-            >
-              Resources <ChevronDown size={12} className={`transition-transform duration-300 ${activeDropdown === "resources" ? "rotate-180" : "group-hover/resources:rotate-180"}`} />
-            </button>
-            <div className={`absolute top-[calc(100%-4px)] left-0 w-48 bg-obsidian/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-lg p-1 transition-all duration-300 z-50 opacity-0 translate-y-2 pointer-events-none group-hover/resources:opacity-100 group-hover/resources:translate-y-0 group-hover/resources:pointer-events-auto group-focus-within/resources:opacity-100 group-focus-within/resources:translate-y-0 group-focus-within/resources:pointer-events-auto ${
-              activeDropdown === "resources" ? "!opacity-100 !translate-y-0 !pointer-events-auto" : ""
-            }`}>
-              <Link to="/tech-stack" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Cpu size={12} className="text-ares-cyan" /> Tech Stack
-              </Link>
-              <Link to="/robots" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
-              </Link>
-              <Link to="/aresplanner" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Compass size={12} className="text-ares-gold" /> ARESPlanner
-              </Link>
-              <Link to="/dashboard/scope?sim=true" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
-              </Link>
-              <a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Layers size={12} className="text-ares-red" /> 3D Models Archive
-              </a>
-              <a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <Layers size={12} className="text-ares-gold" /> CAD Workspace
-              </a>
-              <div className="h-px bg-white/5 my-1"></div>
-              <Link to="/academy" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
-              </Link>
-              <Link to="/docs" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <BookOpen size={12} className="text-ares-red" /> <span className="text-ares-red">ARES</span>Lib
-              </Link>
-              <Link to="/store" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2.5 px-3 py-2 text-[10px] text-marble hover:text-white hover:bg-white/5 rounded-md transition-colors font-bold tracking-wider">
-                <ShoppingBag size={12} className="text-ares-bronze" /> Official Store
-              </Link>
-            </div>
-          </div>
+          <NavDropdown
+            label="Resources"
+            isOpen={activeDropdown === "resources"}
+            onToggle={() => toggleDropdown("resources")}
+            items={RESOURCE_LINKS}
+            onItemClick={() => setActiveDropdown(null)}
+          />
 
           {/* 3. High-Priority Links */}
           <Link to="/calendar" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
@@ -219,78 +129,17 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-4">
-          {loading ? (
-            <span className="text-xs text-marble/60">Verifying session...</span>
-          ) : isSignedIn ? (
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden lg:block">
-                <p className="text-xs font-bold text-white leading-none">
-                  {user.displayName || "ARES Member"}
-                </p>
-                <p className="text-[10px] text-ares-gold uppercase tracking-wider font-semibold mt-1">
-                  {userRole}
-                </p>
-              </div>
-              
-              <div className="relative group">
-                <button className="relative flex items-center gap-2 px-3 h-9 bg-white/5 hover:bg-white/10 border border-white/10 ares-cut-sm transition-all cursor-pointer">
-                  <img
-                    src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`}
-                    alt=""
-                    className="w-6 h-6 rounded-full bg-black/40 border border-ares-bronze/40"
-                  />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider hidden sm:inline">Portal</span>
-                  {hasPendingInquiries && (
-                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-10">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
-                    </span>
-                  )}
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-obsidian border border-ares-bronze/20 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-2">
-                  <div className="px-3 py-2 border-b border-white/5">
-                    <p className="text-xs text-marble/60">Logged in as</p>
-                    <p className="text-xs font-bold text-white truncate">{maskEmail(user.email)}</p>
-                  </div>
-                  <Link
-                    to="/dashboard"
-                    className="w-full text-left mt-1 px-3 py-2 text-xs text-ares-gold hover:bg-ares-gold/10 rounded transition-colors font-bold uppercase tracking-wider flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <LayoutDashboard size={12} /> Command Center
-                    </div>
-                    {hasPendingInquiries && (
-                      <span className="flex h-2 w-2 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-red"></span>
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    to="/dashboard/profile"
-                    className="w-full text-left block mt-1 px-3 py-2 text-xs text-marble hover:bg-white/5 rounded transition-colors font-bold uppercase tracking-wider flex items-center gap-2"
-                  >
-                    <User size={12} className="text-ares-cyan" /> My Profile
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="w-full text-left mt-1 px-3 py-2 text-xs text-ares-danger hover:bg-ares-red/10 rounded transition-colors flex items-center gap-2 font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    <LogOut size={12} /> Sign Out
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={loginWithGoogle}
-              className="flex items-center gap-2 px-4 h-9 bg-ares-red hover:bg-ares-red-dark text-white border border-white/10 ares-cut-sm transition-all font-bold uppercase tracking-widest text-xs cursor-pointer"
-            >
-              <LogIn size={14} /> Sign In
-            </button>
-          )}
-        </div>
+        {/* Desktop User Menu */}
+        <DesktopUserMenu
+          loading={loading}
+          isSignedIn={isSignedIn}
+          user={user}
+          userRole={userRole}
+          userImage={userImage}
+          hasPendingInquiries={hasPendingInquiries}
+          logout={logout}
+          loginWithGoogle={loginWithGoogle}
+        />
 
         {/* Mobile menu trigger */}
         <button
@@ -306,127 +155,18 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Drawer */}
-      {open && (
-        <div className="absolute top-full left-0 w-full bg-obsidian border-b border-ares-bronze/20 shadow-2xl p-6 flex flex-col gap-5 md:hidden z-50 max-h-[80vh] overflow-y-auto">
-          
-          {/* Section 1: Team & Organization */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Team & Organization</p>
-            <div className="flex flex-col gap-3 pl-2">
-              <Link to="/about" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Users size={12} className="text-ares-cyan" /> Who We Are
-              </Link>
-              <Link to="/seasons" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Trophy size={12} className="text-ares-gold" /> Seasons & Legacy
-              </Link>
-              <Link to="/outreach" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Sparkles size={12} className="text-ares-red" /> Outreach & Impact
-              </Link>
-              <Link to="/gallery" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <ImageIcon size={12} className="text-ares-red" /> Photo Gallery
-              </Link>
-              <Link to="/videos" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Play size={12} className="text-ares-red" /> Video Gallery
-              </Link>
-              <Link to="/blog" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <BookOpen size={12} className="text-ares-bronze" /> Team Blog
-              </Link>
-              <Link to="/join" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Check size={12} className="text-ares-cyan" /> Join the Team
-              </Link>
-              <Link to="/calendar" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <CalendarIcon size={12} className="text-ares-red" /> Team Calendar
-              </Link>
-            </div>
-          </div>
-
-          {/* Section 2: Resources */}
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">Resources</p>
-            <div className="flex flex-col gap-3 pl-2">
-              <Link to="/tech-stack" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Cpu size={12} className="text-ares-cyan" /> Tech Stack
-              </Link>
-              <Link to="/robots" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Cpu size={12} className="text-ares-bronze" /> Robots Fleet
-              </Link>
-              <Link to="/aresplanner" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Compass size={12} className="text-ares-gold" /> ARESPlanner
-              </Link>
-              <Link to="/dashboard/scope?sim=true" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <LayoutDashboard size={12} className="text-ares-cyan" /> Robot Simulator
-              </Link>
-              <a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Layers size={12} className="text-ares-red" /> 3D Models Archive
-              </a>
-              <a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <Layers size={12} className="text-ares-gold" /> CAD Workspace
-              </a>
-              <Link to="/academy" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <GraduationCap size={12} className="text-ares-gold" /> ARES Academy
-              </Link>
-              <Link to="/docs" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <BookOpen size={12} className="text-ares-red" /> <span className="text-ares-red">ARES</span>Lib
-              </Link>
-              <Link to="/store" onClick={() => setOpen(false)} className="text-marble hover:text-ares-gold transition-colors font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <ShoppingBag size={12} className="text-ares-bronze" /> Official Store
-              </Link>
-            </div>
-          </div>
-          
-          <div className="h-px bg-white/10 my-1"></div>
-          
-          {loading ? (
-            <span className="text-xs text-marble/60">Verifying session...</span>
-          ) : isSignedIn ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                <img
-                  src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`}
-                  alt=""
-                  className="w-8 h-8 rounded-full bg-black/40 border border-ares-bronze/40"
-                />
-                <div>
-                  <p className="text-sm font-bold text-white">{user.displayName}</p>
-                  <p className="text-xs text-ares-gold font-semibold uppercase tracking-wider">{userRole}</p>
-                </div>
-              </div>
-              <Link
-                to="/dashboard"
-                onClick={() => setOpen(false)}
-                className="w-full mt-2 text-center py-2 text-xs text-white bg-white/5 hover:bg-white/10 rounded transition-colors font-bold uppercase tracking-wider border border-white/10 flex items-center justify-center gap-2 cursor-pointer relative"
-              >
-                <LayoutDashboard size={12} className="text-ares-gold" /> Command Center
-                {hasPendingInquiries && (
-                  <span className="absolute top-2 right-4 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-ares-red"></span>
-                  </span>
-                )}
-              </Link>
-              <button
-                onClick={() => {
-                  logout();
-                  setOpen(false);
-                }}
-                className="w-full mt-2 text-center py-2 text-xs text-white bg-ares-red/20 hover:bg-ares-red text-ares-danger hover:text-white rounded transition-colors font-bold uppercase tracking-wider border border-ares-red/30 cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                loginWithGoogle();
-                setOpen(false);
-              }}
-              className="w-full text-center py-3 bg-ares-red hover:bg-ares-red-dark text-white rounded transition-all font-bold uppercase tracking-widest text-xs border border-ares-bronze/20 cursor-pointer"
-            >
-              Sign In with Google
-            </button>
-          )}
-        </div>
-      )}
+      <MobileNavDrawer
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        loading={loading}
+        isSignedIn={isSignedIn}
+        user={user}
+        userRole={userRole}
+        userImage={userImage}
+        hasPendingInquiries={hasPendingInquiries}
+        logout={logout}
+        loginWithGoogle={loginWithGoogle}
+      />
     </nav>
   );
 }

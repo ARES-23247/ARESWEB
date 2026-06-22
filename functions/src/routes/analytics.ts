@@ -3,6 +3,9 @@ import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
 import { BigQuery } from "@google-cloud/bigquery";
 import { GoogleGenAI } from "@google/genai";
 import { ensureAuth, ensureAdmin } from "../middleware/auth";
+import { logger } from "../lib/logger";
+import { asyncHandler } from "../lib/utils";
+import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
@@ -249,99 +252,92 @@ function generateDeterministicReport(match: any): string {
 }
 
 // GET /api/analytics/telemetry-log
-router.get("/telemetry-log", ensureAuth, async (req, res) => {
-  try {
-    const runId = (req.query.runId as string) || "run_2026_championship_finals";
-    const gcpProject = process.env.GCP_PROJECT_ID;
+router.get("/telemetry-log", ensureAuth, asyncHandler(async (req, res) => {
+  const runId = (req.query.runId as string) || "run_2026_championship_finals";
+  const gcpProject = process.env.GCP_PROJECT_ID;
 
-    if (gcpProject) {
-      try {
-        const bigquery = new BigQuery({ projectId: gcpProject });
-        const sqlQuery = `
-          SELECT 
-            timestamp_ms as timestamp,
-            robot_x as x,
-            robot_y as y,
-            robot_heading as heading,
-            battery_voltage as battery,
-            loop_time_ms as loopTime,
-            motor_current_lf as lf,
-            motor_current_rf as rf,
-            motor_current_lr as lr,
-            motor_current_rr as rr,
-            slide_height as slideHeight,
-            slide_current as slideCurrent,
-            intake_current as intakeCurrent
-          FROM \`${gcpProject}.telemetry.runs\`
-          WHERE run_id = @runId
-          ORDER BY timestamp_ms ASC
-        `;
+  if (gcpProject) {
+    try {
+      const bigquery = new BigQuery({ projectId: gcpProject });
+      const sqlQuery = `
+        SELECT 
+          timestamp_ms as timestamp,
+          robot_x as x,
+          robot_y as y,
+          robot_heading as heading,
+          battery_voltage as battery,
+          loop_time_ms as loopTime,
+          motor_current_lf as lf,
+          motor_current_rf as rf,
+          motor_current_lr as lr,
+          motor_current_rr as rr,
+          slide_height as slideHeight,
+          slide_current as slideCurrent,
+          intake_current as intakeCurrent
+        FROM \`${gcpProject}.telemetry.runs\`
+        WHERE run_id = @runId
+        ORDER BY timestamp_ms ASC
+      `;
 
-        const options = {
-          query: sqlQuery,
-          params: { runId: runId },
+      const options = {
+        query: sqlQuery,
+        params: { runId: runId },
+      };
+
+      const [rows] = await bigquery.query(options);
+
+      if (rows && rows.length > 0) {
+        const battery = rows.map((r) => r.battery);
+        const loopTime = rows.map((r) => r.loopTime);
+        const lf = rows.map((r) => r.lf);
+        const rf = rows.map((r) => r.rf);
+        const lr = rows.map((r) => r.lr);
+        const rr = rows.map((r) => r.rr);
+        const slideHeight = rows.map((r) => r.slideHeight);
+        const slideCurrent = rows.map((r) => r.slideCurrent);
+        const intakeCurrent = rows.map((r) => r.intakeCurrent);
+
+        const channels: Record<string, number[]> = {
+          "Robot/BatteryVoltage": battery,
+          "Robot/LoopTime": loopTime,
+          "Drive/MotorPower_FL": lf,
+          "Drive/MotorPower_FR": rf,
+          "Drive/MotorPower_BL": lr,
+          "Drive/MotorPower_BR": rr,
+          "Superstructure/Elevator_Height": slideHeight,
+          "Drive/MotorCurrent_FL": slideCurrent,
+          "Drive/IntakeCurrent": intakeCurrent,
         };
 
-        const [rows] = await bigquery.query(options);
-
-        if (rows && rows.length > 0) {
-          const battery = rows.map((r) => r.battery);
-          const loopTime = rows.map((r) => r.loopTime);
-          const lf = rows.map((r) => r.lf);
-          const rf = rows.map((r) => r.rf);
-          const lr = rows.map((r) => r.lr);
-          const rr = rows.map((r) => r.rr);
-          const slideHeight = rows.map((r) => r.slideHeight);
-          const slideCurrent = rows.map((r) => r.slideCurrent);
-          const intakeCurrent = rows.map((r) => r.intakeCurrent);
-
-          const channels: Record<string, number[]> = {
-            "Robot/BatteryVoltage": battery,
-            "Robot/LoopTime": loopTime,
-            "Drive/MotorPower_FL": lf,
-            "Drive/MotorPower_FR": rf,
-            "Drive/MotorPower_BL": lr,
-            "Drive/MotorPower_BR": rr,
-            "Superstructure/Elevator_Height": slideHeight,
-            "Drive/MotorCurrent_FL": slideCurrent,
-            "Drive/IntakeCurrent": intakeCurrent,
-          };
-
-          const formattedData = {
-            runId: runId,
-            opModeName: "ARESChampionshipAutoOp",
-            timestamps: rows.map((r) => r.timestamp),
-            coords: rows.map((r) => ({ x: r.x, y: r.y, heading: r.heading })),
-            channels: channels,
-            maxTimeMs: rows[rows.length - 1].timestamp,
-          };
-          res.json(formattedData);
-          return;
-        }
-      } catch (bqErr) {
-        console.warn(`[BigQuery API] Connection error: ${bqErr}. Loading local high-fidelity seeder.`);
+        const formattedData = {
+          runId: runId,
+          opModeName: "ARESChampionshipAutoOp",
+          timestamps: rows.map((r) => r.timestamp),
+          coords: rows.map((r) => ({ x: r.x, y: r.y, heading: r.heading })),
+          channels: channels,
+          maxTimeMs: rows[rows.length - 1].timestamp,
+        };
+        res.json(formattedData);
+        return;
       }
+    } catch (bqErr) {
+      logger.warn("analytics", "BigQuery API connection error, loading local high-fidelity seeder", bqErr);
     }
-
-    const mockData = generateHighFidelityMockRun(runId);
-    res.json(mockData);
-  } catch (error: any) {
-    console.error("[BigQuery API Endpoint Error]:", error);
-    res.status(500).json({ error: "Internal server error." });
   }
-});
+
+  const mockData = generateHighFidelityMockRun(runId);
+  res.json(mockData);
+}));
 
 // POST /api/analytics/match-analysis
-router.post("/match-analysis", ensureAdmin, async (req, res) => {
-  try {
-    const { matchData } = req.body as { matchData: any };
+router.post("/match-analysis", ensureAdmin, asyncHandler(async (req, res) => {
+  const { matchData } = req.body as { matchData: any };
 
-    if (!matchData || !matchData.matchId) {
-      res.status(400).json({ error: "Missing required matchData or matchId" });
-      return;
-    }
+  if (!matchData || !matchData.matchId) {
+    throw new ApiError(400, "Missing required matchData or matchId");
+  }
 
-    const systemPrompt = `You are the Senior AI Scouting and Strategy Coach for FIRST® Tech Challenge (FTC) Robotics Team ARES 23247.
+  const systemPrompt = `You are the Senior AI Scouting and Strategy Coach for FIRST® Tech Challenge (FTC) Robotics Team ARES 23247.
 Analyze the provided match scouting data and write a highly detailed, professional, and actionable tactical strategy report in markdown.
 In your analysis, evaluate:
 1. Autonomous Performance: Assess autonomous specimen/sample placement and parking.
@@ -353,7 +349,7 @@ Ensure all references to FTC organization and team standards adhere to ARES rule
 - Always format FIRST® with the registered trademark symbol in italics.
 - Refer to our team library as ARESLib (one word, capital L).`;
 
-    const userPrompt = `Match Details:
+  const userPrompt = `Match Details:
 - Match ID: ${matchData.matchId}
 - Our Alliance Color: ${matchData.allianceColor.toUpperCase()}
 - Our Score: ${matchData.ourScore}
@@ -376,429 +372,419 @@ TeleOp Period:
 Endgame Period:
 - Ascent Level: ${matchData.endgame.ascentLevel} (Points: ${matchData.endgame.points})`;
 
-    let report = "";
-    let isVertexUsed = false;
+  let report = "";
+  let isVertexUsed = false;
 
-    const gcpProject = process.env.GCP_PROJECT_ID;
-    const gcpLocation = process.env.GCP_LOCATION || "us-central1";
+  const gcpProject = process.env.GCP_PROJECT_ID;
+  const gcpLocation = process.env.GCP_LOCATION || "us-central1";
 
-    if (gcpProject) {
-      try {
-        console.log(`[Vertex AI] Initializing GenAI in Vertex mode for project: ${gcpProject}`);
-        const ai = new GoogleGenAI({
-          vertexai: true,
-          project: gcpProject,
-          location: gcpLocation,
-        });
-
-        const response = await ai.models.generateContent({
-          model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
-          contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-        });
-
-        report = response.text || "";
-        if (report) {
-          isVertexUsed = true;
-          console.log(`[Vertex AI] Successfully compiled match analysis using GCP credits.`);
-        }
-      } catch (err) {
-        console.warn(`[Vertex AI] Vertex AI invocation failed: ${err}. Falling back.`);
-      }
-    }
-
-    if (!report) {
-      report = generateDeterministicReport(matchData);
-    }
-
+  if (gcpProject) {
     try {
-      const analysisDocRef = adminDb.collection("match_analyses").doc(matchData.matchId);
-      await analysisDocRef.set({
-        matchId: matchData.matchId,
-        matchData: matchData,
-        analysisReport: report,
-        engineUsed: isVertexUsed ? "VertexAI (GCP Credits)" : "Deterministic Rule Engine (Fallback)",
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      logger.info("analytics", `Initializing GenAI in Vertex mode for project: ${gcpProject}`);
+      const ai = new GoogleGenAI({
+        vertexai: true,
+        project: gcpProject,
+        location: gcpLocation,
       });
-      console.log(`[Firestore] Saved match analysis report to database for Match ${matchData.matchId}`);
-    } catch (firestoreErr) {
-      console.warn(`[Firestore] Failed to save match analysis to database: ${firestoreErr}`);
-    }
 
-    res.json({
-      success: true,
-      engine: isVertexUsed ? "VertexAI (GCP Credits)" : "Deterministic Rule Engine (Fallback)",
-      report: report,
-    });
-  } catch (error: any) {
-    console.error("[Match Analysis Endpoint Error]:", error);
-    res.status(500).json({ error: "Internal server error." });
+      const response = await ai.models.generateContent({
+        model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
+        contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+      });
+
+      report = response.text || "";
+      if (report) {
+        isVertexUsed = true;
+        logger.info("analytics", "Successfully compiled match analysis using GCP credits");
+      }
+    } catch (err) {
+      logger.warn("analytics", "Vertex AI invocation failed, falling back", err);
+    }
   }
-});
+
+  if (!report) {
+    report = generateDeterministicReport(matchData);
+  }
+
+  try {
+    const analysisDocRef = adminDb.collection("match_analyses").doc(matchData.matchId);
+    await analysisDocRef.set({
+      matchId: matchData.matchId,
+      matchData: matchData,
+      analysisReport: report,
+      engineUsed: isVertexUsed ? "VertexAI (GCP Credits)" : "Deterministic Rule Engine (Fallback)",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    logger.info("analytics", `Saved match analysis report to database for Match ${matchData.matchId}`);
+  } catch (firestoreErr) {
+    logger.warn("analytics", "Failed to save match analysis to database", firestoreErr);
+  }
+
+  res.json({
+    success: true,
+    engine: isVertexUsed ? "VertexAI (GCP Credits)" : "Deterministic Rule Engine (Fallback)",
+    report: report,
+  });
+}));
 
 // POST /api/analytics/onshape-sync
-router.post("/onshape-sync", ensureAdmin, async (req, res) => {
-  try {
-    const { documentId, workspaceId, elementId, type = "robot", robotId } = req.body as {
-      documentId: string;
-      workspaceId: string;
-      elementId: string;
-      type?: "robot" | "field";
-      robotId?: string;
-    };
+router.post("/onshape-sync", ensureAdmin, asyncHandler(async (req, res) => {
+  const { documentId, workspaceId, elementId, type = "robot", robotId } = req.body as {
+    documentId: string;
+    workspaceId: string;
+    elementId: string;
+    type?: "robot" | "field";
+    robotId?: string;
+  };
 
-    if (!documentId || !workspaceId || !elementId) {
-      res.status(400).json({ error: "Missing required documentId, workspaceId, or elementId" });
-      return;
-    }
+  if (!documentId || !workspaceId || !elementId) {
+    throw new ApiError(400, "Missing required documentId, workspaceId, or elementId");
+  }
 
-    let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
+  let optimizedUrl = type === "field" ? "/cad/ftc_field_2026.glb" : "/cad/robot_latest.glb";
 
-    // SCA-F01: Run Onshape sync logic and await to prevent serverless container freeze
-    await (async () => {
-      try {
-        const onshapeAccessKey = process.env.ONSHAPE_ACCESS_KEY;
-        const onshapeSecretKey = process.env.ONSHAPE_SECRET_KEY;
-        let isRealSyncUsed = false;
-        let extractedObstacleCount = 0;
+  // SCA-F01: Run Onshape sync logic and await to prevent serverless container freeze
+  await (async () => {
+    try {
+      const onshapeAccessKey = process.env.ONSHAPE_ACCESS_KEY;
+      const onshapeSecretKey = process.env.ONSHAPE_SECRET_KEY;
+      let isRealSyncUsed = false;
+      let extractedObstacleCount = 0;
 
-        let fieldYear = "2025-2026 Into The Deep";
-        if (documentId.toLowerCase() === "c7b090d255194e764d0c133c" || documentId.toLowerCase().includes("decode")) {
-          fieldYear = "2026-2027 DECODE";
-        }
+      let fieldYear = "2025-2026 Into The Deep";
+      if (documentId.toLowerCase() === "c7b090d255194e764d0c133c" || documentId.toLowerCase().includes("decode")) {
+        fieldYear = "2026-2027 DECODE";
+      }
 
-        console.log(`[Onshape Sync Async] Initiating CAD details sync in background. Type: ${type}`);
+      logger.info("analytics", `Initiating CAD details sync in background. Type: ${type}`);
 
-        if (onshapeAccessKey && onshapeSecretKey) {
+      if (onshapeAccessKey && onshapeSecretKey) {
+        try {
+          isRealSyncUsed = true;
+          const authHeader = "Basic " + Buffer.from(`${onshapeAccessKey}:${onshapeSecretKey}`).toString("base64");
+
+          // Try to fetch document name for dynamic season resolution
           try {
-            isRealSyncUsed = true;
-            const authHeader = "Basic " + Buffer.from(`${onshapeAccessKey}:${onshapeSecretKey}`).toString("base64");
-
-            // Try to fetch document name for dynamic season resolution
-            try {
-              const docRes = await fetch(`https://cad.onshape.com/api/documents/${documentId}`, {
-                headers: {
-                  "Authorization": authHeader,
-                  "Accept": "application/vnd.onshape.v1+json"
-                }
-              });
-              if (docRes.ok) {
-                const docJson = await docRes.json() as any;
-                const docName = docJson.name || "";
-                if (docName.toLowerCase().includes("decode")) {
-                  fieldYear = "2026-2027 DECODE";
-                } else if (docName.toLowerCase().includes("into the deep")) {
-                  fieldYear = "2025-2026 Into The Deep";
-                } else if (docName) {
-                  fieldYear = docName;
-                }
-              }
-            } catch (docErr) {
-              console.warn(`[Onshape Sync Async] Failed to fetch document name:`, docErr);
-            }
-
-            // 1. Trigger translation request in Onshape
-            console.log(`[Onshape Sync Async] Requesting GLTF translation...`);
-            const translateUrl = `https://cad.onshape.com/api/translations/d/${documentId}/w/${workspaceId}/e/${elementId}`;
-            const translateRes = await fetch(translateUrl, {
-              method: "POST",
+            const docRes = await fetch(`https://cad.onshape.com/api/documents/${documentId}`, {
               headers: {
                 "Authorization": authHeader,
-                "Accept": "application/vnd.onshape.v1+json",
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                formatName: "GLTF",
-                destinationName: `${type}_latest.glb`,
-                gltfVersion: "2.0",
-                storeInDocument: false
-              })
-            });
-
-            if (!translateRes.ok) {
-              throw new Error(`Onshape translation initiation failed: ${translateRes.status} ${translateRes.statusText}`);
-            }
-
-            const translateJson = await translateRes.json() as { id: string; requestState: string };
-            const translationId = translateJson.id;
-            let state = translateJson.requestState;
-
-            // 2. Poll translation status
-            console.log(`[Onshape Sync Async] Polling translation status for ID: ${translationId}`);
-            const maxPolls = 20; // 20 * 2.5s = 50 seconds max
-            let pollCount = 0;
-            while ((state === "ACTIVE" || state === "QUEUED") && pollCount < maxPolls) {
-              await new Promise((resolve) => setTimeout(resolve, 2500));
-              pollCount++;
-
-              const statusRes = await fetch(`https://cad.onshape.com/api/translations/${translationId}`, {
-                headers: {
-                  "Authorization": authHeader,
-                  "Accept": "application/vnd.onshape.v1+json"
-                }
-              });
-
-              if (statusRes.ok) {
-                const statusJson = await statusRes.json() as { requestState: string };
-                state = statusJson.requestState;
-                console.log(`[Onshape Sync Async] Poll ${pollCount}/${maxPolls}: State is ${state}`);
-              }
-            }
-
-            if (state !== "DONE") {
-              throw new Error(`Onshape translation did not complete within limit (Current state: ${state})`);
-            }
-
-            // 3. Download the translated GLB bytes
-            console.log(`[Onshape Sync Async] Downloading translation result...`);
-            const downloadUrl = `https://cad.onshape.com/api/translations/${translationId}/download`;
-            const downloadRes = await fetch(downloadUrl, {
-              headers: {
-                "Authorization": authHeader
+                "Accept": "application/vnd.onshape.v1+json"
               }
             });
-
-            if (!downloadRes.ok) {
-              throw new Error(`Failed to download translated GLB payload: ${downloadRes.statusText}`);
-            }
-
-            const arrayBuffer = await downloadRes.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-
-            // 4. Save to Firebase Storage
-            const bucket = adminStorage.bucket();
-            const fileDest = `cad/${type}_latest.glb`;
-            const file = bucket.file(fileDest);
-
-            console.log(`[Onshape Sync Async] Writing GLB to storage bucket: ${fileDest}`);
-            await file.save(buffer, {
-              metadata: {
-                contentType: "model/gltf-binary"
-              }
-            });
-
-            optimizedUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileDest)}?alt=media`;
-            console.log(`[Onshape Sync Async] Saved file successfully. URL: ${optimizedUrl}`);
-
-            // 5. If type is "field", fetch assembly definition and extract obstacles
-            if (type === "field") {
-              console.log(`[Onshape Sync Async] Fetching assembly hierarchy definition for obstacle extraction...`);
-              const assemblyUrl = `https://cad.onshape.com/api/assemblies/d/${documentId}/w/${workspaceId}/e/${elementId}?includeMateFeatures=false`;
-              const assemblyRes = await fetch(assemblyUrl, {
-                headers: {
-                  "Authorization": authHeader,
-                  "Accept": "application/vnd.onshape.v1+json"
-                }
-              });
-
-              if (assemblyRes.ok) {
-                const assemblyJson = await assemblyRes.json() as any;
-                const rootAssembly = assemblyJson.rootAssembly;
-                const subAssemblies = assemblyJson.subAssemblies || [];
-
-                const resolveInstanceName = (path: string[]): string => {
-                  let currentAssembly = rootAssembly;
-                  let name = "";
-                  for (let i = 0; i < path.length; i++) {
-                    const instId = path[i];
-                    const inst = currentAssembly.instances.find((ins: any) => ins.id === instId);
-                    if (!inst) break;
-                    name = inst.name;
-                    if (i < path.length - 1) {
-                      const subAss = subAssemblies.find((sa: any) => sa.elementId === inst.elementId);
-                      if (subAss) {
-                        currentAssembly = subAss;
-                      } else {
-                        break;
-                      }
-                    }
-                  }
-                  return name;
-                };
-
-                const parsedObstacles: any[] = [];
-                const occurrences = rootAssembly.occurrences || [];
-
-                occurrences.forEach((occ: any) => {
-                  const path = occ.path;
-                  const name = resolveInstanceName(path);
-
-                  const lowerName = name.toLowerCase();
-                  if (
-                    name &&
-                    (name.startsWith("Obstacle_") ||
-                      name.startsWith("Col_") ||
-                      name.includes("_Obstacle_") ||
-                      name.includes("_Col_") ||
-                      lowerName.includes("obstacle") ||
-                      lowerName.includes("column") ||
-                      lowerName.includes("chamber") ||
-                      lowerName.includes("basket") ||
-                      lowerName.includes("goal") ||
-                      lowerName.includes("perimeter"))
-                  ) {
-                    const transform = occ.transform;
-                    if (transform && transform.length === 16) {
-                      let tX = 0;
-                      let tY = 0;
-
-                      if (transform[15] === 1) {
-                        if (
-                          transform[12] === 0 &&
-                          transform[13] === 0 &&
-                          transform[14] === 0 &&
-                          (transform[3] !== 0 || transform[7] !== 0 || transform[11] !== 0)
-                        ) {
-                          tX = transform[3];
-                          tY = transform[7];
-                        } else {
-                          tX = transform[12];
-                          tY = transform[13];
-                        }
-                      }
-
-                      let width = 0.4;
-                      let height = 0.4;
-                      let displayName = name;
-
-                      const dimMatch = name.match(/(?:Obstacle|Col|Chamber|Basket|Goal)_([0-9.]+)[x_]([0-9.]+)(?:_(.*))?/i);
-                      if (dimMatch) {
-                        width = parseFloat(dimMatch[1]) || 0.4;
-                        height = parseFloat(dimMatch[2]) || 0.4;
-                        displayName = dimMatch[3] || name;
-                      } else {
-                        if (lowerName.includes("basket") || lowerName.includes("goal")) {
-                          width = 0.48;
-                          height = 0.48;
-                        } else if (lowerName.includes("chamber")) {
-                          width = 0.35;
-                          height = 0.10;
-                        } else if (lowerName.includes("perimeter")) {
-                          width = 3.66;
-                          height = 0.05;
-                        }
-                        displayName = name.replace(/^(Obstacle|Col|Chamber|Basket|Goal)_/i, "");
-                      }
-
-                      parsedObstacles.push({
-                        id: Math.random().toString(36).substring(2, 9),
-                        name: displayName,
-                        x: Number(tX.toFixed(3)),
-                        y: Number(tY.toFixed(3)),
-                        width: Number(width.toFixed(3)),
-                        height: Number(height.toFixed(3))
-                      });
-                    }
-                  }
-                });
-
-                extractedObstacleCount = parsedObstacles.length;
-                console.log(`[Onshape Sync Async] Parsed occurrences. Extracted ${extractedObstacleCount} obstacles.`);
-
-                if (parsedObstacles.length > 0) {
-                  const layoutId = `layout_onshape_${documentId}`;
-                  const layoutRef = adminDb.collection("field_configs").doc(layoutId);
-                  await layoutRef.set({
-                    name: `Onshape - ${documentId.substring(0, 8)}`,
-                    updatedAt: Date.now(),
-                    obstacles: parsedObstacles
-                  });
-                  console.log(`[Onshape Sync Async] Saved layout field_configs/${layoutId} with ${parsedObstacles.length} obstacles.`);
-                }
+            if (docRes.ok) {
+              const docJson = await docRes.json() as any;
+              const docName = docJson.name || "";
+              if (docName.toLowerCase().includes("decode")) {
+                fieldYear = "2026-2027 DECODE";
+              } else if (docName.toLowerCase().includes("into the deep")) {
+                fieldYear = "2025-2026 Into The Deep";
+              } else if (docName) {
+                fieldYear = docName;
               }
             }
-          } catch (err: any) {
-            console.warn(`[Onshape Sync Async] Connection failed: ${err.message}. Falling back.`);
-            isRealSyncUsed = false;
+          } catch (docErr) {
+            logger.warn("analytics", "Failed to fetch Onshape document name", docErr);
           }
+
+          // 1. Trigger translation request in Onshape
+          logger.info("analytics", "Requesting GLTF translation from Onshape");
+          const translateUrl = `https://cad.onshape.com/api/translations/d/${documentId}/w/${workspaceId}/e/${elementId}`;
+          const translateRes = await fetch(translateUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": authHeader,
+              "Accept": "application/vnd.onshape.v1+json",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              formatName: "GLTF",
+              destinationName: `${type}_latest.glb`,
+              gltfVersion: "2.0",
+              storeInDocument: false
+            })
+          });
+
+          if (!translateRes.ok) {
+            throw new Error(`Onshape translation initiation failed: ${translateRes.status} ${translateRes.statusText}`);
+          }
+
+          const translateJson = await translateRes.json() as { id: string; requestState: string };
+          const translationId = translateJson.id;
+          let state = translateJson.requestState;
+
+          // 2. Poll translation status
+          logger.info("analytics", `Polling translation status for ID: ${translationId}`);
+          const maxPolls = 20; // 20 * 2.5s = 50 seconds max
+          let pollCount = 0;
+          while ((state === "ACTIVE" || state === "QUEUED") && pollCount < maxPolls) {
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+            pollCount++;
+
+            const statusRes = await fetch(`https://cad.onshape.com/api/translations/${translationId}`, {
+              headers: {
+                "Authorization": authHeader,
+                "Accept": "application/vnd.onshape.v1+json"
+              }
+            });
+
+            if (statusRes.ok) {
+              const statusJson = await statusRes.json() as { requestState: string };
+              state = statusJson.requestState;
+              logger.info("analytics", `Poll ${pollCount}/${maxPolls}: State is ${state}`);
+            }
+          }
+
+          if (state !== "DONE") {
+            throw new Error(`Onshape translation did not complete within limit (Current state: ${state})`);
+          }
+
+          // 3. Download the translated GLB bytes
+          logger.info("analytics", "Downloading translation result");
+          const downloadUrl = `https://cad.onshape.com/api/translations/${translationId}/download`;
+          const downloadRes = await fetch(downloadUrl, {
+            headers: {
+              "Authorization": authHeader
+            }
+          });
+
+          if (!downloadRes.ok) {
+            throw new Error(`Failed to download translated GLB payload: ${downloadRes.statusText}`);
+          }
+
+          const arrayBuffer = await downloadRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          // 4. Save to Firebase Storage
+          const bucket = adminStorage.bucket();
+          const fileDest = `cad/${type}_latest.glb`;
+          const file = bucket.file(fileDest);
+
+          logger.info("analytics", `Writing GLB to storage bucket: ${fileDest}`);
+          await file.save(buffer, {
+            metadata: {
+              contentType: "model/gltf-binary"
+            }
+          });
+
+          optimizedUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileDest)}?alt=media`;
+          logger.info("analytics", `Saved file successfully. URL: ${optimizedUrl}`);
+
+          // 5. If type is "field", fetch assembly definition and extract obstacles
+          if (type === "field") {
+            logger.info("analytics", "Fetching assembly hierarchy definition for obstacle extraction");
+            const assemblyUrl = `https://cad.onshape.com/api/assemblies/d/${documentId}/w/${workspaceId}/e/${elementId}?includeMateFeatures=false`;
+            const assemblyRes = await fetch(assemblyUrl, {
+              headers: {
+                "Authorization": authHeader,
+                "Accept": "application/vnd.onshape.v1+json"
+              }
+            });
+
+            if (assemblyRes.ok) {
+              const assemblyJson = await assemblyRes.json() as any;
+              const rootAssembly = assemblyJson.rootAssembly;
+              const subAssemblies = assemblyJson.subAssemblies || [];
+
+              const resolveInstanceName = (path: string[]): string => {
+                let currentAssembly = rootAssembly;
+                let name = "";
+                for (let i = 0; i < path.length; i++) {
+                  const instId = path[i];
+                  const inst = currentAssembly.instances.find((ins: any) => ins.id === instId);
+                  if (!inst) break;
+                  name = inst.name;
+                  if (i < path.length - 1) {
+                    const subAss = subAssemblies.find((sa: any) => sa.elementId === inst.elementId);
+                    if (subAss) {
+                      currentAssembly = subAss;
+                    } else {
+                      break;
+                    }
+                  }
+                }
+                return name;
+              };
+
+              const parsedObstacles: any[] = [];
+              const occurrences = rootAssembly.occurrences || [];
+
+              occurrences.forEach((occ: any) => {
+                const path = occ.path;
+                const name = resolveInstanceName(path);
+
+                const lowerName = name.toLowerCase();
+                if (
+                  name &&
+                  (name.startsWith("Obstacle_") ||
+                    name.startsWith("Col_") ||
+                    name.includes("_Obstacle_") ||
+                    name.includes("_Col_") ||
+                    lowerName.includes("obstacle") ||
+                    lowerName.includes("column") ||
+                    lowerName.includes("chamber") ||
+                    lowerName.includes("basket") ||
+                    lowerName.includes("goal") ||
+                    lowerName.includes("perimeter"))
+                ) {
+                  const transform = occ.transform;
+                  if (transform && transform.length === 16) {
+                    let tX = 0;
+                    let tY = 0;
+
+                    if (transform[15] === 1) {
+                      if (
+                        transform[12] === 0 &&
+                        transform[13] === 0 &&
+                        transform[14] === 0 &&
+                        (transform[3] !== 0 || transform[7] !== 0 || transform[11] !== 0)
+                      ) {
+                        tX = transform[3];
+                        tY = transform[7];
+                      } else {
+                        tX = transform[12];
+                        tY = transform[13];
+                      }
+                    }
+
+                    let width = 0.4;
+                    let height = 0.4;
+                    let displayName = name;
+
+                    const dimMatch = name.match(/(?:Obstacle|Col|Chamber|Basket|Goal)_([0-9.]+)[x_]([0-9.]+)(?:_(.*))?/i);
+                    if (dimMatch) {
+                      width = parseFloat(dimMatch[1]) || 0.4;
+                      height = parseFloat(dimMatch[2]) || 0.4;
+                      displayName = dimMatch[3] || name;
+                    } else {
+                      if (lowerName.includes("basket") || lowerName.includes("goal")) {
+                        width = 0.48;
+                        height = 0.48;
+                      } else if (lowerName.includes("chamber")) {
+                        width = 0.35;
+                        height = 0.10;
+                      } else if (lowerName.includes("perimeter")) {
+                        width = 3.66;
+                        height = 0.05;
+                      }
+                      displayName = name.replace(/^(Obstacle|Col|Chamber|Basket|Goal)_/i, "");
+                    }
+
+                    parsedObstacles.push({
+                      id: Math.random().toString(36).substring(2, 9),
+                      name: displayName,
+                      x: Number(tX.toFixed(3)),
+                      y: Number(tY.toFixed(3)),
+                      width: Number(width.toFixed(3)),
+                      height: Number(height.toFixed(3))
+                    });
+                  }
+                }
+              });
+
+              extractedObstacleCount = parsedObstacles.length;
+              logger.info("analytics", `Parsed occurrences. Extracted ${extractedObstacleCount} obstacles`);
+
+              if (parsedObstacles.length > 0) {
+                const layoutId = `layout_onshape_${documentId}`;
+                const layoutRef = adminDb.collection("field_configs").doc(layoutId);
+                await layoutRef.set({
+                  name: `Onshape - ${documentId.substring(0, 8)}`,
+                  updatedAt: Date.now(),
+                  obstacles: parsedObstacles
+                });
+                logger.info("analytics", `Saved layout field_configs/${layoutId} with ${parsedObstacles.length} obstacles`);
+              }
+            }
+          }
+        } catch (err: any) {
+          logger.warn("analytics", `Onshape connection failed: ${err.message}. Falling back`);
+          isRealSyncUsed = false;
+        }
+      }
+
+      if (!isRealSyncUsed) {
+        logger.info("analytics", "Running simulation fallback sync");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
+      // Write results to Firestore
+      try {
+        const configDocName = type === "field" ? "field_config" : "cad_config";
+        const settingsRef = adminDb.collection("system_settings").doc(configDocName);
+        
+        const configData: any = {
+          documentId: documentId,
+          workspaceId: workspaceId,
+          elementId: elementId,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          optimizedUrl: optimizedUrl,
+          engineUsed: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
+          fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82)
+        };
+
+        const meta = {
+          documentId,
+          workspaceId,
+          elementId,
+          engineUsed: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
+          fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82),
+          optimizedUrl,
+          fieldYear,
+          elementCount: isRealSyncUsed ? 20 + extractedObstacleCount : 42,
+          mateBindings: type === "robot" ? [
+            { mateName: "LinearSlideMate", type: "Slider", channel: "mechanisms/slide/height" },
+            { mateName: "IntakePivotMate", type: "Revolute", channel: "mechanisms/intake/current" }
+          ] : undefined
+        };
+
+        if (type === "robot") {
+          configData.mateBindings = meta.mateBindings;
+        } else {
+          configData.fieldYear = fieldYear;
+          configData.elementCount = meta.elementCount;
         }
 
-        if (!isRealSyncUsed) {
-          console.log(`[Onshape Sync Async] Running simulation fallback sync...`);
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
+        await settingsRef.set(configData, { merge: true });
 
-        // Write results to Firestore
-        try {
-          const configDocName = type === "field" ? "field_config" : "cad_config";
-          const settingsRef = adminDb.collection("system_settings").doc(configDocName);
-          
-          const configData: any = {
-            documentId: documentId,
-            workspaceId: workspaceId,
-            elementId: elementId,
-            lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
-            optimizedUrl: optimizedUrl,
-            engineUsed: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
-            fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82)
-          };
-
-          const meta = {
+        // Update settings/field_cad globally in Firestore
+        if (type === "field") {
+          const fieldRef = adminDb.collection("settings").doc("field_cad");
+          await fieldRef.set({
             documentId,
             workspaceId,
             elementId,
-            engineUsed: isRealSyncUsed ? "Onshape Cloud-to-Cloud API" : "Compiler Simulation (Fallback)",
-            fileSizeMb: isRealSyncUsed ? (type === "field" ? 6.84 : 2.45) : (type === "field" ? 4.92 : 1.82),
-            optimizedUrl,
-            fieldYear,
-            elementCount: isRealSyncUsed ? 20 + extractedObstacleCount : 42,
-            mateBindings: type === "robot" ? [
-              { mateName: "LinearSlideMate", type: "Slider", channel: "mechanisms/slide/height" },
-              { mateName: "IntakePivotMate", type: "Revolute", channel: "mechanisms/intake/current" }
-            ] : undefined
-          };
-
-          if (type === "robot") {
-            configData.mateBindings = meta.mateBindings;
-          } else {
-            configData.fieldYear = fieldYear;
-            configData.elementCount = meta.elementCount;
-          }
-
-          await settingsRef.set(configData, { merge: true });
-
-          // Update settings/field_cad globally in Firestore
-          if (type === "field") {
-            const fieldRef = adminDb.collection("settings").doc("field_cad");
-            await fieldRef.set({
-              documentId,
-              workspaceId,
-              elementId,
-              cadUrl: optimizedUrl,
-              syncMeta: meta
-            });
-            console.log(`[Onshape Sync Async] Saved field config successfully to settings/field_cad.`);
-          }
-
-          // Update robots collection document directly if robotId is provided
-          if (type === "robot" && robotId) {
-            const robotRef = adminDb.collection("robots").doc(robotId);
-            await robotRef.set({
-              onshapeDocId: documentId,
-              onshapeWorkspaceId: workspaceId,
-              onshapeElementId: elementId,
-              onshapeUrl: `https://cad.onshape.com/documents/${documentId}/w/${workspaceId}/e/${elementId}`,
-              cadViewerUrl: optimizedUrl,
-              syncMeta: meta
-            }, { merge: true });
-            console.log(`[Onshape Sync Async] Saved robot config successfully to robots/${robotId}.`);
-          }
-        } catch (dbErr) {
-          console.warn(`[Firestore Sync Async] Failed to write CAD config: ${dbErr}`);
+            cadUrl: optimizedUrl,
+            syncMeta: meta
+          });
+          logger.info("analytics", "Saved field config successfully to settings/field_cad");
         }
-      } catch (asyncErr) {
-        console.error("[Onshape Sync Async Error]:", asyncErr);
-      }
-    })();
 
-    res.status(200).json({
-      success: true,
-      message: `Direct Onshape ${type} synchronization completed.`,
-      optimizedUrl
-    });
-  } catch (error: any) {
-    console.error("[Onshape Sync Endpoint Error]:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-});
+        // Update robots collection document directly if robotId is provided
+        if (type === "robot" && robotId) {
+          const robotRef = adminDb.collection("robots").doc(robotId);
+          await robotRef.set({
+            onshapeDocId: documentId,
+            onshapeWorkspaceId: workspaceId,
+            onshapeElementId: elementId,
+            onshapeUrl: `https://cad.onshape.com/documents/${documentId}/w/${workspaceId}/e/${elementId}`,
+            cadViewerUrl: optimizedUrl,
+            syncMeta: meta
+          }, { merge: true });
+          logger.info("analytics", `Saved robot config successfully to robots/${robotId}`);
+        }
+      } catch (dbErr) {
+        logger.warn("analytics", "Failed to write CAD config to Firestore", dbErr);
+      }
+    } catch (asyncErr) {
+      logger.error("analytics", "Onshape sync async error", asyncErr);
+    }
+  })();
+
+  res.status(200).json({
+    success: true,
+    message: `Direct Onshape ${type} synchronization completed.`,
+    optimizedUrl
+  });
+}));
 
 export default router;

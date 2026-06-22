@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { DecodedIdToken } from "firebase-admin/auth";
 import { adminAuth, adminDb } from "../lib/firebase-admin";
 
 export interface AuthenticatedRequest extends Request {
-  user?: any;
+  user?: DecodedIdToken;
 }
 
 export async function ensureAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {

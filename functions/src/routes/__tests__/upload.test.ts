@@ -111,7 +111,7 @@ describe("ensureTeamMember Middleware", () => {
 
     await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
     expect(req.user).toBeDefined();
-    expect(req.user.uid).toBe("user123");
+    expect(req.user!.uid).toBe("user123");
     expect(next).toHaveBeenCalled();
   });
 });
@@ -119,6 +119,7 @@ describe("ensureTeamMember Middleware", () => {
 describe("POST /api/upload Route Handler", () => {
   let req: any;
   let res: any;
+  let next: any;
   let statusMock: any;
   let jsonMock: any;
   let handler: any;
@@ -149,6 +150,7 @@ describe("POST /api/upload Route Handler", () => {
     res = {
       status: statusMock,
     };
+    next = vi.fn();
 
     // Find the final POST handler in uploadRouter stack
     const postRoute = uploadRouter.stack.find(
@@ -161,16 +163,20 @@ describe("POST /api/upload Route Handler", () => {
 
   it("should reject empty CSV payload with 400", async () => {
     req.body = Buffer.from("");
-    await handler(req, res);
-    expect(statusMock).toHaveBeenCalledWith(400);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Empty CSV data uploaded." });
+    await handler(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err.status).toBe(400);
+    expect(err.message).toBe("Empty CSV data uploaded.");
   });
 
   it("should reject invalid CSV format (no data rows) with 400", async () => {
     req.body = Buffer.from("header_only\n");
-    await handler(req, res);
-    expect(statusMock).toHaveBeenCalledWith(400);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Invalid CSV format: requires header and data." });
+    await handler(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const err = next.mock.calls[0][0];
+    expect(err.status).toBe(400);
+    expect(err.message).toBe("Invalid CSV format: requires header and data.");
   });
 
   it("should process and upload CSV successfully", async () => {

@@ -154,10 +154,10 @@ service cloud.firestore {
       allow write: if isAuthorized();
     }
 
-    // settings
+    // settings (admin-only writes)
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if hasRole('admin');
     }
 
     // system_settings (secure credentials read-only for authorized members)
@@ -201,11 +201,6 @@ service cloud.firestore {
       allow write: if isAuthorized();
     }
 
-    // outreach_logs
-    match /outreach_logs/{logId} {
-      allow read: if true;
-      allow write: if isAuthorized();
-    }
 
     // finance_transactions
     match /finance_transactions/{txId} {

@@ -1,5 +1,6 @@
 import { adminDb } from "./firebase-admin";
 import { decrypt } from "./crypto";
+import { logger } from "./logger";
 
 /**
  * Retrieves a fresh temporary access token from Google using the stored team refresh token in Firestore.
@@ -18,7 +19,7 @@ let tokenExpiresAt: number | null = null; // timestamp in ms
 
 export async function getGooglePhotosAccessToken(): Promise<string> {
   if (cachedAccessToken && tokenExpiresAt && Date.now() < tokenExpiresAt - 30000) {
-    console.log("[Google Auth] Using cached team access token...");
+    logger.info("googleAuth", "Using cached team access token");
     return cachedAccessToken;
   }
 
@@ -47,7 +48,7 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
     throw new Error("Failed to decrypt Google Auth credentials. Verify your ENCRYPTION_SECRET configuration.");
   }
 
-  console.log("[Google Auth] Refreshing team access token...");
+  logger.info("googleAuth", "Refreshing team access token");
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -61,7 +62,7 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[Google Auth] Token refresh request failed:", errorText);
+    logger.error("googleAuth", "Token refresh request failed", errorText);
     throw new Error(`Google token refresh failed: ${errorText}`);
   }
 
@@ -75,6 +76,6 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
   cachedAccessToken = data.access_token;
   tokenExpiresAt = Date.now() + (data.expires_in * 1000);
 
-  console.log("[Google Auth] Access token refreshed successfully.");
+  logger.info("googleAuth", "Access token refreshed successfully");
   return data.access_token;
 }

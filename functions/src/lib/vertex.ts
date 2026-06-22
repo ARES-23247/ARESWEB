@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { logger } from "./logger";
 
 interface TelemetrySummary {
   runId: string;
@@ -24,7 +25,7 @@ if (process.env.FUNCTIONS_EMULATOR === "true" && useVertex) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     const defaultCredentialsPath = "C:\\Users\\david\\AppData\\Roaming\\gcloud\\application_default_credentials.json";
     process.env.GOOGLE_APPLICATION_CREDENTIALS = defaultCredentialsPath;
-    console.log(`[Vertex AI Emulator Support] Injected GOOGLE_APPLICATION_CREDENTIALS path: ${defaultCredentialsPath}`);
+    logger.info("vertex", `Injected GOOGLE_APPLICATION_CREDENTIALS path: ${defaultCredentialsPath}`);
   }
 }
 
@@ -87,7 +88,7 @@ Ensure that all team and organizational references follow the ARES branding guid
     return report;
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.warn(`[Vertex AI] Gemini diagnostics offline/failed: ${errorMsg}. Invoking local seeder fallback.`);
+    logger.warn("vertex", `Gemini diagnostics offline/failed: ${errorMsg}. Invoking local seeder fallback.`);
     
     // Deterministic Rule-Based Fallback Engine (Zero-Downtime Guarantee)
     return generateDeterministicReport(summary);
@@ -237,7 +238,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     
     return JSON.parse(resultText) as GrammarCheckResult;
   } catch (err) {
-    console.warn(`[Vertex AI] Grammar check failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    logger.warn("vertex", `Grammar check failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
     const edits: Array<{ original: string; corrected: string; explanation: string }> = [];
     let correctedText = text;
     
@@ -289,7 +290,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
     
     return assistanceText;
   } catch (err) {
-    console.warn(`[Vertex AI] AI assistance failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    logger.warn("vertex", `AI assistance failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
     return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
   }
 }
@@ -341,7 +342,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     
     return JSON.parse(resultText) as { caption: string; labels: string[] };
   } catch (err) {
-    console.warn(`[Vertex AI] Photo analysis failed: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
+    logger.warn("vertex", `Photo analysis failed: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
     return {
       caption: "ARES robotics team members working on robot assemblies.",
       labels: ["robot", "ares-team", "workspace"]
@@ -396,7 +397,7 @@ export async function getSimulationPlaygroundStream(
       }
     }
   } catch (err) {
-    console.error("[Vertex AI] Simulation playground streaming failed:", err);
+    logger.error("vertex", "Simulation playground streaming failed", err);
     throw err;
   }
 }

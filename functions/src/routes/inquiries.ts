@@ -6,6 +6,7 @@ import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { logger } from "../lib/logger";
 
 const router = express.Router();
 
@@ -48,7 +49,7 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
     nameTrim.includes("Playwright E2E Test");
 
   if (isTestData) {
-    console.log(`[POST /api/inquiries] Intercepted E2E test inquiry (Type: ${type}, Name: ${nameTrim}, Email: ${emailLower}). Bypassing Firestore database write.`);
+    logger.info("inquiries", `Intercepted E2E test inquiry (Type: ${type}, Name: ${nameTrim}, Email: ${emailLower}). Bypassing Firestore database write.`);
     res.json({
       success: true,
       message: "Application submitted successfully.",
@@ -64,7 +65,7 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
   if (!isBypass) {
     const secretKey = process.env.RECAPTCHA_SECRET_KEY;
     if (!secretKey) {
-      console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY is missing, bypassing verification.");
+      logger.warn("inquiries", "RECAPTCHA_SECRET_KEY is missing, bypassing verification");
     } else {
       const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
         method: "POST",
@@ -112,7 +113,7 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
     // Await Zulip Sync
     await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
   } catch (e) {
-    console.error("[Zulip Inquiries Alert] error:", e);
+    logger.error("inquiries", "Zulip alert failed for inquiry submission", e);
   }
 
   res.json({
@@ -244,7 +245,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     targetId = authUser.uid;
   } catch (err: any) {
     if (err.code !== "auth/user-not-found") {
-      console.error("[Inquiry Approve] Firebase Auth lookup error:", err);
+      logger.error("inquiries", "Firebase Auth lookup error during account approval", err);
     }
   }
 
