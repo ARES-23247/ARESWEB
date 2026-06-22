@@ -29,7 +29,16 @@ import VariablesTuner from "./components/VariablesTuner";
 
 // Custom Hooks
 import { useNT4Client } from "./hooks/useNT4Client";
-import { useScopeLayout, LayoutItem } from "./hooks/useScopeLayout";
+import { 
+  useScopeLayout, 
+  LayoutItem, 
+  ChartConfig, 
+  DashboardPreset,
+  migrateLayoutCoordinates 
+} from "./hooks/useScopeLayout";
+
+export { migrateLayoutCoordinates };
+export type { LayoutItem, ChartConfig, DashboardPreset };
 
 // Subcomponents
 import ScopeHeader from "./components/ScopeHeader";
@@ -96,6 +105,7 @@ export default function ScopeDashboard() {
     savingPreset,
     isMobile,
     editingCardId,
+    setEditingCardId,
     editingTitleText,
     setEditingTitleText,
     handleAddWidget,
