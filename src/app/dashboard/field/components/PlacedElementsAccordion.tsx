@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Activity, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { FieldElementInstance, ElementType } from "./FieldCanvas";
+import { FieldElementInstance, ElementType } from "../types";
 
 interface PlacedElementsAccordionProps {
   isPlacedElementsExpanded: boolean;

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Grid, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { ElementType } from "./FieldCanvas";
+import { ElementType } from "../types";
 
 interface ElementCatalogAccordionProps {
   isElementCatalogExpanded: boolean;

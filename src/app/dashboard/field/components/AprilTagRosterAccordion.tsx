@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Compass, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { FieldAprilTag } from "./FieldCanvas";
+import { FieldAprilTag } from "../types";
 
 interface AprilTagRosterAccordionProps {
   isTagsExpanded: boolean;

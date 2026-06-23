@@ -27,12 +27,13 @@ import {
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 
-import FieldCanvas, { 
+import FieldCanvas from "./components/FieldCanvas";
+import { 
   FieldObstacle, 
   ElementType, 
   FieldElementInstance, 
   FieldAprilTag 
-} from "./components/FieldCanvas";
+} from "./types";
 import CropModal from "./components/CropModal";
 import { useFieldLoader } from "./hooks/useFieldLoader";
 import DriverStationCard from "./components/DriverStationCard";

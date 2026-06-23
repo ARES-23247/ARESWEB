@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Activity, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { FieldObstacle } from "./FieldCanvas";
+import { FieldObstacle } from "../types";
 
 interface ObstaclesListAccordionProps {
   isObstaclesExpanded: boolean;
