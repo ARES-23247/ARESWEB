@@ -8,7 +8,10 @@
     "preview": "vite preview",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@babel/standalone": "^8.0.2",
@@ -44,6 +47,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
+    "@tauri-apps/cli": "^2.11.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
