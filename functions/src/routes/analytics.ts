@@ -2,13 +2,15 @@ import express from "express";
 import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
 import { BigQuery } from "@google-cloud/bigquery";
 import { GoogleGenAI } from "@google/genai";
-import { ensureAuth, ensureAdmin } from "../middleware/auth";
+import { ensureTeamMember, ensureAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
-const bigquery = new BigQuery({ projectId: process.env.GCP_PROJECT_ID || "aresfirst-portal" });
+const gcpProjectId = process.env.GCP_PROJECT_ID;
+if (!gcpProjectId) throw new Error("GCP_PROJECT_ID environment variable is missing.");
+const bigquery = new BigQuery({ projectId: gcpProjectId });
 
 // Helper to generate mock telemetry runs
 function generateHighFidelityMockRun(runId: string) {
@@ -158,12 +160,12 @@ function generateHighFidelityMockRun(runId: string) {
   const channels: Record<string, number[]> = {
     "Robot/BatteryVoltage": battery,
     "Robot/LoopTime": loopTime,
-    "Drive/MotorPower_FL": motors.lf,
-    "Drive/MotorPower_FR": motors.rf,
-    "Drive/MotorPower_BL": motors.lr,
-    "Drive/MotorPower_BR": motors.rr,
+    "Drive/MotorCurrent_FL": motors.lf,
+    "Drive/MotorCurrent_FR": motors.rf,
+    "Drive/MotorCurrent_BL": motors.lr,
+    "Drive/MotorCurrent_BR": motors.rr,
     "Superstructure/Elevator_Height": slides.height,
-    "Drive/MotorCurrent_FL": slides.current,
+    "Superstructure/Elevator_Current": slides.current,
     "Drive/IntakeCurrent": intake.current,
   };
 
@@ -174,6 +176,8 @@ function generateHighFidelityMockRun(runId: string) {
     coords: coords,
     channels: channels,
     maxTimeMs: timestamps[timestamps.length - 1],
+    source: "mock" as const,
+    coordinateSystem: "inches" as const,
   };
 }
 
@@ -253,14 +257,119 @@ function generateDeterministicReport(match: any): string {
 }
 
 // GET /api/analytics/telemetry-log
-router.get("/telemetry-log", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/telemetry-log", ensureTeamMember, asyncHandler(async (req, res) => {
   const runId = (req.query.runId as string) || "run_2026_championship_finals";
   const gcpProject = process.env.GCP_PROJECT_ID;
+  if (!gcpProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
 
   if (gcpProject) {
     try {
-      const bigquery = new BigQuery({ projectId: gcpProject });
-      const sqlQuery = `
+
+      // Primary path: query robot_states (populated by FullStateLogger + CloudExporter)
+      const statesQuery = `
+        SELECT 
+          timestamp_ms as timestamp,
+          CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.x') AS FLOAT64) as x,
+          CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.y') AS FLOAT64) as y,
+          CAST(JSON_VALUE(state_json, '$.drive.poseEstimator.estimatedPose.heading.radians') AS FLOAT64) as heading,
+          CAST(JSON_VALUE(state_json, '$.drive.ekfDriftX') AS FLOAT64) as ekf_drift_x,
+          CAST(JSON_VALUE(state_json, '$.drive.ekfDriftY') AS FLOAT64) as ekf_drift_y,
+          CAST(JSON_VALUE(state_json, '$.drive.pitchDegrees') AS FLOAT64) as pitch,
+          CAST(JSON_VALUE(state_json, '$.drive.rollDegrees') AS FLOAT64) as roll
+        FROM \`${gcpProject}.telemetry.robot_states\`
+        WHERE run_id = @runId
+        ORDER BY timestamp_ms ASC
+      `;
+
+      const [stateRows] = await bigquery.query({
+        query: statesQuery,
+        params: { runId },
+      });
+
+      if (stateRows && stateRows.length > 0) {
+        // Query motor telemetry for this run and pivot into per-timestamp channels
+        const motorQuery = `
+          SELECT timestamp_ms, motor_id, current, voltage
+          FROM \`${gcpProject}.telemetry.motor_telemetry\`
+          WHERE run_id = @runId
+          ORDER BY timestamp_ms ASC
+        `;
+
+        let motorMap: Map<number, Record<string, { current: number; voltage: number }>> = new Map();
+        try {
+          const [motorRows] = await bigquery.query({
+            query: motorQuery,
+            params: { runId },
+          });
+
+          // Build a map: timestamp_ms → { motor_id → { current, voltage } }
+          for (const row of motorRows) {
+            const ts = Number(row.timestamp_ms);
+            if (!motorMap.has(ts)) {
+              motorMap.set(ts, {});
+            }
+            motorMap.get(ts)![row.motor_id] = {
+              current: row.current || 0,
+              voltage: row.voltage || 0,
+            };
+          }
+        } catch (motorErr) {
+          logger.warn("analytics", "Could not load motor_telemetry, continuing with states only", motorErr);
+        }
+
+        // Discover all unique motor IDs across the dataset
+        const allMotorIds = new Set<string>();
+        for (const motors of motorMap.values()) {
+          for (const id of Object.keys(motors)) {
+            allMotorIds.add(id);
+          }
+        }
+
+        // Build channel arrays aligned to state timestamps
+        const timestamps = stateRows.map((r: any) => r.timestamp);
+        const coords = stateRows.map((r: any) => ({
+          x: r.x || 0,
+          y: r.y || 0,
+          heading: r.heading || 0,
+        }));
+
+        const channels: Record<string, number[]> = {
+          "Drive/EKF_Drift_X": stateRows.map((r: any) => r.ekf_drift_x || 0),
+          "Drive/EKF_Drift_Y": stateRows.map((r: any) => r.ekf_drift_y || 0),
+          "Drive/Pitch_Degrees": stateRows.map((r: any) => r.pitch || 0),
+          "Drive/Roll_Degrees": stateRows.map((r: any) => r.roll || 0),
+        };
+
+        // Add per-motor current and voltage channels
+        for (const motorId of allMotorIds) {
+          const currentKey = `Motor/${motorId}/Current`;
+          const voltageKey = `Motor/${motorId}/Voltage`;
+          channels[currentKey] = [];
+          channels[voltageKey] = [];
+          for (const ts of timestamps) {
+            const motors = motorMap.get(ts);
+            const motor = motors?.[motorId];
+            channels[currentKey].push(motor?.current || 0);
+            channels[voltageKey].push(motor?.voltage || 0);
+          }
+        }
+
+        const formattedData = {
+          runId,
+          opModeName: "ARESLiveRun",
+          timestamps,
+          coords,
+          channels,
+          maxTimeMs: timestamps[timestamps.length - 1],
+          source: "bigquery" as const,
+          coordinateSystem: "meters" as const,
+        };
+        res.json(formattedData);
+        return;
+      }
+
+      // Fallback: try legacy runs_raw table (for data uploaded via old flat CSV pipeline)
+      const legacyQuery = `
         SELECT 
           timestamp_ms as timestamp,
           pinpoint_x as x,
@@ -271,52 +380,40 @@ router.get("/telemetry-log", ensureAuth, asyncHandler(async (req, res) => {
           motor_lf_current as lf,
           motor_rf_current as rf,
           motor_lr_current as lr,
-          motor_rr_current as rr,
-          CAST(NULL AS FLOAT64) as slideHeight,
-          CAST(NULL AS FLOAT64) as slideCurrent,
-          CAST(NULL AS FLOAT64) as intakeCurrent
+          motor_rr_current as rr
         FROM \`${gcpProject}.telemetry.runs_raw\`
         WHERE run_id = @runId
         ORDER BY timestamp_ms ASC
       `;
 
-      const options = {
-        query: sqlQuery,
-        params: { runId: runId },
-      };
+      const [legacyRows] = await bigquery.query({
+        query: legacyQuery,
+        params: { runId },
+      });
 
-      const [rows] = await bigquery.query(options);
-
-      if (rows && rows.length > 0) {
-        const battery = rows.map((r) => r.battery);
-        const loopTime = rows.map((r) => r.loopTime);
-        const lf = rows.map((r) => r.lf);
-        const rf = rows.map((r) => r.rf);
-        const lr = rows.map((r) => r.lr);
-        const rr = rows.map((r) => r.rr);
-        const slideHeight = rows.map((r) => r.slideHeight);
-        const slideCurrent = rows.map((r) => r.slideCurrent);
-        const intakeCurrent = rows.map((r) => r.intakeCurrent);
-
+      if (legacyRows && legacyRows.length > 0) {
         const channels: Record<string, number[]> = {
-          "Robot/BatteryVoltage": battery,
-          "Robot/LoopTime": loopTime,
-          "Drive/MotorPower_FL": lf,
-          "Drive/MotorPower_FR": rf,
-          "Drive/MotorPower_BL": lr,
-          "Drive/MotorPower_BR": rr,
-          "Superstructure/Elevator_Height": slideHeight,
-          "Drive/MotorCurrent_FL": slideCurrent,
-          "Drive/IntakeCurrent": intakeCurrent,
+          "Robot/BatteryVoltage": legacyRows.map((r: any) => r.battery),
+          "Robot/LoopTime": legacyRows.map((r: any) => r.loopTime),
+          "Motor/leftFront/Current": legacyRows.map((r: any) => r.lf),
+          "Motor/rightFront/Current": legacyRows.map((r: any) => r.rf),
+          "Motor/leftRear/Current": legacyRows.map((r: any) => r.lr),
+          "Motor/rightRear/Current": legacyRows.map((r: any) => r.rr),
         };
 
         const formattedData = {
-          runId: runId,
-          opModeName: "ARESChampionshipAutoOp",
-          timestamps: rows.map((r) => r.timestamp),
-          coords: rows.map((r) => ({ x: r.x, y: r.y, heading: r.heading })),
-          channels: channels,
-          maxTimeMs: rows[rows.length - 1].timestamp,
+          runId,
+          opModeName: "ARESLegacyRun",
+          timestamps: legacyRows.map((r: any) => r.timestamp),
+          coords: legacyRows.map((r: any) => ({
+            x: r.x,
+            y: r.y,
+            heading: r.heading,
+          })),
+          channels,
+          maxTimeMs: legacyRows[legacyRows.length - 1].timestamp,
+          source: "legacy" as const,
+          coordinateSystem: "inches" as const,
         };
         res.json(formattedData);
         return;
@@ -327,7 +424,7 @@ router.get("/telemetry-log", ensureAuth, asyncHandler(async (req, res) => {
   }
 
   const mockData = generateHighFidelityMockRun(runId);
-  res.json(mockData);
+  res.json({ ...mockData, source: "mock", coordinateSystem: "inches" });
 }));
 
 // POST /api/analytics/match-analysis
@@ -789,7 +886,7 @@ router.post("/onshape-sync", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/analytics/match-comparison
-router.get("/match-comparison", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/match-comparison", ensureTeamMember, asyncHandler(async (req, res) => {
   const runId1 = req.query.runId1 as string;
   const runId2 = req.query.runId2 as string;
   if (!runId1 || !runId2) {
@@ -815,6 +912,7 @@ router.get("/match-comparison", ensureAuth, asyncHandler(async (req, res) => {
       FROM \`telemetry.robot_states\`
       WHERE run_id IN (@runId1, @runId2)
       ORDER BY timestamp_ms ASC
+      LIMIT 10000
     `;
     const [stateRows] = await bigquery.query({
       query: qStates,
@@ -831,7 +929,7 @@ router.get("/match-comparison", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/analytics/trends
-router.get("/trends", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/trends", ensureTeamMember, asyncHandler(async (req, res) => {
   try {
     const query = `
       SELECT run_id, robot_id, MIN(timestamp_ms) as start_time,
@@ -852,7 +950,7 @@ router.get("/trends", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/analytics/path-analysis
-router.get("/path-analysis", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/path-analysis", ensureTeamMember, asyncHandler(async (req, res) => {
   const runId = req.query.runId as string;
   if (!runId) {
     throw new ApiError(400, "Missing runId parameter");
@@ -869,6 +967,7 @@ router.get("/path-analysis", ensureAuth, asyncHandler(async (req, res) => {
       FROM \`telemetry.robot_states\`
       WHERE run_id = @runId
       ORDER BY timestamp_ms ASC
+      LIMIT 10000
     `;
     const [rows] = await bigquery.query({
       query,
@@ -881,7 +980,7 @@ router.get("/path-analysis", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/analytics/subsystem-health
-router.get("/subsystem-health", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/subsystem-health", ensureTeamMember, asyncHandler(async (req, res) => {
   const runId = req.query.runId as string;
   if (!runId) {
     throw new ApiError(400, "Missing runId parameter");
@@ -906,6 +1005,7 @@ router.get("/subsystem-health", ensureAuth, asyncHandler(async (req, res) => {
       FROM \`telemetry.robot_states\`
       WHERE run_id = @runId
       ORDER BY timestamp_ms ASC
+      LIMIT 10000
     `;
     const [states] = await bigquery.query({
       query: stateQuery,
@@ -919,7 +1019,7 @@ router.get("/subsystem-health", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/analytics/vision-quality
-router.get("/vision-quality", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/vision-quality", ensureTeamMember, asyncHandler(async (req, res) => {
   const runId = req.query.runId as string;
   if (!runId) {
     throw new ApiError(400, "Missing runId parameter");

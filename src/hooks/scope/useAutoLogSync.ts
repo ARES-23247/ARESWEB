@@ -20,7 +20,7 @@ interface AutoSyncState {
 /**
  * Determines the correct upload sub-endpoint based on log filename prefix.
  */
-function getUploadRoute(fileName: string): string {
+export function getUploadRoute(fileName: string): string {
   if (fileName.startsWith("state_log_")) return "/api/upload/states";
   if (fileName.startsWith("action_log_")) return "/api/upload/actions";
   if (fileName.startsWith("input_log_")) return "/api/upload/inputs";

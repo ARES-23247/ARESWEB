@@ -4,6 +4,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { ensureTeamMember } from "../middleware/auth";
+import { logger } from "../lib/logger";
 
 const router = express.Router();
 const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
@@ -24,7 +25,7 @@ router.get("/:runId/summary", ensureTeamMember, asyncHandler(async (req, res) =>
   try {
     const query = `
       SELECT MIN(timestamp_ms) as startTime, MAX(timestamp_ms) as endTime, COUNT(*) as ticks, robot_id, match_number, alliance
-      FROM \`telemetry.robot_states\`
+      FROM \`${bqProject}.telemetry.robot_states\`
       WHERE run_id = @runId
       GROUP BY robot_id, match_number, alliance
     `;
@@ -62,7 +63,7 @@ router.get("/:runId/states", ensureTeamMember, asyncHandler(async (req, res) => 
 
   try {
     const query = `
-      SELECT state_json, tick_index, timestamp_ms FROM \`telemetry.robot_states\`
+      SELECT state_json, tick_index, timestamp_ms FROM \`${bqProject}.telemetry.robot_states\`
       WHERE run_id = @runId
       AND tick_index >= @start AND tick_index <= @end
       ORDER BY tick_index ASC
@@ -72,7 +73,15 @@ router.get("/:runId/states", ensureTeamMember, asyncHandler(async (req, res) => 
       params: { runId, start, end }
     });
     
-    const states = rows.map(r => JSON.parse(r.state_json));
+    const states: any[] = [];
+    for (const r of rows) {
+      try {
+        states.push(JSON.parse(r.state_json));
+      } catch (parseErr) {
+        logger.warn("replay", `Skipping row with invalid state_json at tick ${r.tick_index}`, parseErr);
+        continue;
+      }
+    }
     res.status(200).json(states);
   } catch (err: any) {
     throw new ApiError(500, `Failed to query states: ${err.message}`);
@@ -84,20 +93,29 @@ router.get("/:runId/actions", ensureTeamMember, asyncHandler(async (req, res) =>
   const { runId } = req.params;
   try {
     const query = `
-      SELECT action_type, payload_json, timestamp_us FROM \`telemetry.robot_actions\`
+      SELECT action_type, payload_json, timestamp_us FROM \`${bqProject}.telemetry.robot_actions\`
       WHERE run_id = @runId
       ORDER BY timestamp_us ASC
+      LIMIT 10000
     `;
     const [rows] = await bigquery.query({
       query,
       params: { runId }
     });
 
-    const actions = rows.map(r => ({
-      type: r.action_type,
-      timestampUs: r.timestamp_us,
-      payload: JSON.parse(r.payload_json)
-    }));
+    const actions: any[] = [];
+    for (const r of rows) {
+      try {
+        actions.push({
+          type: r.action_type,
+          timestampUs: r.timestamp_us,
+          payload: JSON.parse(r.payload_json),
+        });
+      } catch (parseErr) {
+        logger.warn("replay", `Skipping action row with invalid payload_json (type=${r.action_type})`, parseErr);
+        continue;
+      }
+    }
     res.status(200).json(actions);
   } catch (err: any) {
     throw new ApiError(500, `Failed to query actions: ${err.message}`);
@@ -111,9 +129,10 @@ router.get("/:runId/inputs", ensureTeamMember, asyncHandler(async (req, res) => 
   try {
     const query = `
       SELECT timestamp_ms, odometry_json, imu_json, vision_json, swerve_json, run_id, robot_id
-      FROM \`telemetry.robot_inputs\`
+      FROM \`${bqProject}.telemetry.robot_inputs\`
       WHERE run_id = @runId
       ORDER BY timestamp_ms ASC
+      LIMIT 10000
     `;
     const [rows] = await bigquery.query({
       query,
@@ -124,16 +143,21 @@ router.get("/:runId/inputs", ensureTeamMember, asyncHandler(async (req, res) => 
     res.setHeader("Transfer-Encoding", "chunked");
 
     for (const row of rows) {
-      const frame = {
-        runId: row.run_id,
-        robotId: row.robot_id,
-        timestampMs: row.timestamp_ms,
-        odometryInputs: JSON.parse(row.odometry_json || "{}"),
-        imuInputs: JSON.parse(row.imu_json || "{}"),
-        visionInputs: JSON.parse(row.vision_json || "{}"),
-        swerveInputs: JSON.parse(row.swerve_json || "[]")
-      };
-      res.write(JSON.stringify(frame) + "\n");
+      try {
+        const frame = {
+          runId: row.run_id,
+          robotId: row.robot_id,
+          timestampMs: row.timestamp_ms,
+          odometryInputs: JSON.parse(row.odometry_json || "{}"),
+          imuInputs: JSON.parse(row.imu_json || "{}"),
+          visionInputs: JSON.parse(row.vision_json || "{}"),
+          swerveInputs: JSON.parse(row.swerve_json || "[]")
+        };
+        res.write(JSON.stringify(frame) + "\n");
+      } catch (parseErr) {
+        logger.warn("replay", `Skipping input row with invalid JSON at timestamp ${row.timestamp_ms}`, parseErr);
+        continue;
+      }
     }
     res.end();
   } catch (err: any) {
@@ -148,7 +172,7 @@ router.get("/:runId/motors", ensureTeamMember, asyncHandler(async (req, res) => 
   try {
     let query = `
       SELECT timestamp_ms, motor_id, voltage, current, temperature, position, velocity
-      FROM \`telemetry.motor_telemetry\`
+      FROM \`${bqProject}.telemetry.motor_telemetry\`
       WHERE run_id = @runId
     `;
     const params: any = { runId };
@@ -158,7 +182,7 @@ router.get("/:runId/motors", ensureTeamMember, asyncHandler(async (req, res) => 
       params.motorId = motorId;
     }
     
-    query += " ORDER BY timestamp_ms ASC";
+    query += " ORDER BY timestamp_ms ASC LIMIT 10000";
 
     const [rows] = await bigquery.query({ query, params });
     res.status(200).json(rows);
@@ -173,24 +197,33 @@ router.get("/:runId/vision", ensureTeamMember, asyncHandler(async (req, res) => 
   try {
     const query = `
       SELECT timestamp_ms, tag_id, camera_id, raw_pose_json, accepted, rejection_reason, covariance_json
-      FROM \`telemetry.vision_events\`
+      FROM \`${bqProject}.telemetry.vision_events\`
       WHERE run_id = @runId
       ORDER BY timestamp_ms ASC
+      LIMIT 10000
     `;
     const [rows] = await bigquery.query({
       query,
       params: { runId }
     });
 
-    const events = rows.map(r => ({
-      timestampMs: r.timestamp_ms,
-      tagId: r.tag_id,
-      cameraId: r.camera_id,
-      rawPose: JSON.parse(r.raw_pose_json || "{}"),
-      accepted: r.accepted,
-      rejectionReason: r.rejection_reason,
-      covariance: JSON.parse(r.covariance_json || "{}")
-    }));
+    const events: any[] = [];
+    for (const r of rows) {
+      try {
+        events.push({
+          timestampMs: r.timestamp_ms,
+          tagId: r.tag_id,
+          cameraId: r.camera_id,
+          rawPose: JSON.parse(r.raw_pose_json || "{}"),
+          accepted: r.accepted,
+          rejectionReason: r.rejection_reason,
+          covariance: JSON.parse(r.covariance_json || "{}"),
+        });
+      } catch (parseErr) {
+        logger.warn("replay", `Skipping vision row with invalid JSON at timestamp ${r.timestamp_ms}`, parseErr);
+        continue;
+      }
+    }
     res.status(200).json(events);
   } catch (err: any) {
     throw new ApiError(500, `Failed to query vision events: ${err.message}`);

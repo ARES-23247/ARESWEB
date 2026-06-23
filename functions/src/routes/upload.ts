@@ -164,7 +164,8 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
 
       // 2. BigQuery logging
       try {
-        const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+        const bqProject = process.env.GCP_PROJECT_ID;
+        if (!bqProject) throw new Error("GCP_PROJECT_ID missing");
         const bigquery = new BigQuery({ projectId: bqProject });
         const bqRows = dataRows.map(row => ({
           run_id: runId,
@@ -188,6 +189,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
       } catch (err) {
         bqSuccess = false;
         logger.error("upload", `BigQuery streaming failed: ${(err as Error).message}`);
+        throw new Error(`BigQuery streaming failed: ${(err as Error).message}`);
       }
 
       // 3. Gemini analysis
@@ -209,6 +211,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
       logger.info("upload", `Telemetry runs and diagnostic report saved for ${runId}`);
     } catch (bgErr) {
       logger.error("upload", "Telemetry ingestion background error", bgErr);
+      throw bgErr; // Ensure error propagates to client so it's not silently lost
     }
   })();
 
@@ -319,7 +322,8 @@ router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+  const bqProject = process.env.GCP_PROJECT_ID;
+  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_states", robotStatesSchema);
   
@@ -356,7 +360,8 @@ router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+  const bqProject = process.env.GCP_PROJECT_ID;
+  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_actions", robotActionsSchema);
   
@@ -394,7 +399,8 @@ router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+  const bqProject = process.env.GCP_PROJECT_ID;
+  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "robot_inputs", robotInputsSchema);
   
@@ -432,7 +438,8 @@ router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "Invalid CSV format: requires header and data.");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+  const bqProject = process.env.GCP_PROJECT_ID;
+  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "motor_telemetry", motorTelemetrySchema);
   
@@ -470,7 +477,8 @@ router.post("/vision", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID || "aresfirst-portal";
+  const bqProject = process.env.GCP_PROJECT_ID;
+  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
   const bigquery = new BigQuery({ projectId: bqProject });
   await ensureTableExists(bigquery, "telemetry", "vision_events", visionEventsSchema);
   

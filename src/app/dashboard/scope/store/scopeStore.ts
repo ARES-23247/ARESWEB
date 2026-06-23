@@ -153,7 +153,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
         "Drive/MotorPower_BL": legacy.motors?.lr || [],
         "Drive/MotorPower_BR": legacy.motors?.rr || [],
         "Superstructure/Elevator_Height": legacy.slides?.height || [],
-        "Drive/MotorCurrent_FL": legacy.slides?.current || [],
+        "Superstructure/Elevator_Current": legacy.slides?.current || [],
         "Drive/IntakeCurrent": legacy.intake?.current || [],
       };
     }
@@ -174,7 +174,7 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
         "Drive/MotorPower_BL": legacy.motors?.lr || [],
         "Drive/MotorPower_BR": legacy.motors?.rr || [],
         "Superstructure/Elevator_Height": legacy.slides?.height || [],
-        "Drive/MotorCurrent_FL": legacy.slides?.current || [],
+        "Superstructure/Elevator_Current": legacy.slides?.current || [],
         "Drive/IntakeCurrent": legacy.intake?.current || [],
       };
     }
@@ -213,40 +213,36 @@ export const useScopeStore = create<ScopeState>((set, get) => ({
 
     const maxBufferSize = 300; // ~6 seconds rolling buffer at 50Hz
     
-    const nextTimestamps = [...currentData.timestamps, frame.timestamp];
-    const nextCoords = [...currentData.coords, { x: frame.x, y: frame.y, heading: frame.heading }];
-    
-    // Create new channels copy
-    const nextChannels = { ...currentData.channels };
+    currentData.timestamps.push(frame.timestamp);
+    currentData.coords.push({ x: frame.x, y: frame.y, heading: frame.heading });
     
     // Ensure all existing channels are padded to the new frame index
-    Object.keys(nextChannels).forEach((key) => {
-      const lastVal = nextChannels[key][nextChannels[key].length - 1] ?? 0;
-      nextChannels[key] = [...nextChannels[key], frame.values[key] ?? lastVal];
+    Object.keys(currentData.channels).forEach((key) => {
+      const channelArray = currentData.channels[key];
+      const lastVal = channelArray[channelArray.length - 1] ?? 0;
+      channelArray.push(frame.values[key] ?? lastVal);
     });
 
     // Add any newly announced channels in the frame values
     Object.keys(frame.values).forEach((key) => {
-      if (!nextChannels[key]) {
-        const padding = Array(nextTimestamps.length - 1).fill(0);
-        nextChannels[key] = [...padding, frame.values[key]];
+      if (!currentData.channels[key]) {
+        const padding = Array(currentData.timestamps.length - 1).fill(0);
+        padding.push(frame.values[key]);
+        currentData.channels[key] = padding;
       }
     });
 
-    if (nextTimestamps.length > maxBufferSize) {
-      nextTimestamps.shift();
-      nextCoords.shift();
-      Object.keys(nextChannels).forEach((key) => {
-        nextChannels[key].shift();
+    if (currentData.timestamps.length > maxBufferSize) {
+      currentData.timestamps.shift();
+      currentData.coords.shift();
+      Object.keys(currentData.channels).forEach((key) => {
+        currentData.channels[key].shift();
       });
     }
 
     const updatedData = {
       ...currentData,
-      timestamps: nextTimestamps,
-      coords: nextCoords,
-      channels: nextChannels,
-      maxTimeMs: nextTimestamps[nextTimestamps.length - 1] - nextTimestamps[0]
+      maxTimeMs: currentData.timestamps[currentData.timestamps.length - 1] - currentData.timestamps[0]
     };
 
     return {

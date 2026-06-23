@@ -116,7 +116,7 @@ export default function ScopeDashboard() {
     handleToggleFullscreen
   } = useScopeLayout();
 
-  const [selectedRunId, setSelectedRunId] = useState("run_2026_championship_finals");
+  const [selectedRunId, setSelectedRunId] = useState("");
   const [runs, setRuns] = useState<any[]>([]);
   const [actions, setActions] = useState<any[]>([]);
   const [visionEvents, setVisionEvents] = useState<any[]>([]);
@@ -136,6 +136,8 @@ export default function ScopeDashboard() {
         setRuns(list);
         if (list.length > 0) {
           setSelectedRunId(list[0].runId);
+        } else {
+          setSelectedRunId("");
         }
       } catch (err) {
         console.warn("Failed to fetch runs list, using mock defaults", err);
@@ -330,14 +332,15 @@ export default function ScopeDashboard() {
       lastTime = now;
 
       // Advance playhead proportional to elapsed real-world time and playback speed
-      setCurrentTimeMs(currentTimeMs + delta * playbackSpeed);
+      const state = useScopeStore.getState();
+      state.setCurrentTimeMs(state.currentTimeMs + delta * state.playbackSpeed);
       
       animationFrameId = requestAnimationFrame(loop);
     };
 
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, currentTimeMs, playbackSpeed, telemetryData, isStreaming]);
+  }, [isPlaying, telemetryData, isStreaming]);
 
   // Sync video playback speed to master playbackSpeed
   useEffect(() => {

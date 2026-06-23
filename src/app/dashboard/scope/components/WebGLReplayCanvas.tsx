@@ -318,12 +318,32 @@ export default function WebGLReplayCanvas() {
 
       // Update camera FOV meshes
       if (!showFov) {
-        cameraFovGroupsRef.current.forEach((g) => robot.remove(g));
+        cameraFovGroupsRef.current.forEach((g) => {
+          robot.remove(g);
+          g.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+              child.geometry.dispose();
+              if (child.material instanceof THREE.Material) {
+                child.material.dispose();
+              }
+            }
+          });
+        });
         cameraFovGroupsRef.current = [];
       } else {
         const cameras = getCameraPoses(currentFrame);
         if (cameraFovGroupsRef.current.length !== cameras.length) {
-          cameraFovGroupsRef.current.forEach((g) => robot.remove(g));
+          cameraFovGroupsRef.current.forEach((g) => {
+            robot.remove(g);
+            g.traverse((child) => {
+              if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+                child.geometry.dispose();
+                if (child.material instanceof THREE.Material) {
+                  child.material.dispose();
+                }
+              }
+            });
+          });
           cameraFovGroupsRef.current = [];
           
           cameras.forEach((cam) => {
@@ -409,6 +429,7 @@ export default function WebGLReplayCanvas() {
       }
 
       if (points.length > 0) {
+        trail.geometry.dispose();
         trail.geometry.setFromPoints(points);
         trail.geometry.computeBoundingBox();
         trail.geometry.computeBoundingSphere();
@@ -426,6 +447,7 @@ export default function WebGLReplayCanvas() {
         const pt = plannedPath[i];
         points.push(new THREE.Vector3(-pt.y, 0.005, -pt.x));
       }
+      plannedTrail.geometry.dispose();
       plannedTrail.geometry.setFromPoints(points);
       plannedTrail.computeLineDistances();
       plannedTrail.geometry.computeBoundingBox();
@@ -469,6 +491,7 @@ export default function WebGLReplayCanvas() {
         }
 
         if (points.length > 0) {
+          compTrail.geometry.dispose();
           compTrail.geometry.setFromPoints(points);
           compTrail.computeLineDistances();
           compTrail.geometry.computeBoundingBox();

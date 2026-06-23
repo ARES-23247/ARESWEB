@@ -69,40 +69,46 @@ describe("Analytics Router Endpoints", () => {
   };
 
   describe("GET /telemetry-log", () => {
-    it("should query BigQuery and return formatted telemetry data", async () => {
+    it("should query robot_states + motor_telemetry and return formatted data", async () => {
       const handler = getHandler("/telemetry-log");
       req.query = { runId: "run123" };
       process.env.GCP_PROJECT_ID = "aresfirst-portal";
       
-      mockQuery.mockResolvedValue([
-        [
-          {
-            timestamp: 100,
-            x: 1.0,
-            y: 2.0,
-            heading: 0.5,
-            battery: 12.5,
-            loopTime: 8,
-            lf: 5.0,
-            rf: 5.1,
-            lr: 5.2,
-            rr: 5.3,
-            slideHeight: 0.0,
-            slideCurrent: 0.0,
-            intakeCurrent: 0.0,
-          },
-        ],
-      ]);
+      // First call: robot_states query returns state rows
+      // Second call: motor_telemetry query returns motor rows
+      mockQuery
+        .mockResolvedValueOnce([
+          [
+            {
+              timestamp: 100,
+              x: 1.0,
+              y: 2.0,
+              heading: 0.5,
+              ekf_drift_x: 0.01,
+              ekf_drift_y: 0.02,
+              pitch: 1.5,
+              roll: 0.3,
+            },
+          ],
+        ])
+        .mockResolvedValueOnce([
+          [
+            { timestamp_ms: 100, motor_id: "leftFront", current: 5.0, voltage: 6.0 },
+            { timestamp_ms: 100, motor_id: "rightFront", current: 5.1, voltage: 6.1 },
+          ],
+        ]);
 
       await handler(req, res);
 
-      expect(mockQuery).toHaveBeenCalled();
+      expect(mockQuery).toHaveBeenCalledTimes(2);
       expect(statusMock).not.toHaveBeenCalledWith(500);
       expect(jsonMock).toHaveBeenCalled();
       const data = jsonMock.mock.calls[0][0];
       expect(data.runId).toBe("run123");
       expect(data.timestamps[0]).toBe(100);
       expect(data.coords[0].x).toBe(1.0);
+      expect(data.channels["Drive/EKF_Drift_X"][0]).toBe(0.01);
+      expect(data.channels["Motor/leftFront/Current"][0]).toBe(5.0);
     });
 
     it("should fallback to mock data if BigQuery query throws", async () => {
