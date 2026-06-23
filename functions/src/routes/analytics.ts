@@ -8,9 +8,18 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
-const gcpProjectId = process.env.GCP_PROJECT_ID;
-if (!gcpProjectId) throw new Error("GCP_PROJECT_ID environment variable is missing.");
-const bigquery = new BigQuery({ projectId: gcpProjectId });
+
+// Lazy-init BigQuery client — env vars aren't available during Firebase deploy's static analysis
+let _bigquery: BigQuery | null = null;
+function getBigQuery(): BigQuery {
+  if (!_bigquery) {
+    const projectId = process.env.GCP_PROJECT_ID;
+    if (!projectId) throw new ApiError(500, "GCP_PROJECT_ID environment variable is missing.");
+    _bigquery = new BigQuery({ projectId });
+  }
+  return _bigquery;
+}
+
 
 // Helper to generate mock telemetry runs
 function generateHighFidelityMockRun(runId: string) {
@@ -281,7 +290,7 @@ router.get("/telemetry-log", ensureTeamMember, asyncHandler(async (req, res) => 
         ORDER BY timestamp_ms ASC
       `;
 
-      const [stateRows] = await bigquery.query({
+      const [stateRows] = await getBigQuery().query({
         query: statesQuery,
         params: { runId },
       });
@@ -297,7 +306,7 @@ router.get("/telemetry-log", ensureTeamMember, asyncHandler(async (req, res) => 
 
         let motorMap: Map<number, Record<string, { current: number; voltage: number }>> = new Map();
         try {
-          const [motorRows] = await bigquery.query({
+          const [motorRows] = await getBigQuery().query({
             query: motorQuery,
             params: { runId },
           });
@@ -386,7 +395,7 @@ router.get("/telemetry-log", ensureTeamMember, asyncHandler(async (req, res) => 
         ORDER BY timestamp_ms ASC
       `;
 
-      const [legacyRows] = await bigquery.query({
+      const [legacyRows] = await getBigQuery().query({
         query: legacyQuery,
         params: { runId },
       });
@@ -900,7 +909,7 @@ router.get("/match-comparison", ensureTeamMember, asyncHandler(async (req, res) 
       WHERE run_id IN (@runId1, @runId2)
       GROUP BY run_id, motor_id
     `;
-    const [motorRows] = await bigquery.query({
+    const [motorRows] = await getBigQuery().query({
       query: qMotors,
       params: { runId1, runId2 }
     });
@@ -914,7 +923,7 @@ router.get("/match-comparison", ensureTeamMember, asyncHandler(async (req, res) 
       ORDER BY timestamp_ms ASC
       LIMIT 10000
     `;
-    const [stateRows] = await bigquery.query({
+    const [stateRows] = await getBigQuery().query({
       query: qStates,
       params: { runId1, runId2 }
     });
@@ -942,7 +951,7 @@ router.get("/trends", ensureTeamMember, asyncHandler(async (req, res) => {
       ORDER BY start_time DESC
       LIMIT 20
     `;
-    const [rows] = await bigquery.query({ query });
+    const [rows] = await getBigQuery().query({ query });
     res.status(200).json(rows);
   } catch (err: any) {
     throw new ApiError(500, `Failed to query trends: ${err.message}`);
@@ -969,7 +978,7 @@ router.get("/path-analysis", ensureTeamMember, asyncHandler(async (req, res) => 
       ORDER BY timestamp_ms ASC
       LIMIT 10000
     `;
-    const [rows] = await bigquery.query({
+    const [rows] = await getBigQuery().query({
       query,
       params: { runId }
     });
@@ -993,7 +1002,7 @@ router.get("/subsystem-health", ensureTeamMember, asyncHandler(async (req, res) 
       WHERE run_id = @runId
       GROUP BY motor_id
     `;
-    const [motors] = await bigquery.query({
+    const [motors] = await getBigQuery().query({
       query: motorQuery,
       params: { runId }
     });
@@ -1007,7 +1016,7 @@ router.get("/subsystem-health", ensureTeamMember, asyncHandler(async (req, res) 
       ORDER BY timestamp_ms ASC
       LIMIT 10000
     `;
-    const [states] = await bigquery.query({
+    const [states] = await getBigQuery().query({
       query: stateQuery,
       params: { runId }
     });
@@ -1033,7 +1042,7 @@ router.get("/vision-quality", ensureTeamMember, asyncHandler(async (req, res) =>
       WHERE run_id = @runId
       GROUP BY tag_id, camera_id, accepted
     `;
-    const [rows] = await bigquery.query({
+    const [rows] = await getBigQuery().query({
       query,
       params: { runId }
     });
