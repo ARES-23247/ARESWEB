@@ -16,6 +16,7 @@ export function useNT4Client() {
 
   const [ipAddress, setIpAddress] = useState("192.168.43.1");
   const [showLiveModal, setShowLiveModal] = useState(false);
+  const [directConnect, setDirectConnect] = useState(false);
   const ntClientRef = useRef<NT4Client | null>(null);
 
   const handleConnectLive = (targetIp?: string) => {
@@ -36,7 +37,8 @@ export function useNT4Client() {
       },
       (status) => {
         setConnectionStatus(status);
-      }
+      },
+      directConnect
     );
 
     ntClientRef.current = client;
@@ -78,6 +80,8 @@ export function useNT4Client() {
     setIpAddress,
     showLiveModal,
     setShowLiveModal,
+    directConnect,
+    setDirectConnect,
     ntClientRef,
     handleConnectLive,
     handleDisconnectLive,

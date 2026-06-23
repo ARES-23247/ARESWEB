@@ -65,6 +65,8 @@ export default function ScopeDashboard() {
     setIpAddress,
     showLiveModal,
     setShowLiveModal,
+    directConnect,
+    setDirectConnect,
     handleConnectLive,
     handleDisconnectLive,
     handlePublishValue
@@ -475,6 +477,8 @@ export default function ScopeDashboard() {
         ipAddress={ipAddress}
         setIpAddress={setIpAddress}
         handleConnectLive={handleConnectLive}
+        directConnect={directConnect}
+        setDirectConnect={setDirectConnect}
       />
 
       <SyncRobotLogsModal

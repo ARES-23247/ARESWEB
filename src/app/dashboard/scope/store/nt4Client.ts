@@ -19,7 +19,8 @@ export class NT4Client {
   constructor(
     private host: string,
     private onFrame: (frame: TelemetryFrame) => void,
-    private onStatusChange: (status: "disconnected" | "connecting" | "connected") => void
+    private onStatusChange: (status: "disconnected" | "connecting" | "connected") => void,
+    private directConnection: boolean = false
   ) {}
 
   connect() {
@@ -27,8 +28,9 @@ export class NT4Client {
     this.onStatusChange("connecting");
 
     const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
-    const scheme = isSecure ? "wss" : "ws";
-    const port = isSecure ? 5811 : 5810;
+    const useProxy = isSecure && !this.directConnection;
+    const scheme = useProxy ? "wss" : "ws";
+    const port = useProxy ? 5811 : 5810;
 
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
@@ -37,8 +39,8 @@ export class NT4Client {
 
     try {
       // Use the official networktables.org sub-protocol (route through local daemon proxy on localhost in secure contexts)
-      const wsHost = isSecure ? "localhost" : this.host;
-      const queryParams = isSecure ? `?host=${this.host}` : "";
+      const wsHost = useProxy ? "localhost" : this.host;
+      const queryParams = useProxy ? `?host=${this.host}` : "";
       this.ws = new WebSocket(`${scheme}://${wsHost}:${port}/nt/v4/websocket${queryParams}`, ["networktables.org"]);
       this.ws.binaryType = "arraybuffer";
 

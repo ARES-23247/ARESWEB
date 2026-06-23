@@ -8,6 +8,8 @@ interface LiveStreamModalProps {
   ipAddress: string;
   setIpAddress: (ip: string) => void;
   handleConnectLive: () => void;
+  directConnect: boolean;
+  setDirectConnect: (val: boolean) => void;
 }
 
 export default function LiveStreamModal({
@@ -15,7 +17,9 @@ export default function LiveStreamModal({
   onClose,
   ipAddress,
   setIpAddress,
-  handleConnectLive
+  handleConnectLive,
+  directConnect,
+  setDirectConnect
 }: LiveStreamModalProps) {
   const liveModalRef = useFocusTrap(isOpen, onClose);
 
@@ -81,6 +85,30 @@ export default function LiveStreamModal({
           <p className="text-[10px] text-marble/40 mt-1 leading-normal">
             Default for FTC Wi-Fi Direct: <code className="text-ares-gold">192.168.43.1</code>. Control Hub / ADB: <code className="text-ares-gold">localhost</code> or <code className="text-ares-gold">192.168.43.1</code>.
           </p>
+
+          <div className="flex items-center gap-2 mt-2">
+            <input
+              id="directConnectCheckbox"
+              type="checkbox"
+              checked={directConnect}
+              onChange={(e) => setDirectConnect(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-white/10 bg-black/40 text-ares-gold focus:ring-0 cursor-pointer"
+            />
+            <label htmlFor="directConnectCheckbox" className="text-[10px] uppercase font-bold tracking-wider text-marble/70 cursor-pointer select-none">
+              Direct Connection (No Daemon)
+            </label>
+          </div>
+
+          {directConnect && typeof window !== "undefined" && window.location.protocol === "https:" && (
+            <div className="bg-ares-red/10 border border-ares-red/20 rounded-xl p-3 flex flex-col gap-1 text-left mt-1">
+              <div className="flex items-center gap-1.5 text-ares-red font-bold text-[9px] uppercase tracking-wider">
+                <Info size={11} className="stroke-[2.5]" /> Browser Setting Required
+              </div>
+              <p className="text-[8.5px] text-marble/85 leading-normal">
+                To connect directly from HTTPS: click the settings/padlock icon in the URL bar, open <strong>Site settings</strong>, and set <strong>Insecure content</strong> to <strong>Allow</strong>. Otherwise, the browser will block this direct connection.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 mt-2">
