@@ -58,9 +58,16 @@ export default function LocalSimulatorPanel({
     jdk_version: string;
     gradlew_exists: boolean;
     repo_root: string;
+    git_exists: boolean;
+    git_version: string;
   } | null>(null);
   const [checkingEnv, setCheckingEnv] = useState(false);
   const [activeTaskName, setActiveTaskName] = useState<string | null>(null);
+
+  // Git identity copy states
+  const [copiedGitName, setCopiedGitName] = useState(false);
+  const [copiedGitEmail, setCopiedGitEmail] = useState(false);
+  const [copiedGhAuth, setCopiedGhAuth] = useState(false);
 
   // Web daemon States (Fallback)
   const [daemonUrl, setDaemonUrl] = useState("ws://localhost:8080");
@@ -82,7 +89,8 @@ export default function LocalSimulatorPanel({
   const simWsRef = useRef<WebSocket | null>(null);
   const simTerminalEndRef = useRef<HTMLDivElement | null>(null);
 
-  const isEnvReady = !!(diagnostics && diagnostics.jdk_valid && diagnostics.gradlew_exists);
+  // Environment verification readiness check
+  const isEnvReady = !!(diagnostics && diagnostics.jdk_valid && diagnostics.gradlew_exists && diagnostics.git_exists);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -117,6 +125,8 @@ export default function LocalSimulatorPanel({
             jdk_version: string;
             gradlew_exists: boolean;
             repo_root: string;
+            git_exists: boolean;
+            git_version: string;
           }>("check_env")
             .then((result) => {
               setDiagnostics(result);
@@ -148,6 +158,8 @@ export default function LocalSimulatorPanel({
         jdk_version: string;
         gradlew_exists: boolean;
         repo_root: string;
+        git_exists: boolean;
+        git_version: string;
       }>("check_env");
       setDiagnostics(result);
     } catch (err: any) {
@@ -276,6 +288,40 @@ export default function LocalSimulatorPanel({
       setSimState("idle");
       setActiveTaskName(null);
       setDaemonLogs((prev) => [...prev, `[Tauri Error] Automated Tuner X installation failed: ${err.message || err}`]);
+    }
+  };
+
+  const runGitInstaller = async () => {
+    try {
+      setSimState("building");
+      setActiveTaskName("Install Git");
+      setDaemonLogs((prev) => [...prev, "[Tauri] Initiating Git automated installation via winget..."]);
+      const result = await invoke<string>("install_git_winget");
+      setDaemonLogs((prev) => [
+        ...prev, 
+        `[Tauri] ${result}`, 
+        "[Tauri] WARNING: You will need to restart the application once setup completes to update PATH variables."
+      ]);
+      setSimState("running");
+    } catch (err: any) {
+      setSimState("idle");
+      setActiveTaskName(null);
+      setDaemonLogs((prev) => [...prev, `[Tauri Error] Automated Git installation failed: ${err.message || err}`]);
+    }
+  };
+
+  const runGithubCliInstaller = async () => {
+    try {
+      setSimState("building");
+      setActiveTaskName("Install GitHub CLI");
+      setDaemonLogs((prev) => [...prev, "[Tauri] Initiating GitHub CLI automated installation via winget..."]);
+      const result = await invoke<string>("install_github_cli_winget");
+      setDaemonLogs((prev) => [...prev, `[Tauri] ${result}`]);
+      setSimState("running");
+    } catch (err: any) {
+      setSimState("idle");
+      setActiveTaskName(null);
+      setDaemonLogs((prev) => [...prev, `[Tauri Error] Automated GitHub CLI installation failed: ${err.message || err}`]);
     }
   };
 
@@ -522,6 +568,48 @@ export default function LocalSimulatorPanel({
                       )}
                     </div>
 
+                    {/* Git status row */}
+                    <div className="flex flex-col gap-1.5 border-b border-white/5 pb-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-marble/40">Git Version</span>
+                        <span className="flex items-center gap-1">
+                          {diagnostics.git_exists ? (
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          ) : (
+                            <AlertTriangle size={10} className="text-ares-red animate-pulse" />
+                          )}
+                          <span className={diagnostics.git_exists ? "text-marble/80" : "text-ares-red font-bold"}>
+                            {diagnostics.git_exists ? diagnostics.git_version.replace("git version ", "") : diagnostics.git_version}
+                          </span>
+                        </span>
+                      </div>
+                      
+                      {!diagnostics.git_exists && (
+                        <div className="bg-ares-red/10 border border-ares-red/20 rounded-lg p-2.5 flex flex-col gap-2 animate-fade-in">
+                          <span className="text-[8px] text-marble/80 leading-normal">
+                            Git is missing. Clone, pull, and repository checkouts will fail.
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={runGitInstaller}
+                              disabled={simState !== "idle"}
+                              className="flex-1 bg-ares-red text-white py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer"
+                            >
+                              ⚡ Auto-Install Git
+                            </button>
+                            <a
+                              href="https://git-scm.com/download/win"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 bg-white/5 border border-white/10 text-white text-center py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-white/10 flex items-center justify-center"
+                            >
+                              🌐 Download Git
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Gradle Wrapper status row */}
                     <div className="flex flex-col gap-1.5 border-b border-white/5 pb-2">
                       <div className="flex items-center justify-between">
@@ -544,10 +632,10 @@ export default function LocalSimulatorPanel({
                           </span>
                           <button
                             onClick={runRepoCloner}
-                            disabled={simState !== "idle"}
-                            className="w-full bg-ares-red text-white py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer"
+                            disabled={simState !== "idle" || !diagnostics.git_exists}
+                            className="w-full bg-ares-red text-white py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                           >
-                            ⚡ Auto-Clone ARESLib
+                            {!diagnostics.git_exists ? "⚠️ Install Git First" : "⚡ Auto-Clone ARESLib"}
                           </button>
                         </div>
                       )}
@@ -678,7 +766,7 @@ export default function LocalSimulatorPanel({
                         </a>
                       </div>
                       <p className="text-[8px] text-marble/55 leading-normal">
-                        Offline C++/Java libraries, compiler tools, desktop simulation GUI, and custom VS Code build environment.
+                        Offline C++/Java libraries, offline dependencies, desktop simulation GUI, and custom VS Code build environment.
                       </p>
                     </div>
 
@@ -801,6 +889,93 @@ export default function LocalSimulatorPanel({
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Version Control Setup & Identity Guides (Global Section) */}
+              <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
+                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
+                  <Cpu size={14} /> Git & GitHub Integration
+                </h3>
+
+                <div className="space-y-3">
+                  {/* Git Identity config helper */}
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                    <span className="text-[9px] font-black uppercase text-white tracking-wide">Configure Git Developer Identity</span>
+                    <p className="text-[8px] text-marble/55 leading-normal">
+                      Set up your global developer credentials to authorize and sign your code commits correctly.
+                    </p>
+                    <div className="flex flex-col gap-1.5 font-mono text-[8px] mt-1 text-ares-cyan">
+                      <div className="relative flex items-center bg-black/60 rounded p-1.5 border border-white/5 group justify-between">
+                        <span className="select-all truncate pr-6">git config --global user.name "Your Name"</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText('git config --global user.name "Your Name"');
+                            setCopiedGitName(true);
+                            setTimeout(() => setCopiedGitName(false), 2000);
+                          }}
+                          className="p-0.5 rounded hover:bg-white/5 text-marble/50 hover:text-white transition-all cursor-pointer"
+                        >
+                          {copiedGitName ? <Check size={8} className="text-emerald-500" /> : <Copy size={8} />}
+                        </button>
+                      </div>
+
+                      <div className="relative flex items-center bg-black/60 rounded p-1.5 border border-white/5 group justify-between">
+                        <span className="select-all truncate pr-6">git config --global user.email "your.email@example.com"</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText('git config --global user.email "your.email@example.com"');
+                            setCopiedGitEmail(true);
+                            setTimeout(() => setCopiedGitEmail(false), 2000);
+                          }}
+                          className="p-0.5 rounded hover:bg-white/5 text-marble/50 hover:text-white transition-all cursor-pointer"
+                        >
+                          {copiedGitEmail ? <Check size={8} className="text-emerald-500" /> : <Copy size={8} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* GitHub CLI and Authenticator */}
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase text-white tracking-wide">GitHub CLI Tool (gh)</span>
+                      <a 
+                        href="https://cli.github.com/" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                      >
+                        🌐 GitHub CLI <ExternalLink size={8} />
+                      </a>
+                    </div>
+                    <p className="text-[8px] text-marble/55 leading-normal">
+                      The GitHub CLI tool enables you to authenticate, check pull requests, and pull private repositories securely.
+                    </p>
+                    <div className="flex flex-col gap-2 mt-1">
+                      <button
+                        onClick={runGithubCliInstaller}
+                        disabled={simState !== "idle"}
+                        className="w-full bg-ares-red text-white py-1 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer transition-all"
+                      >
+                        ⚡ Auto-Install GitHub CLI
+                      </button>
+                      
+                      <div className="relative flex items-center bg-black/60 rounded p-1.5 border border-white/5 group justify-between text-ares-cyan font-mono text-[8px]">
+                        <span className="select-all">gh auth login</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText('gh auth login');
+                            setCopiedGhAuth(true);
+                            setTimeout(() => setCopiedGhAuth(false), 2000);
+                          }}
+                          className="p-0.5 rounded hover:bg-white/5 text-marble/50 hover:text-white transition-all cursor-pointer"
+                        >
+                          {copiedGhAuth ? <Check size={8} className="text-emerald-500" /> : <Copy size={8} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           ) : (
