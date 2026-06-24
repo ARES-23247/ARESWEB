@@ -350,6 +350,185 @@ fn deploy_via_adb(app: AppHandle, state: State<'_, AppState>, robot_ip: String) 
     Ok("Starting ADB deployment...".to_string())
 }
 
+#[tauri::command]
+fn install_jdk_winget(app: AppHandle, state: State<'_, AppState>) -> Result<String, String> {
+    // 1. Terminate any active running task
+    let _ = stop_process(state.clone());
+
+    // 2. Configure installation command
+    let shell_cmd = "winget install --id EclipseAdoptium.Temurin.17.JDK --silent --accept-source-agreements --accept-package-agreements";
+    
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd.exe");
+        c.args(&["/c", shell_cmd]);
+        c
+    } else {
+        return Err("Auto-installation of JDK 17 via winget is only supported on Windows. Please install manually on other platforms.".to_string());
+    };
+
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn winget command: {}", e))?;
+    
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
+    
+    {
+        let mut process_guard = state.active_process.lock().unwrap();
+        *process_guard = Some(child);
+    }
+
+    let app_stdout = app.clone();
+    let app_stderr = app.clone();
+    let state_exit = state.clone();
+    let app_exit = app.clone();
+
+    // Spawn stdout reader
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stdout.emit("sim-log", LogPayload { line: line_str });
+            }
+        }
+    });
+
+    // Spawn stderr reader
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stderr.emit("sim-log", LogPayload { line: format!("[ERROR] {}", line_str) });
+            }
+        }
+    });
+
+    // Spawn exit waiter
+    std::thread::spawn(move || {
+        let status = {
+            let mut process_guard = state_exit.active_process.lock().unwrap();
+            if let Some(child) = process_guard.as_mut() {
+                child.wait().ok()
+            } else {
+                None
+            }
+        };
+
+        if let Some(exit_status) = status {
+            let code = exit_status.code().unwrap_or(0);
+            let success = exit_status.success();
+            let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
+        }
+        
+        let mut process_guard = state_exit.active_process.lock().unwrap();
+        *process_guard = None;
+    });
+
+    Ok("Starting JDK 17 installation via winget... Please check the log terminal for progress.".to_string())
+}
+
+#[tauri::command]
+fn clone_robot_repo(app: AppHandle, state: State<'_, AppState>) -> Result<String, String> {
+    // 1. Terminate any active running task
+    let _ = stop_process(state.clone());
+
+    let repo_root = get_repo_root();
+    
+    // Check if the sibling directory already exists
+    if repo_root.exists() {
+        return Err("ARESLib-Kotlin repository already exists at the sibling path. Please check or rename the folder if you want to re-clone.".to_string());
+    }
+
+    // 2. Configure Git Clone command
+    let clone_cmd = "git clone https://github.com/ARES-23247/ARESLib-Kotlin.git ../ARESLib-Kotlin";
+    
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd.exe");
+        c.args(&["/c", clone_cmd]);
+        c
+    } else {
+        let mut c = Command::new("sh");
+        c.args(&["-c", clone_cmd]);
+        c
+    };
+
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn git clone command: {}", e))?;
+    
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
+    
+    {
+        let mut process_guard = state.active_process.lock().unwrap();
+        *process_guard = Some(child);
+    }
+
+    let app_stdout = app.clone();
+    let app_stderr = app.clone();
+    let state_exit = state.clone();
+    let app_exit = app.clone();
+
+    // Spawn stdout reader
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stdout.emit("sim-log", LogPayload { line: line_str });
+            }
+        }
+    });
+
+    // Spawn stderr reader (Git clone progress writes to stderr)
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stderr.emit("sim-log", LogPayload { line: line_str });
+            }
+        }
+    });
+
+    // Spawn exit waiter
+    std::thread::spawn(move || {
+        let status = {
+            let mut process_guard = state_exit.active_process.lock().unwrap();
+            if let Some(child) = process_guard.as_mut() {
+                child.wait().ok()
+            } else {
+                None
+            }
+        };
+
+        if let Some(exit_status) = status {
+            let code = exit_status.code().unwrap_or(0);
+            let success = exit_status.success();
+            let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
+        }
+        
+        let mut process_guard = state_exit.active_process.lock().unwrap();
+        *process_guard = None;
+    });
+
+    Ok("Starting Git clone of ARESLib-Kotlin... Please check the log terminal for progress.".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -370,7 +549,9 @@ pub fn run() {
         check_env,
         start_task,
         stop_process,
-        deploy_via_adb
+        deploy_via_adb,
+        install_jdk_winget,
+        clone_robot_repo
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

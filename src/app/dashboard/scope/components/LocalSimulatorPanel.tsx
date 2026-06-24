@@ -81,6 +81,8 @@ export default function LocalSimulatorPanel({
   const simWsRef = useRef<WebSocket | null>(null);
   const simTerminalEndRef = useRef<HTMLDivElement | null>(null);
 
+  const isEnvReady = !!(diagnostics && diagnostics.jdk_valid && diagnostics.gradlew_exists);
+
   // Auto-scroll logs
   useEffect(() => {
     if (simAutoScrollLogs && simTerminalEndRef.current) {
@@ -103,11 +105,25 @@ export default function LocalSimulatorPanel({
 
         unlistenExit = await listen<{ code: number; success: boolean }>("sim-exit", (event) => {
           setSimState("idle");
-          setActiveTaskName(null);
           setDaemonLogs((prev) => [
             ...prev,
             `[System] Process exited with code ${event.payload.code} (Success: ${event.payload.success}).`
           ]);
+
+          // Re-check system environment diagnostic state
+          invoke<{
+            jdk_valid: boolean;
+            jdk_version: string;
+            gradlew_exists: boolean;
+            repo_root: string;
+          }>("check_env")
+            .then((result) => {
+              setDiagnostics(result);
+              setDaemonLogs((prev) => [...prev, "[Tauri] Environment diagnostics updated."]);
+            })
+            .catch((err) => console.error("Failed to recheck diagnostics on exit:", err));
+
+          setActiveTaskName(null);
         });
       } catch (err) {
         console.error("Failed to setup Tauri event listeners:", err);
@@ -194,7 +210,7 @@ export default function LocalSimulatorPanel({
 
   const stopTauriTask = async () => {
     try {
-      setDaemonLogs((prev) => [...prev, "[Tauri] Terminating native process tree..."]);
+      setDaemonLogs((prev) => [...prev, "[Tauri] Terminating active process tree..."]);
       await invoke("stop_process");
       setSimState("idle");
       setActiveTaskName(null);
@@ -214,6 +230,36 @@ export default function LocalSimulatorPanel({
       setSimState("idle");
       setActiveTaskName(null);
       setDaemonLogs((prev) => [...prev, `[Tauri Error] ADB Deployment failed: ${err.message || err}`]);
+    }
+  };
+
+  const runJdkInstaller = async () => {
+    try {
+      setSimState("building");
+      setActiveTaskName("Install JDK 17");
+      setDaemonLogs((prev) => [...prev, "[Tauri] Initiating JDK 17 automated installation via winget..."]);
+      const result = await invoke<string>("install_jdk_winget");
+      setDaemonLogs((prev) => [...prev, `[Tauri] ${result}`]);
+      setSimState("running");
+    } catch (err: any) {
+      setSimState("idle");
+      setActiveTaskName(null);
+      setDaemonLogs((prev) => [...prev, `[Tauri Error] Automated JDK installation failed: ${err.message || err}`]);
+    }
+  };
+
+  const runRepoCloner = async () => {
+    try {
+      setSimState("building");
+      setActiveTaskName("Clone ARESLib Repository");
+      setDaemonLogs((prev) => [...prev, "[Tauri] Initiating ARESLib-Kotlin Git clone..."]);
+      const result = await invoke<string>("clone_robot_repo");
+      setDaemonLogs((prev) => [...prev, `[Tauri] ${result}`]);
+      setSimState("running");
+    } catch (err: any) {
+      setSimState("idle");
+      setActiveTaskName(null);
+      setDaemonLogs((prev) => [...prev, `[Tauri Error] Repository clone failed: ${err.message || err}`]);
     }
   };
 
@@ -408,8 +454,8 @@ export default function LocalSimulatorPanel({
                   </span>
                   <button
                     onClick={checkEnvironment}
-                    disabled={checkingEnv}
-                    className="p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white text-marble/60 transition-all cursor-pointer"
+                    disabled={checkingEnv || simState !== "idle"}
+                    className="p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white text-marble/60 transition-all cursor-pointer disabled:opacity-40"
                     title="Refresh diagnostics"
                   >
                     <RefreshCw size={10} className={checkingEnv ? "animate-spin" : ""} />
@@ -417,32 +463,78 @@ export default function LocalSimulatorPanel({
                 </div>
 
                 {diagnostics ? (
-                  <div className="space-y-2 text-[10px]">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
-                      <span className="text-marble/40">JDK Version (17+)</span>
-                      <span className="flex items-center gap-1">
-                        {diagnostics.jdk_valid ? (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        ) : (
-                          <AlertTriangle size={10} className="text-ares-red animate-pulse" />
-                        )}
-                        <span className={diagnostics.jdk_valid ? "text-marble/80" : "text-ares-red font-bold"}>
-                          {diagnostics.jdk_version}
+                  <div className="space-y-3 text-[10px]">
+                    {/* JDK status row */}
+                    <div className="flex flex-col gap-1.5 border-b border-white/5 pb-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-marble/40">JDK Version (17+)</span>
+                        <span className="flex items-center gap-1">
+                          {diagnostics.jdk_valid ? (
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          ) : (
+                            <AlertTriangle size={10} className="text-ares-red animate-pulse" />
+                          )}
+                          <span className={diagnostics.jdk_valid ? "text-marble/80" : "text-ares-red font-bold"}>
+                            {diagnostics.jdk_version}
+                          </span>
                         </span>
-                      </span>
+                      </div>
+                      
+                      {!diagnostics.jdk_valid && (
+                        <div className="bg-ares-red/10 border border-ares-red/20 rounded-lg p-2.5 flex flex-col gap-2 animate-fade-in">
+                          <span className="text-[8px] text-marble/80 leading-normal">
+                            JDK 17 is missing. Automate the setup via Windows `winget` or download adopting packages manually.
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={runJdkInstaller}
+                              disabled={simState !== "idle"}
+                              className="flex-1 bg-ares-red text-white py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer"
+                            >
+                              ⚡ Auto-Install JDK 17
+                            </button>
+                            <a
+                              href="https://adoptium.net/temurin/releases/?version=17"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 bg-white/5 border border-white/10 text-white text-center py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-white/10 flex items-center justify-center"
+                            >
+                              🌐 Download Page
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
-                      <span className="text-marble/40">Gradle Wrapper</span>
-                      <span className="flex items-center gap-1">
-                        {diagnostics.gradlew_exists ? (
-                          <span className="text-emerald-500 font-bold">FOUND</span>
-                        ) : (
-                          <span className="text-ares-red font-bold flex items-center gap-1">
-                            <AlertTriangle size={10} /> MISSING
+                    {/* Gradle Wrapper status row */}
+                    <div className="flex flex-col gap-1.5 border-b border-white/5 pb-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-marble/40">Gradle Wrapper</span>
+                        <span className="flex items-center gap-1">
+                          {diagnostics.gradlew_exists ? (
+                            <span className="text-emerald-500 font-bold">FOUND</span>
+                          ) : (
+                            <span className="text-ares-red font-bold flex items-center gap-1">
+                              <AlertTriangle size={10} /> MISSING
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      
+                      {!diagnostics.gradlew_exists && (
+                        <div className="bg-ares-red/10 border border-ares-red/20 rounded-lg p-2.5 flex flex-col gap-2 animate-fade-in">
+                          <span className="text-[8px] text-marble/80 leading-normal">
+                            Sibling robot repository `ARESLib-Kotlin` not found or incomplete. Clone the project to run local builds.
                           </span>
-                        )}
-                      </span>
+                          <button
+                            onClick={runRepoCloner}
+                            disabled={simState !== "idle"}
+                            className="w-full bg-ares-red text-white py-1.5 px-2 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer"
+                          >
+                            ⚡ Auto-Clone ARESLib
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -474,7 +566,8 @@ export default function LocalSimulatorPanel({
                         <select
                           value={selectedFieldConfigId}
                           onChange={handleFieldConfigChange}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-ares-gold transition-colors cursor-pointer"
+                          disabled={!isEnvReady}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:border-ares-gold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {fieldConfigs.map((c) => (
                             <option key={c.id} value={c.id} className="bg-neutral-900 text-white">
@@ -486,8 +579,8 @@ export default function LocalSimulatorPanel({
                       <div className="flex gap-2">
                         <button
                           onClick={() => startTauriTask("ARES Simulator", [":simulator:run"], true)}
-                          disabled={simState !== "idle"}
-                          className="flex-1 py-2.5 bg-ares-red hover:bg-ares-red/80 disabled:opacity-50 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold"
+                          disabled={simState !== "idle" || !isEnvReady}
+                          className="w-full py-2.5 bg-ares-red hover:bg-ares-red/80 disabled:opacity-55 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold disabled:cursor-not-allowed"
                         >
                           <Play size={12} /> Launch ARES Sim
                         </button>
@@ -496,8 +589,8 @@ export default function LocalSimulatorPanel({
                   ) : (
                     <button
                       onClick={() => startTauriTask("WPILib Simulation", [":frc-app:simulateJava"], false)}
-                      disabled={simState !== "idle"}
-                      className="w-full py-2.5 bg-ares-red hover:bg-ares-red/80 disabled:opacity-50 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold"
+                      disabled={simState !== "idle" || !isEnvReady}
+                      className="w-full py-2.5 bg-ares-red hover:bg-ares-red/80 disabled:opacity-55 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold disabled:cursor-not-allowed"
                     >
                       <Play size={12} /> Launch WPILib Sim
                     </button>
@@ -514,8 +607,8 @@ export default function LocalSimulatorPanel({
                         const compileTask = targetPlatform === "ftc" ? ":TeamCode:assembleDebug" : ":frc-app:build";
                         startTauriTask(`Compile ${targetPlatform.toUpperCase()}`, [compileTask], false);
                       }}
-                      disabled={simState !== "idle"}
-                      className="flex-1 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 disabled:opacity-50 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer font-bold"
+                      disabled={simState !== "idle" || !isEnvReady}
+                      className="flex-1 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 disabled:opacity-55 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer font-bold disabled:cursor-not-allowed"
                     >
                       Compile Code
                     </button>
@@ -528,8 +621,8 @@ export default function LocalSimulatorPanel({
                           startTauriTask("Deploy FRC RoboRIO", [":frc-app:deploy"], false);
                         }
                       }}
-                      disabled={simState !== "idle"}
-                      className="flex-1 py-2.5 bg-ares-gold text-black hover:bg-ares-gold/90 disabled:opacity-50 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer font-bold"
+                      disabled={simState !== "idle" || !isEnvReady}
+                      className="flex-1 py-2.5 bg-ares-gold text-black hover:bg-ares-gold/90 disabled:opacity-55 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer font-bold disabled:cursor-not-allowed"
                     >
                       Deploy to Robot
                     </button>
