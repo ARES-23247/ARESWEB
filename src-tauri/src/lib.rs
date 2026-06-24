@@ -219,7 +219,7 @@ fn start_task(
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reading thread
@@ -245,7 +245,7 @@ fn start_task(
     // Spawn exit waiter thread
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -259,7 +259,7 @@ fn start_task(
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -321,7 +321,7 @@ fn deploy_via_adb(app: AppHandle, state: State<'_, AppState>, robot_ip: String) 
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -347,7 +347,7 @@ fn deploy_via_adb(app: AppHandle, state: State<'_, AppState>, robot_ip: String) 
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -361,7 +361,7 @@ fn deploy_via_adb(app: AppHandle, state: State<'_, AppState>, robot_ip: String) 
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -406,7 +406,7 @@ fn install_jdk_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -432,7 +432,7 @@ fn install_jdk_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -446,7 +446,7 @@ fn install_jdk_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -500,7 +500,7 @@ fn clone_robot_repo(app: AppHandle, state: State<'_, AppState>) -> Result<String
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -526,7 +526,7 @@ fn clone_robot_repo(app: AppHandle, state: State<'_, AppState>) -> Result<String
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -540,7 +540,7 @@ fn clone_robot_repo(app: AppHandle, state: State<'_, AppState>) -> Result<String
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -585,7 +585,7 @@ fn install_tuner_x(app: AppHandle, state: State<'_, AppState>) -> Result<String,
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -611,7 +611,7 @@ fn install_tuner_x(app: AppHandle, state: State<'_, AppState>) -> Result<String,
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -625,7 +625,7 @@ fn install_tuner_x(app: AppHandle, state: State<'_, AppState>) -> Result<String,
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -670,7 +670,7 @@ fn install_git_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -696,7 +696,7 @@ fn install_git_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -710,7 +710,7 @@ fn install_git_winget(app: AppHandle, state: State<'_, AppState>) -> Result<Stri
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 
@@ -755,7 +755,7 @@ fn install_github_cli_winget(app: AppHandle, state: State<'_, AppState>) -> Resu
 
     let app_stdout = app.clone();
     let app_stderr = app.clone();
-    let state_exit = state.clone();
+    let active_process = Arc::clone(&state.active_process);
     let app_exit = app.clone();
 
     // Spawn stdout reader
@@ -781,7 +781,7 @@ fn install_github_cli_winget(app: AppHandle, state: State<'_, AppState>) -> Resu
     // Spawn exit waiter
     std::thread::spawn(move || {
         let status = {
-            let mut process_guard = state_exit.active_process.lock().unwrap();
+            let mut process_guard = active_process.lock().unwrap();
             if let Some(child) = process_guard.as_mut() {
                 child.wait().ok()
             } else {
@@ -795,7 +795,7 @@ fn install_github_cli_winget(app: AppHandle, state: State<'_, AppState>) -> Resu
             let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
         }
         
-        let mut process_guard = state_exit.active_process.lock().unwrap();
+        let mut process_guard = active_process.lock().unwrap();
         *process_guard = None;
     });
 

@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "archive/**",
     "scripts/**",
     ".scripts/**",
+    "src-tauri/**",
   ]),
 ]);
 
