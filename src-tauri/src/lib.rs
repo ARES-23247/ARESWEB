@@ -529,6 +529,91 @@ fn clone_robot_repo(app: AppHandle, state: State<'_, AppState>) -> Result<String
     Ok("Starting Git clone of ARESLib-Kotlin... Please check the log terminal for progress.".to_string())
 }
 
+#[tauri::command]
+fn install_tuner_x(app: AppHandle, state: State<'_, AppState>) -> Result<String, String> {
+    // 1. Terminate any active running task
+    let _ = stop_process(state.clone());
+
+    // 2. Configure installation command
+    let shell_cmd = "winget install --id CTR-Electronics.PhoenixTunerX --silent --accept-source-agreements --accept-package-agreements";
+    
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut c = Command::new("cmd.exe");
+        c.args(&["/c", shell_cmd]);
+        c
+    } else {
+        return Err("Auto-installation of CTRE Phoenix Tuner X is only supported on Windows. Please install manually on other platforms.".to_string());
+    };
+
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn winget command: {}", e))?;
+    
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
+    
+    {
+        let mut process_guard = state.active_process.lock().unwrap();
+        *process_guard = Some(child);
+    }
+
+    let app_stdout = app.clone();
+    let app_stderr = app.clone();
+    let state_exit = state.clone();
+    let app_exit = app.clone();
+
+    // Spawn stdout reader
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stdout.emit("sim-log", LogPayload { line: line_str });
+            }
+        }
+    });
+
+    // Spawn stderr reader
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            if let Ok(line_str) = line {
+                let _ = app_stderr.emit("sim-log", LogPayload { line: format!("[ERROR] {}", line_str) });
+            }
+        }
+    });
+
+    // Spawn exit waiter
+    std::thread::spawn(move || {
+        let status = {
+            let mut process_guard = state_exit.active_process.lock().unwrap();
+            if let Some(child) = process_guard.as_mut() {
+                child.wait().ok()
+            } else {
+                None
+            }
+        };
+
+        if let Some(exit_status) = status {
+            let code = exit_status.code().unwrap_or(0);
+            let success = exit_status.success();
+            let _ = app_exit.emit("sim-exit", ExitPayload { code, success });
+        }
+        
+        let mut process_guard = state_exit.active_process.lock().unwrap();
+        *process_guard = None;
+    });
+
+    Ok("Starting CTRE Phoenix Tuner X installation via winget... Please check the log terminal for progress.".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -551,7 +636,8 @@ pub fn run() {
         stop_process,
         deploy_via_adb,
         install_jdk_winget,
-        clone_robot_repo
+        clone_robot_repo,
+        install_tuner_x
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

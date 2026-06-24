@@ -16,7 +16,8 @@ import {
   Layers,
   AlertTriangle,
   FolderOpen,
-  Laptop
+  Laptop,
+  ExternalLink
 } from "lucide-react";
 import TuningSettingsDrawer from "./TuningSettingsDrawer";
 import { invoke } from "@tauri-apps/api/core";
@@ -260,6 +261,21 @@ export default function LocalSimulatorPanel({
       setSimState("idle");
       setActiveTaskName(null);
       setDaemonLogs((prev) => [...prev, `[Tauri Error] Repository clone failed: ${err.message || err}`]);
+    }
+  };
+
+  const runTunerXInstaller = async () => {
+    try {
+      setSimState("building");
+      setActiveTaskName("Install Phoenix Tuner X");
+      setDaemonLogs((prev) => [...prev, "[Tauri] Initiating CTRE Phoenix Tuner X automated installation via winget..."]);
+      const result = await invoke<string>("install_tuner_x");
+      setDaemonLogs((prev) => [...prev, `[Tauri] ${result}`]);
+      setSimState("running");
+    } catch (err: any) {
+      setSimState("idle");
+      setActiveTaskName(null);
+      setDaemonLogs((prev) => [...prev, `[Tauri Error] Automated Tuner X installation failed: ${err.message || err}`]);
     }
   };
 
@@ -636,6 +652,154 @@ export default function LocalSimulatorPanel({
                   >
                     <Square size={12} /> Stop Active Task {activeTaskName ? `(${activeTaskName})` : ""}
                   </button>
+                )}
+              </div>
+
+              {/* FRC/FTC Resource Setup & Utility Guides */}
+              <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
+                <h3 className="font-heading font-black text-xs uppercase tracking-widest text-ares-gold flex items-center gap-2">
+                  <FolderOpen size={14} /> Platform Software Setup
+                </h3>
+                
+                {targetPlatform === "frc" ? (
+                  /* FRC GUIDES */
+                  <div className="space-y-3">
+                    {/* WPILib Installer */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">WPILib Suite & VS Code</span>
+                        <a 
+                          href="https://github.com/wpilibsuite/allwpilib/releases" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 Releases <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        Offline C++/Java libraries, compiler tools, desktop simulation GUI, and custom VS Code build environment.
+                      </p>
+                    </div>
+
+                    {/* FRC Game Tools */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">NI FRC Game Tools</span>
+                        <a 
+                          href="https://www.ni.com/en/support/downloads/drivers/download.frc-game-tools.html" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 NI Portal <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        Essential suite containing the FRC Driver Station, RoboRIO Imaging Tool, and Radio Configuration Utility.
+                      </p>
+                    </div>
+
+                    {/* CTRE Phoenix Tuner X */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">CTRE Phoenix Tuner X</span>
+                        <a 
+                          href="https://apps.microsoft.com/detail/9nv10t0z8p2f" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 MS Store <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        CAN diagnostics and settings management for CTR hardware (Talon FX, CANcoders, CANivores).
+                      </p>
+                      <button
+                        onClick={runTunerXInstaller}
+                        disabled={simState !== "idle"}
+                        className="w-full bg-ares-red text-white py-1 rounded font-black uppercase tracking-wider text-[8px] hover:bg-ares-red/80 disabled:opacity-50 cursor-pointer transition-all"
+                      >
+                        ⚡ Auto-Install via Winget
+                      </button>
+                    </div>
+
+                    {/* REV Hardware Client */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">REV Hardware Client</span>
+                        <a 
+                          href="https://docs.revrobotics.com/rev-hardware-client/installation" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 REV Docs <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        Firmware flashing and parameter configuration for REV SPARK MAX/Flex controllers, PDH, and pneumatic hubs.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* FTC GUIDES */
+                  <div className="space-y-3">
+                    {/* Android Studio */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">Android Studio IDE</span>
+                        <a 
+                          href="https://developer.android.com/studio" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 Download <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        The recommended IDE for coding FTC robot controllers in Java/Kotlin. Automatically installs Android SDK tooling.
+                      </p>
+                    </div>
+
+                    {/* REV Hardware Client */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">REV Hardware Client</span>
+                        <a 
+                          href="https://docs.revrobotics.com/rev-hardware-client/installation" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 REV Docs <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        Essential for flashing and configuring REV Control Hubs, Expansion Hubs, and SPARK controllers.
+                      </p>
+                    </div>
+
+                    {/* FTC Software Wiki */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase text-white tracking-wide">FTC Software Wiki</span>
+                        <a 
+                          href="https://ftc-docs.firstinspires.org/en/latest/index.html" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[8px] font-black uppercase text-ares-gold hover:text-white flex items-center gap-1 transition-all"
+                        >
+                          🌐 Official Docs <ExternalLink size={8} />
+                        </a>
+                      </div>
+                      <p className="text-[8px] text-marble/55 leading-normal">
+                        The official *FIRST*® programming wiki for setting up and debugging control systems and Wi-Fi configurations.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </>
