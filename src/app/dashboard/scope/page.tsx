@@ -510,6 +510,7 @@ export default function ScopeDashboard() {
         simState={simState}
         setSimState={setSimState}
         handleConnectLive={handleConnectLive}
+        ipAddress={ipAddress}
       />
 
     </div>
