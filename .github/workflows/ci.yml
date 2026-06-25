@@ -69,9 +69,10 @@ jobs:
       - name: Deploy Preview to Firebase Hosting
         id: deploy
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          npx firebase-tools hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal > output.txt 2>&1 || { cat output.txt; exit 1; }
+          export FIREBASE_TOKEN=$(echo "$RAW_FIREBASE_TOKEN" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal > output.txt 2>&1 || { cat output.txt; exit 1; }
           cat output.txt
           URL=$(grep 'Channel URL:' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
           echo "details_url=$URL" >> $GITHUB_OUTPUT
@@ -441,8 +442,10 @@ jobs:
 
       - name: Deploy Production to Firebase
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx firebase-tools deploy --only hosting,functions --project aresfirst-portal
+          RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          export FIREBASE_TOKEN=$(echo "$RAW_FIREBASE_TOKEN" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal
 
       - name: Post Deploy Status
         run: |
