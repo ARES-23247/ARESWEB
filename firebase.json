@@ -7,7 +7,6 @@
     "rules": "storage.rules"
   },
     "hosting": {
-      "site": "aresfirst-portal",
       "public": "dist",
       "ignore": [
         "firebase.json",
