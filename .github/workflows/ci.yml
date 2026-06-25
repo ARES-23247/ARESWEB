@@ -57,8 +57,6 @@ jobs:
             ${{ runner.os }}-vite-
 
       - name: Build with Vite
-        env:
-          VITE_DISABLE_PAGES_REDIRECT: "true"
         run: pnpm run build
 
       - name: Upload Build Artifacts
@@ -196,7 +194,7 @@ jobs:
       - name: Run ESLint
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run lint
+        run: pnpm run lint --cache --cache-location .eslintcache
 
   # 3. Run TypeScript compiler typechecks
   fast-typecheck:
@@ -223,7 +221,7 @@ jobs:
       - name: Cache TypeScript build info
         uses: actions/cache@v4
         with:
-          path: .tsbuildinfo
+          path: tsconfig.tsbuildinfo
           key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
           restore-keys: |
             tsbuildinfo-${{ runner.os }}-
@@ -442,12 +440,9 @@ jobs:
           pnpm run build
 
       - name: Deploy Production to Firebase
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy --only hosting,functions
         env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ARESFIRST_PORTAL || secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: npx firebase-tools deploy --only hosting,functions --project aresfirst-portal
 
       - name: Post Deploy Status
         run: |
