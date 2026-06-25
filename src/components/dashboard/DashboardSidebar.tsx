@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, Compass, Grid, Play, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, BarChart3 } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -153,46 +153,6 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           </div>
         </div>
 
-        {/* Robot Tools */}
-        <div>
-          <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
-            Robot Tools
-          </h4>
-          <div className="space-y-1">
-            <NavButton tab="scope" icon={Cpu} label="ARES-Scope" currentPath={pathname} />
-            <Link
-              to="/dashboard/scope?sim=true"
-              onClick={onCloseMobile}
-              className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
-                pathname === "/dashboard/scope" && search.includes("sim=true")
-                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
-                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-3 truncate">
-                <Play size={16} className={pathname === "/dashboard/scope" && search.includes("sim=true") ? "text-white animate-pulse" : "text-marble/55"} />
-                <span className="truncate">Robot Simulator</span>
-              </div>
-            </Link>
-            <Link
-              to="/aresplanner"
-              onClick={onCloseMobile}
-              className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border ${
-                pathname === "/aresplanner"
-                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
-                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-3 truncate">
-                <Compass size={16} className={pathname === "/aresplanner" ? "text-white animate-pulse" : "text-marble/55"} />
-                <span className="truncate">ARES Pathplanning</span>
-              </div>
-            </Link>
-            <NavButton tab="field" icon={Grid} label="Field Editor" currentPath={pathname} />
-            <NavButton tab="analytics" icon={BarChart3} label="Analytics Hub" currentPath={pathname} />
-          </div>
-        </div>
-
         {/* Media Management */}
         <div>
           <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
@@ -203,7 +163,6 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <NavButton tab="events" icon={Calendar} label="Manage Events" currentPath={pathname} />
             <NavButton tab="academy" icon={GraduationCap} label="Academy Manager" currentPath={pathname} />
             <NavButton tab="areslib" icon={BookOpen} label="ARESLib Manager" currentPath={pathname} />
-            <NavButton tab="simulations" icon={TerminalSquare} label="Simulations Manager" currentPath={pathname} />
             <NavButton tab="documents" icon={FileText} label="Cloud Resources" currentPath={pathname} />
             <NavButton tab="videos" icon={Video} label="Manage Videos" currentPath={pathname} />
             <NavButton tab="photos" icon={ImageIcon} label="Manage Photos" currentPath={pathname} />

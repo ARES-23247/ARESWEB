@@ -5,7 +5,6 @@ import cors from "cors";
 import photosRouter from "./routes/photos";
 import inquiriesRouter from "./routes/inquiries";
 import tasksRouter from "./routes/tasks";
-import analyticsRouter from "./routes/analytics";
 import webhooksRouter from "./routes/webhooks";
 import uploadRouter from "./routes/upload";
 import replayRouter from "./routes/replay";
@@ -51,7 +50,6 @@ app.use((req, res, next) => {
 app.use("/api/photos", photosRouter);
 app.use("/api/inquiries", inquiriesRouter);
 app.use("/api/tasks", tasksRouter);
-app.use("/api/analytics", analyticsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/replay", replayRouter);
