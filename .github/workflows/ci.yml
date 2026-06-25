@@ -71,7 +71,7 @@ jobs:
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          echo "$SERVICE_ACCOUNT_KEY" > /tmp/gcp_key.json
+          node -e "require('fs').writeFileSync('/tmp/gcp_key.json', process.env.SERVICE_ACCOUNT_KEY)"
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
           pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --debug > output.txt 2>&1 || { cat output.txt; rm -f /tmp/gcp_key.json; exit 1; }
           rm -f /tmp/gcp_key.json
@@ -446,7 +446,7 @@ jobs:
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          echo "$SERVICE_ACCOUNT_KEY" > /tmp/gcp_key.json
+          node -e "require('fs').writeFileSync('/tmp/gcp_key.json', process.env.SERVICE_ACCOUNT_KEY)"
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
           pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal --debug || { rm -f /tmp/gcp_key.json; exit 1; }
           rm -f /tmp/gcp_key.json
