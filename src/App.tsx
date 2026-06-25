@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Link, NavLink } from "react-router-dom";
+import { Cpu, Grid, Compass } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -91,16 +92,76 @@ export default function App() {
   const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window || "__TAURI_IPC__" in window);
 
   if (isTauri) {
+    // Helper link component for Tauri native desktop sidebar
+    const TauriNavLink = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
+      return (
+        <NavLink
+          to={to}
+          className={({ isActive }) =>
+            `w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border relative ${
+              isActive
+                ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)] font-extrabold"
+                : "text-marble/70 hover:bg-white/5 hover:text-white border-transparent"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <Icon size={16} className={isActive ? "text-white animate-pulse" : "text-marble/45"} />
+              <span className="truncate">{label}</span>
+            </>
+          )}
+        </NavLink>
+      );
+    };
+
     return (
       <BrowserRouter>
         <AuthProvider>
-          <div className="min-h-screen bg-obsidian text-marble p-6 md:p-10 max-w-7xl mx-auto w-full relative z-10">
-            <Suspense fallback={<AppLoading />}>
-              <Routes>
-                <Route path="/" element={<DashboardScopePage />} />
-                <Route path="*" element={<DashboardScopePage />} />
-              </Routes>
-            </Suspense>
+          <div className="w-screen h-screen bg-[#09090b] text-marble flex overflow-hidden fixed inset-0 z-50">
+            {/* Native Desktop Navigation Sidebar */}
+            <div className="w-64 bg-[#0c0c0f] border-r border-white/5 flex flex-col shrink-0 p-4 gap-6 select-none h-full justify-between">
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-3 px-2 py-1">
+                  <span className="text-sm font-black tracking-tighter text-white font-heading">
+                    ARES <span className="bg-ares-red text-white px-1.5 py-0.5 ares-cut-sm font-bold text-xs ml-1">PORTAL</span>
+                  </span>
+                  <span className="text-[8px] bg-ares-gold/15 text-ares-gold border border-ares-gold/25 px-1.5 py-0.5 rounded uppercase font-bold font-mono tracking-wider">
+                    Desktop
+                  </span>
+                </div>
+
+                {/* Navigation Items */}
+                <div className="flex flex-col gap-1">
+                  <TauriNavLink to="/" icon={Cpu} label="ARES Scope" />
+                  <TauriNavLink to="/field" icon={Grid} label="Field Editor" />
+                  <TauriNavLink to="/aresplanner" icon={Compass} label="ARES Pathplanning" />
+                </div>
+              </div>
+
+              {/* Profile Card / Footer info */}
+              <div className="bg-black/35 border border-white/5 p-3 rounded-lg flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-ares-red/10 border border-ares-red/35 flex items-center justify-center font-black text-xs text-ares-red shrink-0 font-mono">
+                  CD
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white truncate leading-none mb-1">Coach David</p>
+                  <p className="text-[9px] text-marble/35 uppercase font-mono tracking-wider">Offline Admin</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Window Workspace */}
+            <div className="flex-grow min-w-0 h-full overflow-hidden relative bg-[#09090b]">
+              <Suspense fallback={<AppLoading />}>
+                <Routes>
+                  <Route path="/" element={<DashboardScopePage />} />
+                  <Route path="/field" element={<DashboardFieldPage />} />
+                  <Route path="/aresplanner" element={<AresPlannerPage />} />
+                  <Route path="*" element={<DashboardScopePage />} />
+                </Routes>
+              </Suspense>
+            </div>
           </div>
         </AuthProvider>
       </BrowserRouter>

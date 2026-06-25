@@ -522,7 +522,7 @@ export default function ScopeDashboard() {
 
   if (isTauri) {
     return (
-      <div className="w-screen h-screen bg-[#09090b] text-marble flex flex-col overflow-hidden select-none fixed inset-0 z-50">
+      <div className="w-full h-full bg-[#09090b] text-marble flex flex-col overflow-hidden select-none relative">
         {/* Header Toolbar */}
         <div className="w-full h-12 bg-[#0c0c0f] border-b border-white/5 flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
