@@ -88,6 +88,25 @@ export default function App() {
     document.head.appendChild(script);
   }, []);
 
+  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+
+  if (isTauri) {
+    return (
+      <BrowserRouter>
+        <AuthProvider>
+          <div className="min-h-screen bg-obsidian text-marble p-6 md:p-10 max-w-7xl mx-auto w-full relative z-10">
+            <Suspense fallback={<AppLoading />}>
+              <Routes>
+                <Route path="/" element={<DashboardScopePage />} />
+                <Route path="*" element={<DashboardScopePage />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </AuthProvider>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
       <AuthProvider>

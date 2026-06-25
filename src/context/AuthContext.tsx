@@ -37,6 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
+    const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+    if (isTauri) {
+      loginWithMockUser("coach.david@gmail.com", "admin", "Coach David");
+      return;
+    }
+
     // Safety timeout: if Auth takes more than 1.5 seconds to initialize (e.g., emulators are offline/refused),
     // automatically force loading to false so the developer bypass lockscreen is visible.
     const safetyTimeout = setTimeout(() => {
