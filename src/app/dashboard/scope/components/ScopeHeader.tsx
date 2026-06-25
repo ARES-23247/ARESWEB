@@ -87,6 +87,8 @@ export default function ScopeHeader({
   const pathInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
 
+  const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window || "__TAURI_IPC__" in window);
+
   return (
     <header className="border-b border-white/5 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
       <div>
@@ -136,36 +138,40 @@ export default function ScopeHeader({
           </div>
         )}
 
-        {/* Live Stream Button */}
-        {isStreaming ? (
-          <button
-            onClick={handleDisconnectLive}
-            className="px-4 py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 hover:border-ares-red/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-          >
-            <WifiOff size={12} /> Disconnect
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowLiveModal(true)}
-            className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
-          >
-            <Wifi size={12} /> Go Live
-          </button>
+        {/* Live Stream Button (Tauri Only) */}
+        {isTauri && (
+          isStreaming ? (
+            <button
+              onClick={handleDisconnectLive}
+              className="px-4 py-2.5 bg-ares-red/15 hover:bg-ares-red/25 text-ares-red-light border border-ares-red/20 hover:border-ares-red/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+            >
+              <WifiOff size={12} /> Disconnect
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowLiveModal(true)}
+              className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/20 hover:border-ares-gold/30 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold"
+            >
+              <Wifi size={12} /> Go Live
+            </button>
+          )
         )}
 
-        {/* Local Simulator Controls Button */}
-        <button
-          onClick={() => setShowSimDrawer(true)}
-          className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none ${
-            simState !== "idle"
-              ? "bg-ares-success/15 text-ares-success border border-ares-success/20 hover:bg-ares-success/25"
-              : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
-          }`}
-          title="Open local simulator controls"
-        >
-          <Play size={12} className={simState === "building" ? "animate-pulse text-ares-gold" : simState === "running" ? "text-ares-success" : ""} />
-          <span>Local Sim</span>
-        </button>
+        {/* Local Simulator Controls Button (Tauri Only) */}
+        {isTauri && (
+          <button
+            onClick={() => setShowSimDrawer(true)}
+            className={`px-4 py-2.5 text-[10px] uppercase font-black tracking-widest ares-cut-sm cursor-pointer flex items-center gap-2 transition-all duration-300 shadow-md font-bold focus:ring-2 focus:ring-ares-cyan focus:outline-none ${
+              simState !== "idle"
+                ? "bg-ares-success/15 text-ares-success border border-ares-success/20 hover:bg-ares-success/25"
+                : "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/10"
+            }`}
+            title="Open local simulator controls"
+          >
+            <Play size={12} className={simState === "building" ? "animate-pulse text-ares-gold" : simState === "running" ? "text-ares-success" : ""} />
+            <span>Local Sim</span>
+          </button>
+        )}
 
         {/* Field Layout Selector */}
         <div className="flex items-center bg-black/50 border border-white/5 px-3 py-2 rounded-xl text-xs gap-2">
