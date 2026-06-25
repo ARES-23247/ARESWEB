@@ -507,7 +507,7 @@ export default function ScopeDashboard() {
     }
   }, [currentTimeMs, videoUrl]);
 
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+  const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window || "__TAURI_IPC__" in window);
 
   const currentFrame = getCurrentFrame();
   const currentFrameValues = currentFrame?.values || {};

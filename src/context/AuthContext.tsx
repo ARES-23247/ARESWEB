@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
-    const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+    const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window || "__TAURI_IPC__" in window);
     if (isTauri) {
       loginWithMockUser("coach.david@gmail.com", "admin", "Coach David");
       return;

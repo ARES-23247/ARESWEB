@@ -49,7 +49,7 @@ export default function LocalSimulatorPanel({
   const simDrawerRef = useFocusTrap(isOpen, onClose);
   
   // Tauri environment detection
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+  const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window || "__TAURI_IPC__" in window);
 
   // Tauri States
   const [targetPlatform, setTargetPlatform] = useState<"ftc" | "frc">("ftc");
