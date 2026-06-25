@@ -13,6 +13,7 @@
   "dependencies": {
     "@babel/standalone": "^8.0.2",
     "@monaco-editor/react": "^4.7.0",
+    "@radix-ui/react-dialog": "^1.1.17",
     "@tanstack/react-query": "^5.101.0",
     "@xyflow/react": "^12.11.0",
     "clsx": "^2.1.1",
