@@ -69,10 +69,12 @@ jobs:
       - name: Deploy Preview to Firebase Hosting
         id: deploy
         env:
-          RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          export FIREBASE_TOKEN="${RAW_FIREBASE_TOKEN//[[:space:]]/}"
-          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --token "$FIREBASE_TOKEN" --debug > output.txt 2>&1 || { cat output.txt; exit 1; }
+          echo "$SERVICE_ACCOUNT_KEY" > /tmp/gcp_key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
+          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --debug > output.txt 2>&1 || { cat output.txt; rm -f /tmp/gcp_key.json; exit 1; }
+          rm -f /tmp/gcp_key.json
           cat output.txt
           URL=$(grep 'Channel URL:' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
           echo "details_url=$URL" >> $GITHUB_OUTPUT
@@ -442,10 +444,12 @@ jobs:
 
       - name: Deploy Production to Firebase
         env:
-          RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          export FIREBASE_TOKEN="${RAW_FIREBASE_TOKEN//[[:space:]]/}"
-          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal --token "$FIREBASE_TOKEN"
+          echo "$SERVICE_ACCOUNT_KEY" > /tmp/gcp_key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
+          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal --debug || { rm -f /tmp/gcp_key.json; exit 1; }
+          rm -f /tmp/gcp_key.json
 
       - name: Post Deploy Status
         run: |

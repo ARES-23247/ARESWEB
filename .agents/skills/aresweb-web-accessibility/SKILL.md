@@ -20,16 +20,15 @@ You are an expert accessibility engineer enforcing the championship-grade standa
 * **Forms & DOM Hygiene:** Every `<input>`, `<textarea>`, and `<select>` MUST have an explicitly associated `<label>` using the `htmlFor`/`id` pattern in React.
 
 ## Testing Protocol
-1. Ensure components render cleanly on the Cloudflare Edge.
-2. Fix "Orphaned form labels" or "Unlabeled form controls" immediately. Use semantic form controls inside Next.js Server Components or Client-side actions safely.
-3. **Hierarchy Traversal:** Whenever rendering dynamic pages or complex layouts, ensure a visually-hidden `Skip to content` link exists in the header layout to allow keyboard users to bypass the Navigation bar.
+1. Fix "Orphaned form labels" or "Unlabeled form controls" immediately.
+2. **Hierarchy Traversal:** Whenever rendering dynamic pages or complex layouts, ensure a visually-hidden `Skip to content` link exists in the header layout to allow keyboard users to bypass the Navigation bar.
 
 
-## Next.js / React Theming Fixes
+## React Theming Fixes
 Because ARESWEB uses a futuristic dark theme via Tailwind CSS:
 1. Ensure focus rings match the aesthetic (e.g. `focus-visible:ring-ares-cyan`).
 2. Do not use hardcoded black text on dark components unless visually separated by glassmorphic boundaries.
-3. Injected inline elements or custom React interactive dashboards must map properly to transparent custom fallbacks rather than hardcoded colors, ensuring components hydrate seamlessly from the server.
+3. Injected inline elements or custom React interactive dashboards must map properly to transparent custom fallbacks rather than hardcoded colors.
 
 ## Remediation: Axe / Pa11y Background Calculation Errors
 When text overlays a visually complex background (such as absolute gradients, `blur-3xl` glow effects, radial-gradients, or transparency layers), automation tools like Axe regularly trigger non-deterministic "needsFurtherReview" color contrast false positives because they cannot compute the blended mathematical matrix.
