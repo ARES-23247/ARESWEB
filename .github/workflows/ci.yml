@@ -71,10 +71,8 @@ jobs:
         env:
           RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          echo "DEBUG: Token length is ${#RAW_FIREBASE_TOKEN}"
-          echo "DEBUG: Token starts with: ${RAW_FIREBASE_TOKEN:0:5}"
           export FIREBASE_TOKEN="${RAW_FIREBASE_TOKEN//[[:space:]]/}"
-          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal > output.txt 2>&1 || { cat output.txt; exit 1; }
+          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --token "$FIREBASE_TOKEN" > output.txt 2>&1 || { cat output.txt; exit 1; }
           cat output.txt
           URL=$(grep 'Channel URL:' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
           echo "details_url=$URL" >> $GITHUB_OUTPUT
@@ -447,7 +445,7 @@ jobs:
           RAW_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           export FIREBASE_TOKEN="${RAW_FIREBASE_TOKEN//[[:space:]]/}"
-          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal
+          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal --token "$FIREBASE_TOKEN"
 
       - name: Post Deploy Status
         run: |
