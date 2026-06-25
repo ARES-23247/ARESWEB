@@ -1,5 +1,6 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, Suspense } from "react";
 import { Info, AlertTriangle, Lightbulb } from "lucide-react";
+import { SIM_COMPONENTS } from "./generated/sim-registry";
 
 export interface ASTMark {
   type: string;
@@ -148,9 +149,25 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       return <hr className="my-6 border-t border-white/10" />;
     case "interactiveComponent": {
       const componentName = node.attrs?.componentName as string;
+      if (!componentName) return null;
+      const SimComponent = SIM_COMPONENTS[componentName] || SIM_COMPONENTS[componentName.toLowerCase()];
+      if (!SimComponent) {
+        return (
+          <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-marble/55 text-xs">
+            Unknown simulator component: {componentName}
+          </div>
+        );
+      }
       return (
-        <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-marble/55 text-xs bg-black/25 my-6">
-          Interactive simulator component &quot;{componentName}&quot; is only available in the ARES Scope Desktop Application.
+        <div className="w-full my-8">
+          <Suspense fallback={
+            <div className="h-64 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center text-marble/60 animate-pulse">
+              <div className="w-8 h-8 border-4 border-white/10 border-t-ares-cyan rounded-full animate-spin mb-3"></div>
+              <p className="text-[10px] uppercase font-black tracking-widest text-ares-cyan">Loading Simulator...</p>
+            </div>
+          }>
+            <SimComponent />
+          </Suspense>
         </div>
       );
     }

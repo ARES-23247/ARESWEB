@@ -4,12 +4,11 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
-
-const SIM_TAG_NAMES: string[] = [];
-const SIM_COMPONENTS: Record<string, React.ComponentType> = {};
+import { SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
 
 // ── Lazy-loaded Non-Sim Components ─────────────────────────────────────
 const ConfigVisualizer = lazy(() => import("./ConfigVisualizer"));
+const SimulationPlayground = lazy(() => import("../SimulationPlayground"));
 const CodePlayground = lazy(() => import("./CodePlayground"));
 const ScreenshotGallery = lazy(() => import("./ScreenshotGallery"));
 const InteractiveTutorial = lazy(() => import("../InteractiveTutorial"));
@@ -87,7 +86,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
       components={{
         // @ts-expect-error Custom component tag names
         configvisualizer: () => <LazyWrap><ConfigVisualizer /></LazyWrap>,
-        simulationplayground: () => <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-marble/55 text-xs bg-black/25 my-6">Interactive simulator playground is only available in the ARES Scope Desktop Application.</div>,
+        simulationplayground: () => <LazyWrap><SimulationPlayground /></LazyWrap>,
         codeplayground: () => <LazyWrap><CodePlayground /></LazyWrap>,
         screenshotgallery: () => <LazyWrap><ScreenshotGallery /></LazyWrap>,
         interactivetutorial: () => <LazyWrap><InteractiveTutorial /></LazyWrap>,

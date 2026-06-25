@@ -1,0 +1,323 @@
+{
+  "simulators": [
+    {
+      "id": "armkg",
+      "name": "Arm Kinematics Gravity Model",
+      "path": "./armkg",
+      "requiresContext": false
+    },
+    {
+      "id": "auto",
+      "name": "Autonomous Visualizer",
+      "path": "./auto",
+      "requiresContext": true
+    },
+    {
+      "id": "battleship",
+      "name": "Battleship",
+      "path": "./battleship",
+      "requiresContext": false
+    },
+    {
+      "id": "bee",
+      "name": "Bee",
+      "path": "./bee",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingAnchorAngles",
+      "name": "Anchor Vector Angles",
+      "path": "./climbing-anchor-angles",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingCapstanFriction",
+      "name": "Capstan Friction & Belay Dynamics",
+      "path": "./climbing-capstan-friction",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingCenterOfMass",
+      "name": "Center of Mass & Friction Vectors",
+      "path": "./climbing-center-of-mass",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingFallFactor",
+      "name": "Fall Factor & Impact Force",
+      "path": "./climbing-fall-factor",
+      "requiresContext": false
+    },
+    {
+      "id": "climbingFingerBiomechanics",
+      "name": "Finger Biomechanics & Pulley Strain",
+      "path": "./climbing-finger-biomechanics",
+      "requiresContext": false
+    },
+    {
+      "id": "cyclingGearRatios",
+      "name": "Cycling Gear Ratios & Cadence",
+      "path": "./cycling-gear-ratios",
+      "requiresContext": false
+    },
+    {
+      "id": "elevatorpid",
+      "name": "Elevator PID Tuning",
+      "path": "./elevatorpid",
+      "requiresContext": false
+    },
+    {
+      "id": "fault",
+      "name": "Fault Tolerant State Manager",
+      "path": "./fault",
+      "requiresContext": true
+    },
+    {
+      "id": "field",
+      "name": "PathPlanner Canvas Renderer",
+      "path": "./field",
+      "requiresContext": true
+    },
+    {
+      "id": "flywheelkv",
+      "name": "Flywheel KV Optimization",
+      "path": "./flywheelkv",
+      "requiresContext": false
+    },
+    {
+      "id": "greatbee",
+      "name": "Greatbee",
+      "path": "./greatbee",
+      "requiresContext": false
+    },
+    {
+      "id": "hikingGradeEnergy",
+      "name": "Hiking Grade Energy Cost",
+      "path": "./hiking-grade-energy",
+      "requiresContext": false
+    },
+    {
+      "id": "kayakingHydrodynamics",
+      "name": "Kayaking Hydrodynamics",
+      "path": "./kayaking-hydrodynamics",
+      "requiresContext": false
+    },
+    {
+      "id": "linearequations",
+      "name": "Linear Equations",
+      "path": "./linearequations",
+      "requiresContext": false
+    },
+    {
+      "id": "montyhall",
+      "name": "Monty Hall Problem",
+      "path": "./montyhall",
+      "requiresContext": false
+    },
+    {
+      "id": "nnActivation",
+      "name": "Sim 1.5: Activation Functions",
+      "path": "./nn-activation",
+      "requiresContext": false
+    },
+    {
+      "id": "nnBiology",
+      "name": "Sim 0: The Single Neuron",
+      "path": "./nn-biology",
+      "requiresContext": false
+    },
+    {
+      "id": "nnCnn",
+      "name": "Sim 2.5: Convolutions",
+      "path": "./nn-cnn",
+      "requiresContext": false
+    },
+    {
+      "id": "nnDiffusion",
+      "name": "Sim 5: Generative AI (Diffusion)",
+      "path": "./nn-diffusion",
+      "requiresContext": false
+    },
+    {
+      "id": "nnIntro",
+      "name": "Sim 1: Neural Networks Basics",
+      "path": "./nn-intro",
+      "requiresContext": false
+    },
+    {
+      "id": "nnLlm",
+      "name": "Sim 3: LLM Attention",
+      "path": "./nn-llm",
+      "requiresContext": false
+    },
+    {
+      "id": "nnPlayground",
+      "name": "Sim 6: Neural Playground",
+      "path": "./nn-playground",
+      "requiresContext": false
+    },
+    {
+      "id": "nnRl",
+      "name": "Sim 4: Reinforcement Learning",
+      "path": "./nn-rl",
+      "requiresContext": false
+    },
+    {
+      "id": "nnVision",
+      "name": "Sim 2: Machine Vision",
+      "path": "./nn-vision",
+      "requiresContext": false
+    },
+    {
+      "id": "performance",
+      "name": "AdvantageScope Telemetry Dashboard",
+      "path": "./performance",
+      "requiresContext": true
+    },
+    {
+      "id": "physics",
+      "name": "Dyn4j Physics Subsystem",
+      "path": "./physics",
+      "requiresContext": true
+    },
+    {
+      "id": "powershedding",
+      "name": "Brownout Protection Sandbox",
+      "path": "./powershedding",
+      "requiresContext": false
+    },
+    {
+      "id": "risk",
+      "name": "Risk",
+      "path": "./risk",
+      "requiresContext": false
+    },
+    {
+      "id": "satcircles",
+      "name": "Coordinate Circles & Sectors",
+      "path": "./satcircles",
+      "requiresContext": false
+    },
+    {
+      "id": "satexponential",
+      "name": "Exponential Functions",
+      "path": "./satexponential",
+      "requiresContext": false
+    },
+    {
+      "id": "satgraphs",
+      "name": "Scatterplots & Line of Best Fit",
+      "path": "./satgraphs",
+      "requiresContext": false
+    },
+    {
+      "id": "satinequalities",
+      "name": "Systems of Inequalities",
+      "path": "./satinequalities",
+      "requiresContext": false
+    },
+    {
+      "id": "satquadratic",
+      "name": "Quadratics & Parabolas",
+      "path": "./satquadratic",
+      "requiresContext": false
+    },
+    {
+      "id": "satstats",
+      "name": "Statistics & Data Distributions",
+      "path": "./satstats",
+      "requiresContext": false
+    },
+    {
+      "id": "satsystems",
+      "name": "Systems of Linear Equations",
+      "path": "./satsystems",
+      "requiresContext": false
+    },
+    {
+      "id": "sattables",
+      "name": "Two-Way Tables & Probability",
+      "path": "./sattables",
+      "requiresContext": false
+    },
+    {
+      "id": "sattriangles",
+      "name": "Solving Right Triangles",
+      "path": "./sattriangles",
+      "requiresContext": false
+    },
+    {
+      "id": "skiingCarvingForces",
+      "name": "Skiing Carving Forces",
+      "path": "./skiing-carving-forces",
+      "requiresContext": false
+    },
+    {
+      "id": "sotm",
+      "name": "Shoot-on-the-Move Analytics",
+      "path": "./sotm",
+      "requiresContext": true
+    },
+    {
+      "id": "statemachine",
+      "name": "State Machine Hierarchy Visualizer",
+      "path": "./statemachine",
+      "requiresContext": false
+    },
+    {
+      "id": "swerve",
+      "name": "Swerve Kinematics Playground",
+      "path": "./swerve",
+      "requiresContext": false
+    },
+    {
+      "id": "sysid",
+      "name": "System Identification Optimizer",
+      "path": "./sysid",
+      "requiresContext": false
+    },
+    {
+      "id": "trigbasics",
+      "name": "Trigonometry Basics",
+      "path": "./trigbasics",
+      "requiresContext": false
+    },
+    {
+      "id": "triginverse",
+      "name": "Inverse Trigonometry",
+      "path": "./triginverse",
+      "requiresContext": false
+    },
+    {
+      "id": "trigrobotics",
+      "name": "Robotics Kinematics",
+      "path": "./trigrobotics",
+      "requiresContext": false
+    },
+    {
+      "id": "troubleshooting",
+      "name": "MARSLib Error Triage Engine",
+      "path": "./troubleshooting",
+      "requiresContext": true
+    },
+    {
+      "id": "untitled",
+      "name": "Untitled",
+      "path": "./untitled",
+      "requiresContext": false
+    },
+    {
+      "id": "vision",
+      "name": "PhotonVision Pose Estimator",
+      "path": "./vision",
+      "requiresContext": true
+    },
+    {
+      "id": "zeroallocation",
+      "name": "Zero Allocation Memory Profiler",
+      "path": "./zeroallocation",
+      "requiresContext": true
+    }
+  ],
+  "_generated": "2026-06-18T16:23:33.413Z"
+}

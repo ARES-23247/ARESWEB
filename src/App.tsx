@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Link, NavLink } from "react-router-dom";
+import { Cpu, Grid, Compass } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -39,6 +40,7 @@ const DashboardBlogPage = lazy(() => import("@/app/dashboard/blog/page"));
 const DashboardDocumentsPage = lazy(() => import("@/app/dashboard/documents/page"));
 const DashboardAcademyPage = lazy(() => import("@/app/dashboard/academy/page"));
 const DashboardAreslibPage = lazy(() => import("@/app/dashboard/areslib/page"));
+const DashboardSimulationsPage = lazy(() => import("@/app/dashboard/simulations/page"));
 const DashboardEventsPage = lazy(() => import("@/app/dashboard/events/page"));
 const DashboardPhotosPage = lazy(() => import("@/app/dashboard/photos/page"));
 const DashboardTasksPage = lazy(() => import("@/app/dashboard/tasks/page"));
@@ -129,6 +131,7 @@ export default function App() {
                   <Route path="documents" element={<DashboardDocumentsPage />} />
                   <Route path="academy" element={<DashboardAcademyPage />} />
                   <Route path="areslib" element={<DashboardAreslibPage />} />
+                  <Route path="simulations" element={<DashboardSimulationsPage />} />
                   <Route path="videos" element={<DashboardVideosPage />} />
                   <Route path="photos" element={<DashboardPhotosPage />} />
                   <Route path="inquiries" element={<DashboardInquiriesPage />} />
