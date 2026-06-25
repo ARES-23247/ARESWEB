@@ -69,12 +69,14 @@ jobs:
           retention-days: 7
 
       - name: Deploy Preview to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
         id: deploy
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ARESFIRST_PORTAL || secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          projectId: aresfirst-portal
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          OUTPUT=$(npx firebase-tools hosting:channel:deploy preview-${{ github.event.number || github.sha }} --only hosting --token "$FIREBASE_TOKEN" --project aresfirst-portal)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep 'Channel URL:' | sed 's/.*Channel URL:[[:space:]]*//' | tr -d '\r' | tr -d '\n')
+          echo "details_url=$URL" >> $GITHUB_OUTPUT
 
       - name: Comment Preview URL on PR
         if: github.event_name == 'pull_request'
@@ -254,7 +256,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Security Audit
-        run: pnpm audit
+        run: pnpm audit --audit-level=high
 
   # Full E2E test suite - informational only
   e2e-playwright:
