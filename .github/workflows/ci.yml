@@ -73,9 +73,9 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          OUTPUT=$(npx firebase-tools hosting:channel:deploy preview-${{ github.event.number || github.sha }} --only hosting --token "$FIREBASE_TOKEN" --project aresfirst-portal)
-          echo "$OUTPUT"
-          URL=$(echo "$OUTPUT" | grep 'Channel URL:' | sed 's/.*Channel URL:[[:space:]]*//' | tr -d '\r' | tr -d '\n')
+          npx firebase-tools hosting:channel:deploy preview-${{ github.event.number || github.sha }} --only hosting --project aresfirst-portal > output.txt 2>&1 || { cat output.txt; exit 1; }
+          cat output.txt
+          URL=$(grep 'Channel URL:' output.txt | sed 's/.*Channel URL:[[:space:]]*//' | tr -d '\r' | tr -d '\n')
           echo "details_url=$URL" >> $GITHUB_OUTPUT
 
       - name: Comment Preview URL on PR
