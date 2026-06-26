@@ -40,12 +40,12 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              We do not use tracking tools like Google Analytics. Instead, we maintain a privacy-first web design with no analytics tracking scripts.
+              We utilize Google Analytics in <strong>Cookie-Free Mode</strong>. To prioritize your privacy, we have explicitly disabled HTTP cookie storage.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>No unique user IP addresses are stored or tracked to identify you.</li>
-              <li>No cookies or tracking files are saved on your device.</li>
-              <li>We measure basic website traffic (like total visits and page speed) to keep our site working.</li>
+              <li>A client identifier is generated and maintained strictly in the browser&apos;s local storage, preventing HTTP tracking cookies.</li>
+              <li>No unique user IP addresses are stored or permanently tracked.</li>
+              <li>We measure basic website traffic (like total visits, page views, and performance) to optimize site operations.</li>
             </ul>
           </section>
 

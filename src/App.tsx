@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TechStackPage from "@/app/tech-stack/page";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 // Lazy-load public pages for optimal bundle splitting
 const Home = lazy(() => import("@/app/page"));
@@ -88,6 +89,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AnalyticsTracker />
       <AuthProvider>
         <LayoutWrapper>
           <ErrorBoundary>
