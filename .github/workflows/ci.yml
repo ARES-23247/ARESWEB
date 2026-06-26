@@ -439,8 +439,8 @@ jobs:
       - name: Build Cloud Functions
         run: |
           cd functions
-          pnpm install
-          pnpm run build
+          npm ci
+          npm run build
 
       - name: Deploy Production to Firebase
         env:
