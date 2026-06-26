@@ -93,6 +93,7 @@ export default function OutreachPage() {
         window.location.hostname.startsWith("192.168.") ||
         window.location.hostname.startsWith("10.") ||
         window.location.hostname.endsWith(".local") ||
+        window.location.hostname.includes("aresfirst-portal--") ||
         window.location.protocol === "http:"
       );
       const hasBypass = typeof window !== "undefined" && window.ARES_E2E_BYPASS;

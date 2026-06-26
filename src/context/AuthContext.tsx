@@ -104,7 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.location.hostname === "127.0.0.1" ||
       window.location.hostname.startsWith("192.168.") ||
       window.location.hostname.startsWith("10.") ||
-      window.location.hostname.endsWith(".local")
+      window.location.hostname.endsWith(".local") ||
+      window.location.hostname.includes("aresfirst-portal--")
     );
 
     if (isLocalEnv) {

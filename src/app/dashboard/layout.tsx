@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
        window.location.hostname.startsWith("192.168.") ||
        window.location.hostname.startsWith("10.") ||
        window.location.hostname.endsWith(".local") ||
+       window.location.hostname.includes("aresfirst-portal--") ||
        process.env.NODE_ENV === "development")
     );
   }, []);
