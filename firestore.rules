@@ -33,7 +33,11 @@ service cloud.firestore {
     // Public collections (blogs, calendar, knowledge base docs)
     match /posts/{postSlug} {
       allow read: if true; // Publicly readable
-      allow write: if isAuthorized(); // Only team members can create or edit
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
@@ -77,7 +81,11 @@ service cloud.firestore {
 
     match /docs/{docSlug} {
       allow read: if true; // Publicly readable
-      allow write: if isAuthorized(); // Only team members can create or edit
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
@@ -186,19 +194,31 @@ service cloud.firestore {
     // videos
     match /videos/{videoId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
     }
 
     // seasons
     match /seasons/{seasonId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
     }
 
     // awards
     match /awards/{awardId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if isAuthorized();
     }
 
 

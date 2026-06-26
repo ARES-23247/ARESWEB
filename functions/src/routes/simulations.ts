@@ -2,6 +2,7 @@ import express from "express";
 import { adminDb } from "../lib/firebase-admin";
 import { ensureAuth, ensureAdmin, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
+import { ApiError } from "../middleware/errorHandler";
 import { exec } from "child_process";
 import path from "path";
 
@@ -120,8 +121,7 @@ router.get("/gist/:id", ensureAuth, asyncHandler(async (req, res) => {
 
   const ghRes = await fetch(`https://api.github.com/gists/${id}`, { headers });
   if (!ghRes.ok) {
-    res.status(404).json({ error: "Gist not found" });
-    return;
+    throw new ApiError(404, "Gist not found");
   }
 
   interface GitHubGist {
@@ -161,14 +161,12 @@ router.get("/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   if (!id || !id.startsWith("github:")) {
-    res.status(404).json({ error: "Simulation not found" });
-    return;
+    throw new ApiError(404, "Simulation not found");
   }
 
   const simId = id.replace("github:", "");
   if (!SIM_ID_PATTERN.test(simId)) {
-    res.status(400).json({ error: "Invalid simulation ID" });
-    return;
+    throw new ApiError(400, "Invalid simulation ID");
   }
 
   const filePath = `src/sims/${simId}/index.tsx`;
@@ -187,8 +185,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
     const legacyPath = `src/sims/${simId}.tsx`;
     const legacyRes = await fetch(`${ghConfig.apiBase}/contents/${legacyPath}`, { headers });
     if (!legacyRes.ok) {
-      res.status(404).json({ error: "Simulation not found in GitHub" });
-      return;
+      throw new ApiError(404, "Simulation not found in GitHub");
     }
     const code = await legacyRes.text();
     res.json({
@@ -227,21 +224,18 @@ router.get("/:id", asyncHandler(async (req, res) => {
 router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { files } = req.body as { files: Record<string, string> };
   if (!files || Object.keys(files).length === 0) {
-    res.status(400).json({ error: "No files provided" });
-    return;
+    throw new ApiError(400, "No files provided");
   }
 
   // Security: Limit total payload size to 2MB to prevent DoS
   const totalSize = JSON.stringify(files).length;
   if (totalSize > 2 * 1024 * 1024) {
-    res.status(400).json({ error: "Payload exceeds 2MB limit" });
-    return;
+    throw new ApiError(400, "Payload exceeds 2MB limit");
   }
 
   const rawFilename = Object.keys(files)[0];
   if (!SIM_FILENAME_PATTERN.test(rawFilename)) {
-    res.status(400).json({ error: "Invalid filename characters or extension" });
-    return;
+    throw new ApiError(400, "Invalid filename characters or extension");
   }
 
   const filename = rawFilename;
@@ -251,8 +245,7 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
   const pat = await getGitHubPat();
 
   if (!pat) {
-    res.status(500).json({ error: "GitHub PAT not configured" });
-    return;
+    throw new ApiError(500, "GitHub PAT not configured");
   }
 
   const headers: Record<string, string> = {
@@ -277,8 +270,7 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
     // Check ownership before updating
     const canModify = await canModifySimulation(req.user, simIdStr);
     if (!canModify) {
-      res.status(403).json({ error: "You can only modify your own simulations" });
-      return;
+      throw new ApiError(403, "You can only modify your own simulations");
     }
   }
 
@@ -293,8 +285,7 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
   });
 
   if (!putRes.ok) {
-    res.status(500).json({ error: "Failed to upload to GitHub" });
-    return;
+    throw new ApiError(500, "Failed to upload to GitHub");
   }
 
   res.json({ id: `github:${simIdStr}` });
@@ -304,14 +295,12 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
 router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   if (!id || !id.startsWith("github:")) {
-    res.status(404).json({ error: "Simulation not found" });
-    return;
+    throw new ApiError(404, "Simulation not found");
   }
 
   const simIdStr = id.replace("github:", "");
   if (!SIM_ID_PATTERN.test(simIdStr)) {
-    res.status(400).json({ error: "Invalid simulation ID" });
-    return;
+    throw new ApiError(400, "Invalid simulation ID");
   }
 
   const filename = `${simIdStr}.tsx`;
@@ -319,8 +308,7 @@ router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest,
   const pat = await getGitHubPat();
 
   if (!pat) {
-    res.status(500).json({ error: "GitHub PAT not configured" });
-    return;
+    throw new ApiError(500, "GitHub PAT not configured");
   }
 
   const headers: Record<string, string> = {
@@ -343,8 +331,7 @@ router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest,
   if (sha) {
     const canModify = await canModifySimulation(req.user, simIdStr);
     if (!canModify) {
-      res.status(403).json({ error: "You can only delete your own simulations" });
-      return;
+      throw new ApiError(403, "You can only delete your own simulations");
     }
 
     await fetch(url, {
@@ -364,14 +351,12 @@ router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest,
 router.post("/gist", ensureAuth, asyncHandler(async (req, res) => {
   const { name, files } = req.body as { name?: string; files: Record<string, string> };
   if (!files || Object.keys(files).length === 0) {
-    res.status(400).json({ error: "No files provided" });
-    return;
+    throw new ApiError(400, "No files provided");
   }
 
   const pat = await getGitHubPat();
   if (!pat) {
-    res.status(500).json({ error: "GitHub PAT not configured" });
-    return;
+    throw new ApiError(500, "GitHub PAT not configured");
   }
 
   const headers: Record<string, string> = {
@@ -397,8 +382,7 @@ router.post("/gist", ensureAuth, asyncHandler(async (req, res) => {
   });
 
   if (!ghRes.ok) {
-    res.status(500).json({ error: "Failed to create GitHub Gist" });
-    return;
+    throw new ApiError(500, "Failed to create GitHub Gist");
   }
 
   const gistResponse = await ghRes.json() as { id: string; html_url: string };
@@ -406,19 +390,19 @@ router.post("/gist", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/simulations/admin/generate-registry - Admin endpoint to regenerate registry
-router.post("/admin/generate-registry", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/admin/generate-registry", ensureAdmin, asyncHandler(async (req, res, next) => {
   if (process.env.FUNCTIONS_EMULATOR === "true" || process.env.NODE_ENV === "development") {
     const scriptPath = path.resolve(__dirname, "../../../scripts/generate-sim-registry.ts");
     exec(`npx ts-node "${scriptPath}"`, (err, stdout, stderr) => {
       if (err) {
         console.error("Failed to run generate-sim-registry:", err, stderr);
-        res.status(500).json({ success: false, error: err.message });
+        next(new ApiError(500, `Failed to generate registry: ${err.message}`));
         return;
       }
       res.json({ success: true, message: "Registry regenerated successfully!" });
     });
   } else {
-    res.status(403).json({ success: false, error: "Regeneration is not supported in production environment." });
+    throw new ApiError(403, "Regeneration is not supported in production environment.");
   }
 }));
 
@@ -427,8 +411,7 @@ router.get("/field-config/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const docSnap = await adminDb.collection("field_configs").doc(id).get();
   if (!docSnap.exists) {
-    res.status(404).json({ error: "Field configuration not found" });
-    return;
+    throw new ApiError(404, "Field configuration not found");
   }
   res.json(docSnap.data());
 }));

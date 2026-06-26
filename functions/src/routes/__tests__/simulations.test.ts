@@ -141,8 +141,10 @@ describe("Simulations Router Backend Endpoints", () => {
       const handler = getHandler("/:id", "get");
       await handler(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: "Invalid simulation ID" });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(400);
+      expect(err.message).toBe("Invalid simulation ID");
     });
   });
 
@@ -192,8 +194,10 @@ describe("Simulations Router Backend Endpoints", () => {
       const handler = getHandler("/", "post");
       await handler(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: "Payload exceeds 2MB limit" });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(400);
+      expect(err.message).toBe("Payload exceeds 2MB limit");
     });
   });
 

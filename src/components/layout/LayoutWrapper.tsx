@@ -14,7 +14,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />
-        {children}
+        <main id="main-content" className="flex-grow">
+          {children}
+        </main>
       </div>
     );
   }
