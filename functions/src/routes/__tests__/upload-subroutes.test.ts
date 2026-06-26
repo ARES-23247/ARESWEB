@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import uploadRouter from "../upload";
-import { BigQuery } from "@google-cloud/bigquery";
 
 // Mock Firebase Admin
 vi.mock("../../lib/firebase-admin", () => {
@@ -17,37 +16,6 @@ vi.mock("../../lib/firebase-admin", () => {
   };
 });
 
-// Mock BigQuery using constructible class inside factory
-vi.mock("@google-cloud/bigquery", () => {
-  const mockInsert = vi.fn();
-  const mockExists = vi.fn();
-  const mockCreate = vi.fn();
-  const mockCreateTable = vi.fn();
-
-  class MockBigQuery {
-    static mockInsert = mockInsert;
-    static mockExists = mockExists;
-    static mockCreate = mockCreate;
-    static mockCreateTable = mockCreateTable;
-
-    dataset(datasetId: string) {
-      return {
-        exists: () => mockExists(),
-        create: () => mockCreate(),
-        table: (tableId: string) => ({
-          exists: () => mockExists(),
-          insert: (rows: any) => mockInsert(rows),
-        }),
-        createTable: (tableId: string, options: any) => mockCreateTable(tableId, options),
-      };
-    }
-  }
-
-  return {
-    BigQuery: MockBigQuery,
-  };
-});
-
 describe("Ingestion Sub-endpoints", () => {
   let req: any;
   let res: any;
@@ -55,17 +23,8 @@ describe("Ingestion Sub-endpoints", () => {
   let statusMock: any;
   let jsonMock: any;
 
-  const mockInsert = (BigQuery as any).mockInsert;
-  const mockExists = (BigQuery as any).mockExists;
-  const mockCreate = (BigQuery as any).mockCreate;
-  const mockCreateTable = (BigQuery as any).mockCreateTable;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExists.mockResolvedValue([true]);
-    mockInsert.mockResolvedValue({});
-    mockCreate.mockResolvedValue({});
-    mockCreateTable.mockResolvedValue({});
 
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
@@ -95,12 +54,6 @@ describe("Ingestion Sub-endpoints", () => {
 
       await handler(req, res, next);
 
-      expect(mockInsert).toHaveBeenCalled();
-      const insertedRows = mockInsert.mock.calls[0][0];
-      expect(insertedRows.length).toBe(2);
-      expect(insertedRows[0].run_id).toBe("run123");
-      expect(insertedRows[1].timestamp_ms).toBe(200);
-
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith({ success: true, count: 2 });
     });
@@ -127,13 +80,8 @@ describe("Ingestion Sub-endpoints", () => {
 
       await handler(req, res, next);
 
-      expect(mockInsert).toHaveBeenCalled();
-      const insertedRows = mockInsert.mock.calls[0][0];
-      expect(insertedRows.length).toBe(1);
-      expect(insertedRows[0].run_id).toBe("run123");
-      expect(insertedRows[0].action_type).toBe("Intake");
-
       expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ success: true, count: 1 });
     });
 
     it("should throw ApiError on malformed JSON in actions", async () => {
@@ -158,12 +106,8 @@ describe("Ingestion Sub-endpoints", () => {
 
       await handler(req, res, next);
 
-      expect(mockInsert).toHaveBeenCalled();
-      const insertedRows = mockInsert.mock.calls[0][0];
-      expect(insertedRows.length).toBe(1);
-      expect(insertedRows[0].run_id).toBe("run123");
-
       expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ success: true, count: 1 });
     });
 
     it("should throw ApiError on malformed JSON in inputs", async () => {
@@ -187,13 +131,8 @@ describe("Ingestion Sub-endpoints", () => {
 
       await handler(req, res, next);
 
-      expect(mockInsert).toHaveBeenCalled();
-      const insertedRows = mockInsert.mock.calls[0][0];
-      expect(insertedRows.length).toBe(2);
-      expect(insertedRows[0].motor_id).toBe("drive_lf");
-      expect(insertedRows[1].timestamp_ms).toBe(200);
-
       expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ success: true, count: 2 });
     });
   });
 
@@ -206,13 +145,8 @@ describe("Ingestion Sub-endpoints", () => {
 
       await handler(req, res, next);
 
-      expect(mockInsert).toHaveBeenCalled();
-      const insertedRows = mockInsert.mock.calls[0][0];
-      expect(insertedRows.length).toBe(1);
-      expect(insertedRows[0].run_id).toBe("run123");
-      expect(insertedRows[0].tag_id).toBe(12);
-
       expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ success: true, count: 1 });
     });
 
     it("should throw ApiError on malformed JSON in vision", async () => {

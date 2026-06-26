@@ -3,7 +3,6 @@ import { ensureTeamMember, AuthenticatedRequest } from "../../middleware/auth";
 import uploadRouter from "../upload";
 import { Response, NextFunction } from "express";
 import { adminAuth, adminDb, adminStorage } from "../../lib/firebase-admin";
-import { runTelemetryDiagnostics } from "../../lib/vertex";
 
 // Mock Firebase Admin
 vi.mock("../../lib/firebase-admin", () => {
@@ -31,40 +30,7 @@ vi.mock("../../lib/firebase-admin", () => {
   };
 });
 
-// Mock Vertex Diagnostics
-vi.mock("../../lib/vertex", () => {
-  return {
-    runTelemetryDiagnostics: vi.fn(),
-  };
-});
 
-// Mock Google Cloud BigQuery
-vi.mock("@google-cloud/bigquery", () => {
-  const mockExists = vi.fn().mockResolvedValue([true]);
-  const mockCreate = vi.fn().mockResolvedValue([{}]);
-  const mockInsert = vi.fn().mockResolvedValue([{}]);
-  const mockCreateTable = vi.fn().mockResolvedValue([{}]);
-
-  const mockTable = vi.fn().mockReturnValue({
-    exists: mockExists,
-    insert: mockInsert,
-  });
-
-  const mockDataset = vi.fn().mockReturnValue({
-    exists: mockExists,
-    create: mockCreate,
-    table: mockTable,
-    createTable: mockCreateTable,
-  });
-
-  class MockBigQuery {
-    dataset = mockDataset;
-  }
-
-  return {
-    BigQuery: MockBigQuery,
-  };
-});
 
 describe("ensureTeamMember Middleware", () => {
   let req: Partial<AuthenticatedRequest>;
@@ -164,8 +130,6 @@ describe("POST /api/upload Route Handler", () => {
     const mockSave = adminStorage.bucket().file("").save;
     vi.mocked(mockSave).mockResolvedValue({} as any);
 
-    vi.mocked(runTelemetryDiagnostics).mockResolvedValue("Mock AI Report Content");
-
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
     req = {
@@ -210,7 +174,6 @@ describe("POST /api/upload Route Handler", () => {
   it("should process and upload CSV successfully", async () => {
     const mockGet = adminDb.collection("").doc("").get;
     vi.mocked(mockGet).mockResolvedValue({ exists: false } as any); // No existing run
-    vi.mocked(runTelemetryDiagnostics).mockResolvedValue("Mock AI Report Content");
 
     await handler(req, res);
 
@@ -256,6 +219,5 @@ describe("POST /api/upload Route Handler", () => {
     expect(mockSet).not.toHaveBeenCalled();
     const mockSave = adminStorage.bucket().file("").save;
     expect(mockSave).not.toHaveBeenCalled();
-    expect(runTelemetryDiagnostics).not.toHaveBeenCalled();
   });
 });

@@ -1,9 +1,7 @@
 import express from "express";
-import { BigQuery } from "@google-cloud/bigquery";
 import { adminDb, adminStorage } from "../lib/firebase-admin";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
-import { runTelemetryDiagnostics } from "../lib/vertex";
 import crypto from "crypto";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
@@ -139,9 +137,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
     }
   };
 
-  let bqSuccess = true;
-
-  // SCA-F01: Run upload and diagnostic checks, awaiting to prevent serverless container freeze
+  // SCA-F01: Run upload checks, awaiting to prevent serverless container freeze
   await (async () => {
     try {
       // 1. Archive CSV to GCS
@@ -162,53 +158,12 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
         logger.warn("upload", "Cloud Storage GCS save failed");
       }
 
-      // 2. BigQuery logging
-      try {
-        const bqProject = process.env.GCP_PROJECT_ID;
-        if (!bqProject) throw new Error("GCP_PROJECT_ID missing");
-        const bigquery = new BigQuery({ projectId: bqProject });
-        const bqRows = dataRows.map(row => ({
-          run_id: runId,
-          timestamp_ms: row.timestamp_ms,
-          battery_voltage: row.battery_voltage,
-          motor_lf_current: row.motor_lf_current,
-          motor_rf_current: row.motor_rf_current,
-          motor_lr_current: row.motor_lr_current,
-          motor_rr_current: row.motor_rr_current,
-          pinpoint_x: row.pinpoint_x,
-          pinpoint_y: row.pinpoint_y,
-          pinpoint_heading: row.pinpoint_heading,
-          ekf_drift_x: row.ekf_drift_x,
-          ekf_drift_y: row.ekf_drift_y,
-          loop_time_ms: row.loop_time_ms
-        }));
-
-        await ensureTableExists(bigquery, "telemetry", "runs_raw", runsRawSchema);
-        await bigquery.dataset("telemetry").table("runs_raw").insert(bqRows);
-        logger.info("upload", `Streamed timeseries rows to BigQuery for run: ${runId}`);
-      } catch (err) {
-        bqSuccess = false;
-        logger.error("upload", `BigQuery streaming failed: ${(err as Error).message}`);
-        throw new Error(`BigQuery streaming failed: ${(err as Error).message}`);
-      }
-
-      // 3. Gemini analysis
-      const markdownReport = await runTelemetryDiagnostics(summary);
-
-      // 4. Save to Firestore runs index
+      // 2. Save to Firestore runs index
       await adminDb.collection("telemetry_runs").doc(runId).set({
         ...summary,
         createdAt: new Date().toISOString()
       });
-
-      // 5. Save report to Firestore reports collection
-      await adminDb.collection("telemetry_reports").doc(runId).set({
-        runId,
-        opModeName,
-        report: markdownReport,
-        createdAt: new Date().toISOString()
-      });
-      logger.info("upload", `Telemetry runs and diagnostic report saved for ${runId}`);
+      logger.info("upload", `Telemetry runs saved for ${runId}`);
     } catch (bgErr) {
       logger.error("upload", "Telemetry ingestion background error", bgErr);
       throw bgErr; // Ensure error propagates to client so it's not silently lost
@@ -218,98 +173,11 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
   res.status(200).json({
     success: true,
     runId,
-    bqIngested: bqSuccess,
+    bqIngested: false,
     summary,
-    message: "Telemetry uploaded, archived, and Vertex diagnostics completed successfully."
+    message: "Telemetry uploaded and archived successfully."
   });
 }));
-
-const runsRawSchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
-  { name: "battery_voltage", type: "FLOAT", mode: "NULLABLE" },
-  { name: "motor_lf_current", type: "FLOAT", mode: "NULLABLE" },
-  { name: "motor_rf_current", type: "FLOAT", mode: "NULLABLE" },
-  { name: "motor_lr_current", type: "FLOAT", mode: "NULLABLE" },
-  { name: "motor_rr_current", type: "FLOAT", mode: "NULLABLE" },
-  { name: "pinpoint_x", type: "FLOAT", mode: "NULLABLE" },
-  { name: "pinpoint_y", type: "FLOAT", mode: "NULLABLE" },
-  { name: "pinpoint_heading", type: "FLOAT", mode: "NULLABLE" },
-  { name: "ekf_drift_x", type: "FLOAT", mode: "NULLABLE" },
-  { name: "ekf_drift_y", type: "FLOAT", mode: "NULLABLE" },
-  { name: "loop_time_ms", type: "FLOAT", mode: "NULLABLE" }
-];
-
-const robotStatesSchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "tick_index", type: "INTEGER", mode: "REQUIRED" },
-  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
-  { name: "state_json", type: "STRING", mode: "REQUIRED" },
-  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
-  { name: "match_number", type: "INTEGER", mode: "NULLABLE" },
-  { name: "alliance", type: "STRING", mode: "NULLABLE" }
-];
-
-const robotActionsSchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "timestamp_us", type: "INTEGER", mode: "REQUIRED" },
-  { name: "action_type", type: "STRING", mode: "REQUIRED" },
-  { name: "payload_json", type: "STRING", mode: "REQUIRED" },
-  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
-  { name: "match_number", type: "INTEGER", mode: "NULLABLE" },
-  { name: "alliance", type: "STRING", mode: "NULLABLE" }
-];
-
-const robotInputsSchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
-  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
-  { name: "odometry_json", type: "STRING", mode: "NULLABLE" },
-  { name: "imu_json", type: "STRING", mode: "NULLABLE" },
-  { name: "vision_json", type: "STRING", mode: "NULLABLE" },
-  { name: "distance_json", type: "STRING", mode: "NULLABLE" },
-  { name: "swerve_json", type: "STRING", mode: "NULLABLE" }
-];
-
-const motorTelemetrySchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
-  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
-  { name: "motor_id", type: "STRING", mode: "REQUIRED" },
-  { name: "voltage", type: "FLOAT", mode: "NULLABLE" },
-  { name: "current", type: "FLOAT", mode: "NULLABLE" },
-  { name: "temperature", type: "FLOAT", mode: "NULLABLE" },
-  { name: "position", type: "FLOAT", mode: "NULLABLE" },
-  { name: "velocity", type: "FLOAT", mode: "NULLABLE" }
-];
-
-const visionEventsSchema = [
-  { name: "run_id", type: "STRING", mode: "REQUIRED" },
-  { name: "robot_id", type: "STRING", mode: "NULLABLE" },
-  { name: "timestamp_ms", type: "INTEGER", mode: "REQUIRED" },
-  { name: "tag_id", type: "INTEGER", mode: "REQUIRED" },
-  { name: "camera_id", type: "STRING", mode: "NULLABLE" },
-  { name: "raw_pose_json", type: "STRING", mode: "NULLABLE" },
-  { name: "accepted", type: "BOOLEAN", mode: "REQUIRED" },
-  { name: "rejection_reason", type: "STRING", mode: "NULLABLE" },
-  { name: "covariance_json", type: "STRING", mode: "NULLABLE" }
-];
-
-async function ensureTableExists(bigquery: BigQuery, datasetId: string, tableId: string, schema: any[]) {
-  const dataset = bigquery.dataset(datasetId);
-  const [datasetExists] = await dataset.exists();
-  if (!datasetExists) {
-    await dataset.create();
-    logger.info("bigquery", `Created dataset ${datasetId}`);
-  }
-  
-  const table = dataset.table(tableId);
-  const [tableExists] = await table.exists();
-  if (!tableExists) {
-    await dataset.createTable(tableId, { schema });
-    logger.info("bigquery", `Created table ${tableId} in dataset ${datasetId}`);
-  }
-}
 
 // POST /api/upload/states
 router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
@@ -322,31 +190,15 @@ router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID;
-  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
-  const bigquery = new BigQuery({ projectId: bqProject });
-  await ensureTableExists(bigquery, "telemetry", "robot_states", robotStatesSchema);
-  
-  const bqRows = lines.map((line: string, index: number) => {
-    let parsed;
+  const parsedLines = lines.map((line: string, index: number) => {
     try {
-      parsed = JSON.parse(line);
+      return JSON.parse(line);
     } catch {
       throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
     }
-    return {
-      run_id: parsed.run_id || "",
-      tick_index: index,
-      timestamp_ms: parsed.timestampMs || 0,
-      state_json: line,
-      robot_id: parsed.robot_id || "",
-      match_number: parsed.match_number || 0,
-      alliance: parsed.alliance || "BLUE"
-    };
   });
   
-  await bigquery.dataset("telemetry").table("robot_states").insert(bqRows);
-  res.status(200).json({ success: true, count: bqRows.length });
+  res.status(200).json({ success: true, count: parsedLines.length });
 }));
 
 // POST /api/upload/actions
@@ -360,32 +212,15 @@ router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID;
-  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
-  const bigquery = new BigQuery({ projectId: bqProject });
-  await ensureTableExists(bigquery, "telemetry", "robot_actions", robotActionsSchema);
-  
-  const bqRows = lines.map((line: string, index: number) => {
-    let envelope;
+  const parsedLines = lines.map((line: string, index: number) => {
     try {
-      envelope = JSON.parse(line);
+      return JSON.parse(line);
     } catch {
       throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
     }
-    const payload = envelope.payload || {};
-    return {
-      run_id: envelope.run_id || "",
-      timestamp_us: payload.timestampMs ? payload.timestampMs * 1000 : 0,
-      action_type: envelope.type || "",
-      payload_json: JSON.stringify(payload),
-      robot_id: envelope.robot_id || "",
-      match_number: envelope.match_number || 0,
-      alliance: envelope.alliance || "BLUE"
-    };
   });
   
-  await bigquery.dataset("telemetry").table("robot_actions").insert(bqRows);
-  res.status(200).json({ success: true, count: bqRows.length });
+  res.status(200).json({ success: true, count: parsedLines.length });
 }));
 
 // POST /api/upload/inputs
@@ -399,32 +234,15 @@ router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID;
-  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
-  const bigquery = new BigQuery({ projectId: bqProject });
-  await ensureTableExists(bigquery, "telemetry", "robot_inputs", robotInputsSchema);
-  
-  const bqRows = lines.map((line: string, index: number) => {
-    let frame;
+  const parsedLines = lines.map((line: string, index: number) => {
     try {
-      frame = JSON.parse(line);
+      return JSON.parse(line);
     } catch {
       throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
     }
-    return {
-      run_id: frame.runId || "",
-      robot_id: frame.robotId || "",
-      timestamp_ms: frame.timestampMs || 0,
-      odometry_json: JSON.stringify(frame.odometryInputs || {}),
-      imu_json: JSON.stringify(frame.imuInputs || {}),
-      vision_json: JSON.stringify(frame.visionInputs || {}),
-      distance_json: null,
-      swerve_json: JSON.stringify(frame.swerveInputs || [])
-    };
   });
   
-  await bigquery.dataset("telemetry").table("robot_inputs").insert(bqRows);
-  res.status(200).json({ success: true, count: bqRows.length });
+  res.status(200).json({ success: true, count: parsedLines.length });
 }));
 
 // POST /api/upload/motors
@@ -438,32 +256,7 @@ router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "Invalid CSV format: requires header and data.");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID;
-  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
-  const bigquery = new BigQuery({ projectId: bqProject });
-  await ensureTableExists(bigquery, "telemetry", "motor_telemetry", motorTelemetrySchema);
-  
-  const bqRows: any[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(",");
-    if (parts.length < 9) continue;
-    bqRows.push({
-      run_id: parts[0],
-      robot_id: parts[1],
-      timestamp_ms: parseInt(parts[2]) || 0,
-      motor_id: parts[3],
-      voltage: parseFloat(parts[4]) || 0,
-      current: parseFloat(parts[5]) || 0,
-      temperature: parseFloat(parts[6]) || 0,
-      position: parseFloat(parts[7]) || 0,
-      velocity: parseFloat(parts[8]) || 0
-    });
-  }
-  
-  if (bqRows.length > 0) {
-    await bigquery.dataset("telemetry").table("motor_telemetry").insert(bqRows);
-  }
-  res.status(200).json({ success: true, count: bqRows.length });
+  res.status(200).json({ success: true, count: lines.length - 1 });
 }));
 
 // POST /api/upload/vision
@@ -477,36 +270,15 @@ router.post("/vision", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
     throw new ApiError(400, "No lines to import");
   }
   
-  const bqProject = process.env.GCP_PROJECT_ID;
-  if (!bqProject) throw new ApiError(500, "GCP_PROJECT_ID missing");
-  const bigquery = new BigQuery({ projectId: bqProject });
-  await ensureTableExists(bigquery, "telemetry", "vision_events", visionEventsSchema);
-  
-  const bqRows = lines.map((line: string, index: number) => {
-    let event;
+  const parsedLines = lines.map((line: string, index: number) => {
     try {
-      event = JSON.parse(line);
+      return JSON.parse(line);
     } catch {
       throw new ApiError(400, `Malformed JSON at line ${index + 1}: ${line.substring(0, 100)}`);
     }
-    return {
-      run_id: event.run_id || "",
-      robot_id: event.robot_id || "",
-      timestamp_ms: event.timestampMs || 0,
-      tag_id: event.tagId || 0,
-      camera_id: event.cameraId || "",
-      raw_pose_json: event.rawPoseJson || "",
-      accepted: event.accepted || false,
-      rejection_reason: event.rejectionReason || null,
-      covariance_json: JSON.stringify({
-        before: event.covarianceBefore || null,
-        after: event.covarianceAfter || null
-      })
-    };
   });
   
-  await bigquery.dataset("telemetry").table("vision_events").insert(bqRows);
-  res.status(200).json({ success: true, count: bqRows.length });
+  res.status(200).json({ success: true, count: parsedLines.length });
 }));
 
 export default router;
