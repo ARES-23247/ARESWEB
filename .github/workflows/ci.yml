@@ -85,88 +85,8 @@ jobs:
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 Preview deployment ready!\n\n**URL:** ${{ steps.deploy.outputs.details_url }}\n\nAll tests will run against this deployed environment.`
-            })
-
-  smoke-test:
-    name: Smoke Test
-    runs-on: ubuntu-latest
-    needs: deploy-preview
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.14.0"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: E2E Smoke Tests
-        env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: pnpm exec playwright test e2e/navigation.spec.ts
-
-      - name: Upload Smoke Test Report (on failure)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smoke-test-report
-          path: playwright-report/
-          retention-days: 7
-
-  # 1. Run unit/integration tests with Vitest
-  fast-test:
-    name: Unit & Integration Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.14.0"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run Vitest
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run test
-
-  # 2. Run ESLint code checks
-  fast-lint:
-    name: Code Linting
+              issue_numbe  verify:
+    name: Code Quality & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -199,28 +119,6 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: pnpm run lint --cache --cache-location .eslintcache
 
-  # 3. Run TypeScript compiler typechecks
-  fast-typecheck:
-    name: Type Checking
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.14.0"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Cache TypeScript build info
         uses: actions/cache@v4
         with:
@@ -234,40 +132,24 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: npx tsc --noEmit
 
-  # 4. Run security audit
-  fast-security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.14.0"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Run Security Audit
         run: pnpm audit --audit-level=high
 
-  # Full E2E test suite - informational only
-  e2e-playwright:
-    name: E2E Playwright
+      - name: Run Frontend Unit Tests
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: pnpm run test
+
+      - name: Run Cloud Functions Unit Tests
+        run: |
+          cd functions
+          npm ci
+          npm run test
+
+  e2e-tests:
+    name: Playwright E2E Tests
     runs-on: ubuntu-latest
     needs: deploy-preview
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -317,48 +199,24 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Playwright Tests (Shard ${{ matrix.shard }}/5)
+      - name: Run Playwright E2E Tests
         if: steps.check_e2e.outputs.run_e2e == 'true'
         env:
           PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: pnpm exec playwright test --shard=${{ matrix.shard }}/5
+        run: pnpm exec playwright test
 
       - name: Upload Playwright Report (on failure)
         if: failure() && steps.check_e2e.outputs.run_e2e == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report
           path: playwright-report/
           retention-days: 7
 
-      - name: Upload Test Artifacts (on failure)
-        if: failure() && steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-shard-${{ matrix.shard }}
-          path: test-results/
-          retention-days: 7
-
-      - name: Comment failure with debug info
-        if: failure() && github.event_name == 'pull_request' && matrix.shard == 1
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ **E2E Tests Failed**\n\n**Preview URL:** ${{ needs.deploy-preview.outputs.preview-url }}\n\n**Debug locally:**\n\`\`\`bash\nPREVIEW_URL=${{ needs.deploy-preview.outputs.preview-url }} npm run test:e2e:remote\n\`\`\`\n\nOr use debug mode:\n\`\`\`bash\nPREVIEW_URL=${{ needs.deploy-preview.outputs.preview-url }} npm run test:e2e:debug:remote\n\`\`\``
-            })
-
-
-
-  # Gate for production deployment - only runs on master after critical tests pass
   test-gate:
     name: Test Gate
     runs-on: ubuntu-latest
-    needs: [fast-test, fast-lint, fast-typecheck, fast-security, deploy-preview, smoke-test]
-    # Always run so we can check the status of dependent jobs
+    needs: [verify, deploy-preview, e2e-tests]
     if: always()
     outputs:
       all-passed: ${{ steps.check.outputs.all-passed }}
@@ -366,40 +224,20 @@ jobs:
       - name: Check test results
         id: check
         run: |
-          # Critical tests must pass for production deploy
-          # - fast-test: unit/integration tests
-          # - fast-lint: code quality checks
-          # - fast-typecheck: compiler type safety
-          # - fast-security: package vulnerability checks
-          # - deploy-preview: deploy preview
-          # - smoke-test: smoke tests
-          # Other E2E tests (playwright shards) are informational
-          if [ "${{ needs.fast-test.result }}" == "success" ] && \
-             [ "${{ needs.fast-lint.result }}" == "success" ] && \
-             [ "${{ needs.fast-typecheck.result }}" == "success" ] && \
-             [ "${{ needs.fast-security.result }}" == "success" ] && \
+          if [ "${{ needs.verify.result }}" == "success" ] && \
              [ "${{ needs.deploy-preview.result }}" == "success" ] && \
-             [ "${{ needs.smoke-test.result }}" == "success" ]; then
+             ( [ "${{ needs.e2e-tests.result }}" == "success" ] || [ "${{ needs.e2e-tests.result }}" == "skipped" ] ); then
             echo "all-passed=true" >> $GITHUB_OUTPUT
-            echo "✅ Critical tests passed!"
-            echo "  fast-test: ${{ needs.fast-test.result }}"
-            echo "  fast-lint: ${{ needs.fast-lint.result }}"
-            echo "  fast-typecheck: ${{ needs.fast-typecheck.result }}"
-            echo "  fast-security: ${{ needs.fast-security.result }}"
+            echo "✅ All critical validation checks passed!"
+            echo "  verify: ${{ needs.verify.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
-            echo "  smoke-test: ${{ needs.smoke-test.result }}"
-            echo ""
-            echo "ℹ️  Informational tests:"
-            echo "  e2e-playwright: (mocked, not blocking)"
+            echo "  e2e-tests: ${{ needs.e2e-tests.result }}"
           else
             echo "all-passed=false" >> $GITHUB_OUTPUT
-            echo "❌ Critical tests failed:"
-            echo "  fast-test: ${{ needs.fast-test.result }}"
-            echo "  fast-lint: ${{ needs.fast-lint.result }}"
-            echo "  fast-typecheck: ${{ needs.fast-typecheck.result }}"
-            echo "  fast-security: ${{ needs.fast-security.result }}"
+            echo "❌ Critical validation checks failed:"
+            echo "  verify: ${{ needs.verify.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
-            echo "  smoke-test: ${{ needs.smoke-test.result }}"
+            echo "  e2e-tests: ${{ needs.e2e-tests.result }}"
             exit 1
           fi
 
