@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -107,7 +107,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -153,7 +153,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -180,7 +180,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -215,7 +215,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -250,7 +250,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -298,7 +298,7 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -424,7 +424,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
+          node-version: "22.14.0"
           cache: "pnpm"
 
       - name: Install dependencies
