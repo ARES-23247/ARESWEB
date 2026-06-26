@@ -127,7 +127,7 @@ jobs:
       - name: E2E Smoke Tests
         env:
           PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: pnpm exec playwright test tests/e2e/smoke.spec.ts
+        run: pnpm exec playwright test e2e/navigation.spec.ts
 
       - name: Upload Smoke Test Report (on failure)
         if: failure()

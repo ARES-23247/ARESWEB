@@ -31,6 +31,7 @@ const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
 const StorePage = lazy(() => import("@/app/store/page"));
 const TasksRedirect = lazy(() => import("@/app/tasks/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
+const AresPlannerPage = lazy(() => import("@/app/aresplanner/page"));
 
 // Lazy-load dashboard pages
 const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));
@@ -120,6 +121,7 @@ export default function App() {
                 <Route path="/tasks" element={<TasksRedirect />} />
                 <Route path="/tech-stack" element={<TechStackPage />} />
                 <Route path="/terms" element={<TermsPage />} />
+                <Route path="/aresplanner" element={<AresPlannerPage />} />
                 
                 {/* Dashboard routes nested under DashboardLayout */}
                 <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
