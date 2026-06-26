@@ -85,7 +85,13 @@ jobs:
         with:
           script: |
             github.rest.issues.createComment({
-              issue_numbe  verify:
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployment ready!\n\n**URL:** ${{ steps.deploy.outputs.details_url }}\n\nAll tests will run against this deployed environment.`
+            })
+
+  verify:
     name: Code Quality & Unit Tests
     runs-on: ubuntu-latest
     steps:
