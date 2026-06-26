@@ -76,7 +76,7 @@ jobs:
           pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --debug > output.txt 2>&1 || { cat output.txt; rm -f /tmp/gcp_key.json; exit 1; }
           rm -f /tmp/gcp_key.json
           cat output.txt
-          URL=$(grep 'Channel URL:' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
+          URL=$(grep 'Channel URL' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
           echo "details_url=$URL" >> $GITHUB_OUTPUT
 
       - name: Comment Preview URL on PR
