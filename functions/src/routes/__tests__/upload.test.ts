@@ -38,6 +38,34 @@ vi.mock("../../lib/vertex", () => {
   };
 });
 
+// Mock Google Cloud BigQuery
+vi.mock("@google-cloud/bigquery", () => {
+  const mockExists = vi.fn().mockResolvedValue([true]);
+  const mockCreate = vi.fn().mockResolvedValue([{}]);
+  const mockInsert = vi.fn().mockResolvedValue([{}]);
+  const mockCreateTable = vi.fn().mockResolvedValue([{}]);
+
+  const mockTable = vi.fn().mockReturnValue({
+    exists: mockExists,
+    insert: mockInsert,
+  });
+
+  const mockDataset = vi.fn().mockReturnValue({
+    exists: mockExists,
+    create: mockCreate,
+    table: mockTable,
+    createTable: mockCreateTable,
+  });
+
+  class MockBigQuery {
+    dataset = mockDataset;
+  }
+
+  return {
+    BigQuery: MockBigQuery,
+  };
+});
+
 describe("ensureTeamMember Middleware", () => {
   let req: Partial<AuthenticatedRequest>;
   let res: Partial<Response>;
