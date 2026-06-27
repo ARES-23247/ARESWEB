@@ -8,6 +8,7 @@ import { cleanThumbnailUrl } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil, Plus } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface BlogPost {
   slug: string;
@@ -105,6 +106,7 @@ export default function BlogFeedPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO title="Blog" description="Deep technical insight, mechanical design updates, code breakdowns, and outreach reflections from ARES 23247 robotics team." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         <div className="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
           <div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import SEO from "@/components/SEO";
 
 interface TeamMember {
   userId: string;
@@ -69,6 +70,7 @@ export default function AboutPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="About Us" description="Meet the students, coaches, mentors, and alumni of ARES 23247. Learn about our mission to bring robotics and STEM education to Morgantown and West Virginia." />
       {/* ─── HERO ─── */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />

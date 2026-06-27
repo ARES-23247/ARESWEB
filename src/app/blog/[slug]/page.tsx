@@ -9,6 +9,7 @@ import { cleanThumbnailUrl } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface BlogPostDetails {
   slug: string;
@@ -163,6 +164,20 @@ export default function BlogPostPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble">
+      <SEO 
+        title={post.title} 
+        description={post.snippet || `Read "${post.title}" by ${post.author || "ARES Member"} on the ARES 23247 team blog.`}
+        image={post.thumbnail}
+        type="article"
+        schemaData={{
+          authorName: post.author || "ARES Member",
+          datePublished: (() => {
+            if (!post.date) return undefined;
+            const parsed = Date.parse(post.date);
+            return isNaN(parsed) ? undefined : new Date(parsed).toISOString();
+          })()
+        }}
+      />
       {/* ─── STANDALONE BLOG HERO ─── */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
         <img

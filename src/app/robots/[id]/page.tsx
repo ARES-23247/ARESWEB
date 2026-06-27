@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import SEO from "@/components/SEO";
 
 interface RobotDetails {
   id: string;
@@ -130,6 +131,10 @@ export default function RobotDetailPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO 
+        title={`${robot.name} (Robot)`} 
+        description={`Detailed technical profile of robot ${robot.name} for the FTC ${robot.challengeName} challenge (${robot.seasonName}). Drivetrain: ${robot.drivetrainType || 'Custom'}.`} 
+      />
       <div className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20">
         
         {/* Back Link */}

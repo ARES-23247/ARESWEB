@@ -6,12 +6,14 @@ import { ArrowRight, LogIn, LogOut, ShieldCheck, Cpu, Calendar as CalendarIcon, 
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
 import { maskEmail } from "@/lib/utils";
+import SEO from "@/components/SEO";
 
 export default function Home() {
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Home" description="ARES 23247 - Appalachian Robotics & Engineering Society. A FIRST Tech Challenge Team based in Morgantown, WV, offering youth robotics, STEM education, and engineering." />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
