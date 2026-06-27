@@ -56,7 +56,15 @@
   --color-ares-muted: var(--ares-muted);
   --color-ares-success: var(--ares-success);
   --color-ares-black: #050505;
+  --color-obsidian-900: #141414;
+  --color-obsidian-800: #202020;
+  --color-obsidian-950: #0a0a0a;
+  --color-obsidian-surface: #222222;
+  --color-obsidian-dark: #121212;
+  --color-obsidian-darker: #0b0b0b;
+  --color-ares-gold-soft: rgba(255, 184, 28, 0.2);
 }
+
 
 body {
   color: var(--foreground);

@@ -37,7 +37,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
@@ -51,7 +51,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
 
       match /signups/{userId} {
         allow read: if isAuthorized();
@@ -85,7 +85,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
@@ -170,7 +170,7 @@ service cloud.firestore {
 
     // system_settings (secure credentials read-only for authorized members)
     match /system_settings/{settingId} {
-      allow read: if isAuthorized();
+      allow read: if hasRole('admin');
       allow write: if false;
     }
 
@@ -198,7 +198,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     // seasons
@@ -208,7 +208,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     // awards
@@ -218,7 +218,7 @@ service cloud.firestore {
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );
-      allow delete: if isAuthorized();
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
 

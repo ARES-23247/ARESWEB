@@ -50,26 +50,29 @@ describe("Auth Middleware", () => {
   describe("ensureAuth", () => {
     it("should return 401 if authorization header is missing", async () => {
       await ensureAuth(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Missing or invalid token format" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Missing or invalid token format");
     });
 
     it("should return 401 if authorization header does not start with Bearer", async () => {
       req.headers!.authorization = "Basic 12345";
       await ensureAuth(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Missing or invalid token format" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Missing or invalid token format");
     });
 
     it("should return 401 if verifyIdToken throws", async () => {
       req.headers!.authorization = "Bearer my-token";
       vi.mocked(adminAuth.verifyIdToken).mockRejectedValue(new Error("verify failed"));
       await ensureAuth(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Invalid token" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Invalid token");
     });
 
     it("should attach user and call next() on success", async () => {
@@ -85,18 +88,20 @@ describe("Auth Middleware", () => {
   describe("ensureAdmin", () => {
     it("should return 401 if authorization header is missing", async () => {
       await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Missing or invalid token format" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Missing or invalid token format");
     });
 
     it("should return 401 if verifyIdToken throws", async () => {
       req.headers!.authorization = "Bearer admin-token";
       vi.mocked(adminAuth.verifyIdToken).mockRejectedValue(new Error("verify failed"));
       await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Invalid token" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Invalid token");
     });
 
     it("should return 403 if user doc does not exist", async () => {
@@ -106,9 +111,10 @@ describe("Auth Middleware", () => {
       vi.mocked(mockGet).mockResolvedValue({ exists: false } as any);
 
       await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(403);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Forbidden: User not authorized" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: User not authorized");
     });
 
     it("should return 403 if user exists but has insufficient privileges", async () => {
@@ -121,9 +127,10 @@ describe("Auth Middleware", () => {
       } as any);
 
       await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(403);
-      expect(jsonMock).toHaveBeenCalledWith({ error: "Forbidden: Insufficient privileges" });
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: Insufficient privileges");
     });
 
     it("should attach user and call next() on admin role success", async () => {
@@ -175,8 +182,10 @@ describe("Auth Middleware", () => {
   describe("ensureTeamMember extra coverage", () => {
     it("should return 401 if authorization header is missing", async () => {
       await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
-      expect(statusMock).toHaveBeenCalledWith(401);
-      expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Missing or invalid token format");
     });
   });
 });

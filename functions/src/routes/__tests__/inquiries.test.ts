@@ -9,6 +9,7 @@ process.env.ENCRYPTION_SECRET = "a_very_strong_secret_that_is_at_least_32_charac
 vi.mock("../../lib/crypto", () => ({
   encrypt: vi.fn().mockImplementation(async (val) => `encrypted:${val}`),
   decrypt: vi.fn().mockImplementation(async (val) => val.replace("encrypted:", "")),
+  getEncryptionSecret: vi.fn().mockReturnValue("a_very_strong_secret_that_is_at_least_32_characters_long_for_testing_purposes"),
 }));
 
 // Mock Firebase Admin

@@ -8,37 +8,37 @@ service firebase.storage {
 
     match /events/{eventId}/photos/{photoId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
     }
 
     match /gallery/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
     }
 
     match /cad/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 100 * 1024 * 1024;
     }
 
     match /telemetry_runs/{allPaths=**} {
       allow read: if isAuthorized();
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 10 * 1024 * 1024;
     }
 
     match /editor/uploads/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024;
     }
 
     match /field/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 50 * 1024 * 1024;
     }
 
     match /fields/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if isAuthorized() && request.resource.size < 50 * 1024 * 1024;
     }
   }
 }

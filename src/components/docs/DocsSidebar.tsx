@@ -34,13 +34,12 @@ interface DocsSidebarProps {
 }
 
 function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs" }: DocsSidebarProps) {
-  const {
-    docsOpen,
-    docsExpandedCategories,
-    toggleDocs,
-    toggleDocsCategory,
-    setDocsExpandedCategories,
-  } = useSidebarStore();
+  const docsOpen = useSidebarStore((s) => s.docsOpen);
+  const docsExpandedCategories = useSidebarStore((s) => s.docsExpandedCategories);
+  const toggleDocs = useSidebarStore((s) => s.toggleDocs);
+  const toggleDocsCategory = useSidebarStore((s) => s.toggleDocsCategory);
+  const setDocsExpandedCategories = useSidebarStore((s) => s.setDocsExpandedCategories);
+
 
 
 

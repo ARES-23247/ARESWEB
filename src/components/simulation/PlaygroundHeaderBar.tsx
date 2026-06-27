@@ -64,7 +64,7 @@ export function PlaygroundHeaderBar({
           New Sim
         </button>
 
-        <button onClick={handleToggleLibrary} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-indigo-600/30 transition-colors">
+        <button onClick={handleToggleLibrary} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors">
           <FolderOpen className="w-3.5 h-3.5" />
           Open Library
         </button>
@@ -73,7 +73,7 @@ export function PlaygroundHeaderBar({
           <Play className="w-3.5 h-3.5" /> Run
         </button>
 
-        <button onClick={handleCopy} aria-label="Copy code" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
+        <button onClick={handleCopy} aria-label="Copy code" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors">
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
 
@@ -82,13 +82,14 @@ export function PlaygroundHeaderBar({
           {simId ? 'Update' : 'Save'}
         </button>
 
-        <button onClick={handleDownloadZip} aria-label="Download as ZIP" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors">
+        <button onClick={handleDownloadZip} aria-label="Download as ZIP" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors">
           <Download className="w-3.5 h-3.5" />
         </button>
 
-        <button onClick={handleShareGist} disabled={isSharingGist} aria-label="Share as Gist" className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md text-xs font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors disabled:opacity-50">
+        <button onClick={handleShareGist} disabled={isSharingGist} aria-label="Share as Gist" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors disabled:opacity-50">
           {isSharingGist ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
         </button>
+
 
         <SnapshotHistoryDropdown
           showHistory={showHistory}

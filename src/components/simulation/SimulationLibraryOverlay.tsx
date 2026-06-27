@@ -56,11 +56,11 @@ export function SimulationLibraryOverlay({
             <Clock className="w-4 h-4" /> Your Saved Simulations
           </h3>
           {isLoadingSims ? (
-            <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
+            <div className="flex items-center gap-2 text-marble/60 text-sm py-4">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading...
             </div>
           ) : savedSims.length === 0 ? (
-            <p className="text-zinc-500 text-sm py-4">No saved simulations yet. Create one and hit Save!</p>
+            <p className="text-marble/40 text-sm py-4">No saved simulations yet. Create one and hit Save!</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {savedSims.map((sim) => (
@@ -70,12 +70,12 @@ export function SimulationLibraryOverlay({
                     handleLoadSim(sim.id, setFiles, setActiveFile);
                     setShowLibrary(false);
                   }}
-                  className="text-left p-4 bg-zinc-800/50 border border-white/10 rounded-xl hover:border-ares-gold/40 hover:bg-zinc-800 transition-all group"
+                  className="text-left p-4 bg-ares-gray-dark/50 border border-white/10 rounded-xl hover:border-ares-gold/40 hover:bg-ares-gray-dark transition-all group"
                 >
                   <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">
                     {sim.name}
                   </div>
-                  <div className="text-[11px] text-zinc-500 mt-1">
+                  <div className="text-[11px] text-marble/40 mt-1">
                     {sim.type && <span className="text-ares-cyan/60 mr-2">{sim.type}</span>}
                     {new Date(sim.updatedAt).toLocaleDateString()}
                   </div>
@@ -87,15 +87,15 @@ export function SimulationLibraryOverlay({
 
         {/* GitHub Official Sims */}
         <div>
-          <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-ares-gold uppercase tracking-widest mb-3 flex items-center gap-2">
             <Globe className="w-4 h-4" /> Official ARES Simulations
           </h3>
           {isLoadingGithubSims ? (
-            <div className="flex items-center gap-2 text-zinc-400 text-sm py-4">
+            <div className="flex items-center gap-2 text-marble/60 text-sm py-4">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading from GitHub...
             </div>
           ) : githubSims.length === 0 ? (
-            <p className="text-zinc-500 text-sm py-4">No official simulations found in the repository.</p>
+            <p className="text-marble/40 text-sm py-4">No official simulations found in the repository.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {githubSims.map((sim) => (
@@ -105,17 +105,18 @@ export function SimulationLibraryOverlay({
                     handleLoadGithubSim(sim, setFiles, setActiveFile);
                     setShowLibrary(false);
                   }}
-                  className="text-left p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl hover:border-indigo-400/40 hover:bg-indigo-900/30 transition-all group"
+                  className="text-left p-4 bg-ares-red/10 border border-ares-red/20 rounded-xl hover:border-ares-gold/40 hover:bg-ares-red/20 transition-all group"
                 >
-                  <div className="font-semibold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">
+                  <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">
                     {sim.name}
                   </div>
-                  <div className="text-[11px] text-zinc-500 mt-1">Official • {sim.path}</div>
+                  <div className="text-[11px] text-marble/40 mt-1">Official • {sim.path}</div>
                 </button>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

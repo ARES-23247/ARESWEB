@@ -49,7 +49,14 @@ const MOCK_PRODUCTS: Product[] = [
 
 export default function StorePage() {
   const { user } = useAuth();
-  const { items, isOpen, setIsOpen, addItem, removeItem, updateQuantity, clearCart } = useCartStore();
+  const items = useCartStore((s) => s.items);
+  const isOpen = useCartStore((s) => s.isOpen);
+  const setIsOpen = useCartStore((s) => s.setIsOpen);
+  const addItem = useCartStore((s) => s.addItem);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const clearCart = useCartStore((s) => s.clearCart);
+
   const cartTotal = useCartStore(selectCartTotal);
   const cartCount = useCartStore(selectCartCount);
   

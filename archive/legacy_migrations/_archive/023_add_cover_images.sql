@@ -1,1 +1,0 @@
-﻿-- Migration 023: Add thumbnail and cover_image-- RESOLVED: These columns already exist in production (applied manually).-- This file is kept as a no-op so wrangler marks it as applied and proceeds.SELECT 1;

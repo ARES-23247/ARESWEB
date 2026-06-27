@@ -1,18 +1,6 @@
 import { adminDb } from "./firebase-admin";
-import { decrypt } from "./crypto";
+import { decrypt, getEncryptionSecret } from "./crypto";
 import { logger } from "./logger";
-
-/**
- * Retrieves a fresh temporary access token from Google using the stored team refresh token in Firestore.
- * This completely encapsulates the token refresh logic.
- */
-function getEncryptionSecret(): string {
-  const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
-    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
-  }
-  return secret;
-}
 
 let cachedAccessToken: string | null = null;
 let tokenExpiresAt: number | null = null; // timestamp in ms

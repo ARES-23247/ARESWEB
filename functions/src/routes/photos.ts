@@ -4,7 +4,7 @@ import admin, { adminDb, adminStorage, adminAuth } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAuth, ensureAdmin, ensureTeamMember } from "../middleware/auth";
-import { encrypt } from "../lib/crypto";
+import { encrypt, getEncryptionSecret } from "../lib/crypto";
 import { generatePhotoCaptionAndLabels } from "../lib/vertex";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
@@ -12,14 +12,6 @@ import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
-
-function getEncryptionSecret(): string {
-  const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
-    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
-  }
-  return secret;
-}
 
 // Helper to increment/decrement album media count atomically
 async function updateAlbumMediaCount(albumId: string, delta: number) {

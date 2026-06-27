@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ensureTeamMember, AuthenticatedRequest } from "../../middleware/auth";
+import { ApiError } from "../../middleware/errorHandler";
 import uploadRouter from "../upload";
 import { Response, NextFunction } from "express";
 import { adminAuth, adminDb, adminStorage } from "../../lib/firebase-admin";
+
 
 // Mock Firebase Admin
 vi.mock("../../lib/firebase-admin", () => {
@@ -58,16 +60,19 @@ describe("ensureTeamMember Middleware", () => {
 
   it("should return 401 if authorization header is missing", async () => {
     await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
-    expect(statusMock).toHaveBeenCalledWith(401);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Missing or invalid token format" });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+    const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+    expect(err.status).toBe(401);
+    expect(err.message).toBe("Unauthorized: Missing or invalid token format");
   });
 
   it("should return 401 if authorization header does not start with Bearer", async () => {
     req.headers!.authorization = "Basic 12345";
     await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
-    expect(statusMock).toHaveBeenCalledWith(401);
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+    const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+    expect(err.status).toBe(401);
+    expect(err.message).toBe("Unauthorized: Missing or invalid token format");
   });
 
   it("should return 401 if token verification throws an error", async () => {
@@ -75,9 +80,10 @@ describe("ensureTeamMember Middleware", () => {
     vi.mocked(adminAuth.verifyIdToken).mockRejectedValue(new Error("Firebase verification failed"));
 
     await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
-    expect(statusMock).toHaveBeenCalledWith(401);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Unauthorized: Invalid token" });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+    const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+    expect(err.status).toBe(401);
+    expect(err.message).toBe("Unauthorized: Invalid token");
   });
 
   it("should return 403 if user is not in authorized_users Firestore collection", async () => {
@@ -88,9 +94,10 @@ describe("ensureTeamMember Middleware", () => {
     vi.mocked(mockGet).mockResolvedValue({ exists: false } as any);
 
     await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
-    expect(statusMock).toHaveBeenCalledWith(403);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Forbidden: User not authorized" });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+    const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+    expect(err.status).toBe(403);
+    expect(err.message).toBe("Forbidden: User not authorized");
   });
 
   it("should attach user and call next() if user is authorized", async () => {

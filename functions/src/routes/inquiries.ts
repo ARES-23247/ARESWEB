@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
-import { encrypt, decrypt } from "../lib/crypto";
+import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
@@ -17,14 +17,6 @@ const inquiryLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-function getEncryptionSecret(): string {
-  const secret = process.env.ENCRYPTION_SECRET;
-  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
-    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
-  }
-  return secret;
-}
 
 // POST /api/inquiries
 router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {

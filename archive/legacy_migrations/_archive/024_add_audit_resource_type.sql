@@ -1,1 +1,0 @@
-﻿-- Migration 024: Add resource_type to audit_log-- RESOLVED: Column already exists in production schema.-- This file is kept as a no-op so wrangler marks it as applied and proceeds.SELECT 1;

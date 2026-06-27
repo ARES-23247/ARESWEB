@@ -1,1 +1,0 @@
-﻿-- 026_fix_awards_outreach_is_deleted.sql-- Add missing is_deleted column to awards table.-- outreach_logs.is_deleted already exists in the base schema.ALTER TABLE awards ADD COLUMN is_deleted INTEGER DEFAULT 0;

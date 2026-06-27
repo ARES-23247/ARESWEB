@@ -1,6 +1,16 @@
 import { webcrypto } from "node:crypto";
+import { logger } from "./logger";
 
 const subtle = webcrypto.subtle;
+
+export function getEncryptionSecret(): string {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret || secret.length < 32 || secret === "01234567890123456789012345678901" || secret === "test-encryption-secret-with-32-chars-long") {
+    throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
+  }
+  return secret;
+}
+
 
 async function getCryptoKey(secret: string, saltHex?: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
@@ -94,7 +104,7 @@ export async function decrypt(encryptedText: string, secret: string): Promise<st
     decryptionCache.set(encryptedText, result);
     return result;
   } catch (err) {
-    console.error("[Crypto] Decryption failed:", err);
+    logger.error("crypto", "Decryption failed", err);
     return "[Decryption Failed]";
   }
 }
