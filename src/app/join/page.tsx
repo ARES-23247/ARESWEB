@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { siteConfig } from "@/lib/site-config";
 import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck, ArrowRight } from "lucide-react";
+import SEO from "@/components/SEO";
 
 declare global {
   interface Window {
@@ -153,6 +154,7 @@ export default function JoinPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble py-12 relative overflow-hidden">
+      <SEO title="Join the Team" description="Ready to build the future of West Virginia robotics? Apply to join ARES 23247 as a student member or a professional mentor." />
       {/* Background radial highlight */}
       <div className="absolute inset-0 bg-ares-red/5 bg-[radial-gradient(ellipse_at_center,rgba(192,0,0,0.1)_0,rgba(0,0,0,0)_70%)] opacity-50 blur-[80px]" />
 

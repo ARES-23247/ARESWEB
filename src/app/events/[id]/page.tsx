@@ -39,6 +39,7 @@ import {
 import TiptapRenderer, { ASTNode } from "@/components/TiptapRenderer";
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
+import SEO from "@/components/SEO";
 
 export interface TeamLocation {
   id: string;
@@ -510,6 +511,21 @@ export default function EventDetailPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO 
+        title={event.title} 
+        description={event.description || `Join team ARES 23247 at "${event.title}". Scheduled for ${new Date(event.dateStart).toLocaleDateString()} at ${event.location || 'Location TBA'}.`}
+        image={event.coverImage}
+        type="event"
+        schemaData={{
+          startDate: event.dateStart,
+          endDate: event.dateEnd || event.dateStart,
+          locationName: event.location || "Location TBA",
+          locationAddress: (() => {
+            const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
+            return selected ? selected.address : (event.locationId === "mars-building" || event.location === "MARS Building") ? "123 Science Way, Morgantown, WV" : "Morgantown, WV";
+          })()
+        }}
+      />
       {/* Hero Cover Image Section */}
       <section className="relative w-full h-[45vh] min-h-[350px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-bronze">
         <GreekMeander variant="thick" opacity="opacity-50" className="absolute bottom-[-1px] left-0 z-10" />

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { authenticatedFetch } from "@/lib/api";
 import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import SEO from "@/components/SEO";
 
 interface GalleryPhoto {
   id: number;
@@ -161,6 +162,7 @@ export default function GalleryPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Photo Gallery" description="Behind the scenes of ARES 23247. A visual build log documenting our journey from raw Onshape CAD models and machining to our live championship performances." />
       {/* Hero Header */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />

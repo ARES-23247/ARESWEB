@@ -6,6 +6,7 @@ import { useCartStore, Product, selectCartTotal, selectCartCount } from "@/store
 import { collection, setDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import SEO from "@/components/SEO";
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -116,6 +117,7 @@ export default function StorePage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8 relative">
+      <SEO title="Team Store" description="Grab official ARES 23247 team apparel, hoodies, and jerseys. 100% of proceeds directly fund our drivetrain materials and youth STEM outreach camps." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
         {/* Header */}

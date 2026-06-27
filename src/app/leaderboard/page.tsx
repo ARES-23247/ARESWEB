@@ -4,6 +4,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Award, Medal, Crown, Star, ArrowLeft } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import SEO from "@/components/SEO";
 
 interface LeaderboardUser {
   userId: string;
@@ -67,6 +68,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Leaderboard" description="Recognising the student innovators, mentors, and coaches who go above and beyond in engineering excellence and technical leadership." />
       {/* Hero Header */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />

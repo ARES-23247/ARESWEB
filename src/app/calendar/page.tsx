@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
+import SEO from "@/components/SEO";
 
 interface TeamEvent {
   id: string;
@@ -312,6 +313,7 @@ export default function CalendarPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO title="Team Calendar" description="Stay up to date with ARES 23247 schedules, lab practice times, outreach programs, and FTC competition events." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
         {/* Header */}

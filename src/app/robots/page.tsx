@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Cpu, Scale, Code } from "lucide-react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import SEO from "@/components/SEO";
 
 interface RobotItem {
   id: string;
@@ -85,6 +86,7 @@ export default function RobotsFeedPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO title="Our Robots" description="Explore the fleet of competition robots engineered by ARES 23247. Detailed blueprints, specifications, and telemetry calibrations for our FTC designs." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
         {/* Header */}

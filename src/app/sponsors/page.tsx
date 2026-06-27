@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface Sponsor {
   id: string;
@@ -209,6 +210,7 @@ export default function SponsorsPage() {
 
   return (
     <div className="min-h-screen bg-obsidian text-white py-12 relative overflow-hidden">
+      <SEO title="Our Sponsors" description="Meet the corporate and local sponsors supporting ARES 23247. Learn how your organization can partner with us to sponsor youth STEM and robotics education." />
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[600px] bg-ares-red/5 blur-[120px] rounded-full pointer-events-none" />
 

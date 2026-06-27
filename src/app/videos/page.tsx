@@ -7,6 +7,7 @@ import { Play, X, Calendar, Clock, Film, ExternalLink, RefreshCw } from "lucide-
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { GreekMeander } from "@/components/GreekMeander";
+import SEO from "@/components/SEO";
 
 interface TeamVideo {
   id: string;
@@ -112,6 +113,7 @@ export default function VideosPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Video Hub" description="Tune in to watch ARES #23247 in action. Explore our match recordings, design reveals, regional highlights, and educational CAD/programming guides." />
       {/* Hero Header */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />

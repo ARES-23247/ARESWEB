@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Target, Clock, Heart, MapPin, Activity, ArrowRight, X, Check, AlertCircle } from "lucide-react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import SEO from "@/components/SEO";
 
 declare global {
   interface Window {
@@ -184,6 +185,7 @@ export default function OutreachPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO title="Community Outreach" description="Discover our mission to expand STEM accessibility across West Virginia. Read our community impact reports, hours tracked, and requested robot demonstrations." />
       
       {/* Hero */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
