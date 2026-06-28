@@ -1,5 +1,5 @@
 import express from "express";
-import { ensureAuth } from "../middleware/auth";
+import { ensureTeamMember } from "../middleware/auth";
 import { sendZulipMessage } from "../lib/zulip";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -7,7 +7,7 @@ import { ApiError } from "../middleware/errorHandler";
 const router = express.Router();
 
 // POST /api/tasks/comment
-router.post("/comment", ensureAuth, asyncHandler(async (req, res) => {
+router.post("/comment", ensureTeamMember, asyncHandler(async (req, res) => {
   const { taskId, author, content } = req.body as {
     taskId: string;
     author: string;
@@ -31,7 +31,7 @@ router.post("/comment", ensureAuth, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/tasks/notify
-router.post("/notify", ensureAuth, asyncHandler(async (req, res) => {
+router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
   const { taskId, action, title, status, description, subteam, priority } = req.body as {
     taskId: string;
     action: "create" | "move";

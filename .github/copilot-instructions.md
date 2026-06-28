@@ -10,8 +10,8 @@ Before writing code or answering questions, you must review the relevant SKILL.m
 
 ### 1. Absolute Zero Trust Security
 **Directory:** `.agents/skills/aresweb-zero-trust-security/SKILL.md`
-- **When to read:** Editing `functions/api/`, modifying D1 Database queries, or changing Authentication flows.
-- **Summary:** Expressly forbids relying on spoofable headers (`Referer`, `Host`) for authentication. Strict enforcement of `cf-access-authenticated-user-email` via Cloudflare Zero Trust.
+- **When to read:** Editing `functions/src/`, modifying Firestore security rules/queries, or changing Authentication flows.
+- **Summary:** Expressly forbids relying on spoofable headers (`Referer`, `Host`) for authentication. Enforces verification of Firebase Auth ID tokens inside Cloud Functions middlewares.
 
 ### 1. Championship-Tier Accessibility
 **Directory:** `.agents/skills/aresweb-web-accessibility/SKILL.md`
@@ -44,13 +44,13 @@ E2E tests require building the entire app and running a local server, which is r
 
 ```bash
 # Run tests against deployed preview (no local build/server)
-PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote
+PREVIEW_URL=https://aresfirst-portal.web.app npm run test:e2e:remote
 
 # For specific test suites
-PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:remote tests/e2e/task-detail.spec.ts
+PREVIEW_URL=https://aresfirst-portal.web.app npm run test:e2e:remote tests/e2e/task-detail.spec.ts
 
 # Debug mode with inspector
-PREVIEW_URL=https://aresweb.pages.dev npm run test:e2e:debug:remote
+PREVIEW_URL=https://aresfirst-portal.web.app npm run test:e2e:debug:remote
 ```
 
 **Never run `npm run test:e2e` locally** unless you specifically need to test local development changes. The remote mode is faster, lighter, and tests the actual deployed environment.

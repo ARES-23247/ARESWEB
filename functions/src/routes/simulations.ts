@@ -1,6 +1,6 @@
 import express from "express";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAuth, ensureAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { exec } from "child_process";
@@ -221,7 +221,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/simulations - Save simulation to GitHub
-router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
+router.post("/", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { files } = req.body as { files: Record<string, string> };
   if (!files || Object.keys(files).length === 0) {
     throw new ApiError(400, "No files provided");
@@ -274,13 +274,20 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
     }
   }
 
+  const commitAuthor = {
+    name: req.user?.name || req.user?.email?.split("@")[0] || "ARES Member",
+    email: req.user?.email || "anonymous@aresfirst.org"
+  };
+
   const putRes = await fetch(url, {
     method: "PUT",
     headers,
     body: JSON.stringify({
-      message: `feat(sims): update ${filename} via Simulation Playground`,
+      message: sha ? `feat(sims): update ${filename} via Simulation Playground` : `feat(sims): create ${filename} via Simulation Playground`,
       content: base64Content,
-      sha
+      sha,
+      author: commitAuthor,
+      committer: commitAuthor
     })
   });
 
@@ -292,7 +299,7 @@ router.post("/", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res)
 }));
 
 // DELETE /api/simulations/:id - Delete simulation from GitHub
-router.delete("/:id", ensureAuth, asyncHandler(async (req: AuthenticatedRequest, res) => {
+router.delete("/:id", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   if (!id || !id.startsWith("github:")) {
     throw new ApiError(404, "Simulation not found");

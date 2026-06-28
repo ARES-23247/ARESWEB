@@ -71,7 +71,7 @@ export function DesktopUserMenu({
               </span>
             )}
           </button>
-          <div className="absolute right-0 top-full mt-2 w-48 bg-obsidian border border-ares-bronze/20 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-2">
+          <div className="absolute right-0 top-full mt-2 w-48 bg-obsidian border border-ares-bronze/20 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50 p-2">
             <div className="px-3 py-2 border-b border-white/5">
               <p className="text-xs text-marble/60">Logged in as</p>
               <p className="text-xs font-bold text-white truncate">{maskEmail(user.email)}</p>

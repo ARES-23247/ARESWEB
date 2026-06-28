@@ -5,6 +5,7 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { authenticatedFetch } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface DocRecord {
   slug: string;
@@ -75,6 +76,9 @@ export default function DocFormDrawer({
   loadingRevisions,
   fetchRevisions
 }: DocFormDrawerProps) {
+  const { authorizedUser } = useAuth();
+  const isStudent = authorizedUser?.role === "student";
+
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "revisions">("edit");
   const [showAiSidebar, setShowAiSidebar] = useState(true);
@@ -568,11 +572,18 @@ export default function DocFormDrawer({
                           id="formStatus"
                           value={formStatus}
                           onChange={(e) => setFormStatus(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
+                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={isStudent}
                         >
                           <option value="draft">🟡 Draft (Hidden)</option>
-                          <option value="published">🟢 Published (Live)</option>
+                          {!isStudent && <option value="published">🟢 Published (Live)</option>}
                         </select>
+                        {isStudent && (
+                          <div className="mt-1 text-[10px] text-ares-gold flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>Coaches/mentors must review before publishing.</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -630,11 +641,18 @@ export default function DocFormDrawer({
                           id="formStatus"
                           value={formStatus}
                           onChange={(e) => setFormStatus(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
+                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={isStudent}
                         >
                           <option value="draft">🟡 Draft (Hidden)</option>
-                          <option value="published">🟢 Published (Live)</option>
+                          {!isStudent && <option value="published">🟢 Published (Live)</option>}
                         </select>
+                        {isStudent && (
+                          <div className="mt-1 text-[10px] text-ares-gold flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>Coaches/mentors must review before publishing.</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

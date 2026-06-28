@@ -3,7 +3,7 @@ import crypto from "crypto";
 import admin, { adminDb, adminStorage, adminAuth } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
-import { ensureAuth, ensureAdmin, ensureTeamMember } from "../middleware/auth";
+import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { encrypt, getEncryptionSecret } from "../lib/crypto";
 import { generatePhotoCaptionAndLabels } from "../lib/vertex";
 import { logger } from "../lib/logger";
@@ -28,7 +28,7 @@ async function updateAlbumMediaCount(albumId: string, delta: number) {
 }
 
 // GET /api/photos
-router.get("/", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
   const cursor = req.query.cursor as string | undefined;
 
@@ -125,7 +125,7 @@ router.get("/public", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/photos/albums
-router.get("/albums", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/albums", ensureTeamMember, asyncHandler(async (req, res) => {
   const albumsSnap = await adminDb
     .collection("albums")
     .orderBy("createdAt", "desc")

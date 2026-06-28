@@ -1,6 +1,6 @@
 import express from "express";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
-import { ensureAuth, ensureAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import crypto from "crypto";
 import { getZulipUsers, createZulipUser } from "../lib/zulip";
 import { logger } from "../lib/logger";
@@ -67,8 +67,8 @@ router.get("/about-roster", asyncHandler(async (req, res) => {
   res.json({ members });
 }));
 
-// GET /api/profiles/team-roster (requires authentication, for dashboard assignees picker)
-router.get("/team-roster", ensureAuth, asyncHandler(async (req, res) => {
+// GET /api/profiles/team-roster (requires team membership, for dashboard assignees picker)
+router.get("/team-roster", ensureTeamMember, asyncHandler(async (req, res) => {
   const snapshot = await adminDb.collection("user_profiles").get();
   const membersRaw = snapshot.docs.map(doc => {
     const data = doc.data();

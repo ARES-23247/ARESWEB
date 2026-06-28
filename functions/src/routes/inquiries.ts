@@ -57,7 +57,10 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
   if (!isBypass) {
     const secretKey = process.env.RECAPTCHA_SECRET_KEY;
     if (!secretKey) {
-      logger.warn("inquiries", "RECAPTCHA_SECRET_KEY is missing, bypassing verification");
+      if (isProd) {
+        throw new ApiError(500, "Spam protection configuration error. Please contact administrators.");
+      }
+      logger.warn("inquiries", "RECAPTCHA_SECRET_KEY is missing, bypassing verification in emulator");
     } else {
       const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
         method: "POST",

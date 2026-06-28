@@ -66,17 +66,17 @@ service cloud.firestore {
 
     match /locations/{locationId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     match /imported_photos/{photoId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     match /albums/{albumId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     match /docs/{docSlug} {
@@ -159,7 +159,11 @@ service cloud.firestore {
     // robots
     match /robots/{robotId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     // settings (admin-only writes)
@@ -177,13 +181,17 @@ service cloud.firestore {
     // field_configs
     match /field_configs/{configId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     // documents
     match /documents/{docId} {
       allow read: if true;
-      allow write: if isAuthorized();
+      allow create, update: if isAuthorized() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
@@ -224,7 +232,7 @@ service cloud.firestore {
 
     // finance_transactions
     match /finance_transactions/{txId} {
-      allow read, write: if isAuthorized();
+      allow read, write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
     // judge_access_codes
