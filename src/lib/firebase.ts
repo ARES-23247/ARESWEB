@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
+import { initializeFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 const getFirebaseConfig = () => {
@@ -38,7 +38,9 @@ const firebaseConfig = {
 // Handle SSR check: only initialize on client or once globally
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  ignoreUndefinedProperties: true
+});
 const storage = getStorage(app);
 
 // Connect client SDKs to local emulators if running in local or development environment
