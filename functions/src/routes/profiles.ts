@@ -9,6 +9,31 @@ import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
+function deduplicateRoster(membersRaw: any[], idKey: "uid" | "userId" = "uid") {
+  const uniqueMembersMap = new Map<string, any>();
+  for (const member of membersRaw) {
+    const key = member.contactEmail ? member.contactEmail.trim().toLowerCase() : `nick:${member.nickname.trim().toLowerCase()}`;
+    const existing = uniqueMembersMap.get(key);
+    if (!existing) {
+      uniqueMembersMap.set(key, member);
+      continue;
+    }
+
+    const getPriority = (id: string) => {
+      if (id.length === 28 && !id.includes("@")) return 3;
+      if (id.length === 32 && !id.includes("@")) return 2;
+      if (id.includes("@")) return 1;
+      return 0;
+    };
+
+    if (getPriority(member[idKey]) > getPriority(existing[idKey])) {
+      uniqueMembersMap.set(key, member);
+    }
+  }
+  return Array.from(uniqueMembersMap.values());
+}
+
+
 // GET /api/profiles/about-roster (public-facing roster)
 router.get("/about-roster", asyncHandler(async (req, res) => {
   const snapshot = await adminDb.collection("user_profiles").where("showOnAbout", "==", true).get();
@@ -35,30 +60,9 @@ router.get("/about-roster", asyncHandler(async (req, res) => {
     };
   }).filter(m => m !== null) as any[];
 
-  // Deduplicate by contactEmail or nickname
-  const uniqueMembersMap = new Map<string, any>();
-  for (const member of membersRaw) {
-    const key = member.contactEmail ? member.contactEmail.trim().toLowerCase() : `nick:${member.nickname.trim().toLowerCase()}`;
-    const existing = uniqueMembersMap.get(key);
-    if (!existing) {
-      uniqueMembersMap.set(key, member);
-      continue;
-    }
+  const deduplicated = deduplicateRoster(membersRaw, "userId");
 
-    // Priority: Auth UID (28 chars) > legacy UUID (32 chars) > email address > other
-    const getPriority = (id: string) => {
-      if (id.length === 28 && !id.includes("@")) return 3;
-      if (id.length === 32 && !id.includes("@")) return 2;
-      if (id.includes("@")) return 1;
-      return 0;
-    };
-
-    if (getPriority(member.userId) > getPriority(existing.userId)) {
-      uniqueMembersMap.set(key, member);
-    }
-  }
-
-  const members = Array.from(uniqueMembersMap.values()).map(m => {
+  const members = deduplicated.map(m => {
     // Strip contactEmail to protect student PII
     const { contactEmail, ...rest } = m;
     return rest;
@@ -80,28 +84,9 @@ router.get("/team-roster", ensureTeamMember, asyncHandler(async (req, res) => {
     };
   });
 
-  const uniqueMembersMap = new Map<string, any>();
-  for (const member of membersRaw) {
-    const key = member.contactEmail ? member.contactEmail.trim().toLowerCase() : `nick:${member.nickname.trim().toLowerCase()}`;
-    const existing = uniqueMembersMap.get(key);
-    if (!existing) {
-      uniqueMembersMap.set(key, member);
-      continue;
-    }
+  const deduplicated = deduplicateRoster(membersRaw, "uid");
 
-    const getPriority = (uid: string) => {
-      if (uid.length === 28 && !uid.includes("@")) return 3;
-      if (uid.length === 32 && !uid.includes("@")) return 2;
-      if (uid.includes("@")) return 1;
-      return 0;
-    };
-
-    if (getPriority(member.uid) > getPriority(existing.uid)) {
-      uniqueMembersMap.set(key, member);
-    }
-  }
-
-  const members = Array.from(uniqueMembersMap.values()).map(m => ({
+  const members = deduplicated.map(m => ({
     uid: m.uid,
     nickname: m.nickname,
     avatar: m.avatar

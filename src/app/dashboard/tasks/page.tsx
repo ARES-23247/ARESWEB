@@ -9,7 +9,7 @@ import { authenticatedFetch } from "@/lib/api";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 import TaskFilters from "./components/TaskFilters";
 import TaskBoardColumn from "./components/TaskBoardColumn";
-import { TaskItem, MemberProfile, SubTask } from "./components/TaskCard";
+import { TaskItem, MemberProfile, SubTask } from "@/types/task";
 
 const MOCK_TASKS: TaskItem[] = [
   {

@@ -8,30 +8,32 @@ export interface AuthenticatedRequest extends Request {
   user?: DecodedIdToken;
 }
 
-export async function ensureAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+async function extractAndVerifyToken(req: Request): Promise<DecodedIdToken> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new ApiError(401, "Unauthorized: Missing or invalid token format"));
+    throw new ApiError(401, "Unauthorized: Missing or invalid token format");
   }
   const token = authHeader.split("Bearer ")[1];
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    req.user = decodedToken;
+    return await adminAuth.verifyIdToken(token);
+  } catch (err: any) {
+    throw new ApiError(401, "Unauthorized: Invalid token");
+  }
+}
+
+export async function ensureAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    req.user = await extractAndVerifyToken(req);
     next();
   } catch (err: any) {
     logger.error("auth", "Token verification failed", { error: err.message });
-    next(new ApiError(401, "Unauthorized: Invalid token"));
+    next(err);
   }
 }
 
 export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new ApiError(401, "Unauthorized: Missing or invalid token format"));
-  }
-  const token = authHeader.split("Bearer ")[1];
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await extractAndVerifyToken(req);
     const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
@@ -44,18 +46,13 @@ export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next
     next();
   } catch (err: any) {
     logger.error("auth", "Admin verification failed", { error: err.message });
-    next(new ApiError(401, "Unauthorized: Invalid token"));
+    next(err);
   }
 }
 
 export async function ensureTeamMember(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new ApiError(401, "Unauthorized: Missing or invalid token format"));
-  }
-  const token = authHeader.split("Bearer ")[1];
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await extractAndVerifyToken(req);
     const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
@@ -68,7 +65,7 @@ export async function ensureTeamMember(req: AuthenticatedRequest, res: Response,
     next();
   } catch (err: any) {
     logger.error("auth", "Team member verification failed", { error: err.message });
-    next(new ApiError(401, "Unauthorized: Invalid token"));
+    next(err);
   }
 }
 

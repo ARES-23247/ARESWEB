@@ -1,13 +1,5 @@
-export interface TeamEvent {
-  id: string;
-  title: string;
-  dateStart: string;
-  dateEnd?: string;
-  location?: string;
-  locationId?: string;
-  description?: string;
-  category: "internal" | "outreach";
-}
+import { TeamEvent } from "@/types/event";
+export type { TeamEvent };
 
 export const MOCK_EVENTS: TeamEvent[] = [
   {

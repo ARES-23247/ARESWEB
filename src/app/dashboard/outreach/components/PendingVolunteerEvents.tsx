@@ -1,19 +1,8 @@
 import React from "react";
 import { Clock } from "lucide-react";
 
-export interface TeamEvent {
-  id: string;
-  title: string;
-  dateStart: string;
-  dateEnd: string;
-  location?: string | null;
-  locationId: string;
-  description: string;
-  category: string;
-  isVolunteer: number;
-  isDeleted: number;
-  status: string;
-}
+import { TeamEvent } from "@/types/event";
+export type { TeamEvent };
 
 interface PendingVolunteerEventsProps {
   pendingEvents: TeamEvent[];

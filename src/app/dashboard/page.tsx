@@ -27,24 +27,7 @@ import {
   FileText
 } from "lucide-react";
 
-interface SubTask {
-  id: string;
-  title: string;
-  completed: boolean;
-}
-
-interface TaskItem {
-  id: string;
-  title: string;
-  description: string;
-  status: "todo" | "in_progress" | "review" | "completed";
-  priority: "low" | "medium" | "high";
-  subteam: "software" | "hardware" | "business" | "outreach";
-  assignees: string[];
-  subtasks: SubTask[];
-  archived?: boolean;
-  createdAt: string;
-}
+import { SubTask, TaskItem } from "@/types/task";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();

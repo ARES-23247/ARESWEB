@@ -4,7 +4,7 @@ import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
-import { asyncHandler } from "../lib/utils";
+import { asyncHandler, maskEmail, maskName } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
 
@@ -93,11 +93,8 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
   await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
 
   try {
-    const nameVal = name.trim();
-    const maskedName = nameVal.charAt(0) + "***" + nameVal.charAt(nameVal.length - 1);
-    const emailVal = email.trim().toLowerCase();
-    const emailParts = emailVal.split("@");
-    const maskedEmail = emailParts[0].charAt(0) + "***@" + emailParts[1];
+    const maskedName = maskName(name);
+    const maskedEmail = maskEmail(email);
 
     const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}

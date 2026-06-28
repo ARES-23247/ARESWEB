@@ -5,7 +5,8 @@ import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus }
 import { authenticatedFetch } from "@/lib/api";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
-import TaskCommentsSection, { MemberProfile, TaskItem } from "./TaskCommentsSection";
+import TaskCommentsSection from "./TaskCommentsSection";
+import { MemberProfile, TaskItem, SubTask } from "@/types/task";
 import TaskEditorAiCopilot from "./TaskEditorAiCopilot";
 
 interface TaskDetailsModalProps {
@@ -372,7 +373,7 @@ export default function TaskDetailsModal({
 
               {task.subtasks?.length > 0 ? (
                 <div className="space-y-2">
-                  {task.subtasks.map((sub) => (
+                  {task.subtasks.map((sub: SubTask) => (
                     <div key={sub.id} className="flex justify-between items-center group/sub">
                       <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
                         <input

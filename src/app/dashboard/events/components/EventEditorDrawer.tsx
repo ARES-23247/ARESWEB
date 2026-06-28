@@ -27,20 +27,8 @@ import ShiftScheduleEditor from "./ShiftScheduleEditor";
 import EventFormRoster from "./EventFormRoster";
 import EventEditorAiCopilot from "./EventEditorAiCopilot";
 
-export interface TeamEvent {
-  id: string;
-  title: string;
-  dateStart: string;
-  dateEnd?: string;
-  locationId?: string;
-  description?: string;
-  category: "internal" | "outreach";
-  coverImage?: string;
-  isPotluck?: number;
-  isVolunteer?: number;
-  isDeleted?: number;
-  status?: "published" | "draft" | "pending";
-}
+import { TeamEvent } from "@/types/event";
+export type { TeamEvent };
 
 export interface EventRevision {
   id: string;

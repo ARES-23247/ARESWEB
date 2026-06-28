@@ -41,37 +41,8 @@ import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
 
-export interface TeamLocation {
-  id: string;
-  name: string;
-  address: string;
-  description?: string;
-  gmapsUrl?: string;
-}
-
-export const MOCK_LOCATIONS: TeamLocation[] = [
-  {
-    id: "mars-building",
-    name: "MARS Building",
-    address: "123 Science Way, Morgantown, WV 26508",
-    description: "Our primary design workshop, machining center, and practice arena.",
-    gmapsUrl: "https://maps.google.com/?q=123+Science+Way+Morgantown+WV+26508"
-  },
-  {
-    id: "ares-shop",
-    name: "ARES Machine Shop",
-    address: "456 Tech Lane, Morgantown, WV 26505",
-    description: "CNC fabrication, 3D printing farm, and anodizing workshop.",
-    gmapsUrl: "https://maps.google.com/?q=456+Tech+Lane+Morgantown+WV+26505"
-  },
-  {
-    id: "spark-museum",
-    name: "SPARK! WV Museum",
-    address: "9500 Mall Road, Morgantown, WV 26501",
-    description: "Community science museum where we host outreach events and demo days.",
-    gmapsUrl: "https://maps.google.com/?q=Morgantown+Mall+WV+26501"
-  }
-];
+import { TeamLocation } from "@/types/location";
+import { MOCK_LOCATIONS } from "@/utils/constants";
 
 interface EventItem {
   id: string;

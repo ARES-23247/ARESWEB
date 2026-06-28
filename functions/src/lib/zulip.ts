@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { logger } from "./logger";
 
 export async function sendZulipMessage(
   stream: string,
@@ -10,7 +11,7 @@ export async function sendZulipMessage(
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
-    console.warn("[Zulip] Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
+    logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return false;
   }
 
@@ -35,13 +36,13 @@ export async function sendZulipMessage(
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("[Zulip] Failed to send message:", res.status, errorText);
+      logger.error("zulip", "Failed to send message", { status: res.status, error: errorText });
       return false;
     }
 
     return true;
   } catch (err) {
-    console.error("[Zulip] Exception sending message:", err);
+    logger.error("zulip", "Exception sending message", { error: err });
     return false;
   }
 }
@@ -64,7 +65,7 @@ export async function getZulipUsers(): Promise<any[] | null> {
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
-    console.warn("[Zulip] Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
+    logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return null;
   }
 
@@ -81,14 +82,14 @@ export async function getZulipUsers(): Promise<any[] | null> {
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("[Zulip] Failed to fetch users:", res.status, errorText);
+      logger.error("zulip", "Failed to fetch users", { status: res.status, error: errorText });
       return null;
     }
 
     const data = await res.json();
     return data.members || [];
   } catch (err) {
-    console.error("[Zulip] Exception fetching users:", err);
+    logger.error("zulip", "Exception fetching users", { error: err });
     return null;
   }
 }
@@ -129,13 +130,13 @@ export async function createZulipUser(
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       const errorMsg = errorData.msg || `Zulip API returned status ${res.status}`;
-      console.error("[Zulip] Failed to create user:", res.status, errorData);
+      logger.error("zulip", "Failed to create user", { status: res.status, error: errorData });
       return { success: false, error: errorMsg };
     }
 
     return { success: true };
   } catch (err: any) {
-    console.error("[Zulip] Exception creating user:", err);
+    logger.error("zulip", "Exception creating user", { error: err });
     return { success: false, error: err.message || "Internal server error." };
   }
 }
