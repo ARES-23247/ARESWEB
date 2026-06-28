@@ -134,9 +134,12 @@ describe("Photos Router Backend Endpoints", () => {
       const mockCollection = adminDb.collection as any;
       const mockWhere = mockCollection().where;
       
-      mockWhere.mockReturnValueOnce({
+      const queryMock = {
+        limit: vi.fn().mockReturnThis(),
         get: vi.fn().mockResolvedValue({ docs: mockAlbums })
-      }).mockReturnValueOnce({
+      };
+
+      mockWhere.mockReturnValueOnce(queryMock).mockReturnValueOnce({
         orderBy: vi.fn().mockReturnValue({
           limit: vi.fn().mockReturnValue({
             get: vi.fn().mockResolvedValue({ docs: mockPhotos })
@@ -162,9 +165,11 @@ describe("Photos Router Backend Endpoints", () => {
     it("should return empty array if no public albums exist", async () => {
       const mockCollection = adminDb.collection as any;
       const mockWhere = mockCollection().where;
-      mockWhere.mockReturnValueOnce({
+      const queryMock = {
+        limit: vi.fn().mockReturnThis(),
         get: vi.fn().mockResolvedValue({ docs: [] })
-      });
+      };
+      mockWhere.mockReturnValueOnce(queryMock);
 
       const handler = getHandler("/public", "get");
       await handler(req, res, next);

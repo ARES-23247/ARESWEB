@@ -6,6 +6,7 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { exec } from "child_process";
 import path from "path";
+import { logger } from "../lib/logger";
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ async function getGitHubPat(): Promise<string | undefined> {
       if (data?.value) return data.value;
     }
   } catch (err) {
-    console.error("[Simulations] Failed to fetch GITHUB_PAT from settings collection:", err);
+    logger.error("simulations", "Failed to fetch GITHUB_PAT from settings collection:", err);
   }
   return process.env.GITHUB_PAT;
 }
@@ -83,7 +84,7 @@ async function canModifySimulation(sessionUser: DecodedIdToken | undefined, simI
     const authorEmail = commits[0].commit?.author?.email;
     return authorEmail === sessionUser.email;
   } catch (err) {
-    console.error("[Simulations] Ownership verification error:", err);
+    logger.error("simulations", "Ownership verification error:", err);
     return false;
   }
 }
@@ -416,7 +417,7 @@ router.post("/admin/generate-registry", ensureAdmin, asyncHandler(async (req, re
     const scriptPath = path.resolve(__dirname, "../../../scripts/generate-sim-registry.ts");
     exec(`npx ts-node "${scriptPath}"`, (err, stdout, stderr) => {
       if (err) {
-        console.error("Failed to run generate-sim-registry:", err, stderr);
+        logger.error("simulations", "Failed to run generate-sim-registry:", err);
         next(new ApiError(500, `Failed to generate registry: ${err.message}`));
         return;
       }

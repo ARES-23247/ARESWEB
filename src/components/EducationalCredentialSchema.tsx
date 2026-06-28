@@ -41,7 +41,7 @@ export default function EducationalCredentialSchema({
     "@context": "https://schema.org",
     "@type": "EducationalOccupationalCredential",
     "name": credential.name,
-    "description": `${credential.description} Offered by ${organizationName} in Morgantown, West Virginia as part of FIRST Tech Challenge robotics program.`,
+    "description": `${credential.description} Offered by ${organizationName} in Morgantown, West Virginia as part of *FIRST*® Tech Challenge robotics program.`,
     "educationalLevel": credential.educationalLevel,
     "credentialCategory": credential.category,
     "competencyRequired": credential.competencyRequired,

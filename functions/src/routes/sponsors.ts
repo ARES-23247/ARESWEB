@@ -53,7 +53,7 @@ router.get("/", asyncHandler(async (req, res) => {
 
 // GET /api/sponsors/admin - Fetch all sponsors (admin only)
 router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("sponsors").get();
+  const snapshot = await adminDb.collection("sponsors").limit(200).get();
   
   const sponsors = snapshot.docs.map((doc) => {
     const data = doc.data();

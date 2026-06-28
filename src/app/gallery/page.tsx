@@ -5,6 +5,7 @@ import { authenticatedFetch } from "@/lib/api";
 import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
+import * as Dialog from "@radix-ui/react-dialog";
 
 interface GalleryPhoto {
   id: number;
@@ -160,6 +161,16 @@ export default function GalleryPage() {
     setSelectedPhoto(filteredPhotos[prevIdx]);
   };
 
+  useEffect(() => {
+    if (!selectedPhoto) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") handlePrevPhoto();
+      if (e.key === "ArrowRight") handleNextPhoto();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPhoto, handlePrevPhoto, handleNextPhoto]);
+
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
       <SEO title="Photo Gallery" description="Behind the scenes of ARES 23247. A visual build log documenting our journey from raw Onshape CAD models and machining to our live championship performances." />
@@ -259,84 +270,93 @@ export default function GalleryPage() {
       </section>
 
       {/* Fullscreen Photo Lightbox Dialog Overlay */}
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/95 backdrop-blur-md"
-            onClick={() => setSelectedPhoto(null)}
-          />
-          
-          <div className="relative w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh]">
-            {/* Header controls */}
-            <div className="w-full flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-              <div>
-                <span className="px-2.5 py-0.5 bg-ares-red text-white text-[8px] font-black uppercase tracking-widest rounded-md">
-                  {selectedPhoto.category}
-                </span>
-                <span className="text-[10px] text-marble/40 font-mono ml-3">
-                  Captured at {selectedPhoto.location} &middot; {selectedPhoto.date}
-                </span>
-              </div>
-              <button
-                aria-label="Close lightbox"
-                onClick={() => setSelectedPhoto(null)}
-                className="text-marble/55 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Central Graphic Container */}
-            <div className="w-full max-w-xl aspect-video bg-black border border-white/5 rounded-2xl relative overflow-hidden my-4 shadow-inner flex items-center justify-center">
-              {selectedPhoto.imageUrl ? (
-                <img
-                  src={selectedPhoto.imageUrl}
-                  alt={selectedPhoto.title}
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className={`w-full h-full bg-gradient-to-br ${selectedPhoto.colorClass} flex flex-col justify-center items-center p-8 text-center`}>
-                  <div className="absolute inset-0 bg-black/60 z-0"></div>
-                  <div className="relative z-10 space-y-4">
-                    <span className="text-ares-gold/20 block font-heading text-7xl font-bold uppercase tracking-tight select-none">
-                      ARES
+      <Dialog.Root open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 animate-fade-in" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none animate-scale-in">
+            {selectedPhoto && (
+              <>
+                <Dialog.Title className="sr-only">
+                  {selectedPhoto.title}
+                </Dialog.Title>
+                <Dialog.Description className="sr-only">
+                  {selectedPhoto.desc}
+                </Dialog.Description>
+                {/* Header controls */}
+                <div className="w-full flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+                  <div>
+                    <span className="px-2.5 py-0.5 bg-ares-red text-white text-[8px] font-black uppercase tracking-widest rounded-md">
+                      {selectedPhoto.category}
                     </span>
-                    <h3 className="text-2xl font-black text-white uppercase font-heading tracking-tight max-w-sm mx-auto leading-tight">
-                      {selectedPhoto.title}
-                    </h3>
+                    <span className="text-[10px] text-marble/40 font-mono ml-3">
+                      Captured at {selectedPhoto.location} &middot; {selectedPhoto.date}
+                    </span>
+                  </div>
+                  <Dialog.Close asChild>
+                    <button
+                      aria-label="Close lightbox"
+                      className="text-marble/55 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan rounded"
+                    >
+                      <X size={20} />
+                    </button>
+                  </Dialog.Close>
+                </div>
+
+                {/* Central Graphic Container */}
+                <div className="w-full max-w-xl aspect-video bg-black border border-white/5 rounded-2xl relative overflow-hidden my-4 shadow-inner flex items-center justify-center">
+                  {selectedPhoto.imageUrl ? (
+                    <img
+                      src={selectedPhoto.imageUrl}
+                      alt={selectedPhoto.title}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${selectedPhoto.colorClass} flex flex-col justify-center items-center p-8 text-center`}>
+                      <div className="absolute inset-0 bg-black/60 z-0"></div>
+                      <div className="relative z-10 space-y-4">
+                        <span className="text-ares-gold/20 block font-heading text-7xl font-bold uppercase tracking-tight select-none">
+                          ARES
+                        </span>
+                        <h3 className="text-2xl font-black text-white uppercase font-heading tracking-tight max-w-sm mx-auto leading-tight">
+                          {selectedPhoto.title}
+                        </h3>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Details and Navigation */}
+                <div className="w-full border-t border-white/5 pt-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-xs text-marble/80 text-left max-w-xl">
+                    <strong>Description:</strong> {selectedPhoto.desc}
+                  </p>
+
+                  {/* Navigation arrows */}
+                  <div className="flex items-center gap-2 bg-black/45 border border-white/5 p-1 rounded-xl">
+                    <button
+                      onClick={handlePrevPhoto}
+                      className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
+                      aria-label="Previous photo"
+                    >
+                      <ArrowLeft size={14} />
+                    </button>
+                    <span className="text-[10px] font-mono text-marble/45 px-2">
+                      {filteredPhotos.findIndex(p => p.id === selectedPhoto.id) + 1} / {filteredPhotos.length}
+                    </span>
+                    <button
+                      onClick={handleNextPhoto}
+                      className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
+                      aria-label="Next photo"
+                    >
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Bottom Details and Navigation */}
-            <div className="w-full border-t border-white/5 pt-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-marble/80 text-left max-w-xl">
-                <strong>Description:</strong> {selectedPhoto.desc}
-              </p>
-
-              {/* Navigation arrows */}
-              <div className="flex items-center gap-2 bg-black/45 border border-white/5 p-1 rounded-xl">
-                <button
-                  onClick={handlePrevPhoto}
-                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                </button>
-                <span className="text-[10px] font-mono text-marble/45 px-2">
-                  {filteredPhotos.findIndex(p => p.id === selectedPhoto.id) + 1} / {filteredPhotos.length}
-                </span>
-                <button
-                  onClick={handleNextPhoto}
-                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors"
-                >
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
     </div>
   );

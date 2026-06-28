@@ -74,6 +74,7 @@ router.get("/public", asyncHandler(async (req, res) => {
   const publicAlbumsSnap = await adminDb
     .collection("albums")
     .where("isPublic", "==", true)
+    .limit(100)
     .get();
 
   const publicAlbumIds = publicAlbumsSnap.docs.map(doc => doc.id);
