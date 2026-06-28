@@ -1,13 +1,12 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { GripVertical, Sparkles } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
-import { TelemetryPanel } from "./editor/TelemetryPanel";
 import { SimFileExplorer } from "./editor/SimFileExplorer";
 // TODO: implement component library picker UI
 // import { SimComponentLibrary } from "./editor/SimComponentLibrary";
-import { SimConsole, LogEntry, TestResult } from "./editor/SimConsole";
+import { LogEntry, TestResult } from "./editor/SimConsole";
 import { logger } from "../utils/logger";
 import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
@@ -19,13 +18,13 @@ import { toastApiError } from "../api/apiClient";
 import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
 import { SimulationLibraryOverlay } from "./simulation/SimulationLibraryOverlay";
 import { AiChangesBanner } from "./simulation/AiChangesBanner";
-import { AiChatPanel } from "./simulation/AiChatPanel";
 import { Snapshot } from "./simulation/SnapshotHistoryDropdown";
+import SimulationPlaygroundPreview from "./SimulationPlaygroundPreview";
+import SimulationPlaygroundConsoleTabs from "./SimulationPlaygroundConsoleTabs";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
 const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => ({ default: mod.DiffEditor })));
-const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
 
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
@@ -561,30 +560,14 @@ export default function SimulationPlayground() {
           <Panel defaultSize={40} minSize={20}>
             <PanelGroup orientation="horizontal" id="playground-bottom-v2">
               <Panel defaultSize={60} minSize={20}>
-                <div className="flex flex-col h-full w-full">
-                  <div className="px-3 py-1.5 border-b border-white/10 bg-obsidian-dark flex items-center gap-2 shrink-0">
-                    <span className="text-white/40 text-xs font-mono">Live Preview</span>
-                    <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-ares-danger' : 'bg-ares-cyan'}`} />
-                    {fps !== null && (
-                      <span className={`text-[10px] font-mono ml-auto ${fps >= 50 ? 'text-ares-cyan' : fps >= 30 ? 'text-ares-bronze' : 'text-ares-danger'}`}>
-                        {fps} FPS
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-h-0 relative flex flex-col">
-                    <div className="flex-1 min-h-0">
-                      <Suspense fallback={<div className="flex items-center justify-center h-full bg-obsidian-dark text-white/40 text-sm">Loading preview...</div>}>
-                        <SimPreviewFrame
-                          compiledFiles={compiledFiles}
-                          compileError={compileError}
-                          onFixWithAI={handleFixWithAI}
-                          onTestResult={handleTestResult}
-                        />
-                      </Suspense>
-                    </div>
-                    <TelemetryPanel data={telemetry} />
-                  </div>
-                </div>
+                <SimulationPlaygroundPreview
+                  compileError={compileError}
+                  fps={fps}
+                  compiledFiles={compiledFiles}
+                  handleFixWithAI={handleFixWithAI}
+                  handleTestResult={handleTestResult}
+                  telemetry={telemetry}
+                />
               </Panel>
 
               <PanelResizeHandle className="w-1.5 bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group">
@@ -592,57 +575,23 @@ export default function SimulationPlayground() {
               </PanelResizeHandle>
 
               <Panel defaultSize={40} minSize={20}>
-                <div className="flex flex-col h-full">
-                  {/* Tab bar */}
-                  <div className="flex items-center border-b border-white/10 bg-obsidian-dark shrink-0">
-                    <button
-                      onClick={() => setBottomRightTab('console')}
-                      className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                        bottomRightTab === 'console'
-                          ? 'text-ares-cyan border-b-2 border-ares-cyan bg-white/5'
-                          : 'text-white/40 hover:text-white/60'
-                      }`}
-                    >
-                      Console
-                    </button>
-                    <button
-                      onClick={() => setBottomRightTab('ai')}
-                      className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                        bottomRightTab === 'ai'
-                          ? 'text-indigo-400 border-b-2 border-indigo-400 bg-white/5'
-                          : 'text-white/40 hover:text-white/60'
-                      }`}
-                    >
-                      <Sparkles className="w-3 h-3" /> AI Chat
-                    </button>
-                  </div>
-
-                  {/* Tab content */}
-                  <div className="flex-1 min-h-0">
-                    {bottomRightTab === 'console' ? (
-                      <SimConsole
-                        logs={consoleLogs}
-                        testResults={testResults}
-                        onClear={() => {
-                          setConsoleLogs([]);
-                          setTestResults([]);
-                        }}
-                        onFixWithAI={handleFixWithAI}
-                      />
-                    ) : (
-                      <AiChatPanel
-                        chatMessages={chatMessages}
-                        isChatLoading={isChatLoading}
-                        chatInput={chatInput}
-                        setChatInput={setChatInput}
-                        handleChatKeyDown={handleChatKeyDown}
-                        handleChatSend={handleChatSend}
-                        chatEndRef={chatEndRef}
-                        chatInputRef={chatInputRef}
-                      />
-                    )}
-                  </div>
-                </div>
+                <SimulationPlaygroundConsoleTabs
+                  bottomRightTab={bottomRightTab}
+                  setBottomRightTab={setBottomRightTab}
+                  consoleLogs={consoleLogs}
+                  setConsoleLogs={setConsoleLogs}
+                  testResults={testResults}
+                  setTestResults={setTestResults}
+                  handleFixWithAI={handleFixWithAI}
+                  chatMessages={chatMessages}
+                  isChatLoading={isChatLoading}
+                  chatInput={chatInput}
+                  setChatInput={setChatInput}
+                  handleChatKeyDown={handleChatKeyDown}
+                  handleChatSend={handleChatSend}
+                  chatEndRef={chatEndRef}
+                  chatInputRef={chatInputRef}
+                />
               </Panel>
             </PanelGroup>
           </Panel>
