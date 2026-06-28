@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Maximize2, Minimize2, Sparkles, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { X, Maximize2, Minimize2, Sparkles, AlertCircle } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { useAuth } from "@/context/AuthContext";
 import DocFormDrawerAiCopilot from "./DocFormDrawerAiCopilot";
+import DocFormMetadataFields from "./DocFormMetadataFields";
+import DocFormAttachmentFields from "./DocFormAttachmentFields";
 
 interface DocRecord {
   slug: string;
@@ -438,291 +440,112 @@ export default function DocFormDrawer({
 
                   {/* Docs Variant Fields */}
                   {variant === "docs" && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label
-                          htmlFor="formCategory"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Category / Section
-                        </label>
-                        <select
-                          id="formCategory"
-                          value={formCategory}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormCategory(val);
-                            setIsCustomCategory(val === "custom");
-                          }}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
-                        >
-                          {categories.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                          <option value="custom">🛠️ Custom Category...</option>
-                        </select>
-                      </div>
-
-                      {isCustomCategory && (
-                        <div>
-                          <label
-                            htmlFor="customCategoryText"
-                            className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                          >
-                            Custom Category Name
-                          </label>
-                          <input
-                            id="customCategoryText"
-                            type="text"
-                            placeholder="e.g. Advanced Control Theory"
-                            value={customCategoryText}
-                            onChange={(e) => setCustomCategoryText(e.target.value)}
-                            className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                            required
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label
-                          htmlFor="formSortOrder"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Sorting Priority Order
-                        </label>
-                        <input
-                          id="formSortOrder"
-                          type="number"
-                          placeholder="1"
-                          value={formSortOrder}
-                          onChange={(e) => setFormSortOrder(Number(e.target.value))}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="formStatus"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Release Status
-                        </label>
-                        <select
-                          id="formStatus"
-                          value={formStatus}
-                          onChange={(e) => setFormStatus(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={isStudent}
-                        >
-                          <option value="draft">🟡 Draft (Hidden)</option>
-                          {!isStudent && <option value="published">🟢 Published (Live)</option>}
-                        </select>
-                        {isStudent && (
-                          <div className="mt-1 text-[10px] text-ares-gold flex items-center gap-1">
-                            <AlertCircle size={10} />
-                            <span>Coaches/mentors must review before publishing.</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <DocFormMetadataFields
+                      variant={variant}
+                      categories={categories}
+                      formCategory={formCategory}
+                      setFormCategory={setFormCategory}
+                      isCustomCategory={isCustomCategory}
+                      setIsCustomCategory={setIsCustomCategory}
+                      customCategoryText={customCategoryText}
+                      setCustomCategoryText={setCustomCategoryText}
+                      formSortOrder={formSortOrder}
+                      setFormSortOrder={setFormSortOrder}
+                      formStatus={formStatus}
+                      setFormStatus={setFormStatus}
+                      isStudent={isStudent}
+                      formDisplayInMathCorner={formDisplayInMathCorner}
+                      setFormDisplayInMathCorner={setFormDisplayInMathCorner}
+                      formDisplayInScienceCorner={formDisplayInScienceCorner}
+                      setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
+                      formDisplayInAreslib={formDisplayInAreslib}
+                      setFormDisplayInAreslib={setFormDisplayInAreslib}
+                      formIsPortfolio={formIsPortfolio}
+                      setFormIsPortfolio={setFormIsPortfolio}
+                      formIsExecutiveSummary={formIsExecutiveSummary}
+                      setFormIsExecutiveSummary={setFormIsExecutiveSummary}
+                    />
                   )}
 
                   {/* Documents Variant Fields */}
                   {variant === "documents" && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="md:col-span-2">
-                        <label
-                          htmlFor="formFileUrl"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          File / External URL Link
-                        </label>
-                        <input
-                          id="formFileUrl"
-                          type="url"
-                          placeholder="https://drive.google.com/... or github.com"
-                          value={formFileUrl}
-                          onChange={(e) => setFormFileUrl(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="formCategory"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Document Type
-                        </label>
-                        <select
-                          id="formCategory"
-                          value={formCategory}
-                          onChange={(e) => setFormCategory(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan"
-                        >
-                          {categories.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="formStatus"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Status
-                        </label>
-                        <select
-                          id="formStatus"
-                          value={formStatus}
-                          onChange={(e) => setFormStatus(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none focus:ring-2 focus:ring-ares-cyan disabled:opacity-60 disabled:cursor-not-allowed"
-                          disabled={isStudent}
-                        >
-                          <option value="draft">🟡 Draft (Hidden)</option>
-                          {!isStudent && <option value="published">🟢 Published (Live)</option>}
-                        </select>
-                        {isStudent && (
-                          <div className="mt-1 text-[10px] text-ares-gold flex items-center gap-1">
-                            <AlertCircle size={10} />
-                            <span>Coaches/mentors must review before publishing.</span>
-                          </div>
-                        )}
-                      </div>
+                    <div className="space-y-6">
+                      <DocFormAttachmentFields
+                        variant={variant}
+                        formFileUrl={formFileUrl}
+                        setFormFileUrl={setFormFileUrl}
+                        formThumbnail={formThumbnail}
+                        setFormThumbnail={setFormThumbnail}
+                        setIsPhotoPickerOpen={setIsPhotoPickerOpen}
+                      />
+                      <DocFormMetadataFields
+                        variant={variant}
+                        categories={categories}
+                        formCategory={formCategory}
+                        setFormCategory={setFormCategory}
+                        isCustomCategory={isCustomCategory}
+                        setIsCustomCategory={setIsCustomCategory}
+                        customCategoryText={customCategoryText}
+                        setCustomCategoryText={setCustomCategoryText}
+                        formSortOrder={formSortOrder}
+                        setFormSortOrder={setFormSortOrder}
+                        formStatus={formStatus}
+                        setFormStatus={setFormStatus}
+                        isStudent={isStudent}
+                        formDisplayInMathCorner={formDisplayInMathCorner}
+                        setFormDisplayInMathCorner={setFormDisplayInMathCorner}
+                        formDisplayInScienceCorner={formDisplayInScienceCorner}
+                        setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
+                        formDisplayInAreslib={formDisplayInAreslib}
+                        setFormDisplayInAreslib={setFormDisplayInAreslib}
+                        formIsPortfolio={formIsPortfolio}
+                        setFormIsPortfolio={setFormIsPortfolio}
+                        formIsExecutiveSummary={formIsExecutiveSummary}
+                        setFormIsExecutiveSummary={setFormIsExecutiveSummary}
+                      />
                     </div>
                   )}
 
                   {/* Blog Variant Fields */}
                   {variant === "blog" && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label
-                          htmlFor="formAuthor"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Post Author
-                        </label>
-                        <input
-                          id="formAuthor"
-                          type="text"
-                          placeholder="e.g. Lead Programmer"
-                          value={formAuthor}
-                          onChange={(e) => setFormAuthor(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="formDate"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Publication Date
-                        </label>
-                        <input
-                          id="formDate"
-                          type="date"
-                          value={formDate}
-                          onChange={(e) => setFormDate(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                          required
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label
-                          htmlFor="formThumbnail"
-                          className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                        >
-                          Thumbnail Graphic URL
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            id="formThumbnail"
-                            type="text"
-                            placeholder="https://images.unsplash.com/..."
-                            value={formThumbnail}
-                            onChange={(e) => setFormThumbnail(e.target.value)}
-                            className="flex-grow bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setIsPhotoPickerOpen(true)}
-                            className="px-3 bg-white/5 hover:bg-ares-gold/20 border border-white/10 hover:border-ares-gold text-white rounded flex items-center justify-center transition-all cursor-pointer"
-                            title="Choose from Gallery"
-                          >
-                            <ImageIcon size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Display Destinations (Docs variant checkmarks) */}
-                  {variant === "docs" && (
-                    <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-wider mb-3 text-marble/60">
-                        Display Configurations
-                      </span>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 bg-black/25 border border-white/5 p-4 rounded-lg">
-                        <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={formDisplayInMathCorner}
-                            onChange={(e) => setFormDisplayInMathCorner(e.target.checked)}
-                            className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
-                          />
-                          <span>Academy (Math Corner)</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={formDisplayInScienceCorner}
-                            onChange={(e) => setFormDisplayInScienceCorner(e.target.checked)}
-                            className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
-                          />
-                          <span>Academy (Science Corner)</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={formDisplayInAreslib}
-                            onChange={(e) => setFormDisplayInAreslib(e.target.checked)}
-                            className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
-                          />
-                          <span>ARESLib Reference</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={formIsPortfolio}
-                            onChange={(e) => setFormIsPortfolio(e.target.checked)}
-                            className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
-                          />
-                          <span>Portfolio Archive</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={formIsExecutiveSummary}
-                            onChange={(e) => setFormIsExecutiveSummary(e.target.checked)}
-                            className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
-                          />
-                          <span>Executive Summary</span>
-                        </label>
-                      </div>
+                    <div className="space-y-6">
+                      <DocFormMetadataFields
+                        variant={variant}
+                        categories={categories}
+                        formCategory={formCategory}
+                        setFormCategory={setFormCategory}
+                        isCustomCategory={isCustomCategory}
+                        setIsCustomCategory={setIsCustomCategory}
+                        customCategoryText={customCategoryText}
+                        setCustomCategoryText={setCustomCategoryText}
+                        formSortOrder={formSortOrder}
+                        setFormSortOrder={setFormSortOrder}
+                        formStatus={formStatus}
+                        setFormStatus={setFormStatus}
+                        isStudent={isStudent}
+                        formDisplayInMathCorner={formDisplayInMathCorner}
+                        setFormDisplayInMathCorner={setFormDisplayInMathCorner}
+                        formDisplayInScienceCorner={formDisplayInScienceCorner}
+                        setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
+                        formDisplayInAreslib={formDisplayInAreslib}
+                        setFormDisplayInAreslib={setFormDisplayInAreslib}
+                        formIsPortfolio={formIsPortfolio}
+                        setFormIsPortfolio={setFormIsPortfolio}
+                        formIsExecutiveSummary={formIsExecutiveSummary}
+                        setFormIsExecutiveSummary={setFormIsExecutiveSummary}
+                        formAuthor={formAuthor}
+                        setFormAuthor={setFormAuthor}
+                        formDate={formDate}
+                        setFormDate={setFormDate}
+                      />
+                      <DocFormAttachmentFields
+                        variant={variant}
+                        formFileUrl={formFileUrl}
+                        setFormFileUrl={setFormFileUrl}
+                        formThumbnail={formThumbnail}
+                        setFormThumbnail={setFormThumbnail}
+                        setIsPhotoPickerOpen={setIsPhotoPickerOpen}
+                      />
                     </div>
                   )}
 
