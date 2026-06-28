@@ -16,15 +16,19 @@ vi.mock("../../lib/firebase-admin", () => {
     delete: mockDelete,
   });
 
-  const mockWhere = vi.fn().mockReturnValue({
+  const queryMock: any = {
     get: mockGet,
-    where: vi.fn().mockReturnThis(),
-  });
+    where: vi.fn().mockImplementation(() => queryMock),
+    limit: vi.fn().mockImplementation(() => queryMock),
+  };
+
+  const mockWhere = vi.fn().mockReturnValue(queryMock);
 
   const mockCollection = vi.fn().mockReturnValue({
     doc: mockDoc,
     where: mockWhere,
     get: mockGet,
+    limit: vi.fn().mockImplementation(() => queryMock),
   });
 
   return {
@@ -94,9 +98,11 @@ describe("Profiles Router Backend Endpoints", () => {
 
       const mockCollection = adminDb.collection as any;
       const mockWhere = mockCollection().where;
-      mockWhere.mockReturnValue({
+      const queryMock = {
         get: vi.fn().mockResolvedValue({ docs: mockDocs }),
-      });
+        limit: vi.fn().mockReturnThis(),
+      };
+      mockWhere.mockReturnValue(queryMock);
 
       const handler = getHandler("/about-roster", "get");
       await handler(req, res, next);

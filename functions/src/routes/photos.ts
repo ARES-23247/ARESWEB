@@ -9,8 +9,18 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import photosAuthRouter from "./photosAuth";
 import albumsRouter from "./albums";
+import rateLimit from "express-rate-limit";
+import crypto from "crypto";
 
 const router = express.Router();
+
+const uploadUnifiedLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per window
+  message: { error: "Too many upload requests. Please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Helper to increment/decrement album media count atomically
 async function updateAlbumMediaCount(albumId: string, delta: number) {
@@ -335,7 +345,7 @@ router.use("/", photosAuthRouter);
 
 // POST /api/photos/upload-unified
 // Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
-router.post("/upload-unified", ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHandler(async (req, res) => {
   const { fileBase64, filename, mimeType, albumId, uploadToGoogle, runAiLabeling } = req.body as {
     fileBase64: string;
     filename: string;
@@ -357,6 +367,55 @@ router.post("/upload-unified", ensureTeamMember, asyncHandler(async (req, res) =
   );
   if (!validation.valid) {
     throw new ApiError(400, validation.error || "File did not pass magic bytes verification.");
+  }
+
+  // Calculate SHA-256 hash of the image buffer
+  const imageHash = crypto.createHash("sha256").update(buffer).digest("hex");
+
+  // Check if a photo with this hash already exists in imported_photos
+  const existingPhotoSnap = await adminDb
+    .collection("imported_photos")
+    .where("sha256", "==", imageHash)
+    .limit(1)
+    .get();
+
+  if (!existingPhotoSnap.empty) {
+    const existingPhotoDoc = existingPhotoSnap.docs[0];
+    const existingPhotoData = existingPhotoDoc.data();
+    
+    // If an albumId is provided and the existing photo isn't already in it, assign it
+    if (albumId && existingPhotoData.albumId !== albumId) {
+      const batch = adminDb.batch();
+      
+      // Update photo doc in imported_photos
+      batch.update(existingPhotoDoc.ref, { albumId });
+      
+      // Copy to new album's photos subcollection
+      const albumRef = adminDb.collection("albums").doc(albumId);
+      const newAlbumPhotoRef = albumRef.collection("photos").doc(existingPhotoDoc.id);
+      batch.set(newAlbumPhotoRef, { ...existingPhotoData, albumId });
+      
+      await batch.commit();
+      await updateAlbumMediaCount(albumId, 1);
+      
+      // Decrement the old album count if it was previously assigned elsewhere
+      if (existingPhotoData.albumId) {
+        await updateAlbumMediaCount(existingPhotoData.albumId, -1);
+        const oldAlbumRef = adminDb.collection("albums").doc(existingPhotoData.albumId);
+        await oldAlbumRef.collection("photos").doc(existingPhotoDoc.id).delete();
+      }
+    }
+    
+    res.json({
+      success: true,
+      photo: {
+        id: existingPhotoDoc.id,
+        ...existingPhotoData,
+        albumId: albumId || existingPhotoData.albumId
+      },
+      cached: true
+    });
+    return;
   }
 
   // Save to Firebase Storage
@@ -477,7 +536,8 @@ router.post("/upload-unified", ensureTeamMember, asyncHandler(async (req, res) =
     albumId: albumId || null,
     caption,
     labels,
-    googleMediaItemId
+    googleMediaItemId,
+    sha256: imageHash
   };
 
   await adminDb.collection("imported_photos").doc(docId).set(photoMeta);

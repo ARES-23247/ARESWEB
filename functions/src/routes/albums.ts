@@ -25,6 +25,7 @@ router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const albumsSnap = await adminDb
     .collection("albums")
     .orderBy("createdAt", "desc")
+    .limit(100)
     .get();
 
   const albums = albumsSnap.docs.map((doc) => ({
@@ -129,11 +130,16 @@ router.delete("/:albumId", ensureAdmin, asyncHandler(async (req, res) => {
     .get();
 
   if (!photosSnap.empty) {
-    const batch = adminDb.batch();
-    photosSnap.docs.forEach((doc) => {
-      batch.update(doc.ref, { albumId: null });
-    });
-    await batch.commit();
+    const batchSize = 400;
+    const docs = photosSnap.docs;
+    for (let i = 0; i < docs.length; i += batchSize) {
+      const batch = adminDb.batch();
+      const chunk = docs.slice(i, i + batchSize);
+      chunk.forEach((doc) => {
+        batch.update(doc.ref, { albumId: null });
+      });
+      await batch.commit();
+    }
   }
 
   // 2. Delete album from Firestore

@@ -36,7 +36,7 @@ function deduplicateRoster(membersRaw: any[], idKey: "uid" | "userId" = "uid") {
 
 // GET /api/profiles/about-roster (public-facing roster)
 router.get("/about-roster", asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("user_profiles").where("showOnAbout", "==", true).get();
+  const snapshot = await adminDb.collection("user_profiles").where("showOnAbout", "==", true).limit(100).get();
   const membersRaw = snapshot.docs.map(doc => {
     const data = doc.data();
     // Parents should be filtered out
@@ -73,7 +73,7 @@ router.get("/about-roster", asyncHandler(async (req, res) => {
 
 // GET /api/profiles/team-roster (requires team membership, for dashboard assignees picker)
 router.get("/team-roster", ensureTeamMember, asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("user_profiles").get();
+  const snapshot = await adminDb.collection("user_profiles").limit(300).get();
   const membersRaw = snapshot.docs.map(doc => {
     const data = doc.data();
     return {
