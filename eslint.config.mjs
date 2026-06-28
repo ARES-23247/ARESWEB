@@ -10,6 +10,9 @@ const eslintConfig = defineConfig([
     "archive/**",
     "scripts/**",
     ".scripts/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 
