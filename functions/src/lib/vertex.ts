@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { logger } from "./logger";
+import os from "os";
+import path from "path";
+import fs from "fs";
 const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key";
 
 // Local Firebase emulator compatibility: the emulator environment sanitizes standard user environment variables,
@@ -7,9 +10,19 @@ const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_AP
 // Explicitly inject the path if we are running in the emulator and the credentials env variable is not set.
 if (process.env.FUNCTIONS_EMULATOR === "true" && useVertex) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    const defaultCredentialsPath = "C:\\Users\\david\\AppData\\Roaming\\gcloud\\application_default_credentials.json";
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = defaultCredentialsPath;
-    logger.info("vertex", `Injected GOOGLE_APPLICATION_CREDENTIALS path: ${defaultCredentialsPath}`);
+    let credentialsPath = "";
+    if (process.platform === "win32") {
+      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+      credentialsPath = path.join(appData, "gcloud", "application_default_credentials.json");
+    } else {
+      credentialsPath = path.join(os.homedir(), ".config", "gcloud", "application_default_credentials.json");
+    }
+    if (fs.existsSync(credentialsPath)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
+      logger.info("vertex", `Injected GOOGLE_APPLICATION_CREDENTIALS path: ${credentialsPath}`);
+    } else {
+      logger.warn("vertex", `Google Application Credentials file not found at: ${credentialsPath}`);
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { X, Upload, Search, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { usePhotoUpload } from "../hooks/usePhotoUpload";
@@ -168,18 +169,24 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose} />
-      
-      <div className="relative w-full max-w-xl bg-obsidian border border-white/10 p-6 shadow-2xl ares-cut-lg flex flex-col max-h-[90vh] text-marble z-10 text-left">
-        <header className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
-          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <ImageIcon size={16} className="text-ares-gold" /> Embed Image
-          </h3>
-          <button type="button" onClick={onClose} className="text-marble/55 hover:text-white transition-colors cursor-pointer">
-            <X size={16} />
-          </button>
-        </header>
+    <Dialog.Root open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="fixed left-[50%] top-[50%] z-[10000] translate-x-[-50%] translate-y-[-50%] w-[calc(100%-2rem)] max-w-xl bg-obsidian border border-white/10 p-6 shadow-2xl ares-cut-lg flex flex-col max-h-[90vh] text-marble z-10 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        >
+          <header className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={16} className="text-ares-gold" aria-hidden="true" />
+              <Dialog.Title className="text-sm font-black text-white uppercase tracking-wider m-0">Embed Image</Dialog.Title>
+            </div>
+            <Dialog.Close asChild>
+              <button type="button" aria-label="Close modal" className="text-marble/55 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                <X size={16} />
+              </button>
+            </Dialog.Close>
+          </header>
 
         {displayError && (
           <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded mb-4 flex items-start gap-2 leading-relaxed">
@@ -277,7 +284,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                       placeholder="Describe image contents"
                       value={imageAlt}
                       onChange={(e) => setImageAlt(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red transition-colors placeholder:text-marble/25"
                     />
                   </div>
                 </div>
@@ -292,7 +299,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                           placeholder="Search gallery photos..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                          className="w-full bg-black/60 border border-white/10 rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red transition-colors placeholder:text-marble/25"
                         />
                       </div>
 
@@ -302,7 +309,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                           id="filter-album"
                           value={selectedAlbumId}
                           onChange={(e) => setSelectedAlbumId(e.target.value)}
-                          className="bg-black/60 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red cursor-pointer max-w-[150px]"
+                          className="bg-black/60 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red cursor-pointer max-w-[150px]"
                         >
                           <option value="">All Albums</option>
                           {albums.map((a) => (
@@ -353,7 +360,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                         placeholder="Describe image contents"
                         value={imageAlt}
                         onChange={(e) => setImageAlt(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none"
+                        className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
                       />
                     </div>
 
@@ -448,7 +455,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                       placeholder="https://example.com/image.png"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/20 font-mono"
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red transition-colors placeholder:text-marble/20 font-mono"
                     />
                   </div>
 
@@ -459,7 +466,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                       placeholder="Describe image contents"
                       value={imageAlt}
                       onChange={(e) => setImageAlt(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red transition-colors placeholder:text-marble/25"
+                      className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red transition-colors placeholder:text-marble/25"
                     />
                   </div>
 
@@ -478,7 +485,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
             </div>
           </div>
         )}
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

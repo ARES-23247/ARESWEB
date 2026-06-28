@@ -189,7 +189,7 @@ This is **bold** text`} />);
     const file = new File(["dummy content"], "intake.png", { type: "image/png" });
 
     // Find hidden file input and trigger upload
-    const fileInput = container.querySelector("input[type='file']") as HTMLInputElement;
+    const fileInput = (container.querySelector("input[type='file']") || document.body.querySelector("input[type='file']")) as HTMLInputElement;
 
 
     await act(async () => {

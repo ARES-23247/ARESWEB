@@ -102,9 +102,9 @@ service cloud.firestore {
 
     match /chat_sessions/{sessionId} {
       // Allow read/write for authorized team members, or guests under standard "anonymous" sessions
-      allow read: if isAuthorized() || (isAuthenticated() && resource.data.userId == 'anonymous');
-      allow create: if isAuthorized() || (isAuthenticated() && request.resource.data.userId == 'anonymous');
-      allow update, delete: if isAuthorized() || (isAuthenticated() && resource.data.userId == 'anonymous');
+      allow read: if isAuthorized() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthorized() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAuthorized() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     match /telemetry_runs/{runId} {

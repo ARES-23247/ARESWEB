@@ -188,7 +188,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertMarkdown("**", "**", "bold text")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Bold"
             aria-label="Insert bold text"
           >
@@ -198,7 +198,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertMarkdown("*", "*", "italic text")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Italic"
             aria-label="Insert italic text"
           >
@@ -208,7 +208,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertBlock("### ", "Heading")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Heading 3"
             aria-label="Insert Heading 3"
           >
@@ -218,7 +218,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertMarkdown("\n```\n", "\n```\n", "code")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Code Block"
             aria-label="Insert code block"
           >
@@ -228,7 +228,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertBlock("- ", "List item")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Bullet List"
             aria-label="Insert bullet list"
           >
@@ -238,7 +238,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertBlock("1. ", "List item")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Numbered List"
             aria-label="Insert numbered list"
           >
@@ -248,7 +248,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => insertBlock("> ", "Quote")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Quote"
             aria-label="Insert blockquote"
           >
@@ -258,7 +258,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleLink}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Link"
             aria-label="Insert link"
           >
@@ -271,7 +271,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleUnderline}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Underline"
           >
             <Underline size={13} />
@@ -280,7 +280,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleStrikethrough}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Strikethrough"
           >
             <Strikethrough size={13} />
@@ -289,7 +289,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleSubscript}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Subscript"
           >
             <Subscript size={13} />
@@ -298,7 +298,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleSuperscript}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Superscript"
           >
             <Superscript size={13} />
@@ -310,7 +310,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => handleAlign("left")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Left"
           >
             <AlignLeft size={13} />
@@ -319,7 +319,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => handleAlign("center")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Center"
           >
             <AlignCenter size={13} />
@@ -328,7 +328,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => handleAlign("right")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Right"
           >
             <AlignRight size={13} />
@@ -337,7 +337,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => handleAlign("justify")}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Justify"
           >
             <AlignJustify size={13} />
@@ -349,7 +349,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={handleTable}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Insert Table"
           >
             <Table size={13} />
@@ -358,7 +358,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => setIsPhotoOpen(true)}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-ares-gold/90"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-ares-gold/90"
             title="Insert Image"
             aria-label="Insert image"
           >
@@ -368,7 +368,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => setIsVideoOpen(true)}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-ares-cyan/90"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-ares-cyan/90"
             title="Insert Video"
           >
             <Video size={13} />
@@ -377,7 +377,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => setIsSimPickerOpen(true)}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none disabled:opacity-20 text-indigo-400"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-indigo-400"
             title="Insert Simulation"
             aria-label="Insert simulation"
           >
@@ -421,7 +421,7 @@ export default function MarkdownEditor({
             placeholder={placeholder}
             required={required}
             disabled={disabled}
-            className={`w-full bg-transparent px-4 py-3 text-xs text-white font-mono focus:outline-none border-none resize-none leading-relaxed placeholder:text-marble/30 ${className}`}
+            className={`w-full bg-transparent px-4 py-3 text-xs text-white font-mono focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan border-none resize-none leading-relaxed placeholder:text-marble/30 ${className}`}
           />
         ) : (
           <div
