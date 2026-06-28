@@ -16,13 +16,13 @@ service cloud.firestore {
     function isAuthorized() {
       return isAuthenticated() && 
         exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.get('role', 'unverified') != 'unverified';
+        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
     }
     
     // Helper function to check if the user has a specific role (e.g. 'admin')
     function hasRole(role) {
       return isAuthorized() && 
-        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.get('role', 'unverified') == role;
+        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role == role;
     }
 
     // Rules for the authorized_users collection
