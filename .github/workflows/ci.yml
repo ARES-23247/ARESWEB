@@ -147,10 +147,7 @@ jobs:
         run: pnpm run test
 
       - name: Run Cloud Functions Unit Tests
-        run: |
-          cd functions
-          npm ci
-          npm run test
+        run: pnpm --filter functions test
 
   e2e-tests:
     name: Playwright E2E Tests
@@ -281,10 +278,7 @@ jobs:
           path: dist/
 
       - name: Build Cloud Functions
-        run: |
-          cd functions
-          npm ci
-          npm run build
+        run: pnpm --filter functions build
 
       - name: Deploy Production to Firebase
         env:
