@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Plus, Shield, Activity } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useDocumentSync, DocRecord } from "@/hooks/useDocumentSync";
+import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 
@@ -21,20 +19,6 @@ export default function BlogManagementPage({
   prefilledAction?: "create" | "edit" | null;
   prefilledSlug?: string | null;
 } = {}) {
-  const { user, authorizedUser } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const editSlugQuery = searchParams.get("edit");
-
-  // User Profile metadata
-  const [userNickname, setUserNickname] = useState("");
-  const [userAvatar, setUserAvatar] = useState("");
-
-  const [selectedDoc, setSelectedDoc] = useState<DocRecord | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-
-  // Document Sync Hook (Filtered for posts collection)
   const {
     docs,
     loadingList,
@@ -42,89 +26,22 @@ export default function BlogManagementPage({
     revisions,
     loadingRevisions,
     fetchRevisions,
-    saveDoc,
-    deleteDoc
-  } = useDocumentSync("posts", (d) => d.isDeleted !== 1);
-
-  // Set local profile nickname and avatar on user load
-  useEffect(() => {
-    if (!user) return;
-    setUserNickname(authorizedUser?.name || user.displayName || "Anonymous Member");
-    setUserAvatar(user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`);
-  }, [user, authorizedUser]);
-
-  // Sync state with URL edit parameters & editorOnly prefilled parameters
-  useEffect(() => {
-    if (editorOnly) {
-      if (prefilledAction === "create") {
-        setSelectedDoc(null);
-        setIsEditorOpen(true);
-      } else if (prefilledAction === "edit" && prefilledSlug && docs.length > 0) {
-        const found = docs.find((d) => d.slug === prefilledSlug);
-        if (found) {
-          setSelectedDoc(found);
-          setIsEditorOpen(true);
-        }
-      }
-    } else {
-      if (editSlugQuery && docs.length > 0 && !isEditorOpen) {
-        const found = docs.find((d) => d.slug === editSlugQuery);
-        if (found) {
-          setSelectedDoc(found);
-          setIsEditorOpen(true);
-        }
-      }
-    }
-  }, [editSlugQuery, docs, editorOnly, prefilledAction, prefilledSlug]);
-
-  const handleOpenEdit = (docItem: DocRecord) => {
-    setSelectedDoc(docItem);
-    setIsEditorOpen(true);
-    if (!editorOnly) {
-      setSearchParams({ edit: docItem.slug });
-    }
-  };
-
-  const handleOpenCreate = () => {
-    setSelectedDoc(null);
-    setIsEditorOpen(true);
-  };
-
-  const handleCloseEditor = () => {
-    setIsEditorOpen(false);
-    setSelectedDoc(null);
-    if (editorOnly) {
-      onEditorClose?.();
-    } else if (searchParams.has("edit")) {
-      searchParams.delete("edit");
-      setSearchParams(searchParams);
-    }
-  };
-
-  const handleSave = async (slug: string, payload: any) => {
-    const finalPayload = {
-      ...payload,
-      original_authorNickname: editDocAuthorNickname(),
-      original_authorAvatar: editDocAuthorAvatar()
-    };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar);
-  };
-
-  const editDocAuthorNickname = () => {
-    if (selectedDoc) return selectedDoc.original_authorNickname || userNickname;
-    return userNickname;
-  };
-
-  const editDocAuthorAvatar = () => {
-    if (selectedDoc) return selectedDoc.original_authorAvatar || userAvatar;
-    return userAvatar;
-  };
-
-  const handleDelete = async (slug: string) => {
-    if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this blog post?")) return;
-    await deleteDoc(slug);
-  };
+    selectedDoc,
+    isEditorOpen,
+    canEdit,
+    handleOpenEdit,
+    handleOpenCreate,
+    handleCloseEditor,
+    handleSave,
+    handleDelete
+  } = useDashboardDocController(
+    "posts",
+    (d) => d.isDeleted !== 1,
+    editorOnly,
+    onEditorClose,
+    prefilledAction,
+    prefilledSlug
+  );
 
   if (editorOnly) {
     return isEditorOpen ? (

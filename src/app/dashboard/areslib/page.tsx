@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Plus, Shield, BookOpen } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useDocumentSync, DocRecord } from "@/hooks/useDocumentSync";
+import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 
@@ -18,20 +16,6 @@ const ARESLIB_CATEGORIES = [
 ];
 
 export default function AreslibManagementPage() {
-  const { user, authorizedUser } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const editSlugQuery = searchParams.get("edit");
-
-  // User Profile metadata
-  const [userNickname, setUserNickname] = useState("");
-  const [userAvatar, setUserAvatar] = useState("");
-
-  const [selectedDoc, setSelectedDoc] = useState<DocRecord | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-
-  // Document Sync Hook (Filtered for ARESLib reference display)
   const {
     docs,
     loadingList,
@@ -39,72 +23,15 @@ export default function AreslibManagementPage() {
     revisions,
     loadingRevisions,
     fetchRevisions,
-    saveDoc,
-    deleteDoc
-  } = useDocumentSync("docs", (d) => d.isDeleted !== 1 && d.displayInAreslib === 1);
-
-  // Set local profile nickname and avatar on user load
-  useEffect(() => {
-    if (!user) return;
-    setUserNickname(authorizedUser?.name || user.displayName || "Anonymous Member");
-    setUserAvatar(user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`);
-  }, [user, authorizedUser]);
-
-  // Sync state with URL edit parameters
-  useEffect(() => {
-    if (editSlugQuery && docs.length > 0 && !isEditorOpen) {
-      const found = docs.find((d) => d.slug === editSlugQuery);
-      if (found) {
-        setSelectedDoc(found);
-        setIsEditorOpen(true);
-      }
-    }
-  }, [editSlugQuery, docs]);
-
-  const handleOpenEdit = (docItem: DocRecord) => {
-    setSelectedDoc(docItem);
-    setIsEditorOpen(true);
-    setSearchParams({ edit: docItem.slug });
-  };
-
-  const handleOpenCreate = () => {
-    setSelectedDoc(null);
-    setIsEditorOpen(true);
-  };
-
-  const handleCloseEditor = () => {
-    setIsEditorOpen(false);
-    setSelectedDoc(null);
-    if (searchParams.has("edit")) {
-      searchParams.delete("edit");
-      setSearchParams(searchParams);
-    }
-  };
-
-  const handleSave = async (slug: string, payload: any) => {
-    const finalPayload = {
-      ...payload,
-      original_authorNickname: editDocAuthorNickname(payload),
-      original_authorAvatar: editDocAuthorAvatar(payload)
-    };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar);
-  };
-
-  const editDocAuthorNickname = (payload: any) => {
-    if (selectedDoc) return selectedDoc.original_authorNickname || userNickname;
-    return userNickname;
-  };
-
-  const editDocAuthorAvatar = (payload: any) => {
-    if (selectedDoc) return selectedDoc.original_authorAvatar || userAvatar;
-    return userAvatar;
-  };
-
-  const handleDelete = async (slug: string) => {
-    if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this document?")) return;
-    await deleteDoc(slug);
-  };
+    selectedDoc,
+    isEditorOpen,
+    canEdit,
+    handleOpenEdit,
+    handleOpenCreate,
+    handleCloseEditor,
+    handleSave,
+    handleDelete
+  } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && d.displayInAreslib === 1);
 
   return (
     <div className="space-y-10 w-full text-left">
