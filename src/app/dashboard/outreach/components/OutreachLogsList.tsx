@@ -54,7 +54,7 @@ export default function OutreachLogsList({
           placeholder="Search outreach events by title, summary, or location..."
           value={searchQuery}
           onChange={(e) => onSearchQueryChange(e.target.value)}
-          className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+          className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
         />
       </div>
 
@@ -69,7 +69,7 @@ export default function OutreachLogsList({
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-16 bg-ares-red/10 border border-ares-red/20 ares-cut gap-4 text-center">
           <AlertCircle size={36} className="text-ares-red" />
-          <span className="text-sm font-bold text-ares-red">{error}</span>
+          <span className="text-sm font-bold bg-ares-red text-white px-3 py-1.5 rounded">{error}</span>
           <button
             onClick={onFetchLogs}
             className="px-4 py-2 bg-ares-red text-white text-xs font-black uppercase tracking-wider ares-cut-sm shadow-md cursor-pointer font-bold"

@@ -145,7 +145,7 @@ export default function InquiriesPage() {
       case "resolved":
         return <span className="px-2 py-0.5 bg-ares-cyan/15 text-ares-cyan text-[10px] font-black uppercase tracking-wider ares-cut-sm border border-ares-cyan/30">Resolved</span>;
       case "rejected":
-        return <span className="px-2 py-0.5 bg-ares-red/15 text-ares-red text-[10px] font-black uppercase tracking-wider ares-cut-sm border border-ares-red/30">Rejected</span>;
+        return <span className="px-2 py-0.5 bg-ares-red text-white text-[10px] font-black uppercase tracking-wider ares-cut-sm">Rejected</span>;
       case "pending":
       default:
         return <span className="px-2 py-0.5 bg-ares-gold/15 text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm border border-ares-gold/30 animate-pulse">Pending</span>;
@@ -154,7 +154,7 @@ export default function InquiriesPage() {
 
   const getTypeBadge = (type: string) => {
     const colors: Record<string, string> = {
-      student: "bg-ares-red/15 text-ares-red border-ares-red/20",
+      student: "bg-ares-red text-white border-transparent",
       mentor: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
       sponsor: "bg-ares-cyan/15 text-ares-cyan border-ares-cyan/20",
       demo: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
@@ -195,7 +195,7 @@ export default function InquiriesPage() {
             placeholder="Search inquiries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
           />
         </div>
 
@@ -203,7 +203,7 @@ export default function InquiriesPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none font-bold"
+            className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 font-bold"
           >
             <option value="all">All Types</option>
             <option value="student">Students</option>
@@ -213,7 +213,7 @@ export default function InquiriesPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none font-bold"
+            className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 font-bold"
           >
             <option value="all">All Statuses</option>
             <option value="pending">Pending</option>
@@ -232,7 +232,7 @@ export default function InquiriesPage() {
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-16 bg-ares-red/10 border border-ares-red/20 ares-cut gap-4 text-center">
           <AlertCircle size={36} className="text-ares-red" />
-          <span className="text-sm font-bold text-ares-red">{error}</span>
+          <span className="text-sm font-bold bg-ares-red text-white px-3 py-1.5 rounded">{error}</span>
           <button onClick={fetchInquiries} className="px-4 py-2 bg-ares-red text-white text-xs font-black uppercase tracking-wider ares-cut-sm shadow-md cursor-pointer font-bold">Retry</button>
         </div>
       ) : filteredInquiries.length === 0 ? (

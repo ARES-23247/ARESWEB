@@ -41,6 +41,7 @@ interface CareerTabProps {
   newEmpYears: string;
   setNewEmpYears: (val: string) => void;
   addEmployer: () => void;
+  isStudent?: boolean;
 }
 
 export default function CareerTab({
@@ -68,7 +69,16 @@ export default function CareerTab({
   newEmpYears,
   setNewEmpYears,
   addEmployer,
+  isStudent = false,
 }: CareerTabProps) {
+  if (isStudent) {
+    return (
+      <div className="bg-black/20 border border-white/5 p-6 rounded-xl text-marble/60 text-xs text-center leading-normal">
+        🎓 Professional career and higher education history is reserved for mentors, coaches, and alumni.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* College Sub-form */}

@@ -74,7 +74,7 @@ router.get("/public", asyncHandler(async (req, res) => {
     return;
   }
 
-  let cursorDoc: any = null;
+  let cursorDoc: admin.firestore.DocumentSnapshot | null = null;
   if (cursor) {
     cursorDoc = await adminDb.collection("imported_photos").doc(cursor).get();
   }
@@ -85,7 +85,7 @@ router.get("/public", asyncHandler(async (req, res) => {
     chunks.push(publicAlbumIds.slice(i, i + 30));
   }
 
-  let rawPhotos: any[] = [];
+  let rawPhotos: admin.firestore.DocumentData[] = [];
   for (const chunk of chunks) {
     let q = adminDb.collection("imported_photos")
       .where("albumId", "in", chunk)
@@ -207,9 +207,18 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
 
   logger.info("photos", `Starting ingestion of ${items.length} items on Firebase`);
 
+  interface PhotoImportResult {
+    mediaItemId: string;
+    status: "success" | "failed";
+    filename: string;
+    storagePath?: string;
+    publicUrl?: string;
+    error?: string;
+  }
+
   const googleToken = await getGooglePhotosAccessToken();
   const bucket = adminStorage.bucket();
-  const results: any[] = [];
+  const results: PhotoImportResult[] = [];
 
   const dateStr = new Date().toISOString().split("T")[0];
   const sanitizedAlbum = albumName ? sanitizeAlbumName(albumName) : "imported";
@@ -225,7 +234,7 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
   const docMap = new Map(docSnaps.map(snap => [snap.id, snap]));
 
   // We compile writes in an array of operations to commit in chunks
-  const batchOperations: { ref: any; data: any }[] = [];
+  const batchOperations: { ref: admin.firestore.DocumentReference; data: admin.firestore.DocumentData }[] = [];
 
   // Process items in parallel chunks of 4 for downloads & GCS uploads
   const chunkArray = <T>(arr: T[], size: number): T[][] => {
@@ -478,7 +487,14 @@ router.get("/auth", asyncHandler(async (req, res) => {
       return;
     }
 
-    const tokens = (await tokenRes.json()) as any;
+    interface GoogleTokenResponse {
+      access_token: string;
+      expires_in: number;
+      refresh_token?: string;
+      scope: string;
+      token_type: string;
+    }
+    const tokens = (await tokenRes.json()) as GoogleTokenResponse;
     const authRef = adminDb.collection("system_settings").doc("google_auth");
     const existingDoc = await authRef.get();
     const existingData = existingDoc.exists ? existingDoc.data() : null;
@@ -742,7 +758,17 @@ router.post("/upload-unified", ensureTeamMember, asyncHandler(async (req, res) =
       const uploadToken = await uploadRes.text();
 
       // 2. Register media item in Google Photos library
-      const batchCreateBody: any = {
+      interface GoogleBatchCreateBody {
+        newMediaItems: {
+          description?: string;
+          simpleMediaItem: {
+            uploadToken: string;
+            fileName: string;
+          };
+        }[];
+        albumId?: string;
+      }
+      const batchCreateBody: GoogleBatchCreateBody = {
         newMediaItems: [
           {
             description: caption || "Uploaded via ARES Portal",

@@ -1,6 +1,7 @@
 import express from "express";
+import { DecodedIdToken } from "firebase-admin/auth";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
+import { ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { exec } from "child_process";
@@ -34,7 +35,7 @@ async function getGitHubPat(): Promise<string | undefined> {
 }
 
 // Helper: Check if user owns a simulation or is admin
-async function canModifySimulation(sessionUser: any, simId: string): Promise<boolean> {
+async function canModifySimulation(sessionUser: DecodedIdToken | undefined, simId: string): Promise<boolean> {
   if (!sessionUser) return false;
   
   // Admins, coaches, and mentors can modify any simulation
@@ -109,7 +110,7 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/simulations/gist/:id - Fetch a GitHub Gist by ID
-router.get("/gist/:id", ensureAuth, asyncHandler(async (req, res) => {
+router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const pat = await getGitHubPat();
 
@@ -355,7 +356,7 @@ router.delete("/:id", ensureTeamMember, asyncHandler(async (req: AuthenticatedRe
 }));
 
 // POST /api/simulations/gist - Create a new GitHub Gist for a simulation
-router.post("/gist", ensureAuth, asyncHandler(async (req, res) => {
+router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
   const { name, files } = req.body as { name?: string; files: Record<string, string> };
   if (!files || Object.keys(files).length === 0) {
     throw new ApiError(400, "No files provided");

@@ -187,6 +187,60 @@ describe("Auth Middleware", () => {
       expect(err.status).toBe(401);
       expect(err.message).toBe("Unauthorized: Missing or invalid token format");
     });
+
+    it("should return 401 if verifyIdToken throws", async () => {
+      req.headers!.authorization = "Bearer member-token";
+      vi.mocked(adminAuth.verifyIdToken).mockRejectedValue(new Error("verify failed"));
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(401);
+      expect(err.message).toBe("Unauthorized: Invalid token");
+    });
+
+    it("should return 403 if user doc does not exist", async () => {
+      req.headers!.authorization = "Bearer member-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "member123" } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({ exists: false } as any);
+
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: User not authorized");
+    });
+
+    it("should return 403 if user is unverified", async () => {
+      req.headers!.authorization = "Bearer member-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "member123" } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "unverified" }),
+      } as any);
+
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: Account is unverified");
+    });
+
+    it("should attach user and call next() on verified student success", async () => {
+      req.headers!.authorization = "Bearer member-token";
+      const mockDecoded = { uid: "member123" };
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue(mockDecoded as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "student" }),
+      } as any);
+
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+      expect(req.user).toEqual(mockDecoded);
+      expect(next).toHaveBeenCalled();
+    });
   });
 });
 

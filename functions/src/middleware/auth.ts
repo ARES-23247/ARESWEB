@@ -60,6 +60,10 @@ export async function ensureTeamMember(req: AuthenticatedRequest, res: Response,
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }
+    const userData = userDoc.data();
+    if (userData?.role === "unverified") {
+      return next(new ApiError(403, "Forbidden: Account is unverified"));
+    }
     req.user = decodedToken;
     next();
   } catch (err: any) {

@@ -12,9 +12,11 @@ service cloud.firestore {
       return (request.auth != null && request.auth.token != null && request.auth.token.email != null) ? request.auth.token.email.lower() : null;
     }
     
-    // Helper function to check if the user exists in the authorized_users collection
+    // Helper function to check if the user exists in the authorized_users collection and is verified
     function isAuthorized() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid));
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
     }
     
     // Helper function to check if the user has a specific role (e.g. 'admin')
@@ -27,7 +29,7 @@ service cloud.firestore {
       // Users can read their own registration doc; admins can read everything
       allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
       // Only admins can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
-      allow write: if hasRole('admin') || (isAuthenticated() && getUserEmail() == 'coach.david@gmail.com' && !exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)));
+      allow write: if hasRole('admin') || (isAuthenticated() && getUserEmail() == 'coach.david@gmail.com' && request.auth.uid == userId && !exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)));
     }
 
     // Public collections (blogs, calendar, knowledge base docs)

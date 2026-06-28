@@ -410,6 +410,7 @@ export default function DashboardProfilePage() {
               <CareerTab
                 colleges={colleges}
                 employers={employers}
+                isStudent={memberType === "student"}
                 removeCollege={removeCollege}
                 removeEmployer={removeEmployer}
                 newColName={newColName}
@@ -447,6 +448,7 @@ export default function DashboardProfilePage() {
                 setShowEmail={setShowEmail}
                 showPhone={showPhone}
                 setShowPhone={setShowPhone}
+                isStudent={memberType === "student"}
               />
             )}
 
