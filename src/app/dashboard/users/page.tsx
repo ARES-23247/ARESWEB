@@ -413,7 +413,6 @@ export default function DashboardUsersPage() {
                 <option value="admin">Admin</option>
                 <option value="coach">Coach</option>
                 <option value="mentor">Mentor</option>
-                <option value="programmer">Programmer</option>
                 <option value="member">Member</option>
                 <option value="unverified">Unverified</option>
               </select>

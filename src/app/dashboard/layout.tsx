@@ -123,11 +123,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </button>
                   <button
                     type="button"
-                    onClick={() => loginWithMockUser("lead.programmer@gmail.com", "programmer", "Programmer Lead")}
+                    onClick={() => loginWithMockUser("lead.programmer@gmail.com", "member", "Student Lead")}
                     className="w-full py-2 bg-ares-cyan/15 hover:bg-ares-cyan/25 border border-ares-cyan/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center truncate"
-                    title="Lead Programmer"
+                    title="Student Lead"
                   >
-                    Programmer
+                    Member
                   </button>
                 </div>
               </div>

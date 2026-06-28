@@ -155,7 +155,6 @@ export default function UserInviteForm({
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white cursor-pointer font-bold focus:outline-none font-sans"
           >
             <option value="member">Member (Standard Roster)</option>
-            <option value="programmer">Programmer (Developer Access)</option>
             <option value="mentor">Mentor (Senior Advisor)</option>
             <option value="coach">Coach (Team Director)</option>
             <option value="admin">Admin (Full System Control)</option>
