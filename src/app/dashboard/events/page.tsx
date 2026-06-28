@@ -22,6 +22,8 @@ import { authenticatedFetch } from "@/lib/api";
 import LocationManagerModal, { TeamLocation, MOCK_LOCATIONS } from "./components/LocationManagerModal";
 import EventEditorDrawer, { TeamEvent } from "./components/EventEditorDrawer";
 import EventsCalendarView from "./components/EventsCalendarView";
+import EventsFilterPanel from "./components/EventsFilterPanel";
+import { MOCK_EVENTS } from "../../calendar/components/mockEvents";
 
 export default function EventsManagementPage({
   editorOnly = false,
@@ -405,129 +407,21 @@ export default function EventsManagementPage({
           )}
 
           {/* Advanced Filter controls */}
-          <div className="space-y-4 mb-6">
-            {/* Status Pills / Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-white/5 pb-2 text-[10px] uppercase font-black tracking-wider">
-              {(["all", "published", "pending", "draft", "deleted"] as const).map((status) => {
-                const isActive = filterStatus === status;
-                const count = counts[status];
-                
-                // Color codes
-                let colorClass = "hover:text-white border-transparent text-marble/45";
-                if (isActive) {
-                  if (status === "deleted") colorClass = "border-ares-red/30 text-ares-red bg-ares-red/10";
-                  else if (status === "pending") colorClass = "border-amber-500/30 text-amber-500 bg-amber-500/10";
-                  else if (status === "published") colorClass = "border-ares-success/30 text-ares-success bg-ares-success/10";
-                  else colorClass = "border-ares-gold/35 text-white bg-white/5";
-                }
-
-                return (
-                  <button
-                    key={status}
-                    onClick={() => setFilterStatus(status)}
-                    className={`px-3 py-2 border rounded-t-lg transition-all cursor-pointer flex items-center gap-1.5 ${colorClass}`}
-                  >
-                    <span>
-                      {status === "all" && "📁 All Operations"}
-                      {status === "published" && "🟢 Published"}
-                      {status === "pending" && "🟡 Pending Approval"}
-                      {status === "draft" && "📝 Drafts"}
-                      {status === "deleted" && "🗑️ Trash"}
-                    </span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                      isActive ? "bg-white/10 text-white" : "bg-white/5 text-marble/40"
-                    }`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Dropdown Filters Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 bg-black/20 p-4 border border-white/5 rounded-xl text-left">
-              {/* Search */}
-              <div className="md:col-span-2 relative">
-                <input
-                  type="text"
-                  value={filterSearch}
-                  onChange={(e) => setFilterSearch(e.target.value)}
-                  placeholder="Search events by title, description..."
-                  className="w-full bg-black/60 border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-cyan focus:ring-2 focus:ring-ares-cyan/25 transition-all placeholder:text-marble/30 font-medium"
-                />
-                {filterSearch && (
-                  <button
-                    onClick={() => setFilterSearch("")}
-                    className="absolute right-3 top-3 text-[10px] text-marble/40 hover:text-white uppercase font-bold cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              {/* Category */}
-              <div>
-                <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value as any)}
-                  className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
-                >
-                  <option value="all">📁 All Categories</option>
-                  <option value="internal">🏠 Internal Practices</option>
-                  <option value="outreach">🌍 Outreach Operations</option>
-                </select>
-              </div>
-
-              {/* Month */}
-              <div>
-                <select
-                  value={filterMonth}
-                  onChange={(e) => setFilterMonth(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
-                >
-                  <option value="all">📅 All Months</option>
-                  <option value="0">January</option>
-                  <option value="1">February</option>
-                  <option value="2">March</option>
-                  <option value="3">April</option>
-                  <option value="4">May</option>
-                  <option value="5">June</option>
-                  <option value="6">July</option>
-                  <option value="7">August</option>
-                  <option value="8">September</option>
-                  <option value="9">October</option>
-                  <option value="10">November</option>
-                  <option value="11">December</option>
-                </select>
-              </div>
-
-              {/* Year */}
-              <div className="flex gap-2">
-                <select
-                  value={filterYear}
-                  onChange={(e) => setFilterYear(e.target.value)}
-                  className="flex-grow bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
-                >
-                  <option value="all">🗓️ All Years</option>
-                  {yearOptions.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
-
-                {(filterSearch || filterStatus !== "all" || filterCategory !== "all" || filterMonth !== "all" || filterYear !== "all") && (
-                  <button
-                    onClick={handleClearFilters}
-                    className="px-3 bg-white/5 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/20 rounded-lg text-marble/60 hover:text-ares-red-light transition-all flex items-center justify-center cursor-pointer shrink-0"
-                    title="Reset Filters"
-                  >
-                    <RotateCcw size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <EventsFilterPanel
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterSearch={filterSearch}
+            setFilterSearch={setFilterSearch}
+            filterMonth={filterMonth}
+            setFilterMonth={setFilterMonth}
+            filterYear={filterYear}
+            setFilterYear={setFilterYear}
+            counts={counts}
+            yearOptions={yearOptions}
+            handleClearFilters={handleClearFilters}
+          />
 
           {/* Schedule Index List */}
           <EventsCalendarView
@@ -572,71 +466,3 @@ export default function EventsManagementPage({
   );
 }
 
-const MOCK_EVENTS: TeamEvent[] = [
-  {
-    id: "event_1",
-    title: "Spark! Goes WILD Exhibition",
-    dateStart: "2026-05-24T09:30:00",
-    dateEnd: "2026-05-24T14:30:00",
-    locationId: "spark-museum",
-    description: "Team outreach, STEM workshops, and public science bridge exhibits.",
-    category: "outreach",
-    isPotluck: 0,
-    isVolunteer: 1
-  },
-  {
-    id: "event_2",
-    title: "Sunday Night Driver Practice",
-    dateStart: "2026-05-24T18:00:00",
-    dateEnd: "2026-05-24T20:30:00",
-    locationId: "mars-building",
-    description: "Weekly telemetry calibrations and driver practice on standard field.",
-    category: "internal",
-    isPotluck: 0,
-    isVolunteer: 0
-  },
-  {
-    id: "event_3",
-    title: "Friday Night Hardware Lab",
-    dateStart: "2026-05-29T18:00:00",
-    dateEnd: "2026-05-29T20:00:00",
-    locationId: "ares-shop",
-    description: "Weekly hardware maintenance, linear slide adjustments, and intake tuning.",
-    category: "internal",
-    isPotluck: 0,
-    isVolunteer: 0
-  },
-  {
-    id: "event_4",
-    title: "Sunday Night EKF Tuning",
-    dateStart: "2026-05-31T18:00:00",
-    dateEnd: "2026-05-31T20:30:00",
-    locationId: "mars-building",
-    description: "Main chassis odometry calibrations and autonomous state-slip test runs.",
-    category: "internal",
-    isPotluck: 0,
-    isVolunteer: 0
-  },
-  {
-    id: "event_5",
-    title: "Overnight Scrimmage & Prep",
-    dateStart: "2026-06-12T18:00:00",
-    dateEnd: "2026-06-13T01:00:00",
-    locationId: "mars-building",
-    description: "Extended overnight competition prep and match simulation.",
-    category: "internal",
-    isPotluck: 0,
-    isVolunteer: 1
-  },
-  {
-    id: "event_6",
-    title: "FLL Robotics Mentorship Camp",
-    dateStart: "2026-06-18T10:00:00",
-    dateEnd: "2026-06-18T15:00:00",
-    locationId: "mars-building",
-    description: "Mentoring middle school FLL teams on mechanical design and FIRST® Core Values.",
-    category: "outreach",
-    isPotluck: 1,
-    isVolunteer: 1
-  }
-];
