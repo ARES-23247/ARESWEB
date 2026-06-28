@@ -124,7 +124,7 @@ export default function EventEditorDrawer({
   const editId = eventToEdit?.id || null;
   const editorRef = useFocusTrap(isOpen, onClose);
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-  const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
+  const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
   const canPublishDirectly = useMemo(() => {
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);

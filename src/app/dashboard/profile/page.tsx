@@ -86,7 +86,7 @@ export default function DashboardProfilePage() {
   const [newEmpYears, setNewEmpYears] = useState("");
 
   const userRole = authorizedUser?.role || "Pending Verification";
-  const isAdmin = userRole === "admin";
+  const isAdmin = userRole === "admin" || userRole === "coach";
 
   useEffect(() => {
     const currentUser = user;

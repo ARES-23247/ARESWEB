@@ -27,10 +27,10 @@ service cloud.firestore {
 
     // Rules for the authorized_users collection
     match /authorized_users/{userId} {
-      // Users can read their own registration doc; admins can read everything
-      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
-      // Only admins can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
-      allow write: if hasRole('admin') || (isAuthenticated() && getUserEmail() == 'coach.david@gmail.com' && request.auth.uid == userId && !exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)));
+      // Users can read their own registration doc; admins/coaches can read everything
+      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
+      // Only admins/coaches can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
+      allow write: if hasRole('admin') || hasRole('coach') || (isAuthenticated() && getUserEmail() == 'coach.david@gmail.com' && request.auth.uid == userId && !exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)));
     }
 
     // Public collections (blogs, calendar, knowledge base docs)
@@ -58,7 +58,7 @@ service cloud.firestore {
 
       match /signups/{userId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized() && (request.auth.uid == userId || hasRole('admin'));
+        allow write: if isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
       }
 
       match /photos/{photoId} {
@@ -138,11 +138,11 @@ service cloud.firestore {
     // user_profiles
     match /user_profiles/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach') || hasRole('mentor'));
-      allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin'));
-      allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin'));
-      allow delete: if hasRole('admin');
+      allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin') || hasRole('coach'));
+      allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin') || hasRole('coach'));
+      allow delete: if hasRole('admin') || hasRole('coach');
 
       match /layouts/{layoutId} {
         allow read, write: if isAuthenticated() && request.auth.uid == userId;
@@ -159,15 +159,15 @@ service cloud.firestore {
       allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 
-    // settings (admin-only writes)
+    // settings (admin/coach writes)
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if hasRole('admin');
+      allow write: if hasRole('admin') || hasRole('coach');
     }
 
-    // system_settings (secure credentials read-only for authorized members)
+    // system_settings (secure credentials read-only for admin/coach)
     match /system_settings/{settingId} {
-      allow read: if hasRole('admin');
+      allow read: if hasRole('admin') || hasRole('coach');
       allow write: if false;
     }
 
@@ -231,7 +231,7 @@ service cloud.firestore {
     // judge_access_codes
     match /judge_access_codes/{codeId} {
       allow read: if isAuthorized();
-      allow write: if hasRole('admin');
+      allow write: if hasRole('admin') || hasRole('coach');
     }
 
     // docs_feedback

@@ -115,7 +115,7 @@ export default function EventDetailPage() {
   };
 
   const isVerified = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-  const isAdmin = !!(user && authorizedUser && authorizedUser.role === "admin");
+  const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
 
   // 1. Fetch Event Detail
   useEffect(() => {

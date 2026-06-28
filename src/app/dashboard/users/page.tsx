@@ -62,7 +62,7 @@ export default function DashboardUsersPage() {
   const [zulipWarning, setZulipWarning] = useState<string | null>(null);
 
   const userRole = authorizedUser?.role || "Pending Verification";
-  const isAdmin = userRole === "admin";
+  const isAdmin = userRole === "admin" || userRole === "coach";
 
   const fetchUsersData = async () => {
     if (!user || !isAdmin) return;
