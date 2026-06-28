@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 1. Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center relative overflow-hidden">
+      <main id="main-content" className="min-h-screen bg-obsidian flex flex-col items-center justify-center relative overflow-hidden">
         {/* Animated Background Gradients */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-ares-red/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-ares-gold/5 rounded-full blur-[120px] pointer-events-none"></div>
@@ -51,14 +51,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </p>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   // 2. Lockscreen / Sign In Required
   if (!user) {
     return (
-      <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <main id="main-content" className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Beautiful background patterns */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20" aria-hidden="true">
           <div 
@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="absolute top-0 left-0 w-full z-10">
           <GreekMeander variant="thin" opacity="opacity-30" className="w-full" />
         </div>
-
+ 
         <div className="relative z-10 w-full max-w-md">
           {/* Lockscreen Card */}
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
@@ -91,14 +91,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-marble/70 text-sm leading-relaxed mb-8 max-w-sm">
               Access to telemetry commands, the Kanban task boards, and workspace analytics is restricted to authenticated ARES team engineers.
             </p>
-
+ 
             <button
               onClick={loginWithGoogle}
               className="w-full clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl hover:shadow-[0_0_20px_rgba(192,0,0,0.3)] active:scale-95 cursor-pointer"
             >
               <LogIn size={16} /> Sign In with Google
             </button>
-
+ 
             {isLocal && (
               <div className="w-full mt-4 pt-4 border-t border-white/5 space-y-2.5">
                 <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center animate-pulse">
@@ -140,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 

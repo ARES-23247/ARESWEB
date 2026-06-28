@@ -86,13 +86,13 @@ export default function SeasonsPage() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full bg-ares-gray-deep min-h-screen text-marble relative overflow-hidden">
+    <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
       <SEO
         title="Team Legacy"
         description="A chronicle of ARES 23247's journey through FIRST® Robotics. Explore our seasonal achievements, awards, and growth."
       />
 
-      <section className="py-32 px-6 relative z-10 text-center bg-ares-gray-deep">
+      <section className="py-32 px-6 relative z-10 text-center bg-obsidian">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -114,7 +114,7 @@ export default function SeasonsPage() {
       </section>
 
       {/* Seasonal Timeline */}
-      <section className="py-32 px-6 bg-ares-gray-dark/50 relative z-10 border-y border-white/5">
+      <section className="py-32 px-6 bg-obsidian/50 relative z-10 border-y border-white/5">
         <div className="max-w-6xl mx-auto">
           <header className="mb-20 text-center">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">Journey Through Time</h2>
@@ -216,7 +216,7 @@ export default function SeasonsPage() {
       </section>
 
       {/* Trophy Case Section */}
-      <section className="py-32 px-6 relative z-10 bg-ares-gray-deep">
+      <section className="py-32 px-6 relative z-10 bg-obsidian">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-16">
             <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
@@ -234,7 +234,7 @@ export default function SeasonsPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  className="bg-ares-gray-dark border border-white/5 p-8 ares-cut group hover:border-ares-gold/40 transition-all relative overflow-hidden"
+                  className="bg-obsidian border border-white/5 p-8 ares-cut group hover:border-ares-gold/40 transition-all relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-3xl rounded-full pointer-events-none" />
                   <div className="flex justify-between items-start mb-6">
@@ -283,7 +283,7 @@ export default function SeasonsPage() {
             </a>
             <a
               href="/join"
-              className="px-8 py-4 bg-ares-gray-dark text-white font-black ares-cut-sm hover:bg-white/10 transition-all border border-white/10"
+              className="px-8 py-4 bg-obsidian text-white font-black ares-cut-sm hover:bg-white/10 transition-all border border-white/10"
             >
               JOIN THE TEAM
             </a>

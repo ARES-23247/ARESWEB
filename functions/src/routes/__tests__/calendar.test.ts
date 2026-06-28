@@ -5,6 +5,7 @@ import { adminDb } from "../../lib/firebase-admin";
 vi.mock("../../lib/firebase-admin", () => {
   const mockQuery = {
     where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
     get: vi.fn(),
   };
   return {

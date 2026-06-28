@@ -16,10 +16,21 @@ vi.mock("../../lib/firebase-admin", () => {
     delete: mockDelete,
   });
 
+  const mockQuery = {
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
+    get: mockGet,
+  };
+
   const mockCollection = vi.fn().mockReturnValue({
     doc: mockDoc,
+    orderBy: vi.fn().mockReturnValue(mockQuery),
+    limit: vi.fn().mockReturnValue(mockQuery),
     get: mockGet,
   });
+
+  mockCollection.get = mockGet;
 
   return {
     adminDb: {
@@ -97,6 +108,8 @@ describe("Outreach Router Backend Endpoints", () => {
           expect.objectContaining({ id: "out2", date: "2026-04-12", title: "Science Fair Support", eventId: null }),
           expect.objectContaining({ id: "out1", date: "2026-03-10", title: "STEM Library Day", eventId: "event123" }),
         ],
+        hasMore: false,
+        nextCursor: null,
       });
     });
   });
@@ -126,6 +139,8 @@ describe("Outreach Router Backend Endpoints", () => {
         logs: [
           expect.objectContaining({ id: "out1", title: "Demo 1" }),
         ],
+        hasMore: false,
+        nextCursor: null,
       });
     });
   });

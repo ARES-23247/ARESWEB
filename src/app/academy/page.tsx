@@ -195,7 +195,7 @@ export default function AcademyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-ares-gray-deep text-white flex flex-col w-full">
+    <div className="min-h-screen bg-obsidian text-white flex flex-col w-full">
       <SEO
         title={currentDoc?.title ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}` : (isAresLib ? "ARESLib Documentation" : "ARES Academy")}
         description={currentDoc?.description || (isAresLib ? "ARESLib documentation, control loops, and API references." : "ARES Academy lessons and interactive simulations.")}
@@ -219,7 +219,7 @@ export default function AcademyPage() {
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-ares-gray-dark border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl bg-obsidian border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -438,7 +438,7 @@ export default function AcademyPage() {
 
                     <div className="flex items-center gap-4 bg-obsidian/50 p-2 pr-4 rounded-full border border-white/5">
                       <div className="flex items-center">
-                        <div className="relative z-10 w-8 h-8 rounded-full border-2 border-ares-gray-deep overflow-hidden bg-ares-gray-dark">
+                        <div className="relative z-10 w-8 h-8 rounded-full border-2 border-obsidian overflow-hidden bg-obsidian/80">
                           <img
                             src={
                               currentDoc.original_authorAvatar ||

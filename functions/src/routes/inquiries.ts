@@ -120,10 +120,26 @@ router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
 
 // GET /api/inquiries
 router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("inquiries").orderBy("createdAt", "desc").get();
+  const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
+  const cursor = req.query?.cursor as string | undefined;
+
+  let query = adminDb.collection("inquiries").orderBy("createdAt", "desc").limit(limitVal + 1);
+
+  if (cursor) {
+    const cursorDoc = await adminDb.collection("inquiries").doc(cursor).get();
+    if (cursorDoc.exists) {
+      query = query.startAfter(cursorDoc);
+    }
+  }
+
+  const snapshot = await query.get();
+  const rawDocs = snapshot.docs;
+  const hasMore = rawDocs.length > limitVal;
+  const docs = hasMore ? rawDocs.slice(0, limitVal) : rawDocs;
+
   const secret = getEncryptionSecret();
 
-  const inquiries = await Promise.all(snapshot.docs.map(async (doc) => {
+  const inquiries = await Promise.all(docs.map(async (doc) => {
     const data = doc.data();
     let name = data.name;
     let email = data.email;
@@ -155,7 +171,12 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
     };
   }));
 
-  res.json({ success: true, inquiries });
+  res.json({
+    success: true,
+    inquiries,
+    hasMore,
+    nextCursor: hasMore ? inquiries[inquiries.length - 1].id : null
+  });
 }));
 
 // PATCH /api/inquiries/:id/status

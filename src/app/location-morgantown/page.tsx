@@ -21,7 +21,7 @@ export default function LocationMorgantownPage() {
     <div className="flex flex-col w-full bg-obsidian">
       <SEO
         title="Robotics in Morgantown, West Virginia | ARES 23247"
-        description="Join ARES 23247, Morgantown's premier FIRST Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
+        description="Join ARES 23247, Morgantown's premier FIRST® Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
       />
       <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <ReviewSchema reviews={ARES_REVIEWS} />
@@ -61,7 +61,7 @@ export default function LocationMorgantownPage() {
       </section>
 
       {/* Programs Section */}
-      <section className="py-20 bg-ares-gray-deep">
+      <section className="py-20 bg-obsidian">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-black text-white mb-12 text-center font-heading uppercase">
             Robotics Programs in <span className="text-ares-gold">Morgantown</span>
@@ -71,7 +71,7 @@ export default function LocationMorgantownPage() {
               <div className="w-14 h-14 bg-ares-red/20 rounded-lg flex items-center justify-center mb-6">
                 <Trophy className="w-7 h-7 text-ares-red" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">FIRST Tech Challenge</h3>
+              <h3 className="text-xl font-bold text-white mb-3"><em>FIRST</em>® Tech Challenge</h3>
               <p className="text-marble/70 leading-relaxed">
                 Compete in the world&apos;s premier middle and high school robotics competition. Design, build, and program robots to compete in tournaments throughout West Virginia and beyond.
               </p>
@@ -152,7 +152,7 @@ export default function LocationMorgantownPage() {
       </section>
 
       {/* Service Area Section */}
-      <section className="py-20 bg-ares-gray-deep">
+      <section className="py-20 bg-obsidian">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-black text-white mb-8 text-center font-heading uppercase">
             Serving <span className="text-ares-gold">North Central West Virginia</span>

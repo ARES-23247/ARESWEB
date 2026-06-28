@@ -8,9 +8,24 @@ const router = express.Router();
 
 // GET /api/outreach - Fetch active outreach logs (public)
 router.get("/", asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("outreach_logs").get();
+  const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
+  const cursor = req.query?.cursor as string | undefined;
+
+  let query = adminDb.collection("outreach_logs").orderBy("date", "desc").limit(limitVal + 1);
+
+  if (cursor) {
+    const cursorDoc = await adminDb.collection("outreach_logs").doc(cursor).get();
+    if (cursorDoc.exists) {
+      query = query.startAfter(cursorDoc);
+    }
+  }
+
+  const snapshot = await query.get();
+  const rawDocs = snapshot.docs;
+  const hasMore = rawDocs.length > limitVal;
+  const docs = hasMore ? rawDocs.slice(0, limitVal) : rawDocs;
   
-  const logs = snapshot.docs.map((doc) => {
+  const logs = docs.map((doc) => {
     const data = doc.data();
     return {
       id: doc.id,
@@ -28,14 +43,34 @@ router.get("/", asyncHandler(async (req, res) => {
   // Sort by date descending
   logs.sort((a, b) => b.date.localeCompare(a.date));
 
-  res.json({ success: true, logs });
+  res.json({
+    success: true,
+    logs,
+    hasMore,
+    nextCursor: hasMore ? logs[logs.length - 1].id : null
+  });
 }));
 
 // GET /api/outreach/admin - Fetch all outreach logs (admin only)
 router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
-  const snapshot = await adminDb.collection("outreach_logs").get();
+  const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
+  const cursor = req.query?.cursor as string | undefined;
+
+  let query = adminDb.collection("outreach_logs").orderBy("date", "desc").limit(limitVal + 1);
+
+  if (cursor) {
+    const cursorDoc = await adminDb.collection("outreach_logs").doc(cursor).get();
+    if (cursorDoc.exists) {
+      query = query.startAfter(cursorDoc);
+    }
+  }
+
+  const snapshot = await query.get();
+  const rawDocs = snapshot.docs;
+  const hasMore = rawDocs.length > limitVal;
+  const docs = hasMore ? rawDocs.slice(0, limitVal) : rawDocs;
   
-  const logs = snapshot.docs.map((doc) => {
+  const logs = docs.map((doc) => {
     const data = doc.data();
     return {
       id: doc.id,
@@ -53,7 +88,12 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   // Sort by date descending
   logs.sort((a, b) => b.date.localeCompare(a.date));
 
-  res.json({ success: true, logs });
+  res.json({
+    success: true,
+    logs,
+    hasMore,
+    nextCursor: hasMore ? logs[logs.length - 1].id : null
+  });
 }));
 
 // POST /api/outreach/admin - Create or update outreach log (admin only)

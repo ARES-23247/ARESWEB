@@ -6,7 +6,7 @@ const DEFAULT_KEYWORDS = [
   "robotics",
   "Morgantown robotics",
   "West Virginia robotics",
-  "FIRST Robotics",
+  "FIRST® Robotics",
   "FTC robotics",
   "STEM education",
   "youth robotics",
@@ -20,7 +20,7 @@ const DEFAULT_KEYWORDS = [
   "robotics near me",
   "robotics programs",
   "robotics classes",
-  "FIRST Tech Challenge",
+  "FIRST® Tech Challenge",
   "Morgantown STEM",
   "West Virginia STEM"
 ].join(", ");
@@ -92,7 +92,7 @@ export default function SEO({
         "addressCountry": "US"
       }
     },
-    "keywords": "robotics, FIRST, FTC, STEM, Morgantown, West Virginia, engineering, competition robotics, ARES 23247, youth robotics, robotics team, robotics club, robotics competition, robotics classes, robotics education, robotics for kids, robotics for teens, robotics near me, robotics West Virginia, robotics Morgantown, robotics programs, robotics training, FIRST Tech Challenge, FTC robotics, STEM education, engineering programs, Morgantown robotics team, West Virginia robotics",
+    "keywords": "robotics, FIRST®, FTC, STEM, Morgantown, West Virginia, engineering, competition robotics, ARES 23247, youth robotics, robotics team, robotics club, robotics competition, robotics classes, robotics education, robotics for kids, robotics for teens, robotics near me, robotics West Virginia, robotics Morgantown, robotics programs, robotics training, FIRST® Tech Challenge, FTC robotics, STEM education, engineering programs, Morgantown robotics team, West Virginia robotics",
     "sameAs": [
       "https://github.com/ARES23247",
       "https://theorangealliance.org/teams/23247"
@@ -147,17 +147,17 @@ export default function SEO({
       `https://theorangealliance.org/teams/23247`
     ],
     "foundingDate": "2021",
-    "founder": "FIRST Robotics West Virginia",
+    "founder": "FIRST® Robotics West Virginia",
     "memberOf": [
       {
         "@type": "Organization",
-        "name": "FIRST Inspires",
+        "name": "FIRST® Inspires",
         "url": "https://www.firstinspires.org"
       }
     ],
     "knowsAbout": [
       "Robotics",
-      "FIRST Tech Challenge",
+      "FIRST® Tech Challenge",
       "STEM Education",
       "Computer Programming",
       "Mechanical Engineering",
@@ -173,7 +173,7 @@ export default function SEO({
     "name": "ARES 23247",
     "alternateName": "Appalachian Robotics & Engineering Society",
     "url": siteConfig.urls.base,
-    "description": "FIRST Tech Challenge Robotics Team in Morgantown, West Virginia. Youth robotics programs, STEM education, and competition opportunities.",
+    "description": "FIRST® Tech Challenge Robotics Team in Morgantown, West Virginia. Youth robotics programs, STEM education, and competition opportunities.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {

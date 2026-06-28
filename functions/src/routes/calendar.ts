@@ -73,6 +73,7 @@ router.get("/feed", asyncHandler(async (req, res) => {
     .collection("events")
     .where("isDeleted", "==", 0)
     .where("status", "==", "published")
+    .limit(200)
     .get();
 
   const nowStr = new Date().toISOString().replace(/-|:|\.\d+Z?/g, "");
