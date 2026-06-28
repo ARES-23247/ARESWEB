@@ -127,21 +127,6 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // aresplanner_paths
-    match /aresplanner_paths/{pathId} {
-      allow read, write: if isAuthorized();
-    }
-
-    // aresplanner_logs
-    match /aresplanner_logs/{logId} {
-      allow read, write: if isAuthorized();
-    }
-
-    // aresplanner_log_data
-    match /aresplanner_log_data/{logId} {
-      allow read, write: if isAuthorized();
-    }
-
     // user_profiles
     match /user_profiles/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach') || hasRole('mentor'));
