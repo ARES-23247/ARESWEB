@@ -220,11 +220,9 @@ export default function DocFormMetadataFields({
             <input
               id="formAuthor"
               type="text"
-              placeholder="e.g. Lead Programmer"
               value={formAuthor}
-              onChange={(e) => setFormAuthor && setFormAuthor(e.target.value)}
-              className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-              required
+              readOnly
+              className="w-full bg-black/35 border border-white/5 rounded px-4 py-2.5 text-xs text-marble/50 focus:outline-none cursor-not-allowed"
             />
           </div>
 

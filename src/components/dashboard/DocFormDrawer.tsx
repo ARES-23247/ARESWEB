@@ -78,7 +78,7 @@ export default function DocFormDrawer({
   loadingRevisions,
   fetchRevisions
 }: DocFormDrawerProps) {
-  const { authorizedUser } = useAuth();
+  const { authorizedUser, user } = useAuth();
   const isStudent = authorizedUser?.role === "student";
 
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -122,6 +122,7 @@ export default function DocFormDrawer({
 
   // Initialize form fields
   useEffect(() => {
+    const currentUserNickname = authorizedUser?.name || user?.displayName || "Anonymous Member";
     if (editDoc) {
       setFormTitle(editDoc.title || "");
       setFormSlug(editDoc.slug || "");
@@ -150,7 +151,7 @@ export default function DocFormDrawer({
         setFormFileUrl(editDoc.fileUrl || "");
         setFormCreatedAt(editDoc.createdAt || new Date().toISOString().split("T")[0]);
       } else if (variant === "blog") {
-        setFormAuthor(editDoc.author || "");
+        setFormAuthor(editDoc.author || currentUserNickname);
         setFormDate(editDoc.date || new Date().toISOString().split("T")[0]);
         setFormThumbnail(editDoc.thumbnail || "");
       }
@@ -175,7 +176,7 @@ export default function DocFormDrawer({
         setFormFileUrl("");
         setFormCreatedAt(new Date().toISOString().split("T")[0]);
       } else if (variant === "blog") {
-        setFormAuthor("");
+        setFormAuthor(currentUserNickname);
         setFormDate(new Date().toISOString().split("T")[0]);
         setFormThumbnail("");
       }
