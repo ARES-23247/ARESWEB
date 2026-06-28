@@ -42,7 +42,9 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // Connect client SDKs to local emulators if running in local or development environment
+const useEmulator = import.meta.env.VITE_USE_EMULATOR !== "false" && import.meta.env.NEXT_PUBLIC_USE_EMULATOR !== "false";
 if (
+  useEmulator &&
   typeof window !== "undefined" &&
   (window.location.hostname === "localhost" ||
    window.location.hostname === "127.0.0.1" ||
