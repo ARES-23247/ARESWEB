@@ -384,7 +384,7 @@ export default function AcademyPage() {
                               to={`${basePath}/${prevDoc.slug}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group"
                             >
-                              <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                              <span className="text-marble/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
                                 <ArrowLeft
                                   size={12}
                                   className="group-hover:-translate-x-1 transition-transform"
@@ -403,7 +403,7 @@ export default function AcademyPage() {
                               to={`${basePath}/${nextDoc.slug}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end"
                             >
-                              <span className="text-ares-gray text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                              <span className="text-marble/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
                                 Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                               </span>
                               <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">

@@ -113,7 +113,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] w-full bg-ares-gray-deep text-white ares-cut-sm border border-dashed border-ares-danger/50 p-8 shadow-2xl">
+        <div className="flex flex-col items-center justify-center min-h-[400px] w-full bg-obsidian text-white ares-cut-sm border border-dashed border-ares-danger/50 p-8 shadow-2xl">
           <div className="text-ares-danger mb-6">
             <svg className="w-16 h-16 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -137,11 +137,11 @@ export default class ErrorBoundary extends Component<Props, State> {
             )}
           </div>
 
-          <div className="bg-ares-gray-dark border border-white/10 p-4 ares-cut-sm w-full max-w-xl text-left font-mono text-xs text-white overflow-x-auto mb-8 shadow-inner">
+          <div className="bg-black/40 border border-white/10 p-4 ares-cut-sm w-full max-w-xl text-left font-mono text-xs text-white overflow-x-auto mb-8 shadow-inner">
             {this.state.errorStr}
           </div>
           <button 
-            className="bg-white text-ares-gray-deep font-bold px-8 py-3 ares-cut-sm hover:bg-ares-gold transition-colors tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-ares-gray-deep shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.4)]"
+            className="bg-white text-black font-bold px-8 py-3 ares-cut-sm hover:bg-ares-gold transition-colors tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-obsidian shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.4)]"
             onClick={() => window.location.reload()}
           >
             Reboot Interface

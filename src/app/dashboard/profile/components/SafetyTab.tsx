@@ -37,7 +37,7 @@ export default function SafetyTab({
             id="profile-tshirt-size"
             value={tshirtSize}
             onChange={(e) => setTshirtSize(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
           >
             <option value="">Select size...</option>
             <option value="xs">XS</option>
@@ -88,7 +88,7 @@ export default function SafetyTab({
             type="text"
             value={emergencyContactName}
             onChange={(e) => setEmergencyContactName(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. Jane Doe"
           />
         </div>
@@ -99,7 +99,7 @@ export default function SafetyTab({
             type="tel"
             value={emergencyContactPhone}
             onChange={(e) => setEmergencyContactPhone(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. 304-555-0100"
           />
         </div>

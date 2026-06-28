@@ -12,13 +12,13 @@ export default function ConfigVisualizer() {
   };
 
   return (
-    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-ares-gray-deep shadow-xl">
-      <div className="bg-ares-gray-dark px-4 py-3 border-b border-white/10 flex items-center justify-between">
+    <div className="my-6 border border-white/10 ares-cut-sm overflow-hidden bg-obsidian shadow-xl">
+      <div className="bg-black/40 px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings size={18} className="text-ares-gold" />
           <span className="font-mono text-sm font-bold text-white">ARESLib Tuner (Live)</span>
         </div>
-        <button onClick={handleSave} className="flex items-center gap-2 text-xs font-bold px-3 py-1 bg-ares-red/20 hover:bg-ares-red/40 text-white rounded transition-colors">
+        <button onClick={handleSave} className="flex items-center gap-2 text-xs font-bold px-3 py-1 bg-ares-red/20 hover:bg-ares-red/40 text-white rounded transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan">
           {saved ? <RefreshCw size={14} className="animate-spin text-ares-gold" /> : <Save size={14} />}
           {saved ? "SYNCING..." : "DEPLOY"}
         </button>
@@ -26,7 +26,7 @@ export default function ConfigVisualizer() {
 
       <div className="flex flex-col sm:flex-row">
         {/* Sidebar */}
-        <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-white/10 bg-ares-gray-deep/50 p-2 flex flex-col gap-1">
+        <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-white/10 bg-black/20 p-2 flex flex-col gap-1">
           {["constants", "pid_gains", "kinematics", "vision"].map((tab) => (
             <button
               key={tab}

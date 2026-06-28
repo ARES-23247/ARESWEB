@@ -100,7 +100,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
       <div className={`border border-white/10 rounded-lg p-6 bg-black/40 glass-card animate-pulse ${className || "my-8"}`}>
         <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
           <span className="w-5 h-5 bg-white/10 rounded" />
-          <h3 className="font-heading font-bold text-ares-gray">Zulip Thread: {topic}</h3>
+          <h3 className="font-heading font-bold text-marble/60">Zulip Thread: {topic}</h3>
         </div>
         <div className="space-y-4">
           <div className="h-16 bg-white/5 rounded w-full"></div>
@@ -123,7 +123,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
         <button 
           type="button"
           onClick={() => fetchMessages(true)}
-          className="text-ares-gray hover:text-white transition-colors"
+          className="text-marble/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan rounded"
           title="Refresh Messages"
           aria-label="Refresh Messages"
         >

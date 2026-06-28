@@ -98,7 +98,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
 
       <aside className={`
         fixed lg:sticky top-0 left-0 z-30 h-screen w-72 shrink-0
-        bg-ares-gray-deep border-r border-white/8
+        bg-obsidian border-r border-white/8
         overflow-y-auto overscroll-contain
         transition-transform duration-300
         ${docsOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}

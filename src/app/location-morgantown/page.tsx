@@ -21,7 +21,7 @@ export default function LocationMorgantownPage() {
     <div className="flex flex-col w-full bg-obsidian">
       <SEO
         title="Robotics in Morgantown, West Virginia | ARES 23247"
-        description="Join ARES 23247, Morgantown's premier FIRST® Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
+        description="Join ARES 23247, Morgantown's premier *FIRST*® Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
       />
       <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <ReviewSchema reviews={ARES_REVIEWS} />

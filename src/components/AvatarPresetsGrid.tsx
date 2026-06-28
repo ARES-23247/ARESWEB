@@ -28,10 +28,10 @@ export default function AvatarPresetsGrid({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-gold/50 appearance-none custom-select"
+        className="bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan appearance-none custom-select"
       >
         {options.map((opt) => (
-          <option key={opt} value={opt} className="bg-ares-gray-deep">
+          <option key={opt} value={opt} className="bg-obsidian">
             {opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
           </option>
         ))}

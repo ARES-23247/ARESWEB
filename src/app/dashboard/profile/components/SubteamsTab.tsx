@@ -63,7 +63,7 @@ export default function SubteamsTab({
             type="text"
             value={rookieYear}
             onChange={(e) => setRookieYear(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. 2024"
           />
         </div>
@@ -74,7 +74,7 @@ export default function SubteamsTab({
             type="text"
             value={leadershipRole}
             onChange={(e) => setLeadershipRole(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. Programming Lead"
           />
         </div>
@@ -85,7 +85,7 @@ export default function SubteamsTab({
               id="profile-member-type"
               value={memberType}
               onChange={(e) => setMemberType(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             >
               <option value="student">Student</option>
               <option value="alumni">Alumni</option>

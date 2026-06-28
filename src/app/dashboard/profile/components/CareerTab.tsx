@@ -117,7 +117,7 @@ export default function CareerTab({
               type="text"
               value={newColName}
               onChange={(e) => setNewColName(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. West Virginia University"
             />
           </div>
@@ -128,7 +128,7 @@ export default function CareerTab({
               type="text"
               value={newColDomain}
               onChange={(e) => setNewColDomain(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. wvu.edu"
             />
           </div>
@@ -139,7 +139,7 @@ export default function CareerTab({
               type="text"
               value={newColDegree}
               onChange={(e) => setNewColDegree(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. B.S. Computer Science"
             />
           </div>
@@ -150,7 +150,7 @@ export default function CareerTab({
               type="text"
               value={newColYears}
               onChange={(e) => setNewColYears(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. 2021-2025"
             />
           </div>
@@ -204,7 +204,7 @@ export default function CareerTab({
               type="text"
               value={newEmpName}
               onChange={(e) => setNewEmpName(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. NASA Goddard"
             />
           </div>
@@ -215,7 +215,7 @@ export default function CareerTab({
               type="text"
               value={newEmpDomain}
               onChange={(e) => setNewEmpDomain(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. nasa.gov"
             />
           </div>
@@ -226,7 +226,7 @@ export default function CareerTab({
               type="text"
               value={newEmpTitle}
               onChange={(e) => setNewEmpTitle(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. Guidance Controls Intern"
             />
           </div>
@@ -237,7 +237,7 @@ export default function CareerTab({
               type="text"
               value={newEmpYears}
               onChange={(e) => setNewEmpYears(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="e.g. 2024-Present"
             />
           </div>

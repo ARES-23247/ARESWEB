@@ -63,7 +63,7 @@ export default function IdentityTab({
             required
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. David"
           />
         </div>
@@ -74,7 +74,7 @@ export default function IdentityTab({
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="Legal first name"
           />
         </div>
@@ -85,7 +85,7 @@ export default function IdentityTab({
             type="text"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="Legal last name"
           />
         </div>
@@ -99,7 +99,7 @@ export default function IdentityTab({
             type="text"
             value={pronouns}
             onChange={(e) => setPronouns(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. he/him"
           />
         </div>
@@ -117,7 +117,7 @@ export default function IdentityTab({
                 type="url"
                 value={avatar}
                 onChange={(e) => setAvatar(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
                 placeholder="https://..."
               />
               <button
@@ -139,7 +139,7 @@ export default function IdentityTab({
           rows={4}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors resize-none"
+          className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors resize-none"
           placeholder="Tell us about your interest in robotics, engineering, or team role..."
         />
       </div>
@@ -158,7 +158,7 @@ export default function IdentityTab({
             type="text"
             value={favoriteFirstThing}
             onChange={(e) => setFavoriteFirstThing(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. Gracious Professionalism, building code..."
           />
         </div>
@@ -169,7 +169,7 @@ export default function IdentityTab({
             type="text"
             value={favoriteRobotMechanism}
             onChange={(e) => setFavoriteRobotMechanism(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. Virtual Pivot Intake, active hang assembly..."
           />
         </div>
@@ -180,7 +180,7 @@ export default function IdentityTab({
             type="text"
             value={preMatchSuperstition}
             onChange={(e) => setPreMatchSuperstition(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="e.g. fist-bumping drive coach, checking telemetry offsets..."
           />
         </div>
@@ -191,7 +191,7 @@ export default function IdentityTab({
             type="text"
             value={funFact}
             onChange={(e) => setFunFact(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none transition-colors"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
             placeholder="A strange or unique fact about you..."
           />
         </div>

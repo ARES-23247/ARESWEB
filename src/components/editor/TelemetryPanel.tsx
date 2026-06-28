@@ -105,7 +105,7 @@ function TelemetryGraph({ title, points }: { title: string, points: TelemetryPoi
   const latestValue = points[points.length - 1]?.value || 0;
 
   return (
-    <div className="bg-ares-gray-dark border border-white/5 rounded-md p-2 flex flex-col gap-1">
+    <div className="bg-black/40 border border-white/5 rounded-md p-2 flex flex-col gap-1">
       <div className="flex justify-between items-center px-1">
         <span className="text-white/60 text-[10px] font-mono">{title}</span>
         <span className="text-white font-mono text-xs">{latestValue.toFixed(3)}</span>
