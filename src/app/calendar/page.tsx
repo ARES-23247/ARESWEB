@@ -26,83 +26,9 @@ import {
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
-
-interface TeamEvent {
-  id: string;
-  title: string;
-  dateStart: string;
-  dateEnd?: string;
-  location?: string;
-  locationId?: string;
-  description?: string;
-  category: "internal" | "outreach";
-}
-
-const MOCK_EVENTS: TeamEvent[] = [
-  {
-    id: "event_1",
-    title: "Spark! Goes WILD Exhibition",
-    dateStart: "2026-05-24T09:30:00",
-    dateEnd: "2026-05-24T14:30:00",
-    location: "SPARK! WV Museum",
-    description: "Team outreach, STEM workshops, and public science bridge exhibits.",
-    category: "outreach"
-  },
-  {
-    id: "event_2",
-    title: "Sunday Night Driver Practice",
-    dateStart: "2026-05-24T18:00:00",
-    dateEnd: "2026-05-24T20:30:00",
-    location: "MARS Laboratory",
-    description: "Weekly telemetry calibrations and driver practice on standard field.",
-    category: "internal"
-  },
-  {
-    id: "event_3",
-    title: "Friday Night Hardware Lab",
-    dateStart: "2026-05-29T18:00:00",
-    dateEnd: "2026-05-29T20:00:00",
-    location: "ARES Machine Shop",
-    description: "Weekly hardware maintenance, linear slide adjustments, and intake tuning.",
-    category: "internal"
-  },
-  {
-    id: "event_4",
-    title: "Sunday Night EKF Tuning",
-    dateStart: "2026-05-31T18:00:00",
-    dateEnd: "2026-05-31T20:30:00",
-    location: "MARS Laboratory",
-    description: "Main chassis odometry calibrations and autonomous state-slip test runs.",
-    category: "internal"
-  },
-  {
-    id: "event_5",
-    title: "Overnight Scrimmage & Prep",
-    dateStart: "2026-06-12T18:00:00",
-    dateEnd: "2026-06-13T01:00:00",
-    location: "Championship Scrimmage Field",
-    description: "Extended overnight competition prep and match simulation.",
-    category: "internal"
-  },
-  {
-    id: "event_6",
-    title: "FLL Robotics Mentorship Camp",
-    dateStart: "2026-06-18T10:00:00",
-    dateEnd: "2026-06-18T15:00:00",
-    location: "Spark! Learning Space",
-    description: "ARES mentors conducting visual block-coding tutorials for local FLL students.",
-    category: "outreach"
-  },
-  {
-    id: "event_7",
-    title: "Into The Deep Finals Scrimmage",
-    dateStart: "2026-06-21T13:00:00",
-    dateEnd: "2026-06-21T18:00:00",
-    location: "MARS Laboratory",
-    description: "Final mock matches with regional alliance teams to optimize autonomous target routes.",
-    category: "internal"
-  }
-];
+import { TeamEvent, MOCK_EVENTS } from "./components/mockEvents";
+import { SelectedEventPanel } from "./components/SelectedEventPanel";
+import { SyncSubscriptionPanel } from "./components/SyncSubscriptionPanel";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
@@ -470,136 +396,23 @@ export default function CalendarPage() {
           <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
             
             {/* Selected Date Summary Panel */}
-            <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-2xl flex flex-col justify-between min-h-[220px]">
-              <div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-ares-bronze flex items-center gap-1.5 mb-2">
-                  <CalendarIcon size={10} className="text-ares-red" /> Target Schedule Details
-                </span>
-                <h3 className="text-xl font-black text-white font-heading uppercase leading-tight mt-1">
-                  {formatFullDate(selectedDate)}
-                </h3>
-                <p className="text-[10px] text-marble/60 font-mono mt-2 border-t border-white/5 pt-2">
-                  {selectedDayEvents.length === 0 
-                    ? "No events or practices scheduled for this day." 
-                    : `Active Operational Targets: ${selectedDayEvents.length} Event${selectedDayEvents.length === 1 ? "" : "s"}`
-                  }
-                </p>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                {selectedDayEvents.length === 0 ? (
-                  <div className="p-4 bg-white/5 border border-white/5 text-center text-marble/45 text-xs font-bold uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-2">
-                    <Info size={12} className="text-ares-bronze" /> Ready for Booking
-                  </div>
-                ) : (
-                  selectedDayEvents.map((event) => (
-                    <Link 
-                      to={`/events/${event.id}`}
-                      key={event.id}
-                      className={`block p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
-                        event.category === "outreach"
-                          ? "bg-ares-gold/5 border-ares-gold/20 hover:bg-ares-gold/10"
-                          : "bg-ares-red/5 border-ares-red/20 hover:bg-ares-red/10"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center relative z-10">
-                        <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${
-                          event.category === "outreach" ? "bg-ares-gold text-black" : "bg-ares-red text-white"
-                        }`}>
-                          {event.category}
-                        </span>
-                        
-                        <div className="flex items-center gap-2">
-                          {canEdit && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleOpenInlineEdit(event.id);
-                              }}
-                              className="p-1 bg-white/5 hover:bg-ares-gold/25 border border-white/10 rounded transition-colors text-white cursor-pointer"
-                              title="Edit Event"
-                            >
-                              <Pencil size={8} />
-                            </button>
-                          )}
-                          <span className="text-[8px] font-mono text-marble/45 flex items-center gap-1">
-                            <Clock size={8} /> {formatEventTime(event.dateStart)}
-                          </span>
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-black text-white leading-tight uppercase font-heading">{event.title}</h4>
-                      <p className="text-[10px] text-marble/85 leading-relaxed">{event.description}</p>
-                      
-                      {event.location && (
-                        <p className="text-[8px] font-bold text-ares-bronze flex items-center gap-1 mt-1.5">
-                          <MapPin size={8} className="text-ares-red" /> {event.location}
-                        </p>
-                      )}
-                    </Link>
-                  ))
-                )}
-              </div>
-              
-              {canEdit && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenInlineCreate(selectedDate)}
-                    className="w-full py-2 bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/30 text-white hover:text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow active:scale-98"
-                  >
-                    <Plus size={11} /> Schedule Event
-                  </button>
-                </div>
-              )}
-            </div>
+            <SelectedEventPanel
+              selectedDate={selectedDate}
+              selectedDayEvents={selectedDayEvents}
+              canEdit={canEdit}
+              formatFullDate={formatFullDate}
+              formatEventTime={formatEventTime}
+              handleOpenInlineCreate={handleOpenInlineCreate}
+              handleOpenInlineEdit={handleOpenInlineEdit}
+            />
 
             {/* Sync Subscription Panel */}
-            <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-xl flex flex-col gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-ares-cyan/10 flex items-center justify-center border border-ares-cyan/25 shrink-0">
-                  <CalendarIcon size={20} className="text-ares-cyan" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider leading-none">Subscribe to Feed</h4>
-                  <p className="text-[10px] text-marble/70 leading-relaxed pt-1">
-                    Sync ARES events directly into your personal calendar (Google, Apple, or Outlook) to stay updated in real-time.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <a
-                  href={webcalUrl}
-                  className="px-3 py-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/35 text-ares-cyan hover:text-white text-[9px] font-black uppercase tracking-wider rounded text-center transition-all cursor-pointer shadow flex items-center justify-center gap-1"
-                >
-                  Subscribe (iCal)
-                </a>
-                <a
-                  href={gcalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/35 text-ares-gold hover:text-white text-[9px] font-black uppercase tracking-wider rounded text-center transition-all cursor-pointer shadow flex items-center justify-center gap-1"
-                >
-                  Google Calendar
-                </a>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyFeedUrl}
-                className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-marble hover:text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                {copiedFeedUrl ? (
-                  <>
-                    <Check size={11} className="text-ares-success" /> Copied Feed URL!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={11} /> Copy Feed URL
-                  </>
-                )}
-              </button>
-            </div>
+            <SyncSubscriptionPanel
+              webcalUrl={webcalUrl}
+              gcalUrl={gcalUrl}
+              copiedFeedUrl={copiedFeedUrl}
+              handleCopyFeedUrl={handleCopyFeedUrl}
+            />
 
           </div>
 

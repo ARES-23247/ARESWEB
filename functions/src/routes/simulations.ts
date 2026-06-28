@@ -62,12 +62,25 @@ async function canModifySimulation(sessionUser: DecodedIdToken | undefined, simI
     const url = `${ghConfig.apiBase}/commits?path=${filePath}&per_page=1`;
 
     const res = await fetch(url, { headers });
+    if (res.status === 404) {
+      return true; // New simulation file, creation is authorized for verified team members
+    }
     if (!res.ok) return false;
 
-    const commits = await res.json() as { author?: { email: string } }[];
-    if (!commits || commits.length === 0) return false;
+    interface GitHubCommitResponse {
+      commit?: {
+        author?: {
+          email?: string;
+        };
+      };
+    }
 
-    const authorEmail = commits[0].author?.email;
+    const commits = (await res.json()) as GitHubCommitResponse[];
+    if (!commits || commits.length === 0) {
+      return true; // No commit history, authorized to create
+    }
+
+    const authorEmail = commits[0].commit?.author?.email;
     return authorEmail === sessionUser.email;
   } catch (err) {
     console.error("[Simulations] Ownership verification error:", err);
@@ -267,12 +280,12 @@ router.post("/", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest
   if (getRes.ok) {
     const getJson = (await getRes.json()) as { sha: string };
     sha = getJson.sha;
-    
-    // Check ownership before updating
-    const canModify = await canModifySimulation(req.user, simIdStr);
-    if (!canModify) {
-      throw new ApiError(403, "You can only modify your own simulations");
-    }
+  }
+
+  // Check ownership/authorization for all saves (creates and updates)
+  const canModify = await canModifySimulation(req.user, simIdStr);
+  if (!canModify) {
+    throw new ApiError(403, "You are not authorized to save this simulation");
   }
 
   const commitAuthor = {

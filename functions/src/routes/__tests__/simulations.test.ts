@@ -165,7 +165,9 @@ describe("Simulations Router Backend Endpoints", () => {
       } as any);
 
       // Mock GET sha check (doesn't exist)
-      fetchMock.mockResolvedValueOnce({ ok: false });
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
+      // Mock canModifySimulation commits check (doesn't exist)
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
       // Mock PUT save
       fetchMock.mockResolvedValueOnce({ ok: true });
 

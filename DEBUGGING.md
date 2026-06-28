@@ -1,6 +1,6 @@
 # Debugging Tools for ARESWEB
 
-This document outlines the debugging tools available in the ARESWEB application.
+This document outlines the debugging and performance-monitoring tools available in the ARESWEB application.
 
 ## Installed Debugging Tools
 
@@ -12,29 +12,15 @@ This document outlines the debugging tools available in the ARESWEB application.
   - Simulate loading/error states
   - Query performance metrics
 
-### 2. TanStack Router DevTools
-- **Location**: Bottom-right corner (floating button)
-- **Features**:
-  - Route tree visualization
-  - Current route params & search params
-  - Loader/action data inspection
-  - Navigation history
-
-### 3. Sentry Error Tracking
-- **Scope**: Production & development (when DSN is configured)
-- **Tracks**:
-  - Query errors (with query keys)
-  - Mutation errors (with mutation IDs)
-  - React component errors (via ErrorBoundary)
-  - Performance traces
-
-### 4. Query Logger
+### 2. Query Logger
 - **Scope**: Development only
-- **Logs**: Query lifecycle events (fetch, success, error)
+- **Logs**: Query lifecycle events (fetch, success, error) in the console
 
-### 5. Slow Query Monitoring
+### 3. Slow Query Monitoring
 - **Threshold**: Queries taking > 2 seconds
 - **Output**: Console warning with query key and duration
+
+---
 
 ## Browser Extensions (Recommended)
 
@@ -59,21 +45,21 @@ This document outlines the debugging tools available in the ARESWEB application.
 5. Click "Stop profiling"
 6. Analyze flame graph for performance bottlenecks
 
+---
+
 ## Named Query Functions
 
-Query functions are now named for better stack traces:
+Query functions are named for better stack traces in logs:
 - `getTasks()` instead of `anonymous()`
 - `getUsersList()` instead of `anonymous()`
 - `patchUser()` instead of `anonymous()`
 
-This makes debugging easier in DevTools and Sentry.
+---
 
 ## Error Boundary
 
-The global ErrorBoundary catches and displays:
+The global `ErrorBoundary` catches and displays:
 - API errors (with status codes)
 - React rendering errors
-- Stale chunk errors (auto-reloads)
+- Stale chunk errors (auto-reloads for service worker cache synchronization)
 - Third-party blocking errors
-
-All errors are reported to Sentry with correlation IDs.
