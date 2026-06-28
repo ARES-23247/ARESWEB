@@ -5,8 +5,17 @@ import { ApiError } from "../middleware/errorHandler";
 import { ensureTeamMember, ensureAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { GoogleGenAI } from "@google/genai";
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
+
+const analysisLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per window
+  message: { error: "Too many match analysis requests. Please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // GET /api/replay/:runId/summary
 router.get("/:runId/summary", ensureTeamMember, asyncHandler(async (req, res) => {
@@ -280,11 +289,16 @@ router.get("/telemetry-log", ensureTeamMember, asyncHandler(async (req, res) => 
 }));
 
 // POST /api/replay/match-analysis
-router.post("/match-analysis", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/match-analysis", ensureAdmin, analysisLimiter, asyncHandler(async (req, res) => {
   const { matchData } = req.body as { matchData: any };
 
   if (!matchData || !matchData.matchId) {
     throw new ApiError(400, "Missing required matchData or matchId");
+  }
+
+  const dataString = JSON.stringify(matchData);
+  if (dataString.length > 50000) {
+    throw new ApiError(400, "Match data payload size exceeds maximum limit.");
   }
 
   const systemPrompt = `You are the Senior AI Scouting and Strategy Coach for FIRST® Tech Challenge (FTC) Robotics Team ARES 23247.
@@ -311,8 +325,11 @@ Format the output strictly in valid Github-Flavored Markdown. Use bold styling, 
       model: "gemini-2.5-flash",
       contents: [
         { role: "system", parts: [{ text: systemPrompt }] },
-        { role: "user", parts: [{ text: JSON.stringify(matchData) }] }
-      ]
+        { role: "user", parts: [{ text: dataString }] }
+      ],
+      config: {
+        maxOutputTokens: 2048
+      }
     });
 
     const report = response.text || generateDeterministicReport(matchData);

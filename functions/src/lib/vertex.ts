@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import os from "os";
 import path from "path";
 import fs from "fs";
+import { ApiError } from "../middleware/errorHandler";
 const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key";
 
 // Local Firebase emulator compatibility: the emulator environment sanitizes standard user environment variables,
@@ -67,6 +68,10 @@ Your output must be a valid JSON object matching this schema:
 }
 Do not wrap the JSON response in any markdown code blocks.`;
 
+  if (text.length > 20000) {
+    throw new ApiError(400, "Input text exceeds maximum allowed character limit (20,000).");
+  }
+
   try {
     if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
       throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
@@ -78,7 +83,8 @@ Do not wrap the JSON response in any markdown code blocks.`;
         { role: "user", parts: [{ text: `${systemPrompt}\n\nText to check:\n${text}` }] }
       ],
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        maxOutputTokens: 2048
       }
     });
 
@@ -122,6 +128,10 @@ Always use professional technical language, preserve Markdown formatting, and ad
     userPrompt += `\n\nFull blog content for context:\n${context}`;
   }
 
+  if (prompt.length > 2000 || (text && text.length > 20000) || (context && context.length > 20000)) {
+    throw new ApiError(400, "Input fields exceed allowed character limits.");
+  }
+
   try {
     if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
       throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
@@ -131,7 +141,10 @@ Always use professional technical language, preserve Markdown formatting, and ad
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
-      ]
+      ],
+      config: {
+        maxOutputTokens: 2048
+      }
     });
 
     const assistanceText = response.text || "";
@@ -160,6 +173,10 @@ Your output must be a valid JSON object matching this schema:
 }
 Do not wrap the JSON response in any markdown code blocks.`;
 
+  if (imageBuffer.length > 10 * 1024 * 1024) {
+    throw new ApiError(400, "Image size exceeds maximum allowed limit (10MB).");
+  }
+
   try {
     if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
       throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
@@ -182,7 +199,8 @@ Do not wrap the JSON response in any markdown code blocks.`;
         }
       ],
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        maxOutputTokens: 1024
       }
     });
 
@@ -208,6 +226,11 @@ export async function getSimulationPlaygroundStream(
   imageUrl: string | undefined,
   onChunk: (text: string) => void
 ): Promise<void> {
+  const totalLength = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0) + (systemPrompt?.length || 0);
+  if (totalLength > 40000) {
+    throw new ApiError(400, "Simulation conversation history exceeds maximum allowed character limit.");
+  }
+
   try {
     if (!useVertex && (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key")) {
       throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
@@ -236,7 +259,8 @@ export async function getSimulationPlaygroundStream(
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: contents,
       config: {
-        systemInstruction: systemPrompt
+        systemInstruction: systemPrompt,
+        maxOutputTokens: 2048
       }
     });
 

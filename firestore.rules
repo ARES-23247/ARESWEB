@@ -230,7 +230,9 @@ service cloud.firestore {
 
     // docs_feedback
     match /docs_feedback/{feedbackId} {
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                    request.resource.data.comment is string &&
+                    request.resource.data.comment.size() < 2000;
       allow read: if isAuthorized();
     }
 

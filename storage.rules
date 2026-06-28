@@ -3,7 +3,9 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     function isAuthorized() {
-      return request.auth != null && firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.uid));
+      return request.auth != null && 
+        firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
     }
 
     match /events/{eventId}/photos/{photoId} {

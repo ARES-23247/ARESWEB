@@ -3,11 +3,20 @@ import { ensureAdmin } from "../middleware/auth";
 import { checkGrammarAndSpelling, getAIAssistance, getSimulationPlaygroundStream } from "../lib/vertex";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
 
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per window
+  message: { error: "Too many AI generation requests. Please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/ai/grammar - Check spelling & grammar
-router.post("/grammar", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/grammar", ensureAdmin, aiLimiter, asyncHandler(async (req, res) => {
   const { text } = req.body as { text: string };
   if (typeof text !== "string") {
     throw new ApiError(400, "Missing required 'text' field.");
@@ -18,7 +27,7 @@ router.post("/grammar", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/ai/assistant - Get general AI assistant help
-router.post("/assistant", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/assistant", ensureAdmin, aiLimiter, asyncHandler(async (req, res) => {
   const { prompt, text, context } = req.body as {
     prompt: string;
     text?: string;
@@ -34,7 +43,7 @@ router.post("/assistant", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/ai/sim-playground - Stream simulation playground responses
-router.post("/sim-playground", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/sim-playground", ensureAdmin, aiLimiter, asyncHandler(async (req, res) => {
   const { systemPrompt, messages, imageUrl } = req.body as {
     systemPrompt: string;
     messages: Array<{ role: string; content: string }>;
