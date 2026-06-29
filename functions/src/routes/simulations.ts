@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { adminDb } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
@@ -9,6 +10,14 @@ import path from "path";
 import { logger } from "../lib/logger";
 
 const router = express.Router();
+
+const simulationsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many simulations requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
@@ -124,9 +133,10 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/simulations/gist/:id - Fetch a GitHub Gist by ID
-router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
+router.get("/gist/:id", simulationsLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  if (!/^[a-f0-9]{32}$/.test(id) && !/^[0-9a-f]{20}$/.test(id)) {
+  const safeId = id.match(/^[a-f0-9]{32}$/) ? id : (id.match(/^[0-9a-f]{20}$/) ? id : null);
+  if (!safeId) {
     throw new ApiError(400, "Invalid Gist ID");
   }
   const pat = await getGitHubPat();
@@ -137,7 +147,7 @@ router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   };
   if (pat) headers["Authorization"] = `Bearer ${pat}`;
 
-  const ghRes = await fetch(`https://api.github.com/gists/${id}`, { headers });
+  const ghRes = await fetch(`https://api.github.com/gists/${safeId}`, { headers });
   if (!ghRes.ok) {
     throw new ApiError(404, "Gist not found");
   }

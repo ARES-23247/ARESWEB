@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { ensureAuth, AuthenticatedRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
@@ -8,6 +9,14 @@ import { z } from "zod";
 import { NextFunction, Response } from "express";
 
 const router = express.Router();
+
+const robotsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many robot requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Custom role verification middleware
 export async function ensureAdminOrCoach(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -113,7 +122,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/robots
-router.post("/", ensureAuth, ensureAdminOrCoach, validate(createRobotSchema), asyncHandler(async (req, res) => {
+router.post("/", robotsLimiter, ensureAuth, ensureAdminOrCoach, validate(createRobotSchema), asyncHandler(async (req, res) => {
   const docRef = adminDb.collection("robots").doc();
   const robotId = docRef.id;
   const timestamp = new Date().toISOString();
@@ -131,7 +140,7 @@ router.post("/", ensureAuth, ensureAdminOrCoach, validate(createRobotSchema), as
 }));
 
 // PUT /api/robots/:id
-router.put("/:id", ensureAuth, ensureAdminOrCoach, validate(updateRobotSchema), asyncHandler(async (req, res) => {
+router.put("/:id", robotsLimiter, ensureAuth, ensureAdminOrCoach, validate(updateRobotSchema), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const docRef = adminDb.collection("robots").doc(id);
   const docSnap = await docRef.get();
@@ -158,7 +167,7 @@ router.put("/:id", ensureAuth, ensureAdminOrCoach, validate(updateRobotSchema), 
 }));
 
 // DELETE /api/robots/:id
-router.delete("/:id", ensureAuth, ensureAdminOrCoach, asyncHandler(async (req, res) => {
+router.delete("/:id", robotsLimiter, ensureAuth, ensureAdminOrCoach, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const docRef = adminDb.collection("robots").doc(id);
   const docSnap = await docRef.get();

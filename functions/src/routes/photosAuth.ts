@@ -161,6 +161,10 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing 'url' query parameter");
   }
 
+  if (!url.match(/^https:\/\/(lh3\.googleusercontent\.com|photospicker\.googleapis.com)\/.*$/)) {
+    throw new ApiError(400, "Forbidden: Target URL host is not authorized");
+  }
+
   // Authenticate: support header or query parameter
   let token: string | undefined;
   const authHeader = req.headers.authorization;
@@ -229,6 +233,9 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
 // GET /api/photos/picker/:sessionId/items
 router.get("/picker/:sessionId/items", ensureAdmin, asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
+  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
+    throw new ApiError(400, "Invalid session ID format");
+  }
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(`${PICKER_API_BASE}/mediaItems?sessionId=${sessionId}`, {
     method: "GET",
@@ -247,6 +254,9 @@ router.get("/picker/:sessionId/items", ensureAdmin, asyncHandler(async (req, res
 // GET /api/photos/picker/:sessionId
 router.get("/picker/:sessionId", ensureAdmin, asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
+  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
+    throw new ApiError(400, "Invalid session ID format");
+  }
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
     method: "GET",
@@ -286,6 +296,9 @@ router.post("/picker", ensureAdmin, asyncHandler(async (req, res) => {
 // DELETE /api/photos/picker/:sessionId
 router.delete("/picker/:sessionId", ensureAdmin, asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
+  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
+    throw new ApiError(400, "Invalid session ID format");
+  }
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
     method: "DELETE",
