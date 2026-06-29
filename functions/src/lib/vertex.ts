@@ -36,7 +36,7 @@ const clientConfig: any = {};
 if (useVertex) {
   clientConfig.vertexai = true;
   clientConfig.project = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || "aresfirst-portal";
-  clientConfig.location = process.env.GCP_LOCATION || "us-central1";
+  clientConfig.location = process.env.GCP_LOCATION || "global";
 } else {
   clientConfig.apiKey = process.env.GEMINI_API_KEY;
 }
@@ -83,7 +83,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\nText to check:\n${text}` }] }
       ],
@@ -143,7 +143,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
       ],
@@ -188,7 +188,7 @@ Do not wrap the JSON response in any markdown code blocks.`;
     }
 
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         {
           role: "user",
@@ -261,7 +261,7 @@ export async function getSimulationPlaygroundStream(
     }
 
     const responseStream = await ai.models.generateContentStream({
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: contents,
       config: {
         systemInstruction: systemPrompt,
