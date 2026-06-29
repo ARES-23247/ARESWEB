@@ -1,32 +1,39 @@
 # Error Handling Architecture
 
-> Throw-first error handling for Hono/OpenAPI routes.
+> Throw-first error handling for Express sub-router endpoints.
 
 ## Core Principle
 
-**Every route handler MUST only return happy-path responses.** All errors MUST be thrown via `ApiError` — never returned.
+**Every route handler MUST only return happy-path responses.** All errors MUST be thrown via `ApiError` — never manually returned as status code structures.
 
 ### Why
-Returning both success and error shapes creates union types (`200-response | 500-response`), causing TypeScript `TS2345` overload errors. Throwing lets the global `app.onError()` middleware handle all error formatting.
+Returning both success and error shapes inside Express handlers without bubbling leads to cluttered controller code. Throwing errors lets the global Express `globalErrorHandler` handle all logging, metrics, and consistent JSON formatting.
 
 ---
 
 ## Required Pattern
+
+Wrap all async Express router handlers in the `asyncHandler` utility, and throw `ApiError` on errors:
 ```typescript
 import { ApiError } from "../middleware/errorHandler";
+import { asyncHandler } from "../lib/utils";
 
-router.openapi(route, typedHandler<typeof route>(async (c) => {
-  // Validation errors
-  if (!id) throw new ApiError(400, "ID is required", "VALIDATION_ERROR");
+router.post("/save", ensureAdmin, asyncHandler(async (req, res) => {
+  const { title } = req.body as { title: string };
+  
+  // Validation error
+  if (!title) {
+    throw new ApiError(400, "Title is required");
+  }
 
-  // Not found
-  if (!result) throw new ApiError(404, "Post not found", "NOT_FOUND");
-
-  // Rate limiting
-  if (isRateLimited) throw new ApiError(429, "Rate limit exceeded", "RATE_LIMIT_EXCEEDED");
+  // Database checks
+  const result = await saveArticle(title);
+  if (!result) {
+    throw new ApiError(500, "Failed to save article");
+  }
 
   // ONLY happy path returned
-  return c.json({ post: result }, 200);
+  res.json({ success: true });
 }));
 ```
 
@@ -34,19 +41,22 @@ router.openapi(route, typedHandler<typeof route>(async (c) => {
 
 ## Forbidden Patterns
 
-### ❌ Returning Error Responses
+### ❌ Returning Error Responses Directly
 ```typescript
-// NEVER DO THIS — creates union return type
-if (!result) return c.json({ error: "Not found" }, 404);
+// NEVER DO THIS — creates inconsistent handling and leaks structure
+if (!result) {
+  return res.status(404).json({ error: "Not found" });
+}
 ```
 
 ### ❌ Handler-Level Try/Catch
 ```typescript
 // NEVER DO THIS
 try {
-  return c.json({ post: result }, 200);
+  const item = await getItem(id);
+  res.json({ item });
 } catch (err) {
-  return c.json({ error: "Server error" }, 500);  // ❌
+  res.status(500).json({ error: "Server error" }); // ❌
 }
 ```
 
@@ -54,47 +64,50 @@ try {
 
 ## ApiError Class
 
-Located at `functions/api/middleware/errorHandler.ts`
+Located at `functions/src/middleware/errorHandler.ts`
 
 ```typescript
-// new ApiError(message, statusCode, errorCode?, details?)
-throw new ApiError("Not found", 404, "NOT_FOUND");
-throw new ApiError("Validation failed", 400, "VALIDATION_ERROR", { field: "email" });
-throw new ApiError("Unauthorized", 401, "UNAUTHORIZED");
-throw new ApiError("Forbidden", 403, "FORBIDDEN");
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 ```
-
-### Optional Helpers
+Standard usage:
 ```typescript
-import { throwErrors } from "../middleware/errorHandler";
-throwErrors.notFound("Post");        // → 404
-throwErrors.badRequest("Invalid ID"); // → 400
-throwErrors.unauthorized();           // → 401
-throwErrors.forbidden();              // → 403
-throwErrors.internal("DB error");     // → 500
+throw new ApiError(400, "Validation failed");
+throw new ApiError(401, "Unauthorized");
+throw new ApiError(403, "Forbidden");
+throw new ApiError(404, "Resource not found");
 ```
 
 ---
 
-## Import Paths
+## Global Handler
 
-| File Location | Import Path |
-|---|---|
-| `functions/api/routes/*.ts` | `"../middleware/errorHandler"` |
-| `functions/api/routes/*/index.ts` | `"../../middleware/errorHandler"` |
+The global handler catches all thrown errors and returns a standardized JSON structure:
+```json
+{
+  "error": "Error message content"
+}
+```
+Location: `functions/src/middleware/errorHandler.ts`
+```typescript
+export const globalErrorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.error("[Global Error Handler] Caught Exception:", err);
 
----
+  const status = err.status || 500;
+  const message = err.message || "Internal server error.";
 
-## When `as any` Is Acceptable
-
-Only for **Drizzle ORM dynamic table lookups** where TypeScript cannot track type through `Record<string, unknown>` indirection (e.g., backup endpoint's `SCHEMA_MAP[tableName]`).
-
-Never acceptable for: handler return types, error responses, route signatures, `typedHandler` parameters.
-
----
-
-## Reference Implementations
-
-- Clean handlers: `functions/api/routes/badges.ts`, `functions/api/routes/awards.ts`
-- Global handler: `functions/api/[[route]].ts` (app.onError, ~line 294)
-- ApiError class: `functions/api/middleware/errorHandler.ts`
+  res.status(status).json({
+    error: message
+  });
+};
+```
+This is registered in `functions/src/index.ts` as the very last middleware.

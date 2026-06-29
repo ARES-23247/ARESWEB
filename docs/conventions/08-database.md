@@ -1,65 +1,87 @@
 # Database Management
 
-> D1 database schema, migrations, FTS5, and query patterns. Read before modifying tables or writing SQL.
+> Firestore database structure, index configurations, firestore.rules, and querying patterns.
 
-## Schema Authority
+## Schema & Security Rules Authority
 
-**`schema.sql` is the single source of truth.** Can provision entire DB:
+**`firestore.rules` is the single source of truth for access controls.** Every direct client read/write to Firestore is checked by these rules.
+
+To deploy security rules and indexes:
 ```bash
-npx wrangler d1 execute ares-db --file=schema.sql --remote
+npx firebase deploy --only firestore
 ```
 
-## Dual-Update Rule
+## Collection Conventions
 
-Every schema change MUST update BOTH:
-1. Numbered migration file in `migrations/` (starts at `050`)
-2. The `schema.sql` file
+- **Document IDs:** Use unique generated string keys (e.g. `uid` for profiles, `slug` for blog posts, auto-generated IDs for sign-ups).
+- **Soft-delete:** Include `isDeleted: 1` field on soft-deleted files. Ensure firestore.rules and queries filter out documents where `isDeleted == 1`.
+- **Timestamps:** Write server timestamps using `admin.firestore.FieldValue.serverTimestamp()` on creation.
 
-## Table Conventions
+---
 
-- **Content tables:** `TEXT PRIMARY KEY` with UUIDs/slugs
-- **Join/history tables:** `INTEGER PRIMARY KEY AUTOINCREMENT`
-- **Soft-delete:** `is_deleted INTEGER DEFAULT 0` (never `DELETE FROM`)
-- **Timestamps:** `created_at TEXT DEFAULT (datetime('now'))`
-- **DDL guards:** Always `IF NOT EXISTS` / `IF EXISTS`
+## Indexing Rules (`firestore.indexes.json`)
 
-## FTS5 Critical Rule
+Firestore requires compound indexes for queries combining multiple `where` clauses, inequality filters, or `orderBy` sorting.
+- Add compound indexes to `firestore.indexes.json` before writing queries that combine filters.
+- If a query fails in dev, follow the Firebase link printed in console/logger to automatically provision the missing index.
 
-**NEVER filter on unindexed columns in FTS5.** Always JOIN to base table:
+---
 
-```sql
--- ❌ BROKEN — is_deleted not indexed in FTS
-SELECT slug FROM docs_fts WHERE is_deleted = '0' AND docs_fts MATCH ?
+## Query Patterns (Firebase Admin SDK)
 
--- ✅ CORRECT — JOIN for metadata filtering
-SELECT f.slug FROM docs_fts f
-JOIN docs d ON f.slug = d.slug
-WHERE d.is_deleted = 0 AND f.docs_fts MATCH ?
-```
-
-## Indexing
-
-Create indexes for: `WHERE` clauses, `ORDER BY`, `JOIN` conditions. Composite indexes for common patterns like `status + is_deleted`.
-
-## Query Patterns
-
-**Preferred:** Drizzle ORM for type safety
+### Simple Queries
 ```typescript
-await db.select().from(schema.posts).where(eq(schema.posts.slug, slug)).get();
+import { adminDb } from "../lib/firebase-admin";
+
+const postSnap = await adminDb
+  .collection("posts")
+  .where("isDeleted", "!=", 1)
+  .limit(50)
+  .get();
 ```
 
-**Raw SQL for:** FTS, complex aggregations, multi-table JOINs
+### Batched Writes (Crucial for Scalability)
+Firestore batches are capped at 500 operations. For bulk deletions or updates, paginate queries using `.limit(400)` and execute commits in a loop:
 ```typescript
-await db.run(sql`SELECT * FROM docs_fts WHERE docs_fts MATCH ${query}`);
+let hasMore = true;
+while (hasMore) {
+  const snapshot = await adminDb
+    .collection("imported_photos")
+    .where("albumId", "==", albumId)
+    .limit(400)
+    .get();
+
+  if (snapshot.empty) {
+    hasMore = false;
+    break;
+  }
+
+  const batch = adminDb.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { albumId: null });
+  });
+  await batch.commit();
+
+  if (snapshot.docs.length < 400) {
+    hasMore = false;
+  }
+}
 ```
 
-## Deployment
+---
 
-Database name: **`ares-db`** (not aresweb-db)
+## Security Rule Guards
 
-```bash
-# Test locally first
-npx wrangler d1 execute ares-db --file=migrations/050_xxx.sql --local
-# Apply to production
-npx wrangler d1 execute ares-db --file=migrations/050_xxx.sql --remote
+Ensure the database remains locked down for unauthorized requests by using rules helpers:
+```javascript
+function isAuthenticated() {
+  return request.auth != null;
+}
+function isAuthorized() {
+  return isAuthenticated() && exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid));
+}
+function hasRole(role) {
+  return isAuthorized() && get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role == role;
+}
 ```
+Public write permissions are strictly banned on sensitive collections like `inquiries` and `system_settings`.

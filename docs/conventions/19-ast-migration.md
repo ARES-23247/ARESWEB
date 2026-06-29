@@ -1,25 +1,29 @@
 # Tiptap AST Migration
 
-> Convert Markdown to Tiptap ProseMirror AST for D1 docs. Use when importing or repairing documentation.
+> Convert Markdown to Tiptap ProseMirror AST for Firestore documents. Use when importing or repairing documentation.
 
 ARES CMS uses Tiptap/ProseMirror AST JSON. Legacy Markdown imports require conversion.
 
 ## Remote Auditing
 
-Export D1 to JSON first (CLI truncates large files):
-```bash
-npx wrangler d1 execute ares-db --remote --command="SELECT slug, title, content FROM docs;" --json > db_dump.json
+Write a temporary Node.js script in the `scratch/` directory that uses `firebase-admin` to read and update collection documents:
+```javascript
+import { adminDb } from "../functions/src/lib/firebase-admin";
+
+const docSnap = await adminDb.collection("docs").doc(slug).get();
+const docData = docSnap.data();
 ```
 
 ## Missing Title Resolution
 
-If title shows "Untitled", extract from markdown using RegEx:
+If the title is empty or shows "Untitled", extract the first header from the markdown content using RegEx:
 ```javascript
 const title = markdown.match(/^#\s+(.+)$/m)?.[1] || "Untitled";
 ```
 
 ## AST Conversion
 
+Translate markdown into Tiptap's schema utilizing `@tiptap/html` and `marked`:
 ```javascript
 import { marked } from 'marked';
 import { generateJSON } from '@tiptap/html';
@@ -32,9 +36,8 @@ const jsonAst = generateJSON(html, [StarterKit, Image, Link]);
 const finalContent = JSON.stringify(jsonAst);
 ```
 
-## Live Edge Execution
+## Live Execution
 
-1. Generate `.sql` file with `UPDATE` statements
-2. Escape apostrophes as `''` for SQLite
-3. Apply via: `npx wrangler d1 execute ares-db --remote --file=migration.sql`
-4. Delete temporary scripts
+1. Write a script utilizing `adminDb.collection("docs").doc(slug).update({ content: finalContent, title: extractedTitle })`.
+2. Run it locally using environment credentials (e.g. `node scratch/run_migration.js`).
+3. Delete the temporary script from the repository workspace when finished.

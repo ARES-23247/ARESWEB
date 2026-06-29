@@ -139,24 +139,22 @@ function handleSubmit(e: React.FormEvent<HTMLFormElement>) {}
 
 ---
 
-## Hono-Specific
+## Express-Specific (Firebase Cloud Functions)
 
-### Always Use `typedHandler`
+### Always Use `asyncHandler` and `AuthenticatedRequest`
 ```typescript
-router.openapi(myRoute, typedHandler<typeof myRoute>(async (c) => {
-  const body = c.req.valid("json");
-  return c.json({ success: true }, 200);
+import { asyncHandler } from "../lib/utils";
+import { AuthenticatedRequest } from "../middleware/auth";
+
+router.post("/save", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const user = req.user; // Typed as DecodedIdToken
+  const { title } = req.body as { title: string };
+  res.json({ success: true, title });
 }));
 ```
 
-### Throw-Only Error Policy
-```typescript
-// ❌ NEVER return errors
-if (!result) return c.json({ error: "Not found" }, 404);
-
-// ✅ ALWAYS throw errors
-if (!result) throw new ApiError(404, "Not found");
-```
+### Path Variables Casing
+Ensure url parameters from `req.params` match their expected casing (e.g. `const { albumId } = req.params;`).
 
 ---
 

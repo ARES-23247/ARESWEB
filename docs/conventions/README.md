@@ -18,10 +18,10 @@ Then reference specific conventions as needed.
 
 | File | When to Read |
 |------|--------------|
-| [02-api-reference.md](02-api-reference.md) | Working with Hono API routes |
+| [02-api-reference.md](02-api-reference.md) | Working with Express API routes in Cloud Functions |
 | [03-zero-trust-security.md](03-zero-trust-security.md) | Editing auth flows or protected routes |
-| [04-error-handling.md](04-error-handling.md) | Writing API handlers |
-| [08-database.md](08-database.md) | Modifying D1 schema or writing SQL |
+| [04-error-handling.md](04-error-handling.md) | Writing Express API handlers and bubble-up errors |
+| [08-database.md](08-database.md) | Modifying Firestore models, collections, or security rules |
 | [16-social-manager.md](16-social-manager.md) | Working with scheduled posts or social integrations |
 
 ### Frontend & UI
@@ -38,7 +38,7 @@ Then reference specific conventions as needed.
 
 | File | When to Read |
 |------|--------------|
-| [01-typescript-safety.md](01-typescript-safety.md) | Editing `.ts`/`.tsx` files, API routes, or zod schemas |
+| [01-typescript-safety.md](01-typescript-safety.md) | Editing `.ts`/`.tsx` files, API routes, or data models |
 | [09-ci-build.md](09-ci-build.md) | Running commands or diagnosing build failures |
 | [13-testing.md](13-testing.md) | Writing new utilities or API routes |
 | [14-failure-exposure.md](14-failure-exposure.md) | Handling errors or building error UIs |
@@ -59,19 +59,20 @@ Then reference specific conventions as needed.
 
 ### Core Principles
 
-1. **Throw, never return errors** — All API errors must be thrown via `ApiError`
-2. **Type safety first** — Use `typedHandler`, infer from Zod, `as any` only at boundaries
-3. **Soft-delete standard** — `is_deleted = 1`, never `DELETE FROM`
-4. **Server-side validation** — Never trust client headers for auth
+1. **Throw, never return errors** — All Express API errors must be thrown via `ApiError`
+2. **Type safety first** — Keep strict typings, use `AuthenticatedRequest` for endpoints, avoid `any`
+3. **Soft-delete standard** — Set `isDeleted: 1` on Firestore documents (never delete primary keys directly)
+4. **Server-side validation** — Never trust client-side parameters; verify ID tokens on the server
 5. **WCAG 2.1 AA** — 4.5:1 contrast ratio, keyboard navigation, semantic HTML
 
 ### Common Commands
 
 ```bash
-npm run dev          # Start dev server
-npm run lint         # Check code quality
-npm run build        # Production build
-npm run test:e2e     # E2E tests (remote mode preferred)
+pnpm dev              # Start Vite dev server locally
+pnpm build            # Build frontend bundle
+pnpm test             # Run frontend unit tests (Vitest)
+pnpm --filter functions test  # Run backend unit tests
+pnpm run test:e2e     # Run Playwright E2E integration tests
 ```
 
 ### Color Palette (Use ONLY these)

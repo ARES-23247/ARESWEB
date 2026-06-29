@@ -4,6 +4,8 @@ If you are an AI assistant, coding agent, or generalized language model interact
 
 To maintain the championship-grade quality of the ARES Web Portal, you **must** adhere to the ARES Institutional Skills located in the `.agents/skills/` directory.
 
+---
+
 ## 🧭 Core Architectural Guidelines
 
 Before writing code or answering questions, you must review the relevant SKILL.md file for the domain you are operating in:
@@ -33,13 +35,28 @@ Before writing code or answering questions, you must review the relevant SKILL.m
 - **When to read:** Generating pages related to the team, 'About Us', outreach, or general content layout.
 - **Summary:** Ensures that the FIRST Core Values (Gracious Professionalism, Coopertition) and ARES legacy are heavily emphasized in the platform architecture and content.
 
-## ⚠️ Mandatory AI Execution Rule
-When a user asks you to perform a task, **you must identify which of the domains your task falls into, and read the corresponding `.agents/skills/.../SKILL.md` file BEFORE writing code.**
+---
 
-## 🧪 E2E Testing Workflow
+## ⚠️ Coding Standards & Guidelines
 
-To run the Playwright E2E test suite locally:
+1. **Express Route Handling**: All backend routes in `functions/src/routes/` MUST be wrapped in the `asyncHandler` wrapper. All API errors must be thrown via the custom `ApiError` class (never manually returned).
+2. **PII and Youth Protection**: (Reference YPP rules). Never expose or output member PII on public routes. Mask emails and phone numbers.
+3. **Structured Logging**: Banish raw `console.log` or `console.error` calls in production backend code. Use the custom structured `logger` adapter from `functions/src/lib/logger.ts`.
+4. **Tailwind Design System**: Only use the team's official color palette classes. Generic scales (`zinc-`, `neutral-`, `gray-`, `red-500`) are banned.
 
-```bash
-pnpm run test:e2e
-```
+---
+
+## 🧪 Testing Workflows
+
+- Run Frontend & Helpers tests:
+  ```bash
+  pnpm test
+  ```
+- Run Backend Cloud Functions tests:
+  ```bash
+  pnpm --filter functions test
+  ```
+- Run Playwright E2E integration tests:
+  ```bash
+  pnpm run test:e2e
+  ```
