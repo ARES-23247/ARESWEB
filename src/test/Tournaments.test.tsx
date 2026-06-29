@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import TournamentsFeedPage from "../app/tournaments/page";
 import TournamentDetailPage from "../app/tournaments/[id]/page";
 import TournamentsManager from "../components/dashboard/TournamentsManager";
@@ -15,15 +15,6 @@ vi.mock("../context/AuthContext", () => {
   return {
     useAuth: vi.fn(),
     AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  };
-});
-
-// Mock react-router-dom to return a fixed tournament ID
-vi.mock("react-router-dom", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("react-router-dom")>();
-  return {
-    ...actual,
-    useParams: () => ({ id: "world-championship-2026" }),
   };
 });
 
@@ -51,12 +42,19 @@ const createTestQueryClient = () => new QueryClient({
   },
 });
 
-const renderWithProviders = (ui: React.ReactElement, queryClient = createTestQueryClient()) => {
+const renderWithProviders = (
+  ui: React.ReactElement,
+  queryClient = createTestQueryClient(),
+  initialEntries = ["/tournaments/world-championship-2026"]
+) => {
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
+      <MemoryRouter initialEntries={initialEntries}>
+        <Routes>
+          <Route path="/tournaments/:id" element={ui} />
+          <Route path="*" element={ui} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
