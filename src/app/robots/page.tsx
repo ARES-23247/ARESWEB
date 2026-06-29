@@ -98,7 +98,7 @@ export default function RobotsFeedPage() {
             The <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">Fleet</span>
           </h1>
           <p className="text-lg text-marble/60 max-w-2xl mx-auto font-medium leading-relaxed">
-            Archive of championship-caliber robotics systems engineered for the FIRST® Tech Challenge by team ARES.
+            Archive of championship-caliber robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
           </p>
         </header>
 

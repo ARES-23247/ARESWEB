@@ -89,7 +89,7 @@ export default function SeasonsPage() {
     <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
       <SEO
         title="Team Legacy"
-        description="A chronicle of ARES 23247's journey through FIRST® Robotics. Explore our seasonal achievements, awards, and growth."
+        description="A chronicle of ARES 23247's journey through *FIRST*® Robotics. Explore our seasonal achievements, awards, and growth."
       />
 
       <section className="py-32 px-6 relative z-10 text-center bg-obsidian">

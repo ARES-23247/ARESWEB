@@ -629,7 +629,7 @@ export default function SystemsSim() {
           Concept Strategy & Robotics Connection
         </span>
         <p className="text-marble/85">
-          In FIRST® Robotics, linear systems determine paths of sensor readings or path collisions. Remember: 
+          In <i>FIRST</i>® Robotics, linear systems determine paths of sensor readings or path collisions. Remember: 
           1) **One Solution** means slopes are different ($m_1 \neq m_2$).
           2) **No Solution** means parallel lines ($m_1 = m_2$, $b_1 \neq b_2$).
           3) **Infinite Solutions** means identical lines ($m_1 = m_2$, $b_1 = b_2$).

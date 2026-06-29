@@ -58,7 +58,7 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold">FIRST® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
+              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
               <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
@@ -88,7 +88,7 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">4. Secure Administration</h2>
             </div>
             <p className="text-marble leading-relaxed">
-              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized FIRST® Robotics team identity providers.
+              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized <i>FIRST</i>® Robotics team identity providers.
             </p>
           </section>
         </div>

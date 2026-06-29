@@ -119,10 +119,10 @@ Do not wrap the JSON response in any markdown code blocks.`;
  * Provides general AI assistance or rewrites for selected text/paragraph.
  */
 export async function getAIAssistance(prompt: string, text?: string, context?: string): Promise<string> {
-  const systemPrompt = `You are a helpful engineering co-pilot and expert technical writer for FIRST® Robotics Team ARES 23247.
+  const systemPrompt = `You are a helpful engineering co-pilot and expert technical writer for *FIRST*® Robotics Team ARES 23247.
 Assist the user with writing, editing, or refining their blog post.
 Always use professional technical language, preserve Markdown formatting, and adhere to ARES branding guidelines:
-- Always refer to FIRST® (italicized with registered trademark symbol).
+- Always refer to *FIRST*® (italicized with registered trademark symbol).
 - Refer to our software library as ARESLib (one word, capital L).`;
 
   let userPrompt = `User Request: ${prompt}`;
@@ -158,7 +158,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
     return assistanceText;
   } catch (err) {
     logger.warn("vertex", `AI assistance failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
-    return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
+    return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
   }
 }
 
@@ -166,7 +166,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
  * Uses Gemini to automatically label and generate a caption for an uploaded photo.
  */
 export async function generatePhotoCaptionAndLabels(imageBuffer: Buffer, mimeType: string): Promise<{ caption: string; labels: string[] }> {
-  const systemPrompt = `You are an AI photo assistant for FIRST® Robotics Team ARES 23247.
+  const systemPrompt = `You are an AI photo assistant for *FIRST*® Robotics Team ARES 23247.
 Analyze the provided image and generate:
 1. A concise, descriptive, action-oriented caption (1-2 sentences).
 2. A list of 4-8 descriptive tags/labels (e.g. "robot", "intake", "chassis", "competition", "outreach", "drivetrain", "coding").

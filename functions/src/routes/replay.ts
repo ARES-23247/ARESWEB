@@ -301,7 +301,7 @@ router.post("/match-analysis", ensureAdmin, analysisLimiter, asyncHandler(async 
     throw new ApiError(400, "Match data payload size exceeds maximum limit.");
   }
 
-  const systemPrompt = `You are the Senior AI Scouting and Strategy Coach for FIRST® Tech Challenge (FTC) Robotics Team ARES 23247.
+  const systemPrompt = `You are the Senior AI Scouting and Strategy Coach for *FIRST*® Tech Challenge (FTC) Robotics Team ARES 23247.
 Analyze the provided match scouting data and write a highly detailed, professional, and actionable tactical strategy report in markdown.
 In your analysis, evaluate:
 1. Autonomous Performance: Assess autonomous specimen/sample placement and parking.

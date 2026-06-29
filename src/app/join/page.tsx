@@ -414,7 +414,7 @@ export default function JoinPage() {
                   {submitStatus === "sending" ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                 </button>
                 <p className="text-center text-[9px] text-obsidian/50 font-bold uppercase tracking-widest mt-4 leading-relaxed max-w-md mx-auto">
-                  Your personal information is protected under the FIRST® Youth Protection Program (YPP) guidelines.
+                  Your personal information is protected under the <i>FIRST</i>® Youth Protection Program (YPP) guidelines.
                 </p>
               </div>
 
