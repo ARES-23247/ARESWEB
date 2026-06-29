@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, getCountFromServer, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { maskEmail } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -43,17 +43,34 @@ export default function DashboardHome() {
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
 
-  // Subscribe to real-time Firestore collections
+  // Fetch counts once on mount and subscribe to recent tasks (limited to 10)
   useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [tasksSnap, activeTasksSnap, blogsSnap, docsSnap] = await Promise.all([
+          getCountFromServer(collection(db, "tasks")),
+          getCountFromServer(query(collection(db, "tasks"), where("status", "!=", "completed"))),
+          getCountFromServer(collection(db, "posts")),
+          getCountFromServer(query(collection(db, "docs"), where("isDeleted", "==", 0)))
+        ]);
+
+        setTaskCount(tasksSnap.data().count);
+        setActiveTasks(activeTasksSnap.data().count);
+        setBlogCount(blogsSnap.data().count);
+        setDocCount(docsSnap.data().count);
+        setIsDbConnected(true);
+      } catch (err) {
+        console.error("Error fetching dashboard counts:", err);
+      }
+    };
+
+    fetchCounts();
+
     try {
-      // 1. Listen to tasks
-      const unsubTasks = onSnapshot(collection(db, "tasks"), (snapshot) => {
+      const qTasks = query(collection(db, "tasks"), limit(10));
+      const unsubTasks = onSnapshot(qTasks, (snapshot) => {
         setIsDbConnected(true);
         if (!snapshot.empty) {
-          setTaskCount(snapshot.size);
-          const active = snapshot.docs.filter(d => d.data().status !== "completed").length;
-          setActiveTasks(active);
-
           // Get top 4 active tasks sorted by priority (high first)
           const list = snapshot.docs
             .map(d => ({ id: d.id, ...d.data() } as TaskItem))
@@ -65,37 +82,17 @@ export default function DashboardHome() {
             .slice(0, 4);
           setRecentTasks(list);
         } else {
-          setTaskCount(0);
-          setActiveTasks(0);
           setRecentTasks([]);
         }
       }, (err) => {
         console.error("Tasks listener error:", err);
       });
 
-      // 2. Listen to posts (blogs)
-      const unsubPosts = onSnapshot(collection(db, "posts"), (snapshot) => {
-        setIsDbConnected(true);
-        setBlogCount(snapshot.empty ? 0 : snapshot.size);
-      }, (err) => {
-        console.error("Posts listener error:", err);
-      });
-
-      // 3. Listen to docs (lessons / API guides)
-      const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => {
-        setIsDbConnected(true);
-        setDocCount(snapshot.empty ? 0 : snapshot.docs.filter(d => d.data().isDeleted !== 1).length);
-      }, (err) => {
-        console.error("Docs listener error:", err);
-      });
-
       return () => {
         unsubTasks();
-        unsubPosts();
-        unsubDocs();
       };
     } catch (e) {
-      console.error("Error setting up dashboard listeners:", e);
+      console.error("Error setting up tasks list listener:", e);
     }
   }, []);
 

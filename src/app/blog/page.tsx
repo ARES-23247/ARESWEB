@@ -25,7 +25,7 @@ const MOCK_POSTS: BlogPost[] = [
     slug: "championship-2026-recap",
     title: "Championship 2026: Team ARES Wins Big!",
     date: "May 20, 2026",
-    snippet: "A comprehensive recap of our journey, triumphs, and scores at the 2026 FIRST® World Championship.",
+    snippet: "A comprehensive recap of our journey, triumphs, and scores at the 2026 *FIRST*® World Championship.",
     author: "David Coach",
     thumbnail: "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=500&auto=format&fit=crop&q=60"
   },

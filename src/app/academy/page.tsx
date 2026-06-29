@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
-import AutonomousLogicDiagram from "@/components/docs/AutonomousLogicDiagram";
+const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/AutonomousLogicDiagram"));
 import ZulipThread from "@/components/ZulipThread";
 import { ContributorStack } from "@/components/ui/ContributorStack";
 import TiptapRenderer from "@/components/TiptapRenderer";
@@ -34,7 +34,8 @@ const ACADEMY_SIDEBAR_ORDER = [
 export default function AcademyPage() {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const { user, authorizedUser } = useAuth();
 
   const isAresLib = pathname.startsWith("/docs");
@@ -50,6 +51,16 @@ export default function AcademyPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
+  // Parse search query parameter 'q' and open the search overlay on boot
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q");
+    if (q) {
+      setSearchQuery(q);
+      setSearchOpen(true);
+    }
+  }, [location.search]);
 
   // Fetch all documents
   useEffect(() => {
@@ -362,7 +373,9 @@ export default function AcademyPage() {
                         </h3>
                         <div className="h-px flex-1 bg-white/5" />
                       </div>
-                      <AutonomousLogicDiagram />
+                      <React.Suspense fallback={<div className="h-64 flex items-center justify-center text-xs text-marble/40">Loading logic diagram...</div>}>
+                        <AutonomousLogicDiagram />
+                      </React.Suspense>
                       <p className="text-[10px] text-marble/30 text-center uppercase tracking-widest font-mono">
                         ARES-FLOW Engine v1.0 // Node-based State Machine Visualization
                       </p>

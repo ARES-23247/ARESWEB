@@ -377,7 +377,7 @@ export default function MarkdownEditor({
             type="button"
             onClick={() => setIsSimPickerOpen(true)}
             disabled={mode === "preview" || disabled}
-            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-indigo-400"
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-ares-red/90"
             title="Insert Simulation"
             aria-label="Insert simulation"
           >

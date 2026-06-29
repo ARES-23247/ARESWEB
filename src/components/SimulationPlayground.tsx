@@ -13,6 +13,10 @@ import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
 import { toastApiError } from "../api/apiClient";
+import { useSimulationSnapshots } from "../hooks/useSimulationSnapshots";
+import { useSimulationShortcuts } from "../hooks/useSimulationShortcuts";
+import { useSimulationTelemetry } from "../hooks/useSimulationTelemetry";
+import { useSimulationActions } from "../hooks/useSimulationActions";
 
 // Sub-components
 import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
@@ -86,8 +90,6 @@ export default function SimulationPlayground() {
   const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Blank Canvas"]);
   const [activeFile, setActiveFile] = useState("SimComponent.tsx");
   const [pendingAiChanges, setPendingAiChanges] = useState<Record<string, string> | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSharingGist, setIsSharingGist] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -100,6 +102,23 @@ export default function SimulationPlayground() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [fps, setFps] = useState<number | null>(null);  // fps used in JSX
   const [bottomRightTab, setBottomRightTab] = useState<'console' | 'ai'>('console');
+
+  // Simulation Actions Hook
+  const {
+    isSaving,
+    isSharingGist,
+    handleSave,
+    handleShareGist,
+    handleFormatCode,
+    handleDownloadZip
+  } = useSimulationActions({
+    files,
+    activeFile,
+    simName,
+    simId,
+    setFiles,
+    setSimId
+  });
 
   // AI Chat Logic
   const {
@@ -128,6 +147,22 @@ export default function SimulationPlayground() {
     },
     consoleLogs,
     compileError
+  });
+
+  // Snapshot History Hook
+  const {
+    getSnapshots,
+    restoreSnapshot
+  } = useSimulationSnapshots({
+    files,
+    simName,
+    simId,
+    setFiles,
+    setActiveFile,
+    setSimName,
+    setSimId,
+    compileCode,
+    setShowHistory
   });
 
   const handleReset = useCallback(() => {
@@ -183,51 +218,6 @@ export default function SimulationPlayground() {
     setTimeout(() => setCopied(false), 2000);
   }, [files]);
 
-  const handleFormatCode = useCallback(async () => {
-    try {
-      const code = files[activeFile];
-      if (!code) return;
-      const prettier = (await import("prettier/standalone")).default;
-      const prettierPluginBabel = await import("prettier/plugins/babel");
-      const prettierPluginEstree = await import("prettier/plugins/estree");
-      const prettierPluginTs = await import("prettier/plugins/typescript");
-      const formatted = await prettier.format(code, {
-        parser: "typescript",
-        plugins: [prettierPluginBabel, prettierPluginEstree, prettierPluginTs],
-        tabWidth: 2,
-        printWidth: 100,
-        semi: true,
-      });
-      setFiles(prev => ({ ...prev, [activeFile]: formatted }));
-      const { toast } = await import("sonner");
-      toast.success("Code formatted");
-    } catch (e) {
-      logger.error("Failed to format code:", e);
-      toastApiError(e, "Format failed");
-    }
-  }, [files, activeFile]);
-
-  const handleDownloadZip = useCallback(async () => {
-    try {
-      const JSZip = (await import("jszip")).default;
-      const zip = new JSZip();
-      Object.entries(files).forEach(([path, content]) => {
-        zip.file(path, content);
-      });
-      const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${simName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'simulation'}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      logger.error("Failed to download zip:", e);
-    }
-  }, [files, simName]);
-
   const handleCodeChange = useCallback((value: string | undefined) => {
     const newCode = value || "";
     setFiles(prev => {
@@ -236,6 +226,23 @@ export default function SimulationPlayground() {
       return newFiles;
     });
   }, [activeFile, scheduleCompile]);
+
+  // Keyboard Shortcuts Hook
+  useSimulationShortcuts({
+    isFullscreen,
+    setIsFullscreen,
+    handleRun,
+    handleFormatCode,
+    handleSave
+  });
+
+  // Telemetry Hook
+  useSimulationTelemetry({
+    setTelemetry,
+    setAttachedImage,
+    setConsoleLogs,
+    setFps
+  });
 
   // TODO: implement code insertion from component library
   const _handleInsertCode = useCallback((code: string) => {
@@ -253,164 +260,6 @@ export default function SimulationPlayground() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleSave = useCallback(async () => {
-    if (!simName.trim()) return;
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/simulations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: simName, files: files, ...(simId ? { id: simId } : {}) }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { id?: string };
-        if (data.id && !simId) {
-          setSimId(data.id);
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("simId", data.id.toString());
-          window.history.replaceState({}, "", newUrl.toString());
-        }
-        const { toast } = await import("sonner");
-        toast.success("Saved simulation!");
-      } else {
-        const errData = await res.json().catch(() => ({})) as { error?: string, message?: string, code?: string };
-        toastApiError({ 
-          message: errData.message || errData.error || res.statusText, 
-          status: res.status,
-          code: errData.code 
-        }, "Save failed");
-      }
-    } catch (e) {
-      logger.error("[SimPlayground] Save failed:", e);
-      toastApiError(e, "Network error while saving simulation");
-    } finally {
-      setIsSaving(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simName, files, simId]);
-
-  const handleShareGist = useCallback(async () => {
-    setIsSharingGist(true);
-    try {
-      const res = await fetch("/api/simulations/gist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: simName, files }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { gistId: string, url: string };
-        const shareUrl = `${window.location.origin}/academy/playground?gist=${encodeURIComponent(data.gistId)}`;
-        await navigator.clipboard.writeText(shareUrl);
-        setSimId(`gist:${data.gistId}`);
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("simId");
-        newUrl.searchParams.set("gist", data.gistId);
-        window.history.replaceState({}, "", newUrl.toString());
-        const { toast } = await import("sonner");
-        toast.success("Shareable link generated and copied!");
-      } else {
-        throw new Error("Failed to create Gist");
-      }
-    } catch (e) {
-      logger.error("[SimPlayground] Gist Share failed:", e);
-      toastApiError(e, "Gist Generation Failed");
-    } finally {
-      setIsSharingGist(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simName, files]);
-
-  // Listen for Telemetry from Iframe
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === "ARES_TELEMETRY") {
-        setTelemetry(prev => {
-          const key = e.data.key;
-          const current = prev[key] || [];
-          const next = [...current, { time: e.data.timestamp, value: e.data.value }].slice(-100);
-          return { ...prev, [key]: next };
-        });
-      }
-      if (e.data?.type === "ARES_SCREENSHOT") {
-        setAttachedImage(e.data.dataUrl);
-      }
-      if (e.data?.type === "sim-console") {
-        setConsoleLogs(prev => [...prev, e.data]);
-      }
-      if (e.data?.type === "sim-fps") {
-        setFps(e.data.fps);
-      }
-    };
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [setAttachedImage]);
-
-  // Version Snapshot state
-  const SNAPSHOT_KEY = 'ares_sim_snapshots';
-  const MAX_SNAPSHOTS = 5;
-
-  const saveSnapshot = useCallback(() => {
-    try {
-      const snapshot = {
-        files,
-        simName,
-        simId,
-        timestamp: Date.now()
-      };
-      const stored = localStorage.getItem(SNAPSHOT_KEY);
-      const snapshots = stored ? JSON.parse(stored) : [];
-      snapshots.unshift(snapshot);
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots.slice(0, MAX_SNAPSHOTS)));
-    } catch { /* localStorage full or unavailable */ }
-  }, [files, simName, simId]);
-
-  useEffect(() => {
-    const interval = setInterval(saveSnapshot, 60000);
-    return () => clearInterval(interval);
-  }, [saveSnapshot]);
-
-  const getSnapshots = useCallback(() => {
-    try {
-      const stored = localStorage.getItem(SNAPSHOT_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  }, []);
-
-  const restoreSnapshot = useCallback((snapshot: { files: Record<string, string>; simName: string; simId: string | null }) => {
-    setFiles(snapshot.files);
-    setActiveFile(Object.keys(snapshot.files)[0]);
-    setSimName(snapshot.simName);
-    setSimId(snapshot.simId);
-    compileCode(snapshot.files);
-    setShowHistory(false);
-    import("sonner").then(({ toast }) => toast.success("Snapshot restored"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compileCode]);
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleRun();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        handleFormatCode();
-      }
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isFullscreen, handleRun, handleFormatCode, handleSave]);
 
   const content = (
     <div

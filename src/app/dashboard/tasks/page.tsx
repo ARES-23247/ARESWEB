@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
@@ -43,7 +43,7 @@ const MOCK_TASKS: TaskItem[] = [
   {
     id: "task_3",
     title: "Sponsorship Outreach Pamphlets",
-    description: "Design and print marketing pamphlets detailing ARES 23247 FIRST® achievements.",
+    description: "Design and print marketing pamphlets detailing ARES 23247 *FIRST*® achievements.",
     status: "review",
     priority: "high",
     subteam: "business",
@@ -95,8 +95,9 @@ export default function KanbanPage() {
   useEffect(() => {
     try {
       const tasksRef = collection(db, "tasks");
+      const q = query(tasksRef, where("archived", "==", false));
       const unsubscribe = onSnapshot(
-        tasksRef,
+        q,
         (snapshot) => {
           if (snapshot.empty) {
             setTasks(MOCK_TASKS);

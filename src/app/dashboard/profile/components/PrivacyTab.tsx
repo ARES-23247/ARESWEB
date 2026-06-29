@@ -32,7 +32,7 @@ export default function PrivacyTab({
     <div className="space-y-6">
       {isStudent && (
         <div className="bg-ares-gold/10 border border-ares-gold/20 p-4 rounded-xl text-ares-gold text-xs leading-normal">
-          <strong>FIRST® Youth Protection Program (YPP):</strong> As a student member, your contact details (email and phone number) are protected under YPP rules. They are kept securely hidden from public profiles and verified members, and are visible only to team administrators.
+          <strong><i>FIRST</i>® Youth Protection Program (YPP):</strong> As a student member, your contact details (email and phone number) are protected under YPP rules. They are kept securely hidden from public profiles and verified members, and are visible only to team administrators.
         </div>
       )}
 

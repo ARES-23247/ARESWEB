@@ -264,7 +264,15 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                 <div className="space-y-4">
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-white/10 hover:border-ares-red/40 bg-black/25 rounded-lg p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 mt-6"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="border-2 border-dashed border-white/10 hover:border-ares-red/40 bg-black/25 rounded-lg p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 mt-6 focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
                   >
                     <input
                       ref={fileInputRef}
@@ -337,7 +345,15 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                           <div
                             key={photo.id}
                             onClick={() => handleSelectGalleryPhoto(photo)}
-                            className={`aspect-video relative overflow-hidden rounded border transition-all cursor-pointer bg-black/40 group shadow-md ${
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSelectGalleryPhoto(photo);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className={`aspect-video relative overflow-hidden rounded border transition-all cursor-pointer bg-black/40 group shadow-md focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan ${
                               selectedGalleryUrl === photo.publicUrl ? "border-ares-gold ring-1 ring-ares-gold" : "border-white/10"
                             }`}
                           >

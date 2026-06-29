@@ -52,7 +52,7 @@ export default function EventEditorAiCopilot({
       setAiResponse(data.response || "");
     } catch (err: any) {
       setAiResponse(
-        `Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside FIRST® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`
+        `Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`
       );
     } finally {
       setAiLoading(false);

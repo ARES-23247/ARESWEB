@@ -119,7 +119,7 @@ export default function FinanceLedgerPage() {
     <div className="min-h-screen bg-obsidian text-marble py-24 relative overflow-hidden w-full">
       <SEO 
         title="Financial Transparency Ledger" 
-        description="Public financial accountability board and ledger for ARES 23247 FIRST® Tech Challenge robotics team." 
+        description="Public financial accountability board and ledger for ARES 23247 *FIRST*® Tech Challenge robotics team." 
       />
 
       {/* Decorative Grid and Ambient Lights */}
@@ -344,7 +344,7 @@ export default function FinanceLedgerPage() {
 
         <footer className="mt-32 text-center border-t border-white/5 pt-8">
           <p className="text-[10px] font-mono uppercase tracking-widest text-marble/30">
-            ARES 23247 FIRST® Tech Challenge Portal — Morgantown, WV
+            ARES 23247 <i>FIRST</i>® Tech Challenge Portal — Morgantown, WV
           </p>
         </footer>
 

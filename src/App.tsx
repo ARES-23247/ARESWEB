@@ -4,7 +4,6 @@ import { Cpu, Grid, Compass } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import TechStackPage from "@/app/tech-stack/page";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 // Lazy-load public pages for optimal bundle splitting
@@ -32,6 +31,7 @@ const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
 const StorePage = lazy(() => import("@/app/store/page"));
 const TasksRedirect = lazy(() => import("@/app/tasks/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
+const TechStackPage = lazy(() => import("@/app/tech-stack/page"));
 
 // Lazy-load dashboard pages
 const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));

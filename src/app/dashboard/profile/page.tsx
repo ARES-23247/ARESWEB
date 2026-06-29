@@ -316,7 +316,7 @@ export default function DashboardProfilePage() {
             initial={{ opacity: 0, y: -10 }} 
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0 }}
-            className="p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 ares-cut-sm flex items-center gap-3"
+            className="p-4 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan ares-cut-sm flex items-center gap-3"
           >
             <CheckCircle size={18} className="shrink-0" />
             <span className="text-xs font-semibold uppercase tracking-wider">{success}</span>

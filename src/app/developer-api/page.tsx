@@ -19,7 +19,7 @@ export default function DeveloperApiPage() {
         <Link to="/dashboard" className="text-ares-gold hover:text-ares-gold/80 flex items-center gap-2 mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
-        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-ares-gold to-yellow-600 mb-4">
+        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-ares-gold to-ares-red mb-4">
           Developer API
         </h1>
         <p className="text-lg text-marble/90 max-w-3xl">
@@ -47,14 +47,14 @@ export default function DeveloperApiPage() {
               <li>Generate a new Personal Access Token.</li>
               <li>Include the token in your request headers.</li>
             </ol>
-            <div className="mt-4 bg-ares-black p-3 rounded font-mono text-xs text-yellow-300 border border-yellow-500/30 overflow-x-auto">
+            <div className="mt-4 bg-ares-black p-3 rounded font-mono text-xs text-ares-gold border border-ares-gold/30 overflow-x-auto">
               Authorization: Bearer {'<your_token>'}
             </div>
           </div>
 
           <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-              <ShieldAlert className="text-red-500 w-6 h-6" /> Rate Limiting
+              <ShieldAlert className="text-ares-red w-6 h-6" /> Rate Limiting
             </h2>
             <p className="text-marble/85">
               To ensure stability during competitions, the API enforces strict rate limits.
@@ -62,15 +62,15 @@ export default function DeveloperApiPage() {
             <ul className="mt-4 space-y-2 text-sm text-white">
               <li className="flex justify-between border-b border-white/10 pb-2">
                 <span>Public Routes</span>
-                <span className="font-mono text-yellow-300">100 / min</span>
+                <span className="font-mono text-ares-gold">100 / min</span>
               </li>
               <li className="flex justify-between border-b border-white/10 pb-2">
                 <span>TBA Proxy</span>
-                <span className="font-mono text-yellow-300">30 / min</span>
+                <span className="font-mono text-ares-gold">30 / min</span>
               </li>
               <li className="flex justify-between pt-2">
                 <span>Authentication</span>
-                <span className="font-mono text-yellow-300">5 / min</span>
+                <span className="font-mono text-ares-gold">5 / min</span>
               </li>
             </ul>
           </div>
@@ -97,7 +97,7 @@ export default function DeveloperApiPage() {
           <div className="bg-ares-dark rounded-xl border border-ares-darker overflow-hidden shadow-2xl h-[800px] flex flex-col">
             <div className="bg-black/40 border-b border-ares-darker p-4 flex items-center justify-between">
               <h2 className="font-bold font-mono text-ares-gold flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="w-3 h-3 rounded-full bg-ares-cyan animate-pulse"></span>
                 Interactive API Explorer
               </h2>
               <a
