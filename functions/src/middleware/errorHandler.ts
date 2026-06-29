@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { logger } from "../lib/logger";
 
 /**
  * Standardized API Error class to propagate specific HTTP status codes and custom messages.
@@ -20,7 +21,7 @@ export const globalErrorHandler = (
   next: NextFunction
 ) => {
   // Log the full stack trace on the server for diagnostics
-  console.error("[Global Error Handler] Caught Exception:", err);
+  logger.error("errorHandler", "[Global Error Handler] Caught Exception:", err);
 
   const status = err.status || 500;
   const message = err.message || "Internal server error.";

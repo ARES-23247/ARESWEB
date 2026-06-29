@@ -126,6 +126,9 @@ router.get("/", asyncHandler(async (req, res) => {
 // GET /api/simulations/gist/:id - Fetch a GitHub Gist by ID
 router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   const { id } = req.params;
+  if (!/^[a-f0-9]{32}$/.test(id) && !/^[0-9a-f]{20}$/.test(id)) {
+    throw new ApiError(400, "Invalid Gist ID");
+  }
   const pat = await getGitHubPat();
 
   const headers: Record<string, string> = {

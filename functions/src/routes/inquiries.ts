@@ -7,6 +7,7 @@ import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler, maskEmail, maskName } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -252,7 +253,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   const memberType = type === "mentor" ? "mentor" : "student";
 
   // Check if Firebase Auth user already exists for this email
-  let targetId = cleanEmail;
+  let targetId = "";
   try {
     const authUser = await adminAuth.getUserByEmail(cleanEmail);
     targetId = authUser.uid;
@@ -260,6 +261,10 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     if (err.code !== "auth/user-not-found") {
       logger.error("inquiries", "Firebase Auth lookup error during account approval", err);
     }
+  }
+
+  if (!targetId) {
+    targetId = crypto.randomUUID();
   }
 
   const batch = adminDb.batch();

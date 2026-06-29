@@ -143,6 +143,13 @@ describe("Inquiries Router Backend Endpoints", () => {
       expect(batchInstance.update).toHaveBeenCalledTimes(1); // inquiries status update
       expect(batchInstance.commit).toHaveBeenCalled();
 
+      // Verify correct doc ID is a generated UUID instead of the raw email
+      const mockCollection = adminDb.collection as any;
+      const targetId = mockCollection().doc.mock.calls[2][0];
+      expect(targetId).not.toBe("alice@student.com");
+      expect(targetId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(mockCollection().doc.mock.calls[3][0]).toBe(targetId);
+
       // Check authorized_users content
       const firstSetCall = batchInstance.set.mock.calls[0];
       expect(firstSetCall[1]).toEqual({

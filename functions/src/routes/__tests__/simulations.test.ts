@@ -205,7 +205,7 @@ describe("Simulations Router Backend Endpoints", () => {
 
   describe("GET /api/simulations/gist/:id - Fetch Gist", () => {
     it("should fetch gist from GitHub and map to standard simulation format", async () => {
-      req.params.id = "gist123";
+      req.params.id = "0123456789abcdef0123456789abcdef";
 
       const gistResponse = {
         description: "My Physics Gist",
@@ -227,16 +227,28 @@ describe("Simulations Router Backend Endpoints", () => {
       await handler(req, res, next);
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.github.com/gists/gist123",
+        "https://api.github.com/gists/0123456789abcdef0123456789abcdef",
         expect.any(Object)
       );
       expect(res.json).toHaveBeenCalledWith({
         simulation: expect.objectContaining({
-          id: "gist:gist123",
+          id: "gist:0123456789abcdef0123456789abcdef",
           name: "My Physics Gist",
           files: JSON.stringify({ "index.tsx": "export default function GistSim() {}" }),
         }),
       });
+    });
+
+    it("should reject invalid gist ID formats with 400 status", async () => {
+      req.params.id = "invalid-gist-id-format";
+
+      const handler = getHandler("/gist/:id", "get");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(400);
+      expect(err.message).toBe("Invalid Gist ID");
     });
   });
 });
