@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { authenticatedFetch } from "@/lib/api";
 import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -147,19 +147,19 @@ export default function GalleryPage() {
     ? photos
     : photos.filter(p => p.category === activeCategory);
 
-  const handleNextPhoto = () => {
+  const handleNextPhoto = useCallback(() => {
     if (!selectedPhoto) return;
     const currentIdx = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
     const nextIdx = (currentIdx + 1) % filteredPhotos.length;
     setSelectedPhoto(filteredPhotos[nextIdx]);
-  };
+  }, [selectedPhoto, filteredPhotos]);
 
-  const handlePrevPhoto = () => {
+  const handlePrevPhoto = useCallback(() => {
     if (!selectedPhoto) return;
     const currentIdx = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
     const prevIdx = (currentIdx - 1 + filteredPhotos.length) % filteredPhotos.length;
     setSelectedPhoto(filteredPhotos[prevIdx]);
-  };
+  }, [selectedPhoto, filteredPhotos]);
 
   useEffect(() => {
     if (!selectedPhoto) return;
@@ -226,7 +226,16 @@ export default function GalleryPage() {
                 <div
                   key={photo.id}
                   onClick={() => setSelectedPhoto(photo)}
-                  className={`w-full overflow-hidden ares-cut border relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(192,0,0,0.15)] bg-gradient-to-br ${photo.colorClass} ${assignedAspect} flex flex-col justify-end p-6`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open lightbox for ${photo.title}`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedPhoto(photo);
+                    }
+                  }}
+                  className={`w-full overflow-hidden ares-cut border relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(192,0,0,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan bg-gradient-to-br ${photo.colorClass} ${assignedAspect} flex flex-col justify-end p-6`}
                 >
                   {/* Real Image Render with subtle zoom */}
                   {photo.imageUrl ? (
@@ -273,7 +282,18 @@ export default function GalleryPage() {
       <Dialog.Root open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 animate-fade-in" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none animate-scale-in">
+          <Dialog.Content 
+            onKeyDown={(e) => {
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                handlePrevPhoto();
+              } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                handleNextPhoto();
+              }
+            }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none animate-scale-in"
+          >
             {selectedPhoto && (
               <>
                 <Dialog.Title className="sr-only">

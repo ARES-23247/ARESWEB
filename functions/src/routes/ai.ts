@@ -21,6 +21,9 @@ router.post("/grammar", ensureAdmin, aiLimiter, asyncHandler(async (req, res) =>
   if (typeof text !== "string") {
     throw new ApiError(400, "Missing required 'text' field.");
   }
+  if (text.length > 20000) {
+    throw new ApiError(400, "Input text exceeds maximum allowed character limit (20,000).");
+  }
 
   const result = await checkGrammarAndSpelling(text);
   res.json(result);
@@ -37,6 +40,15 @@ router.post("/assistant", ensureAdmin, aiLimiter, asyncHandler(async (req, res) 
   if (!prompt || typeof prompt !== "string") {
     throw new ApiError(400, "Missing required 'prompt' field.");
   }
+  if (prompt.length > 2000) {
+    throw new ApiError(400, "Prompt exceeds maximum allowed character limit (2,000).");
+  }
+  if (text && text.length > 20000) {
+    throw new ApiError(400, "Selected text exceeds maximum allowed character limit (20,000).");
+  }
+  if (context && context.length > 20000) {
+    throw new ApiError(400, "Context exceeds maximum allowed character limit (20,000).");
+  }
 
   const responseText = await getAIAssistance(prompt, text, context);
   res.json({ response: responseText });
@@ -52,6 +64,16 @@ router.post("/sim-playground", ensureAdmin, aiLimiter, asyncHandler(async (req, 
 
   if (!systemPrompt || !Array.isArray(messages)) {
     throw new ApiError(400, "Missing required 'systemPrompt' or 'messages' fields.");
+  }
+  if (systemPrompt.length > 5000) {
+    throw new ApiError(400, "System prompt exceeds maximum allowed character limit (5,000).");
+  }
+  const totalLength = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
+  if (totalLength > 40000) {
+    throw new ApiError(400, "Conversation history exceeds maximum allowed character limit (40,000).");
+  }
+  if (imageUrl && imageUrl.length > 5 * 1024 * 1024) {
+    throw new ApiError(400, "Image payload size exceeds maximum allowed limit (5MB).");
   }
 
   // Setup Server-Sent Events headers

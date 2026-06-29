@@ -123,22 +123,28 @@ router.delete("/:albumId", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(404, "Album not found.");
   }
 
-  // 1. Unassign all photos associated with this album
-  const photosSnap = await adminDb
-    .collection("imported_photos")
-    .where("albumId", "==", albumId)
-    .get();
+  // 1. Unassign all photos associated with this album in bounded pagination batches
+  let hasMore = true;
+  while (hasMore) {
+    const photosSnap = await adminDb
+      .collection("imported_photos")
+      .where("albumId", "==", albumId)
+      .limit(400)
+      .get();
 
-  if (!photosSnap.empty) {
-    const batchSize = 400;
-    const docs = photosSnap.docs;
-    for (let i = 0; i < docs.length; i += batchSize) {
-      const batch = adminDb.batch();
-      const chunk = docs.slice(i, i + batchSize);
-      chunk.forEach((doc) => {
-        batch.update(doc.ref, { albumId: null });
-      });
-      await batch.commit();
+    if (photosSnap.empty) {
+      hasMore = false;
+      break;
+    }
+
+    const batch = adminDb.batch();
+    photosSnap.docs.forEach((doc) => {
+      batch.update(doc.ref, { albumId: null });
+    });
+    await batch.commit();
+
+    if (photosSnap.docs.length < 400) {
+      hasMore = false;
     }
   }
 

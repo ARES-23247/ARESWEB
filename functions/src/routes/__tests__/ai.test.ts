@@ -72,6 +72,18 @@ describe("AI Router Backend Endpoints", () => {
       expect(err.message).toBe("Missing required 'text' field.");
       expect(err.status).toBe(400);
     });
+
+    it("should fail validation if text exceeds maximum character limit", async () => {
+      req.body = { text: "a".repeat(20001) };
+
+      const handler = getHandler("/grammar", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.message).toBe("Input text exceeds maximum allowed character limit (20,000).");
+      expect(err.status).toBe(400);
+    });
   });
 
   describe("POST /api/ai/assistant - AI assistant prompt help", () => {
@@ -95,6 +107,18 @@ describe("AI Router Backend Endpoints", () => {
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Missing required 'prompt' field.");
+      expect(err.status).toBe(400);
+    });
+
+    it("should fail validation if prompt exceeds maximum character limit", async () => {
+      req.body = { prompt: "a".repeat(2001) };
+
+      const handler = getHandler("/assistant", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.message).toBe("Prompt exceeds maximum allowed character limit (2,000).");
       expect(err.status).toBe(400);
     });
   });
@@ -125,6 +149,22 @@ describe("AI Router Backend Endpoints", () => {
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Missing required 'systemPrompt' or 'messages' fields.");
+      expect(err.status).toBe(400);
+    });
+
+    it("should fail validation if image exceeds maximum payload limit", async () => {
+      req.body = {
+        systemPrompt: "You are a path planner",
+        messages: [{ role: "user", content: "Hello" }],
+        imageUrl: "data:image/png;base64," + "a".repeat(5 * 1024 * 1024 + 1)
+      };
+
+      const handler = getHandler("/sim-playground", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.message).toBe("Image payload size exceeds maximum allowed limit (5MB).");
       expect(err.status).toBe(400);
     });
   });
