@@ -33,6 +33,12 @@ interface ShiftScheduleEditorProps {
   setIsPhotoPickerOpen: (val: boolean) => void;
 }
 
+const getSafeImageUrl = (url: string) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url) || url.startsWith('/') || url.startsWith('data:image/')) return url;
+  return "";
+};
+
 export default function ShiftScheduleEditor({
   formTitle,
   setFormTitle,
@@ -220,7 +226,7 @@ export default function ShiftScheduleEditor({
         </div>
         {formCoverImage && (
           <div className="mt-3 relative w-48 h-28 border border-white/10 rounded-lg overflow-hidden group">
-            <img src={formCoverImage} alt="Cover preview" className="w-full h-full object-cover" />
+            <img src={getSafeImageUrl(formCoverImage)} alt="Cover preview" className="w-full h-full object-cover" />
             {canEdit && (
               <button
                 type="button"

@@ -55,7 +55,8 @@ router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
     .replace(/[\s_]+/g, "-")
     .replace(/[^a-z0-9-]/g, "")
     .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
 
   const albumDocRef = adminDb.collection("albums").doc(albumId);
   const existing = await albumDocRef.get();

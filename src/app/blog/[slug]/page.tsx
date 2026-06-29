@@ -134,7 +134,7 @@ export default function BlogPostPage() {
         setIsLoading(false);
       },
       (error) => {
-        console.warn(`Firestore read failed for post slug: ${slug}, using mock fallback.`, error);
+        console.warn("Firestore read failed for post slug: using mock fallback.", { slug, error });
         setPost(MOCK_DETAILS[slug] || null);
         setIsLoading(false);
       }

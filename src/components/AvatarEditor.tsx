@@ -45,7 +45,7 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
     try {
       if (!currentImage) return new URLSearchParams();
       const url = new URL(currentImage);
-      if (!url.hostname.endsWith('dicebear.com') && !url.hostname.endsWith('api.dicebear.com')) {
+      if (!(url.hostname === 'dicebear.com' || url.hostname.endsWith('.dicebear.com') || url.hostname === 'api.dicebear.com' || url.hostname.endsWith('.api.dicebear.com'))) {
         console.warn('Avatar URL must be from dicebear.com domain');
         return new URLSearchParams();
       }

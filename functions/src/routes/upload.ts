@@ -24,7 +24,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
   let opModeName = "AutonomousField";
 
   if (contentType.includes("multipart/form-data")) {
-    const boundaryMatch = contentType.match(/boundary=(.+)$/);
+    const boundaryMatch = contentType.match(/boundary=([^;\s]+)/);
     if (boundaryMatch) {
       const boundary = boundaryMatch[1];
       const parts = req.body.toString().split(`--${boundary}`);

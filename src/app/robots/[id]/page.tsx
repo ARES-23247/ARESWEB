@@ -133,7 +133,7 @@ export default function RobotDetailPage() {
           versions: data.versions || []
         });
       } catch (error) {
-        console.warn(`Firestore read failed for robot: ${id}, using mock fallback.`, error);
+        console.warn("Firestore read failed for robot: using mock fallback.", { id, error });
         setRobot(MOCK_DETAILS[id] || null);
       } finally {
         setIsLoading(false);
