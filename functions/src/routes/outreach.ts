@@ -1,10 +1,20 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.use(limiter);
 
 async function getOutreachLogsHelper(req: express.Request) {
   const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);

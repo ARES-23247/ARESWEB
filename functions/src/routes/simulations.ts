@@ -11,13 +11,14 @@ import { logger } from "../lib/logger";
 
 const router = express.Router();
 
-const simulationsLimiter = rateLimit({
+const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: "Too many simulations requests, please try again later",
   standardHeaders: true,
   legacyHeaders: false,
 });
+router.use(limiter);
 
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
@@ -133,7 +134,7 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/simulations/gist/:id - Fetch a GitHub Gist by ID
-router.get("/gist/:id", simulationsLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const safeId = id.match(/^[a-f0-9]{32}$/) ? id : (id.match(/^[0-9a-f]{20}$/) ? id : null);
   if (!safeId) {

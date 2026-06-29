@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import crypto from "crypto";
@@ -10,6 +11,15 @@ import { z } from "zod";
 import { validate } from "../middleware/validation";
 
 const router = express.Router();
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.use(limiter);
 
 function deduplicateRoster(membersRaw: any[], idKey: "uid" | "userId" = "uid") {
   const uniqueMembersMap = new Map<string, any>();

@@ -1,10 +1,20 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
 import { sendZulipMessage } from "../lib/zulip";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.use(limiter);
 
 // POST /api/tasks/comment
 router.post("/comment", ensureTeamMember, asyncHandler(async (req, res) => {

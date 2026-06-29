@@ -37,8 +37,37 @@ const app = express();
 app.set("trust proxy", 1);
 
 // Middleware
-// Enable CORS
-app.use(cors({ origin: true }));
+// Enable CORS with restricted origin reflection
+const allowedOrigins = [
+  "https://ares23247.web.app",
+  "https://ares23247.firebaseapp.com",
+  "https://aresfirst.org",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    // Allow subdomains ending in .web.app or .firebaseapp.com
+    const hostname = origin.replace(/^https?:\/\//, "");
+    if (hostname.endsWith(".web.app") || hostname.endsWith(".firebaseapp.com")) {
+      callback(null, true);
+      return;
+    }
+    callback(null, false);
+  },
+};
+
+app.use(cors(corsOptions));
 
 // Use raw body parsing for the upload endpoints, and json for everything else
 app.use((req, res, next) => {
@@ -72,7 +101,16 @@ app.use(globalErrorHandler);
 
 // Export Cloud Function
 export const api = onRequest({ 
-  cors: true, 
+  cors: [
+    "https://ares23247.web.app",
+    "https://ares23247.firebaseapp.com",
+    "https://aresfirst.org",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    /\.web\.app$/,
+    /\.firebaseapp\.com$/,
+  ], 
   maxInstances: 10, 
   secrets: [
     "ENCRYPTION_SECRET",

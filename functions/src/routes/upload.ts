@@ -9,16 +9,17 @@ import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
-const uploadLimiter = rateLimit({
+const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10, // Limit each IP to 10 uploads per 10 minutes
   message: { error: "Too many log uploads from this IP. Please wait 10 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
 });
+router.use(limiter);
 
 // POST /api/upload
-router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const contentType = req.headers["content-type"] || "";
   let csvText = "";
   let opModeName = "AutonomousField";
@@ -180,7 +181,7 @@ router.post("/", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) 
 }));
 
 // POST /api/upload/states
-router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/states", ensureTeamMember, asyncHandler(async (req, res) => {
   const text = req.body.toString();
   if (!text || text.trim().length === 0) {
     throw new ApiError(400, "Empty payload");
@@ -202,7 +203,7 @@ router.post("/states", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
 }));
 
 // POST /api/upload/actions
-router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/actions", ensureTeamMember, asyncHandler(async (req, res) => {
   const text = req.body.toString();
   if (!text || text.trim().length === 0) {
     throw new ApiError(400, "Empty payload");
@@ -224,7 +225,7 @@ router.post("/actions", uploadLimiter, ensureTeamMember, asyncHandler(async (req
 }));
 
 // POST /api/upload/inputs
-router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/inputs", ensureTeamMember, asyncHandler(async (req, res) => {
   const text = req.body.toString();
   if (!text || text.trim().length === 0) {
     throw new ApiError(400, "Empty payload");
@@ -246,7 +247,7 @@ router.post("/inputs", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
 }));
 
 // POST /api/upload/motors
-router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/motors", ensureTeamMember, asyncHandler(async (req, res) => {
   const text = req.body.toString();
   if (!text || text.trim().length === 0) {
     throw new ApiError(400, "Empty payload");
@@ -260,7 +261,7 @@ router.post("/motors", uploadLimiter, ensureTeamMember, asyncHandler(async (req,
 }));
 
 // POST /api/upload/vision
-router.post("/vision", uploadLimiter, ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/vision", ensureTeamMember, asyncHandler(async (req, res) => {
   const text = req.body.toString();
   if (!text || text.trim().length === 0) {
     throw new ApiError(400, "Empty payload");

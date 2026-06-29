@@ -10,13 +10,14 @@ import { NextFunction, Response } from "express";
 
 const router = express.Router();
 
-const tournamentsLimiter = rateLimit({
+const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: "Too many tournament requests, please try again later",
   standardHeaders: true,
   legacyHeaders: false,
 });
+router.use(limiter);
 
 // Custom role verification middleware
 export async function ensureAdminOrCoach(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -113,7 +114,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/tournaments
-router.post("/", tournamentsLimiter, ensureAuth, ensureAdminOrCoach, validate(createTournamentSchema), asyncHandler(async (req, res) => {
+router.post("/", ensureAuth, ensureAdminOrCoach, validate(createTournamentSchema), asyncHandler(async (req, res) => {
   const docRef = adminDb.collection("tournaments").doc();
   const tournamentId = docRef.id;
   const timestamp = new Date().toISOString();
@@ -131,7 +132,7 @@ router.post("/", tournamentsLimiter, ensureAuth, ensureAdminOrCoach, validate(cr
 }));
 
 // PUT /api/tournaments/:id
-router.put("/:id", tournamentsLimiter, ensureAuth, ensureAdminOrCoach, validate(updateTournamentSchema), asyncHandler(async (req, res) => {
+router.put("/:id", ensureAuth, ensureAdminOrCoach, validate(updateTournamentSchema), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const docRef = adminDb.collection("tournaments").doc(id);
   const docSnap = await docRef.get();
@@ -158,7 +159,7 @@ router.put("/:id", tournamentsLimiter, ensureAuth, ensureAdminOrCoach, validate(
 }));
 
 // DELETE /api/tournaments/:id
-router.delete("/:id", tournamentsLimiter, ensureAuth, ensureAdminOrCoach, asyncHandler(async (req, res) => {
+router.delete("/:id", ensureAuth, ensureAdminOrCoach, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const docRef = adminDb.collection("tournaments").doc(id);
   const docSnap = await docRef.get();
