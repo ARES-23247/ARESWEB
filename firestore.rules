@@ -106,6 +106,16 @@ service cloud.firestore {
       allow read, write: if isAuthorized();
     }
 
+    match /tournaments/{tournamentId} {
+      allow read: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach');
+    }
+
+    match /tournament_matches/{matchId} {
+      allow read: if isAuthorized();
+      allow write: if hasRole('admin') || hasRole('coach');
+    }
+
     match /chat_sessions/{sessionId} {
       // Restrict read/write to the session owner only
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;

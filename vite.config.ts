@@ -18,9 +18,22 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("firebase")) {
+          const normalizedId = id.replace(/\\/g, "/");
+          if (normalizedId.includes("node_modules")) {
+            if (normalizedId.includes("firebase")) {
               return "vendor-firebase";
+            }
+            if (normalizedId.includes("@xyflow") || normalizedId.includes("reactflow")) {
+              return "vendor-xyflow";
+            }
+            if (normalizedId.includes("monaco-editor")) {
+              return "vendor-monaco";
+            }
+            if (normalizedId.includes("@babel")) {
+              return "vendor-babel";
+            }
+            if (normalizedId.includes("three")) {
+              return "vendor-three";
             }
             return "vendor";
           }

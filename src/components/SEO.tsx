@@ -56,6 +56,18 @@ export default function SEO({
   const siteTitle = `${title} | ARES 23247`;
   const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : siteConfig.urls.base);
 
+  // Check if URL search query parameter 'q' is present
+  let hasSearchQuery = false;
+  if (typeof window !== 'undefined') {
+    hasSearchQuery = new URLSearchParams(window.location.search).has('q');
+  } else if (url) {
+    try {
+      hasSearchQuery = new URL(url, siteConfig.urls.base).searchParams.has('q');
+    } catch {
+      hasSearchQuery = url.includes('?q=') || url.includes('&q=');
+    }
+  }
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
@@ -270,7 +282,7 @@ export default function SEO({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="theme-color" content="#C00000" />
-      <meta name="robots" content="index, follow" />
+      <meta name="robots" content={hasSearchQuery ? "noindex, follow" : "index, follow"} />
       <link rel="canonical" href={currentUrl} />
 
       {/* Open Graph / Facebook */}

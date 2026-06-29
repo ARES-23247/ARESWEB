@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Link, NavLink } from "react-router-dom";
 import { Cpu, Grid, Compass } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
+import { HelmetProvider } from "react-helmet-async";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
@@ -87,12 +88,13 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <AnalyticsTracker />
-      <AuthProvider>
-        <LayoutWrapper>
-          <ErrorBoundary>
-            <Suspense fallback={<AppLoading />}>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AnalyticsTracker />
+        <AuthProvider>
+          <LayoutWrapper>
+            <ErrorBoundary>
+              <Suspense fallback={<AppLoading />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<AboutPage />} />
@@ -156,5 +158,6 @@ export default function App() {
         </LayoutWrapper>
       </AuthProvider>
     </BrowserRouter>
+    </HelmetProvider>
   );
 }

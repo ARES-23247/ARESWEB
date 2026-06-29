@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
@@ -51,6 +51,23 @@ export default function AcademyPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    const params = new URLSearchParams(location.search);
+    if (params.has("q")) {
+      params.delete("q");
+      const newSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: newSearch ? `?${newSearch}` : "",
+        },
+        { replace: true }
+      );
+    }
+  }, [location.pathname, location.search, navigate]);
 
   // Parse search query parameter 'q' and open the search overlay on boot
   useEffect(() => {
@@ -161,16 +178,21 @@ export default function AcademyPage() {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen((o) => !o);
+        setSearchOpen((o) => {
+          const next = !o;
+          if (!next) {
+            closeSearch();
+          }
+          return next;
+        });
       }
       if (e.key === "Escape") {
-        setSearchOpen(false);
-        setSearchQuery("");
+        closeSearch();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [closeSearch]);
 
   // Redirect to first available document if raw route is opened
   useEffect(() => {
@@ -223,8 +245,7 @@ export default function AcademyPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
             onClick={() => {
-              setSearchOpen(false);
-              setSearchQuery("");
+              closeSearch();
             }}
           >
             <motion.div

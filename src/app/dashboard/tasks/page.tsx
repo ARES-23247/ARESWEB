@@ -95,7 +95,9 @@ export default function KanbanPage() {
   useEffect(() => {
     try {
       const tasksRef = collection(db, "tasks");
-      const q = query(tasksRef, where("archived", "==", false));
+      const q = showArchived
+        ? query(tasksRef)
+        : query(tasksRef, where("archived", "==", false));
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {
@@ -135,7 +137,7 @@ export default function KanbanPage() {
       setTasks(MOCK_TASKS);
       setIsLive(false);
     }
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     const fetchTeamRoster = async () => {
