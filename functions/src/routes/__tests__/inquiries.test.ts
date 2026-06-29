@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import inquiriesRouter from "../inquiries";
 import { adminDb, adminAuth } from "../../lib/firebase-admin";
+
+// Mock express-rate-limit
+vi.mock("express-rate-limit", () => {
+  return {
+    default: vi.fn().mockImplementation(() => (req: any, res: any, next: any) => next()),
+  };
+});
+
+import inquiriesRouter from "../inquiries";
 
 // Set encryption secret for tests (avoiding blacklisted keys)
 process.env.ENCRYPTION_SECRET = "a_very_strong_secret_that_is_at_least_32_characters_long_for_testing_purposes";
@@ -210,60 +218,39 @@ describe("Inquiries Router Backend Endpoints", () => {
   });
 
   describe("POST /api/inquiries - Inquiry submission validation", () => {
-        const runStack = async (path: string, method: string, req: any, res: any) => {
+    const runStack = async (path: string, method: string, req: any, res: any) => {
       const routeLayer = inquiriesRouter.stack.find(
         (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
       );
       expect(routeLayer).toBeDefined();
       const stack = routeLayer!.route!.stack;
       let errorThrown: any = null;
+      
+      // Run middlewares (all except the last handler)
+      for (let i = 0; i < stack.length - 1; i++) {
+        const middleware = stack[i];
+        try {
+          await new Promise<void>((resolve, reject) => {
+            middleware.handle(req, res, (err?: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+        } catch (err) {
+          errorThrown = err;
+          break;
+        }
+      }
 
-      await new Promise<void>((resolve, reject) => {
-        const originalJson = res.json;
-        const originalSend = res.send;
-        
-        const finish = (err?: any) => {
-          res.json = originalJson;
-          res.send = originalSend;
-          if (err) reject(err);
-          else resolve();
+      // If no middleware failed, run the final route handler
+      if (!errorThrown) {
+        const handler = stack[stack.length - 1];
+        const nextMock = (err?: any) => {
+          if (err) errorThrown = err;
         };
-
-        res.json = vi.fn().mockImplementation((val) => {
-          originalJson(val);
-          finish();
-          return res;
-        });
-
-        res.send = vi.fn().mockImplementation((val) => {
-          originalSend(val);
-          finish();
-          return res;
-        });
-
-        let index = 0;
-        const next = (err?: any) => {
-          if (err) {
-            finish(err);
-            return;
-          }
-          if (index >= stack.length) {
-            finish();
-            return;
-          }
-          const layer = stack[index++];
-          try {
-            layer.handle(req, res, next);
-          } catch (e) {
-            finish(e);
-          }
-        };
-
-        next();
-      }).catch((err) => {
-        errorThrown = err;
-      });
-
+        await handler.handle(req, res, nextMock);
+      }
+      
       return errorThrown;
     };
 
