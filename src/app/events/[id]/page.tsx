@@ -40,6 +40,7 @@ import TiptapRenderer, { ASTNode } from "@/components/TiptapRenderer";
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
+import ShareButtons from "@/components/ShareButtons";
 
 import { TeamLocation } from "@/types/location";
 import { MOCK_LOCATIONS } from "@/utils/constants";
@@ -609,6 +610,13 @@ export default function EventDetailPage() {
               <p className="whitespace-pre-wrap text-base md:text-lg leading-relaxed text-marble/90">{event.description}</p>
             )}
           </div>
+
+          {/* Social Media Sharing */}
+          {event && (
+            <div className="pt-4">
+              <ShareButtons title={event.title} theme="cyan" />
+            </div>
+          )}
 
           {/* Zulip Thread Link */}
           {isVerified && (event.zulipStream || event.zulipTopic) && (
