@@ -203,4 +203,60 @@ describe("Inquiries Router Backend Endpoints", () => {
       });
     });
   });
+
+  describe("POST /api/inquiries - Inquiry submission validation", () => {
+    const runStack = async (path: string, method: string, req: any, res: any) => {
+      const routeLayer = inquiriesRouter.stack.find(
+        (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
+      );
+      expect(routeLayer).toBeDefined();
+      const stack = routeLayer!.route!.stack;
+      let errorThrown: any = null;
+      for (const item of stack) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            // express-rate-limit middleware requires next to be called, which our custom runner handles
+            item.handle(req, res, (err?: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+        } catch (err) {
+          errorThrown = err;
+          break;
+        }
+      }
+      return errorThrown;
+    };
+
+    it("should pass validation with valid payload", async () => {
+      req.body = {
+        type: "student",
+        name: "Playwright E2E Test",
+        email: "playwright.test@aresfirst.org",
+        metadata: { message: "Hello ARES" },
+        recaptchaToken: "test-bypass-token"
+      };
+
+      const err = await runStack("/", "post", req, res);
+      expect(err).toBeNull();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+      }));
+    });
+
+    it("should fail validation with missing or invalid fields", async () => {
+      req.body = {
+        type: "",
+        name: "Test",
+        email: "not-an-email",
+        recaptchaToken: ""
+      };
+
+      const err = await runStack("/", "post", req, res);
+      expect(err).toBeDefined();
+      expect(err.status).toBe(400);
+      expect(err.message).toContain("Validation failed");
+    });
+  });
 });

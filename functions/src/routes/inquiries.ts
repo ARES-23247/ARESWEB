@@ -8,6 +8,8 @@ import { asyncHandler, maskEmail, maskName } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
 import crypto from "crypto";
+import { z } from "zod";
+import { validate } from "../middleware/validation";
 
 const router = express.Router();
 
@@ -19,19 +21,17 @@ const inquiryLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// POST /api/inquiries
-router.post("/", inquiryLimiter, asyncHandler(async (req, res) => {
-  const { type, name, email, metadata, recaptchaToken } = req.body as {
-    type: string;
-    name: string;
-    email: string;
-    metadata: any;
-    recaptchaToken: string;
-  };
+const createInquirySchema = z.object({
+  type: z.string().min(1, "Type is required."),
+  name: z.string().min(1, "Name is required."),
+  email: z.string().email("Invalid email address."),
+  metadata: z.any().optional(),
+  recaptchaToken: z.string().min(1, "Recaptcha token is required."),
+});
 
-  if (!type || !name || !email || !recaptchaToken) {
-    throw new ApiError(400, "Missing required fields.");
-  }
+// POST /api/inquiries
+router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
+  const { type, name, email, metadata, recaptchaToken } = req.body;
 
   // Intercept and ignore automated E2E test inquiries to prevent database pollution
   const emailLower = email.trim().toLowerCase();

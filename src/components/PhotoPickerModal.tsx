@@ -262,8 +262,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
             <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
               {tab === "upload" ? (
                 <div className="space-y-4">
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
+                  <label
+                    htmlFor="photo-picker-file-input"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
@@ -275,6 +275,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                     className="border-2 border-dashed border-white/10 hover:border-ares-red/40 bg-black/25 rounded-lg p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 mt-6 focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
                   >
                     <input
+                      id="photo-picker-file-input"
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
@@ -284,11 +285,12 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                     <Upload size={24} className="text-marble/40" />
                     <span className="text-xs font-bold text-white">Select image from your device</span>
                     <span className="text-[9px] text-marble/40 uppercase font-mono">JPG, PNG, GIF, WEBP files permitted</span>
-                  </div>
+                  </label>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
+                    <label htmlFor="upload-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
                     <input
+                      id="upload-image-alt"
                       type="text"
                       placeholder="Describe image contents"
                       value={imageAlt}
@@ -302,8 +304,10 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                   <div className="space-y-4">
                     <div className="flex gap-2.5">
                       <div className="relative flex-1">
+                        <label htmlFor="gallery-search-input" className="sr-only">Search gallery photos</label>
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
                         <input
+                          id="gallery-search-input"
                           type="text"
                           placeholder="Search gallery photos..."
                           value={searchQuery}
@@ -371,8 +375,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
                   <div className="border-t border-white/5 pt-4 space-y-4 mt-auto">
                     <div>
-                      <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
+                      <label htmlFor="gallery-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
                       <input
+                        id="gallery-image-alt"
                         type="text"
                         placeholder="Describe image contents"
                         value={imageAlt}
@@ -470,8 +475,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               ) : (
                 <div className="space-y-4 mt-2">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Image URL</label>
+                    <label htmlFor="url-image-url" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Image URL</label>
                     <input
+                      id="url-image-url"
                       type="url"
                       placeholder="https://example.com/image.png"
                       value={imageUrl}
@@ -481,8 +487,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
+                    <label htmlFor="url-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">Alt Text / Caption</label>
                     <input
+                      id="url-image-alt"
                       type="text"
                       placeholder="Describe image contents"
                       value={imageAlt}

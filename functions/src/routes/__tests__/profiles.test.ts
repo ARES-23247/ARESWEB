@@ -210,4 +210,72 @@ describe("Profiles Router Backend Endpoints", () => {
       });
     });
   });
+
+  describe("POST /api/profiles/sync - Synchronize validation", () => {
+    const runStack = async (path: string, method: string, req: any, res: any) => {
+      const routeLayer = profilesRouter.stack.find(
+        (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
+      );
+      expect(routeLayer).toBeDefined();
+      const stack = routeLayer!.route!.stack;
+      let errorThrown: any = null;
+      for (const item of stack) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            item.handle(req, res, (err?: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+        } catch (err) {
+          errorThrown = err;
+          break;
+        }
+      }
+      return errorThrown;
+    };
+
+    it("should pass validation with valid payload", async () => {
+      req.body = {
+        userId: "test_sync_uid",
+        profile: {
+          nickname: "NewNickname",
+          firstName: "TestName",
+          subteams: ["Software"]
+        }
+      };
+
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ role: "student" }) } as any);
+
+      const err = await runStack("/sync", "post", req, res);
+      expect(err).toBeNull();
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it("should fail validation with invalid userId", async () => {
+      req.body = {
+        userId: "invalid uid with spaces",
+        profile: {
+          nickname: "NewNickname"
+        }
+      };
+
+      const err = await runStack("/sync", "post", req, res);
+      expect(err).toBeDefined();
+      expect(err.status).toBe(400);
+      expect(err.message).toContain("Validation failed");
+    });
+
+    it("should fail validation with missing profile", async () => {
+      req.body = {
+        userId: "valid_uid"
+      };
+
+      const err = await runStack("/sync", "post", req, res);
+      expect(err).toBeDefined();
+      expect(err.status).toBe(400);
+      expect(err.message).toContain("Validation failed");
+    });
+  });
 });

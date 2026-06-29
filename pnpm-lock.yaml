@@ -189,6 +189,9 @@ importers:
       firebase-functions:
         specifier: ^6.3.0
         version: 6.6.0(firebase-admin@13.10.0)
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -9442,7 +9445,7 @@ snapshots:
 
   monaco-editor@0.55.1:
     dependencies:
-      dompurify: 3.4.11
+      dompurify: 3.2.7
       marked: 14.0.0
 
   monaco-vim@0.4.4(monaco-editor@0.55.1):

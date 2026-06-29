@@ -14,6 +14,7 @@ import calendarRouter from "./routes/calendar";
 import simulationsRouter from "./routes/simulations";
 import sponsorsRouter from "./routes/sponsors";
 import outreachRouter from "./routes/outreach";
+import sitemapRouter from "./routes/sitemap";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
@@ -59,6 +60,8 @@ app.use("/api/calendar", calendarRouter);
 app.use("/api/simulations", simulationsRouter);
 app.use("/api/sponsors", sponsorsRouter);
 app.use("/api/outreach", outreachRouter);
+app.use("/sitemap.xml", sitemapRouter);
+app.use("/api/sitemap.xml", sitemapRouter);
 
 // Global Error Handler
 app.use(globalErrorHandler);

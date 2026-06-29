@@ -6,6 +6,8 @@ import { getZulipUsers, createZulipUser } from "../lib/zulip";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { z } from "zod";
+import { validate } from "../middleware/validation";
 
 const router = express.Router();
 
@@ -95,8 +97,17 @@ router.get("/team-roster", ensureTeamMember, asyncHandler(async (req, res) => {
   res.json({ members });
 }));
 
+const profileSyncSchema = z.object({
+  userId: z.string({ required_error: "Bad Request: Invalid or unsafe userId." })
+    .regex(/^[a-zA-Z0-9_-]+$/, "Bad Request: Invalid or unsafe userId."),
+  profile: z.any().refine(val => val && typeof val === "object" && !Array.isArray(val), "Bad Request: Missing profile payload."),
+  email: z.string().email("Invalid email address.").optional().or(z.literal("")).or(z.null()),
+  role: z.string().optional(),
+  name: z.string().optional(),
+});
+
 // POST /api/profiles/sync (secured with shared secret)
-router.post("/sync", asyncHandler(async (req, res) => {
+router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) => {
   const secret = process.env.ENCRYPTION_SECRET;
   if (!secret) {
     throw new ApiError(500, "Encryption secret not configured on Firebase server.");
@@ -117,14 +128,6 @@ router.post("/sync", asyncHandler(async (req, res) => {
   }
 
   const { userId, profile, email, role, name } = req.body;
-
-  if (!userId || typeof userId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(userId)) {
-    throw new ApiError(400, "Bad Request: Invalid or unsafe userId.");
-  }
-
-  if (!profile || typeof profile !== "object") {
-    throw new ApiError(400, "Bad Request: Missing profile payload.");
-  }
 
   // Resolve targetUid using email lookup in Firebase Auth if available
   let targetUid = userId;
