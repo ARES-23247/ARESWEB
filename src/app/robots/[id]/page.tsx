@@ -7,6 +7,15 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 
+interface RobotVersion {
+  name: string;
+  weightLbs?: number;
+  drivetrainType?: string;
+  cadViewerUrl?: string;
+  primaryMechanism?: string;
+  content: string;
+}
+
 interface RobotDetails {
   id: string;
   name: string;
@@ -20,6 +29,7 @@ interface RobotDetails {
   cadViewerUrl?: string;
   primaryMechanism?: string;
   content: string;
+  versions?: RobotVersion[];
 }
 
 const MOCK_DETAILS: Record<string, RobotDetails> = {
@@ -40,7 +50,25 @@ const MOCK_DETAILS: Record<string, RobotDetails> = {
 Minotaur utilizes GoBilda 5203 series yellow-jacket planetary motors running at a 19.2:1 gear ratio. Combined with a custom kS friction feedforward voltage offset of exactly **0.05V**, the drivetrain overcomes early deadbands to execute extremely fine path corrections during micro-positioning.
 
 ### Intakes & Scoring Arms
-The primary scoring mechanism consists of a dual-link coaxial jointed arm powered by smart torque servo assemblies. By mapping the arm joint trajectories inside a multi-dimensional state-space controller, we execute rapid cycles without any mechanical whip.`
+The primary scoring mechanism consists of a dual-link coaxial jointed arm powered by smart torque servo assemblies. By mapping the arm joint trajectories inside a multi-dimensional state-space controller, we execute rapid cycles without any mechanical whip.`,
+    versions: [
+      {
+        name: "V1 - Intake Prototype",
+        weightLbs: 12.5,
+        drivetrainType: "4-Motor Mecanum Prototype",
+        primaryMechanism: "Single-joint intake roller arm",
+        cadViewerUrl: "https://cad.onshape.com/documents",
+        content: "Initial structural prototype focusing on intake validation under high gear load. The mechanical link is prone to binding at high angles, but successfully validates active roller intake paths."
+      },
+      {
+        name: "V2 - Coaxial Assembly",
+        weightLbs: 14.2,
+        drivetrainType: "4-Motor Pinpoint Mecanum (EKF calibrated)",
+        primaryMechanism: "Dual-link coaxial jointed arm",
+        cadViewerUrl: "https://cad.onshape.com/documents",
+        content: "Secondary revision incorporating the coaxial drive joint to optimize dynamic height tracking and center of mass constraints. Fixed arm binding issues from V1."
+      }
+    ]
   },
   "prometheus": {
     id: "prometheus",
@@ -65,6 +93,11 @@ export default function RobotDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [robot, setRobot] = useState<RobotDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedVersionIndex, setSelectedVersionIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSelectedVersionIndex(null);
+  }, [id]);
 
   useEffect(() => {
     const fetchRobotDetails = async () => {
@@ -96,7 +129,8 @@ export default function RobotDetailPage() {
           onshapeUrl: data.onshapeUrl || "",
           cadViewerUrl: data.cadViewerUrl || "",
           primaryMechanism: data.primaryMechanism || "Custom Subsystem",
-          content: data.content || data.description || ""
+          content: data.content || data.description || "",
+          versions: data.versions || []
         });
       } catch (error) {
         console.warn(`Firestore read failed for robot: ${id}, using mock fallback.`, error);
@@ -128,6 +162,16 @@ export default function RobotDetailPage() {
       </div>
     );
   }
+
+  const activeVersion = (robot.versions && selectedVersionIndex !== null)
+    ? robot.versions[selectedVersionIndex]
+    : null;
+
+  const activeWeight = activeVersion && activeVersion.weightLbs !== undefined ? activeVersion.weightLbs : robot.weightLbs;
+  const activeDrivetrain = activeVersion && activeVersion.drivetrainType !== undefined ? activeVersion.drivetrainType : robot.drivetrainType;
+  const activeCadViewer = activeVersion && activeVersion.cadViewerUrl !== undefined ? activeVersion.cadViewerUrl : robot.cadViewerUrl;
+  const activeMechanism = activeVersion && activeVersion.primaryMechanism !== undefined ? activeVersion.primaryMechanism : robot.primaryMechanism;
+  const activeContent = activeVersion && activeVersion.content !== undefined ? activeVersion.content : robot.content;
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
@@ -177,6 +221,33 @@ export default function RobotDetailPage() {
           </div>
         </div>
 
+        {/* Versions Dropdown */}
+        {robot.versions && robot.versions.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/5 p-6 ares-cut-lg border border-white/10 mb-10">
+            <div className="shrink-0">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-cyan block mb-1">Configuration</span>
+              <span className="text-sm font-bold text-white uppercase tracking-wider">Select Robot Version</span>
+            </div>
+            <div className="flex-grow">
+              <select
+                value={selectedVersionIndex !== null ? selectedVersionIndex : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedVersionIndex(val === "" ? null : parseInt(val, 10));
+                }}
+                className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-sm font-bold text-white focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan focus:outline-none transition-all cursor-pointer"
+              >
+                <option value="">Base Configuration (Production)</option>
+                {robot.versions.map((ver, idx) => (
+                  <option key={idx} value={idx}>
+                    {ver.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         {/* Content Split */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           
@@ -195,10 +266,22 @@ export default function RobotDetailPage() {
               </div>
             )}
 
+            {activeCadViewer && (
+              <div className="aspect-video bg-black ares-cut-lg overflow-hidden shadow-2xl border border-white/5 relative group">
+                <div className="absolute inset-0 border-2 border-ares-cyan/20 group-hover:border-ares-cyan/40 transition-colors z-20 pointer-events-none"></div>
+                <iframe
+                  className="w-full h-full relative z-10"
+                  src={activeCadViewer}
+                  title="Robot CAD Viewer"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            )}
+
             <div className="glass-card p-8 md:p-10 ares-cut-lg border border-white/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-ares-red/5 rounded-full blur-[100px] pointer-events-none"></div>
               <article className="prose prose-invert lg:prose-lg max-w-none relative z-10 leading-relaxed whitespace-pre-line prose-headings:text-white prose-p:text-white/95">
-                {robot.content}
+                {activeContent}
               </article>
             </div>
           </div>
@@ -213,38 +296,38 @@ export default function RobotDetailPage() {
               </div>
               
               <div className="p-8 space-y-8 bg-black/10">
-                {robot.weightLbs && (
+                {activeWeight !== undefined && activeWeight !== null && (
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Weight Class</span>
                     <div className="flex items-center gap-4 text-lg font-bold text-white">
                       <div className="p-2.5 bg-ares-cyan/15 ares-cut-sm border border-ares-cyan/20">
                         <Scale size={18} className="text-ares-cyan" />
                       </div>
-                      <span className="font-heading">{robot.weightLbs} lbs</span>
+                      <span className="font-heading">{activeWeight} lbs</span>
                     </div>
                   </div>
                 )}
 
-                {robot.drivetrainType && (
+                {activeDrivetrain && (
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Drivetrain Architecture</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
                       <div className="p-2.5 bg-ares-red/15 ares-cut-sm border border-ares-red/20 shrink-0">
                         <Cpu size={18} className="text-ares-red" />
                       </div>
-                      <span className="font-heading leading-tight">{robot.drivetrainType}</span>
+                      <span className="font-heading leading-tight">{activeDrivetrain}</span>
                     </div>
                   </div>
                 )}
 
-                {robot.primaryMechanism && (
+                {activeMechanism && (
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Primary Mechanism</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
                       <div className="p-2.5 bg-ares-gold/15 ares-cut-sm border border-ares-gold/20 shrink-0">
                         <Wrench size={18} className="text-ares-gold" />
                       </div>
-                      <span className="font-heading leading-tight">{robot.primaryMechanism}</span>
+                      <span className="font-heading leading-tight">{activeMechanism}</span>
                     </div>
                   </div>
                 )}

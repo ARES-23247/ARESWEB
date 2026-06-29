@@ -3,9 +3,20 @@ import { BrowserRouter, Routes, Route, Outlet, Link, NavLink } from "react-route
 import { Cpu, Grid, Compass } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+
+// Create TanStack Query Client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // Lazy-load public pages for optimal bundle splitting
 const Home = lazy(() => import("@/app/page"));
@@ -33,6 +44,8 @@ const StorePage = lazy(() => import("@/app/store/page"));
 const TasksRedirect = lazy(() => import("@/app/tasks/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
 const TechStackPage = lazy(() => import("@/app/tech-stack/page"));
+const TournamentsFeedPage = lazy(() => import("@/app/tournaments/page"));
+const TournamentDetailPage = lazy(() => import("@/app/tournaments/[id]/page"));
 
 // Lazy-load dashboard pages
 const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));
@@ -51,6 +64,7 @@ const DashboardInquiriesPage = lazy(() => import("@/app/dashboard/inquiries/page
 const DashboardUsersPage = lazy(() => import("@/app/dashboard/users/page"));
 const DashboardSponsorsPage = lazy(() => import("@/app/dashboard/sponsors/page"));
 const DashboardOutreachPage = lazy(() => import("@/app/dashboard/outreach/page"));
+const DashboardTournamentsPage = lazy(() => import("@/app/dashboard/tournaments/page"));
 
 // Premium fallback loader with ARES branding
 function AppLoading() {
@@ -88,76 +102,81 @@ export default function App() {
   }, []);
 
   return (
-    <HelmetProvider>
-      <BrowserRouter>
-        <AnalyticsTracker />
-        <AuthProvider>
-          <LayoutWrapper>
-            <ErrorBoundary>
-              <Suspense fallback={<AppLoading />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/academy" element={<AcademyPage />} />
-                <Route path="/academy/:slug" element={<AcademyPage />} />
-                <Route path="/docs" element={<AcademyPage />} />
-                <Route path="/docs/:slug" element={<AcademyPage />} />
-                <Route path="/accessibility" element={<AccessibilityPage />} />
-                <Route path="/blog" element={<BlogFeedPage />} />
-                <Route path="/blog/:slug" element={<BlogPostPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/developer-api" element={<DeveloperApiPage />} />
-                <Route path="/events/:id" element={<EventDetailPage />} />
-                <Route path="/finance" element={<FinanceLedgerPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/videos" element={<VideosPage />} />
-                <Route path="/join" element={<JoinPage />} />
-                <Route path="/leaderboard" element={<LeaderboardPage />} />
-                <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
-                <Route path="/outreach" element={<OutreachPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/robots" element={<RobotsFeedPage />} />
-                <Route path="/robots/:id" element={<RobotDetailPage />} />
-                <Route path="/seasons" element={<SeasonsPage />} />
-                <Route path="/sponsors" element={<SponsorsPage />} />
-                <Route path="/store" element={<StorePage />} />
-                <Route path="/tasks" element={<TasksRedirect />} />
-                <Route path="/tech-stack" element={<TechStackPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                
-                {/* Dashboard routes nested under DashboardLayout */}
-                <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
-                  <Route index element={<DashboardPage />} />
-                  <Route path="profile" element={<DashboardProfilePage />} />
-                  <Route path="tasks" element={<DashboardTasksPage />} />
-                  <Route path="blog" element={<DashboardBlogPage />} />
-                  <Route path="events" element={<DashboardEventsPage />} />
-                  <Route path="documents" element={<DashboardDocumentsPage />} />
-                  <Route path="academy" element={<DashboardAcademyPage />} />
-                  <Route path="areslib" element={<DashboardAreslibPage />} />
-                  <Route path="simulations" element={<DashboardSimulationsPage />} />
-                  <Route path="videos" element={<DashboardVideosPage />} />
-                  <Route path="photos" element={<DashboardPhotosPage />} />
-                  <Route path="inquiries" element={<DashboardInquiriesPage />} />
-                  <Route path="users" element={<DashboardUsersPage />} />
-                  <Route path="sponsors" element={<DashboardSponsorsPage />} />
-                  <Route path="outreach" element={<DashboardOutreachPage />} />
-                </Route>
-                
-                {/* 404 Route */}
-                <Route path="*" element={
-                  <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
-                    <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
-                    <p className="text-marble/60 text-sm mb-8">Page not found.</p>
-                    <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
-                  </div>
-                } />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </LayoutWrapper>
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <BrowserRouter>
+          <AnalyticsTracker />
+          <AuthProvider>
+            <LayoutWrapper>
+              <ErrorBoundary>
+                <Suspense fallback={<AppLoading />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/academy/:slug" element={<AcademyPage />} />
+                  <Route path="/docs" element={<AcademyPage />} />
+                  <Route path="/docs/:slug" element={<AcademyPage />} />
+                  <Route path="/accessibility" element={<AccessibilityPage />} />
+                  <Route path="/blog" element={<BlogFeedPage />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/developer-api" element={<DeveloperApiPage />} />
+                  <Route path="/events/:id" element={<EventDetailPage />} />
+                  <Route path="/finance" element={<FinanceLedgerPage />} />
+                  <Route path="/gallery" element={<GalleryPage />} />
+                  <Route path="/videos" element={<VideosPage />} />
+                  <Route path="/join" element={<JoinPage />} />
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
+                  <Route path="/outreach" element={<OutreachPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/robots" element={<RobotsFeedPage />} />
+                  <Route path="/robots/:id" element={<RobotDetailPage />} />
+                  <Route path="/seasons" element={<SeasonsPage />} />
+                  <Route path="/sponsors" element={<SponsorsPage />} />
+                  <Route path="/store" element={<StorePage />} />
+                  <Route path="/tasks" element={<TasksRedirect />} />
+                  <Route path="/tech-stack" element={<TechStackPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/tournaments" element={<TournamentsFeedPage />} />
+                  <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+                  
+                  {/* Dashboard routes nested under DashboardLayout */}
+                  <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
+                    <Route index element={<DashboardPage />} />
+                    <Route path="profile" element={<DashboardProfilePage />} />
+                    <Route path="tasks" element={<DashboardTasksPage />} />
+                    <Route path="blog" element={<DashboardBlogPage />} />
+                    <Route path="events" element={<DashboardEventsPage />} />
+                    <Route path="documents" element={<DashboardDocumentsPage />} />
+                    <Route path="academy" element={<DashboardAcademyPage />} />
+                    <Route path="areslib" element={<DashboardAreslibPage />} />
+                    <Route path="simulations" element={<DashboardSimulationsPage />} />
+                    <Route path="videos" element={<DashboardVideosPage />} />
+                    <Route path="photos" element={<DashboardPhotosPage />} />
+                    <Route path="inquiries" element={<DashboardInquiriesPage />} />
+                    <Route path="users" element={<DashboardUsersPage />} />
+                    <Route path="sponsors" element={<DashboardSponsorsPage />} />
+                    <Route path="outreach" element={<DashboardOutreachPage />} />
+                    <Route path="tournaments" element={<DashboardTournamentsPage />} />
+                  </Route>
+                  
+                  {/* 404 Route */}
+                  <Route path="*" element={
+                    <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
+                      <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
+                      <p className="text-marble/60 text-sm mb-8">Page not found.</p>
+                      <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
+                    </div>
+                  } />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </LayoutWrapper>
+        </AuthProvider>
+      </BrowserRouter>
     </HelmetProvider>
+  </QueryClientProvider>
   );
 }

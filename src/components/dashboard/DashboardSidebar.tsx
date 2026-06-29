@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -179,6 +179,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <div className="space-y-1">
               {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
                 <NavButton tab="inquiries" icon={MessageSquare} label="Inquiries Hub" currentPath={pathname} hasAlert={hasPendingInquiries} />
+              )}
+              {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
+                <NavButton tab="tournaments" icon={Trophy} label="Manage Tournaments" currentPath={pathname} />
               )}
               {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
                 <NavButton tab="sponsors" icon={Heart} label="Sponsors Manager" currentPath={pathname} />
