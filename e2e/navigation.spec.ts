@@ -1,10 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Navigation & Accessibility E2E tests', () => {
   test('should navigate to homepage and verify branding', async ({ page }) => {
     await page.goto('/');
-    // Check that ARES exists somewhere in the body
-    await expect(page.locator('body')).toContainText('ARES');
+    // Check that the unique hero heading is visible
+    const heroHeading = page.getByRole('heading', { name: 'Engineered To Inspire' });
+    await expect(heroHeading).toBeVisible();
+
+    // Verify key button "View Schedule" is visible
+    const viewScheduleButton = page.getByRole('link', { name: 'View Schedule' });
+    await expect(viewScheduleButton).toBeVisible();
   });
 
   test('should have a working skip link for accessibility', async ({ page }) => {
@@ -27,8 +32,12 @@ test.describe('Navigation & Accessibility E2E tests', () => {
   
   test('should navigate to public page about roster', async ({ page }) => {
     await page.goto('/about');
-    // Ensure headings or titles exist
-    const heading = page.locator('h1, h2').first();
-    await expect(heading).toBeVisible();
+    // Ensure the unique about heading is visible
+    const aboutHeading = page.getByRole('heading', { name: 'About ARES' });
+    await expect(aboutHeading).toBeVisible();
+
+    // Ensure the roster section heading is visible
+    const rosterHeading = page.getByRole('heading', { name: 'Our Championship Roster' });
+    await expect(rosterHeading).toBeVisible();
   });
 });

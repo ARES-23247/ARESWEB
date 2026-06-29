@@ -125,6 +125,9 @@ export default function ImageCropper({
 
       <div
         ref={viewportRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Image cropper, use arrow keys to pan image"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -132,7 +135,27 @@ export default function ImageCropper({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleMouseUp}
-        className="relative w-full h-[220px] bg-black border border-white/15 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center select-none"
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? 50 : 10;
+          let moved = false;
+          if (e.key === "ArrowLeft" || e.key === "Left") {
+            setOffset((prev) => ({ ...prev, x: prev.x - step }));
+            moved = true;
+          } else if (e.key === "ArrowRight" || e.key === "Right") {
+            setOffset((prev) => ({ ...prev, x: prev.x + step }));
+            moved = true;
+          } else if (e.key === "ArrowUp" || e.key === "Up") {
+            setOffset((prev) => ({ ...prev, y: prev.y - step }));
+            moved = true;
+          } else if (e.key === "ArrowDown" || e.key === "Down") {
+            setOffset((prev) => ({ ...prev, y: prev.y + step }));
+            moved = true;
+          }
+          if (moved) {
+            e.preventDefault();
+          }
+        }}
+        className="relative w-full h-[220px] bg-black border border-white/15 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
       >
         <div className="absolute inset-0 border-2 border-ares-gold/40 pointer-events-none z-10 rounded-md m-2">
           <div className="absolute inset-0 flex justify-between pointer-events-none">

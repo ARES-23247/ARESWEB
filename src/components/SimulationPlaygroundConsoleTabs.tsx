@@ -56,7 +56,7 @@ export default function SimulationPlaygroundConsoleTabs({
           onClick={() => setBottomRightTab('ai')}
           className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
             bottomRightTab === 'ai'
-              ? 'text-indigo-400 border-b-2 border-indigo-400 bg-white/5'
+              ? 'text-ares-gold border-b-2 border-ares-gold bg-white/5'
               : 'text-white/40 hover:text-white/60'
           }`}
         >

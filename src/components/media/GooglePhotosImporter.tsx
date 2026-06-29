@@ -152,8 +152,17 @@ export default function GooglePhotosImporter({
             {googlePhotos.map((item) => (
               <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleSelectGooglePhoto(item)}
-                className="aspect-video relative overflow-hidden rounded border border-white/10 hover:border-ares-gold cursor-pointer bg-black/40 group shadow-md"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelectGooglePhoto(item);
+                  }
+                }}
+                className="aspect-video relative overflow-hidden rounded border border-white/10 hover:border-ares-gold cursor-pointer bg-black/40 group shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                aria-label={item.filename || item.mediaFile?.filename || "Select Google Photo"}
               >
                 <img
                   src={item.mediaFile?.baseUrl || item.baseUrl || ""}

@@ -239,6 +239,17 @@ select option {
   color: var(--ares-red-light) !important;
 }
 
+/* Accessibility: Enforce WCAG AA Contrast for ARES Red Text on Light Backgrounds */
+.bg-marble .text-ares-red,
+.bg-white .text-ares-red,
+.text-obsidian .text-ares-red,
+[class*="bg-marble"] .text-ares-red,
+[class*="bg-white"] .text-ares-red,
+[class*="text-obsidian"] .text-ares-red,
+.light .text-ares-red {
+  color: var(--ares-red) !important;
+}
+
 /* Analytics UI Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }

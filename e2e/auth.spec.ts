@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Dashboard Authentication E2E tests', () => {
   test('should log in using developer bypass and access dashboard', async ({ page }) => {

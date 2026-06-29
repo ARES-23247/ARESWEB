@@ -190,7 +190,7 @@ export default function SimManager() {
                     await navigator.clipboard.writeText(shareUrl);
                     toast.success(`Copied share link for ${sim.name}`);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded text-xs font-semibold transition"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/10 text-ares-cyan hover:bg-ares-cyan/20 rounded text-xs font-semibold transition"
                 >
                   <Link2 className="w-3 h-3" />
                   Share
@@ -224,7 +224,7 @@ export default function SimManager() {
                   await navigator.clipboard.writeText(shareUrl);
                   toast.success("Shareable link copied!");
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded text-xs font-semibold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/10 text-ares-cyan hover:bg-ares-cyan/20 rounded text-xs font-semibold transition"
               >
                 <Link2 className="w-3.5 h-3.5" />
                 Share
