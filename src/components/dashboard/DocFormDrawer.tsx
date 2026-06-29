@@ -647,6 +647,7 @@ export default function DocFormDrawer({
         <PhotoPickerModal
           isOpen={isPhotoPickerOpen}
           onClose={() => setIsPhotoPickerOpen(false)}
+          mode="imageOnly"
           onSelect={(url) => {
             setFormThumbnail(url);
             setIsPhotoPickerOpen(false);

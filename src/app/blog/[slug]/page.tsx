@@ -183,7 +183,7 @@ export default function BlogPostPage() {
         <img
           src={cleanThumbnailUrl(post.thumbnail || "/favicon.png")}
           alt={post.title}
-          className={post.thumbnail ? "absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity object-cover" : "absolute inset-0 m-auto w-32 h-32 opacity-25 mix-blend-luminosity object-contain"}
+          className={(post.thumbnail && post.thumbnail !== "/favicon.png") ? "absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity object-cover" : "absolute inset-0 m-auto w-32 h-32 opacity-25 mix-blend-luminosity object-contain"}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/70 to-transparent"></div>
         

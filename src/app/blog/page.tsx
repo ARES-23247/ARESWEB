@@ -147,7 +147,7 @@ export default function BlogFeedPage() {
                     <img
                       src={cleanThumbnailUrl(post.thumbnail || "/favicon.png")}
                       alt={post.title}
-                      className={post.thumbnail ? "w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover" : "w-16 h-16 object-contain opacity-30 group-hover:scale-110 transition-transform duration-500 m-auto"}
+                      className={(post.thumbnail && post.thumbnail !== "/favicon.png") ? "w-full h-full group-hover:scale-105 transition-transform duration-500 object-cover" : "w-16 h-16 object-contain opacity-30 group-hover:scale-110 transition-transform duration-500 m-auto"}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent animate-fadeIn"></div>
                     

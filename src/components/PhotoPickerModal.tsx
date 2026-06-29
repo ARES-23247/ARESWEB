@@ -10,9 +10,10 @@ interface PhotoPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (url: string, alt?: string) => void;
+  mode?: "all" | "imageOnly";
 }
 
-export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPickerModalProps) {
+export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "all" }: PhotoPickerModalProps) {
   const [tab, setTab] = useState<"upload" | "gallery" | "albums" | "google" | "url">("upload");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -423,12 +424,16 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect }: PhotoPic
                             <button
                               type="button"
                               onClick={() => {
-                                onSelect(`[album:${album.id}]`, album.title);
+                                if (mode === "imageOnly") {
+                                  onSelect(album.coverImageUrl || "", album.title);
+                                } else {
+                                  onSelect(`[album:${album.id}]`, album.title);
+                                }
                                 onClose();
                               }}
                               className="mt-3 w-full py-1 bg-white text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm hover:bg-ares-gold transition-colors cursor-pointer"
                             >
-                              Insert Album
+                              {mode === "imageOnly" ? "Use Cover Image" : "Insert Album"}
                             </button>
                           </div>
                         ))}
