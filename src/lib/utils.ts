@@ -27,6 +27,9 @@ export function maskEmail(email: string | null | undefined): string {
  */
 export function cleanThumbnailUrl(url?: string): string {
   if (!url) return "";
+  if (!url.includes("/api/media/")) {
+    return url;
+  }
   try {
     // Decode any percent-encoding in the URL first (e.g., %3A%2F%2F -> ://)
     let decoded = decodeURIComponent(url);
