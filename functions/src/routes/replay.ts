@@ -322,7 +322,7 @@ Format the output strictly in valid Github-Flavored Markdown. Use bold styling, 
 
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: [
         { role: "system", parts: [{ text: systemPrompt }] },
         { role: "user", parts: [{ text: dataString }] }
