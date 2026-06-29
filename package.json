@@ -17,7 +17,7 @@
     "@tanstack/react-query": "^5.101.0",
     "@xyflow/react": "^12.11.0",
     "clsx": "^2.1.1",
-    "dompurify": "^3.4.8",
+    "dompurify": "^3.4.11",
     "firebase": "^12.14.0",
     "framer-motion": "^12.38.0",
     "jszip": "^3.10.1",
@@ -65,7 +65,14 @@
     "vite": "^8.0.10",
     "vitest": "^4.1.6"
   },
-  "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "^1.32.0"
+  "pnpm": {
+    "overrides": {
+      "dompurify": "^3.4.11",
+      "**/dompurify": "^3.4.11"
+    }
+  },
+  "resolutions": {
+    "dompurify": "^3.4.11",
+    "**/dompurify": "^3.4.11"
   }
 }
