@@ -35,6 +35,10 @@
       ],
       "rewrites": [
         {
+          "source": "/sitemap.xml",
+          "function": "api"
+        },
+        {
           "source": "/api/**",
           "function": "api"
         },

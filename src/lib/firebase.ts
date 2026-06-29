@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { initializeFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const getFirebaseConfig = () => {
   if (typeof import.meta !== "undefined") {
@@ -42,6 +43,25 @@ const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true
 });
 const storage = getStorage(app);
+
+// Initialize Firebase App Check on the client side
+let appCheck: ReturnType<typeof initializeAppCheck> | undefined = undefined;
+if (typeof window !== "undefined") {
+  const useEmulator = import.meta.env.VITE_USE_EMULATOR !== "false" && import.meta.env.NEXT_PUBLIC_USE_EMULATOR !== "false";
+  if (useEmulator || import.meta.env.DEV) {
+    (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+  
+  const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "dummy-recaptcha-key";
+  try {
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(siteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch (err) {
+    console.warn("Firebase App Check failed to initialize:", err);
+  }
+}
 
 // Connect client SDKs to local emulators if running in local or development environment
 const useEmulator = import.meta.env.VITE_USE_EMULATOR !== "false" && import.meta.env.NEXT_PUBLIC_USE_EMULATOR !== "false";
@@ -85,6 +105,6 @@ export const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promi
   ]);
 };
 
-export { app, auth, db, storage };
+export { app, auth, db, storage, appCheck };
 
 

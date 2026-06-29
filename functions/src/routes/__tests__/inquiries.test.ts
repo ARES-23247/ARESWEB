@@ -62,14 +62,19 @@ describe("Inquiries Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    req = {
+        req = {
       params: {},
       body: {},
       headers: {},
+      ip: "127.0.0.1",
+      app: {
+        get: vi.fn().mockReturnValue(true)
+      }
     };
     res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn(),
     };
     next = vi.fn();
   });
@@ -205,27 +210,60 @@ describe("Inquiries Router Backend Endpoints", () => {
   });
 
   describe("POST /api/inquiries - Inquiry submission validation", () => {
-    const runStack = async (path: string, method: string, req: any, res: any) => {
+        const runStack = async (path: string, method: string, req: any, res: any) => {
       const routeLayer = inquiriesRouter.stack.find(
         (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
       );
       expect(routeLayer).toBeDefined();
       const stack = routeLayer!.route!.stack;
       let errorThrown: any = null;
-      for (const item of stack) {
-        try {
-          await new Promise<void>((resolve, reject) => {
-            // express-rate-limit middleware requires next to be called, which our custom runner handles
-            item.handle(req, res, (err?: any) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          });
-        } catch (err) {
-          errorThrown = err;
-          break;
-        }
-      }
+
+      await new Promise<void>((resolve, reject) => {
+        const originalJson = res.json;
+        const originalSend = res.send;
+        
+        const finish = (err?: any) => {
+          res.json = originalJson;
+          res.send = originalSend;
+          if (err) reject(err);
+          else resolve();
+        };
+
+        res.json = vi.fn().mockImplementation((val) => {
+          originalJson(val);
+          finish();
+          return res;
+        });
+
+        res.send = vi.fn().mockImplementation((val) => {
+          originalSend(val);
+          finish();
+          return res;
+        });
+
+        let index = 0;
+        const next = (err?: any) => {
+          if (err) {
+            finish(err);
+            return;
+          }
+          if (index >= stack.length) {
+            finish();
+            return;
+          }
+          const layer = stack[index++];
+          try {
+            layer.handle(req, res, next);
+          } catch (e) {
+            finish(e);
+          }
+        };
+
+        next();
+      }).catch((err) => {
+        errorThrown = err;
+      });
+
       return errorThrown;
     };
 
