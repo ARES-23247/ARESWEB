@@ -4,7 +4,12 @@ import os from "os";
 import path from "path";
 import fs from "fs";
 import { ApiError } from "../middleware/errorHandler";
-const useVertex = process.env.USE_VERTEX_AI === "true" || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "dummy-gemini-key";
+const useVertex = process.env.USE_VERTEX_AI !== "false" && (
+  process.env.USE_VERTEX_AI === "true" ||
+  process.env.FUNCTIONS_EMULATOR !== "true" ||
+  !process.env.GEMINI_API_KEY ||
+  process.env.GEMINI_API_KEY === "dummy-gemini-key"
+);
 
 // Local Firebase emulator compatibility: the emulator environment sanitizes standard user environment variables,
 // which prevents the Google GenAI SDK from resolving the path to David's local Application Default Credentials (ADC).
