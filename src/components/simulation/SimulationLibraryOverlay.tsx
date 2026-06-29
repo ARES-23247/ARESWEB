@@ -43,7 +43,7 @@ export function SimulationLibraryOverlay({
           <h2 className="text-lg font-bold text-white">Simulation Library</h2>
           <button
             onClick={() => setShowLibrary(false)}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 text-marble/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             aria-label="Close library"
           >
             <X className="w-5 h-5" />

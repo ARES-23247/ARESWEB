@@ -63,7 +63,7 @@ export default function SimManager() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-ares-red">Simulation Registry</h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-marble/60 mt-1">
             Auto-discovered sims from <code className="bg-obsidian-900 px-2 py-0.5 rounded text-ares-gold">src/sims/</code>
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function SimManager() {
           <Plus className="w-4 h-4" />
           How to Add a New Simulation
         </h3>
-        <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+        <ol className="text-sm text-marble/80 space-y-1 list-decimal list-inside">
           <li>Create a folder: <code className="bg-obsidian-900 px-1 rounded">src/sims/my-sim/</code></li>
           <li>Create <code className="bg-obsidian-900 px-1 rounded">index.tsx</code> with your component</li>
           <li>
@@ -117,15 +117,15 @@ export default function SimManager() {
       {/* Stats */}
       <div className="mb-6 flex gap-4 text-sm">
         <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-ares-gold/20">
-          <span className="text-gray-400">Total: </span>
+          <span className="text-marble/60">Total: </span>
           <span className="text-white font-semibold">{sims.length}</span>
         </div>
         <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-green-500/20">
-          <span className="text-gray-400">Standalone: </span>
+          <span className="text-marble/60">Standalone: </span>
           <span className="text-green-400 font-semibold">{sims.filter((s: SimMetadata) => !s.requiresContext).length}</span>
         </div>
         <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-ares-bronze/20">
-          <span className="text-gray-400">Requires Context: </span>
+          <span className="text-marble/60">Requires Context: </span>
           <span className="text-ares-bronze font-semibold">{sims.filter((s: SimMetadata) => s.requiresContext).length}</span>
         </div>
       </div>
@@ -153,17 +153,17 @@ export default function SimManager() {
             </div>
 
             <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 text-marble/60">
                 <Folder className="w-3 h-3" />
                 <code className="text-ares-gold">{sim.folder}/</code>
               </div>
 
-              <div className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 text-marble/60">
                 <Code className="w-3 h-3" />
-                <span className="text-xs">ID: <code className="text-gray-300">{sim.id}</code></span>
+                <span className="text-xs">ID: <code className="text-marble/80">{sim.id}</code></span>
               </div>
 
-              <div className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 text-marble/60">
                 <Copy className="w-3 h-3" />
                 <button
                   onClick={() => {
@@ -212,7 +212,7 @@ export default function SimManager() {
                 {activeSim?.name}
               </Dialog.Title>
               <Dialog.Close asChild>
-                <button className="rounded-full p-1.5 hover:bg-white/10 text-gray-400 hover:text-white transition">
+                <button className="rounded-full p-1.5 hover:bg-white/10 text-marble/60 hover:text-white transition">
                   <X className="h-5 w-5" />
                   <span className="sr-only">Close</span>
                 </button>
@@ -245,15 +245,15 @@ export default function SimManager() {
 
       {/* Registry File Info */}
       <div className="mt-8 p-4 bg-obsidian-800 rounded-lg border border-white/10">
-        <h3 className="font-semibold text-gray-300 mb-2 flex items-center gap-2">
+        <h3 className="font-semibold text-marble/80 mb-2 flex items-center gap-2">
           <FolderOpen className="w-4 h-4" />
           Generated Files
         </h3>
-        <ul className="text-sm text-gray-400 space-y-1">
+        <ul className="text-sm text-marble/60 space-y-1">
           <li><code className="text-ares-gold">src/components/generated/sim-registry.ts</code> — Lazy imports for React</li>
           <li><code className="text-ares-gold">src/sims/simRegistry.json</code> — Reference (auto-generated, do not edit)</li>
         </ul>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-marble/45 mt-2">
           Both files are auto-generated from the filesystem. Add sims by creating folders in src/sims/
         </p>
       </div>

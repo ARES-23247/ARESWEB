@@ -22,6 +22,7 @@ import EventRevisionsTab from "./EventRevisionsTab";
 import { resizeAndCompressImage } from "@/lib/image";
 import LocationManagerModal, { TeamLocation } from "./LocationManagerModal";
 import { cleanUndefined } from "@/lib/utils";
+import { logger } from "@/utils/logger";
 
 import ShiftScheduleEditor from "./ShiftScheduleEditor";
 import EventFormRoster from "./EventFormRoster";
@@ -144,7 +145,7 @@ export default function EventEditorDrawer({
           }
         }
       } catch (err) {
-        console.error("Failed to load user profile:", err);
+        logger.error("Failed to load user profile:", err);
       }
     };
     fetchProfile();
@@ -308,13 +309,13 @@ export default function EventEditorDrawer({
           };
           await setDoc(doc(db, "events", editId, "revisions", revId), cleanUndefined(revision));
         } catch (revErr) {
-          console.warn("Could not log revision audit log:", revErr);
+          logger.warn("Could not log revision audit log:", revErr);
         }
       }
 
       onClose();
     } catch (err: any) {
-      console.error("Error saving event:", err);
+      logger.error("Error saving event:", err);
       alert("Failed to save event: " + err.message);
     }
   };
@@ -335,7 +336,7 @@ export default function EventEditorDrawer({
       }
       onClose();
     } catch (err: any) {
-      console.error("Error soft deleting event:", err);
+      logger.error("Error soft deleting event:", err);
       alert("Failed to delete event: " + err.message);
     }
   };
@@ -356,7 +357,7 @@ export default function EventEditorDrawer({
       }
       onClose();
     } catch (err: any) {
-      console.error("Error restoring event:", err);
+      logger.error("Error restoring event:", err);
       alert("Failed to restore event: " + err.message);
     }
   };
@@ -369,7 +370,7 @@ export default function EventEditorDrawer({
       await deleteDoc(doc(db, "events", editId));
       onClose();
     } catch (err: any) {
-      console.error("Error permanently deleting event:", err);
+      logger.error("Error permanently deleting event:", err);
       alert("Failed to permanently delete event: " + err.message);
     }
   };
@@ -450,7 +451,7 @@ export default function EventEditorDrawer({
       await deleteDoc(doc(db, "events", editId, "photos", photoId));
       setRevertAlert("Photo removed.");
     } catch (err: any) {
-      console.error("Failed to delete photo:", err);
+      logger.error("Failed to delete photo:", err);
     }
   };
 

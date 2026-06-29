@@ -292,7 +292,7 @@ export default function GalleryPage() {
                 handleNextPhoto();
               }
             }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none animate-scale-in"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan animate-scale-in"
           >
             {selectedPhoto && (
               <>

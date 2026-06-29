@@ -152,6 +152,22 @@ describe("AI Router Backend Endpoints", () => {
       expect(err.status).toBe(400);
     });
 
+    it("should fail validation if imageUrl is not a string", async () => {
+      req.body = {
+        systemPrompt: "You are a path planner",
+        messages: [{ role: "user", content: "Hello" }],
+        imageUrl: { url: "http://attacker.com" }
+      };
+
+      const handler = getHandler("/sim-playground", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.message).toBe("Invalid 'imageUrl' parameter. Must be a string.");
+      expect(err.status).toBe(400);
+    });
+
     it("should fail validation if image exceeds maximum payload limit", async () => {
       req.body = {
         systemPrompt: "You are a path planner",

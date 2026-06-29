@@ -93,7 +93,7 @@ export function SimConsole({
               </button>
               <button
                 onClick={() => toggleFilter("log")}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors ${filters.log ? "text-zinc-300 bg-zinc-300/10" : "text-white/20 hover:text-white/40"}`}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors ${filters.log ? "text-marble/80 bg-white/10" : "text-white/20 hover:text-white/40"}`}
                 title="Toggle Logs"
               >
                 LOG
@@ -126,7 +126,7 @@ export function SimConsole({
                     ? "text-ares-bronze bg-ares-bronze/5"
                     : log.level === "info"
                     ? "text-ares-cyan"
-                    : "text-zinc-300"
+                    : "text-marble/90"
                 }`}
               >
                 <span className="text-white/20 shrink-0 select-none">

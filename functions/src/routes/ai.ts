@@ -72,6 +72,9 @@ router.post("/sim-playground", ensureAdmin, aiLimiter, asyncHandler(async (req, 
   if (totalLength > 40000) {
     throw new ApiError(400, "Conversation history exceeds maximum allowed character limit (40,000).");
   }
+  if (imageUrl !== undefined && typeof imageUrl !== "string") {
+    throw new ApiError(400, "Invalid 'imageUrl' parameter. Must be a string.");
+  }
   if (imageUrl && imageUrl.length > 5 * 1024 * 1024) {
     throw new ApiError(400, "Image payload size exceeds maximum allowed limit (5MB).");
   }

@@ -17,6 +17,7 @@ import ZulipThread from "@/components/ZulipThread";
 import { ContributorStack } from "@/components/ui/ContributorStack";
 import TiptapRenderer from "@/components/TiptapRenderer";
 import { db } from "@/lib/firebase";
+import { logger } from "@/utils/logger";
 
 const ACADEMY_SIDEBAR_ORDER = [
   "AI 101",
@@ -74,7 +75,7 @@ export default function AcademyPage() {
         });
         setAllDocs(filtered);
       } catch (err) {
-        console.error("Error loading all docs:", err);
+        logger.error("Error loading all docs:", err);
       } finally {
         setLoadingAll(false);
       }
@@ -99,7 +100,7 @@ export default function AcademyPage() {
           setCurrentDoc(null);
         }
       } catch (err) {
-        console.error("Error loading doc:", err);
+        logger.error("Error loading doc:", err);
       } finally {
         setDocLoading(false);
       }
@@ -180,7 +181,7 @@ export default function AcademyPage() {
       });
       alert(isHelpful ? "Thanks for your feedback!" : "Thank you! We will use your feedback to improve this page.");
     } catch (err) {
-      console.error("Error submitting feedback:", err);
+      logger.error("Error submitting feedback:", err);
       alert("Failed to submit feedback. Please try again.");
     } finally {
       setIsSubmittingFeedback(false);

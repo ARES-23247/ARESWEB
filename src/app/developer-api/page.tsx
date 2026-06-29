@@ -22,7 +22,7 @@ export default function DeveloperApiPage() {
         <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-ares-gold to-yellow-600 mb-4">
           Developer API
         </h1>
-        <p className="text-lg text-gray-200 max-w-3xl">
+        <p className="text-lg text-marble/90 max-w-3xl">
           Welcome to the ARES 23247 developer portal. Explore our REST API, test endpoints interactively, and integrate our data into your own applications.
         </p>
       </div>
@@ -38,7 +38,7 @@ export default function DeveloperApiPage() {
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
               <Key className="text-ares-gold w-6 h-6" /> Authentication
             </h2>
-            <p className="text-gray-100 mb-4">
+            <p className="text-marble/85 mb-4">
               Most endpoints require a valid Bearer token. To authenticate your requests:
             </p>
             <ol className="list-decimal list-inside space-y-2 text-white font-mono text-sm">
@@ -56,15 +56,15 @@ export default function DeveloperApiPage() {
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
               <ShieldAlert className="text-red-500 w-6 h-6" /> Rate Limiting
             </h2>
-            <p className="text-gray-100">
+            <p className="text-marble/85">
               To ensure stability during competitions, the API enforces strict rate limits.
             </p>
             <ul className="mt-4 space-y-2 text-sm text-white">
-              <li className="flex justify-between border-b border-gray-700 pb-2">
+              <li className="flex justify-between border-b border-white/10 pb-2">
                 <span>Public Routes</span>
                 <span className="font-mono text-yellow-300">100 / min</span>
               </li>
-              <li className="flex justify-between border-b border-gray-700 pb-2">
+              <li className="flex justify-between border-b border-white/10 pb-2">
                 <span>TBA Proxy</span>
                 <span className="font-mono text-yellow-300">30 / min</span>
               </li>
@@ -78,7 +78,7 @@ export default function DeveloperApiPage() {
           <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl text-center">
             <BookOpen className="w-12 h-12 text-ares-gold mx-auto mb-4" />
             <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-            <p className="text-sm text-gray-100 mb-4">
+            <p className="text-sm text-marble/85 mb-4">
               Join the #engineering stream on Zulip to ask questions about API usage or request new endpoints.
             </p>
             <a
@@ -104,7 +104,7 @@ export default function DeveloperApiPage() {
                 href="/api/reference"
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-mono text-gray-200 hover:text-white transition-colors"
+                className="text-xs font-mono text-marble/90 hover:text-white transition-colors"
               >
                 Open Fullscreen ↗
               </a>

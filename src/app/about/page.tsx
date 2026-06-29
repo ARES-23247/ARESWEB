@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
+import { logger } from "@/utils/logger";
 
 interface TeamMember {
   userId: string;
@@ -56,7 +57,7 @@ export default function AboutPage() {
 
         setRoster(visibleMembers);
       } catch (err) {
-        console.error("Error fetching roster:", err);
+        logger.error("Error fetching roster:", err);
       } finally {
         setIsLoading(false);
       }

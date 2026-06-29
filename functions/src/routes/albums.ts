@@ -148,6 +148,30 @@ router.delete("/:albumId", ensureAdmin, asyncHandler(async (req, res) => {
     }
   }
 
+  // 1.5 Delete all documents inside the subcollection 'albums/{albumId}/photos' in bounded batches
+  let hasMorePhotos = true;
+  while (hasMorePhotos) {
+    const photosSubSnap = await albumRef
+      .collection("photos")
+      .limit(400)
+      .get();
+
+    if (photosSubSnap.empty) {
+      hasMorePhotos = false;
+      break;
+    }
+
+    const batch = adminDb.batch();
+    photosSubSnap.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    if (photosSubSnap.docs.length < 400) {
+      hasMorePhotos = false;
+    }
+  }
+
   // 2. Delete album from Firestore
   await albumRef.delete();
 

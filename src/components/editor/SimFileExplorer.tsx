@@ -152,7 +152,7 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
             }
           }}
           className={`group w-full flex items-center justify-between px-2 py-1 text-xs cursor-pointer select-none transition-colors ${
-            isActive ? "bg-ares-gold/20 text-ares-gold" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            isActive ? "bg-ares-gold/20 text-ares-gold" : "text-marble/60 hover:bg-white/5 hover:text-marble/90"
           }`}
           style={{ paddingLeft: `${(level * 12) + 8}px` }}
           onClick={() => isFolder ? toggleFolder(node.path) : setActiveFile(node.path)}
@@ -169,12 +169,12 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
                 {node.name.endsWith(".tsx") || node.name.endsWith(".ts") ? (
                   <FileCode className="w-3.5 h-3.5 shrink-0 text-ares-cyan" />
                 ) : (
-                  <File className="w-3.5 h-3.5 shrink-0 text-zinc-400" />
+                  <File className="w-3.5 h-3.5 shrink-0 text-marble/60" />
                 )}
               </>
             )}
             <span className="truncate">{node.name}</span>
-            {readOnlyFiles.includes(node.path) && <Lock className="w-2.5 h-2.5 text-zinc-500 ml-1 shrink-0" />}
+            {readOnlyFiles.includes(node.path) && <Lock className="w-2.5 h-2.5 text-marble/45 ml-1 shrink-0" />}
           </div>
 
           <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -182,14 +182,14 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleCreateFile(node.path); }}
-                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white"
+                  className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white"
                   title="New File"
                 >
                   <Plus className="w-3 h-3" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleCreateFolder(node.path); }}
-                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white"
+                  className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white"
                   title="New Folder"
                 >
                   <FolderPlus className="w-3 h-3" />
@@ -200,14 +200,14 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
               <>
                 <button
                   onClick={(e) => handleRename(node.path, e)}
-                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white"
+                  className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white"
                   title="Rename"
                 >
                   <Edit2 className="w-3 h-3" />
                 </button>
                 <button
                   onClick={(e) => handleDelete(node.path, e)}
-                  className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-ares-danger"
+                  className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-ares-danger"
                   title={isFolder ? "Delete Folder" : "Delete"}
                 >
                   <Trash2 className="w-3 h-3" />
@@ -232,12 +232,12 @@ export function SimFileExplorer({ files, activeFile, setActiveFile, setFiles, re
   return (
     <div className="flex flex-col h-full bg-obsidian-surface border-r border-white/5">
       <div className="px-3 py-2 flex items-center justify-between border-b border-white/5">
-        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Explorer</span>
+        <span className="text-xs font-bold text-marble/60 uppercase tracking-wider">Explorer</span>
         <div className="flex items-center gap-0.5">
-          <button onClick={() => handleCreateFile("")} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white" title="New File">
+          <button onClick={() => handleCreateFile("")} className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white" title="New File">
             <Plus className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => handleCreateFolder("")} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white" title="New Folder">
+          <button onClick={() => handleCreateFolder("")} className="p-1 hover:bg-white/10 rounded text-marble/60 hover:text-white" title="New Folder">
             <FolderPlus className="w-3.5 h-3.5" />
           </button>
         </div>

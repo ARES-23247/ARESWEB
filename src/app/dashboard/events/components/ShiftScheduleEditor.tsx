@@ -149,7 +149,7 @@ export default function ShiftScheduleEditor({
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan"
           >
             {locations.map((loc) => (
-              <option key={loc.id} value={loc.id} className="bg-neutral-900 text-white">
+              <option key={loc.id} value={loc.id} className="bg-ares-gray-deep text-white">
                 {loc.name}
               </option>
             ))}
