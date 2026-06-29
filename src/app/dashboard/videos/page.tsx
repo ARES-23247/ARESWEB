@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, RefreshCw } from "lucide-react";
 import { cleanThumbnailUrl, cleanUndefined } from "@/lib/utils";
@@ -157,75 +157,26 @@ export default function VideosManagementPage() {
     setIsSyncing(true);
     setSyncStatus(null);
     try {
-      const apiKey = "AIzaSyA1BCs1QLtbdmBXr6NdE72WxBPVKuQjeUw";
-      const playlistId = "UUre4FN7UThyVd-biFk0n-Ig";
-      
-      const allItems: any[] = [];
-      let nextPageToken: string | undefined = undefined;
-      
-      do {
-        const pageTokenParam = nextPageToken ? `&pageToken=${nextPageToken}` : "";
-        const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}${pageTokenParam}`;
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`YouTube API returned status ${response.status}`);
-        }
-        
-        const data = await response.json() as { items?: any[]; nextPageToken?: string };
-        if (data.items) {
-          allItems.push(...data.items);
-        }
-        nextPageToken = data.nextPageToken;
-      } while (nextPageToken);
-      
-      if (allItems.length === 0) {
-        setSyncStatus("No videos found on YouTube channel.");
-        setIsSyncing(false);
-        return;
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("Unable to retrieve authentication token.");
       }
 
-      let addedCount = 0;
-      
-      for (const item of allItems) {
-        const snippet = item.snippet;
-        const videoId = snippet.resourceId?.videoId;
-        if (!videoId) continue;
-        
-        const title = snippet.title || "";
-        const description = snippet.description || "";
-        const titleStr = title.toLowerCase();
-        const descStr = description.toLowerCase();
-        const isShort = titleStr.includes("#shorts") || descStr.includes("#shorts");
-        const type = isShort ? "short" : "video";
-        
-        const videoDoc = {
-          id: `video_${videoId}`,
-          title,
-          description,
-          platform: "youtube",
-          videoId,
-          thumbnailUrl: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-          embedUrl: `https://www.youtube.com/embed/${videoId}`,
-          type,
-          createdAt: snippet.publishedAt ? snippet.publishedAt.split("T")[0] : new Date().toISOString().split("T")[0]
-        };
-        
-        await setDoc(doc(db, "videos", `video_${videoId}`), videoDoc);
-        addedCount++;
+      const response = await fetch("/api/videos/sync", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Sync failed with status ${response.status}`);
       }
-      
-      // Clean up Firestore videos that are no longer in YouTube playlist items
-      const ytVideoIds = new Set(allItems.map(item => item.snippet.resourceId?.videoId).filter(Boolean));
-      const videosToDelete = videos.filter(v => v.platform === "youtube" && !ytVideoIds.has(v.videoId));
-      
-      let deletedCount = 0;
-      for (const v of videosToDelete) {
-        await deleteDoc(doc(db, "videos", v.id));
-        deletedCount++;
-      }
-      
-      setSyncStatus(`Successfully synced YouTube channel! Added/updated ${addedCount} videos, removed ${deletedCount} obsolete ones.`);
+
+      setSyncStatus(data.message || "Successfully synced YouTube channel!");
       setTimeout(() => setSyncStatus(null), 8000);
     } catch (err: any) {
       console.error("Error syncing YouTube channel:", err);
