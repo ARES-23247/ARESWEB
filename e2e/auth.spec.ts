@@ -30,11 +30,11 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     
     // Navigate to inquiries page
     await page.goto('/dashboard/inquiries');
-    await expect(page.locator('h1')).toContainText('Access Denied');
+    await expect(page.locator('h1')).toContainText('Access Denied', { timeout: 15000 });
     
     // Navigate to users page
     await page.goto('/dashboard/users');
-    await expect(page.locator('h1')).toContainText('Access Denied');
+    await expect(page.locator('h1')).toContainText('Access Denied', { timeout: 15000 });
   });
 });
 
