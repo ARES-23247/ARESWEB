@@ -9,6 +9,7 @@ import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and } from 
 import SEO from "@/components/SEO";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
 import { useAuth } from "@/context/AuthContext";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
@@ -51,7 +52,6 @@ export default function AcademyPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setSearchQuery("");
@@ -68,6 +68,8 @@ export default function AcademyPage() {
       );
     }
   }, [location.pathname, location.search, navigate]);
+
+  const searchRef = useFocusTrap(searchOpen, closeSearch);
 
   // Parse search query parameter 'q' and open the search overlay on boot
   useEffect(() => {
@@ -252,6 +254,7 @@ export default function AcademyPage() {
             }}
           >
             <motion.div
+              ref={searchRef}
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
@@ -264,6 +267,7 @@ export default function AcademyPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search documentation..."
+                  aria-label="Search documentation"
                   className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
                 />
                 <kbd className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
@@ -539,7 +543,7 @@ export default function AcademyPage() {
                 </div>
 
                 {/* ── Documentation Discussion ───────────────────────────── */}
-                {slug && user && <ZulipThread stream="announcements" topic={`Doc: ${currentDoc.title}`} />}
+                {slug && user && currentDoc && <ZulipThread stream="announcements" topic={`Doc Slug: ${currentDoc.slug}`} />}
               </motion.article>
             )}
           </main>

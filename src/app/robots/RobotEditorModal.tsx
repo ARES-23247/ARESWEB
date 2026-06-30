@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
-import { RobotItem, RobotVersion } from "./types"; // We will create types.ts or import from elsewhere
+import { RobotItem, RobotVersion } from "./types";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface RobotEditorModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export default function RobotEditorModal({
   onSubmit,
   isPending
 }: RobotEditorModalProps) {
+  const modalRef = useFocusTrap(isOpen, onClose);
+
   const [formName, setFormName] = useState("");
   const [formId, setFormId] = useState("");
   const [formSeasonName, setFormSeasonName] = useState("");
@@ -115,7 +118,7 @@ export default function RobotEditorModal({
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-obsidian border border-white/10 ares-cut-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 relative shadow-2xl">
+      <div ref={modalRef} className="bg-obsidian border border-white/10 ares-cut-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 relative shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-marble/60 hover:text-white p-1 hover:bg-white/5 ares-cut-sm transition-all"

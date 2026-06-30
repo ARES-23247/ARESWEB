@@ -38,8 +38,8 @@ export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }
-    const userData = userDoc.data();
-    if (userData?.role !== "admin" && userData?.role !== "coach" && userData?.role !== "mentor") {
+        const userData = userDoc.data();
+    if (userData?.role !== "admin" && userData?.role !== "coach") {
       return next(new ApiError(403, "Forbidden: Insufficient privileges"));
     }
     req.user = decodedToken;

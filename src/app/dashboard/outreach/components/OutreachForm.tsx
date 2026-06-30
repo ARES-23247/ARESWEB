@@ -76,10 +76,11 @@ export default function OutreachForm({
 
         {/* Event Title */}
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+          <label htmlFor="outreach-title" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
             Event Title *
           </label>
           <input
+            id="outreach-title"
             type="text"
             required
             placeholder="e.g. Morgantown Library STEM Day"
@@ -91,10 +92,11 @@ export default function OutreachForm({
 
         {/* Event Date */}
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+          <label htmlFor="outreach-date" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
             Event Date *
           </label>
           <input
+            id="outreach-date"
             type="date"
             required
             value={date}
@@ -105,10 +107,11 @@ export default function OutreachForm({
 
         {/* Location */}
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+          <label htmlFor="outreach-location" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
             Location
           </label>
           <input
+            id="outreach-location"
             type="text"
             placeholder="e.g. Westover, WV"
             value={location}
@@ -121,10 +124,11 @@ export default function OutreachForm({
         <div className="grid grid-cols-2 gap-4">
           {/* Total Service Hours */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+            <label htmlFor="outreach-hours" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
               Service Hours
             </label>
             <input
+              id="outreach-hours"
               type="number"
               min="0"
               step="any"
@@ -143,10 +147,11 @@ export default function OutreachForm({
 
           {/* People Reached */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+            <label htmlFor="outreach-reach" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
               Impact Reach
             </label>
             <input
+              id="outreach-reach"
               type="number"
               min="0"
               required
@@ -160,10 +165,11 @@ export default function OutreachForm({
 
         {/* Impact Summary */}
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
+          <label htmlFor="outreach-summary" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">
             Impact Summary
           </label>
           <textarea
+            id="outreach-summary"
             placeholder="Provide a brief summary of the demonstrations performed and community impact..."
             rows={4}
             value={impactSummary}

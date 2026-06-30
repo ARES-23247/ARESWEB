@@ -161,10 +161,11 @@ export default function PhotosBatchActions({
           <div className="space-y-3">
             {/* Select Album */}
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-wider mb-1 text-marble/60">
+              <label htmlFor="batch-album" className="block text-[9px] font-black uppercase tracking-wider mb-1 text-marble/60">
                 Add to Album
               </label>
               <select
+                id="batch-album"
                 value={uploadAlbumId}
                 onChange={(e) => setUploadAlbumId(e.target.value)}
                 className="w-full bg-obsidian/70 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-ares-red"

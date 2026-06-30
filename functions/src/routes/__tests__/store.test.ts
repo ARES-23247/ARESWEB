@@ -65,14 +65,18 @@ describe("Store Router Backend Endpoints", () => {
         totalCents: 9000,
       };
 
-      const mockSet = vi.mocked(adminDb.collection("orders").doc).mock.results[0]?.value?.set;
-      
       await handler(req, res, next);
+
+      const mockSet = vi.mocked(adminDb.collection("orders").doc).mock.results[0]?.value?.set;
 
       expect(res.json).toHaveBeenCalled();
       const responseData = res.json.mock.calls[0][0];
       expect(responseData.success).toBe(true);
       expect(responseData.orderId).toBeDefined();
+
+      expect(mockSet).toHaveBeenCalled();
+      const orderArg = vi.mocked(mockSet).mock.calls[0][0];
+      expect(orderArg.customerEmail).toBe("test@example.com");
     });
 
     it("should fail if items list is missing", async () => {

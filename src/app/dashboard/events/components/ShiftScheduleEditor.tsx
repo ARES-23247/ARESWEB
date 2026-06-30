@@ -216,11 +216,12 @@ export default function ShiftScheduleEditor({
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
+        <label htmlFor="event-cover-image" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
           Cover Image (Optional)
         </label>
         <div className="flex gap-3 items-center">
           <input
+            id="event-cover-image"
             type="url"
             placeholder="Paste image link, or pick from gallery..."
             value={formCoverImage}

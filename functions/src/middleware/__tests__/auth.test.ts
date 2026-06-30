@@ -163,7 +163,7 @@ describe("Auth Middleware", () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it("should attach user and call next() on mentor role success", async () => {
+    it("should return 403 if user has mentor role", async () => {
       req.headers!.authorization = "Bearer admin-token";
       const mockDecoded = { uid: "mentor123" };
       vi.mocked(adminAuth.verifyIdToken).mockResolvedValue(mockDecoded as any);
@@ -174,8 +174,10 @@ describe("Auth Middleware", () => {
       } as any);
 
       await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
-      expect(req.user).toEqual(mockDecoded);
-      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: Insufficient privileges");
     });
   });
 

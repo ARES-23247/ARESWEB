@@ -6,6 +6,7 @@ import { Target, Clock, Heart, MapPin, Activity, ArrowRight, X, Check, AlertCirc
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 declare global {
   interface Window {
@@ -81,6 +82,8 @@ export default function OutreachPage() {
     setOrganization("");
     setDescription("");
   };
+
+  const modalRef = useFocusTrap(isModalOpen, closeModal);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -380,7 +383,7 @@ export default function OutreachPage() {
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={closeModal}
           />
-          <div className="relative w-full max-w-xl bg-obsidian border border-white/10 p-8 md:p-12 ares-cut-lg shadow-2xl max-h-[90vh] overflow-y-auto z-50">
+          <div ref={modalRef} className="relative w-full max-w-xl bg-obsidian border border-white/10 p-8 md:p-12 ares-cut-lg shadow-2xl max-h-[90vh] overflow-y-auto z-50">
             <button 
               aria-label="Close modal"
               onClick={closeModal} 

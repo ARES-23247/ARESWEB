@@ -212,6 +212,7 @@ export default function InquiriesPage() {
             placeholder="Search inquiries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search inquiries"
             className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
           />
         </div>
@@ -220,6 +221,7 @@ export default function InquiriesPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
+            aria-label="Filter inquiries by type"
             className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 font-bold"
           >
             <option value="all">All Types</option>
@@ -230,6 +232,7 @@ export default function InquiriesPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter inquiries by status"
             className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 font-bold"
           >
             <option value="all">All Statuses</option>

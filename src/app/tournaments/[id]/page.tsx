@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
 import { GreekMeander } from "@/components/GreekMeander";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { 
   Trophy, 
   Calendar, 
@@ -31,6 +32,7 @@ export default function TournamentDetailPage() {
   
   // Dialog / Edit states
   const [activeLightboxImage, setActiveLightboxImage] = useState<{ src: string; caption: string } | null>(null);
+  const lightboxRef = useFocusTrap(!!activeLightboxImage, () => setActiveLightboxImage(null));
 
   const isAuthorized = useMemo(() => {
     return !!(user && authorizedUser && authorizedUser.role !== "unverified");
@@ -502,10 +504,12 @@ export default function TournamentDetailPage() {
       {/* Lightbox Image Modal */}
       {activeLightboxImage && (
         <div 
+          role="dialog"
+          aria-modal="true"
           onClick={() => setActiveLightboxImage(null)}
           className="fixed inset-0 bg-black/90 z-50 flex flex-col justify-center items-center p-6 cursor-zoom-out"
         >
-          <div className="relative max-w-4xl max-h-[80vh] overflow-hidden rounded-xl border border-white/15 bg-black">
+          <div ref={lightboxRef} className="relative max-w-4xl max-h-[80vh] overflow-hidden rounded-xl border border-white/15 bg-black">
             <img 
               src={activeLightboxImage.src} 
               alt={activeLightboxImage.caption} 

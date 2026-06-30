@@ -59,7 +59,7 @@ export default defineConfig({
             if (normalizedId.includes("recharts") || normalizedId.includes("d3")) {
               return "vendor-recharts";
             }
-            return "vendor";
+            return undefined;
           }
         },
       },

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot, doc, setDoc, limit } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, setDoc, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -78,6 +78,7 @@ export default function CalendarPage() {
         collection(db, "events"),
         where("isDeleted", "==", 0),
         where("status", "==", "published"),
+        orderBy("dateStart", "asc"),
         limit(150)
       );
 

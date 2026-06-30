@@ -89,6 +89,7 @@ export default function EventsFilterPanel({
             value={filterSearch}
             onChange={(e) => setFilterSearch(e.target.value)}
             placeholder="Search events by title, description..."
+            aria-label="Search events"
             className="w-full bg-black/60 border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-cyan focus:ring-2 focus:ring-ares-cyan/25 transition-all placeholder:text-marble/30 font-medium"
           />
           {filterSearch && (
@@ -106,6 +107,7 @@ export default function EventsFilterPanel({
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value as any)}
+            aria-label="Filter events by category"
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
           >
             <option value="all">📁 All Categories</option>
@@ -119,6 +121,7 @@ export default function EventsFilterPanel({
           <select
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
+            aria-label="Filter events by month"
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
           >
             <option value="all">📅 All Months</option>
@@ -142,6 +145,7 @@ export default function EventsFilterPanel({
           <select
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
+            aria-label="Filter events by year"
             className="flex-grow bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
           >
             <option value="all">🗓️ All Years</option>

@@ -1,6 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { EventPhoto } from "./types";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface PhotoLightboxProps {
   selectedPhoto: EventPhoto | null;
@@ -8,6 +9,8 @@ interface PhotoLightboxProps {
 }
 
 export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxProps) {
+  const lightboxRef = useFocusTrap(!!selectedPhoto, onClose);
+
   if (!selectedPhoto) return null;
 
   const uploadedByText = selectedPhoto.uploadedBy?.includes("@")
@@ -15,10 +18,10 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
     : selectedPhoto.uploadedBy || "ARES Member";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative z-10 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between max-h-[90vh]">
+      <div ref={lightboxRef} className="relative z-10 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between max-h-[90vh]">
         <header className="w-full flex items-center justify-between border-b border-white/5 pb-3.5">
           <div>
             <span className="text-[10px] text-marble/40 font-mono">

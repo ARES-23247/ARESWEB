@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Trash2, Save, Loader2 } from "lucide-react";
 import { AlbumItem } from "./AlbumEditModal";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 export interface ImportedPhoto {
   id: string;
@@ -60,6 +61,8 @@ export default function PhotoDetailsDrawer({
   onSaveDetails,
   isSavingDetails,
 }: PhotoDetailsDrawerProps) {
+  const drawerRef = useFocusTrap(!!selectedPhoto, onClose);
+
   if (!selectedPhoto) return null;
 
   const currentAlbum = albums.find((a) => a.id === selectedPhoto.albumId);
@@ -74,7 +77,7 @@ export default function PhotoDetailsDrawer({
       />
 
       {/* Drawer Panel */}
-      <div className="relative w-full max-w-lg h-full bg-obsidian border-l border-white/10 flex flex-col shadow-2xl overflow-y-auto scrollbar-thin">
+      <div ref={drawerRef} className="relative w-full max-w-lg h-full bg-obsidian border-l border-white/10 flex flex-col shadow-2xl overflow-y-auto scrollbar-thin">
         {/* Header */}
         <header className="p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-obsidian/95 backdrop-blur-md z-10">
           <div className="min-w-0">

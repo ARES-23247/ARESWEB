@@ -5,6 +5,7 @@ import { ShoppingCart, Search, CheckCircle2, Plus, Minus, X, ShoppingBag, Loader
 import { useCartStore, Product, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -57,6 +58,7 @@ export default function StorePage() {
 
   const cartTotal = useCartStore(selectCartTotal);
   const cartCount = useCartStore(selectCartCount);
+  const cartRef = useFocusTrap(isOpen, () => setIsOpen(false));
   
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -256,7 +258,7 @@ export default function StorePage() {
             className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 w-full md:w-[420px] bg-obsidian border-l border-white/10 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
+          <div ref={cartRef} className="fixed inset-y-0 right-0 w-full md:w-[420px] bg-obsidian border-l border-white/10 shadow-2xl z-50 flex flex-col transform transition-transform duration-300">
             {/* Drawer Header */}
             <div className="p-5 border-b border-white/10 flex items-center justify-between bg-black/20">
               <div className="flex items-center gap-2">
