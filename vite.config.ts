@@ -53,6 +53,9 @@ export default defineConfig({
             if (normalizedId.includes("@radix-ui")) {
               return "vendor-radix";
             }
+            if (normalizedId.includes("prettier")) {
+              return "vendor-prettier";
+            }
             if (normalizedId.includes("recharts") || normalizedId.includes("d3")) {
               return "vendor-recharts";
             }

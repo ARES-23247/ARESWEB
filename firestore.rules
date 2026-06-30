@@ -157,12 +157,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
                     (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin') || hasRole('coach')) &&
                     // YPP: Prevent students from turning on public contact visibility flags
-                    (hasRole('admin') || hasRole('coach') || (request.resource.data.showEmail != 1 && request.resource.data.showPhone != 1));
+                    (hasRole('admin') || hasRole('coach') || ((!request.resource.data.keys().hasAll(['showEmail']) || request.resource.data.showEmail == 0) && (!request.resource.data.keys().hasAll(['showPhone']) || request.resource.data.showPhone == 0)));
                     
       allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
                     (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin') || hasRole('coach')) &&
                     // YPP: Prevent students from turning on public contact visibility flags
-                    (hasRole('admin') || hasRole('coach') || (request.resource.data.showEmail != 1 && request.resource.data.showPhone != 1));
+                    (hasRole('admin') || hasRole('coach') || ((!request.resource.data.keys().hasAll(['showEmail']) || request.resource.data.showEmail == 0) && (!request.resource.data.keys().hasAll(['showPhone']) || request.resource.data.showPhone == 0)));
                     
       allow delete: if hasRole('admin') || hasRole('coach');
 
