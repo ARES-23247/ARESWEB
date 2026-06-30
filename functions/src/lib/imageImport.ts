@@ -88,11 +88,22 @@ export function validateImageMagicBytes(
  * Sanitize album name for folder storage path
  */
 export function sanitizeAlbumName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "");
+  let clean = "";
+  let lastWasDash = false;
+  const chars = name.toLowerCase().split("");
+  for (const char of chars) {
+    if ((char >= "a" && char <= "z") || (char >= "0" && char <= "9")) {
+      clean += char;
+      lastWasDash = false;
+    } else if (char === " " || char === "_" || char === "-") {
+      if (!lastWasDash && clean.length > 0) {
+        clean += "-";
+        lastWasDash = true;
+      }
+    }
+  }
+  if (clean.endsWith("-")) {
+    clean = clean.slice(0, -1);
+  }
+  return clean;
 }

@@ -35,7 +35,13 @@ interface ShiftScheduleEditorProps {
 
 const getSafeImageUrl = (url: string) => {
   if (!url) return "";
-  if (/^https?:\/\//i.test(url) || url.startsWith('/') || url.startsWith('data:image/')) return url;
+  const trimmed = url.trim();
+  if (trimmed.toLowerCase().startsWith("javascript:")) {
+    return "";
+  }
+  if (trimmed.startsWith("/") || trimmed.startsWith("data:image/") || /^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
   return "";
 };
 

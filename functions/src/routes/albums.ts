@@ -60,13 +60,23 @@ router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing required fields: title, category");
   }
 
-  const albumId = title
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "");
+  let albumId = "";
+  let lastWasDash = false;
+  const chars = title.toLowerCase().split("");
+  for (const char of chars) {
+    if ((char >= "a" && char <= "z") || (char >= "0" && char <= "9")) {
+      albumId += char;
+      lastWasDash = false;
+    } else if (char === " " || char === "_" || char === "-") {
+      if (!lastWasDash && albumId.length > 0) {
+        albumId += "-";
+        lastWasDash = true;
+      }
+    }
+  }
+  if (albumId.endsWith("-")) {
+    albumId = albumId.slice(0, -1);
+  }
 
   const albumDocRef = adminDb.collection("albums").doc(albumId);
   const existing = await albumDocRef.get();

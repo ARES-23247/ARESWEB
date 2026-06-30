@@ -209,11 +209,16 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
     if (parsedUrl.protocol !== "https:") {
       throw new ApiError(400, "Invalid URL protocol");
     }
-    if (parsedUrl.hostname !== "lh3.googleusercontent.com" && parsedUrl.hostname !== "photospicker.googleapis.com") {
+    let safeHost: string;
+    if (parsedUrl.hostname === "lh3.googleusercontent.com") {
+      safeHost = "lh3.googleusercontent.com";
+    } else if (parsedUrl.hostname === "photospicker.googleapis.com") {
+      safeHost = "photospicker.googleapis.com";
+    } else {
       logger.error("photos", `Forbidden target host: '${parsedUrl.hostname}'`);
       throw new ApiError(400, "Forbidden: Target URL host is not authorized");
     }
-    safeUrl = `https://${parsedUrl.hostname}${parsedUrl.pathname}${parsedUrl.search}`;
+    safeUrl = `https://${safeHost}${parsedUrl.pathname}${parsedUrl.search}`;
   } catch (err: any) {
     if (err instanceof ApiError) throw err;
     logger.error("photos", "Invalid URL format provided", err.message);
