@@ -104,6 +104,10 @@ service cloud.firestore {
     // Secure team collections (Kanban tasks, AI chat sessions, telemetry runs)
     match /tasks/{taskId} {
       allow read, write: if isAuthorized();
+
+      match /comments/{commentId} {
+        allow read, write: if isAuthorized();
+      }
     }
 
     match /tournaments/{tournamentId} {
@@ -147,11 +151,19 @@ service cloud.firestore {
 
     // user_profiles
     match /user_profiles/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach') || hasRole('mentor'));
+      // Only allow the user themselves, admins, or coaches to read the full profile doc directly (to protect YPP contact info)
+      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
+      
       allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin') || hasRole('coach'));
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin') || hasRole('coach')) &&
+                    // YPP: Prevent students from turning on public contact visibility flags
+                    (hasRole('admin') || hasRole('coach') || (request.resource.data.showEmail != 1 && request.resource.data.showPhone != 1));
+                    
       allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin') || hasRole('coach'));
+                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin') || hasRole('coach')) &&
+                    // YPP: Prevent students from turning on public contact visibility flags
+                    (hasRole('admin') || hasRole('coach') || (request.resource.data.showEmail != 1 && request.resource.data.showPhone != 1));
+                    
       allow delete: if hasRole('admin') || hasRole('coach');
 
       match /layouts/{layoutId} {
@@ -235,6 +247,13 @@ service cloud.firestore {
 
     // finance_transactions
     match /finance_transactions/{txId} {
+      allow read: if true;
+      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+    }
+
+    // orders (team store checkout mock orders)
+    match /orders/{orderId} {
+      allow create: if true;
       allow read, write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
     }
 

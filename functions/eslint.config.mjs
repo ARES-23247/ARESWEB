@@ -1,10 +1,15 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-
-const eslintConfig = defineConfig([
-  globalIgnores([
-    "lib/**",
-    "node_modules/**",
-  ]),
-]);
-
-export default eslintConfig;
+export default [
+  {
+    ignores: [
+      "lib/**",
+      "node_modules/**",
+    ]
+  },
+  {
+    rules: {
+      "no-unused-vars": "warn",
+      "no-undef": "off",
+      "no-console": ["warn", { allow: ["warn", "error"] }]
+    }
+  }
+];

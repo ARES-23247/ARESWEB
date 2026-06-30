@@ -19,7 +19,7 @@ import type { PlayerColor, GamePhase } from "../types";
 
 describe("useRiskGame", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe("initial state", () => {

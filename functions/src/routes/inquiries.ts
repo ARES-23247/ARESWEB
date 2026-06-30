@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { adminDb, adminAuth } from "../lib/firebase-admin";
+import admin, { adminDb, adminAuth } from "../lib/firebase-admin";
 import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
@@ -42,6 +42,22 @@ const createInquirySchema = z.object({
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
   const { type, name, email, metadata, recaptchaToken } = req.body;
 
+  // App Check Verification (Zero Trust Enforcement)
+  const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
+  const isTestEnvironment = process.env.NODE_ENV === "test";
+
+  if (isProd && !isTestEnvironment) {
+    const appCheckToken = req.headers["x-firebase-appcheck"] as string;
+    if (!appCheckToken) {
+      throw new ApiError(401, "App Check token missing");
+    }
+    try {
+      await admin.appCheck().verifyToken(appCheckToken);
+    } catch (err) {
+      throw new ApiError(401, "App Check token invalid");
+    }
+  }
+
   // Intercept and ignore automated E2E test inquiries to prevent database pollution
   const emailLower = email.trim().toLowerCase();
   const nameTrim = name.trim();
@@ -61,7 +77,6 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
   }
 
   // Disable reCAPTCHA bypass token in production environment
-  const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
   const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
 
   if (!isBypass) {

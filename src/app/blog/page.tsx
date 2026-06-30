@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -67,7 +67,9 @@ export default function BlogFeedPage() {
     const q = query(
       collection(db, "posts"),
       where("status", "==", "published"),
-      where("isDeleted", "==", 0)
+      where("isDeleted", "==", 0),
+      orderBy("date", "desc"),
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(

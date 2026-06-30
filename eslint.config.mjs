@@ -1,19 +1,26 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-
-const eslintConfig = defineConfig([
-  globalIgnores([
-    ".firebase/**",
-    "dist/**",
-    "functions/**",
-    "node_modules/**",
-    "build/**",
-    "archive/**",
-    "scripts/**",
-    ".scripts/**",
-    "coverage/**",
-    "playwright-report/**",
-    "test-results/**",
-  ]),
-]);
-
-export default eslintConfig;
+export default [
+  {
+    ignores: [
+      ".firebase/**",
+      "dist/**",
+      "functions/**",
+      "node_modules/**",
+      "build/**",
+      "archive/**",
+      "scripts/**",
+      ".scripts/**",
+      "coverage/**",
+      "playwright-report/**",
+      "test-results/**",
+      "ci-report/**",
+      "scratch/**",
+    ]
+  },
+  {
+    rules: {
+      "no-unused-vars": "warn",
+      "no-undef": "off",
+      "no-console": ["warn", { allow: ["warn", "error"] }]
+    }
+  }
+];

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RefreshCw, Save, Image as ImageIcon, Shuffle } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 import AvatarPresetsGrid from "./AvatarPresetsGrid";
 
 interface AvatarEditorProps {
@@ -198,83 +199,87 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-[8px]">
-        <style>{`
-          .custom-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1rem; padding-right: 2.5rem; }
-          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-        `}</style>
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-4xl bg-obsidian-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative"
-        >
-          {/* Left Panel: Preview */}
-          <div className="w-full md:w-2/5 p-4 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0 bg-obsidian-950/40">
-            <div className="absolute inset-0 bg-gradient-to-br from-ares-red/10 to-transparent pointer-events-none" />
-            
-            <div className="relative group w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
-              <div className="absolute inset-0 bg-gradient-to-br from-ares-red/30 to-ares-gold/30 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-full h-full rounded-2xl bg-obsidian-950 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
-                <img
-                  src={currentUrl}
-                  alt="Interactive Avatar Preview"
-                  className="w-full h-full object-contain filter drop-shadow-2xl scale-110"
-                />
+    <Dialog.Root open={true} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-[8px] z-[100]" />
+        <Dialog.Content className="fixed inset-0 z-[101] flex items-center justify-center p-4 outline-none">
+          <style>{`
+            .custom-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1rem; padding-right: 2.5rem; }
+            .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+          `}</style>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-4xl bg-obsidian-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[95vh] md:max-h-[85vh] relative outline-none"
+          >
+            {/* Left Panel: Preview */}
+            <div className="w-full md:w-2/5 p-4 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative overflow-hidden shrink-0 bg-obsidian-950/40">
+              <div className="absolute inset-0 bg-gradient-to-br from-ares-red/10 to-transparent pointer-events-none" />
+              
+              <div className="relative group w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-ares-red/30 to-ares-gold/30 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative w-full h-full rounded-2xl bg-obsidian-950 border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 md:p-4 z-10 backdrop-blur-xl">
+                  <img
+                    src={currentUrl}
+                    alt="Interactive Avatar Preview"
+                    className="w-full h-full object-contain filter drop-shadow-2xl scale-110"
+                  />
+                </div>
               </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={debouncedRandomize}
-              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px]"
-            >
-              <Shuffle size={14} className="text-ares-gold md:w-4 md:h-4" />
-              Randomize
-            </button>
-          </div>
-
-          {/* Right Panel: Editor Controls */}
-          <div className="w-full md:w-3/5 flex flex-col h-full bg-obsidian-950/20 min-h-0">
-            <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/5 sticky top-0 bg-obsidian-900 z-20">
-              <h2 className="text-base md:text-lg font-black flex items-center gap-2 tracking-tight">
-                <ImageIcon className="text-ares-red" size={18} />
-                Character Creator
-              </h2>
-              <button type="button" onClick={onClose} aria-label="Close avatar editor" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-
-            <AvatarPresetsGrid
-              styleMode={styleMode}
-              setStyleMode={setStyleMode}
-              avaState={avaState}
-              setAvaState={setAvaState}
-              botState={botState}
-              setBotState={setBotState}
-              AVATAAARS_OPTIONS={AVATAAARS_OPTIONS}
-              BOTTTS_OPTIONS={BOTTTS_OPTIONS}
-            />
-
-            <div className="p-4 md:p-5 border-t border-white/5 bg-black/40 sticky bottom-0 z-20">
               <button
                 type="button"
-                onClick={handleSave}
-                className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-ares-red-dark hover:from-ares-red-dark hover:to-ares-red text-white rounded-lg shadow-[0_0_30px_rgba(192,0,0,0.3)] transition-all"
+                onClick={debouncedRandomize}
+                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs md:text-sm font-bold transition-colors w-full justify-center max-w-[160px] md:max-w-[200px] focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none cursor-pointer"
               >
-                <Save size={18} />
-                Confirm Avatar
+                <Shuffle size={14} className="text-ares-gold md:w-4 md:h-4" />
+                Randomize
               </button>
             </div>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+
+            {/* Right Panel: Editor Controls */}
+            <div className="w-full md:w-3/5 flex flex-col h-full bg-obsidian-950/20 min-h-0">
+              <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/5 sticky top-0 bg-obsidian-900 z-20">
+                <Dialog.Title className="text-base md:text-lg font-black flex items-center gap-2 tracking-tight m-0 text-white">
+                  <ImageIcon className="text-ares-red" size={18} />
+                  Character Creator
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button type="button" aria-label="Close avatar editor" className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none">
+                    <X size={18} />
+                  </button>
+                </Dialog.Close>
+              </div>
+
+              <AvatarPresetsGrid
+                styleMode={styleMode}
+                setStyleMode={setStyleMode}
+                avaState={avaState}
+                setAvaState={setAvaState}
+                botState={botState}
+                setBotState={setBotState}
+                AVATAAARS_OPTIONS={AVATAAARS_OPTIONS}
+                BOTTTS_OPTIONS={BOTTTS_OPTIONS}
+              />
+
+              <div className="p-4 md:p-5 border-t border-white/5 bg-black/40 sticky bottom-0 z-20">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-ares-red-dark hover:from-ares-red-dark hover:to-ares-red text-white rounded-lg shadow-[0_0_30px_rgba(192,0,0,0.3)] transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none cursor-pointer"
+                >
+                  <Save size={18} />
+                  Confirm Avatar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

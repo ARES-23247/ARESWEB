@@ -93,7 +93,7 @@ describe("Tournaments Module Lucide Check", () => {
 
 describe("TournamentsFeedPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("renders locking administrative gate if user is not authorized", async () => {
@@ -143,7 +143,7 @@ describe("TournamentsFeedPage", () => {
 
 describe("TournamentDetailPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("renders detail page layout and stats", async () => {
@@ -202,7 +202,7 @@ describe("TournamentDetailPage", () => {
 
 describe("TournamentsManager", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("prevents access for unprivileged student role", async () => {

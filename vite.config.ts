@@ -35,6 +35,18 @@ export default defineConfig({
             if (normalizedId.includes("three")) {
               return "vendor-three";
             }
+            if (normalizedId.includes("lucide-react")) {
+              return "vendor-lucide";
+            }
+            if (normalizedId.includes("framer-motion")) {
+              return "vendor-framer";
+            }
+            if (normalizedId.includes("@radix-ui")) {
+              return "vendor-radix";
+            }
+            if (normalizedId.includes("recharts") || normalizedId.includes("d3")) {
+              return "vendor-recharts";
+            }
             return "vendor";
           }
         },
@@ -43,6 +55,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
     exclude: ["**/node_modules/**", "**/dist/**", "functions/**", "e2e/**"],

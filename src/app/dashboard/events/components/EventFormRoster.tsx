@@ -206,7 +206,7 @@ export default function EventFormRoster({
                   {isAdmin && (
                     <button
                       onClick={() => handleDeleteRsvp(su.userId)}
-                      className="p-1.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 text-marble/55 hover:text-white rounded transition-all cursor-pointer"
+                      className="p-1.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 text-marble/55 hover:text-white rounded transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                       title="Remove RSVP"
                     >
                       <Trash2 size={11} />
@@ -221,14 +221,16 @@ export default function EventFormRoster({
         {/* Quick Check-in Form for Admin */}
         {isAdmin && (
           <form onSubmit={handleQuickCheckin} className="border-t border-white/5 pt-4 mt-6 space-y-3 text-left">
-            <span className="text-[9px] uppercase font-black tracking-widest text-ares-gold block">
+            <span id="quick-checkin-title" className="text-[9px] uppercase font-black tracking-widest text-ares-gold block">
               Quick Admin Check-in
             </span>
             <div className="flex gap-2">
+              <label htmlFor="quick-checkin-member" className="sr-only">Select Team Member to Check In</label>
               <select
+                id="quick-checkin-member"
                 value={selectedMemberIdToCheckin}
                 onChange={(e) => setSelectedMemberIdToCheckin(e.target.value)}
-                className="flex-grow bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none cursor-pointer"
+                className="flex-grow bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none cursor-pointer focus:ring-2 focus:ring-ares-cyan"
               >
                 <option value="">Select Team Member...</option>
                 {displayedMembers.map((m) => (
@@ -239,7 +241,7 @@ export default function EventFormRoster({
               </select>
               <button
                 type="submit"
-                className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-gold-soft rounded text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all"
+                className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-gold-soft rounded text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
               >
                 Check In
               </button>
@@ -276,7 +278,7 @@ export default function EventFormRoster({
                   placeholder="e.g. Case of soda, cookies..."
                   value={bringing}
                   onChange={(e) => setBringing(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-gold"
+                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-gold focus:ring-2 focus:ring-ares-cyan"
                 />
               </div>
             )}
@@ -296,7 +298,7 @@ export default function EventFormRoster({
                   max="24"
                   value={prepHours}
                   onChange={(e) => setPrepHours(parseInt(e.target.value) || 0)}
-                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan"
+                  className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan focus:ring-2 focus:ring-ares-cyan"
                 />
               </div>
             )}
@@ -313,14 +315,14 @@ export default function EventFormRoster({
                 placeholder="e.g. Arriving 15 mins late. Running odometry code checks."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full h-16 bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-ares-cyan resize-none"
+                className="w-full h-16 bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-ares-cyan resize-none focus:ring-2 focus:ring-ares-cyan"
               />
             </div>
 
             <button
               type="submit"
               disabled={submittingRsvp}
-              className="w-full py-2 bg-ares-cyan text-black hover:brightness-105 font-black uppercase text-[10px] tracking-widest rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-md"
+              className="w-full py-2 bg-ares-cyan text-black hover:brightness-105 font-black uppercase text-[10px] tracking-widest rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-md focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
             >
               {submittingRsvp ? "Updating..." : mySignup ? "Update RSVP" : "Confirm RSVP (Will Attend)"}
             </button>
@@ -331,7 +333,7 @@ export default function EventFormRoster({
               type="button"
               onClick={handleRsvpCancel}
               disabled={submittingRsvp}
-              className="w-full py-2 bg-white/5 border border-white/5 hover:bg-ares-red/15 text-marble/55 hover:text-white text-[9px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer"
+              className="w-full py-2 bg-white/5 border border-white/5 hover:bg-ares-red/15 text-marble/55 hover:text-white text-[9px] uppercase font-black tracking-widest rounded-lg transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
             >
               Cancel Attendance
             </button>

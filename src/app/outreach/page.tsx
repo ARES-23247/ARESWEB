@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Target, Clock, Heart, MapPin, Activity, ArrowRight, X, Check, AlertCircle } from "lucide-react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 
@@ -37,7 +37,12 @@ export default function OutreachPage() {
 
   useEffect(() => {
     try {
-      const unsubscribe = onSnapshot(collection(db, "outreach_logs"), (snapshot) => {
+      const q = query(
+        collection(db, "outreach_logs"),
+        orderBy("date", "desc"),
+        limit(50)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map((doc) => {
             const data = doc.data();
@@ -51,8 +56,6 @@ export default function OutreachPage() {
               impactSummary: data.impactSummary || "",
             } as OutreachLog;
           });
-          // Sort by date desc
-          list.sort((a, b) => b.date.localeCompare(a.date));
           setLogs(list);
         } else {
           setLogs([]);

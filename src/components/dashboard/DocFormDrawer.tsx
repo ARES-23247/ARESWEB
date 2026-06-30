@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Maximize2, Minimize2, Sparkles, AlertCircle } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import MarkdownEditor from "@/components/MarkdownEditor";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { useAuth } from "@/context/AuthContext";
 import DocFormDrawerAiCopilot from "./DocFormDrawerAiCopilot";
-import DocFormMetadataFields from "./DocFormMetadataFields";
-import DocFormAttachmentFields from "./DocFormAttachmentFields";
+import DocFormMainFields from "./DocFormMainFields";
 
 interface DocRecord {
   slug: string;
@@ -391,201 +389,52 @@ export default function DocFormDrawer({
         <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
           {activeTab === "edit" && (
             <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
-              <form
-                id="docForm"
+              <DocFormMainFields
+                variant={variant}
+                formTitle={formTitle}
+                setFormTitle={setFormTitle}
+                formSlug={formSlug}
+                setFormSlug={setFormSlug}
+                editDoc={editDoc}
+                categories={categories}
+                formCategory={formCategory}
+                setFormCategory={setFormCategory}
+                isCustomCategory={isCustomCategory}
+                setIsCustomCategory={setIsCustomCategory}
+                customCategoryText={customCategoryText}
+                setCustomCategoryText={setCustomCategoryText}
+                formSortOrder={formSortOrder}
+                setFormSortOrder={setFormSortOrder}
+                formStatus={formStatus}
+                setFormStatus={setFormStatus}
+                isStudent={isStudent}
+                formDisplayInMathCorner={formDisplayInMathCorner}
+                setFormDisplayInMathCorner={setFormDisplayInMathCorner}
+                formDisplayInScienceCorner={formDisplayInScienceCorner}
+                setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
+                formDisplayInAreslib={formDisplayInAreslib}
+                setFormDisplayInAreslib={setFormDisplayInAreslib}
+                formIsPortfolio={formIsPortfolio}
+                setFormIsPortfolio={setFormIsPortfolio}
+                formIsExecutiveSummary={formIsExecutiveSummary}
+                setFormIsExecutiveSummary={setFormIsExecutiveSummary}
+                formFileUrl={formFileUrl}
+                setFormFileUrl={setFormFileUrl}
+                formThumbnail={formThumbnail}
+                setFormThumbnail={setFormThumbnail}
+                setIsPhotoPickerOpen={setIsPhotoPickerOpen}
+                formAuthor={formAuthor}
+                setFormAuthor={setFormAuthor}
+                formDate={formDate}
+                setFormDate={setFormDate}
+                formDescription={formDescription}
+                setFormDescription={setFormDescription}
+                formContent={formContent}
+                setFormContent={setFormContent}
                 onSubmit={handleSave}
-                className={`space-y-6 flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 transition-all duration-300 ${
-                  showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
-                }`}
-              >
-                <div className="space-y-6 pb-6">
-                  {/* Title & Slug Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="formTitle"
-                        className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                      >
-                        Title
-                      </label>
-                      <input
-                        id="formTitle"
-                        type="text"
-                        placeholder="e.g. Pinpoint System Calibration"
-                        value={formTitle}
-                        onChange={(e) => setFormTitle(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="formSlug"
-                        className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                      >
-                        Slug (URL Path)
-                      </label>
-                      <input
-                        id="formSlug"
-                        type="text"
-                        placeholder="e.g. pinpoint-calibration"
-                        value={formSlug}
-                        onChange={(e) => setFormSlug(e.target.value)}
-                        className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors font-mono disabled:opacity-50 focus:ring-2 focus:ring-ares-cyan"
-                        disabled={!!editDoc}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Docs Variant Fields */}
-                  {variant === "docs" && (
-                    <DocFormMetadataFields
-                      variant={variant}
-                      categories={categories}
-                      formCategory={formCategory}
-                      setFormCategory={setFormCategory}
-                      isCustomCategory={isCustomCategory}
-                      setIsCustomCategory={setIsCustomCategory}
-                      customCategoryText={customCategoryText}
-                      setCustomCategoryText={setCustomCategoryText}
-                      formSortOrder={formSortOrder}
-                      setFormSortOrder={setFormSortOrder}
-                      formStatus={formStatus}
-                      setFormStatus={setFormStatus}
-                      isStudent={isStudent}
-                      formDisplayInMathCorner={formDisplayInMathCorner}
-                      setFormDisplayInMathCorner={setFormDisplayInMathCorner}
-                      formDisplayInScienceCorner={formDisplayInScienceCorner}
-                      setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
-                      formDisplayInAreslib={formDisplayInAreslib}
-                      setFormDisplayInAreslib={setFormDisplayInAreslib}
-                      formIsPortfolio={formIsPortfolio}
-                      setFormIsPortfolio={setFormIsPortfolio}
-                      formIsExecutiveSummary={formIsExecutiveSummary}
-                      setFormIsExecutiveSummary={setFormIsExecutiveSummary}
-                    />
-                  )}
-
-                  {/* Documents Variant Fields */}
-                  {variant === "documents" && (
-                    <div className="space-y-6">
-                      <DocFormAttachmentFields
-                        variant={variant}
-                        formFileUrl={formFileUrl}
-                        setFormFileUrl={setFormFileUrl}
-                        formThumbnail={formThumbnail}
-                        setFormThumbnail={setFormThumbnail}
-                        setIsPhotoPickerOpen={setIsPhotoPickerOpen}
-                      />
-                      <DocFormMetadataFields
-                        variant={variant}
-                        categories={categories}
-                        formCategory={formCategory}
-                        setFormCategory={setFormCategory}
-                        isCustomCategory={isCustomCategory}
-                        setIsCustomCategory={setIsCustomCategory}
-                        customCategoryText={customCategoryText}
-                        setCustomCategoryText={setCustomCategoryText}
-                        formSortOrder={formSortOrder}
-                        setFormSortOrder={setFormSortOrder}
-                        formStatus={formStatus}
-                        setFormStatus={setFormStatus}
-                        isStudent={isStudent}
-                        formDisplayInMathCorner={formDisplayInMathCorner}
-                        setFormDisplayInMathCorner={setFormDisplayInMathCorner}
-                        formDisplayInScienceCorner={formDisplayInScienceCorner}
-                        setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
-                        formDisplayInAreslib={formDisplayInAreslib}
-                        setFormDisplayInAreslib={setFormDisplayInAreslib}
-                        formIsPortfolio={formIsPortfolio}
-                        setFormIsPortfolio={setFormIsPortfolio}
-                        formIsExecutiveSummary={formIsExecutiveSummary}
-                        setFormIsExecutiveSummary={setFormIsExecutiveSummary}
-                      />
-                    </div>
-                  )}
-
-                  {/* Blog Variant Fields */}
-                  {variant === "blog" && (
-                    <div className="space-y-6">
-                      <DocFormMetadataFields
-                        variant={variant}
-                        categories={categories}
-                        formCategory={formCategory}
-                        setFormCategory={setFormCategory}
-                        isCustomCategory={isCustomCategory}
-                        setIsCustomCategory={setIsCustomCategory}
-                        customCategoryText={customCategoryText}
-                        setCustomCategoryText={setCustomCategoryText}
-                        formSortOrder={formSortOrder}
-                        setFormSortOrder={setFormSortOrder}
-                        formStatus={formStatus}
-                        setFormStatus={setFormStatus}
-                        isStudent={isStudent}
-                        formDisplayInMathCorner={formDisplayInMathCorner}
-                        setFormDisplayInMathCorner={setFormDisplayInMathCorner}
-                        formDisplayInScienceCorner={formDisplayInScienceCorner}
-                        setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
-                        formDisplayInAreslib={formDisplayInAreslib}
-                        setFormDisplayInAreslib={setFormDisplayInAreslib}
-                        formIsPortfolio={formIsPortfolio}
-                        setFormIsPortfolio={setFormIsPortfolio}
-                        formIsExecutiveSummary={formIsExecutiveSummary}
-                        setFormIsExecutiveSummary={setFormIsExecutiveSummary}
-                        formAuthor={formAuthor}
-                        setFormAuthor={setFormAuthor}
-                        formDate={formDate}
-                        setFormDate={setFormDate}
-                      />
-                      <DocFormAttachmentFields
-                        variant={variant}
-                        formFileUrl={formFileUrl}
-                        setFormFileUrl={setFormFileUrl}
-                        formThumbnail={formThumbnail}
-                        setFormThumbnail={setFormThumbnail}
-                        setIsPhotoPickerOpen={setIsPhotoPickerOpen}
-                      />
-                    </div>
-                  )}
-
-                  {/* Abstract Description field */}
-                  <div>
-                    <label
-                      htmlFor="formDescription"
-                      className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                    >
-                      Short Abstract Summary
-                    </label>
-                    <textarea
-                      id="formDescription"
-                      rows={2}
-                      placeholder="A quick overview sentence summarizing the content."
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded p-3 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-cyan resize-none leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Markdown Content Editor */}
-                  <div>
-                    <label
-                      htmlFor="formContent"
-                      className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60"
-                    >
-                      Document Content (Markdown & LaTeX)
-                    </label>
-                    <MarkdownEditor
-                      id="formContent"
-                      placeholder="Write rich markdown text. Use LaTeX style double dollar signs ($$) for display equations, or single dollar sign ($) for inline formulas."
-                      value={formContent}
-                      onChange={setFormContent}
-                      className="h-[350px]"
-                    />
-                  </div>
-                </div>
-              </form>
+                showAiSidebar={showAiSidebar}
+                defaultCategory={defaultCategory}
+              />
 
               {/* AI Copilot Panel */}
               {showAiSidebar && (

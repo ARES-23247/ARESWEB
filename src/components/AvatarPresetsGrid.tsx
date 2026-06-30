@@ -22,33 +22,37 @@ export default function AvatarPresetsGrid({
   AVATAAARS_OPTIONS,
   BOTTTS_OPTIONS
 }: AvatarPresetsGridProps) {
-  const renderSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan appearance-none custom-select"
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt} className="bg-obsidian">
-            {opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  const renderSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => {
+    const selectId = `select-${label.toLowerCase().replace(/\s+/g, "-")}`;
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={selectId} className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+        <select
+          id={selectId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan appearance-none custom-select"
+        >
+          {options.map((opt) => (
+            <option key={opt} value={opt} className="bg-obsidian">
+              {opt.replace(/([A-Z0-9])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   const renderColorSelect = (label: string, value: string, options: string[], onChange: (val: string) => void) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</label>
+      <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider pl-1">{label}</span>
       <div className="flex flex-wrap gap-2">
         {options.map((hex: string) => (
           <button
             key={hex}
             type="button"
             onClick={() => onChange(hex)}
-            className={`w-7 h-7 rounded-lg border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/60"}`}
+            className={`w-7 h-7 rounded-lg border-2 transition-all ${value === hex ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/60"} focus-visible:ring-2 focus-visible:ring-ares-cyan focus:outline-none outline-none`}
             style={{ backgroundColor: `#${hex}` }}
             aria-label={`Color #${hex}`}
           />
@@ -57,14 +61,17 @@ export default function AvatarPresetsGrid({
     </div>
   );
 
-  const renderToggle = (label: string, value: boolean, onChange: (val: boolean) => void) => (
-    <div className="flex items-center justify-between py-2">
-      <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider">{label}</label>
-      <button type="button" onClick={() => onChange(!value)} className="text-white">
-        {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/60" />}
-      </button>
-    </div>
-  );
+  const renderToggle = (label: string, value: boolean, onChange: (val: boolean) => void) => {
+    const toggleId = `toggle-${label.toLowerCase().replace(/\s+/g, "-")}`;
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span id={toggleId} className="text-[10px] font-bold text-white/60 uppercase tracking-wider">{label}</span>
+        <button type="button" onClick={() => onChange(!value)} aria-labelledby={toggleId} className="text-white focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none rounded">
+          {value ? <ToggleRight size={28} className="text-ares-red" /> : <ToggleLeft size={28} className="text-white/60" />}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">

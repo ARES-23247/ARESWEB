@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
@@ -120,7 +120,12 @@ export default function TournamentsFeedPage() {
     queryKey: ["tournaments"],
     queryFn: async () => {
       try {
-        const q = query(collection(db, "tournaments"), where("isDeleted", "==", 0));
+        const q = query(
+          collection(db, "tournaments"),
+          where("isDeleted", "==", 0),
+          orderBy("date", "desc"),
+          limit(50)
+        );
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
           return MOCK_TOURNAMENTS;
@@ -130,7 +135,7 @@ export default function TournamentsFeedPage() {
           ...docSnap.data()
         })) as Tournament[];
         
-        return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return list;
       } catch (err) {
         console.warn("Firestore error reading tournaments, falling back to mock data:", err);
         return MOCK_TOURNAMENTS;

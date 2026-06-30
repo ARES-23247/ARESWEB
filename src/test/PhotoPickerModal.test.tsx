@@ -43,7 +43,7 @@ describe("PhotoPickerModal", () => {
   ];
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("does not render when isOpen is false", () => {

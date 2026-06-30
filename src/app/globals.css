@@ -272,3 +272,9 @@ select option {
 .animate-scale-up {
   animation: scaleUp 0.2s ease-out;
 }
+
+/* Accessibility: Standard High-Contrast Cyan Focus Outline for Interactive Elements */
+*:focus-visible {
+  outline: 2px solid var(--ares-cyan) !important;
+  outline-offset: 2px !important;
+}
