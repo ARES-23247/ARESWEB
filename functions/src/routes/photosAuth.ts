@@ -203,13 +203,22 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
     logger.error("photos", "Media proxy token verification failed", authErr.message);
     throw new ApiError(401, "Unauthorized: Invalid token");
   }
-
-  const match = url.match(/^https:\/\/(lh3\.googleusercontent\.com|photospicker\.googleapis.com)\/[a-zA-Z0-9\-_/=?:&%.#+]*$/);
-  if (!match) {
-    logger.error("photos", "Forbidden target host: URL is not authorized");
-    throw new ApiError(400, "Forbidden: Target URL host is not authorized");
+  let safeUrl: string;
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "https:") {
+      throw new ApiError(400, "Invalid URL protocol");
+    }
+    if (parsedUrl.hostname !== "lh3.googleusercontent.com" && parsedUrl.hostname !== "photospicker.googleapis.com") {
+      logger.error("photos", `Forbidden target host: '${parsedUrl.hostname}'`);
+      throw new ApiError(400, "Forbidden: Target URL host is not authorized");
+    }
+    safeUrl = `https://${parsedUrl.hostname}${parsedUrl.pathname}${parsedUrl.search}`;
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
+    logger.error("photos", "Invalid URL format provided", err.message);
+    throw new ApiError(400, "Invalid URL format");
   }
-  const safeUrl = match[0];
 
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(safeUrl, {

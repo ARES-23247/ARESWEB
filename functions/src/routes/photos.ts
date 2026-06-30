@@ -245,11 +245,20 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
             throw new Error("No download URL provided for photo.");
           }
 
-          const match = baseUrl.match(/^https:\/\/lh3\.googleusercontent\.com\/[a-zA-Z0-9\-_/=?:&%.#+]*$/);
-          if (!match) {
-            throw new Error("Invalid photo base URL domain or format");
+          let safeBaseUrl: string;
+          try {
+            const parsedUrl = new URL(baseUrl);
+            if (parsedUrl.protocol !== "https:") {
+              throw new Error("Invalid URL protocol");
+            }
+            if (parsedUrl.hostname !== "lh3.googleusercontent.com") {
+              throw new Error("Invalid photo base URL domain");
+            }
+            safeBaseUrl = `https://${parsedUrl.hostname}${parsedUrl.pathname}`;
+          } catch (err: any) {
+            throw new Error(`Invalid photo base URL format: ${err.message}`);
           }
-          const safeBaseUrl = match[0];
+
           const downloadUrl = `${safeBaseUrl}=w2048-h2048`;
           const downloadRes = await fetch(downloadUrl, {
             headers: { Authorization: `Bearer ${googleToken}` },
