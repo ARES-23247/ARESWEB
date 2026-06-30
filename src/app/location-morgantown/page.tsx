@@ -12,8 +12,7 @@ import BreadcrumbSchema from "@/components/BreadcrumbSchema";
 
 const breadcrumbs = [
   { name: "Home", path: "/" },
-  { name: "Locations", path: "/locations" },
-  { name: "Morgantown, West Virginia", path: "/locations/morgantown" }
+  { name: "Morgantown, West Virginia", path: "/location-morgantown" }
 ];
 
 export default function LocationMorgantownPage() {

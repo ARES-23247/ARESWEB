@@ -88,8 +88,9 @@ export default function VideoEditorDrawer({
         {/* Form Canvas */}
         <form onSubmit={onSave} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Video Title</label>
+            <label htmlFor="video-title" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Video Title</label>
             <input
+              id="video-title"
               type="text"
               placeholder="e.g. World Championship Alliance Selection & Finals Runs"
               value={formTitle}
@@ -101,8 +102,9 @@ export default function VideoEditorDrawer({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">YouTube Video ID</label>
+              <label htmlFor="video-youtube-id" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">YouTube Video ID</label>
               <input
+                id="video-youtube-id"
                 type="text"
                 placeholder="e.g. dQw4w9WgXcQ"
                 value={formVideoId}
@@ -125,8 +127,9 @@ export default function VideoEditorDrawer({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Media Type</label>
+              <label htmlFor="video-type" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Media Type</label>
               <select
+                id="video-type"
                 value={formType}
                 onChange={(e) => setFormType(e.target.value as any)}
                 className="w-full bg-black/60 border border-white/10 text-white text-xs font-bold uppercase rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer appearance-none"
@@ -138,8 +141,9 @@ export default function VideoEditorDrawer({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Thumbnail Image URL</label>
+            <label htmlFor="video-thumbnail" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Thumbnail Image URL</label>
             <input
+              id="video-thumbnail"
               type="url"
               placeholder="Leave empty to load YouTube default poster..."
               value={formThumbnail}
@@ -149,8 +153,9 @@ export default function VideoEditorDrawer({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Brief Summary</label>
+            <label htmlFor="video-summary" className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">Brief Summary</label>
             <textarea
+              id="video-summary"
               placeholder="Describe the match sequence, driver strategy calibrations, or outreach campaign reflections..."
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}

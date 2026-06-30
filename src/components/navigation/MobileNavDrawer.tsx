@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { LayoutDashboard } from "lucide-react";
 import { TEAM_LINKS, RESOURCE_LINKS } from "./navItems";
 import { NavLinkItem } from "./NavLinkItem";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -28,10 +29,15 @@ export function MobileNavDrawer({
   logout,
   loginWithGoogle,
 }: MobileNavDrawerProps) {
+  const drawerRef = useFocusTrap(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-full left-0 w-full bg-obsidian border-b border-ares-bronze/20 shadow-2xl p-6 flex flex-col gap-5 md:hidden z-50 max-h-[80vh] overflow-y-auto">
+    <div 
+      ref={drawerRef}
+      className="absolute top-full left-0 w-full bg-obsidian border-b border-ares-bronze/20 shadow-2xl p-6 flex flex-col gap-5 md:hidden z-50 max-h-[80vh] overflow-y-auto"
+    >
       {/* Section 1: Team & Organization */}
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">

@@ -95,7 +95,7 @@ export default function EventsCalendarView({
                         </span>
                       )}
                       {evt.status === "pending" && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-amber-500/10 border-amber-500/30 text-amber-500 rounded">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-gold/15 border-ares-gold/30 text-ares-gold rounded">
                           Pending Approval
                         </span>
                       )}

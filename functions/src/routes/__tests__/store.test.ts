@@ -45,18 +45,22 @@ describe("Store Router Backend Endpoints", () => {
     next = vi.fn();
   });
 
-  const getHandler = (path: string, method: string) => {
+  const getHandler = (path: string, method: string, expectedMiddlewares: string[] = []) => {
     const routeLayer = storeRouter.stack.find(
       (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
     );
     expect(routeLayer).toBeDefined();
     const stack = routeLayer!.route!.stack;
+    const middlewareNames = stack.map(layer => layer.name);
+    for (const mw of expectedMiddlewares) {
+      expect(middlewareNames).toContain(mw);
+    }
     return stack[stack.length - 1].handle;
   };
 
   describe("POST /checkout", () => {
     it("should successfully log a valid order to Firestore", async () => {
-      const handler = getHandler("/checkout", "post");
+      const handler = getHandler("/checkout", "post", ["ensureAuth"]);
       req.body = {
         customerEmail: "customer@example.com",
         items: [
@@ -80,7 +84,7 @@ describe("Store Router Backend Endpoints", () => {
     });
 
     it("should fail if items list is missing", async () => {
-      const handler = getHandler("/checkout", "post");
+      const handler = getHandler("/checkout", "post", ["ensureAuth"]);
       req.body = {
         customerEmail: "customer@example.com",
         totalCents: 9000,

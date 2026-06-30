@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { collection, getDocs, doc, setDoc, updateDoc, query, where } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, updateDoc, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -62,7 +62,8 @@ export default function TournamentsManager() {
     queryFn: async () => {
       const q = query(
         collection(db, "tournaments"),
-        where("isDeleted", "==", 0)
+        where("isDeleted", "==", 0),
+        limit(50)
       );
       const snap = await getDocs(q);
       const list = snap.docs.map((docSnap) => ({
@@ -278,8 +279,9 @@ export default function TournamentsManager() {
               {/* Primary Fields */}
               <div className="md:col-span-2 space-y-4">
                 <div>
-                  <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Name *</label>
+                  <label htmlFor="tourney-name" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Name *</label>
                   <input
+                    id="tourney-name"
                     type="text"
                     required
                     value={name}
@@ -291,8 +293,9 @@ export default function TournamentsManager() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Date *</label>
+                    <label htmlFor="tourney-date" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Date *</label>
                     <input
+                      id="tourney-date"
                       type="date"
                       required
                       value={date}
@@ -301,8 +304,9 @@ export default function TournamentsManager() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Location *</label>
+                    <label htmlFor="tourney-location" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Location *</label>
                     <input
+                      id="tourney-location"
                       type="text"
                       required
                       value={location}
@@ -314,8 +318,9 @@ export default function TournamentsManager() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Description / Overview</label>
+                  <label htmlFor="tourney-description" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Description / Overview</label>
                   <textarea
+                    id="tourney-description"
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -328,8 +333,9 @@ export default function TournamentsManager() {
               {/* Status and OPR Accents */}
               <div className="space-y-4 bg-black/35 p-4 rounded-xl border border-white/5">
                 <div>
-                  <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Status</label>
+                  <label htmlFor="tourney-status" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Tournament Status</label>
                   <select
+                    id="tourney-status"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as "upcoming" | "past")}
                     className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red"
@@ -340,8 +346,9 @@ export default function TournamentsManager() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Team OPR (At Event)</label>
+                  <label htmlFor="tourney-opr" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Team OPR (At Event)</label>
                   <input
+                    id="tourney-opr"
                     type="number"
                     step="0.1"
                     value={opr}
@@ -352,8 +359,9 @@ export default function TournamentsManager() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Photo Album ID</label>
+                  <label htmlFor="tourney-album-id" className="block text-xs uppercase font-bold text-marble/70 mb-1.5">Photo Album ID</label>
                   <input
+                    id="tourney-album-id"
                     type="text"
                     value={photoAlbumId}
                     onChange={(e) => setPhotoAlbumId(e.target.value)}
@@ -372,8 +380,9 @@ export default function TournamentsManager() {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Autonomous Trajectory Notes</label>
+                  <label htmlFor="tourney-auto-notes" className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Autonomous Trajectory Notes</label>
                   <textarea
+                    id="tourney-auto-notes"
                     rows={3}
                     value={autoPathNotes}
                     onChange={(e) => setAutoPathNotes(e.target.value)}
@@ -382,8 +391,9 @@ export default function TournamentsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Driver Feedback Logs</label>
+                  <label htmlFor="tourney-driver-feedback" className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Driver Feedback Logs</label>
                   <textarea
+                    id="tourney-driver-feedback"
                     rows={3}
                     value={driverFeedback}
                     onChange={(e) => setDriverFeedback(e.target.value)}
@@ -392,8 +402,9 @@ export default function TournamentsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Robot Subsystem Blueprints</label>
+                  <label htmlFor="tourney-robot-specs" className="block text-[10px] uppercase font-bold text-marble/60 mb-1">Robot Subsystem Blueprints</label>
                   <textarea
+                    id="tourney-robot-specs"
                     rows={3}
                     value={robotSpecs}
                     onChange={(e) => setRobotSpecs(e.target.value)}
@@ -413,8 +424,9 @@ export default function TournamentsManager() {
               {/* Input row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 items-end">
                 <div>
-                  <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Team #</label>
+                  <label htmlFor="tourney-subteam-number" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Team #</label>
                   <input
+                    id="tourney-subteam-number"
                     type="text"
                     value={subteamNumber}
                     onChange={(e) => setSubteamNumber(e.target.value)}
@@ -423,8 +435,9 @@ export default function TournamentsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Team Name</label>
+                  <label htmlFor="tourney-subteam-name" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">Team Name</label>
                   <input
+                    id="tourney-subteam-name"
                     type="text"
                     value={subteamName}
                     onChange={(e) => setSubteamName(e.target.value)}
@@ -433,8 +446,9 @@ export default function TournamentsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] uppercase font-bold text-marble/60 mb-1">OPR Score</label>
+                  <label htmlFor="tourney-subteam-opr" className="block text-[9px] uppercase font-bold text-marble/60 mb-1">OPR Score</label>
                   <input
+                    id="tourney-subteam-opr"
                     type="number"
                     step="0.1"
                     value={subteamOpr}

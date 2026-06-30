@@ -12,7 +12,7 @@ import {
   Award,
   Globe
 } from "lucide-react";
-import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import SeasonPicker from "@/components/SeasonPicker";
@@ -44,8 +44,7 @@ export default function FinanceLedgerPage() {
       try {
         const q = query(
           collection(db, "finance_transactions"),
-          orderBy("date", "desc"),
-          limit(50)
+          orderBy("date", "desc")
         );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => ({

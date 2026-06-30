@@ -116,8 +116,9 @@ export default function TournamentMatchesList({
           <h3 className="text-xs font-black uppercase text-ares-gold tracking-widest">New Match Log</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Match Number</label>
+              <label htmlFor="new-match-number" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Match Number</label>
               <input
+                id="new-match-number"
                 type="text"
                 placeholder="e.g. QM3"
                 required
@@ -127,8 +128,9 @@ export default function TournamentMatchesList({
               />
             </div>
             <div>
-              <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Alliance</label>
+              <label htmlFor="new-match-alliance" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Alliance</label>
               <select
+                id="new-match-alliance"
                 value={newAlliance}
                 onChange={(e) => setNewAlliance(e.target.value as "red" | "blue")}
                 className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white"
@@ -138,8 +140,9 @@ export default function TournamentMatchesList({
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Partner Team</label>
+              <label htmlFor="new-match-partner" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Partner Team</label>
               <input
+                id="new-match-partner"
                 type="text"
                 placeholder="e.g. 12345"
                 value={newPartner}
@@ -148,8 +151,9 @@ export default function TournamentMatchesList({
               />
             </div>
             <div>
-              <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Opponents (comma-sep)</label>
+              <label htmlFor="new-match-opponents" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Opponents (comma-sep)</label>
               <input
+                id="new-match-opponents"
                 type="text"
                 placeholder="e.g. 99999, 8888"
                 value={newOpponents}
@@ -162,8 +166,9 @@ export default function TournamentMatchesList({
           {isPast && (
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Our Score</label>
+                <label htmlFor="new-match-score-self" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Our Score</label>
                 <input
+                  id="new-match-score-self"
                   type="number"
                   value={newScoreSelf}
                   onChange={(e) => setNewScoreSelf(e.target.value)}
@@ -171,8 +176,9 @@ export default function TournamentMatchesList({
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Opponent Score</label>
+                <label htmlFor="new-match-score-opponent" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Opponent Score</label>
                 <input
+                  id="new-match-score-opponent"
                   type="number"
                   value={newScoreOpponent}
                   onChange={(e) => setNewScoreOpponent(e.target.value)}
@@ -180,8 +186,9 @@ export default function TournamentMatchesList({
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Result</label>
+                <label htmlFor="new-match-result" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Result</label>
                 <select
+                  id="new-match-result"
                   value={newResult}
                   onChange={(e) => setNewResult(e.target.value as any)}
                   className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white"
@@ -196,8 +203,9 @@ export default function TournamentMatchesList({
           )}
 
           <div>
-            <label className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Match Scouting Notes</label>
+            <label htmlFor="new-match-notes" className="block text-[10px] text-marble/60 uppercase font-bold mb-1">Match Scouting Notes</label>
             <textarea
+              id="new-match-notes"
               placeholder="Scouting telemetry, hardware issues, or driver feedback..."
               rows={2}
               value={newNotes}

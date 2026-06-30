@@ -422,8 +422,9 @@ export default function SponsorsManagerPage() {
               
               {/* Sponsor Name */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Name *</label>
+                <label htmlFor="sponsor-name" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Name *</label>
                 <input
+                  id="sponsor-name"
                   type="text"
                   required
                   placeholder="e.g. Lockheed Martin"
@@ -435,8 +436,9 @@ export default function SponsorsManagerPage() {
 
               {/* Sponsor Tier */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Tier *</label>
+                <label htmlFor="sponsor-tier" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Tier *</label>
                 <select
+                  id="sponsor-tier"
                   value={tier}
                   onChange={(e) => setTier(e.target.value as any)}
                   className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
@@ -451,8 +453,9 @@ export default function SponsorsManagerPage() {
 
               {/* Website URL */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Website URL</label>
+                <label htmlFor="sponsor-website" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Website URL</label>
                 <input
+                  id="sponsor-website"
                   type="url"
                   placeholder="https://example.com"
                   value={websiteUrl}
@@ -463,8 +466,9 @@ export default function SponsorsManagerPage() {
 
               {/* Logo URL / Upload */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Logo</label>
+                <label htmlFor="sponsor-logo-url" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Logo</label>
                 <input
+                  id="sponsor-logo-url"
                   type="url"
                   placeholder="Logo URL (or upload below)"
                   value={logoUrl}
@@ -482,7 +486,7 @@ export default function SponsorsManagerPage() {
                     disabled={isUploading}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full disabled:cursor-not-allowed"
                   />
-                  <div className="w-full py-2 border border-dashed border-white/10 rounded-lg flex items-center justify-center gap-2 bg-obsidian text-marble/45 text-[10px] uppercase font-black tracking-widest hover:border-white/20 transition-all select-none">
+                  <label htmlFor="logo-file-picker" className="w-full py-2 border border-dashed border-white/10 rounded-lg flex items-center justify-center gap-2 bg-obsidian text-marble/45 text-[10px] uppercase font-black tracking-widest hover:border-white/20 transition-all select-none cursor-pointer block text-center">
                     {isUploading ? (
                       <>
                         <RefreshCw size={12} className="animate-spin text-ares-gold" /> Uploading Logo...
@@ -492,7 +496,7 @@ export default function SponsorsManagerPage() {
                         <Upload size={12} /> Click to Upload Logo
                       </>
                     )}
-                  </div>
+                  </label>
                 </div>
 
                 {logoUrl && (

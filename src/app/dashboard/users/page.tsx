@@ -9,7 +9,9 @@ import {
   getDocs, 
   doc, 
   setDoc, 
-  deleteDoc 
+  deleteDoc,
+  query,
+  limit 
 } from "firebase/firestore";
 import { 
   Users, 
@@ -71,10 +73,10 @@ export default function DashboardUsersPage() {
     setZulipWarning(null);
     try {
       // 1. Fetch authorized_users from Firestore
-      const authSnap = await getDocs(collection(db, "authorized_users"));
+      const authSnap = await getDocs(query(collection(db, "authorized_users"), limit(50)));
       
       // 2. Fetch user_profiles from Firestore
-      const profilesSnap = await getDocs(collection(db, "user_profiles"));
+      const profilesSnap = await getDocs(query(collection(db, "user_profiles"), limit(50)));
       
       // 3. Fetch Zulip users from Functions Backend
       let zulipUsers: any[] = [];

@@ -117,10 +117,11 @@ export default function UserInviteForm({
         
         {/* Email Address */}
         <div className="flex flex-col gap-2">
-          <label className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+          <label htmlFor="inviteEmail" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
             Email Address
           </label>
           <input
+            id="inviteEmail"
             type="email"
             required
             placeholder="name@domain.com"
@@ -132,10 +133,11 @@ export default function UserInviteForm({
 
         {/* Name / Nickname */}
         <div className="flex flex-col gap-2">
-          <label className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+          <label htmlFor="inviteName" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
             Full Name / Nickname
           </label>
           <input
+            id="inviteName"
             type="text"
             placeholder="e.g. Coach David"
             value={inviteName}
@@ -146,10 +148,11 @@ export default function UserInviteForm({
 
         {/* Role Selection */}
         <div className="flex flex-col gap-2">
-          <label className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+          <label htmlFor="inviteRole" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
             Portal Permissions / Role
           </label>
           <select
+            id="inviteRole"
             value={inviteRole}
             onChange={(e) => setInviteRole(e.target.value)}
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white cursor-pointer font-bold focus:outline-none font-sans"

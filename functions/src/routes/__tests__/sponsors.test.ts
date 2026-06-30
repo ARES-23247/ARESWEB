@@ -57,12 +57,16 @@ describe("Sponsors Router Backend Endpoints", () => {
     next = vi.fn();
   });
 
-  const getHandler = (path: string, method: string) => {
+  const getHandler = (path: string, method: string, expectedMiddlewares: string[] = []) => {
     const routeLayer = sponsorsRouter.stack.find(
       (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
     );
     expect(routeLayer).toBeDefined();
     const stack = routeLayer!.route!.stack;
+    const middlewareNames = stack.map(layer => layer.name);
+    for (const mw of expectedMiddlewares) {
+      expect(middlewareNames).toContain(mw);
+    }
     // Returns the main handler (the last one in the middleware chain)
     return stack[stack.length - 1].handle;
   };
@@ -148,7 +152,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockCollection = adminDb.collection as any;
       mockCollection().get.mockResolvedValue({ docs: mockDocs });
 
-      const handler = getHandler("/admin", "get");
+      const handler = getHandler("/admin", "get", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
@@ -175,7 +179,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
 
-      const handler = getHandler("/admin", "post");
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.update).toHaveBeenCalledWith(
@@ -198,7 +202,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
 
-      const handler = getHandler("/admin", "post");
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.set).toHaveBeenCalledWith(
@@ -219,7 +223,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         tier: "Bronze",
       };
 
-      const handler = getHandler("/admin", "post");
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -234,7 +238,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         tier: "Platinum",
       };
 
-      const handler = getHandler("/admin", "post");
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -250,7 +254,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         logoUrl: "invalid-url",
       };
 
-      const handler = getHandler("/admin", "post");
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -267,7 +271,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
 
-      const handler = getHandler("/admin/:id", "delete");
+      const handler = getHandler("/admin/:id", "delete", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.delete).toHaveBeenCalled();
@@ -280,7 +284,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
 
-      const handler = getHandler("/admin/:id", "delete");
+      const handler = getHandler("/admin/:id", "delete", ["ensureAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));

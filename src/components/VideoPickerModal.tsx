@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Search, Play } from "lucide-react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { cleanThumbnailUrl } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
     const fetchVideos = async () => {
       setLoading(true);
       try {
-        const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "videos"), orderBy("createdAt", "desc"), limit(50));
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => {
           const data = doc.data();

@@ -16,6 +16,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: ["monaco-editor"],
       output: {
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, "/");
