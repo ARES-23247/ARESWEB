@@ -218,7 +218,7 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
       logger.error("photos", `Forbidden target host: '${parsedUrl.hostname}'`);
       throw new ApiError(400, "Forbidden: Target URL host is not authorized");
     }
-    safeUrl = `https://${safeHost}${parsedUrl.pathname}${parsedUrl.search}`;
+    safeUrl = `https://${safeHost}${parsedUrl.pathname}`;
   } catch (err: any) {
     if (err instanceof ApiError) throw err;
     logger.error("photos", "Invalid URL format provided", err.message);
