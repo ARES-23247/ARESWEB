@@ -245,12 +245,12 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
             throw new Error("No download URL provided for photo.");
           }
 
-          if (!baseUrl.startsWith("https://lh3.googleusercontent.com/")) {
-            throw new Error("Invalid photo base URL domain");
+          const match = baseUrl.match(/^https:\/\/lh3\.googleusercontent\.com\/[a-zA-Z0-9\-_/=?:&%.#+]*$/);
+          if (!match) {
+            throw new Error("Invalid photo base URL domain or format");
           }
-
-          // Downscale to max 2048px on Google Photos side (which also transcodes to JPEG)
-          const downloadUrl = `${baseUrl}=w2048-h2048`;
+          const safeBaseUrl = match[0];
+          const downloadUrl = `${safeBaseUrl}=w2048-h2048`;
           const downloadRes = await fetch(downloadUrl, {
             headers: { Authorization: `Bearer ${googleToken}` },
           });
