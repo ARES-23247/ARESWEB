@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Play, X, Calendar, Clock, Film, ExternalLink, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -62,8 +62,9 @@ export default function VideosPage() {
     setIsLoading(true);
     try {
       const videosRef = collection(db, "videos");
+      const q = query(videosRef, limit(100));
       const unsubscribe = onSnapshot(
-        videosRef,
+        q,
         (snapshot) => {
           if (snapshot.empty) {
             setVideos(MOCK_VIDEOS);

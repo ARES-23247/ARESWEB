@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, setDoc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -77,7 +77,8 @@ export default function CalendarPage() {
       const q = query(
         collection(db, "events"),
         where("isDeleted", "==", 0),
-        where("status", "==", "published")
+        where("status", "==", "published"),
+        limit(150)
       );
 
       const unsubscribe = onSnapshot(

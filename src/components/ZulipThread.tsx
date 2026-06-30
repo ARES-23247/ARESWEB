@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, RefreshCw, Send } from 'lucide-react';
 import { sanitizeHtml } from '../lib/security';
+import { authenticatedFetch } from '../lib/api';
 
 interface ZulipMessage {
   id: number;
@@ -32,7 +33,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
     }
     setError(null);
     try {
-      const res = await fetch(`/api/zulip/topic?stream=${encodeURIComponent(stream)}&topic=${encodeURIComponent(topic)}`);
+      const res = await authenticatedFetch(`/api/zulip/topic?stream=${encodeURIComponent(stream)}&topic=${encodeURIComponent(topic)}`);
       if (!res.ok) {
         if (res.status === 403) throw new Error("Bot not subscribed to this stream.");
         
@@ -69,7 +70,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
     setIsSending(true);
     setSendError(null);
     try {
-      const res = await fetch("/api/zulip/message", {
+      const res = await authenticatedFetch("/api/zulip/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stream, topic, content: message })

@@ -257,7 +257,7 @@ export default function SEO({
       "name": title,
       "startDate": schemaData.startDate,
       "endDate": schemaData.endDate || schemaData.startDate,
-      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "eventAttendanceMode": schemaData.eventAttendanceMode || "https://schema.org/OfflineEventAttendanceMode",
       "eventStatus": "https://schema.org/EventScheduled",
       "location": {
         "@type": "Place",
@@ -266,6 +266,14 @@ export default function SEO({
       },
       "image": image,
       "description": description,
+      "offers": {
+        "@type": "Offer",
+        "url": currentUrl,
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "validFrom": schemaData.datePublished || new Date().toISOString().split('T')[0]
+      },
       "organizer": {
         "@type": "Organization",
         "name": "ARES 23247",

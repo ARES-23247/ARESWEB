@@ -429,7 +429,7 @@ export default function OutreachPage() {
                       disabled={submitStatus === "sending"}
                       value={name} 
                       onChange={e => setName(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50" 
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold focus:ring-2 focus:ring-ares-gold rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50" 
                     />
                   </div>
                   <div>
@@ -441,7 +441,7 @@ export default function OutreachPage() {
                       disabled={submitStatus === "sending"}
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50" 
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold focus:ring-2 focus:ring-ares-gold rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50" 
                     />
                   </div>
                 </div>
@@ -456,7 +456,7 @@ export default function OutreachPage() {
                       value={organization} 
                       onChange={e => setOrganization(e.target.value)}
                       placeholder="e.g. Mountaineer School"
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 disabled:opacity-50" 
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold focus:ring-2 focus:ring-ares-gold rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 disabled:opacity-50" 
                     />
                   </div>
                   <div>
@@ -468,7 +468,7 @@ export default function OutreachPage() {
                       value={phone} 
                       onChange={e => setPhone(e.target.value)}
                       placeholder="(304) 555-0199"
-                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 disabled:opacity-50" 
+                      className="w-full bg-black/50 border border-white/5 focus:border-ares-gold focus:ring-2 focus:ring-ares-gold rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 disabled:opacity-50" 
                     />
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export default function OutreachPage() {
                     value={description} 
                     onChange={e => setDescription(e.target.value)}
                     placeholder="Tell us what you are hosting and potential schedule time slots..."
-                    className="w-full bg-black/50 border border-white/5 focus:border-ares-gold/25 focus:ring-1 focus:ring-ares-gold/25 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 resize-none disabled:opacity-50" 
+                    className="w-full bg-black/50 border border-white/5 focus:border-ares-gold focus:ring-2 focus:ring-ares-gold rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-marble/20 resize-none disabled:opacity-50" 
                   />
                 </div>
 

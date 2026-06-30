@@ -504,6 +504,9 @@ export default function TaskDetailsModal({
       <div 
         ref={modalRef} 
         tabIndex={-1} 
+        role="dialog"
+        aria-modal="true"
+        aria-label={isCreateMode ? "Create Task Card" : "Task Card Details"}
         className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 ${
           isFullScreen ? "w-full max-w-full" : "w-full max-w-3xl"
         }`}

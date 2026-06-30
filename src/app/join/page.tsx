@@ -289,7 +289,7 @@ export default function JoinPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm"
                     placeholder="Jane Doe"
                     required
                   />
@@ -301,7 +301,7 @@ export default function JoinPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm"
                     placeholder="jane@example.com"
                     required
                   />
@@ -315,7 +315,7 @@ export default function JoinPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+                  className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm"
                   placeholder="(304) 555-1234"
                 />
               </div>
@@ -329,7 +329,7 @@ export default function JoinPage() {
                       type="text"
                       value={school}
                       onChange={(e) => setSchool(e.target.value)}
-                      className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+                      className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm"
                       placeholder="High School Name"
                       required={role === "student"}
                     />
@@ -341,7 +341,7 @@ export default function JoinPage() {
                         id="join-grade"
                         value={grade}
                         onChange={(e) => setGrade(e.target.value)}
-                        className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm appearance-none cursor-pointer"
+                        className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm appearance-none cursor-pointer"
                         required={role === "student"}
                       >
                         <option value="" disabled>Select Grade</option>
@@ -363,7 +363,7 @@ export default function JoinPage() {
                     type="text"
                     value={occupation}
                     onChange={(e) => setOccupation(e.target.value)}
-                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-sm"
+                    className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-sm"
                     placeholder="Mechanical Engineer at WVU / NASA"
                     required={role === "mentor"}
                   />
@@ -396,7 +396,7 @@ export default function JoinPage() {
                   value={additional}
                   onChange={(e) => setAdditional(e.target.value)}
                   rows={4}
-                  className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-sm"
+                  className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all resize-none shadow-sm"
                   placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}
                 />
               </div>

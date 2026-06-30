@@ -6,6 +6,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { LogIn, Menu, X, KeyRound } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import SEO from "@/components/SEO";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, loginWithGoogle, loginWithMockUser } = useAuth();
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) {
     return (
       <main id="main-content" className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <SEO title="Administrative Gate" noindex={true} />
         {/* Beautiful background patterns */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20" aria-hidden="true">
           <div 

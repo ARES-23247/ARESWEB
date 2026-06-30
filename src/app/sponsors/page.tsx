@@ -360,7 +360,7 @@ export default function SponsorsPage() {
                     value={name} 
                     onChange={e => setName(e.target.value)} 
                     required 
-                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" 
+                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner" 
                     placeholder="Stark Industries" 
                   />
                 </div>
@@ -373,7 +373,7 @@ export default function SponsorsPage() {
                       value={email} 
                       onChange={e => setEmail(e.target.value)} 
                       required 
-                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" 
+                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner" 
                       placeholder="you@stark.com" 
                     />
                   </div>
@@ -384,7 +384,7 @@ export default function SponsorsPage() {
                       type="tel" 
                       value={phone} 
                       onChange={e => setPhone(e.target.value)} 
-                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner" 
+                      className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner" 
                       placeholder="(304) 555-1234" 
                     />
                   </div>
@@ -398,7 +398,7 @@ export default function SponsorsPage() {
                     id="sponsor-level" 
                     value={level} 
                     onChange={e => setLevel(e.target.value)} 
-                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all shadow-inner appearance-none cursor-pointer [color-scheme:dark]"
+                    className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner appearance-none cursor-pointer [color-scheme:dark]"
                   >
                     <option className="bg-obsidian text-white">Interested in Details</option>
                     <option className="bg-obsidian text-white">Titanium Tier Sponsor</option>
@@ -421,7 +421,7 @@ export default function SponsorsPage() {
                   value={message} 
                   onChange={e => setMessage(e.target.value)} 
                   rows={4} 
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/20 transition-all resize-none shadow-inner" 
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all resize-none shadow-inner" 
                   placeholder="We'd love to partner with Team ARES to..." 
                 />
               </div>

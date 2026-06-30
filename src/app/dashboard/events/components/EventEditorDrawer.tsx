@@ -466,6 +466,9 @@ export default function EventEditorDrawer({
       <div
         ref={editorRef}
         tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={editId ? `Edit Event: ${formTitle}` : "Schedule Team Operation"}
         className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 ${
           isFullScreen ? "w-full max-w-full" : "w-full max-w-5xl"
         }`}

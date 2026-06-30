@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
@@ -96,8 +96,8 @@ export default function KanbanPage() {
     try {
       const tasksRef = collection(db, "tasks");
       const q = showArchived
-        ? query(tasksRef)
-        : query(tasksRef, where("archived", "==", false));
+        ? query(tasksRef, limit(150))
+        : query(tasksRef, where("archived", "==", false), limit(150));
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {

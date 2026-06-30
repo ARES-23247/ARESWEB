@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { collection, doc, onSnapshot, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, deleteDoc, setDoc, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -86,8 +86,9 @@ export default function EventsManagementPage({
   useEffect(() => {
     try {
       const eventsRef = collection(db, "events");
+      const q = query(eventsRef, where("isDeleted", "==", 0), limit(100));
       const unsubscribe = onSnapshot(
-        eventsRef,
+        q,
         (snapshot) => {
           if (snapshot.empty) {
             setEvents(MOCK_EVENTS);

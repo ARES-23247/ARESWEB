@@ -124,7 +124,11 @@ export default function StorePage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8 relative">
-      <SEO title="Team Store" description="Grab official ARES 23247 team apparel, hoodies, and jerseys. 100% of proceeds directly fund our drivetrain materials and youth STEM outreach camps." />
+      <SEO 
+        title={checkoutSuccess ? "Checkout Success" : checkoutCancelled ? "Checkout Cancelled" : "Team Store"} 
+        description="Grab official ARES 23247 team apparel, hoodies, and jerseys. 100% of proceeds directly fund our drivetrain materials and youth STEM outreach camps." 
+        noindex={checkoutSuccess || checkoutCancelled}
+      />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
         {/* Header */}

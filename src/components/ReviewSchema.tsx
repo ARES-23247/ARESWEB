@@ -30,6 +30,14 @@ export default function ReviewSchema({
     "@type": "SportsActivityLocation",
     "name": itemName,
     "url": siteConfig.urls.base,
+    "image": `${siteConfig.urls.base}/ares_hero.png`,
+    "priceRange": "N/A",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Morgantown",
+      "addressRegion": "WV",
+      "addressCountry": "US"
+    },
     "aggregateRating": {
       "@type": "AggregateRating",
       "bestRating": 5,
