@@ -1,6 +1,7 @@
 import express from "express";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
+import { logger } from "../lib/logger";
 
 const router = express.Router();
 
@@ -66,7 +67,7 @@ const handleSitemapRequest = asyncHandler(async (req, res) => {
   </url>`);
     });
   } catch (error) {
-    console.error("Error querying posts collection for sitemap:", error);
+    logger.error("sitemap", "Error querying posts collection for sitemap", error);
   }
 
   // 3. Fetch robots (robots collection)
@@ -85,7 +86,7 @@ const handleSitemapRequest = asyncHandler(async (req, res) => {
   </url>`);
     });
   } catch (error) {
-    console.error("Error querying robots collection for sitemap:", error);
+    logger.error("sitemap", "Error querying robots collection for sitemap", error);
   }
 
   // 4. Fetch academy (academy collection)
@@ -134,7 +135,7 @@ const handleSitemapRequest = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error querying docs collection for sitemap:", error);
+    logger.error("sitemap", "Error querying docs collection for sitemap", error);
   }
 
   // 6. Fetch events (events collection)
@@ -154,7 +155,7 @@ const handleSitemapRequest = asyncHandler(async (req, res) => {
   </url>`);
     });
   } catch (error) {
-    console.error("Error querying events collection for sitemap:", error);
+    logger.error("sitemap", "Error querying events collection for sitemap", error);
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -367,9 +367,9 @@ export default function ShiftScheduleEditor({
               disabled={!canEdit}
               className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan font-bold"
             >
-              <option value="published" className="bg-neutral-900 text-white font-bold">Published</option>
-              <option value="pending" className="bg-neutral-900 text-white font-bold">Pending Review</option>
-              <option value="draft" className="bg-neutral-900 text-white font-bold">Draft</option>
+              <option value="published" className="bg-obsidian text-white font-bold">Published</option>
+              <option value="pending" className="bg-obsidian text-white font-bold">Pending Review</option>
+              <option value="draft" className="bg-obsidian text-white font-bold">Draft</option>
             </select>
           ) : (
             <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">
