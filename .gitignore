@@ -81,6 +81,10 @@ test.sql
 chunk.sql
 min.sql
 
+# Test output and traces
+ci-report/
+/ci-report/
+
 # Explicitly track files we want
 !eslint.config.js
 !eslint.config.mjs
