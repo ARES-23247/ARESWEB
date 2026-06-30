@@ -22,7 +22,7 @@ export default function ReviewSchema({
 
   // Calculate aggregate rating
   const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-  const averageRating = totalRating / reviews.length;
+  const averageRating = reviews.length > 0 ? totalRating / reviews.length : 5;
   const reviewCount = reviews.length;
 
   const schema = {

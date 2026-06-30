@@ -102,6 +102,25 @@ app.use("/api/zulip", zulipRouter);
 app.use("/sitemap.xml", sitemapRouter);
 app.use("/api/sitemap.xml", sitemapRouter);
 
+app.get("/api/reference", (req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>ARES API Reference</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noindex, nofollow">
+      </head>
+      <body>
+        <script id="api-reference" data-url="/api/openapi.json"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+      </body>
+    </html>
+  `);
+});
+
 // Global Error Handler
 app.use(globalErrorHandler);
 

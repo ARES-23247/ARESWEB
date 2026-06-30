@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
@@ -83,25 +83,28 @@ export default function AcademyPage() {
   useEffect(() => {
     const fetchAllDocs = async () => {
       try {
-        const q = query(
-          collection(db, "docs"),
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0)
-        );
+        const q = isAresLib
+          ? query(
+              collection(db, "docs"),
+              where("status", "==", "published"),
+              where("isDeleted", "==", 0),
+              where("displayInAreslib", "==", 1)
+            )
+          : query(
+              collection(db, "docs"),
+              and(
+                where("status", "==", "published"),
+                where("isDeleted", "==", 0),
+                or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
+              )
+            );
         const snap = await getDocs(q);
         const docsList = snap.docs.map((d) => ({
           slug: d.id,
           ...d.data()
         })) as unknown as DocRecord[];
 
-        const filtered = docsList.filter((doc) => {
-          if (isAresLib) {
-            return doc.displayInAreslib === 1;
-          } else {
-            return doc.displayInMathCorner === 1 || doc.displayInScienceCorner === 1;
-          }
-        });
-        setAllDocs(filtered);
+        setAllDocs(docsList);
       } catch (err) {
         logger.error("Error loading all docs:", err);
       } finally {

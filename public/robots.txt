@@ -1,8 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard/
+Disallow: /dashboard
 Disallow: /tournaments
-Disallow: /developer-api
 Disallow: /api/reference
 
 Sitemap: https://aresfirst.org/sitemap.xml
