@@ -82,7 +82,7 @@ export default function TechStackPage() {
               {
                 title: "Three.js WebGL Engine",
                 icon: <Cpu className="text-white" size={24} />,
-                desc: "Our ARES-Scope visualizer relies on custom WebGL geometries, rendering 3D kinematic odometry coordinates and linear slides procedurally on canvas.",
+                desc: "Our standalone ARES-Scope desktop application relies on custom WebGL geometries, rendering 3D kinematic odometry coordinates and linear slides procedurally.",
                 cost: "Open Source"
               },
               {
