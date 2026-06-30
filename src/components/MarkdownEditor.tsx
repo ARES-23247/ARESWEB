@@ -390,7 +390,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => setMode("write")}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan ${
               mode === "write" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
             }`}
           >
@@ -400,7 +400,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => setMode("preview")}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan ${
               mode === "preview" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
             }`}
           >

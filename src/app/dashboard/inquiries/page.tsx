@@ -30,7 +30,7 @@ interface Inquiry {
 }
 
 export default function InquiriesPage() {
-  const { user } = useAuth();
+  const { user, authorizedUser } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,8 +39,11 @@ export default function InquiriesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isProcessingId, setIsProcessingId] = useState<string | null>(null);
 
+  const userRole = authorizedUser?.role || "Pending Verification";
+  const isAdmin = userRole === "admin" || userRole === "coach";
+
   const fetchInquiries = async () => {
-    if (!user) return;
+    if (!user || !isAdmin) return;
     setIsLoading(true);
     setError("");
     try {
@@ -162,6 +165,20 @@ export default function InquiriesPage() {
     const cls = colors[type] || "bg-white/5 text-marble/60 border-white/10";
     return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${cls}`}>{type}</span>;
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center p-6 bg-obsidian text-marble">
+        <div className="w-16 h-16 bg-ares-red/10 border border-ares-red/40 ares-cut flex items-center justify-center mb-6 text-ares-red">
+          <AlertCircle size={28} className="animate-bounce" />
+        </div>
+        <h1 className="text-3xl font-black uppercase tracking-wider text-white mb-2 font-heading">Access Denied</h1>
+        <p className="text-marble/60 text-sm max-w-md">
+          You do not have the required credentials to access the ARES Inquiries console. Please contact Coach David if you need your permissions elevated.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

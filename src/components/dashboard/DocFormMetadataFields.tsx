@@ -277,55 +277,60 @@ export default function DocFormMetadataFields({
             Display Configurations
           </span>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 bg-black/25 border border-white/5 p-4 rounded-lg">
-            <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
+            <div className="flex items-center gap-2 text-xs text-marble/95 select-none">
               <input
+                id="display-math-corner"
                 type="checkbox"
                 checked={formDisplayInMathCorner}
                 onChange={(e) => setFormDisplayInMathCorner(e.target.checked)}
                 className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
               />
-              <span>Academy (Math Corner)</span>
-            </label>
+              <label htmlFor="display-math-corner" className="cursor-pointer">Academy (Math Corner)</label>
+            </div>
 
-            <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
+            <div className="flex items-center gap-2 text-xs text-marble/95 select-none">
               <input
+                id="display-science-corner"
                 type="checkbox"
                 checked={formDisplayInScienceCorner}
                 onChange={(e) => setFormDisplayInScienceCorner(e.target.checked)}
                 className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
               />
-              <span>Academy (Science Corner)</span>
-            </label>
+              <label htmlFor="display-science-corner" className="cursor-pointer">Academy (Science Corner)</label>
+            </div>
 
-            <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
+            <div className="flex items-center gap-2 text-xs text-marble/95 select-none">
               <input
+                id="display-areslib"
                 type="checkbox"
                 checked={formDisplayInAreslib}
                 onChange={(e) => setFormDisplayInAreslib(e.target.checked)}
                 className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
               />
-              <span>ARESLib Reference</span>
-            </label>
+              <label htmlFor="display-areslib" className="cursor-pointer">ARESLib Reference</label>
+            </div>
 
-            <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
+            <div className="flex items-center gap-2 text-xs text-marble/95 select-none">
               <input
+                id="display-portfolio"
                 type="checkbox"
                 checked={formIsPortfolio}
                 onChange={(e) => setFormIsPortfolio(e.target.checked)}
                 className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
               />
-              <span>Portfolio Archive</span>
-            </label>
+              <label htmlFor="display-portfolio" className="cursor-pointer">Portfolio Archive</label>
+            </div>
 
-            <label className="flex items-center gap-2 text-xs text-marble/95 cursor-pointer select-none">
+            <div className="flex items-center gap-2 text-xs text-marble/95 select-none">
               <input
+                id="display-executive-summary"
                 type="checkbox"
                 checked={formIsExecutiveSummary}
                 onChange={(e) => setFormIsExecutiveSummary(e.target.checked)}
                 className="rounded border-white/10 bg-black/40 text-ares-red focus:ring-ares-cyan cursor-pointer w-4 h-4"
               />
-              <span>Executive Summary</span>
-            </label>
+              <label htmlFor="display-executive-summary" className="cursor-pointer">Executive Summary</label>
+            </div>
           </div>
         </div>
       )}

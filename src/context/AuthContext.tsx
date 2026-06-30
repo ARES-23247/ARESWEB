@@ -43,6 +43,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }, 1500);
 
+    // Check if we have a saved mock session in sessionStorage (development/E2E testing)
+    if (typeof window !== "undefined") {
+      const savedMock = sessionStorage.getItem("ares_mock_user");
+      if (savedMock) {
+        try {
+          const parsed = JSON.parse(savedMock);
+          loginWithMockUser(parsed.email, parsed.role, parsed.name);
+          clearTimeout(safetyTimeout);
+          return;
+        } catch (e) {
+          console.error("Failed to restore mock user session:", e);
+        }
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       clearTimeout(safetyTimeout);
       if (isMockRef.current) {
@@ -149,6 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithMockUser = async (email: string, role: string, name?: string) => {
     isMockRef.current = true;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ares_mock_user", JSON.stringify({ email, role, name }));
+    }
     setLoading(true);
     const mockEmail = email.trim().toLowerCase();
 
@@ -213,6 +231,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       if ((user && user.uid === "mock_user_123") || isMockRef.current) {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("ares_mock_user");
+        }
         isMockRef.current = false;
         setUser(null);
         setAuthorizedUser(null);

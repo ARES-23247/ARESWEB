@@ -20,6 +20,15 @@ export default defineConfig({
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, "/");
           if (normalizedId.includes("node_modules")) {
+            if (normalizedId.includes("react-markdown") || normalizedId.includes("remark") || normalizedId.includes("rehype")) {
+              return "vendor-markdown";
+            }
+            if (normalizedId.includes("jszip")) {
+              return "vendor-jszip";
+            }
+            if (normalizedId.includes("dompurify")) {
+              return "vendor-dompurify";
+            }
             if (normalizedId.includes("firebase")) {
               return "vendor-firebase";
             }
