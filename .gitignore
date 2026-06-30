@@ -25,17 +25,13 @@ yarn-error.log*
 # IDE / OS
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
 
 # Environment variables
 .env
 .env.local
 .env.test
-.env.production
 .dev.vars
 
-# Firebase logs and cache
 .firebase/
 firebase-debug.log*
 
