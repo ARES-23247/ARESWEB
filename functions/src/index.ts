@@ -1,6 +1,9 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import express from "express";
 import cors from "cors";
+import { adminDb } from "./lib/firebase-admin";
+import { logger } from "./lib/logger";
 
 import photosRouter from "./routes/photos";
 import inquiriesRouter from "./routes/inquiries";
@@ -146,3 +149,37 @@ export const api = onRequest({
     "RECAPTCHA_SECRET_KEY",
   ] 
 }, app);
+
+// Daily database data minimization job (cleans up inquiries older than 180 days)
+export const cleanupOldInquiries = onSchedule({
+  schedule: "0 0 * * *", // Runs daily at midnight
+  maxInstances: 1,
+}, async (event) => {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 180);
+  const cutoffIso = cutoffDate.toISOString();
+
+  logger.info("cleanup", `Starting deletion of inquiries older than ${cutoffIso}`);
+
+  try {
+    const snap = await adminDb
+      .collection("inquiries")
+      .where("createdAt", "<", cutoffIso)
+      .get();
+
+    if (snap.empty) {
+      logger.info("cleanup", "No old inquiries found to clean up.");
+      return;
+    }
+
+    const batch = adminDb.batch();
+    snap.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+
+    await batch.commit();
+    logger.info("cleanup", `Successfully cleaned up ${snap.size} old inquiries.`);
+  } catch (err) {
+    logger.error("cleanup", "Error running inquiries cleanup task", err);
+  }
+});
