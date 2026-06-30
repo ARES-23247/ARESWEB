@@ -236,6 +236,11 @@ export default function TournamentDetailPage() {
   if (!isAuthorized) {
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble py-8 flex flex-col justify-center relative overflow-hidden">
+        <SEO 
+          title="Sign In | ARES Scouting Vault" 
+          description="Authorized authentication required to access team scouting records." 
+          noindex={true}
+        />
         <div className="absolute top-0 left-0 w-full z-10">
           <GreekMeander variant="thin" opacity="opacity-30" className="w-full" />
         </div>

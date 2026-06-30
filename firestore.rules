@@ -253,8 +253,8 @@ service cloud.firestore {
 
     // orders (team store checkout mock orders)
     match /orders/{orderId} {
-      allow create: if true;
-      allow read, write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow write: if false;
     }
 
     // judge_access_codes

@@ -218,7 +218,19 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
       logger.error("photos", `Forbidden target host: '${parsedUrl.hostname}'`);
       throw new ApiError(400, "Forbidden: Target URL host is not authorized");
     }
-    safeUrl = `https://${safeHost}${parsedUrl.pathname}`;
+
+    // Strict segment validation to satisfy CodeQL SSRF taint trackers
+    if (parsedUrl.pathname.includes("..") || parsedUrl.pathname.includes("//")) {
+      throw new ApiError(400, "Invalid URL path sequence");
+    }
+    const validatedSegments = parsedUrl.pathname.split("/").map((segment) => {
+      if (!/^[a-zA-Z0-9\-\_\.\=\%]*$/.test(segment)) {
+        throw new ApiError(400, "Forbidden characters in URL path segment");
+      }
+      return segment;
+    });
+    const safePath = validatedSegments.join("/");
+    safeUrl = `https://${safeHost}${safePath}`;
   } catch (err: any) {
     if (err instanceof ApiError) throw err;
     logger.error("photos", "Invalid URL format provided", err.message);

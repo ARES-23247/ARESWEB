@@ -67,7 +67,12 @@ export default function DashboardHome() {
     fetchCounts();
 
     try {
-      const qTasks = query(collection(db, "tasks"), limit(10));
+      const qTasks = query(
+        collection(db, "tasks"),
+        where("archived", "==", false),
+        where("status", "!=", "completed"),
+        limit(10)
+      );
       const unsubTasks = onSnapshot(qTasks, (snapshot) => {
         setIsDbConnected(true);
         if (!snapshot.empty) {

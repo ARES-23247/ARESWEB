@@ -18,6 +18,7 @@ import sitemapRouter from "./routes/sitemap";
 import tournamentsRouter from "./routes/tournaments";
 import robotsRouter from "./routes/robots";
 import videosRouter from "./routes/videos";
+import storeRouter from "./routes/store";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
@@ -95,6 +96,7 @@ app.use("/api/outreach", outreachRouter);
 app.use("/api/tournaments", tournamentsRouter);
 app.use("/api/robots", robotsRouter);
 app.use("/api/videos", videosRouter);
+app.use("/api/store", storeRouter);
 app.use("/sitemap.xml", sitemapRouter);
 app.use("/api/sitemap.xml", sitemapRouter);
 

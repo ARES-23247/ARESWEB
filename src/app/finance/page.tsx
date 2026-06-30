@@ -12,7 +12,7 @@ import {
   Award,
   Globe
 } from "lucide-react";
-import { collection, query, getDocs } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import SeasonPicker from "@/components/SeasonPicker";
@@ -42,14 +42,17 @@ export default function FinanceLedgerPage() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const snap = await getDocs(collection(db, "finance_transactions"));
+        const q = query(
+          collection(db, "finance_transactions"),
+          orderBy("date", "desc"),
+          limit(50)
+        );
+        const snap = await getDocs(q);
         const list = snap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         })) as Transaction[];
         
-        // Sort transactions by date descending
-        list.sort((a, b) => b.date.localeCompare(a.date));
         setTransactions(list);
       } catch (err) {
         console.error("Error fetching transactions:", err);

@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { ShoppingCart, Search, CheckCircle2, Plus, Minus, X, ShoppingBag, Loader2, Sparkles, CreditCard, Tag } from "lucide-react";
 import { useCartStore, Product, selectCartTotal, selectCartCount } from "@/store/useCartStore";
-import { collection, setDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
 
@@ -87,25 +85,27 @@ export default function StorePage() {
     if (items.length === 0) return;
     setIsCheckingOut(true);
     
-    // Simulate robust checkout / Stripe routing with self-healing Firestore order logs
     try {
-      const orderId = `order_${Date.now()}`;
       const total = cartTotal;
       
       const orderRecord = {
-        id: orderId,
         customerEmail: user?.email || "anonymous-buyer@gmail.com",
         items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, name: i.product.name })),
         totalCents: total,
-        status: "processing",
-        fulfillmentStatus: "unfulfilled",
-        createdAt: new Date().toISOString()
       };
 
       try {
-        await setDoc(doc(db, "orders", orderId), orderRecord);
+        const response = await fetch("/api/store/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderRecord)
+        });
+        const resData = await response.json();
+        if (!response.ok || !resData.success) {
+          throw new Error(resData.error || "Failed to log order on secure server");
+        }
       } catch (e) {
-        console.warn("Firestore order log bypassed in sandboxed mode:", e);
+        console.warn("Secure order log bypassed or failed in sandboxed mode:", e);
       }
 
       // Simulate routing to Stripe and redirecting back with success params

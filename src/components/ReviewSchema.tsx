@@ -27,7 +27,7 @@ export default function ReviewSchema({
 
   const schema = {
     "@context": "https://schema.org",
-    "@type": "Item",
+    "@type": "SportsActivityLocation",
     "name": itemName,
     "url": siteConfig.urls.base,
     "aggregateRating": {

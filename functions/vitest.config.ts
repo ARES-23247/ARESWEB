@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.{test,spec}.ts"],
+    clearMocks: true,
+    restoreMocks: true,
     coverage: {
       thresholds: {
         lines: 85,

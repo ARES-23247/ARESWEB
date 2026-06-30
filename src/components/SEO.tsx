@@ -32,6 +32,7 @@ interface SEOProps {
   image?: string;
   url?: string;
   type?: string;
+  noindex?: boolean;
   schemaData?: {
     authorName?: string;
     datePublished?: string;
@@ -50,6 +51,7 @@ export default function SEO({
   image = `${siteConfig.urls.base}/ares_hero.png`,
   url,
   type = "website",
+  noindex = false,
   schemaData
 }: SEOProps) {
   
@@ -260,10 +262,7 @@ export default function SEO({
       "location": {
         "@type": "Place",
         "name": schemaData.locationName || "Location TBD",
-        "address": {
-          "@type": "Text",
-          "text": schemaData.locationAddress || "Morgantown, WV"
-        }
+        "address": schemaData.locationAddress || "Morgantown, WV"
       },
       "image": image,
       "description": description,
@@ -282,7 +281,7 @@ export default function SEO({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="theme-color" content="#C00000" />
-      <meta name="robots" content={hasSearchQuery ? "noindex, follow" : "index, follow"} />
+      <meta name="robots" content={(noindex || hasSearchQuery) ? "noindex, follow" : "index, follow"} />
       <link rel="canonical" href={currentUrl} />
 
       {/* Open Graph / Facebook */}

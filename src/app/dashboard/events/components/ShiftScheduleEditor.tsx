@@ -45,7 +45,7 @@ const getSafeImageUrl = (url: string) => {
       return parsed.href;
     }
   } catch (e) {
-    if (trimmed.startsWith("/") || trimmed.startsWith("data:image/")) {
+    if (trimmed.startsWith("/")) {
       return trimmed;
     }
   }
@@ -387,6 +387,7 @@ export default function ShiftScheduleEditor({
           Description & Logistical Details (Markdown supported)
         </label>
         <MarkdownEditor
+          id="event-desc-editor"
           value={formDescription}
           onChange={setFormDescription}
           placeholder="e.g. Schedule for driver trials. Bringing snacks: yes. Intaking linear rail repairs first."
