@@ -3,10 +3,15 @@
 import React from "react";
 import { Cloud, Zap, Database, HardDrive, Cpu, Users, Globe, Lock, Code, Award, CheckCircle2, ShieldAlert } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
+import SEO from "@/components/SEO";
 
 export default function TechStackPage() {
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
+      <SEO 
+        title="Technical Stack & Cloud Architecture" 
+        description="Explore the technical stack, serverless cloud database rules, and WebGL visualizations powering the ARES 23247 FIRST Robotics team portal."
+      />
       {/* Hero Header */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />

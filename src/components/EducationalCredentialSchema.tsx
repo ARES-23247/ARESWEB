@@ -63,7 +63,7 @@ export default function EducationalCredentialSchema({
         "addressCountry": "US"
       }
     },
-    "timeToComplete": "PT6M", // 6 months (typical FTC season)
+    "timeToComplete": "P6M", // 6 months (typical FTC season)
     "keywords": "robotics, STEM, FIRST, FTC, engineering, programming, Morgantown, West Virginia"
   }));
 

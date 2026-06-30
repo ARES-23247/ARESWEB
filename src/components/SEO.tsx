@@ -6,7 +6,7 @@ const DEFAULT_KEYWORDS = [
   "robotics",
   "Morgantown robotics",
   "West Virginia robotics",
-  "*FIRST*® Robotics",
+  "FIRST® Robotics",
   "FTC robotics",
   "STEM education",
   "youth robotics",
@@ -20,7 +20,7 @@ const DEFAULT_KEYWORDS = [
   "robotics near me",
   "robotics programs",
   "robotics classes",
-  "*FIRST*® Tech Challenge",
+  "FIRST® Tech Challenge",
   "Morgantown STEM",
   "West Virginia STEM"
 ].join(", ");
