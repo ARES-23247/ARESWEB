@@ -37,7 +37,7 @@ if (!secret || secret.length < 32 || secret === "0123456789012345678901234567890
   throw new Error("Fatal: ENCRYPTION_SECRET must be configured with a strong secret of at least 32 characters.");
 }
 
-const app = express();
+export const app = express();
 
 // Enable trust proxy for rate limiting behind Cloud Functions hosting proxy
 app.set("trust proxy", 1);

@@ -64,4 +64,32 @@ describe("cleanupOldInquiries scheduled function", () => {
     expect(mockBatchDelete).not.toHaveBeenCalled();
     expect(mockBatchCommit).not.toHaveBeenCalled();
   });
+
+  it("should handle errors during inquiries cleanup task gracefully", async () => {
+    mockGet.mockRejectedValueOnce(new Error("Firestore database error"));
+
+    await expect((cleanupOldInquiries as any).run({})).resolves.not.toThrow();
+  });
+});
+
+import { app } from "../index";
+
+describe("Express App Endpoints", () => {
+  it("should mount and respond on the /api/reference endpoint", () => {
+    const route = app._router.stack.find(
+      (layer: any) => layer.route && layer.route.path === "/api/reference"
+    );
+    expect(route).toBeDefined();
+
+    const req = {} as any;
+    const res = {
+      setHeader: vi.fn(),
+      send: vi.fn(),
+    } as any;
+
+    route.route.stack[0].handle(req, res);
+
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/html");
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining("ARES API Reference"));
+  });
 });
