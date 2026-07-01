@@ -154,6 +154,7 @@ export const api = onRequest({
 export const cleanupOldInquiries = onSchedule({
   schedule: "0 0 * * *", // Runs daily at midnight
   maxInstances: 1,
+  secrets: ["ENCRYPTION_SECRET"],
 }, async (event) => {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - 180);
