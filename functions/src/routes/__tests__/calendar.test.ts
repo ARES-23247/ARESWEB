@@ -76,6 +76,10 @@ describe("GET /feed Calendar Feed Route", () => {
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/calendar; charset=utf-8");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'attachment; filename="ares_calendar.ics"');
     
+    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+    expect(res.setHeader).toHaveBeenCalledWith("Pragma", "no-cache");
+    expect(res.setHeader).toHaveBeenCalledWith("Expires", "0");
+    
     expect(res.send).toHaveBeenCalled();
     const icsContent: string = res.send.mock.calls[0][0];
 
@@ -84,10 +88,14 @@ describe("GET /feed Calendar Feed Route", () => {
     expect(icsContent).toContain("VERSION:2.0");
     expect(icsContent).toContain("PRODID:-//ARES 23247//Team Calendar//EN");
     expect(icsContent).toContain("X-WR-CALNAME:ARES 23247 Team Calendar");
+    expect(icsContent).toContain("REFRESH-INTERVAL;VALUE=DURATION:PT1H");
+    expect(icsContent).toContain("X-PUBLISHED-TTL:PT1H");
 
     // Assert event 1 (with dateEnd)
     expect(icsContent).toContain("BEGIN:VEVENT");
     expect(icsContent).toContain("UID:evt_1@ares23247.org");
+    expect(icsContent).toContain("DTSTAMP:20260524T093000");
+    expect(icsContent).toContain("LAST-MODIFIED:20260524T093000");
     expect(icsContent).toContain("DTSTART:20260524T093000");
     expect(icsContent).toContain("DTEND:20260524T113000");
     expect(icsContent).toContain("SUMMARY:Practice Meeting");
@@ -96,6 +104,8 @@ describe("GET /feed Calendar Feed Route", () => {
 
     // Assert event 2 (without dateEnd, should default to +2 hours)
     expect(icsContent).toContain("UID:evt_2@ares23247.org");
+    expect(icsContent).toContain("DTSTAMP:20260618T100000");
+    expect(icsContent).toContain("LAST-MODIFIED:20260618T100000");
     expect(icsContent).toContain("DTSTART:20260618T100000");
     expect(icsContent).toContain("DTEND:20260618T120000");
     expect(icsContent).toContain("SUMMARY:Outreach Fair");

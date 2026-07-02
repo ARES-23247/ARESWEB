@@ -76,8 +76,6 @@ router.get("/feed", asyncHandler(async (req, res) => {
     .limit(200)
     .get();
 
-  const nowStr = new Date().toISOString().replace(/-|:|\.\d+Z?/g, "");
-
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -86,6 +84,8 @@ router.get("/feed", asyncHandler(async (req, res) => {
     "METHOD:PUBLISH",
     "X-WR-CALNAME:ARES 23247 Team Calendar",
     "X-WR-TIMEZONE:UTC",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
+    "X-PUBLISHED-TTL:PT1H",
   ];
 
   eventsSnapshot.forEach((doc) => {
@@ -95,9 +95,15 @@ router.get("/feed", asyncHandler(async (req, res) => {
       ? formatIcalDate(data.dateEnd) 
       : addHoursToDate(data.dateStart || "", 2);
 
+    // Use a stable update time for cache consistency and sequence detection
+    const updatedStr = data.updatedAt 
+      ? formatIcalDate(data.updatedAt) 
+      : startStr;
+
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${doc.id}@ares23247.org`);
-    lines.push(`DTSTAMP:${nowStr}`);
+    lines.push(`DTSTAMP:${updatedStr}`);
+    lines.push(`LAST-MODIFIED:${updatedStr}`);
     lines.push(`DTSTART:${startStr}`);
     lines.push(`DTEND:${endStr}`);
     lines.push(`SUMMARY:${escapeIcalText(data.title || "Untitled Event")}`);
@@ -116,6 +122,9 @@ router.get("/feed", asyncHandler(async (req, res) => {
 
   res.setHeader("Content-Type", "text/calendar; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="ares_calendar.ics"');
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.send(icsContent);
 }));
 
