@@ -58,7 +58,7 @@ const MOCK_TASKS: TaskItem[] = [
 
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
-  const [tasks, setTasks] = useState<TaskItem[]>(MOCK_TASKS);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [isLive, setIsLive] = useState(false);
@@ -95,15 +95,13 @@ export default function KanbanPage() {
   useEffect(() => {
     try {
       const tasksRef = collection(db, "tasks");
-      const q = showArchived
-        ? query(tasksRef, limit(150))
-        : query(tasksRef, where("archived", "==", false), limit(150));
+      const q = query(tasksRef, limit(500));
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {
           if (snapshot.empty) {
-            setTasks(MOCK_TASKS);
-            setIsLive(false);
+            setTasks([]);
+            setIsLive(true);
             return;
           }
           const list = snapshot.docs.map((docSnap) => {
@@ -137,7 +135,7 @@ export default function KanbanPage() {
       setTasks(MOCK_TASKS);
       setIsLive(false);
     }
-  }, [showArchived]);
+  }, []);
 
   useEffect(() => {
     const fetchTeamRoster = async () => {
