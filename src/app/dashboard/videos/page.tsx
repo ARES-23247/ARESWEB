@@ -368,7 +368,7 @@ export default function VideosManagementPage() {
           >
             {video.thumbnailUrl && (
               <a
-                href={video.embedUrl}
+                href={`https://www.youtube.com/watch?v=${video.videoId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full h-48 bg-black/20 relative group/thumb overflow-hidden border-b border-white/5 cursor-pointer"
