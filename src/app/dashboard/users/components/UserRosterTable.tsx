@@ -26,9 +26,11 @@ interface UserRosterTableProps {
   filteredUsers: UserAuth[];
   isLoading: boolean;
   editedRoles: Record<string, string>;
+  editedMemberTypes: Record<string, string>;
   savingRoles: Record<string, boolean>;
   creatingZulip: Record<string, boolean>;
   onRoleChange: (userId: string, newRole: string) => void;
+  onMemberTypeChange: (userId: string, newType: string) => void;
   onSaveRole: (userId: string) => void;
   onCreateZulip: (userId: string) => void;
   onRemoveUser: (userId: string) => void;
@@ -38,9 +40,11 @@ export default function UserRosterTable({
   filteredUsers,
   isLoading,
   editedRoles,
+  editedMemberTypes,
   savingRoles,
   creatingZulip,
   onRoleChange,
+  onMemberTypeChange,
   onSaveRole,
   onCreateZulip,
   onRemoveUser,
@@ -73,7 +77,12 @@ export default function UserRosterTable({
   return (
     <div className="space-y-4">
       {filteredUsers.map((u) => {
-        const isRoleEdited = editedRoles[u.id] !== u.role;
+        const currentRole = editedRoles[u.id] !== undefined ? editedRoles[u.id] : u.role;
+        const currentMemberType = editedMemberTypes[u.id] !== undefined ? editedMemberTypes[u.id] : (u.memberType || "");
+        const isRoleEdited = editedRoles[u.id] !== undefined && editedRoles[u.id] !== u.role;
+        const isMemberTypeEdited = editedMemberTypes[u.id] !== undefined && editedMemberTypes[u.id] !== (u.memberType || "");
+        const isEdited = isRoleEdited || isMemberTypeEdited;
+
         const isSaving = savingRoles[u.id];
         const isCreatingZ = creatingZulip[u.id];
 
@@ -160,29 +169,48 @@ export default function UserRosterTable({
                 )}
               </div>
 
+              {/* Member Type Dropdown */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Member Type</span>
+                <select
+                  value={currentMemberType}
+                  onChange={(e) => onMemberTypeChange(u.id, e.target.value)}
+                  className="bg-obsidian border border-white/10 ares-cut-sm px-2 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none w-28"
+                >
+                  <option value="">-- None --</option>
+                  <option value="student">Student</option>
+                  <option value="parent">Parent</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="alumni">Alumni</option>
+                  <option value="sponsor">Sponsor</option>
+                </select>
+              </div>
+
               {/* ARES Role Dropdown */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Portal Role</span>
                 <div className="flex items-center gap-2">
                   <select
-                    value={editedRoles[u.id] || u.role}
+                    value={currentRole}
                     onChange={(e) => onRoleChange(u.id, e.target.value)}
                     className="bg-obsidian border border-white/10 ares-cut-sm px-2.5 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none w-32"
                   >
                     <option value="admin">Admin</option>
                     <option value="coach">Coach</option>
                     <option value="mentor">Mentor</option>
+                    <option value="student">Student</option>
+                    <option value="parent">Parent</option>
                     <option value="member">Member</option>
                     <option value="unverified">Unverified</option>
                   </select>
                   
-                  {/* Save role button */}
-                  {isRoleEdited && (
+                  {/* Save role & memberType button */}
+                  {isEdited && (
                     <button
                       onClick={() => onSaveRole(u.id)}
                       disabled={isSaving}
                       className="w-8 h-8 flex items-center justify-center bg-ares-success/15 hover:bg-ares-success/25 border border-ares-success/45 rounded cursor-pointer transition-all shrink-0 text-ares-success"
-                      title="Save Permissions"
+                      title="Save Changes"
                     >
                       {isSaving ? (
                         <RefreshCw size={14} className="animate-spin" />

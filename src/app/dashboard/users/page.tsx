@@ -58,6 +58,7 @@ export default function DashboardUsersPage() {
   // Edit States
   const [savingRoles, setSavingRoles] = useState<Record<string, boolean>>({});
   const [editedRoles, setEditedRoles] = useState<Record<string, string>>({});
+  const [editedMemberTypes, setEditedMemberTypes] = useState<Record<string, string>>({});
 
   // Zulip states
   const [creatingZulip, setCreatingZulip] = useState<Record<string, boolean>>({});
@@ -95,10 +96,15 @@ export default function DashboardUsersPage() {
         setZulipWarning("Could not query Zulip workspace members roster.");
       }
 
-      // Map profiles for quick lookup
+      // Map profiles by ID and by email for quick lookup
       const profilesMap: Record<string, any> = {};
+      const profilesByEmail: Record<string, any> = {};
       profilesSnap.forEach((doc) => {
-        profilesMap[doc.id] = doc.data();
+        const pData = doc.data();
+        profilesMap[doc.id] = { id: doc.id, ...pData };
+        if (pData.contactEmail) {
+          profilesByEmail[pData.contactEmail.toLowerCase().trim()] = { id: doc.id, ...pData };
+        }
       });
 
       // Map Zulip users by normalized email
@@ -114,14 +120,19 @@ export default function DashboardUsersPage() {
       // Process authorized_users
       authSnap.forEach((doc) => {
         const data = doc.data();
-        const profile = profilesMap[doc.id] || {};
         const email = data.email || "";
         const normEmail = email.toLowerCase().trim();
+
+        const profileByUid = profilesMap[doc.id];
+        const profileByEmail = normEmail ? profilesByEmail[normEmail] : null;
+        const profile = profileByUid || profileByEmail || {};
+        const isRegistered = !!profileByUid || !!profileByEmail;
+
         const nickname = profile.nickname || "";
         const firstName = profile.firstName || "";
         const lastName = profile.lastName || "";
         
-        let displayName = data.name || nickname || `${firstName} ${lastName}`.trim();
+        let displayName = data.name || profile.displayName || nickname || `${firstName} ${lastName}`.trim();
         if (!displayName && email) {
           displayName = email.split("@")[0];
         }
@@ -132,11 +143,11 @@ export default function DashboardUsersPage() {
           email: email,
           role: data.role || "member",
           name: displayName,
-          isRegistered: !!profilesMap[doc.id],
+          isRegistered: isRegistered,
           avatar: profile.avatar || "",
           subteams: profile.subteams || [],
-          memberType: profile.memberType || "",
-          profileExists: !!profilesMap[doc.id],
+          memberType: profile.memberType || data.memberType || "",
+          profileExists: isRegistered,
           zulipAccount: normEmail ? zulipMap[normEmail] : null
         };
       });
@@ -175,12 +186,15 @@ export default function DashboardUsersPage() {
       const finalUsers = Object.values(combined);
       setUsersList(finalUsers);
 
-      // Initialize edited roles state
+      // Initialize edited roles & memberTypes states
       const initialRoles: Record<string, string> = {};
+      const initialMemberTypes: Record<string, string> = {};
       finalUsers.forEach(u => {
         initialRoles[u.id] = u.role;
+        initialMemberTypes[u.id] = u.memberType || "";
       });
       setEditedRoles(initialRoles);
+      setEditedMemberTypes(initialMemberTypes);
 
     } catch (err: any) {
       console.error("Error fetching admin users:", err);
@@ -201,10 +215,19 @@ export default function DashboardUsersPage() {
     }));
   };
 
+  const handleMemberTypeChange = (userId: string, newMemberType: string) => {
+    setEditedMemberTypes(prev => ({
+      ...prev,
+      [userId]: newMemberType
+    }));
+  };
+
   const handleSaveRole = async (userId: string) => {
-    const targetRole = editedRoles[userId];
     const originalUser = usersList.find(u => u.id === userId);
     if (!originalUser || !user) return;
+
+    const targetRole = editedRoles[userId] !== undefined ? editedRoles[userId] : originalUser.role;
+    const targetMemberType = editedMemberTypes[userId] !== undefined ? editedMemberTypes[userId] : (originalUser.memberType || "");
 
     setSavingRoles(prev => ({ ...prev, [userId]: true }));
     setSuccess(null);
@@ -214,13 +237,22 @@ export default function DashboardUsersPage() {
       // Update Firestore authorized_users document
       const authRef = doc(db, "authorized_users", userId);
       await setDoc(authRef, {
-        role: targetRole
+        role: targetRole,
+        memberType: targetMemberType
       }, { merge: true });
 
-      setSuccess(`Permissions updated successfully for ${originalUser.name || originalUser.email}`);
+      // Also update user_profiles if profile exists
+      if (originalUser.isRegistered) {
+        const profileRef = doc(db, "user_profiles", userId);
+        await setDoc(profileRef, {
+          memberType: targetMemberType
+        }, { merge: true }).catch(() => {});
+      }
+
+      setSuccess(`Updated permissions and member type for ${originalUser.name || originalUser.email}`);
       
-      // Update local state role
-      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: targetRole } : u));
+      // Update local state
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: targetRole, memberType: targetMemberType } : u));
       
       // Automatically attempt Zulip account creation if role is verified and Zulip is not yet linked
       if (targetRole !== "unverified" && !originalUser.zulipAccount) {
@@ -422,6 +454,8 @@ export default function DashboardUsersPage() {
                 <option value="admin">Admin</option>
                 <option value="coach">Coach</option>
                 <option value="mentor">Mentor</option>
+                <option value="student">Student</option>
+                <option value="parent">Parent</option>
                 <option value="member">Member</option>
                 <option value="unverified">Unverified</option>
               </select>
@@ -443,9 +477,11 @@ export default function DashboardUsersPage() {
             filteredUsers={filteredUsers}
             isLoading={isLoading}
             editedRoles={editedRoles}
+            editedMemberTypes={editedMemberTypes}
             savingRoles={savingRoles}
             creatingZulip={creatingZulip}
             onRoleChange={handleRoleChange}
+            onMemberTypeChange={handleMemberTypeChange}
             onSaveRole={handleSaveRole}
             onCreateZulip={handleCreateZulip}
             onRemoveUser={handleRemoveUser}

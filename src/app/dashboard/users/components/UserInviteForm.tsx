@@ -33,6 +33,7 @@ export default function UserInviteForm({
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
+  const [inviteMemberType, setInviteMemberType] = useState("student");
   const [createZulipCheckbox, setCreateZulipCheckbox] = useState(false);
   const [inviting, setInviting] = useState(false);
 
@@ -59,7 +60,8 @@ export default function UserInviteForm({
       await setDoc(newAuthRef, {
         email: emailClean,
         name: nameClean,
-        role: inviteRole
+        role: inviteRole,
+        memberType: inviteMemberType
       });
 
       let zulipMsg = "";
@@ -157,11 +159,32 @@ export default function UserInviteForm({
             onChange={(e) => setInviteRole(e.target.value)}
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white cursor-pointer font-bold focus:outline-none font-sans"
           >
-            <option value="member">Member (Standard Roster)</option>
+            <option value="student">Student Member</option>
+            <option value="parent">Parent</option>
+            <option value="member">General Member</option>
             <option value="mentor">Mentor (Senior Advisor)</option>
             <option value="coach">Coach (Team Director)</option>
             <option value="admin">Admin (Full System Control)</option>
             <option value="unverified">Unverified (Pending Verification)</option>
+          </select>
+        </div>
+
+        {/* Member Type Selection */}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="inviteMemberType" className="text-[10px] uppercase font-black tracking-widest text-ares-gold">
+            Member Type / Designation
+          </label>
+          <select
+            id="inviteMemberType"
+            value={inviteMemberType}
+            onChange={(e) => setInviteMemberType(e.target.value)}
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white cursor-pointer font-bold focus:outline-none font-sans"
+          >
+            <option value="student">Student</option>
+            <option value="parent">Parent</option>
+            <option value="mentor">Mentor</option>
+            <option value="alumni">Alumni</option>
+            <option value="sponsor">Sponsor</option>
           </select>
         </div>
 
