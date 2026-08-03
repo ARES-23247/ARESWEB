@@ -24,7 +24,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function DashboardZulipPage() {
   const { user, authorizedUser } = useAuth();
-  const [zulipLink, setZulipLink] = useState<string>("https://aresfirst.zulipchat.com/");
+  const [zulipLink, setZulipLink] = useState<string>("https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
   const [zulipAccount, setZulipAccount] = useState<any | null>(null);
   const [checkingSync, setCheckingSync] = useState<boolean>(true);
   const [editingLink, setEditingLink] = useState<boolean>(false);
@@ -48,7 +48,7 @@ export default function DashboardZulipPage() {
         setZulipLink(configDoc.data().inviteUrl);
         setNewLinkInput(configDoc.data().inviteUrl);
       } else {
-        setNewLinkInput("https://aresfirst.zulipchat.com/");
+        setNewLinkInput("https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
       }
 
       // 2. Check if logged-in user is synced in Zulip roster

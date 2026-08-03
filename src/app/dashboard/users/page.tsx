@@ -324,7 +324,7 @@ export default function DashboardUsersPage() {
     } catch (err: any) {
       console.error("Error provisioning Zulip user:", err);
       if (err.message?.includes("bot requests") || err.message?.includes("administrator") || err.message?.includes("not accept")) {
-        setError("Zulip Cloud restricts bot invitations. Members can join directly via our Zulip Join Hub: /dashboard/zulip");
+        setError("Zulip Cloud restricts bot invitations. Members can join directly via our Zulip Join Link: https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
       } else {
         setError(`Zulip account creation failed: ${err.message}`);
       }
