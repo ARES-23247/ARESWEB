@@ -302,8 +302,12 @@ export default function DashboardUsersPage() {
       
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
-      console.error("Error creating Zulip user:", err);
-      setError(`Zulip account creation failed: ${err.message}`);
+      console.error("Error provisioning Zulip user:", err);
+      if (err.message?.includes("Must be an organization administrator")) {
+        setError("Zulip bot requires Administrator permissions. In Zulip Settings -> Organization Settings -> Users, change 'Portal-bot' role to Administrator.");
+      } else {
+        setError(`Zulip account creation failed: ${err.message}`);
+      }
     } finally {
       setCreatingZulip(prev => ({ ...prev, [userId]: false }));
     }
