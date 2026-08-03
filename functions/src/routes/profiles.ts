@@ -305,7 +305,7 @@ router.get("/zulip/users", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/profiles/zulip/users
-// Creates a new user in the Zulip workspace
+// Creates a new user in the Zulip workspace (Admin action)
 router.post("/zulip/users", ensureAdmin, asyncHandler(async (req, res) => {
   const { email, fullName } = req.body;
   if (!email || !fullName) {
@@ -320,4 +320,23 @@ router.post("/zulip/users", ensureAdmin, asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Zulip account created successfully." });
 }));
 
+// POST /api/profiles/zulip/self-provision
+// Allows any verified team member to provision their own Zulip account
+router.post("/zulip/self-provision", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const email = req.user?.email;
+  const fullName = req.user?.name || email?.split("@")[0] || "Team Member";
+
+  if (!email) {
+    throw new ApiError(400, "Email address not found in user session.");
+  }
+
+  const result = await createZulipUser(email, fullName);
+  if (!result.success) {
+    throw new ApiError(500, result.error || "Failed to provision Zulip account.");
+  }
+
+  res.json({ success: true, message: "Zulip account provisioned successfully." });
+}));
+
 export default router;
+

@@ -16,9 +16,11 @@ import {
   AlertTriangle,
   Info,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { authenticatedFetch } from "@/lib/api";
 import AvatarEditor from "@/components/AvatarEditor";
 import IdentityTab from "./components/IdentityTab";
 import SubteamsTab from "./components/SubteamsTab";
@@ -32,7 +34,30 @@ export default function DashboardProfilePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [provisioningZulip, setProvisioningZulip] = useState(false);
   const [activeTab, setActiveTab] = useState<"identity" | "subteams" | "career" | "privacy" | "safety">("identity");
+
+  const handleSelfProvisionZulip = async () => {
+    setProvisioningZulip(true);
+    setSuccess(null);
+    setError(null);
+    try {
+      const res = await authenticatedFetch("/api/profiles/zulip/self-provision", {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to provision Zulip account.");
+      }
+      setSuccess("Zulip account provisioned successfully! Log into aresfirst.zulipchat.com with your Google account.");
+      setTimeout(() => setSuccess(null), 6000);
+    } catch (err: any) {
+      console.error("Zulip self-provision error:", err);
+      setError(err.message || "Failed to provision Zulip account.");
+    } finally {
+      setProvisioningZulip(false);
+    }
+  };
 
   // Form States
   const [nickname, setNickname] = useState("");
@@ -307,6 +332,28 @@ export default function DashboardProfilePage() {
             Manage your personal profile details, subteam roles, career history, and public roster privacy options.
           </p>
         </div>
+        {userRole !== "unverified" && userRole !== "Pending Verification" && (
+          <div className="shrink-0">
+            <button
+              type="button"
+              onClick={handleSelfProvisionZulip}
+              disabled={provisioningZulip}
+              className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2"
+            >
+              {provisioningZulip ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Provisioning...</span>
+                </>
+              ) : (
+                <>
+                  <MessageSquare size={14} />
+                  <span>Provision Zulip Account</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Alerts */}

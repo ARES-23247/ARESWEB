@@ -222,7 +222,14 @@ export default function DashboardUsersPage() {
       // Update local state role
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: targetRole } : u));
       
-      setTimeout(() => setSuccess(null), 4000);
+      // Automatically attempt Zulip account creation if role is verified and Zulip is not yet linked
+      if (targetRole !== "unverified" && !originalUser.zulipAccount) {
+        setTimeout(() => {
+          handleCreateZulip(userId);
+        }, 500);
+      } else {
+        setTimeout(() => setSuccess(null), 4000);
+      }
     } catch (err: any) {
       console.error("Error updating user role:", err);
       setError(`Failed to update permissions: ${err.message}`);
