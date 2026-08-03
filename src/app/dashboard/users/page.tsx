@@ -323,8 +323,8 @@ export default function DashboardUsersPage() {
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
       console.error("Error provisioning Zulip user:", err);
-      if (err.message?.includes("Must be an organization administrator")) {
-        setError("Zulip bot requires Administrator permissions. In Zulip Settings -> Organization Settings -> Users, change 'Portal-bot' role to Administrator.");
+      if (err.message?.includes("bot requests") || err.message?.includes("administrator") || err.message?.includes("not accept")) {
+        setError("Zulip Cloud restricts bot invitations. Members can join directly using your workspace link: https://aresfirst.zulipchat.com/join/");
       } else {
         setError(`Zulip account creation failed: ${err.message}`);
       }
