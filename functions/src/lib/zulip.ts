@@ -119,24 +119,26 @@ export async function getZulipUsers(): Promise<any[] | null> {
 export async function createZulipUser(
   userEmail: string,
   fullName: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; message?: string }> {
   const { url, email, apiKey } = getZulipCredentials();
 
   if (!email || !apiKey) {
     return { success: false, error: "Zulip integration is not active (missing bot email or api key)." };
   }
 
-  try {
-    const auth = Buffer.from(`${email}:${apiKey}`).toString("base64");
-    const endpoint = `${url}/api/v1/users`;
+  const cleanEmail = userEmail.trim().toLowerCase();
+  const cleanName = fullName.trim();
+  const auth = Buffer.from(`${email}:${apiKey}`).toString("base64");
 
-    // Generate a secure random password
+  // Attempt 1: Direct user creation (available on self-hosted or human admin keys)
+  try {
+    const endpoint = `${url}/api/v1/users`;
     const password = crypto.randomBytes(16).toString("hex") + "aA1!";
 
     const params = new URLSearchParams();
-    params.append("email", userEmail.trim().toLowerCase());
+    params.append("email", cleanEmail);
     params.append("password", password);
-    params.append("full_name", fullName.trim());
+    params.append("full_name", cleanName);
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -147,17 +149,42 @@ export async function createZulipUser(
       body: params.toString(),
     });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      const errorMsg = errorData.msg || `Zulip API returned status ${res.status}`;
-      logger.error("zulip", "Failed to create user", { status: res.status, error: errorData });
-      return { success: false, error: errorMsg };
+    if (res.ok) {
+      return { success: true, message: `Zulip account created for ${cleanEmail}` };
     }
 
-    return { success: true };
+    const errorData = await res.json().catch(() => ({}));
+    logger.warn("zulip", "Direct user creation failed, attempting invitation fallback", { status: res.status, error: errorData });
   } catch (err: any) {
-    logger.error("zulip", "Exception creating user", { error: err });
-    return { success: false, error: err.message || "Internal server error." };
+    logger.warn("zulip", "Exception in direct user creation", { error: err });
+  }
+
+  // Attempt 2: Zulip Invitation API (available for Admin Bots on Zulip Cloud)
+  try {
+    const inviteEndpoint = `${url}/api/v1/invites`;
+    const inviteParams = new URLSearchParams();
+    inviteParams.append("invitee_emails", cleanEmail);
+
+    const inviteRes = await fetch(inviteEndpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: inviteParams.toString(),
+    });
+
+    if (inviteRes.ok) {
+      return { success: true, message: `Zulip invitation email sent to ${cleanEmail}` };
+    }
+
+    const inviteError = await inviteRes.json().catch(() => ({}));
+    const errorMsg = inviteError.msg || `Zulip invite failed with status ${inviteRes.status}`;
+    logger.error("zulip", "Failed to invite user via Zulip API", { status: inviteRes.status, error: inviteError });
+    return { success: false, error: errorMsg };
+  } catch (err: any) {
+    logger.error("zulip", "Exception in Zulip user invitation", { error: err });
+    return { success: false, error: err.message || "Internal server error inviting user." };
   }
 }
 

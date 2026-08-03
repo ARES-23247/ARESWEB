@@ -185,7 +185,7 @@ describe("Zulip Integration Library", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, message: expect.stringContaining("Zulip account created") });
     });
 
     it("should return error from response if not ok", async () => {
@@ -215,7 +215,7 @@ describe("Zulip Integration Library", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: false, error: "Zulip API returned status 403" });
+      expect(result).toEqual({ success: false, error: expect.stringContaining("403") });
     });
 
     it("should return success false if fetch throws", async () => {

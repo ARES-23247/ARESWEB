@@ -317,7 +317,7 @@ router.post("/zulip/users", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(500, result.error || "Failed to create Zulip user.");
   }
 
-  res.json({ success: true, message: "Zulip account created successfully." });
+  res.json({ success: true, message: result.message || "Zulip account created successfully." });
 }));
 
 // POST /api/profiles/zulip/self-provision
