@@ -147,9 +147,6 @@ export const api = onRequest({
     "GCP_PROJECT_ID",
     "GEMINI_API_KEY",
     "RECAPTCHA_SECRET_KEY",
-    "ZULIP_BOT_EMAIL",
-    "ZULIP_API_KEY",
-    "ZULIP_URL",
   ] 
 }, app);
 
