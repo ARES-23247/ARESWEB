@@ -149,6 +149,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
           <div className="space-y-1">
             <NavButton tab="" icon={LayoutDashboard} label="Command Center" currentPath={pathname} />
             <NavButton tab="profile" icon={User} label="My Profile" currentPath={pathname} />
+            <NavButton tab="zulip" icon={MessageSquare} label="Zulip Chat Hub" currentPath={pathname} />
             <NavButton tab="tasks" icon={ClipboardList} label="Kanban Tasks" currentPath={pathname} />
           </div>
         </div>

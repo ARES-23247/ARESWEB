@@ -62,6 +62,7 @@ const DashboardTasksPage = lazy(() => import("@/app/dashboard/tasks/page"));
 const DashboardVideosPage = lazy(() => import("@/app/dashboard/videos/page"));
 const DashboardInquiriesPage = lazy(() => import("@/app/dashboard/inquiries/page"));
 const DashboardUsersPage = lazy(() => import("@/app/dashboard/users/page"));
+const DashboardZulipPage = lazy(() => import("@/app/dashboard/zulip/page"));
 const DashboardSponsorsPage = lazy(() => import("@/app/dashboard/sponsors/page"));
 const DashboardOutreachPage = lazy(() => import("@/app/dashboard/outreach/page"));
 const DashboardTournamentsPage = lazy(() => import("@/app/dashboard/tournaments/page"));
@@ -157,6 +158,7 @@ export default function App() {
                     <Route path="photos" element={<DashboardPhotosPage />} />
                     <Route path="inquiries" element={<DashboardInquiriesPage />} />
                     <Route path="users" element={<DashboardUsersPage />} />
+                    <Route path="zulip" element={<DashboardZulipPage />} />
                     <Route path="sponsors" element={<DashboardSponsorsPage />} />
                     <Route path="outreach" element={<DashboardOutreachPage />} />
                     <Route path="tournaments" element={<DashboardTournamentsPage />} />
