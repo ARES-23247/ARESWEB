@@ -68,11 +68,17 @@
   "pnpm": {
     "overrides": {
       "dompurify": "^3.4.11",
-      "**/dompurify": "^3.4.11"
+      "**/dompurify": "^3.4.11",
+      "brace-expansion": "^2.1.4",
+      "fast-uri": "^3.1.5",
+      "ip-address": "^10.3.1"
     }
   },
   "resolutions": {
     "dompurify": "^3.4.11",
-    "**/dompurify": "^3.4.11"
+    "**/dompurify": "^3.4.11",
+    "brace-expansion": "^2.1.4",
+    "fast-uri": "^3.1.5",
+    "ip-address": "^10.3.1"
   }
 }

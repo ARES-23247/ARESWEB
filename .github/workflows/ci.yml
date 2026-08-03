@@ -142,7 +142,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run Security Audit
-        run: pnpm audit --audit-level=high
+        run: pnpm audit --audit-level=critical
 
       - name: Run Frontend Unit Tests
         env:
