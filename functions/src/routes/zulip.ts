@@ -27,7 +27,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
   }
 
   const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
-  const email = process.env.ZULIP_BOT_EMAIL;
+  const email = process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com";
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
