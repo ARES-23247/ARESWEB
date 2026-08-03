@@ -101,10 +101,14 @@ export default function DashboardUsersPage() {
       const profilesByEmail: Record<string, any> = {};
       profilesSnap.forEach((doc) => {
         const pData = doc.data();
-        profilesMap[doc.id] = { id: doc.id, ...pData };
-        if (pData.contactEmail) {
-          profilesByEmail[pData.contactEmail.toLowerCase().trim()] = { id: doc.id, ...pData };
-        }
+        const profileObj = { id: doc.id, ...pData };
+        profilesMap[doc.id] = profileObj;
+        
+        [pData.contactEmail, pData.email, pData.userEmail, pData.primaryEmail].forEach(e => {
+          if (e && typeof e === "string") {
+            profilesByEmail[e.toLowerCase().trim()] = profileObj;
+          }
+        });
       });
 
       // Map Zulip users strictly by normalized email and delivery_email
@@ -119,6 +123,7 @@ export default function DashboardUsersPage() {
       });
 
       const combined: Record<string, UserAuth> = {};
+      const linkedProfileIds = new Set<string>();
 
       // Process authorized_users
       authSnap.forEach((doc) => {
@@ -129,6 +134,11 @@ export default function DashboardUsersPage() {
         const profileByUid = profilesMap[doc.id];
         const profileByEmail = normEmail ? profilesByEmail[normEmail] : null;
         const profile = profileByUid || profileByEmail || {};
+        
+        if (profile.id) {
+          linkedProfileIds.add(profile.id);
+        }
+
         const isRegistered = !!profileByUid || !!profileByEmail;
 
         const nickname = profile.nickname || "";
@@ -141,7 +151,7 @@ export default function DashboardUsersPage() {
         }
         if (!displayName) displayName = "ARES Member";
 
-        const profileEmail = (profile.contactEmail || "").toLowerCase().trim();
+        const profileEmail = (profile.contactEmail || profile.email || "").toLowerCase().trim();
         const zulipAccount = zulipMapByEmail[normEmail] || 
                              (profileEmail ? zulipMapByEmail[profileEmail] : null) || 
                              null;
@@ -162,9 +172,9 @@ export default function DashboardUsersPage() {
 
       // Process any profiles that don't have an auth doc (self-healing)
       profilesSnap.forEach((doc) => {
-        if (!combined[doc.id]) {
+        if (!linkedProfileIds.has(doc.id) && !combined[doc.id]) {
           const profile = doc.data();
-          const email = profile.contactEmail || "";
+          const email = profile.contactEmail || profile.email || "";
           const normEmail = email.toLowerCase().trim();
           const nickname = profile.nickname || "";
           const firstName = profile.firstName || "";
