@@ -28,7 +28,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
 
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey) {
+  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
     logger.warn("zulip", "Zulip integration is not active (missing credentials).");
     res.json({ success: true, messages: [] });
     return;

@@ -3,13 +3,6 @@ import { logger } from "./logger";
 
 export function getZulipCredentials() {
   const url = (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim();
-
-  if (process.env.NODE_ENV === "test") {
-    const email = process.env.ZULIP_BOT_EMAIL ? process.env.ZULIP_BOT_EMAIL.trim() : "";
-    const apiKey = process.env.ZULIP_API_KEY ? process.env.ZULIP_API_KEY.trim() : "";
-    return { url, email, apiKey };
-  }
-
   const email = (process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com").trim();
   const apiKey = (process.env.ZULIP_API_KEY || "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5").trim();
 
@@ -23,7 +16,7 @@ export async function sendZulipMessage(
 ): Promise<boolean> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey) {
+  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
     logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return false;
   }
@@ -75,7 +68,7 @@ export async function sendZulipAlert(
 export async function getZulipUsers(): Promise<any[] | null> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey) {
+  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
     logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return null;
   }
@@ -111,7 +104,7 @@ export async function createZulipUser(
 ): Promise<{ success: boolean; error?: string }> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey) {
+  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
     return { success: false, error: "Zulip integration is not active (missing bot email or api key)." };
   }
 

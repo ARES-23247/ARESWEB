@@ -76,8 +76,8 @@ describe("Zulip Router Backend Endpoints", () => {
     });
 
     it("should return empty list if Zulip credentials are not configured", async () => {
-      delete process.env.ZULIP_BOT_EMAIL;
-      delete process.env.ZULIP_API_KEY;
+      process.env.ZULIP_BOT_EMAIL = "disabled";
+      process.env.ZULIP_API_KEY = "disabled";
 
       const handler = getHandler("/topic", "get");
       req.query = { stream: "announcements", topic: "Doc: Welcome" };

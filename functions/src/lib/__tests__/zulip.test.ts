@@ -17,8 +17,8 @@ describe("Zulip Integration Library", () => {
 
   describe("sendZulipMessage", () => {
     it("should return false and warning if credentials are missing", async () => {
-      delete process.env.ZULIP_BOT_EMAIL;
-      delete process.env.ZULIP_API_KEY;
+      process.env.ZULIP_BOT_EMAIL = "disabled";
+      process.env.ZULIP_API_KEY = "disabled";
 
       const result = await sendZulipMessage("general", "Testing", "Hello Zulip");
       expect(result).toBe(false);
@@ -99,8 +99,8 @@ describe("Zulip Integration Library", () => {
 
   describe("getZulipUsers", () => {
     it("should return null if credentials are missing", async () => {
-      delete process.env.ZULIP_BOT_EMAIL;
-      delete process.env.ZULIP_API_KEY;
+      process.env.ZULIP_BOT_EMAIL = "disabled";
+      process.env.ZULIP_API_KEY = "disabled";
 
       const result = await getZulipUsers();
       expect(result).toBeNull();
@@ -165,8 +165,8 @@ describe("Zulip Integration Library", () => {
 
   describe("createZulipUser", () => {
     it("should return success false if credentials missing", async () => {
-      delete process.env.ZULIP_BOT_EMAIL;
-      delete process.env.ZULIP_API_KEY;
+      process.env.ZULIP_BOT_EMAIL = "disabled";
+      process.env.ZULIP_API_KEY = "disabled";
 
       const result = await createZulipUser("new@team.org", "New User");
       expect(result).toEqual({
