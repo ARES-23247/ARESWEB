@@ -26,7 +26,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing stream or topic parameter.");
   }
 
-  const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
+  const url = process.env.ZULIP_URL || "https://aresfirst.zulip.org";
   const email = process.env.ZULIP_BOT_EMAIL;
   const apiKey = process.env.ZULIP_API_KEY;
 

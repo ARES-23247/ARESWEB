@@ -39,7 +39,7 @@ describe("Zulip Integration Library", () => {
       const result = await sendZulipMessage("general", "Testing", "Hello Zulip");
       expect(result).toBe(true);
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://aresfirst.zulipchat.com/api/v1/messages",
+        "https://aresfirst.zulip.org/api/v1/messages",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
