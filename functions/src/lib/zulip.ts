@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { logger } from "./logger";
 
 export function getZulipCredentials() {
-  if (process.env.ZULIP_BOT_EMAIL === "none" || process.env.ZULIP_API_KEY === "none") {
+  if (process.env.NODE_ENV === "test" && (process.env.ZULIP_BOT_EMAIL === "none" || process.env.ZULIP_API_KEY === "none")) {
     return { 
       url: (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim(), 
       email: "", 
@@ -17,10 +17,10 @@ export function getZulipCredentials() {
   if (!url || !url.startsWith("http")) {
     url = "https://aresfirst.zulipchat.com";
   }
-  if (!email || !email.includes("@")) {
+  if (!email || !email.includes("@") || email === "disabled" || email === "none") {
     email = "Portal-bot@aresfirst.zulipchat.com";
   }
-  if (!apiKey || apiKey.length < 10) {
+  if (!apiKey || apiKey.length < 10 || apiKey === "disabled" || apiKey === "none") {
     apiKey = "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5";
   }
 
