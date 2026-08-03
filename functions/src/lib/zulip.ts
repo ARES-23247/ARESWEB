@@ -2,9 +2,27 @@ import crypto from "crypto";
 import { logger } from "./logger";
 
 export function getZulipCredentials() {
-  const url = (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim();
-  const email = (process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com").trim();
-  const apiKey = (process.env.ZULIP_API_KEY || "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5").trim();
+  if (process.env.ZULIP_BOT_EMAIL === "none" || process.env.ZULIP_API_KEY === "none") {
+    return { 
+      url: (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim(), 
+      email: "", 
+      apiKey: "" 
+    };
+  }
+
+  let url = (process.env.ZULIP_URL || "").trim();
+  let email = (process.env.ZULIP_BOT_EMAIL || "").trim();
+  let apiKey = (process.env.ZULIP_API_KEY || "").trim();
+
+  if (!url || !url.startsWith("http")) {
+    url = "https://aresfirst.zulipchat.com";
+  }
+  if (!email || !email.includes("@")) {
+    email = "Portal-bot@aresfirst.zulipchat.com";
+  }
+  if (!apiKey || apiKey.length < 10) {
+    apiKey = "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5";
+  }
 
   return { url, email, apiKey };
 }
@@ -16,7 +34,7 @@ export async function sendZulipMessage(
 ): Promise<boolean> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
+  if (!email || !apiKey) {
     logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return false;
   }
@@ -68,7 +86,7 @@ export async function sendZulipAlert(
 export async function getZulipUsers(): Promise<any[] | null> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
+  if (!email || !apiKey) {
     logger.warn("zulip", "Integration not active: ZULIP_BOT_EMAIL and/or ZULIP_API_KEY missing.");
     return null;
   }
@@ -104,7 +122,7 @@ export async function createZulipUser(
 ): Promise<{ success: boolean; error?: string }> {
   const { url, email, apiKey } = getZulipCredentials();
 
-  if (!email || !apiKey || email === "disabled" || apiKey === "disabled") {
+  if (!email || !apiKey) {
     return { success: false, error: "Zulip integration is not active (missing bot email or api key)." };
   }
 
