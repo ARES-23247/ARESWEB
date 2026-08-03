@@ -82,7 +82,7 @@ export default function DeveloperApiPage() {
               Join the #engineering stream on Zulip to ask questions about API usage or request new endpoints.
             </p>
             <a
-              href="https://aresfirst.zulip.org"
+              href="https://aresfirst.zulipchat.com"
               target="_blank"
               rel="noreferrer"
               className="inline-block w-full py-2 bg-ares-gold text-ares-black font-bold uppercase rounded hover:bg-ares-gold/80 transition-colors"
