@@ -1,15 +1,17 @@
 import crypto from "crypto";
 import { logger } from "./logger";
 
-function getZulipCredentials() {
-  const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
+export function getZulipCredentials() {
+  const url = (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim();
 
-  if (process.env.NODE_ENV === "test" && (!process.env.ZULIP_BOT_EMAIL || !process.env.ZULIP_API_KEY)) {
-    return { url, email: "", apiKey: "" };
+  if (process.env.NODE_ENV === "test") {
+    const email = process.env.ZULIP_BOT_EMAIL ? process.env.ZULIP_BOT_EMAIL.trim() : "";
+    const apiKey = process.env.ZULIP_API_KEY ? process.env.ZULIP_API_KEY.trim() : "";
+    return { url, email, apiKey };
   }
 
-  const email = process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com";
-  const apiKey = process.env.ZULIP_API_KEY || "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5";
+  const email = (process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com").trim();
+  const apiKey = (process.env.ZULIP_API_KEY || "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5").trim();
 
   return { url, email, apiKey };
 }

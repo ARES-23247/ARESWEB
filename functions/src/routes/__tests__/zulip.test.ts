@@ -3,8 +3,10 @@ import zulipRouter from "../zulip";
 import { sendZulipMessage } from "../../lib/zulip";
 
 // Mock the Zulip library helpers
-vi.mock("../../lib/zulip", () => {
+vi.mock("../../lib/zulip", async (importOriginal) => {
+  const actual: any = await importOriginal();
   return {
+    ...actual,
     sendZulipMessage: vi.fn(),
   };
 });

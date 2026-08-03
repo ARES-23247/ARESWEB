@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
-import { sendZulipMessage } from "../lib/zulip";
+import { sendZulipMessage, getZulipCredentials } from "../lib/zulip";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
@@ -26,9 +26,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing stream or topic parameter.");
   }
 
-  const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
-  const email = process.env.ZULIP_BOT_EMAIL;
-  const apiKey = process.env.ZULIP_API_KEY;
+  const { url, email, apiKey } = getZulipCredentials();
 
   if (!email || !apiKey) {
     logger.warn("zulip", "Zulip integration is not active (missing credentials).");
