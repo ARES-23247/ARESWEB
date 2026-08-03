@@ -107,18 +107,14 @@ export default function DashboardUsersPage() {
         }
       });
 
-      // Map Zulip users by normalized email, delivery_email, and full_name
+      // Map Zulip users strictly by normalized email and delivery_email
       const zulipMapByEmail: Record<string, any> = {};
-      const zulipMapByName: Record<string, any> = {};
       zulipUsers.forEach((zUser: any) => {
         if (zUser.email) {
           zulipMapByEmail[zUser.email.toLowerCase().trim()] = zUser;
         }
         if (zUser.delivery_email) {
           zulipMapByEmail[zUser.delivery_email.toLowerCase().trim()] = zUser;
-        }
-        if (zUser.full_name) {
-          zulipMapByName[zUser.full_name.toLowerCase().trim()] = zUser;
         }
       });
 
@@ -146,10 +142,8 @@ export default function DashboardUsersPage() {
         if (!displayName) displayName = "ARES Member";
 
         const profileEmail = (profile.contactEmail || "").toLowerCase().trim();
-        const normName = displayName.toLowerCase().trim();
         const zulipAccount = zulipMapByEmail[normEmail] || 
                              (profileEmail ? zulipMapByEmail[profileEmail] : null) || 
-                             (normName ? zulipMapByName[normName] : null) || 
                              null;
 
         combined[doc.id] = {
@@ -182,10 +176,7 @@ export default function DashboardUsersPage() {
           }
           if (!displayName) displayName = "Unverified Member";
 
-          const normName = displayName.toLowerCase().trim();
-          const zulipAccount = zulipMapByEmail[normEmail] || 
-                               (normName ? zulipMapByName[normName] : null) || 
-                               null;
+          const zulipAccount = zulipMapByEmail[normEmail] || null;
 
           combined[doc.id] = {
             id: doc.id,
