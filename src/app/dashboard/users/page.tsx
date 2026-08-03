@@ -160,7 +160,7 @@ export default function DashboardUsersPage() {
           combined[doc.id] = {
             id: doc.id,
             email: email,
-            role: "Pending Verification",
+            role: "unverified",
             name: displayName,
             isRegistered: true,
             avatar: profile.avatar || "",

@@ -282,7 +282,16 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
     return;
   }
 
-  res.json({ authorizedUser: null });
+  // Automatically create an unverified authorized_users record for new sign-ins
+  // so admins can see them in the User Management roster and assign roles.
+  const unverifiedData = {
+    email: cleanEmail,
+    role: "unverified",
+    name: req.user?.name || cleanEmail.split("@")[0],
+    createdAt: new Date().toISOString()
+  };
+  await userRef.set(unverifiedData);
+  res.json({ authorizedUser: unverifiedData });
 }));
 
 // GET /api/profiles/zulip/users
