@@ -7,7 +7,7 @@ export async function sendZulipMessage(
   content: string
 ): Promise<boolean> {
   const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
-  const email = process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com";
+  const email = process.env.ZULIP_BOT_EMAIL;
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
@@ -61,7 +61,7 @@ export async function sendZulipAlert(
 
 export async function getZulipUsers(): Promise<any[] | null> {
   const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
-  const email = process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com";
+  const email = process.env.ZULIP_BOT_EMAIL;
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
@@ -99,7 +99,7 @@ export async function createZulipUser(
   fullName: string
 ): Promise<{ success: boolean; error?: string }> {
   const url = process.env.ZULIP_URL || "https://aresfirst.zulipchat.com";
-  const email = process.env.ZULIP_BOT_EMAIL || "Portal-bot@aresfirst.zulipchat.com";
+  const email = process.env.ZULIP_BOT_EMAIL;
   const apiKey = process.env.ZULIP_API_KEY;
 
   if (!email || !apiKey) {
