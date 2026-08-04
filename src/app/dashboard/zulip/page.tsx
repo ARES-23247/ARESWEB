@@ -22,6 +22,18 @@ import { authenticatedFetch } from "@/lib/api";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
+const getSafeZulipUrl = (url: string): string => {
+  if (!url || typeof url !== "string") return "https://aresfirst.zulipchat.com";
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.href;
+    }
+  } catch (_) {}
+  return "https://aresfirst.zulipchat.com";
+};
+
 export default function DashboardZulipPage() {
   const { user, authorizedUser } = useAuth();
   const [zulipLink, setZulipLink] = useState<string>("https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
@@ -123,7 +135,7 @@ export default function DashboardZulipPage() {
 
           <div className="flex flex-col items-end gap-2 shrink-0">
             <a
-              href={zulipLink}
+              href={getSafeZulipUrl(zulipLink)}
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3 bg-ares-red hover:bg-ares-red/90 text-white font-black text-xs uppercase tracking-widest ares-cut-sm shadow-lg shadow-ares-red/20 transition-all flex items-center gap-2 hover:scale-[1.02]"
@@ -213,7 +225,7 @@ export default function DashboardZulipPage() {
                 <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
                   <span className="text-[10px] text-amber-400 font-medium">Click below to create or join using your Google Account</span>
                   <a
-                    href={zulipLink}
+                    href={getSafeZulipUrl(zulipLink)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-1.5 bg-ares-gold text-obsidian font-black text-[10px] uppercase tracking-wider rounded hover:bg-white transition-colors"

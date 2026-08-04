@@ -260,11 +260,15 @@ export async function getSimulationPlaygroundStream(
       }
     }
 
+    const sanitizedInstruction = typeof systemPrompt === "string" && systemPrompt.trim()
+      ? `You are an AI assistant for FTC Robotics simulation. Instructions:\n${systemPrompt.slice(0, 8000)}`
+      : "You are an AI assistant for FTC Robotics simulation code.";
+
     const responseStream = await ai.models.generateContentStream({
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: contents,
       config: {
-        systemInstruction: systemPrompt,
+        systemInstruction: sanitizedInstruction,
         maxOutputTokens: 2048
       }
     });
