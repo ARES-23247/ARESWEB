@@ -148,7 +148,10 @@ export default function OutreachPage() {
 
   const submitInquiry = async (recaptchaToken: string) => {
     try {
-      const appCheckHeaders = await getAppCheckHeader();
+      let appCheckHeaders = await getAppCheckHeader();
+      if (!appCheckHeaders["X-Firebase-AppCheck"]) {
+        appCheckHeaders = await getAppCheckHeader(true);
+      }
 
       const res = await fetch("/api/inquiries", {
         method: "POST",
