@@ -225,7 +225,33 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
   const userSnap = await userRef.get();
 
   if (userSnap.exists) {
-    res.json({ authorizedUser: userSnap.data() });
+    const data = userSnap.data() || {};
+    const rawRole = (data.role || "").toLowerCase().trim();
+    let normRole = rawRole || "member";
+    let memberType = data.memberType || "";
+
+    if (rawRole === "coach") {
+      normRole = "admin";
+      if (!memberType) memberType = "mentor";
+    } else if (rawRole === "student") {
+      normRole = "member";
+      if (!memberType) memberType = "student";
+    } else if (rawRole === "parent") {
+      normRole = "member";
+      if (!memberType) memberType = "parent";
+    } else if (rawRole === "lead") {
+      normRole = "mentor";
+    }
+
+    if (normRole !== rawRole || memberType !== data.memberType) {
+      const updates: any = { role: normRole };
+      if (memberType) updates.memberType = memberType;
+      await userRef.set(updates, { merge: true });
+      data.role = normRole;
+      data.memberType = memberType;
+    }
+
+    res.json({ authorizedUser: data });
     return;
   }
 

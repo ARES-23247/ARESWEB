@@ -151,6 +151,23 @@ export default function DashboardUsersPage() {
         }
         if (!displayName) displayName = "ARES Member";
 
+        const rawRole = (data.role || "").toLowerCase().trim();
+        let normRole = rawRole || "member";
+        let derivedMemberType = profile.memberType || data.memberType || "";
+
+        if (rawRole === "coach") {
+          normRole = "admin";
+          if (!derivedMemberType) derivedMemberType = "mentor";
+        } else if (rawRole === "student") {
+          normRole = "member";
+          if (!derivedMemberType) derivedMemberType = "student";
+        } else if (rawRole === "parent") {
+          normRole = "member";
+          if (!derivedMemberType) derivedMemberType = "parent";
+        } else if (rawRole === "lead") {
+          normRole = "mentor";
+        }
+
         const profileEmail = (profile.contactEmail || profile.email || "").toLowerCase().trim();
         const zulipAccount = zulipMapByEmail[normEmail] || 
                              (profileEmail ? zulipMapByEmail[profileEmail] : null) || 
@@ -159,12 +176,12 @@ export default function DashboardUsersPage() {
         combined[doc.id] = {
           id: doc.id,
           email: email,
-          role: data.role || "member",
+          role: normRole,
           name: displayName,
           isRegistered: isRegistered,
           avatar: profile.avatar || "",
           subteams: profile.subteams || [],
-          memberType: profile.memberType || data.memberType || "",
+          memberType: derivedMemberType,
           profileExists: isRegistered,
           zulipAccount: zulipAccount
         };
