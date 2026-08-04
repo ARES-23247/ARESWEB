@@ -241,10 +241,19 @@ export async function getSimulationPlaygroundStream(
       throw new Error("No valid GEMINI_API_KEY configured and Vertex AI is disabled.");
     }
 
-    const contents = messages.map(msg => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }]
-    }));
+    const staticSystemInstruction = "You are an AI assistant specialized in FIRST Tech Challenge (FTC) 2D and 3D physics simulations, autonomous pathing, and Java/TypeScript robotics code.";
+
+    const userPromptMessage = (typeof systemPrompt === "string" && systemPrompt.trim())
+      ? [{ role: "user", parts: [{ text: `[Simulation System Persona & Context]: ${systemPrompt.trim().slice(0, 8000)}` }] }]
+      : [];
+
+    const contents = [
+      ...userPromptMessage,
+      ...messages.map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      }))
+    ];
 
     if (imageUrl && imageUrl.startsWith("data:image")) {
       const [header, base64] = imageUrl.split(",");
@@ -260,15 +269,11 @@ export async function getSimulationPlaygroundStream(
       }
     }
 
-    const sanitizedInstruction = typeof systemPrompt === "string" && systemPrompt.trim()
-      ? `You are an AI assistant for FTC Robotics simulation. Instructions:\n${systemPrompt.slice(0, 8000)}`
-      : "You are an AI assistant for FTC Robotics simulation code.";
-
     const responseStream = await ai.models.generateContentStream({
       model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
       contents: contents,
       config: {
-        systemInstruction: sanitizedInstruction,
+        systemInstruction: staticSystemInstruction,
         maxOutputTokens: 2048
       }
     });
