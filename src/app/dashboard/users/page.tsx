@@ -39,6 +39,7 @@ interface UserAuth {
   memberType: string;
   profileExists: boolean;
   zulipAccount: any | null;
+  createdAt?: string;
 }
 
 export default function DashboardUsersPage() {
@@ -48,10 +49,11 @@ export default function DashboardUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Search & Filters
+  // Search & Filters & Sorting
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name_asc");
 
 
 
@@ -183,7 +185,8 @@ export default function DashboardUsersPage() {
           subteams: profile.subteams || [],
           memberType: derivedMemberType,
           profileExists: isRegistered,
-          zulipAccount: zulipAccount
+          zulipAccount: zulipAccount,
+          createdAt: data.createdAt || profile.createdAt || ""
         };
       });
 
@@ -208,14 +211,15 @@ export default function DashboardUsersPage() {
           combined[doc.id] = {
             id: doc.id,
             email: email,
-            role: "unverified",
+            role: profile.role || "unverified",
             name: displayName,
             isRegistered: true,
             avatar: profile.avatar || "",
             subteams: profile.subteams || [],
             memberType: profile.memberType || "",
             profileExists: true,
-            zulipAccount: zulipAccount
+            zulipAccount: zulipAccount,
+            createdAt: profile.createdAt || ""
           };
         }
       });
@@ -405,6 +409,35 @@ export default function DashboardUsersPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortBy === "name_asc") {
+      return (a.name || a.email).localeCompare(b.name || b.email);
+    }
+    if (sortBy === "name_desc") {
+      return (b.name || b.email).localeCompare(a.name || a.email);
+    }
+    if (sortBy === "role") {
+      const priority: Record<string, number> = { admin: 1, mentor: 2, member: 3, unverified: 4 };
+      const pA = priority[a.role] || 99;
+      const pB = priority[b.role] || 99;
+      return pA - pB;
+    }
+    if (sortBy === "status") {
+      return (b.isRegistered ? 1 : 0) - (a.isRegistered ? 1 : 0);
+    }
+    if (sortBy === "newest") {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    }
+    if (sortBy === "oldest") {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : Infinity;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : Infinity;
+      return dateA - dateB;
+    }
+    return 0;
+  });
+
   // Access check
   if (!isAdmin) {
     return (
@@ -474,7 +507,7 @@ export default function DashboardUsersPage() {
           
           {/* Filters Toolbar */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/5 p-4 ares-cut border border-white/5">
-            <div className="relative w-full md:w-64">
+            <div className="relative w-full md:w-56">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={14} />
               <input
                 type="text"
@@ -485,11 +518,11 @@ export default function DashboardUsersPage() {
               />
             </div>
 
-            <div className="flex gap-3 w-full md:w-auto">
+            <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-32 focus:outline-none font-bold"
+                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Admin / Coach</option>
@@ -500,19 +533,31 @@ export default function DashboardUsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none font-bold"
+                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
               >
                 <option value="all">All Statuses</option>
                 <option value="registered">Registered Profile</option>
                 <option value="invited">Invited / Legacy</option>
                 <option value="unlinked_zulip">Unlinked Zulip</option>
               </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-obsidian border border-ares-gold/30 text-ares-gold ares-cut-sm px-3 py-2 text-xs cursor-pointer focus:outline-none font-black uppercase tracking-wider"
+              >
+                <option value="name_asc">Sort: Name (A-Z)</option>
+                <option value="name_desc">Sort: Name (Z-A)</option>
+                <option value="role">Sort: Role Hierarchy</option>
+                <option value="status">Sort: Registration</option>
+                <option value="newest">Sort: Newest Joined</option>
+                <option value="oldest">Sort: Oldest Joined</option>
+              </select>
             </div>
           </div>
 
           {/* Users List Cards */}
           <UserRosterTable
-            filteredUsers={filteredUsers}
+            filteredUsers={sortedUsers}
             isLoading={isLoading}
             editedRoles={editedRoles}
             editedMemberTypes={editedMemberTypes}
