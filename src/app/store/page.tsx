@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { ShoppingCart, Search, CheckCircle2, Plus, Minus, X, ShoppingBag, Loader2, Sparkles, CreditCard, Tag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ShoppingCart, Search, CheckCircle2, Plus, Minus, X, ShoppingBag, Loader2, CreditCard, Tag } from "lucide-react";
 import { useCartStore, Product, selectCartTotal, selectCartCount } from "@/store/useCartStore";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
@@ -60,7 +60,7 @@ export default function StorePage() {
   const cartCount = useCartStore(selectCartCount);
   const cartRef = useFocusTrap(isOpen, () => setIsOpen(false));
   
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products] = useState<Product[]>(MOCK_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState("");
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [checkoutCancelled, setCheckoutCancelled] = useState(false);

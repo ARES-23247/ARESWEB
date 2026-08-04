@@ -1,10 +1,9 @@
-import React from "react";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useEventEditor } from "../app/dashboard/events/hooks/useEventEditor";
 import { useAuth } from "../context/AuthContext";
-import { getDoc, setDoc, deleteDoc, getDocs, onSnapshot } from "firebase/firestore";
-import { authenticatedFetch } from "../lib/api";
+import { doc, setDoc, deleteDoc, onSnapshot, getDoc, getDocs } from "firebase/firestore";
+import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "../lib/image";
 
 // Mock AuthContext
@@ -12,24 +11,29 @@ vi.mock("../context/AuthContext", () => ({
   useAuth: vi.fn(),
 }));
 
-// Mock Firebase firestore methods
-vi.mock("firebase/firestore", () => {
-  return {
-    collection: vi.fn(),
-    doc: vi.fn(),
-    onSnapshot: vi.fn(),
-    setDoc: vi.fn(),
-    deleteDoc: vi.fn(),
-    getDoc: vi.fn(),
-    getDocs: vi.fn(),
-    query: vi.fn(),
-    orderBy: vi.fn(),
-  };
-});
+// Mock Firestore functions
+vi.mock("firebase/firestore", () => ({
+  doc: vi.fn(),
+  setDoc: vi.fn(() => Promise.resolve()),
+  deleteDoc: vi.fn(() => Promise.resolve()),
+  onSnapshot: vi.fn(),
+  collection: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn(),
+  limit: vi.fn(),
+  orderBy: vi.fn(),
+  getDoc: vi.fn(),
+  getDocs: vi.fn(),
+}));
 
-// Mock api
-vi.mock("../lib/api", () => ({
-  authenticatedFetch: vi.fn(),
+// Mock API
+vi.mock("@/lib/api", () => ({
+  authenticatedFetch: vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })),
+}));
+
+// Mock utils
+vi.mock("@/lib/utils", () => ({
+  cleanUndefined: (obj: any) => obj,
 }));
 
 // Mock image compression

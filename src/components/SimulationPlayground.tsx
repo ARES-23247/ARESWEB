@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense, useEffect } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { GripVertical } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -7,12 +7,10 @@ import { SimFileExplorer } from "./editor/SimFileExplorer";
 // TODO: implement component library picker UI
 // import { SimComponentLibrary } from "./editor/SimComponentLibrary";
 import { LogEntry, TestResult } from "./editor/SimConsole";
-import { logger } from "../utils/logger";
 import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
 import { useCodeCompiler } from "../hooks/useCodeCompiler";
 import { useMonacoEditor } from "../hooks/useMonacoEditor";
-import { toastApiError } from "../api/apiClient";
 import { useSimulationSnapshots } from "../hooks/useSimulationSnapshots";
 import { useSimulationShortcuts } from "../hooks/useSimulationShortcuts";
 import { useSimulationTelemetry } from "../hooks/useSimulationTelemetry";
@@ -22,7 +20,6 @@ import { useSimulationActions } from "../hooks/useSimulationActions";
 import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
 import { SimulationLibraryOverlay } from "./simulation/SimulationLibraryOverlay";
 import { AiChangesBanner } from "./simulation/AiChangesBanner";
-import { Snapshot } from "./simulation/SnapshotHistoryDropdown";
 import SimulationPlaygroundPreview from "./SimulationPlaygroundPreview";
 import SimulationPlaygroundConsoleTabs from "./SimulationPlaygroundConsoleTabs";
 

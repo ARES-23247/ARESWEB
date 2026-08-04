@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot, doc, setDoc, limit, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -14,14 +14,7 @@ import {
   Clock,
   Sparkles,
   Award,
-  LayoutGrid,
-  List,
-  Plus,
-  X,
-  Loader2,
-  Pencil,
-  Copy,
-  Check
+  Plus
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";

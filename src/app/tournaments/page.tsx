@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
@@ -17,8 +17,7 @@ import {
   Search, 
   Lock,
   ChevronRight,
-  ShieldAlert,
-  ArrowRight
+  ShieldAlert
 } from "lucide-react";
 import { Tournament } from "@/types/tournament";
 
@@ -116,7 +115,7 @@ export default function TournamentsFeedPage() {
   }, [user, authorizedUser]);
 
   // TanStack Query to fetch tournaments from Firestore
-  const { data: tournaments = [], isLoading: dataLoading, error } = useQuery<Tournament[]>({
+  const { data: tournaments = [], isLoading: dataLoading, error: _error } = useQuery<Tournament[]>({
     queryKey: ["tournaments"],
     queryFn: async () => {
       try {

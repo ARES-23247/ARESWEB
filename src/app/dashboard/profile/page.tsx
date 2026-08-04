@@ -1,22 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { 
   User, 
   Save, 
-  GraduationCap, 
-  Briefcase, 
-  Plus, 
-  Trash2, 
   Loader2, 
   CheckCircle, 
   AlertTriangle,
   Info,
   ChevronRight,
-  Sparkles,
   MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";

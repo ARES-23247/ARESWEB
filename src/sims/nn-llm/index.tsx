@@ -79,7 +79,7 @@ export default function NnLlmSim() {
       </div>
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {SENTENCES.map((s, i) => (
+        {SENTENCES.map((_s, i) => (
           <button 
             key={i}
             onClick={() => setSelectedIdx(i)}

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Cpu, TerminalSquare, AlertTriangle, Shield } from "lucide-react";
+import { Cpu, TerminalSquare, Shield } from "lucide-react";
 import SimManager from "@/components/SimManager";
 import SimulationPlayground from "@/components/SimulationPlayground";
 

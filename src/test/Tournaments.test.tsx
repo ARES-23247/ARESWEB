@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,7 +6,6 @@ import TournamentsFeedPage from "../app/tournaments/page";
 import TournamentDetailPage from "../app/tournaments/[id]/page";
 import TournamentsManager from "../components/dashboard/TournamentsManager";
 import { useAuth } from "../context/AuthContext";
-import { getDocs } from "firebase/firestore";
 import * as LucideIcons from "lucide-react";
 
 // Mock AuthContext

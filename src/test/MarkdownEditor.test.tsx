@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import MarkdownEditor from "../components/MarkdownEditor";
@@ -9,8 +9,8 @@ vi.mock("@/lib/firebase", () => ({
 }));
 
 vi.mock("firebase/storage", () => ({
-  ref: vi.fn((storage, path) => ({ path })),
-  uploadBytes: vi.fn((ref, file) => Promise.resolve({ ref })),
+  ref: vi.fn((_storage, path) => ({ path })),
+  uploadBytes: vi.fn((ref, _file) => Promise.resolve({ ref })),
   getDownloadURL: vi.fn((ref) =>
     Promise.resolve(`https://firebasestorage.googleapis.com/v0/b/mock/o/${encodeURIComponent(ref.path)}`)
   )

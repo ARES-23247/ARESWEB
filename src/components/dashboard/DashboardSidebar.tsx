@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, X, ShieldAlert, Cpu, Sparkles, BookOpen, Settings, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, Sparkles, BookOpen, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
@@ -49,7 +49,7 @@ const NavButton: React.FC<NavButtonProps> = ({
 };
 
 export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const { user, authorizedUser, logout } = useAuth();
   const [profileAvatar, setProfileAvatar] = useState<string>("");
   const [profileNickname, setProfileNickname] = useState<string>("");

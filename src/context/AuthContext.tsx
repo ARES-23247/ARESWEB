@@ -10,7 +10,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { auth, db, getDocWithTimeout } from "../lib/firebase";
 
 interface AuthorizedUser {

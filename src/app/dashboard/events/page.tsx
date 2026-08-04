@@ -1,20 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, doc, onSnapshot, deleteDoc, setDoc, query, where, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
   Plus, 
-  Trash2, 
-  Pencil, 
   Shield, 
   Activity, 
-  MapPin, 
-  Calendar, 
-  Clock,
-  Check,
-  RotateCcw
+  MapPin
 } from "lucide-react";
 import { cleanUndefined } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api";

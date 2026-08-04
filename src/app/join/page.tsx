@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { siteConfig } from "@/lib/site-config";
-import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
 
 declare global {

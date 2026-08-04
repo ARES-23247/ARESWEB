@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { collection, onSnapshot, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Play, X, Calendar, Clock, Film, ExternalLink, RefreshCw } from "lucide-react";
+import { Play, X, Calendar, Film, ExternalLink, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -48,7 +48,7 @@ const MOCK_VIDEOS: TeamVideo[] = [
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<TeamVideo[]>(MOCK_VIDEOS);
-  const [isLive, setIsLive] = useState(false);
+  const [_isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "video" | "short">("all");
   

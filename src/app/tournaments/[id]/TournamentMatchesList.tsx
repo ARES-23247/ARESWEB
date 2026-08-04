@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Bookmark, Plus, Check, Edit2, Trash2, Info, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Bookmark, Plus, Check, Edit2, Trash2, Info } from "lucide-react";
 import { TournamentMatch } from "@/types/tournament";
 
 interface TournamentMatchesListProps {
@@ -15,7 +15,7 @@ interface TournamentMatchesListProps {
 }
 
 export default function TournamentMatchesList({
-  tournamentId,
+  tournamentId: _tournamentId,
   isPast,
   matches,
   canEdit,

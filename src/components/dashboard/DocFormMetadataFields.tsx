@@ -56,7 +56,7 @@ export default function DocFormMetadataFields({
   formIsExecutiveSummary,
   setFormIsExecutiveSummary,
   formAuthor = "",
-  setFormAuthor,
+  setFormAuthor: _setFormAuthor,
   formDate = "",
   setFormDate
 }: DocFormMetadataFieldsProps) {

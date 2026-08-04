@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where, limit } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";

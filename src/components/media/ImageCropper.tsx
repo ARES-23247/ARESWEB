@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 
 interface ImageCropperProps {
   cropImageSrc: string;
@@ -11,7 +11,7 @@ interface ImageCropperProps {
 
 export default function ImageCropper({
   cropImageSrc,
-  cropFileName,
+  cropFileName: _cropFileName,
   loading,
   onCancel,
   onSave,

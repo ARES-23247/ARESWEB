@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Cpu, Scale, Code, Trash2, Edit2, Plus, X, Wrench, Video, Link as LinkIcon } from "lucide-react";
+import { Cpu, Scale, Code, Trash2, Edit2, Plus } from "lucide-react";
 import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
-import { RobotItem, RobotVersion } from "./types";
+import { RobotItem } from "./types";
 import RobotEditorModal from "./RobotEditorModal";
 
 const MOCK_ROBOTS: RobotItem[] = [

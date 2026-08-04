@@ -48,7 +48,6 @@ export default function AcademyPage() {
   const [allDocs, setAllDocs] = useState<DocRecord[]>([]);
   const [currentDoc, setCurrentDoc] = useState<DocRecord | null>(null);
   const [docLoading, setDocLoading] = useState(true);
-  const [loadingAll, setLoadingAll] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
@@ -109,8 +108,6 @@ export default function AcademyPage() {
         setAllDocs(docsList);
       } catch (err) {
         logger.error("Error loading all docs:", err);
-      } finally {
-        setLoadingAll(false);
       }
     };
     fetchAllDocs();

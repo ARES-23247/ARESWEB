@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { Trophy, Award, Medal, Crown, Star, ArrowLeft } from "lucide-react";
+import { Trophy, Award, Medal, Crown, Star } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 

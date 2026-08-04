@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { authenticatedFetch } from "@/lib/api";
@@ -14,10 +14,8 @@ import {
   limit 
 } from "firebase/firestore";
 import { 
-  Users, 
   ShieldAlert, 
   Search, 
-  Plus, 
   RefreshCw, 
   AlertCircle, 
   CheckCircle, 

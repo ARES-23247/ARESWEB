@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Pencil, Shield, Activity, Video, ExternalLink, Play, Filter, ArrowUpDown, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Pencil, Shield, Activity, ExternalLink, Play, Filter, ArrowUpDown, RefreshCw } from "lucide-react";
 import { cleanThumbnailUrl, cleanUndefined } from "@/lib/utils";
 import VideoEditorDrawer from "./components/VideoEditorDrawer";
 
@@ -234,7 +234,7 @@ export default function VideosManagementPage() {
   };
 
   // Filter and sort videos
-  const filteredAndSortedVideos = React.useMemo(() => {
+  const filteredAndSortedVideos = useMemo(() => {
     let result = [...videos];
 
     if (typeFilter !== "all") {

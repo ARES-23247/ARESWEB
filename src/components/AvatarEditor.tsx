@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, Save, Image as ImageIcon, Shuffle } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Save, Image as ImageIcon, Shuffle } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import AvatarPresetsGrid from "./AvatarPresetsGrid";
 

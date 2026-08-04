@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { authenticatedFetch } from "@/lib/api";
-import { Eye, MapPin, X, ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Eye, MapPin, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -79,7 +78,6 @@ export default function GalleryPage() {
   const [photos, setPhotos] = useState<GalleryPhoto[]>(MOCK_PHOTOS);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadPhotos() {
@@ -136,8 +134,6 @@ export default function GalleryPage() {
       } catch (err) {
         console.warn("Failed to load synced photos from API:", err);
         setPhotos(MOCK_PHOTOS);
-      } finally {
-        setIsLoading(false);
       }
     }
     loadPhotos();

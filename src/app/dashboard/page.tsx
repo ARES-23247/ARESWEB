@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, onSnapshot, getCountFromServer, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -13,7 +13,6 @@ import {
   Terminal,
   Activity,
   Zap,
-  ExternalLink,
   PenTool,
   Calendar,
   GraduationCap,
@@ -23,11 +22,10 @@ import {
   XCircle,
   AlertCircle,
   Database,
-  UploadCloud,
-  FileText
+  UploadCloud
 } from "lucide-react";
 
-import { SubTask, TaskItem } from "@/types/task";
+import { TaskItem } from "@/types/task";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();

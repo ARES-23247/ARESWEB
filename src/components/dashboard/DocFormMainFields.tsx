@@ -94,7 +94,7 @@ export default function DocFormMainFields({
   setFormContent,
   onSubmit,
   showAiSidebar,
-  defaultCategory
+  defaultCategory: _defaultCategory
 }: DocFormMainFieldsProps) {
   return (
     <form

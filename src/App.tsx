@@ -1,6 +1,5 @@
-import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Outlet, Link, NavLink } from "react-router-dom";
-import { Cpu, Grid, Compass } from "lucide-react";
+import { lazy, Suspense, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -80,7 +79,7 @@ function AppLoading() {
 }
 
 export default function App() {
-  React.useEffect(() => {
+  useEffect(() => {
     // In production, do not load reCAPTCHA if NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not configured.
     // In development/test environments, we can fall back to the public testing key.
     const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 

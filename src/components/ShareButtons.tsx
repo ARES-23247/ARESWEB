@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link2, Check } from "lucide-react";
 
 interface ShareButtonsProps {
@@ -7,7 +7,7 @@ interface ShareButtonsProps {
   theme?: "gold" | "cyan";
 }
 
-export default function ShareButtons({ title, description, theme = "gold" }: ShareButtonsProps) {
+export default function ShareButtons({ title, description: _description, theme = "gold" }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   const getShareUrl = () => {

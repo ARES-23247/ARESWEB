@@ -59,8 +59,8 @@ export function useEventEditor({
   isOpen,
   onClose,
   eventToEdit,
-  locations,
-  setLocations,
+  locations: _locations,
+  setLocations: _setLocations,
   teamMembers
 }: UseEventEditorProps) {
   const { user, authorizedUser } = useAuth();

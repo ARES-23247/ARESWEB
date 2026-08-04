@@ -82,7 +82,7 @@ export default function MarkdownEditor({
   };
 
   // Helper: toggle block prefix on current line
-  const insertBlock = (prefix: string, placeholderText = "") => {
+  const insertBlock = (prefix: string, _placeholderText = "") => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
