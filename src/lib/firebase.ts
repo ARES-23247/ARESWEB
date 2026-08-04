@@ -47,8 +47,16 @@ const storage = getStorage(app);
 // Initialize Firebase App Check on the client side
 let appCheck: ReturnType<typeof initializeAppCheck> | undefined = undefined;
 if (typeof window !== "undefined") {
-  const useEmulator = import.meta.env.VITE_USE_EMULATOR !== "false" && import.meta.env.NEXT_PUBLIC_USE_EMULATOR !== "false";
-  if (useEmulator || import.meta.env.DEV) {
+  const isLocalHost = 
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.endsWith(".local");
+
+  const useEmulator = 
+    (import.meta.env.VITE_USE_EMULATOR === "true" || import.meta.env.NEXT_PUBLIC_USE_EMULATOR === "true") &&
+    isLocalHost;
+
+  if (useEmulator) {
     (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   }
   

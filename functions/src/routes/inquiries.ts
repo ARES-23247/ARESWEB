@@ -42,19 +42,20 @@ const createInquirySchema = z.object({
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
   const { type, name, email, metadata, recaptchaToken } = req.body;
 
-  // App Check Verification (Zero Trust Enforcement)
+  // App Check Verification (Zero Trust Enforcement with reCAPTCHA Fallback)
   const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
   const isTestEnvironment = process.env.NODE_ENV === "test";
 
   if (isProd && !isTestEnvironment) {
     const appCheckToken = req.headers["x-firebase-appcheck"] as string;
-    if (!appCheckToken) {
-      throw new ApiError(401, "App Check token missing");
-    }
-    try {
-      await admin.appCheck().verifyToken(appCheckToken);
-    } catch (err) {
-      throw new ApiError(401, "App Check token invalid");
+    if (appCheckToken) {
+      try {
+        await admin.appCheck().verifyToken(appCheckToken);
+      } catch (err) {
+        logger.warn("inquiries", "App Check token verification failed, falling back to reCAPTCHA v3 verification.");
+      }
+    } else {
+      logger.info("inquiries", "App Check token missing from client request, proceeding with reCAPTCHA v3 verification.");
     }
   }
 
