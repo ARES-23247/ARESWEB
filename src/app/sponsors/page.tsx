@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, getAppCheckHeader } from "@/lib/firebase";
 import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -178,9 +178,14 @@ export default function SponsorsPage() {
 
   const submitInquiry = async (recaptchaToken: string) => {
     try {
+      const appCheckHeaders = await getAppCheckHeader();
+
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...appCheckHeaders
+        },
         body: JSON.stringify({
           type: "sponsor",
           name,

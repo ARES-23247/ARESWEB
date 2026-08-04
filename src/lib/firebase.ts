@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { initializeFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, getToken } from "firebase/app-check";
 
 const getFirebaseConfig = () => {
   if (typeof import.meta !== "undefined") {
@@ -103,6 +103,19 @@ export const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promi
       setTimeout(() => reject(new Error("Firestore getDocs timeout")), timeoutMs)
     )
   ]);
+};
+
+export const getAppCheckHeader = async (): Promise<Record<string, string>> => {
+  if (!appCheck) return {};
+  try {
+    const tokenResult = await getToken(appCheck, false);
+    if (tokenResult?.token) {
+      return { "X-Firebase-AppCheck": tokenResult.token };
+    }
+  } catch (err) {
+    console.warn("Failed to retrieve App Check token:", err);
+  }
+  return {};
 };
 
 export { app, auth, db, storage, appCheck };

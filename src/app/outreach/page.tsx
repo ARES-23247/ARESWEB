@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Target, Clock, Heart, MapPin, Activity, ArrowRight, X, Check, AlertCircle } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, getAppCheckHeader } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
@@ -148,9 +148,14 @@ export default function OutreachPage() {
 
   const submitInquiry = async (recaptchaToken: string) => {
     try {
+      const appCheckHeaders = await getAppCheckHeader();
+
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...appCheckHeaders
+        },
         body: JSON.stringify({
           type: "demo",
           name,

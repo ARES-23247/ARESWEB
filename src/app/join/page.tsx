@@ -15,6 +15,8 @@ declare global {
 const INTEREST_OPTIONS = ["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"] as const;
 const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
 
+import { getAppCheckHeader } from "@/lib/firebase";
+
 export default function JoinPage() {
   const [role, setRole] = useState<"student" | "mentor">("student");
   const [name, setName] = useState("");
@@ -119,9 +121,14 @@ export default function JoinPage() {
         ? { school: school.trim(), grade, interests: selectedInterests, additional: additional.trim(), phone: phone || undefined }
         : { occupation: occupation.trim(), interests: selectedInterests, additional: additional.trim(), phone: phone || undefined };
 
+      const appCheckHeaders = await getAppCheckHeader();
+
       const res = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...appCheckHeaders
+        },
         body: JSON.stringify({
           type: role,
           name,
