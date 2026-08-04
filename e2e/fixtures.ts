@@ -1,18 +1,19 @@
-import { test as base } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 
 export const test = base.extend({
   page: async ({ page }, use) => {
     const pageErrors: Error[] = [];
 
-    page.on('pageerror', (err) => {
+    const errorHandler = (err: Error) => {
       pageErrors.push(err);
-      // Attempt to fail the test immediately
-      throw new Error(`Page Error: ${err.message}\nStack:\n${err.stack || 'No stack trace available'}`);
-    });
+    };
+
+    page.on('pageerror', errorHandler);
 
     await use(page);
 
-    // Fail the test at the end if any page errors occurred during execution
+    page.removeListener('pageerror', errorHandler);
+
     if (pageErrors.length > 0) {
       const errorDetails = pageErrors
         .map((err) => `${err.name || 'Error'}: ${err.message}\n${err.stack || ''}`)
@@ -22,4 +23,4 @@ export const test = base.extend({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect };

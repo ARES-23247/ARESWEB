@@ -320,6 +320,60 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
   res.json({ authorizedUser: unverifiedData });
 }));
 
+// GET /api/profiles/admin/users
+// Admin endpoint: Syncs Firebase Auth users with Firestore authorized_users collection
+// to ensure newly registered signups without a document are automatically provisioned as unverified.
+router.get("/admin/users", ensureAdmin, asyncHandler(async (req, res) => {
+  let authUsers: any[] = [];
+  try {
+    const listResult = await adminAuth.listUsers(1000);
+    authUsers = listResult.users || [];
+  } catch (authErr) {
+    logger.warn("profiles", "Could not list Firebase Auth users:", authErr);
+  }
+
+  const authSnap = await adminDb.collection("authorized_users").limit(500).get();
+  const existingDocUids = new Set<string>();
+  const existingDocEmails = new Set<string>();
+
+  authSnap.docs.forEach(doc => {
+    existingDocUids.add(doc.id);
+    const email = doc.data().email;
+    if (email && typeof email === "string") {
+      existingDocEmails.add(email.toLowerCase().trim());
+    }
+  });
+
+  const batch = adminDb.batch();
+  let newProvisionedCount = 0;
+
+  for (const userRecord of authUsers) {
+    const uid = userRecord.uid;
+    const email = (userRecord.email || "").toLowerCase().trim();
+
+    if (!existingDocUids.has(uid) && (!email || !existingDocEmails.has(email))) {
+      const name = userRecord.displayName || (email ? email.split("@")[0] : "New Member");
+      const unverifiedDoc = {
+        email: userRecord.email || "",
+        role: "unverified",
+        name: name,
+        createdAt: userRecord.metadata?.creationTime || new Date().toISOString()
+      };
+      batch.set(adminDb.collection("authorized_users").doc(uid), unverifiedDoc);
+      existingDocUids.add(uid);
+      if (email) existingDocEmails.add(email);
+      newProvisionedCount++;
+    }
+  }
+
+  if (newProvisionedCount > 0) {
+    await batch.commit();
+    logger.info("profiles", `Admin user sync provisioned ${newProvisionedCount} missing unverified authorized_users docs.`);
+  }
+
+  res.json({ success: true, provisionedCount: newProvisionedCount });
+}));
+
 // GET /api/profiles/zulip/users
 // Fetches all users from Zulip workspace
 router.get("/zulip/users", ensureAdmin, asyncHandler(async (req, res) => {

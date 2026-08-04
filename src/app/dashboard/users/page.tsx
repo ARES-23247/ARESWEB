@@ -75,11 +75,18 @@ export default function DashboardUsersPage() {
     setError(null);
     setZulipWarning(null);
     try {
-      // 1. Fetch authorized_users from Firestore
-      const authSnap = await getDocs(query(collection(db, "authorized_users"), limit(50)));
+      // 0. Trigger backend auto-sync for missing Firebase Auth user documents
+      try {
+        await authenticatedFetch("/api/profiles/admin/users");
+      } catch (syncErr) {
+        console.warn("Backend user sync skipped:", syncErr);
+      }
+
+      // 1. Fetch authorized_users from Firestore (up to 500)
+      const authSnap = await getDocs(query(collection(db, "authorized_users"), limit(500)));
       
-      // 2. Fetch user_profiles from Firestore
-      const profilesSnap = await getDocs(query(collection(db, "user_profiles"), limit(50)));
+      // 2. Fetch user_profiles from Firestore (up to 500)
+      const profilesSnap = await getDocs(query(collection(db, "user_profiles"), limit(500)));
       
       // 3. Fetch Zulip users from Functions Backend
       let zulipUsers: any[] = [];
@@ -496,6 +503,29 @@ export default function DashboardUsersPage() {
             <span className="font-bold text-ares-gold uppercase tracking-wider text-xs block mb-1">Zulip API Notice</span>
             <span className="text-marble/80 text-xs">{zulipWarning}</span>
           </div>
+        </div>
+      )}
+
+      {/* Unverified Signups Banner */}
+      {usersList.filter(u => u.role === "unverified").length > 0 && (
+        <div className="p-4 bg-ares-gold/15 border border-ares-gold/40 text-white rounded flex items-center justify-between gap-3 text-sm font-semibold animate-fade-in shadow-xl">
+          <div className="flex items-center gap-3">
+            <UserCheck size={22} className="text-ares-gold animate-pulse shrink-0" />
+            <div>
+              <span className="font-bold text-ares-gold uppercase tracking-wider text-xs block">
+                {usersList.filter(u => u.role === "unverified").length} User(s) Pending Role Verification
+              </span>
+              <span className="text-marble/80 text-xs">
+                Newly registered team members are awaiting role assignment (Admin, Mentor, or Member).
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setRoleFilter("unverified")}
+            className="px-3 py-1.5 bg-ares-gold/20 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/50 rounded text-xs font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
+          >
+            View Pending ({usersList.filter(u => u.role === "unverified").length})
+          </button>
         </div>
       )}
 
