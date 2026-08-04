@@ -195,12 +195,12 @@ describe("Zulip Integration Library", () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ msg: "Email already in use" }),
+        json: () => Promise.resolve({ msg: "Invalid request parameter" }),
       });
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: false, error: "Email already in use" });
+      expect(result).toEqual({ success: false, error: "Invalid request parameter" });
     });
 
     it("should return generic error if response not ok and json parse fails", async () => {

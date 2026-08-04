@@ -25,6 +25,9 @@ export interface DocRecord {
   updatedAt?: string;
   original_authorNickname?: string;
   original_authorAvatar?: string;
+  approvalStatus?: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface DocRevision {

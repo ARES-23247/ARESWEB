@@ -195,11 +195,8 @@ export default function UserRosterTable({
                     onChange={(e) => onRoleChange(u.id, e.target.value)}
                     className="bg-obsidian border border-white/10 ares-cut-sm px-2.5 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none w-32"
                   >
-                    <option value="admin">Admin</option>
-                    <option value="coach">Coach</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="student">Student</option>
-                    <option value="parent">Parent</option>
+                    <option value="admin">Admin / Coach</option>
+                    <option value="mentor">Mentor / Lead</option>
                     <option value="member">Member</option>
                     <option value="unverified">Unverified</option>
                   </select>

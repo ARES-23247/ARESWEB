@@ -19,8 +19,12 @@ export default function BlogManagementPage({
   prefilledAction?: "create" | "edit" | null;
   prefilledSlug?: string | null;
 } = {}) {
+  const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending">("all");
+
   const {
     docs,
+    pendingDocs,
+    publishedDocs,
     loadingList,
     isLive,
     revisions,
@@ -29,10 +33,12 @@ export default function BlogManagementPage({
     selectedDoc,
     isEditorOpen,
     canEdit,
+    isApprover,
     handleOpenEdit,
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
+    handleApproveAndPublish,
     handleDelete
   } = useDashboardDocController(
     "posts",
@@ -42,6 +48,12 @@ export default function BlogManagementPage({
     prefilledAction,
     prefilledSlug
   );
+
+  const displayItems = activeTab === "pending" 
+    ? pendingDocs 
+    : activeTab === "published" 
+    ? publishedDocs 
+    : docs;
 
   if (editorOnly) {
     return isEditorOpen ? (
@@ -103,16 +115,53 @@ export default function BlogManagementPage({
         </div>
       )}
 
+      {/* Tabs Filter */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
+            activeTab === "all" ? "bg-white/10 text-white border border-white/20" : "text-marble/60 hover:text-white"
+          }`}
+        >
+          All Posts ({docs.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("published")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
+            activeTab === "published" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "text-marble/60 hover:text-white"
+          }`}
+        >
+          Published ({publishedDocs.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors relative flex items-center gap-2 ${
+            activeTab === "pending" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "text-marble/60 hover:text-white"
+          }`}
+        >
+          <span>Pending Mentor Approval</span>
+          {pendingDocs.length > 0 && (
+            <span className="w-5 h-5 rounded-full bg-amber-500 text-obsidian text-[10px] font-black flex items-center justify-center animate-bounce">
+              {pendingDocs.length}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* List Grid View */}
       <DocListGrid
-        items={docs}
+        items={displayItems}
         loadingList={loadingList}
         canEdit={canEdit}
+        isApprover={isApprover}
+        onApprove={handleApproveAndPublish}
         variant="blog"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         searchPlaceholder="Search blogs by title, snippet, or author..."
-        noItemsMessage="No blog posts drafted yet. Click New Blog Post to get started."
+        noItemsMessage="No blog posts match the selected filter."
       />
 
       {/* Drawer Editor */}

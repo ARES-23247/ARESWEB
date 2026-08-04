@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { FileText, Pencil, Trash2, ExternalLink, Search } from "lucide-react";
+import { FileText, Pencil, Trash2, ExternalLink, Search, CheckCircle2 } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
 
 interface DocListGridProps {
   items: any[];
   loadingList: boolean;
   canEdit: boolean;
+  isApprover?: boolean;
+  onApprove?: (item: any) => void;
   variant?: "docs" | "documents" | "blog";
   onEdit: (item: any) => void;
   onDelete: (slug: string) => void;
@@ -17,6 +19,8 @@ export default function DocListGrid({
   items,
   loadingList,
   canEdit,
+  isApprover = false,
+  onApprove,
   variant = "docs",
   onEdit,
   onDelete,
@@ -235,19 +239,32 @@ export default function DocListGrid({
                       <td className="p-4">
                         <span
                           className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
-                            isPublished
+                            item.status === "pending_approval" || item.approvalStatus === "pending_approval"
+                              ? "bg-amber-500/15 border-amber-500/30 text-amber-400 animate-pulse"
+                              : isPublished
                               ? "bg-ares-success/15 border-ares-success/30 text-ares-success"
                               : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                           }`}
                         >
-                          {item.status}
+                          {item.status === "pending_approval" || item.approvalStatus === "pending_approval"
+                            ? "Pending Approval"
+                            : (item.status || "published")}
                         </span>
                       </td>
                     )}
 
                     {/* Actions Column */}
                     <td className="p-4 text-right">
-                      <div className="inline-flex gap-1.5">
+                      <div className="inline-flex gap-1.5 items-center">
+                        {isApprover && onApprove && (item.status === "pending_approval" || item.approvalStatus === "pending_approval") && (
+                          <button
+                            onClick={() => onApprove(item)}
+                            className="px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1"
+                            title="Approve & Publish"
+                          >
+                            <CheckCircle2 size={12} /> Approve
+                          </button>
+                        )}
                         {canEdit ? (
                           <>
                             <button

@@ -159,12 +159,9 @@ export default function UserInviteForm({
             onChange={(e) => setInviteRole(e.target.value)}
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white cursor-pointer font-bold focus:outline-none font-sans"
           >
-            <option value="student">Student Member</option>
-            <option value="parent">Parent</option>
-            <option value="member">General Member</option>
-            <option value="mentor">Mentor (Senior Advisor)</option>
-            <option value="coach">Coach (Team Director)</option>
-            <option value="admin">Admin (Full System Control)</option>
+            <option value="member">Member (Internal Workspace Access)</option>
+            <option value="mentor">Mentor / Lead (Content & Approval Access)</option>
+            <option value="admin">Admin / Coach (Full System Control)</option>
             <option value="unverified">Unverified (Pending Verification)</option>
           </select>
         </div>

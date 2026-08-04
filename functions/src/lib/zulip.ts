@@ -154,6 +154,10 @@ export async function createZulipUser(
     }
 
     const errorData = await res.json().catch(() => ({}));
+    const msg = (errorData.msg || "").toLowerCase();
+    if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
+      return { success: true, message: `${cleanEmail} is already registered on Zulip.` };
+    }
     logger.warn("zulip", "Direct user creation failed, attempting invitation fallback", { status: res.status, error: errorData });
   } catch (err: any) {
     logger.warn("zulip", "Exception in direct user creation", { error: err });
@@ -179,6 +183,11 @@ export async function createZulipUser(
     }
 
     const inviteError = await inviteRes.json().catch(() => ({}));
+    const msg = (inviteError.msg || "").toLowerCase();
+    if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
+      return { success: true, message: `${cleanEmail} is already a member of the Zulip workspace.` };
+    }
+
     const errorMsg = inviteError.msg || `Zulip invite failed with status ${inviteRes.status}`;
     logger.error("zulip", "Failed to invite user via Zulip API", { status: inviteRes.status, error: inviteError });
     return { success: false, error: errorMsg };

@@ -475,11 +475,8 @@ export default function DashboardUsersPage() {
                 className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-32 focus:outline-none font-bold"
               >
                 <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="coach">Coach</option>
-                <option value="mentor">Mentor</option>
-                <option value="student">Student</option>
-                <option value="parent">Parent</option>
+                <option value="admin">Admin / Coach</option>
+                <option value="mentor">Mentor / Lead</option>
                 <option value="member">Member</option>
                 <option value="unverified">Unverified</option>
               </select>

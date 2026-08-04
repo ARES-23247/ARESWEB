@@ -21,6 +21,7 @@ export function useDashboardDocController(
   const [selectedDoc, setSelectedDoc] = useState<DocRecord | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
+  const isApprover = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "mentor" || authorizedUser.role === "coach"));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
   const {
@@ -33,6 +34,13 @@ export function useDashboardDocController(
     saveDoc,
     deleteDoc
   } = useDocumentSync(collectionName, filterFn);
+
+  const pendingDocs = docs.filter(
+    (d: DocRecord) => d.status === "pending_approval" || d.approvalStatus === "pending_approval"
+  );
+  const publishedDocs = docs.filter(
+    (d: DocRecord) => !d.status || d.status === "published" || d.approvalStatus === "approved"
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -88,12 +96,28 @@ export function useDashboardDocController(
   };
 
   const handleSave = async (slug: string, payload: any) => {
+    const isMemberRole = !isApprover;
     const finalPayload = {
       ...payload,
       original_authorNickname: selectedDoc ? selectedDoc.original_authorNickname || userNickname : userNickname,
-      original_authorAvatar: selectedDoc ? selectedDoc.original_authorAvatar || userAvatar : userAvatar
+      original_authorAvatar: selectedDoc ? selectedDoc.original_authorAvatar || userAvatar : userAvatar,
+      // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
+      status: isMemberRole ? "pending_approval" : (payload.status || "published"),
+      approvalStatus: isMemberRole ? "pending_approval" : (payload.approvalStatus || "approved")
     };
     await saveDoc(slug, finalPayload, userNickname, userAvatar);
+  };
+
+  const handleApproveAndPublish = async (docItem: DocRecord) => {
+    if (!isApprover) return;
+    const finalPayload = {
+      ...docItem,
+      status: "published",
+      approvalStatus: "approved",
+      approvedBy: userNickname,
+      approvedAt: new Date().toISOString()
+    };
+    await saveDoc(docItem.slug, finalPayload, userNickname, userAvatar);
   };
 
   const handleDelete = async (slug: string) => {
@@ -104,6 +128,8 @@ export function useDashboardDocController(
 
   return {
     docs,
+    pendingDocs,
+    publishedDocs,
     loadingList,
     isLive,
     revisions,
@@ -114,10 +140,12 @@ export function useDashboardDocController(
     selectedDoc,
     isEditorOpen,
     canEdit,
+    isApprover,
     handleOpenEdit,
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
+    handleApproveAndPublish,
     handleDelete,
     userNickname,
     userAvatar
