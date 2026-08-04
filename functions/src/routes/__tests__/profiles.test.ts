@@ -194,7 +194,7 @@ describe("Profiles Router Backend Endpoints", () => {
       await handler(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
-        authorizedUser: expect.objectContaining({ role: "coach" })
+        authorizedUser: expect.objectContaining({ role: "admin", memberType: "mentor" })
       });
     });
   });
