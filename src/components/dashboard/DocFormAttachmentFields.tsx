@@ -1,5 +1,7 @@
-import React from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import { Image as ImageIcon, HardDriveDownload, Loader2 } from "lucide-react";
+import { authenticatedFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 interface DocFormAttachmentFieldsProps {
   variant: "docs" | "documents" | "blog";
@@ -8,6 +10,7 @@ interface DocFormAttachmentFieldsProps {
   formThumbnail: string;
   setFormThumbnail: (val: string) => void;
   setIsPhotoPickerOpen: (val: boolean) => void;
+  onDriveImportSuccess?: (data: { title: string; category: string; description: string; fileUrl: string }) => void;
 }
 
 export default function DocFormAttachmentFields({
@@ -16,8 +19,48 @@ export default function DocFormAttachmentFields({
   setFormFileUrl,
   formThumbnail,
   setFormThumbnail,
-  setIsPhotoPickerOpen
+  setIsPhotoPickerOpen,
+  onDriveImportSuccess
 }: DocFormAttachmentFieldsProps) {
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleDriveImport = async () => {
+    if (!formFileUrl || !formFileUrl.includes("drive.google.com")) {
+      toast.error("Please enter a valid Google Drive URL first.");
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      const res = await authenticatedFetch("/api/drive/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: formFileUrl })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to fetch Drive metadata.");
+      }
+
+      const data = await res.json();
+      if (data.file) {
+        setFormFileUrl(data.file.fileUrl);
+        onDriveImportSuccess?.({
+          title: data.file.title,
+          category: data.file.category,
+          description: data.file.description,
+          fileUrl: data.file.fileUrl
+        });
+        toast.success(`Imported metadata for "${data.file.title}"`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Error importing from Google Drive.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Documents Variant Attachment */}
@@ -29,15 +72,29 @@ export default function DocFormAttachmentFields({
           >
             File / External URL Link
           </label>
-          <input
-            id="formFileUrl"
-            type="url"
-            placeholder="https://drive.google.com/... or github.com"
-            value={formFileUrl}
-            onChange={(e) => setFormFileUrl(e.target.value)}
-            className="w-full bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
-            required
-          />
+          <div className="flex gap-2">
+            <input
+              id="formFileUrl"
+              type="url"
+              placeholder="https://drive.google.com/... or github.com"
+              value={formFileUrl}
+              onChange={(e) => setFormFileUrl(e.target.value)}
+              className="flex-grow bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
+              required
+            />
+            {formFileUrl.includes("drive.google.com") && (
+              <button
+                type="button"
+                onClick={handleDriveImport}
+                disabled={isImporting}
+                className="px-3 py-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan hover:text-white rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                title="Import Title & Metadata from Google Drive"
+              >
+                {isImporting ? <Loader2 size={14} className="animate-spin" /> : <HardDriveDownload size={14} />}
+                Import Info
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -55,7 +55,7 @@ router.post("/auth/init", ensureAdmin, asyncHandler(async (req, res) => {
   googleAuthUrl.searchParams.set("client_id", clientId);
   googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
   googleAuthUrl.searchParams.set("response_type", "code");
-  googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly https://www.googleapis.com/auth/photoslibrary.appendonly https://www.googleapis.com/auth/photoslibrary.readonly");
+  googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly https://www.googleapis.com/auth/photoslibrary.appendonly https://www.googleapis.com/auth/photoslibrary.readonly https://www.googleapis.com/auth/drive.readonly");
   googleAuthUrl.searchParams.set("access_type", "offline");
   googleAuthUrl.searchParams.set("prompt", "consent");
   googleAuthUrl.searchParams.set("state", state);

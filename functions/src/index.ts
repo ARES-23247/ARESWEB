@@ -23,6 +23,7 @@ import robotsRouter from "./routes/robots";
 import videosRouter from "./routes/videos";
 import storeRouter from "./routes/store";
 import zulipRouter from "./routes/zulip";
+import driveRouter from "./routes/drive";
 import { globalErrorHandler } from "./middleware/errorHandler";
 
 let secret = process.env.ENCRYPTION_SECRET;
@@ -102,6 +103,7 @@ app.use("/api/robots", robotsRouter);
 app.use("/api/videos", videosRouter);
 app.use("/api/store", storeRouter);
 app.use("/api/zulip", zulipRouter);
+app.use("/api/drive", driveRouter);
 app.use("/sitemap.xml", sitemapRouter);
 app.use("/api/sitemap.xml", sitemapRouter);
 
