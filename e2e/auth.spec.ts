@@ -14,7 +14,7 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     await adminButton.click();
     
     // Verify that we are logged in and see the dashboard profile name
-    await expect(page.locator('text=Sign Out')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
   });
 
   test('should log in as student member and receive access denied on admin routes', async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     await memberButton.click();
     
     // Check dashboard loads
-    await expect(page.locator('text=Sign Out')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
     
     // Navigate to inquiries page
     await page.goto('/dashboard/inquiries');
@@ -80,7 +80,7 @@ test.describe('WebGL & Simulations E2E tests', () => {
     // Login as admin
     const adminButton = page.locator('button', { hasText: 'David (Admin)' });
     await adminButton.click();
-    await expect(page.locator('text=Sign Out')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
     
     // Navigate to simulations catalog
     await page.goto('/dashboard/simulations');

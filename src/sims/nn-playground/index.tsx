@@ -311,9 +311,9 @@ export default function NeuralPlayground() {
 
 
   return (
-    <div className="bg-obsidian border border-white/10 ares-cut-lg p-8 text-marble font-sans max-w-7xl mx-auto my-8 min-h-[800px] flex flex-col gap-8">
+    <div className="bg-obsidian border border-white/10 ares-cut-lg p-4 sm:p-6 lg:p-8 text-marble font-sans max-w-7xl mx-auto my-4 sm:my-8 min-h-[800px] flex flex-col gap-6 lg:gap-8">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-start gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-ares-red/20 border border-ares-red/30 ares-cut-sm">
             <Brain className="w-8 h-8 text-ares-red" />
@@ -324,8 +324,8 @@ export default function NeuralPlayground() {
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <div className="bg-black/40 border border-white/5 ares-cut-sm px-6 py-3 flex gap-8">
+        <div className="flex flex-wrap gap-3 sm:gap-4 w-full xl:w-auto">
+          <div className="bg-black/40 border border-white/5 ares-cut-sm px-4 sm:px-6 py-3 flex gap-6 sm:gap-8 flex-1 sm:flex-none justify-center">
              <div className="text-center">
                 <div className="text-[10px] text-marble/60 uppercase tracking-widest mb-1">Epoch</div>
                 <div className="text-xl font-mono text-ares-cyan font-bold">{epoch}</div>
@@ -338,21 +338,27 @@ export default function NeuralPlayground() {
           
           <button 
             onClick={() => setIsTraining(!isTraining)}
-            className={`px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-all ${isTraining ? 'bg-ares-red text-white shadow-[0_0_20px_rgba(192,0,0,0.4)]' : 'bg-ares-cyan text-black hover:scale-105'}`}
+            aria-pressed={isTraining}
+            className={`px-5 sm:px-8 py-3 ares-cut-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${isTraining ? 'bg-ares-red text-white shadow-[0_0_20px_rgba(192,0,0,0.4)]' : 'bg-ares-cyan text-black hover:scale-105'}`}
           >
             {isTraining ? <><Pause className="w-5 h-5"/> Stop</> : <><Play className="w-5 h-5"/> Train</>}
           </button>
 
-          <button onClick={() => { setEpoch(0); resetWeights(); }} className="p-3 bg-white/5 border border-white/10 hover:bg-white/10 ares-cut-sm transition-colors">
-            <RotateCcw className="w-6 h-6 text-marble/60" />
+          <button
+            type="button"
+            onClick={() => { setEpoch(0); resetWeights(); }}
+            aria-label="Reset neural network training"
+            className="p-3 bg-white/5 border border-white/10 hover:bg-white/10 ares-cut-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <RotateCcw aria-hidden="true" className="w-6 h-6 text-marble/60" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-8 flex-1">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 flex-1">
         
         {/* Sidebar: Controls */}
-        <div className="col-span-3 space-y-6">
+        <div className="xl:col-span-3 space-y-6">
           <section className="space-y-4">
             <div className="flex items-center gap-2 text-ares-gold">
                <Settings2 className="w-4 h-4" />
@@ -386,7 +392,8 @@ export default function NeuralPlayground() {
                 <button 
                   key={type} 
                   onClick={() => setDatasetType(type)}
-                  className={`p-2 text-[10px] uppercase font-bold tracking-widest border transition-all ${datasetType === type ? 'bg-ares-red/20 border-ares-red text-white' : 'bg-black/30 border-white/10 text-marble/60 hover:border-white/30'}`}
+                  aria-pressed={datasetType === type}
+                  className={`p-2 text-[10px] uppercase font-bold tracking-widest border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${datasetType === type ? 'bg-ares-red/20 border-ares-red text-white' : 'bg-black/30 border-white/10 text-marble/60 hover:border-white/30'}`}
                 >
                   {type}
                 </button>
@@ -413,10 +420,10 @@ export default function NeuralPlayground() {
         </div>
 
         {/* Center: Network Graph */}
-        <div className="col-span-6 bg-black/20 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col items-center justify-center p-8">
+        <div className="xl:col-span-6 bg-black/20 rounded-2xl border border-white/5 relative overflow-x-auto overflow-y-hidden flex flex-col items-center justify-center p-4 sm:p-8 min-h-[420px]">
            <div className="absolute top-4 left-4 text-[10px] text-white/20 uppercase tracking-widest">Neural Architecture</div>
            
-           <div className="flex gap-16 items-center z-10 w-full justify-between px-4">
+           <div className="flex gap-12 lg:gap-16 items-center z-10 w-full min-w-[620px] justify-between px-4">
               {/* Input Layer */}
               <div className="flex flex-col gap-12">
                  {[0, 1].map(i => (
@@ -440,16 +447,31 @@ export default function NeuralPlayground() {
                       ))}
                    </div>
                    <div className="flex gap-1 mt-4">
-                      <button onClick={() => updateLayerSize(lIdx, -1)} className="p-1 hover:bg-white/10 rounded text-marble/60"><Minus className="w-3 h-3"/></button>
-                      <button onClick={() => updateLayerSize(lIdx, 1)} className="p-1 hover:bg-white/10 rounded text-marble/60"><Plus className="w-3 h-3"/></button>
+                      <button
+                        type="button"
+                        onClick={() => updateLayerSize(lIdx, -1)}
+                        aria-label={`Remove one neuron from hidden layer ${lIdx + 1}`}
+                        className="p-1 hover:bg-white/10 rounded text-marble/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      ><Minus aria-hidden="true" className="w-3 h-3"/></button>
+                      <button
+                        type="button"
+                        onClick={() => updateLayerSize(lIdx, 1)}
+                        aria-label={`Add one neuron to hidden layer ${lIdx + 1}`}
+                        className="p-1 hover:bg-white/10 rounded text-marble/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      ><Plus aria-hidden="true" className="w-3 h-3"/></button>
                    </div>
                 </div>
               ))}
 
               {/* Add Layer Button */}
               {layers.length < 4 && (
-                <button onClick={addLayer} className="p-2 border-2 border-dashed border-white/10 hover:border-white/30 rounded-full transition-all group">
-                   <Plus className="w-4 h-4 text-white/20 group-hover:text-white/60" />
+                <button
+                  type="button"
+                  onClick={addLayer}
+                  aria-label="Add hidden layer"
+                  className="p-2 border-2 border-dashed border-white/10 hover:border-white/30 rounded-full transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                   <Plus aria-hidden="true" className="w-4 h-4 text-white/20 group-hover:text-white/60" />
                 </button>
               )}
 
@@ -464,9 +486,16 @@ export default function NeuralPlayground() {
         </div>
 
         {/* Right: Decision Boundary */}
-        <div className="col-span-3 space-y-4">
+        <div className="xl:col-span-3 space-y-4 w-full max-w-xl xl:max-w-none mx-auto">
           <div className="relative aspect-square w-full bg-black/60 ares-cut-sm border border-white/10 overflow-hidden shadow-2xl">
-             <canvas ref={canvasRef} width="200" height="200" className="absolute inset-0 w-full h-full opacity-60" />
+             <canvas
+               ref={canvasRef}
+               width="200"
+               height="200"
+               role="img"
+               aria-label="Live decision boundary showing the neural network classification regions"
+               className="absolute inset-0 w-full h-full opacity-60"
+             />
              
              {/* Points */}
              <div className="absolute inset-0 pointer-events-none">
@@ -479,9 +508,9 @@ export default function NeuralPlayground() {
                       top: `${((p.y + 5) / 10) * 100}%`,
                       width: '6px',
                       height: '6px',
-                      background: p.label === 1 ? '#3b82f6' : '#f59e0b',
+                      background: p.label === 1 ? 'var(--ares-cyan)' : 'var(--ares-gold)',
                       borderRadius: '50%',
-                      boxShadow: `0 0 8px ${p.label === 1 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)'}`,
+                      boxShadow: `0 0 8px ${p.label === 1 ? 'rgba(0, 229, 255, 0.8)' : 'rgba(255, 184, 28, 0.8)'}`,
                       transform: 'translate(-50%, -50%)'
                     }}
                   />

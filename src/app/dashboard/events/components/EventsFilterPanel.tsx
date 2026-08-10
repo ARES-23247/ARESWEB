@@ -52,7 +52,7 @@ export default function EventsFilterPanel({
           let colorClass = "hover:text-white border-transparent text-marble/45";
           if (isActive) {
             if (status === "deleted") colorClass = "border-ares-red/30 text-ares-red bg-ares-red/10";
-            else if (status === "pending") colorClass = "border-amber-500/30 text-amber-500 bg-amber-500/10";
+            else if (status === "pending") colorClass = "border-ares-gold/30 text-ares-gold bg-ares-gold/10";
             else if (status === "published") colorClass = "border-ares-success/30 text-ares-success bg-ares-success/10";
             else colorClass = "border-ares-gold/35 text-white bg-white/5";
           }

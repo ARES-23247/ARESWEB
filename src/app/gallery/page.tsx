@@ -5,6 +5,7 @@ import { Eye, MapPin, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 import * as Dialog from "@radix-ui/react-dialog";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface GalleryPhoto {
   id: number;
@@ -17,67 +18,12 @@ interface GalleryPhoto {
   imageUrl?: string;
 }
 
-const MOCK_PHOTOS: GalleryPhoto[] = [
-  {
-    id: 1,
-    title: "Mecanum Drivetrain EKF Calibration",
-    category: "Robot Specs",
-    date: "2026-04-10",
-    location: "MARS Laboratory",
-    desc: "Drive teams executing high-frequency odometry tests to reduce EKF state slip values.",
-    colorClass: "from-ares-red/30 to-black/80 border-ares-red/20"
-  },
-  {
-    id: 2,
-    title: "Carbon Fiber Intake Sprockets",
-    category: "Robot Specs",
-    date: "2026-03-15",
-    location: "ARES Machine Shop",
-    desc: "CNC milled custom carbon-fiber sprockets for high-torque intake pivot controls.",
-    colorClass: "from-ares-bronze/30 to-black/80 border-ares-bronze/20"
-  },
-  {
-    id: 3,
-    title: "Spark! WV Bridge Exhibit Launch",
-    category: "Outreach",
-    date: "2026-03-20",
-    location: "Spark! Museum",
-    desc: "ARES students teaching structural engineering principles using custom West Virginia bridge trusses.",
-    colorClass: "from-ares-gold/20 to-black/80 border-ares-gold/25"
-  },
-  {
-    id: 4,
-    title: "High Submersible Ascension Hook",
-    category: "Competition",
-    date: "2026-04-28",
-    location: "Championship Arena",
-    desc: "ARES robot executing a perfect high-tower bar hang in the final 10 seconds of Qualifiers.",
-    colorClass: "from-ares-red/45 to-black/90 border-ares-red/30"
-  },
-  {
-    id: 5,
-    title: "Draco-Compressed Chassis Assembly CAD",
-    category: "CAD Design",
-    date: "2026-02-18",
-    location: "Onshape Cloud Engine",
-    desc: "Direct browser visualization of our 18x18 FTC chassis assembly synced from Onshape.",
-    colorClass: "from-ares-bronze/45 to-black/90 border-ares-bronze/30"
-  },
-  {
-    id: 6,
-    title: "Vertex AI Match Analytics Briefing",
-    category: "Competition",
-    date: "2026-05-12",
-    location: "Strategy Warroom",
-    desc: "Programmers and scouts analyzing BigQuery match logs to optimize autonomous target routes.",
-    colorClass: "from-ares-gold/30 to-black/90 border-ares-gold/20"
-  }
-];
-
 export default function GalleryPage() {
-  const [photos, setPhotos] = useState<GalleryPhoto[]>(MOCK_PHOTOS);
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPhotos() {
@@ -126,14 +72,18 @@ export default function GalleryPage() {
             });
             setPhotos(mapped);
           } else {
-            setPhotos(MOCK_PHOTOS);
+            setPhotos([]);
           }
         } else {
-          setPhotos(MOCK_PHOTOS);
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
+        setLoadError(null);
       } catch (err) {
-        console.warn("Failed to load synced photos from API:", err);
-        setPhotos(MOCK_PHOTOS);
+        console.error("Failed to load published photos from API:", err);
+        setPhotos([]);
+        setLoadError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsLoading(false);
       }
     }
     loadPhotos();
@@ -211,7 +161,24 @@ export default function GalleryPage() {
             {/* Removed obsolete Community Google Photos Album link */}
           </div>
 
-          {/* CSS Columns Masonry Grid (Zero CLS) */}
+          {isLoading ? (
+            <div role="status" className="py-24 text-center text-sm font-bold text-ares-gold">
+              Loading published photos…
+            </div>
+          ) : loadError ? (
+            <PublicDataState
+              title="Unable to load the photo gallery"
+              message="The published photo archive could not be reached. Check your connection and try again."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
+          ) : filteredPhotos.length === 0 ? (
+            <section className="hero-card border border-white/10 bg-black/20 p-12 text-center">
+              <h2 className="text-xl font-black text-white">No published photos yet</h2>
+              <p className="mt-2 text-sm text-marble/70">New build, competition, and outreach photos will appear here.</p>
+            </section>
+          ) : (
+          /* CSS Columns Masonry Grid (Zero CLS) */
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
             {filteredPhotos.map((photo, idx) => {
               // Assign varying aspect ratios for masonry visualization
@@ -270,6 +237,7 @@ export default function GalleryPage() {
               );
             })}
           </div>
+          )}
 
         </div>
       </section>

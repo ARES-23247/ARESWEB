@@ -36,8 +36,13 @@ export function MobileNavDrawer({
   return (
     <div 
       ref={drawerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-navigation-title"
+      tabIndex={-1}
       className="absolute top-full left-0 w-full bg-obsidian border-b border-ares-bronze/20 shadow-2xl p-6 flex flex-col gap-5 md:hidden z-50 max-h-[80vh] overflow-y-auto"
     >
+      <h2 id="mobile-navigation-title" className="sr-only">Mobile navigation menu</h2>
       {/* Section 1: Team & Organization */}
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-bronze mb-2">
@@ -112,7 +117,7 @@ export function MobileNavDrawer({
               logout();
               onClose();
             }}
-            className="w-full mt-2 text-center py-2 text-xs text-white bg-ares-red/20 hover:bg-ares-red text-ares-danger hover:text-white rounded transition-colors font-bold uppercase tracking-wider border border-ares-red/30 cursor-pointer"
+            className="w-full mt-2 text-center py-2 text-xs text-white bg-ares-red/20 hover:bg-ares-red rounded transition-colors font-bold uppercase tracking-wider border border-ares-red/30 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             Sign Out
           </button>
@@ -123,7 +128,7 @@ export function MobileNavDrawer({
             loginWithGoogle();
             onClose();
           }}
-          className="w-full text-center py-3 bg-ares-red hover:bg-ares-red-dark text-white rounded transition-all font-bold uppercase tracking-widest text-xs border border-ares-bronze/20 cursor-pointer"
+          className="w-full text-center py-3 bg-ares-red hover:bg-ares-bronze text-white rounded transition-all font-bold uppercase tracking-widest text-xs border border-ares-bronze/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
           Sign In with Google
         </button>

@@ -14,9 +14,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />
-        <div className="flex-grow flex flex-col">
+        <main id="main-content" tabIndex={-1} className="flex-grow flex flex-col focus:outline-none">
           {children}
-        </div>
+        </main>
       </div>
     );
   }
@@ -25,7 +25,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <div className="min-h-screen bg-obsidian text-marble flex flex-col justify-between">
       <SkipLink />
       <Navbar />
-      <main id="main-content" role="main" className="flex-grow pt-24">
+      <main id="main-content" tabIndex={-1} className="flex-grow pt-24 focus:outline-none">
         {children}
       </main>
       <Footer />

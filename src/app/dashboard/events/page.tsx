@@ -13,11 +13,11 @@ import {
 import { cleanUndefined } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api";
 
-import LocationManagerModal, { TeamLocation, MOCK_LOCATIONS } from "./components/LocationManagerModal";
+import LocationManagerModal, { TeamLocation } from "./components/LocationManagerModal";
 import EventEditorDrawer, { TeamEvent } from "./components/EventEditorDrawer";
 import EventsCalendarView from "./components/EventsCalendarView";
 import EventsFilterPanel from "./components/EventsFilterPanel";
-import { MOCK_EVENTS } from "../../calendar/components/mockEvents";
+import { PublicDataState } from "@/components/PublicDataState";
 
 export default function EventsManagementPage({
   editorOnly = false,
@@ -38,6 +38,7 @@ export default function EventsManagementPage({
   const [events, setEvents] = useState<TeamEvent[]>([]);
   const [locations, setLocations] = useState<TeamLocation[]>([]);
   const [isLive, setIsLive] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Modal control states
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -85,8 +86,9 @@ export default function EventsManagementPage({
         q,
         (snapshot) => {
           if (snapshot.empty) {
-            setEvents(MOCK_EVENTS);
-            setIsLive(false);
+            setEvents([]);
+            setIsLive(true);
+            setLoadError(null);
             return;
           }
           const list = snapshot.docs.map((docSnap) => {
@@ -110,18 +112,21 @@ export default function EventsManagementPage({
           list.sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
           setEvents(list);
           setIsLive(true);
+          setLoadError(null);
         },
         (err) => {
-          console.warn("Firestore not connected, using fallback mock events.", err.message);
-          setEvents(MOCK_EVENTS);
+          console.error("Unable to load event management records:", err);
+          setEvents([]);
           setIsLive(false);
+          setLoadError(err.message);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Local sandbox mode, using static mock schedule.", e);
-      setEvents(MOCK_EVENTS);
+      console.error("Unable to initialize event management records:", e);
+      setEvents([]);
       setIsLive(false);
+      setLoadError(e instanceof Error ? e.message : String(e));
     }
   }, []);
 
@@ -133,7 +138,7 @@ export default function EventsManagementPage({
         locationsRef,
         async (snapshot) => {
           if (snapshot.empty) {
-            setLocations(MOCK_LOCATIONS);
+            setLocations([]);
             return;
           }
           const list = snapshot.docs.map((docSnap) => {
@@ -149,13 +154,16 @@ export default function EventsManagementPage({
           setLocations(list);
         },
         (err) => {
-          console.warn("Locations stream error. Using defaults.", err.message);
-          setLocations(MOCK_LOCATIONS);
+          console.error("Unable to load managed locations:", err);
+          setLocations([]);
+          setLoadError((current) => current || err.message);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      setLocations(MOCK_LOCATIONS);
+      console.error("Unable to initialize managed locations:", e);
+      setLocations([]);
+      setLoadError((current) => current || (e instanceof Error ? e.message : String(e)));
     }
   }, []);
 
@@ -361,12 +369,12 @@ export default function EventsManagementPage({
               <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
                 Manage Events
                 {isLive ? (
-                  <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                    ● Live Sync
+                  <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze ml-2">
+                    Live sync
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                    ● Sandbox
+                  <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze ml-2">
+                    Data unavailable
                   </span>
                 )}
               </h1>
@@ -385,13 +393,22 @@ export default function EventsManagementPage({
                 </button>
                 <button
                   onClick={handleOpenCreate}
-                  className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                  className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
                 >
                   <Plus size={16} /> New Event
                 </button>
               </div>
             )}
           </header>
+
+          {loadError && (
+            <PublicDataState
+              title="Unable to load event management data"
+              message="Events or locations could not be reached. Check your session and connection, then retry."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
+          )}
 
           {/* Guest Lockscreen Warning */}
           {!canEdit && (
@@ -460,4 +477,3 @@ export default function EventsManagementPage({
     </div>
   );
 }
-

@@ -11,6 +11,7 @@ import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil } from "lucide-react";
 import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface BlogPostDetails {
   slug: string;
@@ -23,7 +24,7 @@ interface BlogPostDetails {
   content: string;
 }
 
-const MOCK_DETAILS: Record<string, BlogPostDetails> = {
+export const MOCK_DETAILS: Record<string, BlogPostDetails> = {
   "championship-2026-recap": {
     slug: "championship-2026-recap",
     title: "Championship 2026: Team ARES Wins Big!",
@@ -87,6 +88,7 @@ export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<BlogPostDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Editor Drawer States
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -109,14 +111,16 @@ export default function BlogPostPage() {
       docRef,
       (docSnap) => {
         if (!docSnap.exists()) {
-          setPost(MOCK_DETAILS[slug] || null);
+          setPost(null);
+          setLoadError(null);
           setIsLoading(false);
           return;
         }
 
         const data = docSnap.data();
         if (!data || data.isDeleted === 1 || data.status !== "published") {
-          setPost(MOCK_DETAILS[slug] || null);
+          setPost(null);
+          setLoadError(null);
           setIsLoading(false);
           return;
         }
@@ -131,11 +135,13 @@ export default function BlogPostPage() {
           authorAvatar: data.authorAvatar || "",
           content: data.content || data.snippet || ""
         });
+        setLoadError(null);
         setIsLoading(false);
       },
       (error) => {
-        console.warn("Firestore read failed for post slug: using mock fallback.", { slug, error });
-        setPost(MOCK_DETAILS[slug] || null);
+        console.error("Unable to load published blog post:", { slug, error });
+        setPost(null);
+        setLoadError(error.message);
         setIsLoading(false);
       }
     );
@@ -152,6 +158,20 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
+    if (loadError) {
+      return (
+        <div className="min-h-screen bg-obsidian px-6 py-24 text-marble">
+          <div className="mx-auto max-w-3xl">
+            <PublicDataState
+              title="Unable to load this article"
+              message="The published article could not be reached. Check your connection and try again."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
         <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Post Not Found</h2>

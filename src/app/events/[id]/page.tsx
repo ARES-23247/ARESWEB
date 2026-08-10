@@ -19,6 +19,7 @@ import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import { ASTNode } from "@/components/TiptapRenderer";
+import { PublicDataState } from "@/components/PublicDataState";
 
 // Sub-components
 import EventHero from "@/components/events/EventHero";
@@ -31,7 +32,6 @@ import PhotoLightbox from "@/components/events/PhotoLightbox";
 import { EventItem, EventSignup, EventPhoto } from "@/components/events/types";
 
 import { TeamLocation } from "@/types/location";
-import { MOCK_LOCATIONS } from "@/utils/constants";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -40,9 +40,10 @@ export default function EventDetailPage() {
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
+  const [eventLoadError, setEventLoadError] = useState<string | null>(null);
   const [signups, setSignups] = useState<EventSignup[]>([]);
   const [photos, setPhotos] = useState<EventPhoto[]>([]);
-  const [locations, setLocations] = useState<TeamLocation[]>(MOCK_LOCATIONS);
+  const [locations, setLocations] = useState<TeamLocation[]>([]);
 
   // RSVP Form state
   const [bringing, setBringing] = useState("");
@@ -89,10 +90,12 @@ export default function EventDetailPage() {
         } else {
           setEvent(null);
         }
+        setEventLoadError(null);
         setLoadingEvent(false);
       },
       (err) => {
         console.error("Error fetching event details:", err);
+        setEventLoadError(err.message);
         setLoadingEvent(false);
       }
     );
@@ -107,7 +110,7 @@ export default function EventDetailPage() {
         locationsRef,
         (snapshot) => {
           if (snapshot.empty) {
-            setLocations(MOCK_LOCATIONS);
+            setLocations([]);
             return;
           }
           const list = snapshot.docs.map((docSnap) => {
@@ -123,14 +126,14 @@ export default function EventDetailPage() {
           setLocations(list);
         },
         (err) => {
-          console.warn("Unable to fetch locations in detail page:", err);
-          setLocations(MOCK_LOCATIONS);
+          console.error("Unable to fetch event locations:", err);
+          setLocations([]);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Unable to fetch locations in detail page:", e);
-      setLocations(MOCK_LOCATIONS);
+      console.error("Unable to initialize event locations:", e);
+      setLocations([]);
     }
   }, []);
 
@@ -408,6 +411,20 @@ export default function EventDetailPage() {
   }
 
   if (!event) {
+    if (eventLoadError) {
+      return (
+        <div className="min-h-screen w-full bg-obsidian px-6 py-24 text-marble">
+          <div className="mx-auto max-w-3xl">
+            <PublicDataState
+              title="Unable to load this event"
+              message="The event record could not be reached. Check your connection and try again."
+              diagnostic={eventLoadError}
+              onRetry={() => window.location.reload()}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-3xl font-black font-heading text-white uppercase mb-4">Event Record Lost</h1>
@@ -435,7 +452,7 @@ export default function EventDetailPage() {
           locationName: event.location || "Location TBA",
           locationAddress: (() => {
             const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
-            return selected ? selected.address : (event.locationId === "mars-building" || event.location === "MARS Building") ? "123 Science Way, Morgantown, WV" : "Morgantown, WV";
+            return selected?.address || event.location || "";
           })()
         }}
       />

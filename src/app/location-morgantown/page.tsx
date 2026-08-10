@@ -20,7 +20,7 @@ export default function LocationMorgantownPage() {
     <div className="flex flex-col w-full bg-obsidian">
       <SEO
         title="Robotics in Morgantown, West Virginia | ARES 23247"
-        description="Join ARES 23247, Morgantown's premier *FIRST*® Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
+        description="Join ARES 23247, Morgantown's premier FIRST® Tech Challenge robotics team. We offer youth robotics programs, STEM education, and competition opportunities for students in Morgantown and throughout West Virginia."
       />
       <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <ReviewSchema reviews={ARES_REVIEWS} />
@@ -45,7 +45,7 @@ export default function LocationMorgantownPage() {
           <div className="flex flex-wrap gap-4 justify-center mt-10">
             <Link
               to="/join"
-              className="bg-ares-red hover:bg-red-700 text-white px-8 py-4 font-bold uppercase tracking-widest transition-all shadow-lg shadow-ares-red/20 flex items-center gap-2 ares-cut-sm hover:-translate-y-0.5"
+              className="bg-ares-red hover:bg-ares-bronze text-white px-8 py-4 font-bold uppercase tracking-widest transition-all shadow-lg shadow-ares-red/20 flex items-center gap-2 ares-cut-sm hover:-translate-y-0.5"
             >
               Join Our Team <ArrowRight className="w-5 h-5" />
             </Link>
@@ -194,7 +194,7 @@ export default function LocationMorgantownPage() {
           </p>
           <Link
             to="/join"
-            className="inline-block bg-ares-red hover:bg-red-700 text-white px-10 py-5 font-bold uppercase tracking-widest text-lg transition-all shadow-lg shadow-ares-red/20 ares-cut-sm hover:-translate-y-0.5"
+            className="inline-block bg-ares-red hover:bg-ares-bronze text-white px-10 py-5 font-bold uppercase tracking-widest text-lg transition-all shadow-lg shadow-ares-red/20 ares-cut-sm hover:-translate-y-0.5"
           >
             Apply to Join ARES
           </Link>

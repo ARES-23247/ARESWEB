@@ -77,7 +77,7 @@ export default function NnIntroSim() {
       {/* Header */}
       <div>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#fff', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Cpu className="w-8 h-8 text-blue-500" />
+          <Cpu className="w-8 h-8 text-ares-gold" />
           Sim 1: Neural Networks Basics
         </h1>
         <p style={{ color: '#9ca3af', margin: 0, fontSize: '15px' }}>

@@ -1,27 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import storeRouter from "../store";
-import { adminDb } from "../../lib/firebase-admin";
-
-// Mock Firebase Admin
-vi.mock("../../lib/firebase-admin", () => {
-  const mockSet = vi.fn();
-  const mockDoc = vi.fn().mockImplementation((id) => {
-    return {
-      set: mockSet,
-    };
-  });
-  const mockCollection = vi.fn().mockImplementation(() => {
-    return {
-      doc: mockDoc,
-    };
-  });
-
-  return {
-    adminDb: {
-      collection: mockCollection,
-    },
-  };
-});
 
 describe("Store Router Backend Endpoints", () => {
   let req: any;
@@ -59,7 +37,7 @@ describe("Store Router Backend Endpoints", () => {
   };
 
   describe("POST /checkout", () => {
-    it("should successfully log a valid order to Firestore", async () => {
+    it("rejects checkout until a verified payment provider is configured", async () => {
       const handler = getHandler("/checkout", "post", ["ensureAuth"]);
       req.body = {
         customerEmail: "customer@example.com",
@@ -71,29 +49,11 @@ describe("Store Router Backend Endpoints", () => {
 
       await handler(req, res, next);
 
-      const mockSet = vi.mocked(adminDb.collection("orders").doc).mock.results[0]?.value?.set;
-
-      expect(res.json).toHaveBeenCalled();
-      const responseData = res.json.mock.calls[0][0];
-      expect(responseData.success).toBe(true);
-      expect(responseData.orderId).toBeDefined();
-
-      expect(mockSet).toHaveBeenCalled();
-      const orderArg = vi.mocked(mockSet).mock.calls[0][0];
-      expect(orderArg.customerEmail).toBe("test@example.com");
-    });
-
-    it("should fail if items list is missing", async () => {
-      const handler = getHandler("/checkout", "post", ["ensureAuth"]);
-      req.body = {
-        customerEmail: "customer@example.com",
-        totalCents: 9000,
-      };
-
-      await handler(req, res, next);
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Missing or empty items list");
+      expect(err.status).toBe(503);
+      expect(err.message).toBe("Online checkout is unavailable until a verified payment provider is configured");
+      expect(res.json).not.toHaveBeenCalled();
     });
   });
 });

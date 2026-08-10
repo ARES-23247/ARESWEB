@@ -254,7 +254,7 @@ export default function ExponentialSim() {
           </span>
           <h2 className="text-xl font-bold font-heading text-white flex items-center gap-2">
             {mode === 'growth' ? (
-              <TrendingUp size={20} className="text-emerald-400" />
+              <TrendingUp size={20} className="text-ares-gold" />
             ) : (
               <TrendingDown size={20} className="text-ares-red" />
             )}
@@ -443,7 +443,7 @@ export default function ExponentialSim() {
             </div>
             <div className="text-right">
               <span className="text-[9px] text-ares-muted font-bold block">RATE OF CHANGE</span>
-              <span className={`font-semibold ${mode === 'growth' ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`font-semibold ${mode === 'growth' ? 'text-ares-gold' : 'text-white'}`}>
                 {mode === 'growth' ? 'Compounding Growth' : 'Exponential Decay'}
               </span>
             </div>
@@ -528,9 +528,9 @@ export default function ExponentialSim() {
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
                 if (isCorrect) {
-                  optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
+                  optClass = 'border-ares-gold/50 bg-ares-gold/10 text-ares-gold';
                 } else if (isSelected) {
-                  optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
+                  optClass = 'border-ares-red/50 bg-ares-red text-white';
                 }
               } else if (isSelected) {
                 optClass = 'border-ares-gold bg-ares-gold/10 text-white';
@@ -544,8 +544,8 @@ export default function ExponentialSim() {
                   className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
                 >
                   <span>{opt}</span>
-                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400 font-bold shrink-0" />}
-                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400 font-bold shrink-0" />}
+                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-ares-gold font-bold shrink-0" />}
+                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-white font-bold shrink-0" />}
                 </button>
               );
             })}

@@ -146,7 +146,7 @@ export default function DashboardZulipPage() {
               onClick={handleCopyLink}
               className="text-[10px] font-bold text-marble/60 hover:text-ares-gold transition-colors flex items-center gap-1"
             >
-              {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              {copied ? <Check size={12} className="text-ares-gold" /> : <Copy size={12} />}
               {copied ? "Copied to Clipboard!" : "Copy Join Link"}
             </button>
           </div>
@@ -156,7 +156,7 @@ export default function DashboardZulipPage() {
       {statusMessage && (
         <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between ${
           statusMessage.type === "success" 
-            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+            ? "bg-ares-gold/10 border-ares-gold/30 text-ares-gold"
             : "bg-ares-red/10 border-ares-red/30 text-ares-red"
         }`}>
           <span>{statusMessage.text}</span>
@@ -192,12 +192,12 @@ export default function DashboardZulipPage() {
                 Checking Zulip workspace status for {user?.email}...
               </div>
             ) : zulipAccount ? (
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded flex items-center justify-between gap-4">
+              <div className="p-4 bg-ares-gold/10 border border-ares-gold/30 rounded flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 size={24} className="text-emerald-400 shrink-0" />
+                  <CheckCircle2 size={24} className="text-ares-gold shrink-0" />
                   <div>
                     <div className="text-xs font-bold text-white">Account Active & Linked</div>
-                    <div className="text-[11px] text-emerald-400/90 font-mono">
+                    <div className="text-[11px] text-ares-gold/90 font-mono">
                       {zulipAccount.full_name || zulipAccount.email} ({zulipAccount.email})
                     </div>
                   </div>
@@ -206,15 +206,15 @@ export default function DashboardZulipPage() {
                   href="https://aresfirst.zulipchat.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider rounded transition-colors"
+                  className="px-3 py-1.5 bg-ares-gold/20 hover:bg-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-wider rounded transition-colors"
                 >
                   Open Chat
                 </a>
               </div>
             ) : (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded space-y-3">
+              <div className="p-4 bg-ares-red/10 border border-ares-red/30 rounded space-y-3">
                 <div className="flex items-start gap-3">
-                  <XCircle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+                  <XCircle size={20} className="text-white shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <div className="text-xs font-bold text-white">Zulip Account Not Linked Yet</div>
                     <p className="text-[11px] text-marble/70">
@@ -222,8 +222,8 @@ export default function DashboardZulipPage() {
                     </p>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
-                  <span className="text-[10px] text-amber-400 font-medium">Click below to create or join using your Google Account</span>
+                <div className="pt-2 border-t border-ares-red/20 flex items-center justify-between">
+                  <span className="text-[10px] text-marble/85 font-medium">Click below to create or join using your Google Account</span>
                   <a
                     href={getSafeZulipUrl(zulipLink)}
                     target="_blank"

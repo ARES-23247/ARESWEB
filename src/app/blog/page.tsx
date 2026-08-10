@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil, Plus } from "lucide-react";
 import SEO from "@/components/SEO";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface BlogPost {
   slug: string;
@@ -20,29 +21,11 @@ interface BlogPost {
   authorAvatar?: string;
 }
 
-const MOCK_POSTS: BlogPost[] = [
-  {
-    slug: "championship-2026-recap",
-    title: "Championship 2026: Team ARES Wins Big!",
-    date: "May 20, 2026",
-    snippet: "A comprehensive recap of our journey, triumphs, and scores at the 2026 *FIRST*® World Championship.",
-    author: "David Coach",
-    thumbnail: "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=500&auto=format&fit=crop&q=60"
-  },
-  {
-    slug: "drivetrain-ekf-calibration",
-    title: "ARESLib Drivetrain & EKF Odometry Calibrations",
-    date: "May 15, 2026",
-    snippet: "Deep technical insight into tuning mecanum kS feedforward and GoBilda Pinpoint EKF odometry values.",
-    author: "Lead Student",
-    thumbnail: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&auto=format&fit=crop&q=60"
-  }
-];
-
 export default function BlogFeedPage() {
   const { user, authorizedUser } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Editor Drawer States
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -75,12 +58,6 @@ export default function BlogFeedPage() {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        if (snapshot.empty) {
-          setPosts(MOCK_POSTS);
-          setIsLoading(false);
-          return;
-        }
-
         const postsList = snapshot.docs.map((doc) => {
           const data = doc.data();
           return {
@@ -94,11 +71,13 @@ export default function BlogFeedPage() {
           };
         });
         setPosts(postsList);
+        setLoadError(null);
         setIsLoading(false);
       },
       (error) => {
-        console.warn("Firestore error, using mock articles:", error);
-        setPosts(MOCK_POSTS);
+        console.error("Unable to load published blog posts:", error);
+        setPosts([]);
+        setLoadError(error.message);
         setIsLoading(false);
       }
     );
@@ -136,6 +115,18 @@ export default function BlogFeedPage() {
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
           </div>
+        ) : loadError ? (
+          <PublicDataState
+            title="Unable to load the team blog"
+            message="The published articles could not be reached. Check your connection and try again."
+            diagnostic={loadError}
+            onRetry={() => window.location.reload()}
+          />
+        ) : posts.length === 0 ? (
+          <section className="hero-card border border-white/10 bg-black/20 p-12 text-center">
+            <h2 className="text-xl font-black text-white">No published articles yet</h2>
+            <p className="mt-2 text-sm text-marble/70">New engineering and outreach stories will appear here.</p>
+          </section>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => (

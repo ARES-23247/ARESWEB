@@ -354,7 +354,7 @@ export default function TournamentMatchesList({
                             className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
                               isRedAlliance
                                 ? "bg-ares-red/15 text-ares-red border border-ares-red/35"
-                                : "bg-blue-500/15 text-blue-400 border border-blue-500/35"
+                                : "bg-ares-gold/15 text-ares-gold border border-ares-gold/35"
                             }`}
                           >
                             {m.alliance} alliance

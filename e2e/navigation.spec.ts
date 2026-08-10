@@ -12,22 +12,28 @@ test.describe('Navigation & Accessibility E2E tests', () => {
     await expect(viewScheduleButton).toBeVisible();
   });
 
-  test('should have a working skip link for accessibility', async ({ page }) => {
+  test('should have a working skip link for accessibility', async ({ page, browserName }) => {
     await page.goto('/');
+
+    const skipLink = page.getByRole('link', { name: 'Skip to main content' });
     
     // Press tab to focus the skip link
-    await page.keyboard.press('Tab');
+    if (browserName === 'webkit') {
+      await skipLink.focus();
+    } else {
+      await page.keyboard.press('Tab');
+    }
     
     // Check that the active element is indeed the skip link
-    const skipLink = page.getByRole('link', { name: 'Skip to main content' });
     await expect(skipLink).toBeFocused();
     
-    // Click it
-    await skipLink.click();
+    // Activate the keyboard bypass control.
+    await page.keyboard.press('Enter');
     
     // The focus or element target should scroll/move to main content
     const mainContent = page.locator('#main-content');
     await expect(mainContent).toBeVisible();
+    await expect(mainContent).toBeFocused();
   });
   
   test('should navigate to public page about roster', async ({ page }) => {

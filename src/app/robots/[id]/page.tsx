@@ -6,6 +6,7 @@ import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft } from "
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface RobotVersion {
   name: string;
@@ -32,7 +33,7 @@ interface RobotDetails {
   versions?: RobotVersion[];
 }
 
-const MOCK_DETAILS: Record<string, RobotDetails> = {
+export const MOCK_DETAILS: Record<string, RobotDetails> = {
   "minotaur": {
     id: "minotaur",
     name: "Minotaur",
@@ -93,6 +94,7 @@ export default function RobotDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [robot, setRobot] = useState<RobotDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedVersionIndex, setSelectedVersionIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -107,13 +109,15 @@ export default function RobotDetailPage() {
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
-          setRobot(MOCK_DETAILS[id] || null);
+          setRobot(null);
+          setLoadError(null);
           return;
         }
 
         const data = docSnap.data();
         if (!data || data.isDeleted === 1) {
-          setRobot(MOCK_DETAILS[id] || null);
+          setRobot(null);
+          setLoadError(null);
           return;
         }
 
@@ -132,9 +136,11 @@ export default function RobotDetailPage() {
           content: data.content || data.description || "",
           versions: data.versions || []
         });
+        setLoadError(null);
       } catch (error) {
-        console.warn("Firestore read failed for robot: using mock fallback.", { id, error });
-        setRobot(MOCK_DETAILS[id] || null);
+        console.error("Unable to load published robot detail:", { id, error });
+        setRobot(null);
+        setLoadError(error instanceof Error ? error.message : String(error));
       } finally {
         setIsLoading(false);
       }
@@ -152,6 +158,20 @@ export default function RobotDetailPage() {
   }
 
   if (!robot) {
+    if (loadError) {
+      return (
+        <div className="min-h-screen bg-obsidian px-6 py-24 text-marble">
+          <div className="mx-auto max-w-3xl">
+            <PublicDataState
+              title="Unable to load this robot"
+              message="The published robot record could not be reached. Check your connection and try again."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
         <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Robot Not Found</h2>
@@ -289,7 +309,7 @@ export default function RobotDetailPage() {
           {/* Technical Specs Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-obsidian border border-white/10 ares-cut-lg shadow-2xl overflow-hidden sticky top-28 group">
-              <div className="bg-gradient-to-r from-ares-red to-red-950 p-6 border-b border-red-500/30">
+              <div className="bg-gradient-to-r from-ares-red to-obsidian p-6 border-b border-ares-bronze/30">
                 <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white flex items-center gap-3 font-heading">
                   <Cpu size={20} className="group-hover:rotate-90 transition-transform duration-500 text-ares-gold" /> Tech Specs
                 </h3>

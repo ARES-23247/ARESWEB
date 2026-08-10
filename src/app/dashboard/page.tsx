@@ -43,6 +43,8 @@ export default function DashboardHome() {
 
   // Fetch counts once on mount and subscribe to recent tasks (limited to 10)
   useEffect(() => {
+    if (import.meta.env.MODE === "e2e") return;
+
     const fetchCounts = async () => {
       try {
         const [tasksSnap, activeTasksSnap, blogsSnap, docsSnap] = await Promise.all([

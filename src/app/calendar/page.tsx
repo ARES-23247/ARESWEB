@@ -19,16 +19,19 @@ import {
 import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
-import { TeamEvent, MOCK_EVENTS } from "./components/mockEvents";
+import { TeamEvent } from "./components/mockEvents";
 import { SelectedEventPanel } from "./components/SelectedEventPanel";
 import { SyncSubscriptionPanel } from "./components/SyncSubscriptionPanel";
+import { PublicDataState } from "@/components/PublicDataState";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-  const [events, setEvents] = useState<TeamEvent[]>(MOCK_EVENTS);
+  const [events, setEvents] = useState<TeamEvent[]>([]);
   const [filter, setFilter] = useState<"all" | "internal" | "outreach">("all");
   const [isLive, setIsLive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -79,8 +82,10 @@ export default function CalendarPage() {
         q,
         (snapshot) => {
           if (snapshot.empty) {
-            setEvents(MOCK_EVENTS);
-            setIsLive(false);
+            setEvents([]);
+            setIsLive(true);
+            setLoadError(null);
+            setIsLoading(false);
             return;
           }
           const list = snapshot.docs.map((doc) => {
@@ -98,19 +103,25 @@ export default function CalendarPage() {
           });
           setEvents(list);
           setIsLive(true);
+          setLoadError(null);
+          setIsLoading(false);
         },
         (err) => {
-          console.warn("Firestore empty or not connected, streaming mocks:", err.message);
-          setEvents(MOCK_EVENTS);
+          console.error("Unable to stream published calendar events:", err);
+          setEvents([]);
           setIsLive(false);
+          setLoadError(err.message);
+          setIsLoading(false);
         }
       );
 
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Firestore setup failed, running offline mock events.", e);
-      setEvents(MOCK_EVENTS);
+      console.error("Unable to initialize the published calendar stream:", e);
+      setEvents([]);
       setIsLive(false);
+      setLoadError(e instanceof Error ? e.message : String(e));
+      setIsLoading(false);
     }
   }, []);
 
@@ -246,13 +257,17 @@ export default function CalendarPage() {
             </p>
             <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading flex flex-wrap items-center gap-4">
               Team <span className="bg-ares-red px-6 py-1 pb-3 ares-cut shadow-xl text-white font-bold">Calendar</span>
-              {isLive ? (
-                <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/20">
-                  ● Live Firestore Sync
+              {isLoading ? (
+                <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">
+                  Loading schedule
+                </span>
+              ) : isLive ? (
+                <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze">
+                  Live schedule
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/20">
-                  ● Offline Sandbox Mode
+                <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze">
+                  Schedule unavailable
                 </span>
               )}
             </h1>
@@ -266,17 +281,17 @@ export default function CalendarPage() {
               <button
                 type="button"
                 onClick={() => handleOpenInlineCreate(selectedDate)}
-                className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg flex items-center gap-1.5"
+                className="px-4 py-2 bg-ares-red hover:bg-ares-bronze text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 <Plus size={11} /> New Event
               </button>
             )}
 
             <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5">
-              {["all", "internal", "outreach"].map((cat) => (
+              {(["all", "internal", "outreach"] as const).map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setFilter(cat as any)}
+                  onClick={() => setFilter(cat)}
                   className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer ${
                     filter === cat
                       ? "bg-ares-red text-white"
@@ -291,6 +306,17 @@ export default function CalendarPage() {
         </header>
 
         {/* ─── INTERACTIVE MONTH-GRID CALENDAR (Top Dashboard Section) ─── */}
+        {loadError && (
+          <div className="mb-10">
+            <PublicDataState
+              title="Unable to load the team calendar"
+              message="The published schedule could not be reached. Check your connection and try again."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
           
           {/* LEFT: MONTH VIEW CALENDAR GRID (8 Columns) */}

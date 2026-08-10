@@ -129,7 +129,7 @@ export default function BlogManagementPage({
         <button
           onClick={() => setActiveTab("published")}
           className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
-            activeTab === "published" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "text-marble/60 hover:text-white"
+            activeTab === "published" ? "bg-ares-gold/20 text-ares-gold border border-ares-gold/30" : "text-marble/60 hover:text-white"
           }`}
         >
           Published ({publishedDocs.length})
@@ -138,12 +138,12 @@ export default function BlogManagementPage({
         <button
           onClick={() => setActiveTab("pending")}
           className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors relative flex items-center gap-2 ${
-            activeTab === "pending" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "text-marble/60 hover:text-white"
+            activeTab === "pending" ? "bg-ares-bronze/20 text-ares-gold border border-ares-bronze/40" : "text-marble/60 hover:text-white"
           }`}
         >
           <span>Pending Mentor Approval</span>
           {pendingDocs.length > 0 && (
-            <span className="w-5 h-5 rounded-full bg-amber-500 text-obsidian text-[10px] font-black flex items-center justify-center animate-bounce">
+            <span className="w-5 h-5 rounded-full bg-ares-gold text-black text-[10px] font-black flex items-center justify-center animate-bounce">
               {pendingDocs.length}
             </span>
           )}

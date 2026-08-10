@@ -1,33 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f9f9f9; /* Marble White */
-  --foreground: #1a1a1a; /* Obsidian Black */
+  --background: #F9F9F9; /* Marble White */
+  --foreground: #1A1A1A; /* Obsidian Black */
   --font-inter: "Inter", system-ui, sans-serif;
   --font-spartan: "League Spartan", sans-serif;
   --ares-red: #c00000;
-  --ares-red-light: #FF4D4D;
-  --ares-red-dark: #8A0000;
+  --ares-red-light: var(--ares-red);
+  --ares-red-dark: var(--ares-bronze);
   --ares-bronze: #cd7f32;
-  --ares-bronze-light: #E69B4D;
-  --ares-bronze-dark: #A66324;
+  --ares-bronze-light: var(--ares-bronze);
+  --ares-bronze-dark: var(--ares-bronze);
   --ares-gold: #FFB81C;
   --ares-cyan: #00E5FF;
   --obsidian: #1A1A1A;
   --marble: #F9F9F9;
-  --ares-gray: #4a4a4a;
-  --ares-gray-dark: #2A2A2A;
-  --ares-gray-deep: #0B0B0B;
-  --ares-offwhite: #e6edf3;
-  --ares-muted: #c9d1d9;
-  --ares-danger: #EF4444;
-  --ares-danger-soft: #F87171;
-  --ares-success: #22C55E;
-}
-
-/* Accessibility: Map text-ares-red to high-contrast red #FF4D4D to satisfy WCAG AA contrast on dark backgrounds */
-.text-ares-red {
-  color: #FF4D4D;
+  /* Compatibility aliases: legacy token names now resolve to the authorized palette. */
+  --ares-gray: var(--obsidian);
+  --ares-gray-dark: var(--obsidian);
+  --ares-gray-deep: var(--obsidian);
+  --ares-offwhite: var(--marble);
+  --ares-muted: var(--marble);
+  --ares-danger: var(--ares-red);
+  --ares-danger-soft: var(--marble);
+  --ares-success: var(--ares-gold);
 }
 
 @theme inline {
@@ -55,14 +51,14 @@
   --color-ares-offwhite: var(--ares-offwhite);
   --color-ares-muted: var(--ares-muted);
   --color-ares-success: var(--ares-success);
-  --color-ares-black: #050505;
-  --color-obsidian-900: #141414;
-  --color-obsidian-800: #202020;
-  --color-obsidian-950: #0a0a0a;
-  --color-obsidian-surface: #222222;
-  --color-obsidian-dark: #121212;
-  --color-obsidian-darker: #0b0b0b;
-  --color-ares-gold-soft: rgba(255, 184, 28, 0.2);
+  --color-ares-black: var(--obsidian);
+  --color-obsidian-900: var(--obsidian);
+  --color-obsidian-800: var(--obsidian);
+  --color-obsidian-950: var(--obsidian);
+  --color-obsidian-surface: var(--obsidian);
+  --color-obsidian-dark: var(--obsidian);
+  --color-obsidian-darker: var(--obsidian);
+  --color-ares-gold-soft: var(--ares-gold);
 }
 
 
@@ -74,13 +70,29 @@ body {
   font-family: var(--font-sans);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within,
+  body {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 h1, h2, h3, h4, .font-heading {
   font-family: var(--font-heading);
 }
 
 ::selection {
   background: var(--ares-red);
-  color: #ffffff;
+  color: var(--marble);
 }
 
 /* ARES 23247 Geometric Utilities */
@@ -108,7 +120,7 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .clipped-button:hover {
-  background: var(--ares-red-dark);
+  background: var(--ares-bronze);
   border-color: var(--ares-red);
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
@@ -132,7 +144,7 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .clipped-button-sm:hover {
-  background: var(--ares-red-dark);
+  background: var(--ares-bronze);
   border-color: var(--ares-red);
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
