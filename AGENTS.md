@@ -10,6 +10,9 @@ Storage, and second-generation Cloud Functions. Read the relevant skill under
   belongs in Cloud Functions middleware and Firebase rules, never only in UI.
 - Keep secrets in Firebase/Google Secret Manager. Never store credentials in
   Firestore, source files, logs, URLs, or browser storage.
+- Production GitHub Actions must authenticate with the repository-restricted
+  Workload Identity Federation provider. Never add service-account JSON or a
+  Firebase refresh token to GitHub secrets.
 - Public APIs must return explicit DTOs. Do not expose raw Firestore documents,
   student PII, receipt URLs, internal user IDs, or operational metadata.
 - Encrypt inquiry PII at rest and restrict access to admin/coach roles. Public
