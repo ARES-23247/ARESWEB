@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const previewUrl = process.env.PREVIEW_URL;
-
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
@@ -11,7 +9,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: previewUrl || 'http://localhost:3000',
+    baseURL: 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -21,9 +19,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: previewUrl ? undefined : {
-    command: 'npx vite preview --port 3000 --strictPort',
-    url: 'http://localhost:3000',
+  webServer: {
+    command: 'node node_modules/vite/bin/vite.js build --mode e2e && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 3000 --strictPort',
+    url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
