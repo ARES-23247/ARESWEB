@@ -23,7 +23,9 @@ The required test gate contains three independent jobs:
 
 Production deploys only from `master`, consumes the verified artifact, uses the
 GitHub `production` environment, serializes deployments, and must pass live
-health checks. Pull requests must never receive Firebase deployment credentials.
+health checks against the Firebase Hosting origin. The canonical domain is
+monitored separately because edge bot policies may reject GitHub runner IPs.
+Pull requests must never receive Firebase deployment credentials.
 
 ## Mandatory rules
 

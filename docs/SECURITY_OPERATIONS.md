@@ -57,6 +57,9 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 - Pull-request jobs must not receive Firebase or Google Cloud credentials.
 - Production deploys must reference the protected GitHub `production`
   environment and run only from `master` after the required test gate.
+- Probe the Firebase Hosting origin after a deploy. Monitor the canonical domain
+  separately so CDN bot policy does not turn a healthy release into a false CI
+  failure.
 - Keep repository Actions permissions read-only by default. Grant write scopes
   only to the production deployment job.
 - Disable force pushes to `master`, apply protection to administrators, and
