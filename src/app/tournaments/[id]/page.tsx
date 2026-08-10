@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { doc, getDoc, getDocs, collection, query, where, updateDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, query, where, updateDoc, setDoc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
@@ -22,8 +22,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Tournament, TournamentMatch } from "@/types/tournament";
-import { MOCK_TOURNAMENTS, getMockMatchesForTournament, MOCK_PHOTOS_BY_ALBUM } from "./mockData";
 import TournamentMatchesList from "./TournamentMatchesList";
+import { PublicDataState } from "@/components/PublicDataState";
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,7 +43,13 @@ export default function TournamentDetailPage() {
   }, [user, authorizedUser]);
 
   // Query: Tournament Details
-  const { data: tournament, isLoading: isTournamentLoading } = useQuery<Tournament | null>({
+  const {
+    data: tournament,
+    isLoading: isTournamentLoading,
+    isError: isTournamentError,
+    error: tournamentError,
+    refetch: refetchTournament,
+  } = useQuery<Tournament | null>({
     queryKey: ["tournament", id],
     queryFn: async () => {
       if (!id) return null;
@@ -53,20 +59,23 @@ export default function TournamentDetailPage() {
         if (snap.exists() && snap.data().isDeleted === 0) {
           return { id: snap.id, ...snap.data() } as Tournament;
         }
-        if (MOCK_TOURNAMENTS[id]) {
-          return MOCK_TOURNAMENTS[id];
-        }
         return null;
       } catch (err) {
-        console.warn("Firestore error getting tournament detail, falling back to mock:", err);
-        return MOCK_TOURNAMENTS[id] || null;
+        console.error("Unable to load tournament detail:", err);
+        throw err;
       }
     },
     enabled: isAuthorized
   });
 
   // Query: Matches List
-  const { data: matches = [], isLoading: isMatchesLoading } = useQuery<TournamentMatch[]>({
+  const {
+    data: matches = [],
+    isLoading: isMatchesLoading,
+    isError: isMatchesError,
+    error: matchesError,
+    refetch: refetchMatches,
+  } = useQuery<TournamentMatch[]>({
     queryKey: ["tournament_matches", id],
     queryFn: async () => {
       if (!id) return [];
@@ -74,12 +83,10 @@ export default function TournamentDetailPage() {
         const q = query(
           collection(db, "tournament_matches"),
           where("tournamentId", "==", id),
-          where("isDeleted", "==", 0)
+          where("isDeleted", "==", 0),
+          limit(250)
         );
         const snap = await getDocs(q);
-        if (snap.empty) {
-          return getMockMatchesForTournament(id);
-        }
         const list = snap.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data()
@@ -88,15 +95,20 @@ export default function TournamentDetailPage() {
         // Sort by match number naturally
         return list.sort((a, b) => a.matchNumber.localeCompare(b.matchNumber, undefined, { numeric: true }));
       } catch (err) {
-        console.warn("Firestore error reading matches, falling back to mock matches:", err);
-        return getMockMatchesForTournament(id);
+        console.error("Unable to load tournament matches:", err);
+        throw err;
       }
     },
     enabled: isAuthorized
   });
 
   // Query: Album Photos
-  const { data: photos = [] } = useQuery<{ src: string; caption: string }[]>({
+  const {
+    data: photos = [],
+    isError: isPhotosError,
+    error: photosError,
+    refetch: refetchPhotos,
+  } = useQuery<{ src: string; caption: string }[]>({
     queryKey: ["tournament_photos", tournament?.photoAlbumId],
     queryFn: async () => {
       if (!tournament?.photoAlbumId) return [];
@@ -105,12 +117,10 @@ export default function TournamentDetailPage() {
         const q = query(
           collection(db, "imported_photos"),
           where("albumId", "==", tournament.photoAlbumId),
-          where("isDeleted", "==", 0)
+          where("isDeleted", "==", 0),
+          limit(100)
         );
         const snap = await getDocs(q);
-        if (snap.empty) {
-          return MOCK_PHOTOS_BY_ALBUM[tournament.photoAlbumId] || [];
-        }
         return snap.docs.map((d) => {
           const data = d.data();
           return {
@@ -119,8 +129,8 @@ export default function TournamentDetailPage() {
           };
         }).filter((p) => p.src);
       } catch (err) {
-        console.warn("Firestore error fetching album photos, using fallback album:", err);
-        return MOCK_PHOTOS_BY_ALBUM[tournament.photoAlbumId] || [];
+        console.error("Unable to load tournament album photos:", err);
+        throw err;
       }
     },
     enabled: !!tournament?.photoAlbumId
@@ -271,6 +281,21 @@ export default function TournamentDetailPage() {
     );
   }
 
+  if (isTournamentError) {
+    return (
+      <div className="min-h-screen w-full bg-obsidian px-6 py-24 text-marble">
+        <div className="mx-auto max-w-3xl">
+          <PublicDataState
+            title="Unable to load this tournament"
+            message="The scouting record could not be reached. Check your connection or sign in again, then retry."
+            diagnostic={tournamentError instanceof Error ? tournamentError.message : String(tournamentError)}
+            onRetry={() => void refetchTournament()}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (!tournament) {
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble py-8 flex items-center justify-center">
@@ -354,17 +379,26 @@ export default function TournamentDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* Match schedule checklist */}
-            <TournamentMatchesList
-              tournamentId={id || ""}
-              isPast={tournament.status === "past"}
-              matches={matches}
-              canEdit={canEdit}
-              isMatchesLoading={isMatchesLoading}
-              onToggleMatch={(matchId, completed) => toggleMatchMutation.mutate({ matchId, completed })}
-              onAddMatch={(newMatch) => addMatchMutation.mutate(newMatch)}
-              onUpdateMatch={(updated) => updateMatchMutation.mutate(updated)}
-              onDeleteMatch={(matchId) => deleteMatchMutation.mutate(matchId)}
-            />
+            {isMatchesError ? (
+              <PublicDataState
+                title="Unable to load match records"
+                message="Tournament details are available, but the match checklist could not be reached."
+                diagnostic={matchesError instanceof Error ? matchesError.message : String(matchesError)}
+                onRetry={() => void refetchMatches()}
+              />
+            ) : (
+              <TournamentMatchesList
+                tournamentId={id || ""}
+                isPast={tournament.status === "past"}
+                matches={matches}
+                canEdit={canEdit}
+                isMatchesLoading={isMatchesLoading}
+                onToggleMatch={(matchId, completed) => toggleMatchMutation.mutate({ matchId, completed })}
+                onAddMatch={(newMatch) => addMatchMutation.mutate(newMatch)}
+                onUpdateMatch={(updated) => updateMatchMutation.mutate(updated)}
+                onDeleteMatch={(matchId) => deleteMatchMutation.mutate(matchId)}
+              />
+            )}
 
             {/* Scouting Details Card */}
             {tournament.scoutingDetails && (
@@ -400,6 +434,14 @@ export default function TournamentDetailPage() {
             )}
 
             {/* Photo Albums section */}
+            {tournament.photoAlbumId && isPhotosError && (
+              <PublicDataState
+                title="Unable to load tournament photos"
+                message="The tournament record is available, but its photo album could not be reached."
+                diagnostic={photosError instanceof Error ? photosError.message : String(photosError)}
+                onRetry={() => void refetchPhotos()}
+              />
+            )}
             {tournament.photoAlbumId && photos.length > 0 && (
               <section className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden backdrop-blur-sm shadow-xl">
                 <h2 className="text-lg font-bold text-white uppercase tracking-tight font-heading flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
@@ -409,10 +451,12 @@ export default function TournamentDetailPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {photos.map((p, idx) => (
-                    <div 
+                    <button
+                      type="button"
                       key={idx}
                       onClick={() => setActiveLightboxImage(p)}
-                      className="group cursor-pointer aspect-video relative overflow-hidden border border-white/10 rounded-xl bg-black/60"
+                      aria-label={`Open photo: ${p.caption}`}
+                      className="group cursor-pointer aspect-video relative overflow-hidden border border-white/10 rounded-xl bg-black/60 focus-visible:ring-2 focus-visible:ring-ares-cyan"
                     >
                       <img 
                         src={p.src} 
@@ -424,7 +468,7 @@ export default function TournamentDetailPage() {
                           {p.caption}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </section>

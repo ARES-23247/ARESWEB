@@ -20,9 +20,10 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { Tournament } from "@/types/tournament";
+import { PublicDataState } from "@/components/PublicDataState";
 
 // High-fidelity fallback/mock tournaments list matching ARES brand and history
-const MOCK_TOURNAMENTS: Tournament[] = [
+export const MOCK_TOURNAMENTS: Tournament[] = [
   {
     id: "world-championship-2026",
     name: "FIRST® World Championship 2026",
@@ -115,7 +116,13 @@ export default function TournamentsFeedPage() {
   }, [user, authorizedUser]);
 
   // TanStack Query to fetch tournaments from Firestore
-  const { data: tournaments = [], isLoading: dataLoading, error: _error } = useQuery<Tournament[]>({
+  const {
+    data: tournaments = [],
+    isLoading: dataLoading,
+    isError: dataError,
+    error,
+    refetch,
+  } = useQuery<Tournament[]>({
     queryKey: ["tournaments"],
     queryFn: async () => {
       try {
@@ -126,9 +133,6 @@ export default function TournamentsFeedPage() {
           limit(50)
         );
         const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          return MOCK_TOURNAMENTS;
-        }
         const list = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data()
@@ -136,8 +140,8 @@ export default function TournamentsFeedPage() {
         
         return list;
       } catch (err) {
-        console.warn("Firestore error reading tournaments, falling back to mock data:", err);
-        return MOCK_TOURNAMENTS;
+        console.error("Unable to load tournament records:", err);
+        throw err;
       }
     },
     enabled: isAuthorized // Only fetch if authorized
@@ -145,8 +149,7 @@ export default function TournamentsFeedPage() {
 
   // Filtered tournaments based on tab and search query
   const filteredTournaments = useMemo(() => {
-    const list = isAuthorized ? tournaments : MOCK_TOURNAMENTS;
-    return list.filter((t) => {
+    return tournaments.filter((t) => {
       const matchesTab = activeTab === "all" || t.status === activeTab;
       const matchesSearch = 
         t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -154,11 +157,11 @@ export default function TournamentsFeedPage() {
         (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesTab && matchesSearch;
     });
-  }, [tournaments, activeTab, searchQuery, isAuthorized]);
+  }, [tournaments, activeTab, searchQuery]);
 
   // Summaries Calculations
   const stats = useMemo(() => {
-    const list = isAuthorized ? tournaments : MOCK_TOURNAMENTS;
+    const list = tournaments;
     const upcomingCount = list.filter((t) => t.status === "upcoming").length;
     const pastCount = list.filter((t) => t.status === "past").length;
     const pastWithOpr = list.filter((t) => t.status === "past" && (t.opr || 0) > 0);
@@ -176,7 +179,7 @@ export default function TournamentsFeedPage() {
       avgOpr,
       peakOpr
     };
-  }, [tournaments, isAuthorized]);
+  }, [tournaments]);
 
   // Loader if auth state is initializing
   if (authLoading) {
@@ -209,7 +212,7 @@ export default function TournamentsFeedPage() {
             </div>
             
             <span className="text-ares-gold font-bold uppercase tracking-[0.4em] text-[10px] font-heading mb-3">
-              *FIRST*® Tech Challenge #23247
+              <i>FIRST</i>® Tech Challenge #23247
             </span>
             
             <h2 className="text-2xl font-extrabold text-white uppercase font-heading mb-3 tracking-tighter">
@@ -222,7 +225,7 @@ export default function TournamentsFeedPage() {
 
             <button
               onClick={loginWithGoogle}
-              className="w-full clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl cursor-pointer"
+              className="w-full clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               Sign In with Google
             </button>
@@ -323,7 +326,9 @@ export default function TournamentsFeedPage() {
           {/* Search Box */}
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
+            <label htmlFor="tournament-search" className="sr-only">Search tournaments by name or location</label>
             <input
+              id="tournament-search"
               type="text"
               placeholder="Search by name or location..."
               value={searchQuery}
@@ -339,6 +344,13 @@ export default function TournamentsFeedPage() {
             <div className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
             <span className="text-xs uppercase tracking-widest font-black">Loading Tournament Data...</span>
           </div>
+        ) : dataError ? (
+          <PublicDataState
+            title="Unable to load tournament records"
+            message="The scouting vault could not be reached. Check your connection or sign in again, then retry."
+            diagnostic={error instanceof Error ? error.message : String(error)}
+            onRetry={() => void refetch()}
+          />
         ) : filteredTournaments.length === 0 ? (
           <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-2xl">
             <Trophy className="mx-auto text-marble/25 mb-4" size={48} />

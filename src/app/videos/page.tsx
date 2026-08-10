@@ -8,6 +8,7 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface TeamVideo {
   id: string;
@@ -21,35 +22,10 @@ interface TeamVideo {
   createdAt: string;
 }
 
-const MOCK_VIDEOS: TeamVideo[] = [
-  {
-    id: "video_1",
-    title: "ARES #23247 World Championship Finals Run",
-    description: "Full match footage capturing our mechanical sliders, multi-sample autonomous routines, and hang kinematics.",
-    platform: "youtube",
-    videoId: "dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1516116211223-5c359a36298a?w=500&auto=format&fit=crop&q=60",
-    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    type: "video",
-    createdAt: "2026-05-22"
-  },
-  {
-    id: "video_2",
-    title: "Pinpoint IMU Drift Calibrations in 60s",
-    description: "Fast-paced YouTube Short tutorial illustrating drift reduction routines for regional teams.",
-    platform: "youtube",
-    videoId: "dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&auto=format&fit=crop&q=60",
-    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    type: "short",
-    createdAt: "2026-05-27"
-  }
-];
-
 export default function VideosPage() {
-  const [videos, setVideos] = useState<TeamVideo[]>(MOCK_VIDEOS);
-  const [_isLive, setIsLive] = useState(false);
+  const [videos, setVideos] = useState<TeamVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "video" | "short">("all");
   
   // Lightbox State
@@ -72,8 +48,8 @@ export default function VideosPage() {
         q,
         (snapshot) => {
           if (snapshot.empty) {
-            setVideos(MOCK_VIDEOS);
-            setIsLive(false);
+            setVideos([]);
+            setLoadError(null);
             setIsLoading(false);
             return;
           }
@@ -93,21 +69,21 @@ export default function VideosPage() {
           });
           
           setVideos(list);
-          setIsLive(true);
+          setLoadError(null);
           setIsLoading(false);
         },
         (err) => {
-          console.warn("Firestore collection not initialized or error, using mock library:", err);
-          setVideos(MOCK_VIDEOS);
-          setIsLive(false);
+          console.error("Unable to load the published video library:", err);
+          setVideos([]);
+          setLoadError(err.message);
           setIsLoading(false);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Local offline sandbox mode, using mock video hub:", e);
-      setVideos(MOCK_VIDEOS);
-      setIsLive(false);
+      console.error("Unable to initialize the published video library:", e);
+      setVideos([]);
+      setLoadError(e instanceof Error ? e.message : String(e));
       setIsLoading(false);
     }
   }, []);
@@ -179,6 +155,13 @@ export default function VideosPage() {
               <RefreshCw className="animate-spin text-ares-gold" size={32} />
               <span className="text-xs uppercase font-bold text-ares-gold/75 tracking-widest font-heading">Loading library...</span>
             </div>
+          ) : loadError ? (
+            <PublicDataState
+              title="Unable to load the video library"
+              message="The published videos could not be reached. Check your connection and try again."
+              diagnostic={loadError}
+              onRetry={() => window.location.reload()}
+            />
           ) : filteredVideos.length === 0 ? (
             <div className="text-center py-24 bg-black/10 border border-white/5 rounded-2xl">
               <Film className="mx-auto text-marble/25 mb-4" size={48} />

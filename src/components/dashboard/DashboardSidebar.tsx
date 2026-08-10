@@ -58,6 +58,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const userRole = authorizedUser?.role || "Pending Verification";
 
   useEffect(() => {
+    if (import.meta.env.MODE === "e2e") return;
     if (!user?.uid) return;
 
     const docRef = doc(db, "user_profiles", user.uid);
@@ -79,6 +80,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   }, [user?.uid]);
 
   useEffect(() => {
+    if (import.meta.env.MODE === "e2e") return;
     if (!user?.uid || (userRole !== "admin" && userRole !== "coach" && userRole !== "mentor")) {
       setHasPendingInquiries(false);
       return;

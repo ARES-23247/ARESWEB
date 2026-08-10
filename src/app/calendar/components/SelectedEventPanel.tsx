@@ -46,10 +46,9 @@ export function SelectedEventPanel({
           </div>
         ) : (
           selectedDayEvents.map((event) => (
-            <Link 
-              to={`/events/${event.id}`}
+            <div
               key={event.id}
-              className={`block p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
+              className={`p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
                 event.category === "outreach"
                   ? "bg-ares-gold/5 border-ares-gold/20 hover:bg-ares-gold/10"
                   : "bg-ares-red/5 border-ares-red/20 hover:bg-ares-red/10"
@@ -61,18 +60,20 @@ export function SelectedEventPanel({
                 }`}>
                   {event.category}
                 </span>
-                
+
                 <div className="flex items-center gap-2">
                   {canEdit && (
                     <button
+                      type="button"
                       onClick={(e) => {
-                        e.preventDefault();
+                        e.stopPropagation();
                         handleOpenInlineEdit(event.id);
                       }}
-                      className="p-1 bg-white/5 hover:bg-ares-gold/25 border border-white/10 rounded transition-colors text-white cursor-pointer"
+                      aria-label={`Edit ${event.title}`}
+                      className="p-1 bg-white/5 hover:bg-ares-gold/25 border border-white/10 rounded transition-colors text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                       title="Edit Event"
                     >
-                      <Pencil size={8} />
+                      <Pencil aria-hidden="true" size={8} />
                     </button>
                   )}
                   <span className="text-[8px] font-mono text-marble/45 flex items-center gap-1">
@@ -80,15 +81,21 @@ export function SelectedEventPanel({
                   </span>
                 </div>
               </div>
-              <h4 className="text-sm font-black text-white leading-tight uppercase font-heading">{event.title}</h4>
-              <p className="text-[10px] text-marble/85 leading-relaxed">{event.description}</p>
-              
-              {event.location && (
-                <p className="text-[8px] font-bold text-ares-bronze flex items-center gap-1 mt-1.5">
-                  <MapPin size={8} className="text-ares-red" /> {event.location}
-                </p>
-              )}
-            </Link>
+              <Link
+                to={`/events/${event.id}`}
+                aria-label={`View event details for ${event.title}`}
+                className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <h4 className="text-sm font-black text-white leading-tight uppercase font-heading">{event.title}</h4>
+                <p className="text-[10px] text-marble/85 leading-relaxed mt-2">{event.description}</p>
+
+                {event.location && (
+                  <p className="text-[8px] font-bold text-ares-bronze flex items-center gap-1 mt-1.5">
+                    <MapPin aria-hidden="true" size={8} className="text-ares-red" /> {event.location}
+                  </p>
+                )}
+              </Link>
+            </div>
           ))
         )}
       </div>

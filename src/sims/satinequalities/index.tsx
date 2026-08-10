@@ -613,19 +613,19 @@ export default function InequalitiesSim() {
       {/* Live validation summary */}
       <div className={`w-full border p-3.5 rounded-lg text-xs leading-relaxed flex flex-col gap-1.5 transition-all ${
         satisfiesSystem
-          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-          : 'bg-red-500/10 border-red-500/20 text-red-300'
+          ? 'bg-ares-gold/10 border-ares-gold/20 text-ares-gold'
+          : 'bg-ares-red border-ares-red text-white'
       }`}>
         <span className="text-[10px] text-ares-muted font-bold tracking-wider uppercase block">Test Point Diagnostic</span>
         <div className="flex items-center gap-1.5 font-bold text-white">
           {satisfiesSystem ? (
             <>
-              <CheckCircle2 size={16} className="text-emerald-400" />
+              <CheckCircle2 size={16} className="text-ares-gold" />
               <span>TEST POINT IS A VALID SOLUTION TO THE SYSTEM</span>
             </>
           ) : (
             <>
-              <XCircle size={16} className="text-red-400" />
+              <XCircle size={16} className="text-white" />
               <span>TEST POINT IS NOT A VALID SOLUTION</span>
             </>
           )}
@@ -667,9 +667,9 @@ export default function InequalitiesSim() {
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
                 if (isCorrect) {
-                  optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
+                  optClass = 'border-ares-gold/50 bg-ares-gold/10 text-ares-gold';
                 } else if (isSelected) {
-                  optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
+                  optClass = 'border-ares-red/50 bg-ares-red text-white';
                 }
               } else if (isSelected) {
                 optClass = 'border-ares-gold bg-ares-gold/10 text-white';
@@ -683,8 +683,8 @@ export default function InequalitiesSim() {
                   className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
                 >
                   <span>{opt}</span>
-                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400 font-bold shrink-0" />}
-                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400 font-bold shrink-0" />}
+                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-ares-gold font-bold shrink-0" />}
+                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-white font-bold shrink-0" />}
                 </button>
               );
             })}

@@ -77,6 +77,8 @@ export default function UserRosterTable({
   return (
     <div className="space-y-4">
       {filteredUsers.map((u) => {
+        const memberTypeId = `member-type-${u.id}`;
+        const portalRoleId = `portal-role-${u.id}`;
         const currentRole = editedRoles[u.id] !== undefined ? editedRoles[u.id] : u.role;
         const currentMemberType = editedMemberTypes[u.id] !== undefined ? editedMemberTypes[u.id] : (u.memberType || "");
         const isRoleEdited = editedRoles[u.id] !== undefined && editedRoles[u.id] !== u.role;
@@ -171,11 +173,12 @@ export default function UserRosterTable({
 
               {/* Member Type Dropdown */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Member Type</span>
+                <label htmlFor={memberTypeId} className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Member Type</label>
                 <select
+                  id={memberTypeId}
                   value={currentMemberType}
                   onChange={(e) => onMemberTypeChange(u.id, e.target.value)}
-                  className="bg-obsidian border border-white/10 ares-cut-sm px-2 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none w-28"
+                  className="bg-obsidian border border-white/10 ares-cut-sm px-2 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan w-28"
                 >
                   <option value="">-- None --</option>
                   <option value="student">Student</option>
@@ -188,12 +191,13 @@ export default function UserRosterTable({
 
               {/* ARES Role Dropdown */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Portal Role</span>
+                <label htmlFor={portalRoleId} className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Portal Role</label>
                 <div className="flex items-center gap-2">
                   <select
+                    id={portalRoleId}
                     value={currentRole}
                     onChange={(e) => onRoleChange(u.id, e.target.value)}
-                    className="bg-obsidian border border-white/10 ares-cut-sm px-2.5 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none w-32"
+                    className="bg-obsidian border border-white/10 ares-cut-sm px-2.5 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan w-32"
                   >
                     <option value="admin">Admin / Coach</option>
                     <option value="mentor">Mentor / Lead</option>
@@ -206,7 +210,8 @@ export default function UserRosterTable({
                     <button
                       onClick={() => onSaveRole(u.id)}
                       disabled={isSaving}
-                      className="w-8 h-8 flex items-center justify-center bg-ares-success/15 hover:bg-ares-success/25 border border-ares-success/45 rounded cursor-pointer transition-all shrink-0 text-ares-success"
+                      aria-label={`Save role and member type changes for ${u.name}`}
+                      className="w-8 h-8 flex items-center justify-center bg-ares-cyan/15 hover:bg-ares-cyan/25 border border-ares-cyan/45 rounded cursor-pointer transition-all shrink-0 text-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                       title="Save Changes"
                     >
                       {isSaving ? (
@@ -222,7 +227,8 @@ export default function UserRosterTable({
               {/* Delete User */}
               <button
                 onClick={() => onRemoveUser(u.id)}
-                className="w-8 h-8 flex items-center justify-center bg-ares-danger/10 hover:bg-ares-danger/20 border border-ares-danger/20 hover:border-ares-danger/40 text-ares-danger-soft rounded cursor-pointer transition-all shrink-0 self-end md:self-center"
+                aria-label={`Revoke roster access for ${u.name}`}
+                className="w-8 h-8 flex items-center justify-center bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/20 hover:border-ares-red/40 text-ares-red rounded cursor-pointer transition-all shrink-0 self-end md:self-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 title="Revoke Roster Access"
               >
                 <Trash2 size={14} />

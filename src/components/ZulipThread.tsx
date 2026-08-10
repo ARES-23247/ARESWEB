@@ -135,7 +135,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
       <div className="p-4 space-y-6 overflow-y-auto custom-scrollbar flex-grow bg-black/20">
         {error || messages.length === 0 ? (
           <div className="text-center py-6">
-            <p className={`mb-4 ${error ? "text-red-400 font-bold" : "text-marble/60"}`}>
+            <p className={`mb-4 ${error ? "rounded bg-ares-red px-3 py-2 text-white font-bold" : "text-marble/60"}`}>
               {error ? `Error: ${error}` : "No messages found for this topic yet. Start the conversation!"}
             </p>
           </div>
@@ -168,7 +168,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
 
       <div className="p-4 border-t border-white/10 bg-white/5 shrink-0">
         {sendError && (
-          <div className="text-red-400 text-sm mb-2 px-2 font-bold">
+          <div className="rounded bg-ares-red text-white text-sm mb-2 px-3 py-2 font-bold">
             Failed to send: {sendError}
           </div>
         )}

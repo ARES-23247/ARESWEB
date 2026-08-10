@@ -120,9 +120,9 @@ export default function SimManager() {
           <span className="text-marble/60">Total: </span>
           <span className="text-white font-semibold">{sims.length}</span>
         </div>
-        <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-green-500/20">
+        <div className="px-3 py-1.5 bg-obsidian rounded-lg border border-ares-gold/20">
           <span className="text-marble/60">Standalone: </span>
-          <span className="text-green-400 font-semibold">{sims.filter((s: SimMetadata) => !s.requiresContext).length}</span>
+          <span className="text-ares-gold font-semibold">{sims.filter((s: SimMetadata) => !s.requiresContext).length}</span>
         </div>
         <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-ares-bronze/20">
           <span className="text-marble/60">Requires Context: </span>
@@ -145,7 +145,7 @@ export default function SimManager() {
                   Context
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded">
+                <span className="flex items-center gap-1 text-xs text-ares-gold bg-ares-gold/10 px-2 py-0.5 rounded">
                   <Zap className="w-3 h-3" />
                   Standalone
                 </span>

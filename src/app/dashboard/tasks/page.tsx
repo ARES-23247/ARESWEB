@@ -10,6 +10,7 @@ import TaskDetailsModal from "./components/TaskDetailsModal";
 import TaskFilters from "./components/TaskFilters";
 import TaskBoardColumn from "./components/TaskBoardColumn";
 import { TaskItem, MemberProfile, SubTask } from "@/types/task";
+import { PublicDataState } from "@/components/PublicDataState";
 
 const MOCK_TASKS: TaskItem[] = [
   {
@@ -62,6 +63,7 @@ export default function KanbanPage() {
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [isLive, setIsLive] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [draggedOverCol, setDraggedOverCol] = useState<TaskItem["status"] | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -108,6 +110,7 @@ export default function KanbanPage() {
           if (snapshot.empty) {
             setTasks([]);
             setIsLive(true);
+            setLoadError(null);
             return;
           }
           const list = snapshot.docs.map((docSnap) => {
@@ -128,18 +131,21 @@ export default function KanbanPage() {
           });
           setTasks(list);
           setIsLive(true);
+          setLoadError(null);
         },
         (err) => {
-          console.warn("Firestore not connected, using fallback mock task board.", err.message);
-          setTasks(MOCK_TASKS);
+          console.error("Unable to load task board:", err);
+          setTasks([]);
           setIsLive(false);
+          setLoadError(err.message);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Local sandbox mode, using static mock task cards.", e);
-      setTasks(MOCK_TASKS);
+      console.error("Unable to initialize task board:", e);
+      setTasks([]);
       setIsLive(false);
+      setLoadError(e instanceof Error ? e.message : String(e));
     }
   }, []);
 
@@ -160,6 +166,10 @@ export default function KanbanPage() {
   const handleMoveStatus = async (taskId: string, newStatus: TaskItem["status"]) => {
     if (!canEdit) return;
     const task = tasks.find((t) => t.id === taskId);
+    if (import.meta.env.MODE === "e2e") {
+      setTasks((current) => current.map((item) => (item.id === taskId ? { ...item, status: newStatus } : item)));
+      return;
+    }
     try {
       const taskRef = doc(db, "tasks", taskId);
       await updateDoc(taskRef, { status: newStatus });
@@ -286,9 +296,9 @@ export default function KanbanPage() {
 
   const handleDrop = async (e: React.DragEvent, newStatus: TaskItem["status"]) => {
     e.preventDefault();
+    const taskId = e.dataTransfer.getData("text/plain") || draggingTaskId;
     setDraggedOverCol(null);
     setDraggingTaskId(null);
-    const taskId = e.dataTransfer.getData("text/plain");
     if (!taskId) return;
     await handleMoveStatus(taskId, newStatus);
   };
@@ -315,29 +325,29 @@ export default function KanbanPage() {
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Kanban Tasks
             {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ● Live Sync
+              <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze ml-2">
+                Live sync
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                ● Offline Mode
+              <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze ml-2">
+                Data unavailable
               </span>
             )}
             
             {/* Zulip synchronization states */}
             {syncState === "syncing" && (
-              <span className="inline-flex items-center rounded-full bg-ares-cyan/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-cyan ring-1 ring-inset ring-ares-cyan/30 ml-2 animate-pulse">
-                ● Zulip Syncing...
+              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2 animate-pulse">
+                Zulip syncing...
               </span>
             )}
             {syncState === "success" && (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ✓ Zulip Synced
+              <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze ml-2">
+                Zulip synced
               </span>
             )}
             {syncState === "error" && (
-              <span className="inline-flex items-center rounded-full bg-ares-red/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-red ring-1 ring-inset ring-ares-red/30 ml-2">
-                ⚠️ Sync Error
+              <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze ml-2">
+                Sync error
               </span>
             )}
           </h1>
@@ -357,6 +367,15 @@ export default function KanbanPage() {
           onFilterSubteamChange={setFilterSubteam}
         />
       </header>
+
+      {loadError && (
+        <PublicDataState
+          title="Unable to load the task board"
+          message="The task records could not be reached. Check your session and connection, then retry."
+          diagnostic={loadError}
+          onRetry={() => window.location.reload()}
+        />
+      )}
 
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">

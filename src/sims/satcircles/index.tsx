@@ -475,9 +475,9 @@ export default function CirclesSim() {
                   let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
                   if (isAnswered) {
                     if (isCorrect) {
-                      optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
+                      optClass = 'border-ares-gold/50 bg-ares-gold/10 text-ares-gold';
                     } else if (isSelected) {
-                      optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
+                      optClass = 'border-ares-red/50 bg-ares-red text-white';
                     }
                   } else if (isSelected) {
                     optClass = 'border-ares-gold bg-ares-gold/10 text-white';
@@ -491,8 +491,8 @@ export default function CirclesSim() {
                       className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
                     >
                       <span>{opt}</span>
-                      {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400" />}
-                      {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400" />}
+                      {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-ares-gold" />}
+                      {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-white" />}
                     </button>
                   );
                 })}

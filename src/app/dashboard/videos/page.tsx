@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Plus, Trash2, Pencil, Shield, Activity, ExternalLink, Play, Filter, ArrowUpDown, RefreshCw } from "lucide-react";
 import { cleanThumbnailUrl, cleanUndefined } from "@/lib/utils";
 import VideoEditorDrawer from "./components/VideoEditorDrawer";
+import { PublicDataState } from "@/components/PublicDataState";
 
 function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
@@ -40,35 +41,11 @@ interface TeamVideo {
   createdAt: string;
 }
 
-const MOCK_VIDEOS: TeamVideo[] = [
-  {
-    id: "video_1",
-    title: "ARES #23247 World Championship Finals Run",
-    description: "Full match footage capturing our mechanical sliders, multi-sample autonomous routines, and hang kinematics.",
-    platform: "youtube",
-    videoId: "dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1516116211223-5c359a36298a?w=500&auto=format&fit=crop&q=60",
-    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    type: "video",
-    createdAt: "2026-05-22"
-  },
-  {
-    id: "video_2",
-    title: "Pinpoint IMU Drift Calibrations in 60s",
-    description: "Fast-paced YouTube Short tutorial illustrating drift reduction routines for regional teams.",
-    platform: "youtube",
-    videoId: "dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&auto=format&fit=crop&q=60",
-    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    type: "short",
-    createdAt: "2026-05-27"
-  }
-];
-
 export default function VideosManagementPage() {
   const { user, authorizedUser } = useAuth();
-  const [videos, setVideos] = useState<TeamVideo[]>(MOCK_VIDEOS);
+  const [videos, setVideos] = useState<TeamVideo[]>([]);
   const [isLive, setIsLive] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<"all" | "video" | "short">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
@@ -93,8 +70,9 @@ export default function VideosManagementPage() {
         videosRef,
         (snapshot) => {
           if (snapshot.empty) {
-            setVideos(MOCK_VIDEOS);
-            setIsLive(false);
+            setVideos([]);
+            setIsLive(true);
+            setLoadError(null);
             return;
           }
           const list = snapshot.docs.map((doc) => {
@@ -114,18 +92,21 @@ export default function VideosManagementPage() {
           
           setVideos(list);
           setIsLive(true);
+          setLoadError(null);
         },
         (err) => {
-          console.warn("Firestore not connected, using fallback mock video library.", err.message);
-          setVideos(MOCK_VIDEOS);
+          console.error("Unable to load managed videos:", err);
+          setVideos([]);
           setIsLive(false);
+          setLoadError(err.message);
         }
       );
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Local sandbox mode, using static mock video hub.", e);
-      setVideos(MOCK_VIDEOS);
+      console.error("Unable to initialize managed videos:", e);
+      setVideos([]);
       setIsLive(false);
+      setLoadError(e instanceof Error ? e.message : String(e));
     }
   }, []);
 
@@ -262,12 +243,12 @@ export default function VideosManagementPage() {
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Manage Videos
             {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ● Live Sync
+              <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze ml-2">
+                Live sync
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                ● Sandbox
+              <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze ml-2">
+                Data unavailable
               </span>
             )}
           </h1>
@@ -298,7 +279,7 @@ export default function VideosManagementPage() {
               </button>
               <button
                 onClick={handleOpenCreate}
-                className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl"
+                className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 <Plus size={16} /> Add Video Link
               </button>
@@ -307,12 +288,21 @@ export default function VideosManagementPage() {
         </div>
       </header>
 
+      {loadError && (
+        <PublicDataState
+          title="Unable to load video management data"
+          message="The video library could not be reached. Check your session and connection, then retry."
+          diagnostic={loadError}
+          onRetry={() => window.location.reload()}
+        />
+      )}
+
       {/* Sync Status Banner */}
       {syncStatus && (
-        <div className={`p-4 border flex items-center gap-3 text-xs font-semibold max-w-2xl mx-auto ares-cut ${
+        <div role={syncStatus.toLowerCase().includes("failed") ? "alert" : "status"} className={`p-4 border flex items-center gap-3 text-xs font-semibold max-w-2xl mx-auto ares-cut ${
           syncStatus.includes("failed") || syncStatus.includes("Failed")
-            ? "bg-ares-red/10 border-ares-red/20 text-ares-red" 
-            : "bg-ares-cyan/10 border-ares-cyan/20 text-ares-cyan"
+            ? "bg-ares-red border-ares-bronze text-white"
+            : "bg-ares-gold/10 border-ares-gold/30 text-ares-gold"
         }`}>
           <Activity size={16} className={syncStatus.includes("failed") || syncStatus.includes("Failed") ? "" : "animate-pulse"} />
           <span>{syncStatus}</span>

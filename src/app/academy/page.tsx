@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
@@ -51,6 +51,9 @@ export default function AcademyPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [negativeFeedbackOpen, setNegativeFeedbackOpen] = useState(false);
+  const [feedbackComment, setFeedbackComment] = useState("");
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setSearchQuery("");
@@ -69,6 +72,7 @@ export default function AcademyPage() {
   }, [location.pathname, location.search, navigate]);
 
   const searchRef = useFocusTrap(searchOpen, closeSearch);
+  const feedbackDialogRef = useFocusTrap(negativeFeedbackOpen, () => setNegativeFeedbackOpen(false));
 
   // Parse search query parameter 'q' and open the search overlay on boot
   useEffect(() => {
@@ -89,7 +93,8 @@ export default function AcademyPage() {
               collection(db, "docs"),
               where("status", "==", "published"),
               where("isDeleted", "==", 0),
-              where("displayInAreslib", "==", 1)
+              where("displayInAreslib", "==", 1),
+              limit(200)
             )
           : query(
               collection(db, "docs"),
@@ -97,7 +102,8 @@ export default function AcademyPage() {
                 where("status", "==", "published"),
                 where("isDeleted", "==", 0),
                 or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
-              )
+              ),
+              limit(200)
             );
         const snap = await getDocs(q);
         const docsList = snap.docs.map((d) => ({
@@ -206,6 +212,7 @@ export default function AcademyPage() {
   const handleFeedback = async (isHelpful: boolean, comment: string = "") => {
     if (!slug || isSubmittingFeedback) return;
     setIsSubmittingFeedback(true);
+    setFeedbackMessage(null);
     try {
       await addDoc(collection(db, "docs_feedback"), {
         slug,
@@ -214,20 +221,24 @@ export default function AcademyPage() {
         isResolved: 0,
         createdAt: new Date().toISOString()
       });
-      alert(isHelpful ? "Thanks for your feedback!" : "Thank you! We will use your feedback to improve this page.");
+      setFeedbackMessage({
+        type: "success",
+        text: isHelpful ? "Thanks for your feedback!" : "Thank you! We will use your feedback to improve this page."
+      });
     } catch (err) {
       logger.error("Error submitting feedback:", err);
-      alert("Failed to submit feedback. Please try again.");
+      setFeedbackMessage({ type: "error", text: "Failed to submit feedback. Please try again." });
     } finally {
       setIsSubmittingFeedback(false);
     }
   };
 
-  const handleNegativeFeedbackPrompt = () => {
-    const comment = prompt("How can we improve this page?");
-    if (comment !== null) {
-      handleFeedback(false, comment);
-    }
+  const handleNegativeFeedbackSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const comment = feedbackComment.trim();
+    setNegativeFeedbackOpen(false);
+    setFeedbackComment("");
+    void handleFeedback(false, comment);
   };
 
   return (
@@ -252,12 +263,17 @@ export default function AcademyPage() {
           >
             <motion.div
               ref={searchRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="documentation-search-title"
+              tabIndex={-1}
               initial={{ y: -20, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ y: -20, scale: 0.95 }}
               className="w-full max-w-2xl bg-obsidian border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
+              <h2 id="documentation-search-title" className="sr-only">Search documentation</h2>
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
                 <Search size={18} className="text-white/60" />
                 <input
@@ -296,6 +312,62 @@ export default function AcademyPage() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {negativeFeedbackOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setNegativeFeedbackOpen(false)}
+          >
+            <motion.div
+              ref={feedbackDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="documentation-feedback-title"
+              tabIndex={-1}
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 16, opacity: 0 }}
+              className="w-full max-w-lg bg-obsidian border border-white/10 ares-cut p-6 shadow-2xl focus:outline-none"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <form onSubmit={handleNegativeFeedbackSubmit}>
+                <h2 id="documentation-feedback-title" className="text-xl font-bold text-white mb-2">How can we improve this page?</h2>
+                <p className="text-sm text-marble/70 mb-5">Share the part that was unclear or missing. A short note is enough.</p>
+                <label htmlFor="documentation-feedback-comment" className="block text-xs font-bold uppercase tracking-wider text-ares-gold mb-2">
+                  Feedback
+                </label>
+                <textarea
+                  id="documentation-feedback-comment"
+                  value={feedbackComment}
+                  onChange={(event) => setFeedbackComment(event.target.value)}
+                  rows={5}
+                  className="w-full bg-black/40 border border-white/10 ares-cut-sm p-3 text-sm text-white placeholder:text-marble/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan resize-y"
+                  placeholder="Tell us what would make this lesson more useful."
+                />
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setNegativeFeedbackOpen(false)}
+                    className="px-4 py-2 border border-white/10 text-white ares-cut-sm text-xs font-bold uppercase tracking-wider hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-ares-red text-white ares-cut-sm text-xs font-bold uppercase tracking-wider hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    Send Feedback
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-1 w-full">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <DocsSidebar
@@ -308,7 +380,7 @@ export default function AcademyPage() {
         />
 
         <div className="flex-1 flex w-full">
-          <main className="flex-1 min-w-0 pt-24 pb-16 px-6 lg:px-12 max-w-4xl mx-auto xl:mx-0 xl:max-w-3xl">
+          <div className="flex-1 min-w-0 pt-24 pb-16 px-6 lg:px-12 max-w-4xl mx-auto xl:mx-0 xl:max-w-3xl">
             {docLoading && slug && (
               <div className="flex justify-center items-center py-20">
                 <div className="w-10 h-10 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin"></div>
@@ -520,6 +592,19 @@ export default function AcademyPage() {
                     <p className="text-white/50 text-sm mb-6 max-w-md">
                       Your feedback helps our engineering team improve the documentation for the entire community.
                     </p>
+                    {feedbackMessage && (
+                      <div
+                        role={feedbackMessage.type === "error" ? "alert" : "status"}
+                        aria-live={feedbackMessage.type === "error" ? "assertive" : "polite"}
+                        className={`mb-6 p-3 ares-cut-sm text-sm font-bold ${
+                          feedbackMessage.type === "error"
+                            ? "bg-ares-red text-white"
+                            : "bg-ares-gold text-obsidian"
+                        }`}
+                      >
+                        {feedbackMessage.text}
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-4">
                       <button
                         onClick={() => handleFeedback(true)}
@@ -529,7 +614,7 @@ export default function AcademyPage() {
                         <span className="text-lg">👍</span> Yes, it was
                       </button>
                       <button
-                        onClick={handleNegativeFeedbackPrompt}
+                        onClick={() => setNegativeFeedbackOpen(true)}
                         disabled={isSubmittingFeedback}
                         className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50 cursor-pointer"
                       >
@@ -543,7 +628,7 @@ export default function AcademyPage() {
                 {slug && user && currentDoc && <ZulipThread stream="announcements" topic={`Doc Slug: ${currentDoc.slug}`} />}
               </motion.article>
             )}
-          </main>
+          </div>
 
           {currentDoc && <DocsTableOfContents content={currentDoc.content ?? undefined} />}
         </div>

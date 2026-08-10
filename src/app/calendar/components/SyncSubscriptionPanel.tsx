@@ -16,6 +16,9 @@ export function SyncSubscriptionPanel({
 }: SyncSubscriptionPanelProps) {
   return (
     <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-xl flex flex-col gap-4">
+      <span className="sr-only" role="status" aria-live="polite">
+        {copiedFeedUrl ? "Calendar feed URL copied to clipboard." : ""}
+      </span>
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-full bg-ares-cyan/10 flex items-center justify-center border border-ares-cyan/25 shrink-0">
           <CalendarIcon size={20} className="text-ares-cyan" />
@@ -48,15 +51,16 @@ export function SyncSubscriptionPanel({
       <button
         type="button"
         onClick={handleCopyFeedUrl}
-        className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-marble hover:text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer flex items-center justify-center gap-1.5"
+        aria-label={copiedFeedUrl ? "Calendar feed URL copied" : "Copy calendar feed URL"}
+        className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-marble hover:text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
       >
         {copiedFeedUrl ? (
           <>
-            <Check size={11} className="text-ares-success" /> Copied Feed URL!
+            <Check aria-hidden="true" size={11} className="text-ares-cyan" /> Copied Feed URL!
           </>
         ) : (
           <>
-            <Copy size={11} /> Copy Feed URL
+            <Copy aria-hidden="true" size={11} /> Copy Feed URL
           </>
         )}
       </button>

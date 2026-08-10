@@ -253,7 +253,8 @@ export default function JoinPage() {
               <button
                 type="button"
                 onClick={() => { setRole("student"); setSubmitStatus("idle"); }}
-                className={`flex-1 min-w-[150px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-black uppercase tracking-widest text-xs transition-all cursor-pointer ${
+                aria-pressed={role === "student"}
+                className={`flex-1 min-w-[150px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-black uppercase tracking-widest text-xs transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
                   role === "student"
                     ? "bg-ares-red text-white shadow-lg shadow-ares-red/20 scale-100"
                     : "bg-obsidian/5 text-obsidian/80 hover:bg-obsidian/10 scale-95"
@@ -264,7 +265,8 @@ export default function JoinPage() {
               <button
                 type="button"
                 onClick={() => { setRole("mentor"); setSubmitStatus("idle"); }}
-                className={`flex-1 min-w-[150px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-black uppercase tracking-widest text-xs transition-all cursor-pointer ${
+                aria-pressed={role === "mentor"}
+                className={`flex-1 min-w-[150px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-black uppercase tracking-widest text-xs transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
                   role === "mentor"
                     ? "bg-obsidian text-white shadow-lg scale-100"
                     : "bg-obsidian/5 text-obsidian/80 hover:bg-obsidian/10 scale-95"
@@ -275,14 +277,14 @@ export default function JoinPage() {
             </div>
 
             {submitStatus === "success" && (
-              <div className="bg-ares-gold/15 border border-ares-gold/30 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-xs font-bold items-center">
-                <CheckCircle size={16} className="text-ares-gold shrink-0" /> 
+              <div role="status" aria-live="polite" className="bg-ares-gold/15 border border-ares-gold/30 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-xs font-bold items-center">
+                <CheckCircle aria-hidden="true" size={16} className="text-ares-gold shrink-0" />
                 <span>Application submitted successfully! We&apos;ll be in touch soon.</span>
               </div>
             )}
             
             {submitStatus === "error" && (
-              <div className="bg-ares-red/10 border border-ares-red/35 text-ares-red p-4 ares-cut-sm mb-6 text-xs font-bold">
+              <div role="alert" aria-live="assertive" className="bg-ares-red/10 border border-ares-red/35 text-ares-red p-4 ares-cut-sm mb-6 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
@@ -414,7 +416,8 @@ export default function JoinPage() {
                 <button
                   type="submit"
                   disabled={submitStatus === "sending"}
-                  className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 text-xs cursor-pointer ${
+                  aria-busy={submitStatus === "sending"}
+                  className={`px-8 py-4 w-full text-white font-black uppercase tracking-widest ares-cut-sm hover:-translate-y-1 active:translate-y-0 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 text-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
                     role === "student" 
                       ? "bg-ares-red hover:shadow-[0_10px_30px_rgba(192,0,0,0.3)]" 
                       : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]"

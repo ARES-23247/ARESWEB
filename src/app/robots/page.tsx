@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Cpu, Scale, Code, Trash2, Edit2, Plus } from "lucide-react";
-import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, setDoc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import SEO from "@/components/SEO";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,47 +12,7 @@ import { toast } from "sonner";
 
 import { RobotItem } from "./types";
 import RobotEditorModal from "./RobotEditorModal";
-
-const MOCK_ROBOTS: RobotItem[] = [
-  {
-    id: "minotaur",
-    name: "Minotaur",
-    seasonName: "2025-2026",
-    challengeName: "INTO THE DEEP",
-    weightLbs: 14.2,
-    drivetrainType: "4-Motor Pinpoint Mecanum (EKF calibrated)",
-    programmingLanguage: "Kotlin / ARESLib",
-    revealVideoId: "dQw4w9WgXcQ",
-    versions: [
-      {
-        name: "V1 - Intake Prototype",
-        weightLbs: 12.5,
-        drivetrainType: "4-Motor Mecanum Prototype",
-        primaryMechanism: "Single-joint intake roller arm",
-        cadViewerUrl: "https://cad.onshape.com/documents",
-        content: "Initial structural prototype focusing on intake validation under high gear load."
-      },
-      {
-        name: "V2 - Coaxial Assembly",
-        weightLbs: 14.2,
-        drivetrainType: "4-Motor Pinpoint Mecanum (EKF calibrated)",
-        primaryMechanism: "Dual-link coaxial jointed arm",
-        cadViewerUrl: "https://cad.onshape.com/documents",
-        content: "Secondary revision incorporating the coaxial drive joint."
-      }
-    ]
-  },
-  {
-    id: "prometheus",
-    name: "Prometheus",
-    seasonName: "2024-2025",
-    challengeName: "CENTERSTAGE",
-    weightLbs: 13.8,
-    drivetrainType: "6-Wheel Custom Odometry Drop-Center",
-    programmingLanguage: "Java / FTC SDK",
-    revealVideoId: "dQw4w9WgXcQ"
-  }
-];
+import { PublicDataState } from "@/components/PublicDataState";
 
 export default function RobotsFeedPage() {
   const queryClient = useQueryClient();
@@ -64,19 +24,16 @@ export default function RobotsFeedPage() {
   const [editingRobot, setEditingRobot] = useState<RobotItem | null>(null);
 
   // Fetch Fleet query
-  const { data: robots = [], isLoading } = useQuery<RobotItem[]>({
+  const { data: robots = [], isLoading, isError, error, refetch } = useQuery<RobotItem[]>({
     queryKey: ["robots"],
     queryFn: async () => {
       try {
         const q = query(
           collection(db, "robots"),
-          where("isDeleted", "==", 0)
+          where("isDeleted", "==", 0),
+          limit(100)
         );
         const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-          return MOCK_ROBOTS;
-        }
 
         return snapshot.docs.map((doc) => {
           const data = doc.data();
@@ -97,8 +54,8 @@ export default function RobotsFeedPage() {
           };
         });
       } catch (error) {
-        console.warn("Firestore empty or not connected, using mock fleet:", error);
-        return MOCK_ROBOTS;
+        console.error("Unable to load the published robot fleet:", error);
+        throw error;
       }
     }
   });
@@ -194,7 +151,7 @@ export default function RobotsFeedPage() {
         
         {/* Header */}
         <header className="text-center mb-16 relative">
-          <div className="inline-block bg-ares-red/10 text-ares-red px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-6 border border-ares-red/20">
+          <div className="inline-block bg-ares-red text-white px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-6 border border-ares-bronze/40">
             ARES 23247 Engineering
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading">
@@ -206,7 +163,7 @@ export default function RobotsFeedPage() {
           {canEdit && (
             <button
               onClick={handleOpenCreate}
-              className="clipped-button bg-ares-cyan text-black hover:bg-ares-cyan/85 font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+              className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
             >
               <Plus size={16} /> Deploy New Robot
             </button>
@@ -218,6 +175,13 @@ export default function RobotsFeedPage() {
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
           </div>
+        ) : isError ? (
+          <PublicDataState
+            title="Unable to load the robot fleet"
+            message="The engineering archive could not be reached. Check your connection and try again."
+            diagnostic={error instanceof Error ? error.message : String(error)}
+            onRetry={() => void refetch()}
+          />
         ) : robots.length === 0 ? (
           <div className="text-center text-marble/35 p-20 glass-card ares-cut border border-white/10">
             <Cpu size={48} className="mx-auto mb-6 opacity-20" />
@@ -261,7 +225,7 @@ export default function RobotsFeedPage() {
                               e.stopPropagation();
                               handleOpenEdit(robot);
                             }}
-                            className="p-1.5 text-marble/60 hover:text-ares-cyan hover:bg-white/5 ares-cut-sm transition-all"
+                            className="p-1.5 text-marble/60 hover:text-ares-gold hover:bg-white/5 ares-cut-sm transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan"
                             title="Edit Robot"
                           >
                             <Edit2 size={14} />
@@ -292,7 +256,7 @@ export default function RobotsFeedPage() {
                     <div className="grid grid-cols-2 gap-3">
                       {robot.weightLbs && (
                         <div className="flex items-center gap-2 bg-white/5 p-2.5 ares-cut-sm border border-white/5">
-                          <Scale size={14} className="text-ares-cyan shrink-0" />
+                          <Scale size={14} className="text-ares-gold shrink-0" />
                           <span className="text-xs font-bold text-marble/85">{robot.weightLbs} lbs</span>
                         </div>
                       )}

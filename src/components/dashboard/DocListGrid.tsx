@@ -240,7 +240,7 @@ export default function DocListGrid({
                         <span
                           className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
                             item.status === "pending_approval" || item.approvalStatus === "pending_approval"
-                              ? "bg-amber-500/15 border-amber-500/30 text-amber-400 animate-pulse"
+                              ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold animate-pulse"
                               : isPublished
                               ? "bg-ares-success/15 border-ares-success/30 text-ares-success"
                               : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
@@ -259,7 +259,7 @@ export default function DocListGrid({
                         {isApprover && onApprove && (item.status === "pending_approval" || item.approvalStatus === "pending_approval") && (
                           <button
                             onClick={() => onApprove(item)}
-                            className="px-2 py-1 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1"
+                            className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1"
                             title="Approve & Publish"
                           >
                             <CheckCircle2 size={12} /> Approve

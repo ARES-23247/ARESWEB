@@ -7,7 +7,7 @@ import SEO from "@/components/SEO";
 
 export default function AccessibilityPage() {
   return (
-    <main className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian pt-24 pb-20">
+    <div className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian pt-24 pb-20">
       <SEO 
         title="Accessibility & Web Standards" 
         description="ARES 23247's commitment to web accessibility and AI-powered ARIA compliance."
@@ -130,6 +130,6 @@ export default function AccessibilityPage() {
         </motion.div>
 
       </div>
-    </main>
+    </div>
   );
 }

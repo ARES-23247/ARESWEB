@@ -276,9 +276,9 @@ export default function ScatterplotsSim() {
   const getCorrelationStatus = () => {
     const absR = Math.abs(r);
     if (absR < 0.2) return { text: 'No Correlation', color: 'text-ares-muted' };
-    if (absR < 0.5) return { text: r > 0 ? 'Weak Positive' : 'Weak Negative', color: 'text-orange-400' };
-    if (absR < 0.8) return { text: r > 0 ? 'Moderate Positive' : 'Moderate Negative', color: 'text-yellow-400' };
-    return { text: r > 0 ? 'Strong Positive' : 'Strong Negative', color: 'text-emerald-400' };
+    if (absR < 0.5) return { text: r > 0 ? 'Weak Positive' : 'Weak Negative', color: 'text-ares-bronze' };
+    if (absR < 0.8) return { text: r > 0 ? 'Moderate Positive' : 'Moderate Negative', color: 'text-ares-gold' };
+    return { text: r > 0 ? 'Strong Positive' : 'Strong Negative', color: 'text-ares-gold' };
   };
 
   const corrStatus = getCorrelationStatus();
@@ -562,7 +562,7 @@ export default function ScatterplotsSim() {
               />
               {/* Visual positive r fill bar */}
               <div
-                className="bg-emerald-500/60 h-full transition-all"
+                className="bg-ares-gold/60 h-full transition-all"
                 style={{
                   width: r > 0 ? `${r * 50}%` : '0%',
                   marginRight: 'auto'
@@ -631,9 +631,9 @@ export default function ScatterplotsSim() {
               let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
               if (isAnswered) {
                 if (isCorrect) {
-                  optClass = 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300';
+                  optClass = 'border-ares-gold/50 bg-ares-gold/10 text-ares-gold';
                 } else if (isSelected) {
-                  optClass = 'border-red-500/50 bg-red-500/10 text-red-300';
+                  optClass = 'border-ares-red/50 bg-ares-red text-white';
                 }
               } else if (isSelected) {
                 optClass = 'border-ares-gold bg-ares-gold/10 text-white';
@@ -647,8 +647,8 @@ export default function ScatterplotsSim() {
                   className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
                 >
                   <span>{opt}</span>
-                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-emerald-400 font-bold shrink-0" />}
-                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-red-400 font-bold shrink-0" />}
+                  {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-ares-gold font-bold shrink-0" />}
+                  {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-white font-bold shrink-0" />}
                 </button>
               );
             })}

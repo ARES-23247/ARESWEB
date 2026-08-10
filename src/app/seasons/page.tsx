@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import { db } from "@/lib/firebase";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface Season {
   startYear: number;
@@ -40,6 +41,8 @@ export default function SeasonsPage() {
   const [awards, setAwards] = useState<Award[]>([]);
   const [isLoadingSeasons, setIsLoadingSeasons] = useState(true);
   const [isLoadingAwards, setIsLoadingAwards] = useState(true);
+  const [seasonsError, setSeasonsError] = useState<string | null>(null);
+  const [awardsError, setAwardsError] = useState<string | null>(null);
 
   // Fetch seasons from Firestore
   useEffect(() => {
@@ -48,15 +51,18 @@ export default function SeasonsPage() {
         const q = query(
           collection(db, "seasons"),
           where("status", "==", "published"),
-          where("isDeleted", "==", 0)
+          where("isDeleted", "==", 0),
+          limit(25)
         );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => doc.data() as Season);
         // Sort seasons by start year descending
         list.sort((a, b) => b.startYear - a.startYear);
         setSeasons(list);
+        setSeasonsError(null);
       } catch (err) {
         console.error("Error fetching seasons:", err);
+        setSeasonsError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoadingSeasons(false);
       }
@@ -71,7 +77,8 @@ export default function SeasonsPage() {
         const q = query(
           collection(db, "awards"),
           where("status", "==", "published"),
-          where("isDeleted", "==", 0)
+          where("isDeleted", "==", 0),
+          limit(100)
         );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => {
@@ -84,8 +91,10 @@ export default function SeasonsPage() {
         // Sort awards by date descending
         list.sort((a, b) => b.date.localeCompare(a.date));
         setAwards(list);
+        setAwardsError(null);
       } catch (err) {
         console.error("Error fetching awards:", err);
+        setAwardsError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoadingAwards(false);
       }
@@ -97,7 +106,7 @@ export default function SeasonsPage() {
     <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
       <SEO
         title="Team Legacy"
-        description="A chronicle of ARES 23247's journey through *FIRST*® Robotics. Explore our seasonal achievements, awards, and growth."
+        description="A chronicle of ARES 23247's journey through FIRST® Robotics. Explore our seasonal achievements, awards, and growth."
       />
 
       <section className="py-32 px-6 relative z-10 text-center bg-obsidian">
@@ -132,12 +141,19 @@ export default function SeasonsPage() {
           </header>
 
           <div className="space-y-32 relative">
-            <div className="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-ares-red via-ares-gold to-ares-cyan md:-translate-x-1/2 opacity-20" />
+            <div className="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-ares-red via-ares-gold to-ares-bronze md:-translate-x-1/2 opacity-20" />
 
             {isLoadingSeasons ? (
               <div className="flex justify-center py-20">
                 <div className="w-10 h-10 border-2 border-white/10 border-t-ares-red rounded-full animate-spin" />
               </div>
+            ) : seasonsError ? (
+              <PublicDataState
+                title="Unable to load team seasons"
+                message="The legacy timeline could not be reached. Check your connection and try again."
+                diagnostic={seasonsError}
+                onRetry={() => window.location.reload()}
+              />
             ) : seasons.length > 0 ? (
               seasons.map((season: Season, idx: number) => {
                 const isEven = idx % 2 === 0;
@@ -234,6 +250,15 @@ export default function SeasonsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoadingAwards ? (
               [1, 2, 3].map((i) => <div key={i} className="h-64 bg-white/5 ares-cut animate-pulse" />)
+            ) : awardsError ? (
+              <div className="col-span-full">
+                <PublicDataState
+                  title="Unable to load team awards"
+                  message="The trophy case could not be reached. Check your connection and try again."
+                  diagnostic={awardsError}
+                  onRetry={() => window.location.reload()}
+                />
+              </div>
             ) : awards.length > 0 ? (
               awards.map((award: Award, idx: number) => (
                 <motion.div

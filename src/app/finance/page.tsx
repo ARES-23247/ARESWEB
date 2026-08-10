@@ -116,7 +116,7 @@ export default function FinanceLedgerPage() {
     <div className="min-h-screen bg-obsidian text-marble py-24 relative overflow-hidden w-full">
       <SEO 
         title="Financial Transparency Ledger" 
-        description="Public financial accountability board and ledger for ARES 23247 *FIRST*® Tech Challenge robotics team." 
+        description="Public financial accountability board and ledger for ARES 23247 FIRST® Tech Challenge robotics team."
       />
 
       {/* Decorative Grid and Ambient Lights */}

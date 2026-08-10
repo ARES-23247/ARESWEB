@@ -152,7 +152,7 @@ export default function IdentityTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label htmlFor="profile-favorite-first" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite thing about *FIRST*®</label>
+          <label htmlFor="profile-favorite-first" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Favorite thing about <i>FIRST</i>®</label>
           <input
             id="profile-favorite-first"
             type="text"

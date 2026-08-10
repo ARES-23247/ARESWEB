@@ -382,7 +382,7 @@ export default function DashboardProfilePage() {
         <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm flex items-start gap-3 text-ares-gold text-xs leading-normal mb-6">
           <Info size={16} className="shrink-0 mt-0.5" />
           <div>
-            <strong>*FIRST*® Youth Protection Program Compliance Warning:</strong> Under the *FIRST*® Youth Protection Program (YPP) guidelines, your contact details (email and phone) are protected. They are only visible to team administrators and coaches, and are kept hidden from standard members and public directory outputs.
+            <strong><i>FIRST</i>® Youth Protection Program Compliance Warning:</strong> Under the <i>FIRST</i>® Youth Protection Program (YPP) guidelines, your contact details (email and phone) are protected. They are only visible to team administrators and coaches, and are kept hidden from standard members and public directory outputs.
           </div>
         </div>
       )}

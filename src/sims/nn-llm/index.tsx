@@ -70,7 +70,7 @@ export default function NnLlmSim() {
       {/* Header */}
       <div>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#fff', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <MessageSquare className="w-8 h-8 text-yellow-500" />
+          <MessageSquare className="w-8 h-8 text-ares-gold" />
           Sim 3: LLM Attention Mechanism
         </h1>
         <p style={{ color: '#9ca3af', margin: 0, fontSize: '15px' }}>

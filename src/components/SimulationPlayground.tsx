@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { GripVertical } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -99,6 +99,18 @@ export default function SimulationPlayground() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [fps, setFps] = useState<number | null>(null);  // fps used in JSX
   const [bottomRightTab, setBottomRightTab] = useState<'console' | 'ai'>('console');
+  const [isNarrowLayout, setIsNarrowLayout] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const handleLayoutChange = (event: MediaQueryListEvent) => setIsNarrowLayout(event.matches);
+
+    setIsNarrowLayout(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleLayoutChange);
+    return () => mediaQuery.removeEventListener("change", handleLayoutChange);
+  }, []);
 
   // Simulation Actions Hook
   const {
@@ -263,7 +275,7 @@ export default function SimulationPlayground() {
       className={isFullscreen ? "fixed inset-0 z-[100] bg-obsidian flex flex-col w-full h-full overflow-hidden" : "w-full h-full"}
     >
       <div
-        className={isFullscreen ? "relative flex flex-col w-full h-full p-2 md:p-6" : "relative flex flex-col h-[calc(100vh-80px)]"}
+        className={isFullscreen ? "relative flex flex-col w-full h-full p-2 md:p-6" : "relative flex flex-col h-[calc(100dvh-80px)] min-h-[720px] md:min-h-[640px]"}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={async (e) => {
           e.preventDefault();
@@ -294,27 +306,31 @@ export default function SimulationPlayground() {
           }
         }}
       >
-        <PlaygroundHeaderBar
-          simName={simName}
-          setSimName={setSimName}
-          simId={simId}
-          handleReset={handleReset}
-          handleToggleLibrary={handleToggleLibrary}
-          handleRun={handleRun}
-          handleCopy={handleCopy}
-          copied={copied}
-          handleSave={handleSave}
-          isSaving={isSaving}
-          handleDownloadZip={handleDownloadZip}
-          handleShareGist={handleShareGist}
-          isSharingGist={isSharingGist}
-          showHistory={showHistory}
-          setShowHistory={setShowHistory}
-          getSnapshots={getSnapshots}
-          restoreSnapshot={restoreSnapshot}
-          isFullscreen={isFullscreen}
-          setIsFullscreen={setIsFullscreen}
-        />
+        <div className="shrink-0 overflow-x-auto" aria-label="Simulation editor toolbar">
+          <div className="min-w-max">
+            <PlaygroundHeaderBar
+              simName={simName}
+              setSimName={setSimName}
+              simId={simId}
+              handleReset={handleReset}
+              handleToggleLibrary={handleToggleLibrary}
+              handleRun={handleRun}
+              handleCopy={handleCopy}
+              copied={copied}
+              handleSave={handleSave}
+              isSaving={isSaving}
+              handleDownloadZip={handleDownloadZip}
+              handleShareGist={handleShareGist}
+              isSharingGist={isSharingGist}
+              showHistory={showHistory}
+              setShowHistory={setShowHistory}
+              getSnapshots={getSnapshots}
+              restoreSnapshot={restoreSnapshot}
+              isFullscreen={isFullscreen}
+              setIsFullscreen={setIsFullscreen}
+            />
+          </div>
+        </div>
 
         <SimulationLibraryOverlay
           showLibrary={showLibrary}
@@ -332,8 +348,8 @@ export default function SimulationPlayground() {
         {/* Main content panels */}
         <PanelGroup orientation="vertical" id="playground-main-v2">
           <Panel defaultSize={60} minSize={20}>
-            <PanelGroup orientation="horizontal" id="playground-top-v2">
-              <Panel defaultSize={15} minSize={10}>
+            <PanelGroup orientation={isNarrowLayout ? "vertical" : "horizontal"} id="playground-top-v2">
+              <Panel defaultSize={isNarrowLayout ? 28 : 15} minSize={isNarrowLayout ? 20 : 10}>
                 <SimFileExplorer
                   files={files}
                   activeFile={activeFile}
@@ -343,8 +359,11 @@ export default function SimulationPlayground() {
                 />
               </Panel>
 
-              <PanelResizeHandle className="w-1.5 bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group">
-                <GripVertical className="w-3 h-3 text-white/20 group-hover:text-ares-gold/60" />
+              <PanelResizeHandle
+                aria-label="Resize file explorer and code editor"
+                className={`${isNarrowLayout ? "h-1.5 w-full" : "w-1.5 h-full"} bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan`}
+              >
+                <GripVertical aria-hidden="true" className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`} />
               </PanelResizeHandle>
 
               <Panel defaultSize={60} minSize={25}>
@@ -355,7 +374,7 @@ export default function SimulationPlayground() {
                     handleAcceptAiChanges={handleAcceptAiChanges}
                     handleRejectAiChanges={handleRejectAiChanges}
                   />
-                  <Suspense fallback={<textarea className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
+                  <Suspense fallback={<textarea aria-label="Simulation source code loading preview" className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
                     {pendingAiChanges && pendingAiChanges[activeFile] ? (
                       <MonacoDiffEditor
                         height="100%"
@@ -401,10 +420,10 @@ export default function SimulationPlayground() {
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="h-1.5 w-full bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors z-20" />
+          <PanelResizeHandle aria-label="Resize editor and output panels" className="h-1.5 w-full bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" />
 
           <Panel defaultSize={40} minSize={20}>
-            <PanelGroup orientation="horizontal" id="playground-bottom-v2">
+            <PanelGroup orientation={isNarrowLayout ? "vertical" : "horizontal"} id="playground-bottom-v2">
               <Panel defaultSize={60} minSize={20}>
                 <SimulationPlaygroundPreview
                   compileError={compileError}
@@ -416,8 +435,11 @@ export default function SimulationPlayground() {
                 />
               </Panel>
 
-              <PanelResizeHandle className="w-1.5 bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group">
-                <GripVertical className="w-3 h-3 text-white/20 group-hover:text-ares-gold/60" />
+              <PanelResizeHandle
+                aria-label="Resize simulation preview and console"
+                className={`${isNarrowLayout ? "h-1.5 w-full" : "w-1.5 h-full"} bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan`}
+              >
+                <GripVertical aria-hidden="true" className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`} />
               </PanelResizeHandle>
 
               <Panel defaultSize={40} minSize={20}>

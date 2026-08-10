@@ -175,17 +175,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     const mockEmail = email.trim().toLowerCase();
 
-    // Attempt to authenticate with local Firebase Auth Emulator if we are in local environment
-    try {
+    // E2E uses an isolated client-only identity so cross-browser tests never depend on emulator CORS.
+    if (import.meta.env.MODE !== "e2e") {
       try {
-        await signInWithEmailAndPassword(auth, mockEmail, "password123");
-      } catch (authErr) {
-        // Create the user in the Auth Emulator if they don't exist yet
-        await createUserWithEmailAndPassword(auth, mockEmail, "password123");
+        try {
+          await signInWithEmailAndPassword(auth, mockEmail, "password123");
+        } catch (authErr) {
+          // Create the user in the Auth Emulator if they don't exist yet
+          await createUserWithEmailAndPassword(auth, mockEmail, "password123");
+        }
+        console.log("⚡ Mock user authenticated with Firebase Auth Emulator:", mockEmail);
+      } catch (err) {
+        console.warn("Mock user client-only fallback (Auth Emulator offline/refused):", err);
       }
-      console.log("⚡ Mock user authenticated with Firebase Auth Emulator:", mockEmail);
-    } catch (err) {
-      console.warn("Mock user client-only fallback (Auth Emulator offline/refused):", err);
     }
 
     const mockUserUid = auth.currentUser?.uid || 
@@ -208,25 +210,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: name || "ARES Lead",
     });
 
-    // Attempt to bootstrap the authorized_users record in the Firestore Emulator
-    try {
-      const userRef = doc(db, "authorized_users", mockUser.uid);
-      const userSnap = await getDocWithTimeout(userRef, 1000);
-      if (!userSnap.exists()) {
-        console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
-        await Promise.race([
-          setDoc(userRef, {
-            email: mockEmail,
-            role: role,
-            name: name || "ARES Lead"
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Firestore setDoc timeout")), 1000)
-          )
-        ]);
+    // The E2E identity is intentionally client-only; emulator behavior has its own test suite.
+    if (import.meta.env.MODE !== "e2e") {
+      try {
+        const userRef = doc(db, "authorized_users", mockUser.uid);
+        const userSnap = await getDocWithTimeout(userRef, 1000);
+        if (!userSnap.exists()) {
+          console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
+          await Promise.race([
+            setDoc(userRef, {
+              email: mockEmail,
+              role: role,
+              name: name || "ARES Lead"
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Firestore setDoc timeout")), 1000)
+            )
+          ]);
+        }
+      } catch (dbErr) {
+        console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);
       }
-    } catch (dbErr) {
-      console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);
     }
 
     setLoading(false);

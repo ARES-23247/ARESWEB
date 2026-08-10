@@ -56,6 +56,7 @@ export default function TaskBoardColumn({
       </h3>
 
       <div
+        aria-label={`${col.title} task column`}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => onDrop(e, col.id)}
         onDragEnter={() => setDraggedOverCol(col.id)}
