@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { initializeFirestore, connectFirestoreEmulator, getDoc, getDocs } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider, getToken } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "firebase/app-check";
 
 const getFirebaseConfig = () => {
   if (typeof import.meta !== "undefined") {
@@ -64,7 +64,7 @@ if (typeof window !== "undefined") {
   if (appCheckSiteKey) {
     try {
       appCheck = initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(appCheckSiteKey),
+        provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
         isTokenAutoRefreshEnabled: true
       });
     } catch (err) {
@@ -121,7 +121,7 @@ export const getAppCheckHeader = async (forceRefresh = false): Promise<Record<st
     if (!siteKey) return {};
     try {
       appCheck = initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(siteKey),
+        provider: new ReCaptchaEnterpriseProvider(siteKey),
         isTokenAutoRefreshEnabled: true
       });
     } catch (err) {
@@ -143,4 +143,3 @@ export const getAppCheckHeader = async (forceRefresh = false): Promise<Record<st
 };
 
 export { app, auth, db, storage, appCheck };
-

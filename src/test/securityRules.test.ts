@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const firestoreRules = readFileSync("firestore.rules", "utf8");
 const storageRules = readFileSync("storage.rules", "utf8");
+const firebaseClient = readFileSync("src/lib/firebase.ts", "utf8");
 
 describe("security-rule invariants", () => {
   it("does not expose inquiry or finance records publicly", () => {
@@ -18,5 +19,10 @@ describe("security-rule invariants", () => {
     const editorRule = storageRules.match(/match \/editor\/uploads\/\{allPaths=\*\*\} \{([\s\S]*?)\n    \}/)?.[1] || "";
     expect(editorRule).toContain("isContentManager()");
     expect(editorRule).not.toContain("allow write: if isAuthorized()");
+  });
+
+  it("uses the dedicated reCAPTCHA Enterprise provider for App Check", () => {
+    expect(firebaseClient).toContain("ReCaptchaEnterpriseProvider");
+    expect(firebaseClient).not.toContain("ReCaptchaV3Provider");
   });
 });

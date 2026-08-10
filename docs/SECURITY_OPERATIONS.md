@@ -24,6 +24,10 @@ Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=your_site_key
 ```
 
+The web client must initialize this key with `ReCaptchaEnterpriseProvider`, and
+the same site key must be registered on the Firebase web app's reCAPTCHA
+Enterprise App Check configuration.
+
 Keep the public inquiry form's reCAPTCHA key separate. Confirm the App Check key,
 allowed web origins, and Firebase App Check registration agree before enabling
 enforcement; otherwise legitimate clients will receive 403 responses.
