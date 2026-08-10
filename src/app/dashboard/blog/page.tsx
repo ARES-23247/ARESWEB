@@ -5,6 +5,7 @@ import { Plus, Shield, Activity } from "lucide-react";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
+import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 const BLOG_CATEGORIES: string[] = [];
 
@@ -19,16 +20,21 @@ export default function BlogManagementPage({
   prefilledAction?: "create" | "edit" | null;
   prefilledSlug?: string | null;
 } = {}) {
-  const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending">("all");
+  const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending" | "archived">("all");
 
   const {
     docs,
+    archivedDocs,
     pendingDocs,
     publishedDocs,
     loadingList,
-    isLive,
+    connectionState,
+    listError,
+    hasMore,
+    loadMore,
     revisions,
     loadingRevisions,
+    revisionError,
     fetchRevisions,
     selectedDoc,
     isEditorOpen,
@@ -39,7 +45,8 @@ export default function BlogManagementPage({
     handleCloseEditor,
     handleSave,
     handleApproveAndPublish,
-    handleDelete
+    handleDelete,
+    handleRestore,
   } = useDashboardDocController(
     "posts",
     (d) => d.isDeleted !== 1,
@@ -49,7 +56,9 @@ export default function BlogManagementPage({
     prefilledSlug
   );
 
-  const displayItems = activeTab === "pending" 
+  const displayItems = activeTab === "archived"
+    ? archivedDocs
+    : activeTab === "pending"
     ? pendingDocs 
     : activeTab === "published" 
     ? publishedDocs 
@@ -67,6 +76,7 @@ export default function BlogManagementPage({
         onSave={handleSave}
         revisions={revisions}
         loadingRevisions={loadingRevisions}
+        revisionError={revisionError}
         fetchRevisions={fetchRevisions}
       />
     ) : null;
@@ -82,15 +92,7 @@ export default function BlogManagementPage({
           </p>
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Manage Blogs
-            {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ● Live Sync
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                ● Sandbox
-              </span>
-            )}
+            <DocumentConnectionBadge state={connectionState} />
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
             Draft, edit, and publish technical deep dives and season recap diaries directly to the public team blog feed.
@@ -100,7 +102,7 @@ export default function BlogManagementPage({
         {canEdit && (
           <button
             onClick={handleOpenCreate}
-            className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl animate-fade-in"
+            className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl animate-fade-in"
           >
             <Plus size={16} /> New Blog Post
           </button>
@@ -116,7 +118,7 @@ export default function BlogManagementPage({
       )}
 
       {/* Tabs Filter */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
         <button
           onClick={() => setActiveTab("all")}
           className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
@@ -148,6 +150,14 @@ export default function BlogManagementPage({
             </span>
           )}
         </button>
+        <button
+          onClick={() => setActiveTab("archived")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
+            activeTab === "archived" ? "bg-white/10 text-white border border-white/20" : "text-marble/60 hover:text-white"
+          }`}
+        >
+          Archived ({archivedDocs.length})
+        </button>
       </div>
 
       {/* List Grid View */}
@@ -160,6 +170,11 @@ export default function BlogManagementPage({
         variant="blog"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
+        onRestore={handleRestore}
+        connectionState={connectionState}
+        error={listError}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
         searchPlaceholder="Search blogs by title, snippet, or author..."
         noItemsMessage="No blog posts match the selected filter."
       />
@@ -176,6 +191,7 @@ export default function BlogManagementPage({
           onSave={handleSave}
           revisions={revisions}
           loadingRevisions={loadingRevisions}
+          revisionError={revisionError}
           fetchRevisions={fetchRevisions}
         />
       )}

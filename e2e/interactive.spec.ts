@@ -28,6 +28,21 @@ test.describe('Kanban Task Board E2E Drag and Drop tests', () => {
 
     await expect(inProgressColumn.locator(`[aria-label="${taskLabel}"]`)).toBeVisible();
   });
+
+  test('blocks creating a task until a title is provided', async ({ page }) => {
+    await page.goto('/dashboard/tasks');
+    await page.locator('button', { hasText: 'David (Admin)' }).click();
+    await expect(page.getByRole('heading', { name: 'Kanban Tasks' })).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole('button', { name: 'Create Task' }).click();
+    const editor = page.getByRole('dialog', { name: 'Create Task Card' });
+    await expect(editor).toBeVisible();
+
+    const submit = editor.getByRole('button', { name: 'Add Task Card' });
+    await expect(submit).toBeDisabled();
+    await editor.getByLabel('Task Title').fill('Validate drivetrain telemetry');
+    await expect(submit).toBeEnabled();
+  });
 });
 
 test.describe('Store checkout availability', () => {
@@ -42,7 +57,7 @@ test.describe('Store checkout availability', () => {
 });
 
 test.describe('Markdown Editor & Blog Post Creator E2E tests', () => {
-  test('should open new blog post editor, fill content, and check markdown buttons', async ({ page, loginAs }) => {
+  test('opens an accessible editor and protects a dirty draft from accidental close', async ({ page, loginAs }) => {
     await loginAs('admin');
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
@@ -64,5 +79,24 @@ test.describe('Markdown Editor & Blog Post Creator E2E tests', () => {
 
     // Verify content changed
     await expect(editorTextarea).not.toBeEmpty();
+
+    const editor = page.getByRole('dialog');
+    const closeEditor = page.getByRole('button', { name: 'Close editor', exact: true });
+    await expect(editor).toBeVisible();
+    await expect(closeEditor).toBeInViewport();
+
+    page.once('dialog', async (dialog) => {
+      expect(dialog.type()).toBe('confirm');
+      await dialog.dismiss();
+    });
+    await closeEditor.click();
+    await expect(editor).toBeVisible();
+
+    page.once('dialog', async (dialog) => {
+      expect(dialog.type()).toBe('confirm');
+      await dialog.accept();
+    });
+    await closeEditor.click();
+    await expect(editor).toBeHidden();
   });
 });

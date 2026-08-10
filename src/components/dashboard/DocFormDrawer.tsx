@@ -1,55 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { X, Maximize2, Minimize2, Sparkles, AlertCircle } from "lucide-react";
+import { createPortal } from "react-dom";
+import { X, Maximize2, Minimize2, Sparkles, AlertCircle, Loader2 } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { useAuth } from "@/context/AuthContext";
 import DocFormDrawerAiCopilot from "./DocFormDrawerAiCopilot";
 import DocFormMainFields from "./DocFormMainFields";
-
-interface DocRecord {
-  slug: string;
-  title: string;
-  category: string;
-  sortOrder: number;
-  description: string;
-  content: string;
-  status: string;
-  isDeleted: number;
-  displayInAreslib: number;
-  displayInMathCorner: number;
-  displayInScienceCorner: number;
-  isPortfolio: number;
-  isExecutiveSummary: number;
-  fileUrl?: string;
-  createdAt?: string;
-  author?: string;
-  date?: string;
-  thumbnail?: string;
-}
-
-interface DocRevision {
-  id: string;
-  title: string;
-  category: string;
-  sortOrder: number;
-  description: string;
-  content: string;
-  status: string;
-  displayInAreslib: number;
-  displayInMathCorner: number;
-  displayInScienceCorner: number;
-  isPortfolio: number;
-  isExecutiveSummary: number;
-  editedBy: string;
-  editedByName: string;
-  editedByAvatar: string;
-  timestamp: string;
-  fileUrl?: string;
-  author?: string;
-  date?: string;
-  thumbnail?: string;
-}
+import type { DocRecord, DocRevision } from "@/hooks/useDocumentSync";
 
 interface DocFormDrawerProps {
   isOpen: boolean;
@@ -58,9 +16,10 @@ interface DocFormDrawerProps {
   categories: string[];
   defaultCategory: string;
   variant?: "docs" | "documents" | "blog";
-  onSave: (slug: string, payload: any) => Promise<void>;
+  onSave: (slug: string, payload: Omit<DocRecord, "slug">) => Promise<void>;
   revisions: DocRevision[];
   loadingRevisions: boolean;
+  revisionError?: string | null;
   fetchRevisions: (slug: string) => Promise<void>;
 }
 
@@ -74,6 +33,7 @@ export default function DocFormDrawer({
   onSave,
   revisions,
   loadingRevisions,
+  revisionError = null,
   fetchRevisions
 }: DocFormDrawerProps) {
   const { authorizedUser, user } = useAuth();
@@ -83,6 +43,9 @@ export default function DocFormDrawer({
   const [activeTab, setActiveTab] = useState<"edit" | "revisions">("edit");
   const [showAiSidebar, setShowAiSidebar] = useState(true);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
@@ -112,7 +75,13 @@ export default function DocFormDrawer({
   const [formThumbnail, setFormThumbnail] = useState("");
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
 
+  const draftStorageKey = `ares-editor-draft:${variant}:${editDoc?.slug || "new"}`;
+
   const handleClose = () => {
+    if (isSaving) return;
+    if (isDirty && !window.confirm("Close the editor? Your unsaved changes will remain in a local recovery draft.")) {
+      return;
+    }
     onClose();
   };
 
@@ -180,8 +149,111 @@ export default function DocFormDrawer({
       }
     }
     setRevertAlert(null);
+    setSaveError(null);
     setActiveTab("edit");
+    setIsDirty(false);
+
+    try {
+      const storedDraft = window.localStorage.getItem(draftStorageKey);
+      if (storedDraft && window.confirm("A local recovery draft is available. Restore it?")) {
+        const draft = JSON.parse(storedDraft) as Partial<{
+          title: string; slug: string; category: string; customCategory: string;
+          sortOrder: number; description: string; content: string; status: string;
+          displayInAreslib: boolean; displayInMathCorner: boolean; displayInScienceCorner: boolean;
+          isPortfolio: boolean; isExecutiveSummary: boolean; fileUrl: string; createdAt: string;
+          author: string; date: string; thumbnail: string;
+        }>;
+        setFormTitle(draft.title || "");
+        setFormSlug(draft.slug || editDoc?.slug || "");
+        setFormCategory(draft.category || defaultCategory);
+        setIsCustomCategory(Boolean(draft.customCategory));
+        setCustomCategoryText(draft.customCategory || "");
+        setFormSortOrder(draft.sortOrder || 0);
+        setFormDescription(draft.description || "");
+        setFormContent(draft.content || "");
+        setFormStatus(draft.status || "draft");
+        setFormDisplayInAreslib(Boolean(draft.displayInAreslib));
+        setFormDisplayInMathCorner(Boolean(draft.displayInMathCorner));
+        setFormDisplayInScienceCorner(Boolean(draft.displayInScienceCorner));
+        setFormIsPortfolio(Boolean(draft.isPortfolio));
+        setFormIsExecutiveSummary(Boolean(draft.isExecutiveSummary));
+        setFormFileUrl(draft.fileUrl || "");
+        setFormCreatedAt(draft.createdAt || "");
+        setFormAuthor(draft.author || currentUserNickname);
+        setFormDate(draft.date || "");
+        setFormThumbnail(draft.thumbnail || "");
+        setRevertAlert("Recovered an unsaved local draft. Review it, then save to publish the recovery.");
+        setIsDirty(true);
+      }
+    } catch (error) {
+      console.error("Unable to restore editor draft", error);
+    }
   }, [editDoc, isOpen, variant]);
+
+  useEffect(() => {
+    if (!isOpen || !isDirty) return;
+    const timeout = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(draftStorageKey, JSON.stringify({
+          title: formTitle,
+          slug: formSlug,
+          category: formCategory,
+          customCategory: isCustomCategory ? customCategoryText : "",
+          sortOrder: formSortOrder,
+          description: formDescription,
+          content: formContent,
+          status: formStatus,
+          displayInAreslib: formDisplayInAreslib,
+          displayInMathCorner: formDisplayInMathCorner,
+          displayInScienceCorner: formDisplayInScienceCorner,
+          isPortfolio: formIsPortfolio,
+          isExecutiveSummary: formIsExecutiveSummary,
+          fileUrl: formFileUrl,
+          createdAt: formCreatedAt,
+          author: formAuthor,
+          date: formDate,
+          thumbnail: formThumbnail,
+        }));
+      } catch (error) {
+        console.error("Unable to persist editor recovery draft", error);
+      }
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [customCategoryText, draftStorageKey, formAuthor, formCategory, formContent, formCreatedAt,
+    formDate, formDescription, formDisplayInAreslib, formDisplayInMathCorner,
+    formDisplayInScienceCorner, formFileUrl, formIsExecutiveSummary, formIsPortfolio,
+    formSlug, formSortOrder, formStatus, formThumbnail, formTitle, isCustomCategory, isDirty, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isDirty) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isDirty, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const portalRoot = drawerRef.current?.parentElement;
+    if (!portalRoot || portalRoot.parentElement !== document.body) return;
+    const siblings = Array.from(document.body.children).filter((element) => element !== portalRoot) as HTMLElement[];
+    const previous = siblings.map((element) => ({
+      element,
+      inert: element.inert,
+      ariaHidden: element.getAttribute("aria-hidden"),
+    }));
+    siblings.forEach((element) => {
+      element.inert = true;
+      element.setAttribute("aria-hidden", "true");
+    });
+    return () => previous.forEach(({ element, inert, ariaHidden }) => {
+      element.inert = inert;
+      if (ariaHidden === null) element.removeAttribute("aria-hidden");
+      else element.setAttribute("aria-hidden", ariaHidden);
+    });
+  }, [drawerRef, isOpen]);
 
   // Load revisions
   useEffect(() => {
@@ -203,21 +275,31 @@ export default function DocFormDrawer({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTitle.trim() || !formSlug.trim()) return;
+    if (isSaving || !formTitle.trim() || !formSlug.trim()) return;
+    setIsSaving(true);
+    setSaveError(null);
 
-    let payload: any = {
+    let payload: Omit<DocRecord, "slug"> = {
       title: formTitle.trim(),
+      category: formCategory || defaultCategory || "General",
+      sortOrder: Number(formSortOrder) || 0,
       description: formDescription.trim(),
       content: formContent.trim(),
       status: formStatus,
       isDeleted: 0,
+      displayInAreslib: formDisplayInAreslib ? 1 : 0,
+      displayInMathCorner: formDisplayInMathCorner ? 1 : 0,
+      displayInScienceCorner: formDisplayInScienceCorner ? 1 : 0,
+      isPortfolio: formIsPortfolio ? 1 : 0,
+      isExecutiveSummary: formIsExecutiveSummary ? 1 : 0,
       updatedAt: new Date().toISOString()
     };
 
     if (variant === "docs") {
       const finalCategory = isCustomCategory ? customCategoryText.trim() : formCategory;
       if (!finalCategory) {
-        alert("Please specify a category.");
+        setSaveError("Validation: specify a category before saving.");
+        setIsSaving(false);
         return;
       }
       payload = {
@@ -248,10 +330,15 @@ export default function DocFormDrawer({
 
     try {
       await onSave(formSlug.trim(), payload);
-      handleClose();
-    } catch (err: any) {
-      console.warn(err);
-      alert("Failed to save changes. Connection failed or permission denied.");
+      window.localStorage.removeItem(draftStorageKey);
+      setIsDirty(false);
+      onClose();
+    } catch (error) {
+      const diagnostic = error instanceof Error ? error.message : String(error);
+      console.error("Document save failed", error);
+      setSaveError(diagnostic);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -286,26 +373,39 @@ export default function DocFormDrawer({
     }
 
     setRevertAlert(`Reverted unsaved draft to revision from ${new Date(rev.timestamp).toLocaleString()}. Click Save to commit.`);
+    setIsDirty(true);
     setActiveTab("edit");
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={handleClose} />
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-end">
+      <button
+        type="button"
+        className="absolute inset-0 w-full h-full bg-black/80 backdrop-blur-sm cursor-pointer"
+        onClick={handleClose}
+        aria-label="Close editor backdrop"
+        tabIndex={-1}
+      />
 
       <div
         ref={drawerRef}
         tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="document-editor-title"
+        aria-describedby="document-editor-description"
         className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 ${
           isFullScreen ? "w-full max-w-full" : "w-full max-w-5xl"
         }`}
       >
         <header className="px-6 py-4.5 border-b border-white/10 flex items-center justify-between bg-black/20 shrink-0">
           <div>
-            <h3 className="text-white font-extrabold text-lg font-heading uppercase tracking-tight">
+            <h2 id="document-editor-title" className="text-white font-extrabold text-lg font-heading uppercase tracking-tight">
               {editDoc ? `Edit: ${formTitle}` : `Create New ${variant === "blog" ? "Blog Post" : "Document"}`}
-            </h3>
-            <p className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
+            </h2>
+            <p id="document-editor-description" className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
               Compose premium markdown content and metadata configuration
             </p>
           </div>
@@ -315,6 +415,7 @@ export default function DocFormDrawer({
               onClick={() => setIsFullScreen(!isFullScreen)}
               className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               title={isFullScreen ? "Minimize Editor" : "Maximize Editor"}
+              aria-label={isFullScreen ? "Minimize editor" : "Maximize editor"}
             >
               {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
@@ -392,45 +493,45 @@ export default function DocFormDrawer({
               <DocFormMainFields
                 variant={variant}
                 formTitle={formTitle}
-                setFormTitle={setFormTitle}
+                setFormTitle={(value) => { setFormTitle(value); setIsDirty(true); }}
                 formSlug={formSlug}
-                setFormSlug={setFormSlug}
+                setFormSlug={(value) => { setFormSlug(value); setIsDirty(true); }}
                 editDoc={editDoc}
                 categories={categories}
                 formCategory={formCategory}
-                setFormCategory={setFormCategory}
+                setFormCategory={(value) => { setFormCategory(value); setIsDirty(true); }}
                 isCustomCategory={isCustomCategory}
-                setIsCustomCategory={setIsCustomCategory}
+                setIsCustomCategory={(value) => { setIsCustomCategory(value); setIsDirty(true); }}
                 customCategoryText={customCategoryText}
-                setCustomCategoryText={setCustomCategoryText}
+                setCustomCategoryText={(value) => { setCustomCategoryText(value); setIsDirty(true); }}
                 formSortOrder={formSortOrder}
-                setFormSortOrder={setFormSortOrder}
+                setFormSortOrder={(value) => { setFormSortOrder(value); setIsDirty(true); }}
                 formStatus={formStatus}
-                setFormStatus={setFormStatus}
+                setFormStatus={(value) => { setFormStatus(value); setIsDirty(true); }}
                 isStudent={isStudent}
                 formDisplayInMathCorner={formDisplayInMathCorner}
-                setFormDisplayInMathCorner={setFormDisplayInMathCorner}
+                setFormDisplayInMathCorner={(value) => { setFormDisplayInMathCorner(value); setIsDirty(true); }}
                 formDisplayInScienceCorner={formDisplayInScienceCorner}
-                setFormDisplayInScienceCorner={setFormDisplayInScienceCorner}
+                setFormDisplayInScienceCorner={(value) => { setFormDisplayInScienceCorner(value); setIsDirty(true); }}
                 formDisplayInAreslib={formDisplayInAreslib}
-                setFormDisplayInAreslib={setFormDisplayInAreslib}
+                setFormDisplayInAreslib={(value) => { setFormDisplayInAreslib(value); setIsDirty(true); }}
                 formIsPortfolio={formIsPortfolio}
-                setFormIsPortfolio={setFormIsPortfolio}
+                setFormIsPortfolio={(value) => { setFormIsPortfolio(value); setIsDirty(true); }}
                 formIsExecutiveSummary={formIsExecutiveSummary}
-                setFormIsExecutiveSummary={setFormIsExecutiveSummary}
+                setFormIsExecutiveSummary={(value) => { setFormIsExecutiveSummary(value); setIsDirty(true); }}
                 formFileUrl={formFileUrl}
-                setFormFileUrl={setFormFileUrl}
+                setFormFileUrl={(value) => { setFormFileUrl(value); setIsDirty(true); }}
                 formThumbnail={formThumbnail}
-                setFormThumbnail={setFormThumbnail}
+                setFormThumbnail={(value) => { setFormThumbnail(value); setIsDirty(true); }}
                 setIsPhotoPickerOpen={setIsPhotoPickerOpen}
                 formAuthor={formAuthor}
-                setFormAuthor={setFormAuthor}
+                setFormAuthor={(value) => { setFormAuthor(value); setIsDirty(true); }}
                 formDate={formDate}
-                setFormDate={setFormDate}
+                setFormDate={(value) => { setFormDate(value); setIsDirty(true); }}
                 formDescription={formDescription}
-                setFormDescription={setFormDescription}
+                setFormDescription={(value) => { setFormDescription(value); setIsDirty(true); }}
                 formContent={formContent}
-                setFormContent={setFormContent}
+                setFormContent={(value) => { setFormContent(value); setIsDirty(true); }}
                 onSubmit={handleSave}
                 showAiSidebar={showAiSidebar}
                 defaultCategory={defaultCategory}
@@ -444,9 +545,11 @@ export default function DocFormDrawer({
                   formCategory={isCustomCategory ? customCategoryText : formCategory}
                   onApplyGrammarFixes={(corrected) => {
                     setFormContent(corrected);
+                    setIsDirty(true);
                   }}
                   onAppendContent={(appended) => {
                     setFormContent((prev) => `${prev}\n\n${appended}`);
+                    setIsDirty(true);
                   }}
                   setRevertAlert={setRevertAlert}
                 />
@@ -457,6 +560,12 @@ export default function DocFormDrawer({
           {/* Tab 2: REVISION LOGS */}
           {activeTab === "revisions" && editDoc && (
             <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
+              {revisionError && (
+                <div role="alert" className="mb-4 border border-ares-red/45 bg-ares-red/15 p-4 text-white">
+                  <p className="text-xs font-bold">Revision history could not be loaded.</p>
+                  <p className="mt-1 break-words font-mono text-[10px] text-white/80">{revisionError}</p>
+                </div>
+              )}
               <RevisionHistoryTable
                 revisions={revisions}
                 isLoading={loadingRevisions}
@@ -467,14 +576,23 @@ export default function DocFormDrawer({
         </div>
 
         {/* Footer actions */}
-        <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
-          <span className="text-[10px] text-marble/40 font-mono">
-            {activeTab === "edit" ? "Changes remain unsaved until submitted" : "Click Revert on logs to edit history"}
-          </span>
+        <footer className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-black/20 shrink-0">
+          <div aria-live="polite">
+            <span className="text-[10px] text-marble/55 font-mono">
+              {activeTab === "edit" ? (isDirty ? "Unsaved changes · recovery draft enabled" : "No unsaved changes") : "Click Revert on logs to edit history"}
+            </span>
+            {saveError && (
+              <div role="alert" className="mt-2 max-w-xl border border-ares-red/45 bg-ares-red/15 px-3 py-2 text-white">
+                <p className="text-[10px] font-bold">Save failed. Your local recovery draft is still available.</p>
+                <p className="mt-0.5 break-words font-mono text-[9px] text-white/80">{saveError}</p>
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleClose}
+              disabled={isSaving}
               className="px-4 py-2 rounded border border-white/10 hover:border-white/20 text-marble/80 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
               Cancel
@@ -483,9 +601,11 @@ export default function DocFormDrawer({
               <button
                 type="submit"
                 form="docForm"
-                className="px-4 py-2 bg-ares-red hover:bg-ares-red-dark border border-ares-red/30 hover:border-ares-red/50 text-white rounded transition-all text-xs font-black uppercase tracking-wider cursor-pointer"
+                disabled={isSaving || !formTitle.trim() || !formSlug.trim()}
+                className="px-4 py-2 bg-ares-red hover:bg-ares-bronze border border-ares-red/30 hover:border-ares-bronze/50 text-white rounded transition-all text-xs font-black uppercase tracking-wider cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center gap-2"
               >
-                {editDoc ? "Update Entry" : "Create Entry"}
+                {isSaving && <Loader2 size={13} className="animate-spin" aria-hidden="true" />}
+                {isSaving ? "Saving..." : editDoc ? "Update Entry" : "Create Entry"}
               </button>
             )}
           </div>
@@ -499,10 +619,12 @@ export default function DocFormDrawer({
           mode="imageOnly"
           onSelect={(url) => {
             setFormThumbnail(url);
+            setIsDirty(true);
             setIsPhotoPickerOpen(false);
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

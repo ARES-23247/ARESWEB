@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { GITHUB_REPO } from '../utils/constants';
+import { ApiError, toastApiError } from '../api/apiClient';
+import { authenticatedFetch } from '../lib/api';
 
 export interface SavedSim {
   id: string;
@@ -18,7 +20,57 @@ export interface GithubSim {
   requiresContext: boolean;
 }
 
-export function useSimulationFiles(compileCode: (files: Record<string, string>) => Promise<string | null>) {
+type SetSimulationFiles = React.Dispatch<React.SetStateAction<Record<string, string>>>;
+type SetActiveFile = React.Dispatch<React.SetStateAction<string>>;
+
+interface SimulationResponse {
+  simulation: {
+    id: string;
+    name: string;
+    files: Record<string, string> | string;
+    type?: string;
+  };
+}
+
+interface ApiErrorBody {
+  error?: string;
+  message?: string;
+  code?: string;
+}
+
+async function createResponseError(response: Response, fallbackMessage: string): Promise<ApiError> {
+  const body = await response.json().catch(() => ({})) as ApiErrorBody;
+  return new ApiError(
+    response.status,
+    `HTTP ${response.status}: ${response.statusText || 'Request failed'} — ${body.message || body.error || fallbackMessage}`,
+    body.code,
+  );
+}
+
+function parseSimulationFiles(files: Record<string, string> | string, fallbackName: string): Record<string, string> {
+  if (typeof files === 'string') {
+    try {
+      const parsed = JSON.parse(files) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return Object.fromEntries(
+          Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+        );
+      }
+    } catch {
+      return { [fallbackName]: files };
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(files).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  );
+}
+
+export function useSimulationFiles(
+  compileCode: (files: Record<string, string>) => Promise<string | null>,
+  setEditorFiles: SetSimulationFiles,
+  setEditorActiveFile: SetActiveFile,
+) {
   const [savedSims, setSavedSims] = useState<SavedSim[]>([]);
   const [githubSims, setGithubSims] = useState<GithubSim[]>([]);
   const [isLoadingSims, setIsLoadingSims] = useState(false);
@@ -29,13 +81,13 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
   const fetchSavedSims = useCallback(async () => {
     setIsLoadingSims(true);
     try {
-      const res = await fetch('/api/simulations');
-      if (res.ok) {
-        const data = await res.json() as { simulations?: SavedSim[] };
-        setSavedSims(data.simulations || []);
-      }
+      const res = await authenticatedFetch('/api/simulations');
+      if (!res.ok) throw await createResponseError(res, 'The simulation library could not be loaded.');
+      const data = await res.json() as { simulations?: SavedSim[] };
+      setSavedSims(data.simulations || []);
     } catch (e) {
       logger.error('[SimPlayground] Failed to fetch sims:', e);
+      toastApiError(e, 'Simulation library failed to load');
     } finally {
       setIsLoadingSims(false);
     }
@@ -45,34 +97,28 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
     setIsLoadingGithubSims(true);
     try {
       const res = await fetch(`${GITHUB_REPO.rawUrl}/src/sims/simRegistry.json`);
-      if (res.ok) {
-        const data = await res.json() as { simulators: GithubSim[] };
-        setGithubSims(data.simulators || []);
-      }
+      if (!res.ok) throw await createResponseError(res, 'The official simulation registry could not be loaded.');
+      const data = await res.json() as { simulators: GithubSim[] };
+      setGithubSims(data.simulators || []);
     } catch (e) {
       logger.error('[SimPlayground] Failed to fetch github sims:', e);
+      toastApiError(e, 'Official simulation registry failed to load');
     } finally {
       setIsLoadingGithubSims(false);
     }
   }, []);
 
-  const handleLoadSim = useCallback(async (id: string, setFiles: (files: Record<string, string>) => void, setActiveFile: (file: string) => void) => {
+  const handleLoadSim = useCallback(async (
+    id: string,
+    setFiles: SetSimulationFiles = setEditorFiles,
+    setActiveFile: SetActiveFile = setEditorActiveFile,
+  ) => {
     try {
-      const res = await fetch(`/api/simulations/${id}`);
-      if (!res.ok) throw new Error('Not found');
-      const data = await res.json() as { simulation: { id: string; name: string; files: Record<string, string> | string, type?: string } };
+      const res = await authenticatedFetch(`/api/simulations/${encodeURIComponent(id)}`);
+      if (!res.ok) throw await createResponseError(res, 'The simulation could not be loaded.');
+      const data = await res.json() as SimulationResponse;
       const sim = data.simulation;
-      let parsedFiles: Record<string, string> = {};
-
-      if (typeof sim.files === 'object') {
-        parsedFiles = sim.files as Record<string, string>;
-      } else if (typeof sim.files === 'string') {
-        try {
-          parsedFiles = JSON.parse(sim.files);
-        } catch {
-          parsedFiles = { [sim.id]: sim.files };
-        }
-      }
+      let parsedFiles = parseSimulationFiles(sim.files, `${sim.id}.tsx`);
 
       if (Object.keys(parsedFiles).length === 0) {
         parsedFiles = { 'SimComponent.jsx': '' };
@@ -92,17 +138,20 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
       toast.success(`Loaded: ${sim.name}`);
     } catch (e) {
       logger.error('[SimPlayground] Load failed:', e);
-      const { toast } = await import('sonner');
-      toast.error('Failed to load simulation');
+      toastApiError(e, 'Simulation failed to load');
     }
-  }, [compileCode]);
+  }, [compileCode, setEditorActiveFile, setEditorFiles]);
 
-  const handleLoadGithubSim = useCallback(async (sim: GithubSim, setFiles: (files: Record<string, string>) => void, setActiveFile: (file: string) => void) => {
+  const handleLoadGithubSim = useCallback(async (
+    sim: GithubSim,
+    setFiles: SetSimulationFiles = setEditorFiles,
+    setActiveFile: SetActiveFile = setEditorActiveFile,
+  ) => {
     try {
       const folder = sim.path.replace(/^\.\//, '');
       const filename = `${folder}/index.tsx`;
       const res = await fetch(`${GITHUB_REPO.rawUrl}/src/sims/${filename}`);
-      if (!res.ok) throw new Error('Not found');
+      if (!res.ok) throw await createResponseError(res, `${sim.name} could not be downloaded from GitHub.`);
       const code = await res.text();
 
       const parsedFiles = { [filename]: code };
@@ -121,21 +170,24 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
       toast.success(`Loaded Official Sim: ${sim.name}`);
     } catch (e) {
       logger.error('[SimPlayground] GitHub Load failed:', e);
-      const { toast } = await import('sonner');
-      toast.error(`Failed to load ${sim.name} from GitHub`);
+      toastApiError(e, `Failed to load ${sim.name} from GitHub`);
     }
-  }, [compileCode]);
+  }, [compileCode, setEditorActiveFile, setEditorFiles]);
 
-  const handleLoadGist = useCallback(async (id: string, setFiles: (files: Record<string, string>) => void, setActiveFile: (file: string) => void) => {
+  const handleLoadGist = useCallback(async (
+    id: string,
+    setFiles: SetSimulationFiles = setEditorFiles,
+    setActiveFile: SetActiveFile = setEditorActiveFile,
+  ) => {
     try {
-      const res = await fetch(`/api/simulations/gist/${id}`);
-      if (!res.ok) throw new Error('Not found');
-      const data = await res.json() as { simulation: { id: string; name: string; files: Record<string, string> } };
+      const res = await authenticatedFetch(`/api/simulations/gist/${encodeURIComponent(id)}`);
+      if (!res.ok) throw await createResponseError(res, 'The shared Gist could not be loaded.');
+      const data = await res.json() as SimulationResponse;
       const sim = data.simulation;
-      const parsedFiles = sim.files;
+      let parsedFiles = parseSimulationFiles(sim.files, 'SimComponent.tsx');
 
       if (Object.keys(parsedFiles).length === 0) {
-        parsedFiles['SimComponent.jsx'] = '';
+        parsedFiles = { 'SimComponent.tsx': '' };
       }
 
       setFiles(parsedFiles);
@@ -153,10 +205,9 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
       toast.success(`Loaded Gist: ${sim.name}`);
     } catch (e) {
       logger.error('[SimPlayground] Gist Load failed:', e);
-      const { toast } = await import('sonner');
-      toast.error('Failed to load Gist simulation');
+      toastApiError(e, 'Shared Gist failed to load');
     }
-  }, [compileCode]);
+  }, [compileCode, setEditorActiveFile, setEditorFiles]);
 
   // Check URL for shared simulation on mount
   useEffect(() => {
@@ -164,11 +215,11 @@ export function useSimulationFiles(compileCode: (files: Record<string, string>) 
     const idParam = params.get('simId');
     const gistParam = params.get('gist');
     if (gistParam) {
-      setTimeout(() => handleLoadGist(gistParam, () => {}, () => {}), 0);
+      void handleLoadGist(gistParam);
     } else if (idParam) {
-      // This will be handled by the parent component
+      void handleLoadSim(idParam);
     }
-  }, [handleLoadGist]);
+  }, [handleLoadGist, handleLoadSim]);
 
   return {
     savedSims,

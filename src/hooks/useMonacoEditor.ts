@@ -6,6 +6,9 @@ import type { languages } from 'monaco-editor';
 import type { CancellationToken } from 'monaco-editor';
 import { logger } from '../utils/logger';
 import { authenticatedFetch } from '../lib/api';
+import { ApiError, toastApiError } from '../api/apiClient';
+
+const COMPLETION_ERROR_TOAST_COOLDOWN_MS = 30_000;
 
 interface IVimMode {
   dispose(): void;
@@ -20,6 +23,15 @@ export function useMonacoEditor() {
   const monacoRef = useRef<Monaco | null>(null);
   const vimRef = useRef<IVimMode | null>(null);
   const completionProviderRef = useRef<ReturnType<Monaco['languages']['registerInlineCompletionsProvider']> | null>(null);
+  const lastCompletionErrorToastRef = useRef(0);
+
+  const reportCompletionFailure = useCallback((error: ApiError) => {
+    logger.error(`[SimPlayground] Inline completion failed: ${error.message}`);
+    const now = Date.now();
+    if (now - lastCompletionErrorToastRef.current < COMPLETION_ERROR_TOAST_COOLDOWN_MS) return;
+    lastCompletionErrorToastRef.current = now;
+    toastApiError(error, 'Inline completion unavailable');
+  }, []);
 
   const handleEditorDidMount = useCallback(async (
     editor: editor.IStandaloneCodeEditor,
@@ -123,19 +135,30 @@ export function useMonacoEditor() {
             }),
           });
 
-          if (!res.ok) return { items: [] };
+          if (!res.ok) {
+            reportCompletionFailure(new ApiError(
+              res.status,
+              `HTTP ${res.status}: ${res.statusText || 'Request failed'}`,
+            ));
+            return { items: [] };
+          }
+          if (!res.body) {
+            reportCompletionFailure(new ApiError(
+              res.status,
+              `HTTP ${res.status}: Empty response stream`,
+            ));
+            return { items: [] };
+          }
           let text = '';
-          const reader = res.body?.getReader();
-          if (reader) {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              const chunk = new TextDecoder().decode(value);
-              const lines = chunk.split('\\n');
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  try { text += JSON.parse(line.slice(6)).chunk; } catch { /* ignore */ }
-                }
+          const reader = res.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = new TextDecoder().decode(value);
+            const lines = chunk.split('\\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try { text += JSON.parse(line.slice(6)).chunk; } catch { /* ignore */ }
               }
             }
           }
@@ -152,7 +175,7 @@ export function useMonacoEditor() {
       },
       disposeInlineCompletions: () => { /* no-op cleanup */ }
     });
-  }, []);
+  }, [reportCompletionFailure]);
 
   // Cleanup completion provider on unmount
   useEffect(() => {

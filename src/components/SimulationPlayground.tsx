@@ -51,6 +51,18 @@ interface GithubSim {
 */
 
 export default function SimulationPlayground() {
+  // Local editor state must exist before URL/library loading is initialized.
+  const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Blank Canvas"]);
+  const [activeFile, setActiveFile] = useState("SimComponent.tsx");
+
+  // Code Compiler Hook
+  const {
+    compiledFiles,
+    compileError,
+    compileCode,
+    scheduleCompile,
+  } = useCodeCompiler();
+
   // File Management Hook
   const {
     savedSims,
@@ -65,15 +77,7 @@ export default function SimulationPlayground() {
     fetchGithubSims,
     handleLoadSim,
     handleLoadGithubSim,
-  } = useSimulationFiles(() => Promise.resolve(null));
-
-  // Code Compiler Hook
-  const {
-    compiledFiles,
-    compileError,
-    compileCode,
-    scheduleCompile,
-  } = useCodeCompiler();
+  } = useSimulationFiles(compileCode, setFiles, setActiveFile);
 
   // Monaco Editor Hook
   const {
@@ -84,8 +88,6 @@ export default function SimulationPlayground() {
   } = useMonacoEditor();
 
   // Local state
-  const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Blank Canvas"]);
-  const [activeFile, setActiveFile] = useState("SimComponent.tsx");
   const [pendingAiChanges, setPendingAiChanges] = useState<Record<string, string> | null>(null);
   const [copied, setCopied] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);

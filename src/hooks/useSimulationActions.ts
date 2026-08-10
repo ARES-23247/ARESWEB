@@ -1,7 +1,23 @@
 import { useState, useCallback } from "react";
 import { logger } from "../utils/logger";
-import { toastApiError } from "../api/apiClient";
+import { ApiError, toastApiError } from "../api/apiClient";
 import { authenticatedFetch } from "../lib/api";
+
+interface ApiErrorBody {
+  error?: string;
+  message?: string;
+  code?: string;
+}
+
+async function createResponseError(response: Response, fallbackMessage: string): Promise<ApiError> {
+  const body = await response.json().catch(() => ({})) as ApiErrorBody;
+  const serverMessage = body.message || body.error || fallbackMessage;
+  return new ApiError(
+    response.status,
+    `HTTP ${response.status}: ${response.statusText || "Request failed"} — ${serverMessage}`,
+    body.code,
+  );
+}
 
 interface UseSimulationActionsProps {
   files: Record<string, string>;
@@ -30,7 +46,6 @@ export function useSimulationActions({
       const res = await authenticatedFetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ name: simName, files: files, ...(simId ? { id: simId } : {}) }),
       });
       if (res.ok) {
@@ -44,12 +59,7 @@ export function useSimulationActions({
         const { toast } = await import("sonner");
         toast.success("Saved simulation!");
       } else {
-        const errData = await res.json().catch(() => ({})) as { error?: string, message?: string, code?: string };
-        toastApiError({ 
-          message: errData.message || errData.error || res.statusText, 
-          status: res.status,
-          code: errData.code 
-        }, "Save failed");
+        throw await createResponseError(res, "The simulation could not be saved.");
       }
     } catch (e) {
       logger.error("[SimPlayground] Save failed:", e);
@@ -79,7 +89,7 @@ export function useSimulationActions({
         const { toast } = await import("sonner");
         toast.success("Shareable link generated and copied!");
       } else {
-        throw new Error("Failed to create Gist");
+        throw await createResponseError(res, "The shareable Gist could not be created.");
       }
     } catch (e) {
       logger.error("[SimPlayground] Gist Share failed:", e);

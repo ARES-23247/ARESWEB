@@ -6,16 +6,22 @@ import { toast } from "sonner";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import * as Dialog from "@radix-ui/react-dialog";
+import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 const DOCUMENTS_CATEGORIES = ["spec", "guide", "business"];
 
 export default function DocumentsManagementPage() {
   const {
     docs,
+    archivedDocs,
     loadingList,
-    isLive,
+    connectionState,
+    listError,
+    hasMore,
+    loadMore,
     revisions,
     loadingRevisions,
+    revisionError,
     fetchRevisions,
     selectedDoc,
     isEditorOpen,
@@ -25,25 +31,27 @@ export default function DocumentsManagementPage() {
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
-    handleDelete
+    handleDelete,
+    handleRestore,
   } = useDashboardDocController("documents", (d) => d.isDeleted !== 1);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [folderIdInput, setFolderIdInput] = useState("");
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Fetch current folder config on mount
   useEffect(() => {
     async function loadConfig() {
       try {
         const res = await authenticatedFetch("/api/drive/config");
-        if (res.ok) {
-          const data = await res.json();
-          setFolderIdInput(data.folderId || "");
-        }
-      } catch (err) {
-        console.warn("Failed to load Google Drive config", err);
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}: Drive configuration could not be loaded.`);
+        const data = await res.json();
+        setFolderIdInput(data.folderId || "");
+      } catch (error) {
+        console.error("Failed to load Google Drive config", error);
+        toast.error(error instanceof Error ? error.message : "Drive configuration could not be loaded.");
       }
     }
     loadConfig();
@@ -59,7 +67,7 @@ export default function DocumentsManagementPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || data.message || "Drive sync failed.");
+        throw new Error(`HTTP ${res.status} ${res.statusText}: ${data.error || data.message || "Drive sync failed."}`);
       }
 
       toast.success(
@@ -67,8 +75,8 @@ export default function DocumentsManagementPage() {
           ? `Synced ${data.syncedCount} documents from Google Drive!`
           : "Drive folder is up to date."
       );
-    } catch (err: any) {
-      toast.error(err.message || "Failed to sync Google Drive folder.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to sync Google Drive folder.");
     } finally {
       setIsSyncing(false);
     }
@@ -86,13 +94,13 @@ export default function DocumentsManagementPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || data.message || "Failed to save Folder ID.");
+        throw new Error(`HTTP ${res.status} ${res.statusText}: ${data.error || data.message || "Failed to save Folder ID."}`);
       }
 
       toast.success("Saved Google Drive folder configuration!");
       setIsConfigOpen(false);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save Google Drive config.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to save Google Drive config.");
     } finally {
       setIsSavingConfig(false);
     }
@@ -106,18 +114,10 @@ export default function DocumentsManagementPage() {
           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-heading flex items-center gap-3">
             <FileText className="text-ares-gold" size={32} />
             Cloud Resources
-            {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ● Live Sync
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                ● Sandbox
-              </span>
-            )}
+            <DocumentConnectionBadge state={connectionState} />
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Manage, upload, and link specifications, manuals, and business portfolios.
+            Link specifications, manuals, and business portfolios, or import them from the configured Google Drive folder.
           </p>
         </div>
 
@@ -145,7 +145,7 @@ export default function DocumentsManagementPage() {
 
             <button
               onClick={handleOpenCreate}
-              className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+              className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
             >
               <Plus size={16} /> New Document
             </button>
@@ -162,13 +162,28 @@ export default function DocumentsManagementPage() {
       )}
 
       {/* List Grid View */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowArchived((current) => !current)}
+          className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-wider text-marble/80 hover:text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          aria-pressed={showArchived}
+        >
+          {showArchived ? "Show active records" : `Archived records (${archivedDocs.length})`}
+        </button>
+      </div>
       <DocListGrid
-        items={docs}
+        items={showArchived ? archivedDocs : docs}
         loadingList={loadingList}
         canEdit={canEdit}
         variant="documents"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
+        onRestore={handleRestore}
+        connectionState={connectionState}
+        error={listError}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
         searchPlaceholder="Search documents by title, category, or summary..."
         noItemsMessage="No documents indexed in the library. Click New Document or Sync Google Drive to get started."
       />
@@ -185,6 +200,7 @@ export default function DocumentsManagementPage() {
           onSave={handleSave}
           revisions={revisions}
           loadingRevisions={loadingRevisions}
+          revisionError={revisionError}
           fetchRevisions={fetchRevisions}
         />
       )}

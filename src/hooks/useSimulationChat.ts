@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { logger } from "../utils/logger";
+import { ApiError } from "../api/apiClient";
+import { authenticatedFetch } from "../lib/api";
 import { validateIdParam } from "../utils/security";
 import { getSimChatKey } from "../utils/storageKeys";
-import { authenticatedFetch } from "../lib/api";
 import { 
   sanitizeUserInput, 
   sanitizeFilesForAI, 
@@ -173,7 +174,17 @@ USER REQUEST: ${msg}`;
       });
       setAttachedImage(null);
 
-      if (!res.ok || !res.body) throw new Error("AI request failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string; message?: string; code?: string };
+        throw new ApiError(
+          res.status,
+          `HTTP ${res.status}: ${res.statusText || "Request failed"} — ${body.message || body.error || "AI request failed"}`,
+          body.code,
+        );
+      }
+      if (!res.body) {
+        throw new ApiError(res.status, `HTTP ${res.status}: The AI response stream was empty.`);
+      }
 
       let accumulatedText = "";
       const reader = res.body.getReader();
@@ -279,7 +290,10 @@ USER REQUEST: ${msg}`;
 
     } catch (e: unknown) {
       logger.error("[useSimulationChat] AI Chat error:", e);
-      setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Error: ${(e as Error)?.message || "Network error"}` }]);
+      const diagnostic = e instanceof ApiError
+        ? `${e.message}${e.code ? ` (Diagnostic: ${e.code})` : ""}`
+        : e instanceof Error ? e.message : "Network error";
+      setChatMessages(prev => [...prev, { role: "assistant", content: `⚠️ Error: ${diagnostic}` }]);
     } finally {
       setIsChatLoading(false);
     }

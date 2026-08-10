@@ -94,7 +94,7 @@ export default function TaskCard({
                   ? "bg-ares-gold/20 text-ares-gold border-ares-gold/30"
                   : task.priority === "medium"
                   ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
-                  : "bg-ares-success/10 text-ares-success border-ares-success/20"
+                  : "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
               }`}
             >
               {task.priority}

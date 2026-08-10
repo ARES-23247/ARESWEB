@@ -11,6 +11,27 @@ interface TaskEditorAiCopilotProps {
   setRevertAlert: (msg: string | null) => void;
 }
 
+interface GrammarEdit {
+  original: string;
+  corrected: string;
+  explanation: string;
+}
+
+interface GrammarResponse {
+  corrections?: GrammarEdit[];
+  correctedText?: string;
+}
+
+interface AssistantResponse {
+  response?: string;
+  error?: string;
+  message?: string;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export default function TaskEditorAiCopilot({
   modalTitle,
   modalSubteam,
@@ -22,7 +43,7 @@ export default function TaskEditorAiCopilot({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
-  const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
+  const [grammarEdits, setGrammarEdits] = useState<GrammarEdit[]>([]);
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
 
   const handleAiAssistant = async (prompt: string, presetName = "") => {
@@ -40,11 +61,13 @@ export default function TaskEditorAiCopilot({
         })
       });
 
-      if (!res.ok) throw new Error("AI Assistant service error.");
-      const data = await res.json();
+      const data = await res.json().catch(() => ({})) as AssistantResponse;
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText || "Request failed"} — ${data.message || data.error || "AI Assistant service error"}`);
+      }
       setAiResponse(data.response || "");
-    } catch (err: any) {
-      setAiResponse(`Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`);
+    } catch (error: unknown) {
+      setAiResponse(`Failed to contact Gemini co-pilot: ${errorMessage(error)}`);
     } finally {
       setAiLoading(false);
     }
@@ -62,16 +85,18 @@ export default function TaskEditorAiCopilot({
         body: JSON.stringify({ text: modalDesc })
       });
 
-      if (!res.ok) throw new Error("AI Grammar service error.");
-      const data = await res.json();
+      const data = await res.json().catch(() => ({})) as GrammarResponse & AssistantResponse;
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText || "Request failed"} — ${data.message || data.error || "AI Grammar service error"}`);
+      }
       if (Array.isArray(data.corrections)) {
         setGrammarEdits(data.corrections);
       }
       if (data.correctedText) {
         setSuggestedCorrection(data.correctedText);
       }
-    } catch (err: any) {
-      setAiResponse(`Failed to perform grammar check: ${err.message}`);
+    } catch (error: unknown) {
+      setAiResponse(`Failed to perform grammar check: ${errorMessage(error)}`);
     } finally {
       setAiLoading(false);
     }
@@ -104,7 +129,9 @@ export default function TaskEditorAiCopilot({
             <Sparkles size={11} /> AI Writer Prompts
           </h4>
           
+          <label htmlFor="task-ai-prompt" className="sr-only">Instructions for the task AI writer</label>
           <textarea
+            id="task-ai-prompt"
             placeholder="Tell Gemini what to write, expand, or adjust..."
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
@@ -172,14 +199,14 @@ export default function TaskEditorAiCopilot({
               </div>
               
               <div className="space-y-2">
-                {grammarEdits.map((edit: any, idx: number) => (
+                {grammarEdits.map((edit, idx) => (
                   <div key={idx} className="bg-black/45 border border-white/5 p-2 rounded text-[10px] leading-relaxed">
                     <div className="flex flex-wrap gap-1 items-center mb-1 text-[8px] font-black uppercase tracking-wider">
-                      <span className="bg-ares-red/25 text-ares-red border border-ares-red/35 px-1 py-0.5 rounded line-through">
+                      <span className="bg-ares-red text-white border border-white/30 px-1 py-0.5 rounded line-through">
                         {edit.original}
                       </span>
                       <span className="text-marble/55">➜</span>
-                      <span className="bg-ares-success/25 text-ares-success border border-ares-success/35 px-1 py-0.5 rounded">
+                      <span className="bg-ares-cyan/15 text-ares-cyan border border-ares-cyan/35 px-1 py-0.5 rounded">
                         {edit.corrected}
                       </span>
                     </div>
@@ -214,7 +241,7 @@ export default function TaskEditorAiCopilot({
                   setSuggestedCorrection("");
                   setRevertAlert("Applied grammar and spelling corrections to the description!");
                 }}
-                className="w-full py-2.5 bg-ares-success text-white font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:brightness-105 transition-all"
+                className="w-full py-2.5 bg-ares-cyan text-black font-black uppercase tracking-widest text-[9px] ares-cut-sm cursor-pointer shadow-lg hover:bg-white transition-all"
               >
                 Apply Correction
               </button>
