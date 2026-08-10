@@ -65,11 +65,18 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 - Disable force pushes to `master`, apply protection to administrators, and
   require the CI test gate and CodeQL before merge.
 - Pin third-party actions to immutable commit SHAs.
-- The current Firebase service-account JSON remains a migration dependency.
-  Replace it with GitHub OIDC/Google Workload Identity Federation only after an
-  administrator explicitly approves the trust grant and its service-account
-  roles are reduced. Do not delete the existing credential until an OIDC deploy
-  succeeds.
+- Authenticate production deploys with GitHub OIDC and Google Workload Identity
+  Federation. The provider accepts only repository ID `1213635409`, owner ID
+  `228356285`, `refs/heads/master`, and the `production` environment.
+- Impersonate only
+  `aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com`. This
+  service account must have no user-managed keys and no permission to read
+  Secret Manager values.
+- Keep `id-token: write` limited to the production deploy job. Do not create
+  `FIREBASE_SERVICE_ACCOUNT_KEY`, `FIREBASE_TOKEN`, or equivalent long-lived
+  repository secrets.
+- Ignore `gha-creds-*.json`; the Google authentication action creates this
+  short-lived ADC file during a job and removes it in post-job cleanup.
 
 ## Incident and drift response
 

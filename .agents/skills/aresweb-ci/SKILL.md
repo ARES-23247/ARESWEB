@@ -25,7 +25,10 @@ Production deploys only from `master`, consumes the verified artifact, uses the
 GitHub `production` environment, serializes deployments, and must pass live
 health checks against the Firebase Hosting origin. The canonical domain is
 monitored separately because edge bot policies may reject GitHub runner IPs.
-Pull requests must never receive Firebase deployment credentials.
+Authentication uses GitHub OIDC through the repository-, branch-, and
+environment-restricted Google Workload Identity Federation provider. Pull
+requests must never receive deployment credentials, and long-lived Firebase
+tokens or service-account JSON keys must not be reintroduced.
 
 ## Mandatory rules
 
