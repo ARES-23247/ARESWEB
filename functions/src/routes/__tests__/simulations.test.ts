@@ -24,6 +24,7 @@ describe("Simulations Router Backend Endpoints", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.GITHUB_PAT = "mock-pat-key";
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -46,6 +47,7 @@ describe("Simulations Router Backend Endpoints", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete process.env.GITHUB_PAT;
   });
 
   const getHandler = (path: string, method: string) => {
@@ -59,13 +61,6 @@ describe("Simulations Router Backend Endpoints", () => {
 
   describe("GET /api/simulations - List simulations", () => {
     it("should fetch simRegistry.json from GitHub and list simulations", async () => {
-      // Mock GITHUB_PAT DB fetch
-      const mockGet = adminDb.collection("").doc("").get;
-      vi.mocked(mockGet).mockResolvedValue({
-        exists: true,
-        data: () => ({ value: "mock-pat-key" }),
-      } as any);
-
       // Mock GitHub registry fetch response
       const registryData = {
         simulators: [
@@ -98,16 +93,17 @@ describe("Simulations Router Backend Endpoints", () => {
       });
     });
 
-    it("should return empty simulations list if GitHub registry is missing", async () => {
-      const mockGet = adminDb.collection("").doc("").get;
-      vi.mocked(mockGet).mockResolvedValue({ exists: false } as any);
-
-      fetchMock.mockResolvedValue({ ok: false });
+    it("should expose an upstream failure if the GitHub registry is missing", async () => {
+      fetchMock.mockResolvedValue({ ok: false, status: 404, statusText: "Not Found" });
 
       const handler = getHandler("/", "get");
       await handler(req, res, next);
 
-      expect(res.json).toHaveBeenCalledWith({ simulations: [] });
+      expect(res.json).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 502,
+        message: "GitHub registry request failed: HTTP 404",
+      }));
     });
   });
 
@@ -157,16 +153,13 @@ describe("Simulations Router Backend Endpoints", () => {
         },
       };
 
-      // Mock GITHUB_PAT
       const mockGet = adminDb.collection("").doc("").get;
       vi.mocked(mockGet).mockResolvedValue({
         exists: true,
-        data: () => ({ value: "mock-pat-key" }),
+        data: () => ({ role: "mentor" }),
       } as any);
 
       // Mock GET sha check (doesn't exist)
-      fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
-      // Mock canModifySimulation commits check (doesn't exist)
       fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
       // Mock PUT save
       fetchMock.mockResolvedValueOnce({ ok: true });

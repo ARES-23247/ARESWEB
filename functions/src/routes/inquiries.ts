@@ -30,13 +30,35 @@ const inquiryLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const inquiryMetadataSchema = z.record(z.unknown()).refine(
+  (value) => JSON.stringify(value).length <= 10_000,
+  "Metadata payload is too large."
+);
+
 const createInquirySchema = z.object({
-  type: z.string().min(1, "Type is required."),
-  name: z.string().min(1, "Name is required."),
+  type: z.enum(["student", "mentor", "sponsor", "demo"]),
+  name: z.string().trim().min(1, "Name is required.").max(120),
   email: z.string().email("Invalid email address."),
-  metadata: z.any().optional(),
+  metadata: inquiryMetadataSchema.optional().default({}),
   recaptchaToken: z.string().min(1, "Recaptcha token is required."),
 });
+
+async function decryptMetadata(value: unknown, secret: string): Promise<Record<string, unknown>> {
+  if (typeof value === "string" && value.includes(":")) {
+    const plaintext = await decrypt(value, secret);
+    try {
+      const parsed = JSON.parse(plaintext) as unknown;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
 
 // POST /api/inquiries
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
@@ -52,7 +74,8 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
       try {
         await admin.appCheck().verifyToken(appCheckToken);
       } catch (err) {
-        logger.warn("inquiries", "App Check token verification failed, falling back to reCAPTCHA v3 verification.");
+        logger.warn("inquiries", "App Check token verification failed.");
+        throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
       }
     } else {
       logger.info("inquiries", "App Check token missing from client request, proceeding with reCAPTCHA v3 verification.");
@@ -94,8 +117,13 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
         body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
       });
 
-      const verifyData = (await verifyRes.json()) as { success: boolean; score?: number };
-      if (!verifyData.success || (verifyData.score !== undefined && verifyData.score < 0.5)) {
+      const verifyData = (await verifyRes.json()) as { success: boolean; score?: number; action?: string; hostname?: string };
+      const allowedHostname = verifyData.hostname === "aresfirst.org" ||
+        verifyData.hostname === "aresfirst-portal.web.app" ||
+        verifyData.hostname === "aresfirst-portal.firebaseapp.com" ||
+        Boolean(verifyData.hostname?.match(/^aresfirst-portal--[a-z0-9-]+\.web\.app$/));
+      if (!verifyData.success || verifyData.action !== "submit" || !allowedHostname ||
+          (verifyData.score !== undefined && verifyData.score < 0.5)) {
         throw new ApiError(400, "Spam check verification failed. Please try again.");
       }
     }
@@ -104,15 +132,16 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
   const secret = getEncryptionSecret();
   const encryptedName = await encrypt(name.trim(), secret);
   const encryptedEmail = await encrypt(email.trim().toLowerCase(), secret);
+  const encryptedMetadata = await encrypt(JSON.stringify(metadata || {}), secret);
 
-  const inquiryId = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  const inquiryId = `inq_${crypto.randomUUID()}`;
   const newInquiry = {
     id: inquiryId,
     type,
     name: encryptedName,
     email: encryptedEmail,
     status: "pending",
-    metadata: metadata || {},
+    metadata: encryptedMetadata,
     createdAt: new Date().toISOString(),
   };
 
@@ -122,10 +151,11 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
     const maskedName = maskName(name);
     const maskedEmail = maskEmail(email);
 
+    const metadataMessage = typeof metadata?.message === "string" ? metadata.message : "";
     const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}
 **Type:** ${type}
-**Message:** ${metadata?.message ? (metadata.message.length > 80 ? metadata.message.substring(0, 80) + "..." : metadata.message) : "(no message payload)"}
+**Message:** ${metadataMessage ? (metadataMessage.length > 80 ? metadataMessage.substring(0, 80) + "..." : metadataMessage) : "(no message payload)"}
 [Open Command Center to view applicant details](https://aresfirst.org/dashboard)`;
 
     // Await Zulip Sync
@@ -189,7 +219,7 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
       name,
       email,
       status: data.status,
-      metadata: data.metadata,
+      metadata: await decryptMetadata(data.metadata, secret),
       createdAt: data.createdAt,
     };
   }));
@@ -205,11 +235,11 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
 // PATCH /api/inquiries/:id/status
 router.patch("/:id/status", ensureAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body as { status: string };
-
-  if (!status) {
-    throw new ApiError(400, "Status is required.");
+  const statusResult = z.enum(["pending", "approved", "resolved", "rejected"]).safeParse(req.body?.status);
+  if (!statusResult.success) {
+    throw new ApiError(400, "Status must be pending, approved, resolved, or rejected.");
   }
+  const status = statusResult.data;
 
   const docRef = adminDb.collection("inquiries").doc(id);
   const docSnap = await docRef.get();

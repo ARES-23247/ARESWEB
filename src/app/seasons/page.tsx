@@ -45,7 +45,11 @@ export default function SeasonsPage() {
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const q = query(collection(db, "seasons"), where("isDeleted", "==", 0));
+        const q = query(
+          collection(db, "seasons"),
+          where("status", "==", "published"),
+          where("isDeleted", "==", 0)
+        );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => doc.data() as Season);
         // Sort seasons by start year descending
@@ -64,7 +68,11 @@ export default function SeasonsPage() {
   useEffect(() => {
     const fetchAwards = async () => {
       try {
-        const q = query(collection(db, "awards"), where("isDeleted", "==", 0));
+        const q = query(
+          collection(db, "awards"),
+          where("status", "==", "published"),
+          where("isDeleted", "==", 0)
+        );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => {
           const data = doc.data() as Award;

@@ -8,6 +8,15 @@ service firebase.storage {
         firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
     }
 
+    function hasRole(role) {
+      return isAuthorized() &&
+        firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isContentManager() {
+      return hasRole('admin') || hasRole('coach') || hasRole('mentor');
+    }
+
     match /events/{eventId}/photos/{photoId} {
       allow read: if true;
       allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
@@ -25,7 +34,7 @@ service firebase.storage {
 
     match /cad/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 100 * 1024 * 1024;
+      allow write: if isContentManager() && request.resource.size < 100 * 1024 * 1024;
     }
 
     match /telemetry_runs/{allPaths=**} {
@@ -35,17 +44,19 @@ service firebase.storage {
 
     match /editor/uploads/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024;
+      allow write: if isContentManager() &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('(image/.*|text/.*|application/json|application/javascript|application/zip)');
     }
 
     match /field/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 50 * 1024 * 1024;
+      allow write: if isContentManager() && request.resource.size < 10 * 1024 * 1024;
     }
 
     match /fields/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 50 * 1024 * 1024;
+      allow write: if isContentManager() && request.resource.size < 10 * 1024 * 1024;
     }
   }
 }

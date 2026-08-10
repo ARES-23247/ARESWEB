@@ -275,13 +275,13 @@ describe("errorHandler", () => {
     const err = new Error();
     globalErrorHandler(err, req as any, res as any, next);
     expect(statusMock).toHaveBeenCalledWith(500);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Internal server error." });
+    expect(jsonMock).toHaveBeenCalledWith({ error: "Internal server error.", code: "INTERNAL_ERROR" });
   });
 
   it("globalErrorHandler format error with custom status/message", () => {
     const err = new ApiError(404, "Not Found Custom");
     globalErrorHandler(err, req as any, res as any, next);
     expect(statusMock).toHaveBeenCalledWith(404);
-    expect(jsonMock).toHaveBeenCalledWith({ error: "Not Found Custom" });
+    expect(jsonMock).toHaveBeenCalledWith({ error: "Not Found Custom", code: "HTTP_404" });
   });
 });

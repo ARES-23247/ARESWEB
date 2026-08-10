@@ -1,8 +1,9 @@
 {
-  "timestamp": "2026-05-10T12:00:00Z",
-  "bundles": {
-    "index": { "size": 810000, "gzip": 210000 },
-    "vendor": { "size": 185000, "gzip": 60000 }
-  },
-  "threshold": 0.1
+  "timestamp": "2026-08-10T00:00:00Z",
+  "description": "Absolute budgets for assets fetched on first load and the largest route-lazy JavaScript chunk.",
+  "budgets": {
+    "initialJs": { "raw": 1300000, "gzip": 400000 },
+    "initialCss": { "raw": 200000, "gzip": 30000 },
+    "largestLazyJs": { "raw": 3000000, "gzip": 800000 }
+  }
 }

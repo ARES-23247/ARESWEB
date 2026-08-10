@@ -7,6 +7,7 @@ vi.mock("../lib/firebase-admin", () => {
   
   const mockCollection = vi.fn().mockReturnValue({
     where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
     get: mockGet,
   });
   return {
@@ -32,7 +33,7 @@ describe("cleanupOldInquiries scheduled function", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGet = vi.mocked(adminDb.collection("").get);
+    mockGet = vi.mocked(adminDb.collection("").limit(400).get);
     const batch = adminDb.batch();
     mockBatchDelete = vi.mocked(batch.delete);
     mockBatchCommit = vi.mocked(batch.commit);

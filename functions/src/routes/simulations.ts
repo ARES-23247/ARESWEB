@@ -31,17 +31,9 @@ function getGitHubConfig() {
   return { owner, repo, branch, apiBase: `https://api.github.com/repos/${owner}/${repo}` };
 }
 
-// Fetch GitHub PAT from DB settings with env fallback
-async function getGitHubPat(): Promise<string | undefined> {
-  try {
-    const docSnap = await adminDb.collection("settings").doc("GITHUB_PAT").get();
-    if (docSnap.exists) {
-      const data = docSnap.data();
-      if (data?.value) return data.value;
-    }
-  } catch (err) {
-    logger.error("simulations", "Failed to fetch GITHUB_PAT from settings collection:", err);
-  }
+// Secrets are injected by Cloud Functions Secret Manager. Never read credentials
+// from Firestore, where a rules regression could expose them to client SDKs.
+function getGitHubPat(): string | undefined {
   return process.env.GITHUB_PAT;
 }
 
@@ -112,8 +104,11 @@ router.get("/", asyncHandler(async (req, res) => {
 
   const ghRes = await fetch(`${ghConfig.apiBase}/contents/src/sims/simRegistry.json`, { headers });
   if (!ghRes.ok) {
-    res.json({ simulations: [] });
-    return;
+    logger.error("simulations", "GitHub registry request failed", {
+      status: ghRes.status,
+      statusText: ghRes.statusText,
+    });
+    throw new ApiError(502, `GitHub registry request failed: HTTP ${ghRes.status}`);
   }
 
   const registryText = await ghRes.text();

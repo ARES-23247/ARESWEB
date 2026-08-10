@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, limit, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Play, X, Calendar, Film, ExternalLink, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -62,7 +62,12 @@ export default function VideosPage() {
     setIsLoading(true);
     try {
       const videosRef = collection(db, "videos");
-      const q = query(videosRef, limit(100));
+      const q = query(
+        videosRef,
+        where("status", "==", "published"),
+        where("isDeleted", "==", 0),
+        limit(100)
+      );
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {

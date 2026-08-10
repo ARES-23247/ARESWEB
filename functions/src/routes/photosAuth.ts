@@ -20,11 +20,19 @@ const limiter = rateLimit({
 });
 router.use(limiter);
 const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
+const PUBLIC_ORIGIN = "https://aresfirst.org";
+
+function getRequestOrigin(req: express.Request): string {
+  if (process.env.FUNCTIONS_EMULATOR === "true") {
+    return `${req.protocol}://${req.get("host")}`;
+  }
+  return PUBLIC_ORIGIN;
+}
 
 // GET /api/photos/auth/init
 // Handle deprecated GET request gracefully if browser cache is stale
 router.get("/auth/init", asyncHandler(async (req, res) => {
-  const origin = `${req.protocol}://${req.get("host")}`;
+  const origin = getRequestOrigin(req);
   res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=Stale%20browser%20cache%20detected.%20Please%20refresh%20the%20page%20and%20try%20again.`);
 }));
 
@@ -37,9 +45,7 @@ router.post("/auth/init", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(500, "Google OAuth credentials not configured.");
   }
 
-  const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
-  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-  const origin = `${proto}://${host}`;
+  const origin = getRequestOrigin(req);
   const redirectUri = `${origin}/api/photos/auth`;
 
   // Generate secure state token
@@ -68,9 +74,7 @@ router.get("/auth", asyncHandler(async (req, res) => {
   const code = req.query.code as string | undefined;
   const error = req.query.error as string | undefined;
   const state = req.query.state as string | undefined;
-  const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
-  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-  const origin = `${proto}://${host}`;
+  const origin = getRequestOrigin(req);
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -94,6 +98,11 @@ router.get("/auth", asyncHandler(async (req, res) => {
   const stateDocRef = adminDb.collection("oauth_states").doc(state);
   const stateSnap = await stateDocRef.get();
   if (!stateSnap.exists) {
+    throw new ApiError(400, "Invalid or expired state parameter. Anti-CSRF check failed.");
+  }
+  const stateData = stateSnap.data();
+  if (!stateData?.expiresAt || Date.parse(stateData.expiresAt) <= Date.now()) {
+    await stateDocRef.delete();
     throw new ApiError(400, "Invalid or expired state parameter. Anti-CSRF check failed.");
   }
   
@@ -134,9 +143,7 @@ router.get("/auth", asyncHandler(async (req, res) => {
     const authRef = adminDb.collection("system_settings").doc("google_auth");
     const existingDoc = await authRef.get();
     const existingData = existingDoc.exists ? existingDoc.data() : null;
-    const finalRefreshToken = tokens.refresh_token || existingData?.refreshToken;
-
-    if (!finalRefreshToken) {
+    if (!tokens.refresh_token && !existingData?.refreshToken) {
       res.redirect(
         `${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent("No refresh token received.")}`
       );
@@ -146,7 +153,9 @@ router.get("/auth", asyncHandler(async (req, res) => {
     const secret = getEncryptionSecret();
     const encryptedClientId = await encrypt(clientId, secret);
     const encryptedClientSecret = await encrypt(clientSecret, secret);
-    const encryptedRefreshToken = await encrypt(finalRefreshToken, secret);
+    const encryptedRefreshToken = tokens.refresh_token
+      ? await encrypt(tokens.refresh_token, secret)
+      : existingData!.refreshToken;
 
     await authRef.set({
       clientId: encryptedClientId,
@@ -175,13 +184,12 @@ router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
     throw new ApiError(400, "Forbidden: Target URL host is not authorized");
   }
 
-  // Authenticate: support header or query parameter
+  // Authenticate with a header only. Tokens in query strings leak into logs,
+  // browser history, analytics, and referrer headers.
   let token: string | undefined;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split("Bearer ")[1];
-  } else if (req.query.token && typeof req.query.token === "string") {
-    token = req.query.token;
   }
 
   if (!token) {

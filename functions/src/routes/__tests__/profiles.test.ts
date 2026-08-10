@@ -55,7 +55,7 @@ describe("Profiles Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.ENCRYPTION_SECRET = "dummy-secret-key-32-chars-long-!";
+    process.env.PROFILE_SYNC_SECRET = "dummy-secret-key-32-chars-long-!";
 
     req = {
       params: {},

@@ -41,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.14.0"
+          node-version: "20.19.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -109,7 +109,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.14.0"
+          node-version: "20.19.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -139,10 +139,13 @@ jobs:
       - name: Run Type Checking
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
+
+      - name: Build Cloud Functions
+        run: pnpm --filter functions build
 
       - name: Run Security Audit
-        run: pnpm audit --audit-level=critical
+        run: pnpm audit --prod --audit-level=high
 
       - name: Run Frontend Unit Tests
         env:
@@ -186,7 +189,7 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: "22.14.0"
+          node-version: "20.19.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -268,7 +271,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.14.0"
+          node-version: "20.19.0"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -289,7 +292,7 @@ jobs:
         run: |
           node -e "require('fs').writeFileSync('/tmp/gcp_key.json', process.env.SERVICE_ACCOUNT_KEY)"
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
-          pnpm exec firebase deploy --only hosting,functions --project aresfirst-portal --debug || { rm -f /tmp/gcp_key.json; exit 1; }
+          pnpm exec firebase deploy --only hosting,functions,firestore:rules,storage --project aresfirst-portal --debug || { rm -f /tmp/gcp_key.json; exit 1; }
           rm -f /tmp/gcp_key.json
 
       - name: Post Deploy Status

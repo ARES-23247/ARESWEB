@@ -21,7 +21,11 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const q = query(collection(db, "seasons"), where("isDeleted", "==", 0));
+        const q = query(
+          collection(db, "seasons"),
+          where("status", "==", "published"),
+          where("isDeleted", "==", 0)
+        );
         const snap = await getDocs(q);
         const list = snap.docs.map((doc) => doc.data() as Season);
         list.sort((a, b) => b.startYear - a.startYear);

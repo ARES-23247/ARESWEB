@@ -5,7 +5,7 @@ import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from 
 import crypto from "crypto";
 import { getZulipUsers, createZulipUser } from "../lib/zulip";
 import { logger } from "../lib/logger";
-import { asyncHandler } from "../lib/utils";
+import { asyncHandler, maskEmail } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { z } from "zod";
 import { validate } from "../middleware/validation";
@@ -118,9 +118,9 @@ const profileSyncSchema = z.object({
 
 // POST /api/profiles/sync (secured with shared secret)
 router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) => {
-  const secret = process.env.ENCRYPTION_SECRET;
+  const secret = process.env.PROFILE_SYNC_SECRET;
   if (!secret) {
-    throw new ApiError(500, "Encryption secret not configured on Firebase server.");
+    throw new ApiError(503, "Profile synchronization is not configured on the server.");
   }
 
   const clientSecret = req.headers["x-sync-secret"];
@@ -146,12 +146,12 @@ router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) 
     try {
       const authUser = await adminAuth.getUserByEmail(cleanEmail);
       targetUid = authUser.uid;
-      logger.info("profiles", `Found Firebase Auth user for ${cleanEmail}. Routing sync to Firebase UID: ${targetUid}`);
+      logger.info("profiles", `Found Firebase Auth user for ${maskEmail(cleanEmail)}. Routing sync to Firebase UID: ${targetUid}`);
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
-        logger.info("profiles", `No Firebase Auth user found for ${cleanEmail}. Routing sync to legacy UUID: ${targetUid}`);
+        logger.info("profiles", `No Firebase Auth user found for ${maskEmail(cleanEmail)}. Routing sync to legacy UUID: ${targetUid}`);
       } else {
-        logger.error("profiles", `Error checking Firebase Auth for ${cleanEmail}`, err);
+        logger.error("profiles", `Error checking Firebase Auth for ${maskEmail(cleanEmail)}`, err);
       }
     }
   }
@@ -419,4 +419,3 @@ router.post("/zulip/self-provision", ensureTeamMember, asyncHandler(async (req: 
 }));
 
 export default router;
-

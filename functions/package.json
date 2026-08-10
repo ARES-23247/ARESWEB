@@ -32,12 +32,5 @@
     "typescript": "^5.7.3",
     "vitest": "^4.1.8"
   },
-  "private": true,
-  "pnpm": {
-    "overrides": {
-      "fast-uri": "^3.1.5",
-      "ip-address": "^10.3.1",
-      "brace-expansion": "^2.1.4"
-    }
-  }
+  "private": true
 }

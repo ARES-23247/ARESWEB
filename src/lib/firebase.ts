@@ -60,14 +60,16 @@ if (typeof window !== "undefined") {
     (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   }
   
-  const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LfIliYtAAAAAAqn4QGkniMUU8XK-5iABeyM7u2o";
-  try {
-    appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
-      isTokenAutoRefreshEnabled: true
-    });
-  } catch (err) {
-    console.warn("Firebase App Check failed to initialize:", err);
+  const appCheckSiteKey = import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
+  if (appCheckSiteKey) {
+    try {
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(appCheckSiteKey),
+        isTokenAutoRefreshEnabled: true
+      });
+    } catch (err) {
+      console.warn("Firebase App Check failed to initialize:", err);
+    }
   }
 }
 
@@ -115,7 +117,8 @@ export const getDocsWithTimeout = async (queryRef: any, timeoutMs = 1500): Promi
 
 export const getAppCheckHeader = async (forceRefresh = false): Promise<Record<string, string>> => {
   if (!appCheck && typeof window !== "undefined") {
-    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LfIliYtAAAAAAqn4QGkniMUU8XK-5iABeyM7u2o";
+    const siteKey = import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
+    if (!siteKey) return {};
     try {
       appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(siteKey),
@@ -140,5 +143,4 @@ export const getAppCheckHeader = async (forceRefresh = false): Promise<Record<st
 };
 
 export { app, auth, db, storage, appCheck };
-
 

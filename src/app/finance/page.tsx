@@ -12,11 +12,8 @@ import {
   Award,
   Globe
 } from "lucide-react";
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
-
 import SEO from "@/components/SEO";
 import SeasonPicker from "@/components/SeasonPicker";
-import { db } from "@/lib/firebase";
 
 interface Transaction {
   id: string;
@@ -37,24 +34,22 @@ export default function FinanceLedgerPage() {
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Fetch all transactions from Firestore
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const q = query(
-          collection(db, "finance_transactions"),
-          orderBy("date", "desc")
-        );
-        const snap = await getDocs(q);
-        const list = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Transaction[];
-        
-        setTransactions(list);
+        const response = await fetch("/api/finance?limit=100");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json() as { transactions?: Transaction[] };
+        setTransactions(data.transactions || []);
+        setLoadError(null);
       } catch (err) {
         console.error("Error fetching transactions:", err);
+        setLoadError(err instanceof Error ? err.message : "Unknown finance data error");
       } finally {
         setIsLoading(false);
       }
@@ -163,6 +158,12 @@ export default function FinanceLedgerPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <div className="animate-spin w-10 h-10 border-4 border-ares-red border-t-transparent rounded-full" />
             <p className="text-xs font-black uppercase tracking-widest text-marble/40 animate-pulse">Synchronizing ledger records...</p>
+          </div>
+        ) : loadError ? (
+          <div className="bg-ares-red/10 border border-ares-red/40 p-6 ares-cut-lg" role="alert">
+            <h2 className="font-black uppercase text-white">Financial data unavailable</h2>
+            <p className="mt-2 text-sm text-marble/80">The ledger could not be loaded. No totals are being shown.</p>
+            <p className="mt-3 font-mono text-xs text-ares-red">{loadError}</p>
           </div>
         ) : (
           <>

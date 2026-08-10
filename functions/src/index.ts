@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
 
@@ -24,7 +25,9 @@ import videosRouter from "./routes/videos";
 import storeRouter from "./routes/store";
 import zulipRouter from "./routes/zulip";
 import driveRouter from "./routes/drive";
+import financeRouter from "./routes/finance";
 import { globalErrorHandler } from "./middleware/errorHandler";
+import { ensureTeamMember } from "./middleware/auth";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -49,6 +52,8 @@ const allowedOrigins = [
   "https://ares23247.web.app",
   "https://ares23247.firebaseapp.com",
   "https://aresfirst.org",
+  "https://aresfirst-portal.web.app",
+  "https://aresfirst-portal.firebaseapp.com",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://127.0.0.1:5173",
@@ -64,9 +69,8 @@ const corsOptions: cors.CorsOptions = {
       callback(null, true);
       return;
     }
-    // Allow subdomains ending in .web.app or .firebaseapp.com
-    const hostname = origin.replace(/^https?:\/\//, "");
-    if (hostname.endsWith(".web.app") || hostname.endsWith(".firebaseapp.com")) {
+    // Permit only this project's Firebase preview channels.
+    if (/^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/.test(origin)) {
       callback(null, true);
       return;
     }
@@ -75,6 +79,17 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Throttle and authenticate large uploads before allocating their bodies.
+app.use("/api", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { error: "Too many API requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
+app.use("/api/upload", ensureTeamMember);
+app.use("/api/photos/upload-unified", ensureTeamMember);
 
 // Use raw body parsing for the upload endpoints, and json for everything else
 app.use((req, res, next) => {
@@ -104,6 +119,7 @@ app.use("/api/videos", videosRouter);
 app.use("/api/store", storeRouter);
 app.use("/api/zulip", zulipRouter);
 app.use("/api/drive", driveRouter);
+app.use("/api/finance", financeRouter);
 app.use("/sitemap.xml", sitemapRouter);
 app.use("/api/sitemap.xml", sitemapRouter);
 
@@ -118,9 +134,10 @@ app.get("/api/reference", (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noindex, nofollow">
       </head>
-      <body>
-        <script id="api-reference" data-url="/api/openapi.json"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+      <body style="font-family:system-ui;background:#0b0b0d;color:#f5f5f5;padding:2rem">
+        <h1>ARES API Reference</h1>
+        <p>The interactive OpenAPI specification is not currently published.</p>
+        <p><a href="/developer-api" target="_top" style="color:#f4b942">Return to the developer API guide</a></p>
       </body>
     </html>
   `);
@@ -138,8 +155,7 @@ export const api = onRequest({
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
-    /\.web\.app$/,
-    /\.firebaseapp\.com$/,
+    /^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/,
   ], 
   maxInstances: 10, 
   secrets: [
@@ -149,6 +165,8 @@ export const api = onRequest({
     "GCP_PROJECT_ID",
     "GEMINI_API_KEY",
     "RECAPTCHA_SECRET_KEY",
+    "PROFILE_SYNC_SECRET",
+    "GITHUB_PAT",
   ] 
 }, app);
 
@@ -165,23 +183,25 @@ export const cleanupOldInquiries = onSchedule({
   logger.info("cleanup", `Starting deletion of inquiries older than ${cutoffIso}`);
 
   try {
-    const snap = await adminDb
-      .collection("inquiries")
-      .where("createdAt", "<", cutoffIso)
-      .get();
+    let deletedCount = 0;
+    while (true) {
+      const snap = await adminDb
+        .collection("inquiries")
+        .where("createdAt", "<", cutoffIso)
+        .limit(400)
+        .get();
 
-    if (snap.empty) {
-      logger.info("cleanup", "No old inquiries found to clean up.");
-      return;
+      if (snap.empty) break;
+
+      const batch = adminDb.batch();
+      snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+      await batch.commit();
+      deletedCount += snap.size;
+
+      if (snap.size < 400) break;
     }
 
-    const batch = adminDb.batch();
-    snap.docs.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
-
-    await batch.commit();
-    logger.info("cleanup", `Successfully cleaned up ${snap.size} old inquiries.`);
+    logger.info("cleanup", `Successfully cleaned up ${deletedCount} old inquiries.`);
   } catch (err) {
     logger.error("cleanup", "Error running inquiries cleanup task", err);
   }

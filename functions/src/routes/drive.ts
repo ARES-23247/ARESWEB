@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
-import { ensureAuth, ensureAdmin } from "../middleware/auth";
+import { ensureAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -81,7 +81,7 @@ export function inferDocCategory(name: string, mimeType?: string): "spec" | "gui
 // GET /api/drive/config - Fetch team's saved Google Drive Folder ID
 router.get(
   "/config",
-  ensureAuth,
+  ensureAdmin,
   asyncHandler(async (_req, res) => {
     const docRef = adminDb.collection("system_settings").doc("drive_config");
     const snap = await docRef.get();
@@ -118,7 +118,7 @@ router.post(
 // POST /api/drive/import - Fetch metadata for a single Google Drive file URL
 router.post(
   "/import",
-  ensureAuth,
+  ensureAdmin,
   asyncHandler(async (req, res) => {
     const { url, fileId } = req.body || {};
     const targetId = extractDriveFileId(fileId || url);
@@ -171,7 +171,7 @@ router.post(
 // POST /api/drive/sync - Scan Drive folder & batch-upsert into Firestore documents collection
 router.post(
   "/sync",
-  ensureAuth,
+  ensureAdmin,
   asyncHandler(async (req, res) => {
     let targetFolderId = req.body?.folderId;
 
@@ -272,7 +272,7 @@ router.post(
       `Successfully synced ${syncedFiles.length} documents from Google Drive folder: ${cleanFolderId}`
     );
 
-    res.json({
+    return res.json({
       success: true,
       syncedCount: syncedFiles.length,
       folderId: cleanFolderId,

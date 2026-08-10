@@ -255,18 +255,28 @@ describe("Inquiries Router Backend Endpoints", () => {
     };
 
     it("should pass validation with valid payload", async () => {
+      const originalEmulator = process.env.FUNCTIONS_EMULATOR;
+      process.env.FUNCTIONS_EMULATOR = "true";
       req.body = {
         type: "student",
-        name: "Playwright E2E Test",
-        email: "playwright.test@aresfirst.org",
+        name: "Security Test",
+        email: "security.test@example.com",
         metadata: { message: "Hello ARES" },
         recaptchaToken: "test-bypass-token"
       };
 
       const err = await runStack("/", "post", req, res);
+      if (originalEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
+      else process.env.FUNCTIONS_EMULATOR = originalEmulator;
       expect(err).toBeNull();
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         success: true,
+      }));
+      const mockDoc = adminDb.collection("inquiries").doc as any;
+      expect(mockDoc().set).toHaveBeenCalledWith(expect.objectContaining({
+        name: "encrypted:Security Test",
+        email: "encrypted:security.test@example.com",
+        metadata: 'encrypted:{"message":"Hello ARES"}',
       }));
     });
 

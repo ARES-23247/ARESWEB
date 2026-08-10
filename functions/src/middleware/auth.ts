@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 
 export interface AuthenticatedRequest extends Request {
   user?: DecodedIdToken;
+  authorizationRole?: string;
 }
 
 async function extractAndVerifyToken(req: Request): Promise<DecodedIdToken> {
@@ -43,6 +44,7 @@ export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next
       return next(new ApiError(403, "Forbidden: Insufficient privileges"));
     }
     req.user = decodedToken;
+    req.authorizationRole = String(userData.role);
     next();
   } catch (err: any) {
     logger.error("auth", "Admin verification failed", { error: err.message });
@@ -52,6 +54,10 @@ export async function ensureAdmin(req: AuthenticatedRequest, res: Response, next
 
 export async function ensureTeamMember(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
+    if (req.user && req.authorizationRole && req.authorizationRole !== "unverified") {
+      next();
+      return;
+    }
     const decodedToken = await extractAndVerifyToken(req);
     const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
     if (!userDoc.exists) {
@@ -62,10 +68,10 @@ export async function ensureTeamMember(req: AuthenticatedRequest, res: Response,
       return next(new ApiError(403, "Forbidden: Account is unverified"));
     }
     req.user = decodedToken;
+    req.authorizationRole = String(userData?.role || "");
     next();
   } catch (err: any) {
     logger.error("auth", "Team member verification failed", { error: err.message });
     next(err);
   }
 }
-

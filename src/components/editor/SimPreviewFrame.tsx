@@ -21,13 +21,6 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
-  // Build allowed origins allowlist for strict PostMessage validation
-  const allowedOrigins = useMemo(() => new Set([
-    window.location.origin,
-    // Production domain - add when deployed
-    // 'https://ares-23247.org',
-  ].filter(Boolean)), []);
-
   // Strict message type validation - only these types are accepted
   const ALLOWED_MESSAGE_TYPES = useMemo(() => new Set([
     'sim-error',
@@ -97,9 +90,10 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
 
   // Listen for runtime errors from the iframe
   const handleMessage = useCallback((event: MessageEvent) => {
-    // Validate origin using allowlist approach
-    if (!allowedOrigins.has(event.origin)) {
-      console.warn('SimPreviewFrame: rejected message from unexpected origin:', event.origin);
+    // A sandbox without allow-same-origin has an opaque origin ("null").
+    // Authenticate the sender by WindowProxy identity instead of trusting origin text.
+    if (event.source !== iframeRef.current?.contentWindow) {
+      console.warn('SimPreviewFrame: rejected message from unexpected source');
       return;
     }
 
@@ -125,7 +119,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       // ARES_TELEMETRY and sim-console are logged but not processed further
       // ARES_SCREENSHOT is handled by screenshot request handler
     }
-  }, [allowedOrigins, ALLOWED_MESSAGE_TYPES, onTestResult]);
+  }, [ALLOWED_MESSAGE_TYPES, onTestResult]);
 
   useEffect(() => {
     window.addEventListener("message", handleMessage);
@@ -302,7 +296,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   <div id="root"><div class="sim-loading">Loading Environment...</div></div>
   <script>
     window.onerror = function(msg, source, line, col, error) {
-      window.parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '${window.location.origin}');
+      window.parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
       // Sanitize error message before setting innerHTML to prevent XSS
       const sanitizedMsg = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(msg)) : String(msg).replace(/[<>&"']/g, function(m) {
         return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
@@ -319,7 +313,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
           level,
           args: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)),
           timestamp: Date.now()
-        }, '${window.location.origin}');
+        }, '*');
         original.apply(console, args);
       };
     });
@@ -329,7 +323,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       exports: {
         useTelemetry: function(key, value) {
           React.useEffect(() => {
-            window.parent.postMessage({ type: "ARES_TELEMETRY", key, value, timestamp: performance.now() }, "${window.location.origin}");
+            window.parent.postMessage({ type: "ARES_TELEMETRY", key, value, timestamp: performance.now() }, "*");
           }, [key, value]);
         }
       }
@@ -386,12 +380,12 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       if (typeof SimComponent !== 'undefined') {
         var root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(React.createElement(SimComponent));
-        window.parent.postMessage({ type: 'sim-ready' }, '${window.location.origin}');
+        window.parent.postMessage({ type: 'sim-ready' }, '*');
       } else {
         throw new Error('SimComponent is not defined. Your code must export a default React component.');
       }
     } catch(e) {
-      window.parent.postMessage({ type: 'sim-error', message: e.message }, '${window.location.origin}');
+      window.parent.postMessage({ type: 'sim-error', message: e.message }, '*');
       // Sanitize error message before setting innerHTML to prevent XSS
       const sanitizedError = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(e.message)) : String(e.message).replace(/[<>&"']/g, function(m) {
         return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
@@ -407,7 +401,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       if (e.data?.type === 'ARES_REQUEST_SCREENSHOT' && window.html2canvas) {
         try {
           const canvas = await window.html2canvas(document.body, { useCORS: true, logging: false });
-          window.parent.postMessage({ type: 'ARES_SCREENSHOT', dataUrl: canvas.toDataURL('image/png') }, '${window.location.origin}');
+          window.parent.postMessage({ type: 'ARES_SCREENSHOT', dataUrl: canvas.toDataURL('image/png') }, '*');
         } catch(err) {
           console.error("Screenshot failed inside sandbox:", err);
         }
@@ -421,7 +415,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
         frames++;
         const now = performance.now();
         if (now - lastTime >= 1000) {
-          window.parent.postMessage({ type: 'sim-fps', fps: frames }, '${window.location.origin}');
+          window.parent.postMessage({ type: 'sim-fps', fps: frames }, '*');
           frames = 0;
           lastTime = now;
         }
@@ -457,7 +451,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       <iframe
         ref={iframeRef}
         title="Simulation Preview"
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        sandbox="allow-scripts"
         referrerPolicy="no-referrer"
         className="flex-1 w-full h-full bg-obsidian-dark border-0 rounded-b-lg"
       />
