@@ -28,6 +28,7 @@ import driveRouter from "./routes/drive";
 import financeRouter from "./routes/finance";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ensureTeamMember } from "./middleware/auth";
+import { observeAppCheck } from "./middleware/appCheck";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -88,6 +89,7 @@ app.use("/api", rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 }));
+app.use(observeAppCheck);
 app.use("/api/upload", ensureTeamMember);
 app.use("/api/photos/upload-unified", ensureTeamMember);
 
