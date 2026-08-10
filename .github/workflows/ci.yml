@@ -36,12 +36,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.21.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.0"
+          node-version: "22.13.1"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -104,12 +104,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.21.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.0"
+          node-version: "22.13.1"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -183,13 +183,13 @@ jobs:
         if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.21.0
 
       - name: Setup Node.js
         if: steps.check_e2e.outputs.run_e2e == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.0"
+          node-version: "22.13.1"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -266,12 +266,12 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.21.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.0"
+          node-version: "22.13.1"
           cache: "pnpm"
 
       - name: Install dependencies

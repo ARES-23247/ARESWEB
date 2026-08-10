@@ -29,7 +29,8 @@ Storage, and second-generation Cloud Functions. Read the relevant skill under
 
 ## Verification gate
 
-Use Node 20 (the Cloud Functions runtime), pnpm 11, and run all of the following
+Use Node 22.13 or newer in the Node 22 line (the Cloud Functions runtime),
+pnpm 11.21.0, and run all of the following
 before handing off a code change:
 
 ```text
