@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 
 const mocks = vi.hoisted(() => ({
   verifyToken: vi.fn(),
