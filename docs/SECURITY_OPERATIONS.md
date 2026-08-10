@@ -34,6 +34,41 @@ Keep the public inquiry form's reCAPTCHA key separate. Confirm the App Check key
 allowed web origins, and Firebase App Check registration agree before enabling
 enforcement; otherwise legitimate clients will receive 403 responses.
 
+## App Check monitoring and enforcement
+
+Firestore and Storage use `UNENFORCED` mode during the monitoring stage. This
+mode records App Check metrics but does not block requests. Authentication stays
+`OFF` until the team tests every sign-in flow.
+
+The API also records App Check results for mutation requests. Each event has a
+`valid`, `missing`, or `invalid` status. Logs include only the method and route
+group. They never include tokens, user IDs, query strings, or document IDs.
+
+Two server integrations do not use Firebase App Check:
+
+- `POST /api/profiles/sync` uses `PROFILE_SYNC_SECRET`.
+- `POST /api/webhooks/zulip` uses `ZULIP_WEBHOOK_TOKEN`.
+
+Use this Cloud Logging filter to review custom API results:
+
+```text
+resource.type="cloud_run_revision"
+resource.labels.service_name="api"
+textPayload:"[app-check] App Check observation"
+```
+
+Do not enable enforcement until all of these checks pass:
+
+1. Collect at least 72 hours of production data.
+2. Test inquiry, admin edit, upload, simulation, and checkout flows.
+3. Confirm at least 99% verified traffic in Firebase App Check metrics.
+4. Find the cause of every `missing` or `invalid` API mutation.
+5. Confirm each protected route group has a recent `valid` result.
+
+Enable Storage first. Watch errors for 24 hours. Enable Firestore next, then
+watch for another 24 hours. Return a service to `UNENFORCED` at once if valid
+users receive new 401, 403, or permission errors.
+
 ## Coordinated deployment
 
 Deploy Functions and Firebase rules together so the public DTO endpoints and

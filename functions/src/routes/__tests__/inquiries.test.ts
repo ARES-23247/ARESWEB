@@ -293,5 +293,25 @@ describe("Inquiries Router Backend Endpoints", () => {
       expect(err.status).toBe(400);
       expect(err.message).toContain("Validation failed");
     });
+
+    it("should preserve rejection of an explicitly invalid App Check token", async () => {
+      req.body = {
+        type: "student",
+        name: "Security Test",
+        email: "security.test@example.com",
+        metadata: {},
+        recaptchaToken: "recaptcha-token",
+      };
+      req.appCheckObservation = {
+        status: "invalid",
+        reason: "verification_failed",
+      };
+
+      const err = await runStack("/", "post", req, res);
+
+      expect(err).toBeDefined();
+      expect(err.status).toBe(400);
+      expect(err.message).toBe("App integrity check failed. Please refresh and try again.");
+    });
   });
 });

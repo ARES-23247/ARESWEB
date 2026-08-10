@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import admin, { adminDb, adminAuth } from "../lib/firebase-admin";
+import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin } from "../middleware/auth";
@@ -10,6 +10,7 @@ import { logger } from "../lib/logger";
 import crypto from "crypto";
 import { z } from "zod";
 import { validate } from "../middleware/validation";
+import type { AppCheckObservedRequest } from "../middleware/appCheck";
 
 const router = express.Router();
 
@@ -64,22 +65,12 @@ async function decryptMetadata(value: unknown, secret: string): Promise<Record<s
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
   const { type, name, email, metadata, recaptchaToken } = req.body;
 
-  // App Check Verification (Zero Trust Enforcement with reCAPTCHA Fallback)
+  // Preserve the existing invalid-token rejection while missing-token traffic
+  // is measured during the staged App Check rollout and checked by reCAPTCHA.
   const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
-  const isTestEnvironment = process.env.NODE_ENV === "test";
-
-  if (isProd && !isTestEnvironment) {
-    const appCheckToken = req.headers["x-firebase-appcheck"] as string;
-    if (appCheckToken) {
-      try {
-        await admin.appCheck().verifyToken(appCheckToken);
-      } catch (err) {
-        logger.warn("inquiries", "App Check token verification failed.");
-        throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
-      }
-    } else {
-      logger.info("inquiries", "App Check token missing from client request, proceeding with reCAPTCHA v3 verification.");
-    }
+  const appCheckObservation = (req as AppCheckObservedRequest).appCheckObservation;
+  if (isProd && appCheckObservation?.status === "invalid") {
+    throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
   }
 
   // Intercept and ignore automated E2E test inquiries to prevent database pollution
