@@ -29,6 +29,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const mockAuthEnabled = import.meta.env.DEV || import.meta.env.MODE === "e2e";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 1500);
 
     // Check if we have a saved mock session in sessionStorage (development/E2E testing)
-    if (typeof window !== "undefined") {
+    if (mockAuthEnabled && typeof window !== "undefined") {
       const savedMock = sessionStorage.getItem("ares_mock_user");
       if (savedMock) {
         try {
@@ -114,13 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
 
     // Check if emulator is configured and if we are in local environment
-    const isLocalEnv = typeof window !== "undefined" && (
+    const isLocalEnv = mockAuthEnabled && typeof window !== "undefined" && (
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||
       window.location.hostname.startsWith("192.168.") ||
       window.location.hostname.startsWith("10.") ||
-      window.location.hostname.endsWith(".local") ||
-      window.location.hostname.includes("aresfirst-portal--")
+      window.location.hostname.endsWith(".local")
     );
 
     if (isLocalEnv) {
@@ -163,6 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithMockUser = async (email: string, role: string, name?: string) => {
+    if (!mockAuthEnabled) {
+      console.error("Mock authentication is disabled outside local development and E2E builds.");
+      return;
+    }
+
     isMockRef.current = true;
     if (typeof window !== "undefined") {
       sessionStorage.setItem("ares_mock_user", JSON.stringify({ email, role, name }));

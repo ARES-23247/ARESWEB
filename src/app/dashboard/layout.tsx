@@ -11,21 +11,8 @@ import SEO from "@/components/SEO";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, loginWithGoogle, loginWithMockUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isLocal, setIsLocal] = useState(false);
   const mobileRef = useFocusTrap(mobileMenuOpen, () => setMobileMenuOpen(false));
-
-  React.useEffect(() => {
-    setIsLocal(
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" ||
-       window.location.hostname === "127.0.0.1" ||
-       window.location.hostname.startsWith("192.168.") ||
-       window.location.hostname.startsWith("10.") ||
-       window.location.hostname.endsWith(".local") ||
-       window.location.hostname.includes("aresfirst-portal--") ||
-       process.env.NODE_ENV === "development")
-    );
-  }, []);
+  const mockAuthEnabled = import.meta.env.DEV || import.meta.env.MODE === "e2e";
 
   // 1. Loading State
   if (loading) {
@@ -101,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <LogIn size={16} /> Sign In with Google
             </button>
  
-            {isLocal && (
+            {mockAuthEnabled && (
               <div className="w-full mt-4 pt-4 border-t border-white/5 space-y-2.5">
                 <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center animate-pulse">
                   ⚡ Developer Bypass Active

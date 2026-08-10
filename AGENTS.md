@@ -30,21 +30,25 @@ Storage, and second-generation Cloud Functions. Read the relevant skill under
 ## Verification gate
 
 Use Node 22.13 or newer in the Node 22 line (the Cloud Functions runtime),
-pnpm 11.21.0, and run all of the following
-before handing off a code change:
+pnpm 11.21.0, and Java 21 or newer for Firebase emulators. Run all of the
+following before handing off a code change:
 
 ```text
 pnpm install --frozen-lockfile
 pnpm run lint
 pnpm exec tsc --noEmit
-pnpm run test
+pnpm run test:coverage
 pnpm --filter functions build
-pnpm --filter functions test
+pnpm --filter functions test:coverage
+pnpm run test:rules
 pnpm run build
+node scripts/check-bundle-size.mjs
+pnpm run test:e2e
 pnpm audit --prod --audit-level=high
 ```
 
-Add Vitest coverage for utilities and API routes. Use Playwright for major user
-flows, and Firebase Emulator Suite tests for Firestore or Storage rule behavior.
+Coverage floors are ratchets, not targets. New utilities and API routes must meet
+85% line and 100% function coverage. Use Playwright for major user flows, and
+Firebase Emulator Suite tests for Firestore or Storage rule behavior.
 
 See `docs/SECURITY_OPERATIONS.md` for required secret and deployment controls.

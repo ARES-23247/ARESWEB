@@ -5,51 +5,40 @@ description: Helps understand build automations, Vite testing, ESLint linting, a
 
 # ARESWEB Continuous Integration Skill
 
-You are the DevOps lead for Team ARES 23247. When working with builds, formatting, or deployment:
+You are the DevOps lead for Team ARES 23247. Use Node 22.13+, pnpm 11.21.0,
+and Java 21+ for Firebase Emulator Suite tests.
 
-## 1. Architecture
+## Pipeline architecture
 
-ARESWEB uses Node/npm scripts for compiling, linting, and deploying via Firebase Hosting and Functions:
+The required test gate contains three independent jobs:
 
-| Tool | Purpose |
-|---|---|
-| `npm run dev` | Runs the Vite local development server |
-| `npm run lint` | Runs ESLint and TypeScript checks across `src/` and `functions/` |
-| `npx tsc --noEmit` | Runs the TypeScript compiler in type-check-only mode |
-| `npm run build` | Compiles the React SPA via Vite into `dist/` |
-| `npm run test` | Runs Vitest unit/integration tests |
-| `firebase emulators:start` | Starts local Firebase Emulators (Firestore, Auth, Storage, Functions, Hosting) |
+1. `Verify, Test & Build` runs lint, TypeScript, the production dependency
+   audit, frontend and Functions coverage, both production builds, and bundle
+   budgets. It publishes one commit-addressed release artifact.
+2. `Firebase Rules Emulator Tests` runs real Firestore and Storage allow/deny
+   behavior tests. Static rule-string assertions do not replace this gate.
+3. `Playwright E2E Tests` builds locally in Vite `e2e` mode. Mock authentication
+   is available only in development and this E2E mode, never on Firebase preview
+   or production hosts.
 
-### CI Pipeline
-GitHub Actions and Firebase hosting deployments enforce these gates in order:
-1. `npx tsc --noEmit` — TypeScript type check (hard gate)
-2. `npm run lint` — ESLint with `--max-warnings 0` (hard gate)
-3. `npm run test` — Vitest unit/integration tests
-4. `npm run build` — Vite production build
-5. Playwright E2E tests
+Production deploys only from `master`, consumes the verified artifact, uses the
+GitHub `production` environment, serializes deployments, and must pass live
+health checks. Pull requests must never receive Firebase deployment credentials.
 
-If any gate fails, the PR cannot be merged or deployed.
+## Mandatory rules
 
----
-
-## 2. Mandatory Rules
-
-### Rule A: Always Run Linters Before Committing
-Every code change **MUST** pass `npm run lint` before committing. Unused variables, hook dependency array warnings, and orphaned accessibility labels are non-negotiable.
-
-### Rule B: Verify the Vite & Functions Build
-Always run `npm run build` at the root and `npm run build` in `functions/` to verify the module chunking and compilation succeeds before committing.
-
-### Rule C: Self-Healing Builds
-If a build or lint fails in the terminal, you must autonomously read the terminal output, identify the specific error causing the failure, modify the source code to resolve it, and re-run the build until SUCCESS. Do not halt to ask the user for permission to fix a syntax error.
-
-### Rule D: Never Use `@ts-ignore` — Use `@ts-expect-error` with Descriptions
-Always use the form:
-```ts
-// @ts-expect-error -- Firestore untyped response
-const data = doc.data();
-```
-The description after `--` must be **3+ characters** explaining why the suppression is necessary.
-
-### Rule E: Always Commit Before Ending a Session
-If you modify files, you **MUST** run `npm run lint` and `npm run build`, then `git add -A && git commit` before your session ends. Never leave dirty working trees.
+- Use `pnpm install --frozen-lockfile`; never let CI rewrite the lockfile.
+- Run `pnpm run lint` and `pnpm exec tsc --noEmit` before committing.
+- Run frontend and Functions tests with coverage. Existing global floors are
+  ratchets; new utilities and routes require 85% line and 100% function coverage.
+- Run `pnpm run test:rules` whenever Firestore or Storage access behavior changes.
+- Run `pnpm run test:e2e` for major UI, authentication, or navigation changes.
+- Build both the frontend and Functions, then enforce bundle budgets.
+- Pin every external GitHub Action to a full commit SHA with its release tag in a
+  comment. Do not use movable action tags as executable references.
+- Give workflows explicit least-privilege `permissions`, job timeouts, and
+  concurrency controls.
+- Never expose deployment credentials to pull-request-controlled code.
+- Never use `@ts-ignore`. Use a described `@ts-expect-error` when unavoidable.
+- If a gate fails, diagnose it, fix the cause, and rerun the failing gate.
+- After verification, commit all intended changes and leave the worktree clean.

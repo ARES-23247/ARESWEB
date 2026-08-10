@@ -4,9 +4,11 @@ This guide covers the production steps required by the repository's security
 boundaries. Code changes alone do not rotate a leaked credential or reconcile a
 deployed Firebase ruleset.
 
-## Required secret migration
+## Required secret controls
 
-Before the next Functions deployment, create independent Secret Manager values:
+Production Functions depend on independent Secret Manager values. Verify that
+both values are active before a deployment, and use the same commands when either
+credential must be rotated:
 
 ```text
 firebase functions:secrets:set GITHUB_PAT
@@ -14,9 +16,9 @@ firebase functions:secrets:set PROFILE_SYNC_SECRET
 ```
 
 `GITHUB_PAT` should be a fine-grained token limited to the ARESWEB repository and
-only the contents/gist permissions the simulation routes need. Rotate the prior
-token, then delete the legacy `settings/GITHUB_PAT` Firestore document. Do not
-reuse `ENCRYPTION_KEY` as an API credential.
+only the contents/gist permissions the simulation routes need. The legacy
+`settings/GITHUB_PAT` Firestore document must remain deleted. Do not reuse
+`ENCRYPTION_KEY` as an API credential.
 
 Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 
@@ -49,6 +51,22 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 4. Drive configuration/import/sync rejects non-admin accounts.
 5. Simulation editing works with the Secret Manager token and no Firestore token.
 6. App Check succeeds from production without repeated 403/throttle warnings.
+
+## GitHub Actions deployment controls
+
+- Pull-request jobs must not receive Firebase or Google Cloud credentials.
+- Production deploys must reference the protected GitHub `production`
+  environment and run only from `master` after the required test gate.
+- Keep repository Actions permissions read-only by default. Grant write scopes
+  only to the production deployment job.
+- Disable force pushes to `master`, apply protection to administrators, and
+  require the CI test gate and CodeQL before merge.
+- Pin third-party actions to immutable commit SHAs.
+- The current Firebase service-account JSON remains a migration dependency.
+  Replace it with GitHub OIDC/Google Workload Identity Federation only after an
+  administrator explicitly approves the trust grant and its service-account
+  roles are reduced. Do not delete the existing credential until an OIDC deploy
+  succeeds.
 
 ## Incident and drift response
 

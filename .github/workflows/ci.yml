@@ -1,4 +1,4 @@
-name: CI Testing
+name: CI
 
 on:
   push:
@@ -8,298 +8,260 @@ on:
     branches:
       - master
   workflow_dispatch:
-    inputs:
-      run_e2e:
-        description: 'Run full E2E suite (Playwright)'
-        required: true
-        type: boolean
-        default: true
 
-permissions: read-all
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NODE_VERSION: "22.13.1"
+  PNPM_VERSION: "11.21.0"
 
 jobs:
-  # ──────────────────────────────────────────────────────────────────────
-  # Build, deploy preview, and run smoke tests in one job.
-  # ──────────────────────────────────────────────────────────────────────
-  deploy-preview:
-    name: Deploy Preview
-    runs-on: ubuntu-latest
-    outputs:
-      preview-url: ${{ steps.deploy.outputs.details_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.21.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.13.1"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Vite build
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules/.vite
-            .vite
-          key: ${{ runner.os }}-vite-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx', 'vite.config.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-vite-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            ${{ runner.os }}-vite-
-
-      - name: Build with Vite
-        run: pnpm run build
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
-      - name: Deploy Preview to Firebase Hosting
-        id: deploy
-        env:
-          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        run: |
-          node -e "require('fs').writeFileSync('/tmp/gcp_key.json', process.env.SERVICE_ACCOUNT_KEY)"
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
-          node scripts/cleanup-preview-channels.js
-          pnpm exec firebase hosting:channel:deploy preview-${{ github.event.number || github.sha }} --project aresfirst-portal --debug > output.txt 2>&1 || { cat output.txt; rm -f /tmp/gcp_key.json; exit 1; }
-          rm -f /tmp/gcp_key.json
-          cat output.txt
-          URL=$(grep 'Channel URL' output.txt | grep -oE 'https://[^ ]+' | head -n 1)
-          echo "details_url=$URL" >> $GITHUB_OUTPUT
-
-      - name: Comment Preview URL on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 Preview deployment ready!\n\n**URL:** ${{ steps.deploy.outputs.details_url }}\n\nAll tests will run against this deployed environment.`
-            })
-
   verify:
-    name: Code Quality & Unit Tests
+    name: Verify, Test & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22.13.1"
-          cache: "pnpm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Cache ESLint
-        uses: actions/cache@v4
-        with:
-          path: .eslintcache
-          key: eslint-${{ runner.os }}-${{ hashFiles('**/*.{ts,tsx}') }}
-          restore-keys: |
-            eslint-${{ runner.os }}-
 
       - name: Run ESLint
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run lint --cache --cache-location .eslintcache
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: pnpm run lint
 
-      - name: Cache TypeScript build info
-        uses: actions/cache@v4
-        with:
-          path: tsconfig.tsbuildinfo
-          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            tsbuildinfo-${{ runner.os }}-
-
-      - name: Run Type Checking
+      - name: Run TypeScript checks
         env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
+          NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm exec tsc --noEmit
+
+      - name: Run production dependency audit
+        run: pnpm audit --prod --audit-level=high
+
+      - name: Run frontend tests with coverage
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: pnpm run test:coverage
+
+      - name: Run Cloud Functions tests with coverage
+        run: pnpm --filter functions test:coverage
+
+      - name: Build frontend
+        run: pnpm run build
+
+      - name: Enforce bundle budgets
+        run: node scripts/check-bundle-size.mjs
 
       - name: Build Cloud Functions
         run: pnpm --filter functions build
 
-      - name: Run Security Audit
-        run: pnpm audit --prod --audit-level=high
+      - name: Upload immutable release artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            dist/
+            functions/lib/
+          if-no-files-found: error
+          retention-days: 3
 
-      - name: Run Frontend Unit Tests
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-        run: pnpm run test
+  rules-tests:
+    name: Firebase Rules Emulator Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Run Cloud Functions Unit Tests
-        run: pnpm --filter functions test
+      - name: Install pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Setup Java for Firebase emulators
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Firebase emulator binaries
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('firebase.json') }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test Firestore and Storage rules
+        run: pnpm run test:rules
 
   e2e-tests:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
-    needs: deploy-preview
+    timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check if Full Suite Should Run
-        id: check_e2e
-        env:
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "run_e2e=${{ inputs.run_e2e }}" >> $GITHUB_OUTPUT
-          elif [[ "$PR_TITLE" == *"[skip e2e]"* ]] || [[ "$PR_TITLE" == *"[hotfix]"* ]] || [[ "$PR_LABELS" == *"hotfix"* ]] || [[ "$PR_LABELS" == *"skip-e2e"* ]] || [[ "$COMMIT_MSG" == *"[skip e2e]"* ]] || [[ "$COMMIT_MSG" == *"[hotfix]"* ]]; then
-            echo "run_e2e=false" >> $GITHUB_OUTPUT
-            echo "⏩ Skipping E2E tests for hotfix/fast-path."
-          else
-            echo "run_e2e=true" >> $GITHUB_OUTPUT
-          fi
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install pnpm
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22.13.1"
-          cache: "pnpm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Install dependencies
-        if: steps.check_e2e.outputs.run_e2e == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Cache Playwright Browsers
-        if: steps.check_e2e.outputs.run_e2e == 'true'
+      - name: Cache Playwright browser
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - name: Install Playwright Browsers
-        if: steps.check_e2e.outputs.run_e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Playwright E2E Tests
-        if: steps.check_e2e.outputs.run_e2e == 'true'
-        env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-        run: pnpm exec playwright test
+      - name: Run local E2E suite
+        run: pnpm run test:e2e
 
-      - name: Upload Playwright Report (on failure)
-        if: failure() && steps.check_e2e.outputs.run_e2e == 'true'
-        uses: actions/upload-artifact@v4
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-report-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
           retention-days: 7
 
   test-gate:
-    name: Test Gate
+    name: Required Test Gate
     runs-on: ubuntu-latest
-    needs: [verify, deploy-preview, e2e-tests]
+    timeout-minutes: 5
     if: always()
-    outputs:
-      all-passed: ${{ steps.check.outputs.all-passed }}
+    needs:
+      - verify
+      - rules-tests
+      - e2e-tests
     steps:
-      - name: Check test results
-        id: check
+      - name: Require every validation job
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          RULES_RESULT: ${{ needs.rules-tests.result }}
+          E2E_RESULT: ${{ needs.e2e-tests.result }}
         run: |
-          if [ "${{ needs.verify.result }}" == "success" ] && \
-             [ "${{ needs.deploy-preview.result }}" == "success" ] && \
-             ( [ "${{ needs.e2e-tests.result }}" == "success" ] || [ "${{ needs.e2e-tests.result }}" == "skipped" ] ); then
-            echo "all-passed=true" >> $GITHUB_OUTPUT
-            echo "✅ All critical validation checks passed!"
-            echo "  verify: ${{ needs.verify.result }}"
-            echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
-            echo "  e2e-tests: ${{ needs.e2e-tests.result }}"
-          else
-            echo "all-passed=false" >> $GITHUB_OUTPUT
-            echo "❌ Critical validation checks failed:"
-            echo "  verify: ${{ needs.verify.result }}"
-            echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
-            echo "  e2e-tests: ${{ needs.e2e-tests.result }}"
+          if [ "$VERIFY_RESULT" != "success" ] || [ "$RULES_RESULT" != "success" ] || [ "$E2E_RESULT" != "success" ]; then
+            echo "Validation failed: verify=$VERIFY_RESULT rules=$RULES_RESULT e2e=$E2E_RESULT"
             exit 1
           fi
+          echo "All required validation jobs passed."
 
-  # Deploy to production - only runs on master after all tests pass
   deploy-production:
-    name: Deploy to Production
+    name: Deploy Production
     runs-on: ubuntu-latest
-    needs: [deploy-preview, test-gate]
-    if: github.ref == 'refs/heads/master' && needs.test-gate.outputs.all-passed == 'true'
+    timeout-minutes: 20
+    needs:
+      - verify
+      - test-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.test-gate.result == 'success'
+    environment:
+      name: production
+      url: https://aresfirst.org
+    concurrency:
+      group: production
+      cancel-in-progress: false
     permissions:
       contents: read
       deployments: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22.13.1"
-          cache: "pnpm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
-      - name: Install dependencies
+      - name: Install deployment dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+      - name: Download verified release artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: dist
-          path: dist/
+          name: release-${{ github.sha }}
+          path: .
 
-      - name: Build Cloud Functions
-        run: pnpm --filter functions build
-
-      - name: Deploy Production to Firebase
+      - name: Deploy verified release to Firebase
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          node -e "require('fs').writeFileSync('/tmp/gcp_key.json', process.env.SERVICE_ACCOUNT_KEY)"
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
-          pnpm exec firebase deploy --only hosting,functions,firestore:rules,storage --project aresfirst-portal --debug || { rm -f /tmp/gcp_key.json; exit 1; }
-          rm -f /tmp/gcp_key.json
+          credentials_file="$(mktemp)"
+          trap 'rm -f "$credentials_file"' EXIT
+          printf '%s' "$SERVICE_ACCOUNT_KEY" > "$credentials_file"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials_file"
+          pnpm exec firebase deploy --only hosting,functions,firestore:rules,storage --project aresfirst-portal --non-interactive
 
-      - name: Post Deploy Status
+      - name: Verify production health
         run: |
-          echo "## 🚀 Production Deploy Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** master" >> $GITHUB_STEP_SUMMARY
-          echo "**Preview URL:** ${{ needs.deploy-preview.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Production:** https://aresfirst-portal.web.app" >> $GITHUB_STEP_SUMMARY
+          for url in https://aresfirst.org/ https://aresfirst.org/api/simulations https://aresfirst.org/api/finance?limit=1; do
+            healthy=false
+            for attempt in 1 2 3 4 5; do
+              if curl --fail --silent --show-error --max-time 20 "$url" > /dev/null; then
+                healthy=true
+                break
+              fi
+              sleep 10
+            done
+            if [ "$healthy" != "true" ]; then
+              echo "Production health check failed: $url"
+              exit 1
+            fi
+          done
+
+      - name: Record deployment summary
+        run: |
+          echo "## Production deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"

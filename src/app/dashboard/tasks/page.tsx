@@ -93,6 +93,12 @@ export default function KanbanPage() {
   };
 
   useEffect(() => {
+    if (import.meta.env.MODE === "e2e") {
+      setTasks(MOCK_TASKS);
+      setIsLive(false);
+      return;
+    }
+
     try {
       const tasksRef = collection(db, "tasks");
       const q = query(tasksRef, limit(500));
