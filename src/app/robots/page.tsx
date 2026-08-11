@@ -1,291 +1,197 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Code, Cpu, Edit2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Cpu, Scale, Code, Trash2, Edit2, Plus } from "lucide-react";
-import { collection, query, where, getDocs, doc, setDoc, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import SEO from "@/components/SEO";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-
-import { RobotItem } from "./types";
-import RobotEditorModal from "./RobotEditorModal";
+import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
+import { useAuth } from "@/context/AuthContext";
+import {
+  canManageRobots,
+  createRobot,
+  decommissionRobot,
+  fetchRobots,
+  restoreRobot,
+  updateRobot,
+} from "./api";
+import RobotEditorModal from "./RobotEditorModal";
+import type { RobotItem } from "./types";
 
 export default function RobotsFeedPage() {
   const queryClient = useQueryClient();
-  const { user, authorizedUser } = useAuth();
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-
-  // Form Modal State
+  const { authorizedUser } = useAuth();
+  const canEdit = canManageRobots(authorizedUser?.role);
   const [isOpen, setIsOpen] = useState(false);
   const [editingRobot, setEditingRobot] = useState<RobotItem | null>(null);
+  const [confirmRobot, setConfirmRobot] = useState<RobotItem | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  // Fetch Fleet query
-  const { data: robots = [], isLoading, isError, error, refetch } = useQuery<RobotItem[]>({
-    queryKey: ["robots"],
-    queryFn: async () => {
-      try {
-        const q = query(
-          collection(db, "robots"),
-          where("isDeleted", "==", 0),
-          limit(100)
-        );
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name || "Untitled Robot",
-            seasonName: data.seasonName || "Legacy",
-            challengeName: data.challengeName || "Unknown Challenge",
-            weightLbs: data.weightLbs,
-            drivetrainType: data.drivetrainType || "Custom Drive",
-            programmingLanguage: data.programmingLanguage || "Java",
-            revealVideoId: data.revealVideoId || "",
-            onshapeUrl: data.onshapeUrl || "",
-            cadViewerUrl: data.cadViewerUrl || "",
-            primaryMechanism: data.primaryMechanism || "",
-            content: data.content || "",
-            versions: data.versions || []
-          };
-        });
-      } catch (error) {
-        console.error("Unable to load the published robot fleet:", error);
-        throw error;
-      }
-    }
+  const { data: robots = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["robots", { includeArchived: canEdit }],
+    queryFn: () => fetchRobots(canEdit),
   });
 
-  // Create Mutation
+  const refreshFleet = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["robots"] });
+  };
+
   const createMutation = useMutation({
-    mutationFn: async (newRobot: Omit<RobotItem, "id"> & { id?: string }) => {
-      const robotId = newRobot.id || newRobot.name.toLowerCase().replace(/\s+/g, "-") || `robot-${Date.now()}`;
-      const docRef = doc(db, "robots", robotId);
-      const payload = {
-        ...newRobot,
-        isDeleted: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await setDoc(docRef, payload);
-      return { id: robotId, ...payload };
+    mutationFn: ({ id, data }: { id: string; data: Omit<RobotItem, "id" | "isDeleted"> }) => createRobot(id, data),
+    onSuccess: async () => {
+      await refreshFleet();
+      setIsOpen(false);
+      toast.success("Robot deployed to the fleet archive.");
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] });
-      toast.success("Robot successfully deployed!");
+    onError: (mutationError) => {
+      setSubmissionError(mutationError instanceof Error ? mutationError.message : String(mutationError));
+      toast.error("The robot was not saved. Your draft is still open.");
     },
-    onError: (error) => {
-      console.error("Failed to deploy robot:", error);
-      toast.error("Failed to deploy robot.");
-    }
   });
 
-  // Update Mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<RobotItem> }) => {
-      const docRef = doc(db, "robots", id);
-      const payload = {
-        ...data,
-        updatedAt: new Date().toISOString()
-      };
-      await setDoc(docRef, payload, { merge: true });
-      return { id, ...payload };
+    mutationFn: ({ id, data }: { id: string; data: Omit<RobotItem, "id" | "isDeleted"> }) => updateRobot(id, data),
+    onSuccess: async (_, variables) => {
+      await refreshFleet();
+      await queryClient.invalidateQueries({ queryKey: ["robots", variables.id] });
+      setIsOpen(false);
+      toast.success("Robot fleet record updated.");
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] });
-      queryClient.invalidateQueries({ queryKey: ["robots", variables.id] });
-      toast.success("Robot successfully updated!");
+    onError: (mutationError) => {
+      setSubmissionError(mutationError instanceof Error ? mutationError.message : String(mutationError));
+      toast.error("The robot was not updated. Your draft is still open.");
     },
-    onError: (error) => {
-      console.error("Failed to update robot:", error);
-      toast.error("Failed to update robot.");
-    }
   });
 
-  // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const docRef = doc(db, "robots", id);
-      await setDoc(docRef, { isDeleted: 1, updatedAt: new Date().toISOString() }, { merge: true });
+  const decommissionMutation = useMutation({
+    mutationFn: decommissionRobot,
+    onSuccess: async () => {
+      await refreshFleet();
+      setConfirmRobot(null);
+      toast.success("Robot decommissioned. It can be restored here later.");
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] });
-      toast.success("Robot successfully decommissioned.");
-    },
-    onError: (error) => {
-      console.error("Failed to decommission robot:", error);
-      toast.error("Failed to decommission robot.");
-    }
+    onError: (mutationError) => toast.error(mutationError instanceof Error ? mutationError.message : String(mutationError)),
   });
 
-  const handleOpenEdit = (robot: RobotItem) => {
+  const restoreMutation = useMutation({
+    mutationFn: restoreRobot,
+    onSuccess: async () => {
+      await refreshFleet();
+      toast.success("Robot restored to the public fleet.");
+    },
+    onError: (mutationError) => toast.error(mutationError instanceof Error ? mutationError.message : String(mutationError)),
+  });
+
+  const openEditor = (robot: RobotItem | null) => {
     setEditingRobot(robot);
+    setSubmissionError(null);
+    createMutation.reset();
+    updateMutation.reset();
     setIsOpen(true);
   };
 
-  const handleOpenCreate = () => {
-    setEditingRobot(null);
-    setIsOpen(true);
-  };
-
-  const handleEditorSubmit = (id: string, robotData: Omit<RobotItem, "id">) => {
-    if (editingRobot) {
-      updateMutation.mutate({ id, data: robotData }, {
-        onSuccess: () => setIsOpen(false)
-      });
-    } else {
-      createMutation.mutate({ id: id || undefined, ...robotData }, {
-        onSuccess: () => setIsOpen(false)
-      });
-    }
+  const submitEditor = (id: string, data: Omit<RobotItem, "id" | "isDeleted">) => {
+    setSubmissionError(null);
+    if (editingRobot) updateMutation.mutate({ id: editingRobot.id, data });
+    else createMutation.mutate({ id, data });
   };
 
   return (
-    <div className="w-full min-h-screen bg-obsidian text-marble py-8">
-      <SEO title="Our Robots" description="Explore the fleet of competition robots engineered by ARES 23247. Detailed blueprints, specifications, and telemetry calibrations for our FTC designs." />
+    <main className="w-full min-h-screen bg-obsidian text-marble py-8">
+      <SEO title="Our Robots" description="Explore the competition robots engineered by ARES 23247 for the FIRST® Tech Challenge." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
-        
-        {/* Header */}
-        <header className="text-center mb-16 relative">
-          <div className="inline-block bg-ares-red text-white px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-[10px] mb-6 border border-ares-bronze/40">
+        <header className="text-center mb-16">
+          <div className="inline-block bg-ares-red text-white px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-xs mb-6 border border-ares-bronze">
             ARES 23247 Engineering
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading">
-            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">Fleet</span>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading text-white">
+            The Fleet
           </h1>
-          <p className="text-lg text-marble/60 max-w-2xl mx-auto font-medium leading-relaxed mb-8">
-            Archive of championship-caliber robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
+          <p className="text-lg text-marble/75 max-w-2xl mx-auto font-medium leading-relaxed mb-8">
+            An archive of robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
           </p>
           {canEdit && (
-            <button
-              onClick={handleOpenCreate}
-              className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
-            >
-              <Plus size={16} /> Deploy New Robot
+            <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
+              <Plus aria-hidden="true" size={16} /> Deploy new robot
             </button>
           )}
         </header>
 
-        {/* Fleet Grid */}
         {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+          <div className="flex justify-center items-center py-20" role="status" aria-label="Loading robot fleet">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-gold" aria-hidden="true" />
           </div>
         ) : isError ? (
-          <PublicDataState
-            title="Unable to load the robot fleet"
-            message="The engineering archive could not be reached. Check your connection and try again."
-            diagnostic={error instanceof Error ? error.message : String(error)}
-            onRetry={() => void refetch()}
-          />
+          <PublicDataState title="Unable to load the robot fleet" message="The engineering archive could not be reached. Check your connection and try again." diagnostic={error instanceof Error ? error.message : String(error)} onRetry={() => void refetch()} />
         ) : robots.length === 0 ? (
-          <div className="text-center text-marble/35 p-20 glass-card ares-cut border border-white/10">
-            <Cpu size={48} className="mx-auto mb-6 opacity-20" />
-            <h3 className="text-xl font-bold uppercase tracking-widest text-white">No Fleet Records</h3>
+          <div className="text-center text-marble/70 p-20 glass-card ares-cut border border-white/10">
+            <Cpu aria-hidden="true" size={48} className="mx-auto mb-6 opacity-40" />
+            <h2 className="text-xl font-bold uppercase tracking-widest text-white">No fleet records</h2>
             <p className="text-sm mt-2">The engineering archive is currently empty.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {robots.map((robot) => (
-              <Link
-                key={robot.id}
-                to={`/robots/${robot.id}`}
-                className="group glass-card hero-card overflow-hidden hover:border-ares-red/50 transition-all duration-500 shadow-2xl flex flex-col h-full border border-white/10"
-              >
-                <div className="aspect-video bg-black/40 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10 opacity-60"></div>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-40 group-hover:opacity-75 group-hover:scale-105 transition-all duration-500">
-                    {robot.revealVideoId ? (
-                      <img
-                        src={`https://img.youtube.com/vi/${robot.revealVideoId}/hqdefault.jpg`}
-                        alt={robot.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Cpu size={64} className="text-white/10" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-8 flex-grow flex flex-col justify-between gap-6 relative z-20 -mt-8">
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="bg-ares-red text-white text-[10px] font-black uppercase tracking-[0.2em] py-1.5 px-4 ares-cut-sm self-start shadow-xl inline-block">
-                        {robot.seasonName} // {robot.challengeName}
+            {robots.map((robot) => {
+              const archived = robot.isDeleted === 1;
+              return (
+                <article key={robot.id} className={`glass-card hero-card overflow-hidden shadow-2xl flex flex-col h-full border ${archived ? "border-ares-bronze opacity-80" : "border-white/10"}`}>
+                  <Link to={archived ? "/robots" : `/robots/${robot.id}`} aria-disabled={archived} onClick={(event) => { if (archived) event.preventDefault(); }} className="group flex flex-col flex-1 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
+                    <div className="aspect-video bg-black/40 relative overflow-hidden">
+                      {robot.revealVideoId ? <img src={`https://img.youtube.com/vi/${robot.revealVideoId}/hqdefault.jpg`} alt={`${robot.name} reveal video thumbnail`} loading="lazy" className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity" /> : <div className="absolute inset-0 flex items-center justify-center"><Cpu aria-hidden="true" size={64} className="text-white/20" /></div>}
+                    </div>
+                    <div className="p-8 flex-grow flex flex-col gap-6">
+                      <div>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className="bg-ares-red text-white text-xs font-black uppercase tracking-wider py-1.5 px-3 ares-cut-sm">{robot.seasonName} · {robot.challengeName}</span>
+                          {archived && <span className="bg-ares-bronze text-black text-xs font-black uppercase py-1.5 px-3 ares-cut-sm">Decommissioned</span>}
+                        </div>
+                        <h2 className="text-3xl font-black text-white group-hover:text-ares-gold transition-colors tracking-tight uppercase font-heading">{robot.name}</h2>
                       </div>
-                      {canEdit && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleOpenEdit(robot);
-                            }}
-                            className="p-1.5 text-marble/60 hover:text-ares-gold hover:bg-white/5 ares-cut-sm transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                            title="Edit Robot"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (confirm(`Are you sure you want to decommission "${robot.name}"?`)) {
-                                deleteMutation.mutate(robot.id);
-                              }
-                            }}
-                            className="p-1.5 text-marble/60 hover:text-ares-red hover:bg-white/5 ares-cut-sm transition-all"
-                            title="Decommission Robot"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                      <div className="space-y-3 pt-4 border-t border-white/10 mt-auto">
+                        <div className="grid grid-cols-2 gap-3">
+                          {robot.weightLbs && <Spec icon={<Scale aria-hidden="true" size={14} />} text={`${robot.weightLbs} lbs`} />}
+                          {robot.programmingLanguage && <Spec icon={<Code aria-hidden="true" size={14} />} text={robot.programmingLanguage} />}
                         </div>
-                      )}
+                        {robot.drivetrainType && <Spec icon={<Cpu aria-hidden="true" size={14} />} text={robot.drivetrainType} />}
+                      </div>
                     </div>
-                    
-                    <h2 className="text-3xl font-black text-white group-hover:text-ares-red transition-colors tracking-tight uppercase font-heading leading-tight mt-1">
-                      {robot.name}
-                    </h2>
-                  </div>
+                  </Link>
 
-                  <div className="space-y-4 pt-4 border-t border-white/5 mt-auto">
-                    <div className="grid grid-cols-2 gap-3">
-                      {robot.weightLbs && (
-                        <div className="flex items-center gap-2 bg-white/5 p-2.5 ares-cut-sm border border-white/5">
-                          <Scale size={14} className="text-ares-gold shrink-0" />
-                          <span className="text-xs font-bold text-marble/85">{robot.weightLbs} lbs</span>
+                  {canEdit && (
+                    <div className="border-t border-white/10 p-4">
+                      {archived ? (
+                        <button type="button" onClick={() => restoreMutation.mutate(robot.id)} disabled={restoreMutation.isPending} className="w-full inline-flex justify-center items-center gap-2 bg-ares-red text-white px-4 py-2 text-xs font-black uppercase ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+                          <RotateCcw aria-hidden="true" size={14} /> Restore robot
+                        </button>
+                      ) : confirmRobot?.id === robot.id ? (
+                        <div role="alert" className="space-y-3">
+                          <p className="text-sm text-white">Decommission <strong>{robot.name}</strong>? It will leave the public fleet but remain restorable.</p>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => decommissionMutation.mutate(robot.id)} disabled={decommissionMutation.isPending} className="bg-ares-red text-white px-3 py-2 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">Confirm</button>
+                            <button type="button" onClick={() => setConfirmRobot(null)} className="border border-white/20 text-white px-3 py-2 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                          </div>
                         </div>
-                      )}
-                      {robot.programmingLanguage && (
-                        <div className="flex items-center gap-2 bg-white/5 p-2.5 ares-cut-sm border border-white/5">
-                          <Code size={14} className="text-ares-gold shrink-0" />
-                          <span className="text-xs font-bold text-marble/85 truncate">{robot.programmingLanguage}</span>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => openEditor(robot)} className="flex-1 inline-flex justify-center items-center gap-2 border border-white/20 text-white px-3 py-2 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan"><Edit2 aria-hidden="true" size={14} /> Edit</button>
+                          <button type="button" onClick={() => setConfirmRobot(robot)} className="flex-1 inline-flex justify-center items-center gap-2 bg-ares-red text-white px-3 py-2 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan"><Trash2 aria-hidden="true" size={14} /> Decommission</button>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 bg-white/5 p-2.5 ares-cut-sm border border-white/5">
-                      <Cpu size={14} className="text-ares-red shrink-0" />
-                      <span className="text-xs font-bold text-marble/85 truncate">{robot.drivetrainType || 'Custom Drive'}</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
 
-      <RobotEditorModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        editingRobot={editingRobot}
-        onSubmit={handleEditorSubmit}
-        isPending={createMutation.isPending || updateMutation.isPending}
-      />
-    </div>
+      <RobotEditorModal isOpen={isOpen} onClose={() => setIsOpen(false)} editingRobot={editingRobot} onSubmit={submitEditor} isPending={createMutation.isPending || updateMutation.isPending} submissionError={submissionError} />
+    </main>
   );
+}
+
+function Spec({ icon, text }: { icon: ReactNode; text: string }) {
+  return <div className="flex items-center gap-2 bg-white/5 p-2.5 ares-cut-sm border border-white/10 text-ares-gold"><span>{icon}</span><span className="text-xs font-bold text-marble truncate">{text}</span></div>;
 }

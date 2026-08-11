@@ -4,4 +4,8 @@ export interface TeamLocation {
   address: string;
   description?: string;
   gmapsUrl?: string;
+  isDeleted?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  archivedAt?: string;
 }

@@ -1,14 +1,11 @@
 import { test, expect } from './fixtures';
 
 test.describe('Kanban Task Board E2E Drag and Drop tests', () => {
-  test('should log in as admin, go to tasks, and drag a task card to In Progress', async ({ page, isMobile }) => {
+  test('should log in as admin, go to tasks, and drag a task card to In Progress', async ({ page, isMobile, loginAs }) => {
+    await loginAs('admin');
     // 1. Navigate to tasks board
     await page.goto('/dashboard/tasks');
 
-    // 2. Login using dev bypass
-    const adminButton = page.locator('button', { hasText: 'David (Admin)' });
-    await expect(adminButton).toBeVisible();
-    await adminButton.click();
     await expect(page.getByRole('heading', { name: 'Kanban Tasks' })).toBeVisible({ timeout: 15000 });
 
     // 3. Locate task card on board
@@ -45,12 +42,9 @@ test.describe('Store checkout availability', () => {
 });
 
 test.describe('Markdown Editor & Blog Post Creator E2E tests', () => {
-  test('should open new blog post editor, fill content, and check markdown buttons', async ({ page }) => {
-    // 1. Go to dashboard to trigger login bypass
+  test('should open new blog post editor, fill content, and check markdown buttons', async ({ page, loginAs }) => {
+    await loginAs('admin');
     await page.goto('/dashboard');
-    const adminButton = page.locator('button', { hasText: 'David (Admin)' });
-    await expect(adminButton).toBeVisible();
-    await adminButton.click();
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
 
     // 2. Navigate to blog feed page

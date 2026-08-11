@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from "react-helmet-async";
 import { siteConfig } from "@/lib/site-config";
 
 const DEFAULT_KEYWORDS = [
@@ -11,280 +11,203 @@ const DEFAULT_KEYWORDS = [
   "STEM education",
   "youth robotics",
   "robotics team",
-  "robotics club",
-  "competition robotics",
-  "Appalachian Robotics",
   "engineering",
-  "robotics for kids",
-  "robotics for teens",
-  "robotics near me",
-  "robotics programs",
-  "robotics classes",
-  "FIRST® Tech Challenge",
-  "Morgantown STEM",
-  "West Virginia STEM"
+  "FIRST® Tech Challenge"
 ].join(", ");
+
+const DEFAULT_IMAGE = `${siteConfig.urls.base}/favicon.webp`;
+
+export interface SchemaData {
+  authorName?: string;
+  datePublished?: string;
+  dateModified?: string;
+  startDate?: string;
+  endDate?: string;
+  locationName?: string;
+  locationAddress?: string;
+  eventAttendanceMode?: string;
+  wordCount?: number;
+  readingTime?: string;
+}
 
 interface SEOProps {
   title: string;
   description?: string;
   keywords?: string;
   image?: string;
+  imageAlt?: string;
   url?: string;
-  type?: string;
+  type?: "website" | "article" | "event";
   noindex?: boolean;
-  schemaData?: {
-    authorName?: string;
-    datePublished?: string;
-    startDate?: string;
-    endDate?: string;
-    locationName?: string;
-    locationAddress?: string;
-    [key: string]: unknown;
-  };
+  schemaData?: SchemaData;
 }
 
-export default function SEO({
-  title,
-  description = "ARES 23247 - Appalachian Robotics & Engineering Society. A FIRST® Tech Challenge Team offering youth robotics in Morgantown, WV.",
-  keywords = DEFAULT_KEYWORDS,
-  image = `${siteConfig.urls.base}/ares_hero.png`,
-  url,
-  type = "website",
-  noindex = false,
-  schemaData
-}: SEOProps) {
-  
-  const siteTitle = `${title} | ARES 23247`;
-  const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : siteConfig.urls.base);
+export function getCanonicalUrl(url?: string): string {
+  const requestedPath = url ?? (typeof window !== "undefined" ? window.location.pathname : "/");
 
-  // Check if URL search query parameter 'q' is present
-  let hasSearchQuery = false;
-  if (typeof window !== 'undefined') {
-    hasSearchQuery = new URLSearchParams(window.location.search).has('q');
-  } else if (url) {
-    try {
-      hasSearchQuery = new URL(url, siteConfig.urls.base).searchParams.has('q');
-    } catch {
-      hasSearchQuery = url.includes('?q=') || url.includes('&q=');
-    }
+  try {
+    const parsed = new URL(requestedPath, siteConfig.urls.base);
+    return new URL(`${parsed.pathname || "/"}`, siteConfig.urls.base).toString();
+  } catch {
+    return `${siteConfig.urls.base}/`;
   }
+}
 
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "SportsActivityLocation",
-    "name": "ARES 23247 (Appalachian Robotics & Engineering Society)",
-    "url": siteConfig.urls.base,
-    "logo": `${siteConfig.urls.base}/ares_hero.png`,
-    "description": "FIRST® Tech Challenge (FTC) Robotics Team based in Morgantown, West Virginia. Offering youth robotics programs, STEM education, and competition robotics for students in Morgantown and throughout West Virginia.",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Morgantown",
-      "addressLocality": "Morgantown",
-      "addressRegion": "WV",
-      "postalCode": "26501",
-      "addressCountry": "US"
-    },
-    "areaServed": [
-      {
-        "@type": "City",
-        "name": "Morgantown",
-        "addressRegion": "WV"
-      },
-      {
-        "@type": "State",
-        "name": "West Virginia"
-      }
-    ],
-    "location": {
-      "@type": "Place",
-      "name": "Morgantown, West Virginia",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Morgantown",
-        "addressRegion": "WV",
-        "addressCountry": "US"
-      }
-    },
-    "keywords": "robotics, FIRST®, FTC, STEM, Morgantown, West Virginia, engineering, competition robotics, ARES 23247, youth robotics, robotics team, robotics club, robotics competition, robotics classes, robotics education, robotics for kids, robotics for teens, robotics near me, robotics West Virginia, robotics Morgantown, robotics programs, robotics training, FIRST® Tech Challenge, FTC robotics, STEM education, engineering programs, Morgantown robotics team, West Virginia robotics",
-    "sameAs": [
-      "https://github.com/ARES23247",
-      "https://theorangealliance.org/teams/23247"
-    ]
-  };
+function compactObject<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== "")
+  ) as T;
+}
 
-  // Organization schema for Google Knowledge Panel
-  const knowledgePanelSchema = {
-    "@context": "https://schema.org",
+export const ORGANIZATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "ARES 23247",
+  "alternateName": "Appalachian Robotics & Engineering Society",
+  "url": siteConfig.urls.base,
+  "logo": DEFAULT_IMAGE,
+  "image": DEFAULT_IMAGE,
+  "description": "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Morgantown",
+    "addressRegion": "WV",
+    "addressCountry": "US"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "general inquiries",
+    "email": siteConfig.contact.email,
+    "url": `${siteConfig.urls.base}/join`
+  },
+  "sameAs": [
+    `https://github.com/${siteConfig.urls.githubOrg}`,
+    siteConfig.urls.toa
+  ]
+};
+
+export const WEBSITE_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ARES 23247",
+  "url": siteConfig.urls.base,
+  "description": "The official website for ARES 23247, a FIRST® Tech Challenge team in Morgantown, West Virginia.",
+  "publisher": {
     "@type": "Organization",
     "name": "ARES 23247",
-    "alternateName": "Appalachian Robotics & Engineering Society",
-    "url": siteConfig.urls.base,
-    "logo": {
-      "@type": "ImageObject",
-      "url": `${siteConfig.urls.base}/ares_hero.png`,
-      "width": 500,
-      "height": 500,
-      "caption": "ARES 23247 Logo"
-    },
-    "image": `${siteConfig.urls.base}/ares_hero.png`,
-    "description": "ARES 23247 is a FIRST® Tech Challenge robotics team based in Morgantown, West Virginia. We provide youth robotics programs, STEM education, and competition opportunities for students throughout West Virginia.",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Morgantown",
-      "addressRegion": "WV",
-      "postalCode": "26501",
-      "addressCountry": "US"
-    },
-    "areaServed": {
-      "@type": "GeoCircle",
-      "geoMidpoint": {
-        "@type": "GeoCoordinates",
-        "latitude": 39.6295,
-        "longitude": -79.9554,
-        "name": "Morgantown, WV"
-      },
-      "geoRadius": "100000"
-    },
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "Join the Team",
-      "email": siteConfig.contact.email,
-      "url": `${siteConfig.urls.base}/join`
-    },
-    "sameAs": [
-      `https://github.com/${siteConfig.urls.githubOrg}`,
-      `https://instagram.com/ares23247`,
-      `https://www.youtube.com/@ARESFTC`,
-      `https://www.facebook.com/ARES23247`,
-      `https://www.linkedin.com/${siteConfig.urls.linkedin}`,
-      `https://theorangealliance.org/teams/23247`
-    ],
-    "foundingDate": "2021",
-    "founder": "FIRST® Robotics West Virginia",
-    "memberOf": [
-      {
-        "@type": "Organization",
-        "name": "FIRST® Inspires",
-        "url": "https://www.firstinspires.org"
-      }
-    ],
-    "knowsAbout": [
-      "Robotics",
-      "FIRST® Tech Challenge",
-      "STEM Education",
-      "Computer Programming",
-      "Mechanical Engineering",
-      "CAD Design",
-      "3D Printing"
-    ]
-  };
+    "url": siteConfig.urls.base
+  }
+};
 
-  // WebSite schema for Google Sitelinks Search Box
-  const webSiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "ARES 23247",
-    "alternateName": "Appalachian Robotics & Engineering Society",
-    "url": siteConfig.urls.base,
-    "description": "FIRST® Tech Challenge Robotics Team in Morgantown, West Virginia. Youth robotics programs, STEM education, and competition opportunities.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${siteConfig.urls.base}/academy?q={search_term_string}`
-      },
-      "query-input": {
-        "@type": "PropertyValueSpecification",
-        "valueRequired": true,
-        "valueName": "search_term_string"
-      }
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "ARES 23247",
-      "url": siteConfig.urls.base
-    }
-  };
+interface AdditionalSchemaOptions {
+  type: SEOProps["type"];
+  title: string;
+  description: string;
+  keywords: string;
+  image: string;
+  canonicalUrl: string;
+  schemaData?: SchemaData;
+}
 
-  let additionalSchema = null;
+export function createAdditionalSchema({
+  type,
+  title,
+  description,
+  keywords,
+  image,
+  canonicalUrl,
+  schemaData
+}: AdditionalSchemaOptions): Record<string, unknown> | null {
   if (type === "article" && schemaData) {
-    additionalSchema = {
+    const author = schemaData.authorName
+      ? { "@type": "Person", "name": schemaData.authorName }
+      : { "@type": "Organization", "name": "ARES 23247", "url": siteConfig.urls.base };
+
+    return compactObject({
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       "headline": title,
       "image": image,
-      "author": {
-        "@type": "Person",
-        "name": schemaData.authorName || "ARES Team",
-        "url": schemaData.authorName ? `${siteConfig.urls.base}/blog?author=${encodeURIComponent(schemaData.authorName as string)}` : undefined
-      },
+      "author": author,
       "publisher": {
         "@type": "Organization",
         "name": "ARES 23247",
-        "logo": {
-          "@type": "ImageObject",
-          "url": `${siteConfig.urls.base}/ares_hero.png`
-        }
+        "logo": { "@type": "ImageObject", "url": DEFAULT_IMAGE }
       },
-      "datePublished": schemaData.datePublished || new Date().toISOString(),
-      "dateModified": schemaData.dateModified || schemaData.datePublished || new Date().toISOString(),
+      "datePublished": schemaData.datePublished,
+      "dateModified": schemaData.dateModified,
       "description": description,
       "keywords": keywords,
       "inLanguage": "en-US",
-      "articleSection": "Robotics Education",
-      "wordCount": schemaData.wordCount || undefined,
-      "timeRequired": schemaData.readingTime || undefined,
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": currentUrl
-      },
-      "locationCreated": {
-        "@type": "Place",
-        "name": "Morgantown, West Virginia",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "Morgantown",
-          "addressRegion": "WV",
-          "addressCountry": "US"
-        }
-      }
-    };
-  } else if (type === "event" && schemaData) {
-    additionalSchema = {
+      "wordCount": schemaData.wordCount,
+      "timeRequired": schemaData.readingTime,
+      "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
+    });
+  }
+
+  if (type === "event" && schemaData?.startDate) {
+    const location = schemaData.locationName || schemaData.locationAddress
+      ? compactObject({
+          "@type": "Place",
+          "name": schemaData.locationName,
+          "address": schemaData.locationAddress
+        })
+      : undefined;
+
+    return compactObject({
       "@context": "https://schema.org",
       "@type": "Event",
       "name": title,
       "startDate": schemaData.startDate,
-      "endDate": schemaData.endDate || schemaData.startDate,
-      "eventAttendanceMode": schemaData.eventAttendanceMode || "https://schema.org/OfflineEventAttendanceMode",
-      "eventStatus": "https://schema.org/EventScheduled",
-      "location": {
-        "@type": "Place",
-        "name": schemaData.locationName || "Location TBD",
-        "address": schemaData.locationAddress || "Morgantown, WV"
-      },
+      "endDate": schemaData.endDate,
+      "eventAttendanceMode": schemaData.eventAttendanceMode,
+      "location": location,
       "image": image,
       "description": description,
-      "offers": {
-        "@type": "Offer",
-        "url": currentUrl,
-        "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock",
-        "validFrom": schemaData.datePublished || new Date().toISOString().split('T')[0]
-      },
       "organizer": {
         "@type": "Organization",
         "name": "ARES 23247",
         "url": siteConfig.urls.base
       }
-    };
+    });
   }
+
+  return null;
+}
+
+export default function SEO({
+  title,
+  description = "ARES 23247 is a FIRST® Tech Challenge team in Morgantown, West Virginia.",
+  keywords = DEFAULT_KEYWORDS,
+  image,
+  imageAlt,
+  url,
+  type = "website",
+  noindex = false,
+  schemaData
+}: SEOProps) {
+  const siteTitle = title.endsWith("ARES 23247") ? title : `${title} | ARES 23247`;
+  const currentUrl = getCanonicalUrl(url);
+  const socialImage = image || DEFAULT_IMAGE;
+  const socialImageAlt = imageAlt || `${title} — ARES 23247`;
+  const hasSearchQuery = (
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("q")
+  ) || Boolean(url && /[?&]q=/.test(url));
+
+  const additionalSchema = createAdditionalSchema({
+    type,
+    title,
+    description,
+    keywords,
+    image: socialImage,
+    canonicalUrl: currentUrl,
+    schemaData
+  });
+
+  const openGraphType = type === "article" ? "article" : "website";
 
   return (
     <Helmet>
-      {/* Standard Metadata */}
       <title>{siteTitle}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
@@ -292,39 +215,26 @@ export default function SEO({
       <meta name="robots" content={(noindex || hasSearchQuery) ? "noindex, follow" : "index, follow"} />
       <link rel="canonical" href={currentUrl} />
 
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
+      <meta property="og:type" content={openGraphType} />
       <meta property="og:url" content={currentUrl} />
       <meta property="og:title" content={siteTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={socialImage} />
+      <meta property="og:image:alt" content={socialImageAlt} />
       <meta property="og:site_name" content="ARES 23247" />
       <meta property="og:locale" content="en_US" />
-      <meta property="og:locality" content="Morgantown" />
-      <meta property="og:region" content="WV" />
-      <meta property="og:country-name" content="United States" />
 
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:card" content="summary" />
       <meta name="twitter:url" content={currentUrl} />
       <meta name="twitter:title" content={siteTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={socialImage} />
+      <meta name="twitter:image:alt" content={socialImageAlt} />
 
-      {/* Structured Data (JSON-LD) */}
-      <script type="application/ld+json">
-        {JSON.stringify(organizationSchema)}
-      </script>
-      <script type="application/ld+json">
-        {JSON.stringify(knowledgePanelSchema)}
-      </script>
-      <script type="application/ld+json">
-        {JSON.stringify(webSiteSchema)}
-      </script>
+      <script type="application/ld+json">{JSON.stringify(ORGANIZATION_SCHEMA)}</script>
+      <script type="application/ld+json">{JSON.stringify(WEBSITE_SCHEMA)}</script>
       {additionalSchema && (
-        <script type="application/ld+json">
-          {JSON.stringify(additionalSchema)}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(additionalSchema)}</script>
       )}
     </Helmet>
   );

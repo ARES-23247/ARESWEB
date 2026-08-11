@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { Plus, RefreshCw, UserCheck } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
-import { db } from "@/lib/firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
 
 interface UserAuth {
   id: string;
@@ -55,14 +53,21 @@ export default function UserInviteForm({
         throw new Error("A user with this email address is already authorized.");
       }
 
-      // 2. Create authorized_users record
-      const newAuthRef = doc(collection(db, "authorized_users"));
-      await setDoc(newAuthRef, {
-        email: emailClean,
-        name: nameClean,
-        role: inviteRole,
-        memberType: inviteMemberType
+      // 2. Create the authorization record through the audited server API.
+      const inviteResponse = await authenticatedFetch("/api/profiles/admin/users/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailClean,
+          name: nameClean,
+          role: inviteRole,
+          memberType: inviteMemberType,
+        }),
       });
+      const inviteBody = await inviteResponse.json().catch(() => ({})) as { error?: string };
+      if (!inviteResponse.ok) {
+        throw new Error(`HTTP ${inviteResponse.status}: ${inviteBody.error || inviteResponse.statusText}`);
+      }
 
       let zulipMsg = "";
       // 3. Optionally provision Zulip

@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import router from "../photosImport";
 
 vi.mock("../../lib/firebase-admin", () => {
-  const mockDoc = vi.fn().mockImplementation(() => {
+  const mockDoc = vi.fn().mockImplementation((id: string) => {
     const docRef: any = {
+      id,
       set: vi.fn(),
       update: vi.fn(),
+      get: vi.fn().mockResolvedValue({ exists: true, data: () => ({ isDeleted: 0 }) }),
     };
     docRef.collection = vi.fn().mockReturnValue({
       doc: vi.fn().mockReturnValue(docRef),
@@ -88,7 +90,7 @@ describe("Photos Import Router Backend Endpoints", () => {
     req = { body: { items: [] } };
     res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
 
-    await expect(handler(req, res)).rejects.toThrow("No items provided for import");
+    await expect(handler(req, res)).rejects.toThrow("Choose between 1 and 100 photos");
   });
 
   it("should successfully download and import photos", async () => {
@@ -117,5 +119,36 @@ describe("Photos Import Router Backend Endpoints", () => {
       imported: 1,
       failed: 0,
     }));
+  });
+
+  it("reports an upstream download failure even when Google returns no readable error body", async () => {
+    const handler = getHandler("/import", "post");
+    req = {
+      body: {
+        items: [{
+          id: "photo-2",
+          mediaFile: { baseUrl: "https://lh3.googleusercontent.com/def" },
+        }],
+      },
+    };
+    res = { json: vi.fn() };
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: vi.fn().mockRejectedValue(new Error("unreadable upstream response")),
+    } as unknown as Response);
+
+    await handler(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({
+      imported: 0,
+      failed: 1,
+      results: [{
+        mediaItemId: "photo-2",
+        status: "failed",
+        filename: "photo-photo-2.jpg",
+        error: "Google Photos download failed with status 503: ",
+      }],
+    });
   });
 });

@@ -65,7 +65,7 @@ describe("accessible navigation and calendar controls", () => {
       <SyncSubscriptionPanel
         webcalUrl="webcal://aresfirst.org/api/calendar/feed"
         gcalUrl="https://calendar.google.com/calendar/render"
-        copiedFeedUrl
+        copyStatus="copied"
         handleCopyFeedUrl={vi.fn()}
       />
     );

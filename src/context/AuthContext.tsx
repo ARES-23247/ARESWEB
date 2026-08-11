@@ -6,12 +6,12 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  User,
+  type User,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db, getDocWithTimeout } from "../lib/firebase";
+import { auth } from "../lib/firebaseAuth";
+import { authenticatedFetch } from "../lib/api";
 
 interface AuthorizedUser {
   email: string;
@@ -70,12 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (currentUser && currentUser.email) {
         try {
           // Verify and link user profile securely via functions backend
-          const idToken = await currentUser.getIdToken();
-          const response = await fetch("/api/profiles/session", {
+          const response = await authenticatedFetch("/api/profiles/session", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`
+              "Content-Type": "application/json"
             }
           });
 
@@ -210,24 +208,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: name || "ARES Lead",
     });
 
-    // The E2E identity is intentionally client-only; emulator behavior has its own test suite.
-    if (import.meta.env.MODE !== "e2e") {
+    // Firestore is intentionally absent from the shared authentication shell.
+    // Local-only roster bootstrapping lives in a dynamic development chunk.
+    if (import.meta.env.DEV && import.meta.env.MODE !== "e2e") {
       try {
-        const userRef = doc(db, "authorized_users", mockUser.uid);
-        const userSnap = await getDocWithTimeout(userRef, 1000);
-        if (!userSnap.exists()) {
-          console.log("⚡ Bootstrapping admin user in Firestore Emulator...");
-          await Promise.race([
-            setDoc(userRef, {
-              email: mockEmail,
-              role: role,
-              name: name || "ARES Lead"
-            }),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Firestore setDoc timeout")), 1000)
-            )
-          ]);
-        }
+        const { bootstrapDevelopmentAuthorizedUser } = await import("../lib/firebaseDevBootstrap");
+        await bootstrapDevelopmentAuthorizedUser({
+          uid: mockUser.uid,
+          email: mockEmail,
+          role,
+          name: name || "ARES Lead",
+        });
       } catch (dbErr) {
         console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);
       }

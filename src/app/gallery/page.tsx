@@ -1,347 +1,300 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Eye, MapPin, X, ArrowLeft, ArrowRight } from "lucide-react";
-import { GreekMeander } from "@/components/GreekMeander";
-import SEO from "@/components/SEO";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, CalendarDays, Eye, MapPin, RefreshCw, X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { GreekMeander } from "@/components/GreekMeander";
 import { PublicDataState } from "@/components/PublicDataState";
+import SEO from "@/components/SEO";
+
+const CATEGORIES = ["Robot Specs", "Outreach", "Competition", "CAD Design", "Practice", "Uncategorized"] as const;
+type GalleryCategory = (typeof CATEGORIES)[number];
 
 interface GalleryPhoto {
-  id: number;
-  title: string;
-  category: "Robot Specs" | "Outreach" | "Competition" | "CAD Design" | "Practice";
-  date: string;
-  location: string;
-  desc: string;
-  colorClass: string; // fallback stylized color block
+  key: string;
+  title?: string;
+  altText?: string;
+  category: GalleryCategory;
+  date?: string;
+  dateKind?: "Captured";
+  location?: string;
+  description?: string;
   imageUrl?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readText(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function getCategory(value?: string): GalleryCategory {
+  const match = CATEGORIES.find((category) => category.toLowerCase() === value?.toLowerCase());
+  return match ?? "Uncategorized";
+}
+
+function safeImageUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  if (value.startsWith("/")) return value;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parsePhoto(value: unknown, index: number): GalleryPhoto | null {
+  if (!isRecord(value)) return null;
+  const rawId = value.id;
+  const capturedDate = readText(value, "capturedAt");
+
+  return {
+    key: typeof rawId === "string" || typeof rawId === "number" ? String(rawId) : `published-photo-${index}`,
+    title: readText(value, "caption"),
+    altText: readText(value, "altText"),
+    category: getCategory(readText(value, "category")),
+    date: capturedDate,
+    dateKind: capturedDate ? "Captured" : undefined,
+    location: readText(value, "location"),
+    description: readText(value, "description"),
+    imageUrl: safeImageUrl(readText(value, "publicUrl")),
+  };
 }
 
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeCategory, setActiveCategory] = useState<"all" | GalleryCategory>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+
+  const loadPhotos = useCallback(async (cursor?: string) => {
+    const append = Boolean(cursor);
+    if (append) setIsLoadingMore(true);
+    else if (photos.length > 0) setIsRefreshing(true);
+    else setIsLoading(true);
+
+    try {
+      const url = cursor
+        ? `/api/photos/public?limit=30&cursor=${encodeURIComponent(cursor)}`
+        : "/api/photos/public?limit=30";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const payload: unknown = await response.json();
+      if (!isRecord(payload) || !Array.isArray(payload.photos)) {
+        throw new Error("HTTP 502: Invalid photo response");
+      }
+      const mappedPhotos = payload.photos.map(parsePhoto).filter((photo): photo is GalleryPhoto => photo !== null);
+      setPhotos((current) => {
+        if (!append) return mappedPhotos;
+        const merged = new Map(current.map((photo) => [photo.key, photo]));
+        mappedPhotos.forEach((photo) => merged.set(photo.key, photo));
+        return Array.from(merged.values());
+      });
+      const responseCursor = typeof payload.nextCursor === "string" && payload.nextCursor.trim()
+        ? payload.nextCursor.trim()
+        : null;
+      setNextCursor(responseCursor);
+      setHasMore(payload.hasMore === true && responseCursor !== null);
+      setLoadError(null);
+    } catch (error) {
+      console.error("Failed to load published photos from the public API:", error);
+      setLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      setIsLoadingMore(false);
+    }
+  }, [photos.length]);
 
   useEffect(() => {
-    async function loadPhotos() {
-      try {
-        const res = await fetch("/api/photos/public");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.photos && data.photos.length > 0) {
-            const mapped: GalleryPhoto[] = data.photos.map((p: any, idx: number) => {
-              const gradients = [
-                "from-ares-red/30 to-black/80 border-ares-red/20",
-                "from-ares-bronze/30 to-black/80 border-ares-bronze/20",
-                "from-ares-gold/20 to-black/80 border-ares-gold/25",
-                "from-ares-red/45 to-black/90 border-ares-red/30"
-              ];
-              const colorClass = gradients[idx % gradients.length];
-
-              // Clean up Google file uuid prefix for cleaner titles
-              let titleClean = p.originalFilename || "ARES Archive";
-              if (titleClean.includes("-")) {
-                const parts = titleClean.split("-");
-                if (parts[0].length > 20) {
-                  titleClean = parts.slice(1).join("-");
-                }
-              }
-              titleClean = titleClean.replace(/\.[^/.]+$/, "");
-
-              // Standard category mapping
-              let category: GalleryPhoto["category"] = "Robot Specs";
-              if (p.albumId === "robot-specs" || p.albumId === "Robot Specs") category = "Robot Specs";
-              else if (p.albumId === "outreach" || p.albumId === "Outreach") category = "Outreach";
-              else if (p.albumId === "competition" || p.albumId === "Competition") category = "Competition";
-              else if (p.albumId === "cad-design" || p.albumId === "CAD Design") category = "CAD Design";
-              else if (p.albumId === "practice" || p.albumId === "Practice") category = "Practice";
-
-              return {
-                id: p.id,
-                title: titleClean,
-                category,
-                date: p.importedAt ? p.importedAt.split("T")[0] : new Date().toISOString().split("T")[0],
-                location: "MARS Laboratory",
-                desc: p.description || "Google Photos synced engineering archive log.",
-                colorClass,
-                imageUrl: p.publicUrl,
-              };
-            });
-            setPhotos(mapped);
-          } else {
-            setPhotos([]);
-          }
-        } else {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        setLoadError(null);
-      } catch (err) {
-        console.error("Failed to load published photos from API:", err);
-        setPhotos([]);
-        setLoadError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadPhotos();
+    void loadPhotos();
+    // Initial request only. Retry uses the visible button below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredPhotos = activeCategory === "all"
-    ? photos
-    : photos.filter(p => p.category === activeCategory);
+  const filteredPhotos = useMemo(
+    () => activeCategory === "all" ? photos : photos.filter((photo) => photo.category === activeCategory),
+    [activeCategory, photos],
+  );
 
-  const handleNextPhoto = useCallback(() => {
-    if (!selectedPhoto) return;
-    const currentIdx = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
-    const nextIdx = (currentIdx + 1) % filteredPhotos.length;
-    setSelectedPhoto(filteredPhotos[nextIdx]);
-  }, [selectedPhoto, filteredPhotos]);
-
-  const handlePrevPhoto = useCallback(() => {
-    if (!selectedPhoto) return;
-    const currentIdx = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
-    const prevIdx = (currentIdx - 1 + filteredPhotos.length) % filteredPhotos.length;
-    setSelectedPhoto(filteredPhotos[prevIdx]);
-  }, [selectedPhoto, filteredPhotos]);
-
-  useEffect(() => {
-    if (!selectedPhoto) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") handlePrevPhoto();
-      if (e.key === "ArrowRight") handleNextPhoto();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedPhoto, handlePrevPhoto, handleNextPhoto]);
+  const selectAdjacentPhoto = useCallback((direction: -1 | 1) => {
+    if (!selectedPhoto || filteredPhotos.length === 0) return;
+    const currentIndex = filteredPhotos.findIndex((photo) => photo.key === selectedPhoto.key);
+    const nextIndex = (Math.max(currentIndex, 0) + direction + filteredPhotos.length) % filteredPhotos.length;
+    setSelectedPhoto(filteredPhotos[nextIndex]);
+  }, [filteredPhotos, selectedPhoto]);
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO title="Photo Gallery" description="Behind the scenes of ARES 23247. A visual build log documenting our journey from raw Onshape CAD models and machining to our live championship performances." />
-      {/* Hero Header */}
-      <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
-        <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <p className="text-ares-bronze uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4 animate-pulse">
-            Visual Match & Build Archives
-          </p>
-          <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading">
-            Team <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-xl text-white">Gallery</span>
+    <div className="flex min-h-screen w-full flex-col bg-obsidian text-marble">
+      <SEO title="Photo Gallery" description="Browse published ARES 23247 build, competition, and outreach photos with verified archive metadata." />
+
+      <section className="relative flex min-h-[50vh] items-center overflow-hidden bg-obsidian py-28">
+        <GreekMeander variant="thin" opacity="opacity-25" className="absolute left-0 top-0" />
+        <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+          <p className="mb-4 font-heading text-[10px] font-black uppercase tracking-[0.4em] text-ares-gold">Published team archive</p>
+          <h1 className="mb-6 font-heading text-4xl font-black uppercase tracking-tight text-white md:text-7xl">
+            Team <span className="ares-cut-sm inline-block bg-ares-red px-4 py-1 pb-3 text-white shadow-xl sm:px-6">Gallery</span>
           </h1>
-          <p className="text-marble/85 text-base md:text-lg max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-6 mt-6">
-            Explore behind the scenes of ARES #23247. A rich chronological log documenting our journey from raw Onshape CAD models and machining to our live championship performances.
+          <p className="mx-auto mt-6 max-w-2xl border-t border-white/10 pt-6 text-base leading-relaxed text-marble/85 md:text-lg">
+            See published moments from our build, competition, and community work. Missing details are marked clearly instead of being guessed.
           </p>
         </div>
       </section>
 
-      {/* Gallery Media Grid */}
-      <section className="py-12 bg-black/10 border-y border-white/5 min-h-[60vh]">
-        <div className="max-w-7xl mx-auto px-6">
-          
-          {/* Header Controls & Dynamic Filter Selector */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 border-b border-white/5 pb-6">
+      <section aria-labelledby="gallery-heading" className="min-h-[60vh] border-y border-white/5 bg-black/10 py-12">
+        <div className="mx-auto max-w-7xl px-6">
+          <h2 id="gallery-heading" className="sr-only">Published photos</h2>
+          <fieldset className="mb-10 border-b border-white/10 pb-6">
+            <legend className="sr-only">Filter photos by category</legend>
             <div className="flex flex-wrap gap-2">
-              {["all", "Robot Specs", "Outreach", "Competition", "CAD Design", "Practice"].map(cat => (
+              {(["all", ...CATEGORIES] as const).map((category) => (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                    activeCategory === cat
-                      ? "bg-ares-red text-white"
-                      : "bg-white/5 text-marble/45 hover:bg-white/10 hover:text-white"
+                  key={category}
+                  type="button"
+                  aria-pressed={activeCategory === category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`rounded-lg px-3.5 py-2 text-[9px] font-black uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                    activeCategory === category ? "bg-ares-red text-white" : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  {cat === "all" ? "All Media" : cat}
+                  {category === "all" ? "All media" : category}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => void loadPhotos()}
+                disabled={isLoading || isRefreshing}
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-[9px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <RefreshCw aria-hidden="true" size={12} />
+                Refresh photos
+              </button>
             </div>
-
-            {/* Removed obsolete Community Google Photos Album link */}
-          </div>
+          </fieldset>
 
           {isLoading ? (
-            <div role="status" className="py-24 text-center text-sm font-bold text-ares-gold">
-              Loading published photos…
-            </div>
-          ) : loadError ? (
-            <PublicDataState
-              title="Unable to load the photo gallery"
-              message="The published photo archive could not be reached. Check your connection and try again."
-              diagnostic={loadError}
-              onRetry={() => window.location.reload()}
-            />
-          ) : filteredPhotos.length === 0 ? (
-            <section className="hero-card border border-white/10 bg-black/20 p-12 text-center">
-              <h2 className="text-xl font-black text-white">No published photos yet</h2>
-              <p className="mt-2 text-sm text-marble/70">New build, competition, and outreach photos will appear here.</p>
-            </section>
+            <p role="status" className="py-24 text-center text-sm font-bold text-ares-gold">Loading published photos…</p>
           ) : (
-          /* CSS Columns Masonry Grid (Zero CLS) */
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-            {filteredPhotos.map((photo, idx) => {
-              // Assign varying aspect ratios for masonry visualization
-              const aspects = ["aspect-[4/3]", "aspect-[3/4]", "aspect-[4/5]", "aspect-square"];
-              const assignedAspect = aspects[idx % aspects.length];
-
-              return (
-                <div
-                  key={photo.id}
-                  onClick={() => setSelectedPhoto(photo)}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Open lightbox for ${photo.title}`}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelectedPhoto(photo);
-                    }
-                  }}
-                  className={`w-full overflow-hidden ares-cut border relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(192,0,0,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan bg-gradient-to-br ${photo.colorClass} ${assignedAspect} flex flex-col justify-end p-6`}
-                >
-                  {/* Real Image Render with subtle zoom */}
-                  {photo.imageUrl ? (
-                    <img
-                      src={photo.imageUrl}
-                      alt={photo.title}
-                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-85 group-hover:scale-105 transition-all duration-500 z-0"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-black/45 group-hover:bg-black/20 transition-colors duration-500 z-0"></div>
-                  )}
-
-                  <div className="relative z-10 space-y-2 text-left bg-black/60 p-3 rounded-lg border border-white/5 backdrop-blur-[2px] w-full">
-                    <span className="px-2 py-0.5 bg-ares-red text-white text-[7px] font-black uppercase tracking-wider rounded-md">
-                      {photo.category}
-                    </span>
-                    <h3 className="text-base font-black text-white font-heading leading-tight uppercase group-hover:text-ares-gold transition-colors">
-                      {photo.title}
-                    </h3>
-                    <p className="text-[10px] text-marble/60 line-clamp-2">
-                      {photo.desc}
-                    </p>
-                    <div className="flex items-center gap-1.5 text-[8px] text-marble/45 font-mono pt-1.5">
-                      <MapPin size={8} className="text-ares-red" />
-                      <span>{photo.location}</span>
-                      <span>&middot;</span>
-                      <span>{photo.date}</span>
-                    </div>
-                  </div>
-
-                  {/* Absolute Zoom Indicator Overlay */}
-                  <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    <Eye size={12} className="text-white" />
-                  </div>
+            <>
+              {loadError && (
+                <div className="mb-8">
+                  <PublicDataState
+                    title={photos.length > 0 ? "The gallery could not refresh" : "Unable to load the photo gallery"}
+                    message={photos.length > 0 ? "The last published photos remain visible below." : "The published photo archive could not be reached."}
+                    diagnostic={loadError}
+                    onRetry={() => void loadPhotos()}
+                  />
                 </div>
-              );
-            })}
-          </div>
-          )}
+              )}
+              {isRefreshing && <p role="status" className="mb-6 text-center text-sm text-ares-gold">Refreshing published photos…</p>}
 
+              {filteredPhotos.length === 0 && !loadError ? (
+                <div className="hero-card border border-white/10 bg-black/20 p-12 text-center">
+                  <h3 className="text-xl font-black text-white">No published photos in this view</h3>
+                  <p className="mt-2 text-sm text-marble/75">Photos will appear here after the team publishes them.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredPhotos.map((photo) => {
+                    const title = photo.title ?? "Title not provided";
+                    const imageAlt = photo.altText ?? photo.title ?? "Published team photo; description not provided";
+                    return (
+                      <button
+                        key={photo.key}
+                        type="button"
+                        onClick={() => setSelectedPhoto(photo)}
+                        aria-label={`Open photo: ${title}`}
+                        className="hero-card group flex min-h-[22rem] w-full flex-col overflow-hidden border border-white/10 bg-black/20 text-left transition-colors hover:border-ares-gold/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      >
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/45">
+                          {photo.imageUrl ? (
+                            <img src={photo.imageUrl} alt={imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center p-6 text-center text-sm text-marble/70">Image URL not provided</div>
+                          )}
+                          <span className="absolute right-4 top-4 rounded-full bg-black/70 p-2 text-white"><Eye aria-hidden="true" size={16} /></span>
+                        </div>
+                        <div className="flex flex-1 flex-col p-5">
+                          <span className="w-fit rounded bg-ares-red px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white">{photo.category}</span>
+                          <h3 className="mt-3 font-heading text-lg font-black uppercase text-white">{title}</h3>
+                          <p className="mt-2 text-sm leading-relaxed text-marble/75">{photo.description ?? "Description not provided"}</p>
+                          <div className="mt-auto space-y-2 pt-5 text-xs text-marble/70">
+                            <p className="flex items-center gap-2"><MapPin aria-hidden="true" size={14} className="text-ares-gold" />{photo.location ?? "Location not provided"}</p>
+                            <p className="flex items-center gap-2"><CalendarDays aria-hidden="true" size={14} className="text-ares-gold" />{photo.dateKind && photo.date ? `${photo.dateKind}: ${photo.date}` : "Date not provided"}</p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {hasMore && nextCursor && filteredPhotos.length > 0 && (
+                <div className="mt-10 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void loadPhotos(nextCursor)}
+                    disabled={isLoadingMore}
+                    className="rounded-lg border border-ares-gold/40 bg-ares-gold/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-ares-gold hover:bg-ares-gold/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    {isLoadingMore ? "Loading more photos…" : "Load more photos"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
-      {/* Fullscreen Photo Lightbox Dialog Overlay */}
-      <Dialog.Root open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+      <Dialog.Root open={selectedPhoto !== null} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 animate-fade-in" />
-          <Dialog.Content 
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") {
-                e.preventDefault();
-                handlePrevPhoto();
-              } else if (e.key === "ArrowRight") {
-                e.preventDefault();
-                handleNextPhoto();
-              }
-            }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between z-50 min-h-[50vh] max-h-[90vh] focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan animate-scale-in"
-          >
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/90" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-white/10 bg-obsidian p-6 shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan md:p-8">
             {selectedPhoto && (
               <>
-                <Dialog.Title className="sr-only">
-                  {selectedPhoto.title}
-                </Dialog.Title>
-                <Dialog.Description className="sr-only">
-                  {selectedPhoto.desc}
-                </Dialog.Description>
-                {/* Header controls */}
-                <div className="w-full flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="px-2.5 py-0.5 bg-ares-red text-white text-[8px] font-black uppercase tracking-widest rounded-md">
-                      {selectedPhoto.category}
-                    </span>
-                    <span className="text-[10px] text-marble/40 font-mono ml-3">
-                      Captured at {selectedPhoto.location} &middot; {selectedPhoto.date}
-                    </span>
+                    <span className="rounded bg-ares-red px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white">{selectedPhoto.category}</span>
+                    <Dialog.Title className="mt-3 font-heading text-2xl font-black uppercase text-white">{selectedPhoto.title ?? "Title not provided"}</Dialog.Title>
+                    <Dialog.Description className="mt-2 text-sm text-marble/75">{selectedPhoto.description ?? "Description not provided"}</Dialog.Description>
                   </div>
                   <Dialog.Close asChild>
-                    <button
-                      aria-label="Close lightbox"
-                      className="text-marble/55 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan rounded"
-                    >
-                      <X size={20} />
-                    </button>
+                    <button type="button" aria-label="Close photo" className="rounded p-2 text-marble/75 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><X aria-hidden="true" size={20} /></button>
                   </Dialog.Close>
                 </div>
 
-                {/* Central Graphic Container */}
-                <div className="w-full max-w-xl aspect-video bg-black border border-white/5 rounded-2xl relative overflow-hidden my-4 shadow-inner flex items-center justify-center">
+                <div className="mt-6 flex min-h-64 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/45">
                   {selectedPhoto.imageUrl ? (
-                    <img
-                      src={selectedPhoto.imageUrl}
-                      alt={selectedPhoto.title}
-                      className="w-full h-full object-contain"
-                    />
+                    <img src={selectedPhoto.imageUrl} alt={selectedPhoto.altText ?? selectedPhoto.title ?? "Published team photo; description not provided"} className="max-h-[60vh] w-full object-contain" />
                   ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${selectedPhoto.colorClass} flex flex-col justify-center items-center p-8 text-center`}>
-                      <div className="absolute inset-0 bg-black/60 z-0"></div>
-                      <div className="relative z-10 space-y-4">
-                        <span className="text-ares-gold/20 block font-heading text-7xl font-bold uppercase tracking-tight select-none">
-                          ARES
-                        </span>
-                        <h3 className="text-2xl font-black text-white uppercase font-heading tracking-tight max-w-sm mx-auto leading-tight">
-                          {selectedPhoto.title}
-                        </h3>
-                      </div>
-                    </div>
+                    <p className="p-8 text-sm text-marble/70">Image URL not provided</p>
                   )}
                 </div>
 
-                {/* Bottom Details and Navigation */}
-                <div className="w-full border-t border-white/5 pt-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p className="text-xs text-marble/80 text-left max-w-xl">
-                    <strong>Description:</strong> {selectedPhoto.desc}
-                  </p>
+                <dl className="mt-5 grid gap-3 text-sm text-marble/80 sm:grid-cols-2">
+                  <div><dt className="font-bold text-white">Location</dt><dd>{selectedPhoto.location ?? "Not provided"}</dd></div>
+                  <div><dt className="font-bold text-white">Date</dt><dd>{selectedPhoto.dateKind && selectedPhoto.date ? `${selectedPhoto.dateKind}: ${selectedPhoto.date}` : "Not provided"}</dd></div>
+                </dl>
 
-                  {/* Navigation arrows */}
-                  <div className="flex items-center gap-2 bg-black/45 border border-white/5 p-1 rounded-xl">
-                    <button
-                      onClick={handlePrevPhoto}
-                      className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
-                      aria-label="Previous photo"
-                    >
-                      <ArrowLeft size={14} />
-                    </button>
-                    <span className="text-[10px] font-mono text-marble/45 px-2">
-                      {filteredPhotos.findIndex(p => p.id === selectedPhoto.id) + 1} / {filteredPhotos.length}
-                    </span>
-                    <button
-                      onClick={handleNextPhoto}
-                      className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan"
-                      aria-label="Next photo"
-                    >
-                      <ArrowRight size={14} />
-                    </button>
+                {filteredPhotos.length > 1 && (
+                  <div className="mt-6 flex items-center justify-end gap-2">
+                    <button type="button" onClick={() => selectAdjacentPhoto(-1)} aria-label="Previous photo" className="rounded bg-white/5 p-3 text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><ArrowLeft aria-hidden="true" size={16} /></button>
+                    <button type="button" onClick={() => selectAdjacentPhoto(1)} aria-label="Next photo" className="rounded bg-white/5 p-3 text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><ArrowRight aria-hidden="true" size={16} /></button>
                   </div>
-                </div>
+                )}
               </>
             )}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
     </div>
   );
 }

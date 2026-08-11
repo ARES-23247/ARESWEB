@@ -151,7 +151,7 @@ export default function ShiftScheduleEditor({
               <button
                 type="button"
                 onClick={() => setIsLocationModalOpen(true)}
-                className="text-[9px] font-black uppercase tracking-widest text-ares-cyan hover:text-ares-cyan/80 transition-colors cursor-pointer"
+                className="text-[9px] font-black uppercase tracking-widest text-ares-gold hover:text-white transition-colors cursor-pointer"
               >
                 + Manage Locations
               </button>
@@ -203,7 +203,7 @@ export default function ShiftScheduleEditor({
                       href={selected.gmapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[9px] text-ares-cyan hover:underline font-bold uppercase tracking-widest mt-3 block"
+                      className="text-[9px] text-ares-gold hover:text-white hover:underline font-bold uppercase tracking-widest mt-3 block"
                     >
                       Open Google Directions ↗
                     </a>
@@ -336,7 +336,7 @@ export default function ShiftScheduleEditor({
                 onClick={() => setFormIsVolunteer(1)}
                 disabled={!canEdit}
                 className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                  formIsVolunteer === 1 ? "bg-ares-cyan/20 text-ares-cyan font-black" : "text-marble/45"
+                  formIsVolunteer === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/45"
                 }`}
               >
                 Yes

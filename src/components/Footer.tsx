@@ -23,24 +23,24 @@ export default function Footer() {
         <div className="lg:col-span-1">
           <div className="mb-6">
             <Link to="/" className="block text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 w-fit">
-              <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-red transition-colors">ARES</h3>
+              <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-gold transition-colors">ARES</h3>
               <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
             </Link>
             <p className="text-marble text-[10px] font-medium uppercase tracking-[0.2em] mt-2 px-1">
-              <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4">
+              <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4">
                 <em>FIRST</em>® Tech Challenge
               </a> 
               {" "}Team #23247
             </p>
           </div>
           <p className="text-marble/90 text-sm leading-relaxed max-w-sm border-l-2 border-ares-bronze/30 pl-6 mb-8 italic">
-            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><em>FIRST</em>®</a>.
+            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4 font-bold"><em>FIRST</em>®</a>.
           </p>
           
-          <Link to="/bug-report" className="bg-white/5 hover:bg-ares-red text-marble hover:text-white px-4 py-2 ares-cut-sm transition-all font-bold uppercase tracking-widest text-[9px] inline-flex items-center gap-2 border border-white/10 group">
-            <svg className="w-3.5 h-3.5 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <a href={`https://github.com/${siteConfig.urls.githubOrg}/ARESWEB/issues/new`} target="_blank" rel="noopener noreferrer" className="bg-white/5 hover:bg-ares-red text-marble hover:text-white px-4 py-2 ares-cut-sm transition-all font-bold uppercase tracking-widest text-[9px] inline-flex items-center gap-2 border border-white/10 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <svg aria-hidden="true" className="w-3.5 h-3.5 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             Report Technical Issue
-          </Link>
+          </a>
         </div>
 
         {/* Team & Calendar */}
@@ -56,8 +56,8 @@ export default function Footer() {
             <li><Link to="/videos" className="hover:text-ares-gold transition-colors flex items-center gap-2">Video Gallery</Link></li>
             <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>
             <li><Link to="/join" className="hover:text-ares-cyan transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">Join the Team</Link></li>
-            <li><Link to="/calendar" className="hover:text-ares-red transition-colors flex items-center gap-2">
-              <Calendar size={12} className="text-ares-red" /> Team Calendar
+            <li><Link to="/calendar" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+              <Calendar aria-hidden="true" size={12} className="text-ares-gold" /> Team Calendar
             </Link></li>
           </ul>
         </div>
@@ -125,7 +125,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div>
               <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">Direct Contact</p>
-              <a href={`mailto:${siteConfig.contact.email}`} className="text-marble/60 hover:text-ares-red text-xs transition-colors block tracking-wider">
+              <a href={`mailto:${siteConfig.contact.email}`} className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider">
                 {siteConfig.contact.email}
               </a>
             </div>
@@ -161,9 +161,9 @@ export default function Footer() {
         </div>
         
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[9px] font-bold uppercase tracking-[0.2em] text-marble">
-          <Link to="/accessibility" className="hover:text-ares-red transition-colors flex items-center gap-2 group">
+          <Link to="/accessibility" className="hover:text-ares-gold transition-colors flex items-center gap-2 group">
             <div className="w-5 h-5 rounded-full border border-ares-red/30 flex items-center justify-center group-hover:border-ares-red transition-colors bg-white/5">
-              <svg className="w-2.5 h-2.5 text-ares-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg aria-hidden="true" className="w-2.5 h-2.5 text-ares-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
@@ -171,10 +171,10 @@ export default function Footer() {
             Accessibility
           </Link>
 
-          <Link to="/privacy" className="hover:text-ares-red transition-colors flex items-center gap-2">
+          <Link to="/privacy" className="hover:text-ares-gold transition-colors flex items-center gap-2">
             <ShieldCheck size={12} className="text-ares-cyan" /> Privacy
           </Link>
-          <Link to="/terms" className="hover:text-ares-red transition-colors flex items-center gap-2">
+          <Link to="/terms" className="hover:text-ares-gold transition-colors flex items-center gap-2">
             <BookOpen size={12} className="text-ares-cyan" /> Terms
           </Link>
           

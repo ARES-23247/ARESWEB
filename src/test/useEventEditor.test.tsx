@@ -2,9 +2,10 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useEventEditor } from "../app/dashboard/events/hooks/useEventEditor";
 import { useAuth } from "../context/AuthContext";
-import { doc, setDoc, deleteDoc, onSnapshot, getDoc, getDocs } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, getDocs } from "firebase/firestore";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "../lib/image";
+import { archiveEvent, createEvent, restoreEvent, updateEvent } from "@/app/calendar/api";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => ({
@@ -29,6 +30,13 @@ vi.mock("firebase/firestore", () => ({
 // Mock API
 vi.mock("@/lib/api", () => ({
   authenticatedFetch: vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })),
+}));
+
+vi.mock("@/app/calendar/api", () => ({
+  archiveEvent: vi.fn(),
+  createEvent: vi.fn(),
+  restoreEvent: vi.fn(),
+  updateEvent: vi.fn(),
 }));
 
 // Mock utils
@@ -82,12 +90,10 @@ describe("useEventEditor custom hook", () => {
     });
 
     (setDoc as any).mockResolvedValue(undefined);
-    (deleteDoc as any).mockResolvedValue(undefined);
-    
-    (getDoc as any).mockResolvedValue({
-      exists: () => true,
-      data: () => ({ title: "Existing Event", isDeleted: 0 })
-    });
+    (archiveEvent as any).mockResolvedValue(undefined);
+    (createEvent as any).mockResolvedValue({ id: "new-event" });
+    (restoreEvent as any).mockResolvedValue(undefined);
+    (updateEvent as any).mockResolvedValue({ id: "event-123" });
     
     (getDocs as any).mockResolvedValue({
       docs: []
@@ -99,19 +105,21 @@ describe("useEventEditor custom hook", () => {
       mimeType: "image/jpeg"
     });
 
-    (authenticatedFetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        photo: {
-          id: "photo-1",
-          publicUrl: "photo.jpg",
-          googleMediaItemId: "g-1"
-        }
-      })
-    });
-
-    window.confirm = vi.fn().mockReturnValue(true);
-    window.alert = vi.fn();
+    (authenticatedFetch as any).mockImplementation(async (path: string) => path === "/api/profiles/me"
+      ? { ok: true, status: 200, statusText: "OK", json: async () => ({ profile: { nickname: "Member Nickname", avatar: "" } }) }
+      : {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => "",
+        json: async () => ({
+          photo: {
+            id: "photo-1",
+            publicUrl: "photo.jpg",
+            googleMediaItemId: "g-1"
+          }
+        })
+      });
   });
 
   it("initializes hook states for Create Mode when eventToEdit is null", () => {
@@ -127,7 +135,7 @@ describe("useEventEditor custom hook", () => {
     );
 
     expect(result.current.formTitle).toBe("");
-    expect(result.current.formLocationId).toBe("mars-building");
+    expect(result.current.formLocationId).toBe("");
     expect(result.current.formCategory).toBe("internal");
     expect(result.current.formStatus).toBe("published");
   });
@@ -193,17 +201,17 @@ describe("useEventEditor custom hook", () => {
       await result.current.handleSaveEvent(e);
     });
 
-    expect(setDoc).toHaveBeenCalled();
+    expect(updateEvent).toHaveBeenCalled();
     expect(mockOnClose).toHaveBeenCalled();
 
     await act(async () => {
       await result.current.handleDeleteEvent();
     });
 
-    expect(setDoc).toHaveBeenCalled();
+    expect(archiveEvent).toHaveBeenCalledWith("event-123");
   });
 
-  it("handles event restore and permanent delete action flows", async () => {
+  it("restores archived events without exposing a permanent delete action", async () => {
     const mockEvent = {
       id: "event-123",
       title: "Existing Event",
@@ -228,13 +236,8 @@ describe("useEventEditor custom hook", () => {
       await result.current.handleRestoreEvent();
     });
 
-    expect(setDoc).toHaveBeenCalled();
-
-    await act(async () => {
-      await result.current.handlePermanentDeleteEvent();
-    });
-
-    expect(deleteDoc).toHaveBeenCalled();
+    expect(restoreEvent).toHaveBeenCalledWith("event-123");
+    expect(result.current).not.toHaveProperty("handlePermanentDeleteEvent");
   });
 
   it("fetches revisions list when activeTab shifts to revisions", async () => {
@@ -321,6 +324,8 @@ describe("useEventEditor custom hook", () => {
       await result.current.handleDeletePhoto("photo-1");
     });
 
-    expect(deleteDoc).toHaveBeenCalled();
+    const lastWrite = vi.mocked(setDoc).mock.calls.at(-1);
+    expect(lastWrite?.[1]).toEqual(expect.objectContaining({ isDeleted: 1 }));
+    expect(lastWrite?.[2]).toEqual({ merge: true });
   });
 });

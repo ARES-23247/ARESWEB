@@ -6,7 +6,7 @@ import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { PublicDataState } from "@/components/PublicDataState";
 
 interface Season {

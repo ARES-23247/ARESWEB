@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen } from "lucide-react";
+import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen, RefreshCw } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 import { logger } from "@/utils/logger";
+import { PublicDataState } from "@/components/PublicDataState";
 
 interface TeamMember {
-  userId: string;
+  key: string;
   nickname: string;
   pronouns?: string;
   subteams: string[];
-  memberType: "student" | "alumni" | "mentor" | "coach" | "parent";
-  avatar: string;
+  memberType: "student" | "alumni" | "mentor" | "coach";
+  avatar?: string;
   bio?: string;
   funFact?: string;
   colleges?: string[];
@@ -34,18 +35,74 @@ const MEMBER_TYPE_ORDER: Record<string, number> = {
   alumni: 3
 };
 
+const PUBLIC_MEMBER_TYPES = ["student", "alumni", "mentor", "coach"] as const;
+type PublicMemberType = (typeof PUBLIC_MEMBER_TYPES)[number];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readText(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function readTextArray(record: Record<string, unknown>, key: string): string[] {
+  const value = record[key];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
+    : [];
+}
+
+function safeAvatarUrl(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseTeamMember(value: unknown, index: number): TeamMember | null {
+  if (!isRecord(value) || typeof value.memberType !== "string") return null;
+  if (!PUBLIC_MEMBER_TYPES.includes(value.memberType as PublicMemberType)) return null;
+
+  const memberType = value.memberType as PublicMemberType;
+  const colleges = memberType === "student" ? [] : readTextArray(value, "colleges");
+  return {
+    key: `${memberType}-${readText(value, "nickname") ?? "ARES Member"}-${index}`,
+    nickname: readText(value, "nickname") ?? "ARES Member",
+    pronouns: readText(value, "pronouns"),
+    subteams: readTextArray(value, "subteams"),
+    memberType,
+    avatar: safeAvatarUrl(value.avatar),
+    bio: readText(value, "bio"),
+    funFact: readText(value, "funFact"),
+    colleges,
+  };
+}
+
 export default function AboutPage() {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [roster, setRoster] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRoster = async () => {
+  const fetchRoster = useCallback(async () => {
+      if (roster.length > 0) setIsRefreshing(true);
+      else setIsLoading(true);
       try {
         const response = await fetch("/api/profiles/about-roster");
-        if (!response.ok) throw new Error(`Failed to fetch roster: ${response.status}`);
-        const data = await response.json();
-        const visibleMembers = (data.members || []) as TeamMember[];
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const data: unknown = await response.json();
+        if (!isRecord(data) || !Array.isArray(data.members)) {
+          throw new Error("HTTP 502: Invalid roster response");
+        }
+        const visibleMembers = data.members
+          .map(parseTeamMember)
+          .filter((member): member is TeamMember => member !== null);
 
         // Sort by role order, then nickname
         visibleMembers.sort((a, b) => {
@@ -56,13 +113,20 @@ export default function AboutPage() {
         });
 
         setRoster(visibleMembers);
+        setLoadError(null);
       } catch (err) {
         logger.error("Error fetching roster:", err);
+        setLoadError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
-    };
-    fetchRoster();
+  }, [roster.length]);
+
+  useEffect(() => {
+    void fetchRoster();
+    // Initial request only. Retry and refresh use visible buttons below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredMembers = activeFilter === "all" 
@@ -128,7 +192,7 @@ export default function AboutPage() {
                   to="/join"
                   className="text-white font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2 hover:translate-x-1.5 transition-transform"
                 >
-                  Apply to Join the Roster <ArrowRight size={12} className="text-ares-red" />
+                  Apply to Join the Roster <ArrowRight aria-hidden="true" size={12} className="text-ares-gold" />
                 </Link>
               </div>
             </div>
@@ -147,60 +211,85 @@ export default function AboutPage() {
               Meet the Innovators, Mentors, and Alumni of ARES
             </p>
 
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap justify-center gap-2 mt-8">
-              {FILTER_SECTIONS.map(tab => (
+            <fieldset className="mt-8">
+              <legend className="sr-only">Filter the public team roster</legend>
+              <div className="flex flex-wrap justify-center gap-2">
+                {FILTER_SECTIONS.map(tab => (
+                  <button
+                    key={tab.type}
+                    type="button"
+                    aria-pressed={activeFilter === tab.type}
+                    onClick={() => setActiveFilter(tab.type)}
+                    className={`px-4 py-2 rounded-xl text-[10px] uppercase font-bold tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                      activeFilter === tab.type
+                        ? "bg-ares-red text-white shadow-lg shadow-ares-red/20"
+                        : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span aria-hidden="true">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
                 <button
-                  key={tab.type}
-                  onClick={() => setActiveFilter(tab.type)}
-                  className={`px-4 py-2 rounded-xl text-[10px] uppercase font-bold tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                    activeFilter === tab.type
-                      ? "bg-ares-red text-white shadow-lg shadow-ares-red/20"
-                      : "bg-white/5 text-marble/50 hover:bg-white/10 hover:text-white"
-                  }`}
+                  type="button"
+                  onClick={() => void fetchRoster()}
+                  disabled={isLoading || isRefreshing}
+                  className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
-                  {tab.icon}
-                  {tab.label}
+                  <RefreshCw aria-hidden="true" size={12} />
+                  Refresh roster
                 </button>
-              ))}
-            </div>
+              </div>
+            </fieldset>
           </div>
 
           {/* Members Card Grid */}
-          {isLoading ? (
-            <div className="col-span-full py-20 text-center">
-              <div className="animate-spin w-8 h-8 border-2 border-ares-red border-t-transparent rounded-full mx-auto" />
+          {loadError && (
+            <div className="mb-8">
+              <PublicDataState
+                title={roster.length > 0 ? "The roster could not refresh" : "Unable to load the public roster"}
+                message={roster.length > 0 ? "The last published roster remains visible below." : "The public roster service could not be reached."}
+                diagnostic={loadError}
+                onRetry={() => void fetchRoster()}
+              />
             </div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="col-span-full text-center text-marble/35 p-20 glass-card ares-cut border border-white/10">
-              No team members found for this filter.
+          )}
+          {isRefreshing && <p role="status" className="mb-6 text-center text-sm text-ares-gold">Refreshing the public roster…</p>}
+          {isLoading ? (
+            <div role="status" className="col-span-full py-20 text-center">
+              <div className="animate-spin w-8 h-8 border-2 border-ares-red border-t-transparent rounded-full mx-auto" />
+              <span className="sr-only">Loading the public roster…</span>
+            </div>
+          ) : loadError && roster.length === 0 ? null : filteredMembers.length === 0 ? (
+            <div className="col-span-full text-center text-marble/75 p-20 glass-card ares-cut border border-white/10">
+              No published team members match this filter.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
               {filteredMembers.map(member => (
                 <div
-                  key={member.userId}
+                  key={member.key}
                   className="bg-white/5 border border-white/10 hero-card p-6 flex flex-col justify-between hover:border-ares-red/30 transition-all duration-300 group backdrop-blur-sm shadow-md"
                 >
                   <div className="flex flex-col items-center text-center">
                   {/* PII Nickname compliance & avatar stack */}
                   <div className="w-16 h-16 rounded-2xl bg-black/45 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform flex items-center justify-center relative shrink-0 shadow-inner">
-                    <img
-                      src={member.avatar}
-                      alt={member.nickname}
-                      className="w-full h-full object-contain"
-                    />
+                    {member.avatar ? (
+                      <img src={member.avatar} alt={`${member.nickname}'s approved avatar`} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+                    ) : (
+                      <Users aria-label="Approved avatar not provided" role="img" className="h-8 w-8 text-marble/75" />
+                    )}
                   </div>
                   <h3 className="text-base font-bold text-white mt-4 group-hover:text-ares-gold transition-colors font-heading leading-tight">
                     {member.nickname}
                   </h3>
                   {member.pronouns && (
-                    <span className="text-[10px] text-marble/40 mt-1 font-mono font-medium block">
+                    <span className="text-[10px] text-marble/70 mt-1 font-mono font-medium block">
                       ({member.pronouns})
                     </span>
                   )}
                   <p className="text-xs text-marble/70 mt-3 leading-relaxed font-medium">
-                    {member.bio}
+                    {member.bio ?? "Bio not provided"}
                   </p>
                 </div>
 
@@ -209,14 +298,14 @@ export default function AboutPage() {
                     {member.subteams.map(subteam => (
                       <span
                         key={subteam}
-                        className="px-2 py-0.5 bg-ares-red/10 text-ares-red border border-ares-red/10 text-[8px] font-black uppercase tracking-widest rounded-md"
+                        className="px-2 py-0.5 bg-ares-red text-white border border-ares-red text-[8px] font-black uppercase tracking-widest rounded-md"
                       >
                         {subteam}
                       </span>
                     ))}
                   </div>
 
-                  {member.memberType === "alumni" && member.colleges && (
+                  {member.memberType === "alumni" && member.colleges && member.colleges.length > 0 && (
                     <div className="flex items-center justify-center gap-1.5 mt-3 text-[9px] font-mono text-ares-gold uppercase font-bold">
                       <GraduationCap size={12} /> {member.colleges[0].split(".")[0]}
                     </div>

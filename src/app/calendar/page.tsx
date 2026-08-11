@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { 
   Calendar as CalendarIcon, 
@@ -13,39 +11,46 @@ import {
   ChevronRight, 
   Clock,
   Sparkles,
-  Award,
-  Plus
+  Award
 } from "lucide-react";
-import { GreekMeander } from "@/components/GreekMeander";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
-import { TeamEvent } from "./components/mockEvents";
+import type { TeamEvent } from "@/types/event";
 import { SelectedEventPanel } from "./components/SelectedEventPanel";
 import { SyncSubscriptionPanel } from "./components/SyncSubscriptionPanel";
 import { PublicDataState } from "@/components/PublicDataState";
+import { fetchPublicEvents } from "./api";
+import { CalendarHeader, type CalendarFilter } from "./components/CalendarHeader";
+import { buildCalendarDays, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const [events, setEvents] = useState<TeamEvent[]>([]);
-  const [filter, setFilter] = useState<"all" | "internal" | "outreach">("all");
+  const [filter, setFilter] = useState<CalendarFilter>("all");
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [copiedFeedUrl, setCopiedFeedUrl] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
 
   const feedUrl = typeof window !== "undefined" ? `${window.location.origin}/api/calendar/feed` : "";
   const webcalUrl = feedUrl.replace(/^https?:/, "webcal:");
   const gcalUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`;
 
-  const handleCopyFeedUrl = () => {
+  const handleCopyFeedUrl = async () => {
     if (!feedUrl) return;
-    navigator.clipboard.writeText(feedUrl);
-    setCopiedFeedUrl(true);
-    setTimeout(() => setCopiedFeedUrl(false), 2000);
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+      setCopyStatus("copied");
+      window.setTimeout(() => setCopyStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Unable to copy the calendar feed URL:", error);
+      setCopyStatus("error");
+    }
   };
 
   // Full Drawer Editor States
@@ -68,104 +73,35 @@ export default function CalendarPage() {
     setIsEditorOpen(true);
   };
 
-  useEffect(() => {
+  const loadEvents = useCallback(async (cursor: string | null = null, append = false) => {
+    setIsLoading(true);
     try {
-      const q = query(
-        collection(db, "events"),
-        where("isDeleted", "==", 0),
-        where("status", "==", "published"),
-        orderBy("dateStart", "asc"),
-        limit(150)
-      );
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setEvents([]);
-            setIsLive(true);
-            setLoadError(null);
-            setIsLoading(false);
-            return;
-          }
-          const list = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              title: data.title || "Untitled Event",
-              dateStart: data.dateStart || "",
-              dateEnd: data.dateEnd || "",
-              location: data.location || "TBD",
-              locationId: data.locationId || "",
-              description: data.description || "",
-              category: (data.category as "internal" | "outreach") || "internal"
-            };
-          });
-          setEvents(list);
-          setIsLive(true);
-          setLoadError(null);
-          setIsLoading(false);
-        },
-        (err) => {
-          console.error("Unable to stream published calendar events:", err);
-          setEvents([]);
-          setIsLive(false);
-          setLoadError(err.message);
-          setIsLoading(false);
-        }
-      );
-
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Unable to initialize the published calendar stream:", e);
-      setEvents([]);
+      const page = await fetchPublicEvents(50, cursor);
+      setEvents((current) => {
+        if (!append) return page.events;
+        const merged = new Map(current.map((event) => [event.id, event]));
+        page.events.forEach((event) => merged.set(event.id, event));
+        return Array.from(merged.values());
+      });
+      setNextCursor(page.nextCursor);
+      setIsLive(true);
+      setLoadError(null);
+    } catch (error) {
+      console.error("Unable to load published calendar events:", error);
       setIsLive(false);
-      setLoadError(e instanceof Error ? e.message : String(e));
+      setLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const getDaysInMonth = (year: number, month: number) => {
-    const date = new Date(year, month, 1);
-    const days = [];
-
-    // Weekday of 1st day (0 = Sunday, 6 = Saturday)
-    const startDay = date.getDay();
-
-    // Previous month padding
-    const prevMonthDate = new Date(year, month, 0);
-    const prevMonthDaysCount = prevMonthDate.getDate();
-    for (let i = startDay - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevMonthDaysCount - i),
-        isCurrentMonth: false,
-      });
-    }
-
-    // Current month
-    const currentMonthDaysCount = new Date(year, month + 1, 0).getDate();
-    for (let i = 1; i <= currentMonthDaysCount; i++) {
-      days.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      });
-    }
-
-    // Next month padding (standard 42 grid cells)
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) {
-      days.push({
-        date: new Date(year, month + 1, i),
-        isCurrentMonth: false,
-      });
-    }
-
-    return days;
-  };
+  useEffect(() => {
+    void loadEvents();
+  }, [loadEvents]);
 
   const activeYear = currentDate.getFullYear();
   const activeMonth = currentDate.getMonth(); // 0-indexed
-  const calendarDays = getDaysInMonth(activeYear, activeMonth);
+  const calendarDays = buildCalendarDays(activeYear, activeMonth);
 
   const monthsList = [
     "January", "February", "March", "April", "May", "June",
@@ -178,14 +114,6 @@ export default function CalendarPage() {
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(activeYear, activeMonth + 1, 1));
-  };
-
-  const isSameDay = (d1: Date, d2: Date) => {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
   };
 
   // Get events on a specific day, filtered by active category
@@ -225,85 +153,20 @@ export default function CalendarPage() {
     })
     .sort((a, b) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime());
 
-  const formatEventTime = (isoString: string) => {
-    if (!isoString) return "TBD";
-    const d = new Date(isoString);
-    return d.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
-
-  const formatFullDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric"
-    });
-  };
-
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <SEO title="Team Calendar" description="Stay up to date with ARES 23247 schedules, lab practice times, outreach programs, and FTC competition events." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
-        {/* Header */}
-        <header className="mb-12 border-b border-ares-bronze/30 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 relative">
-          <GreekMeander variant="thin" opacity="opacity-10" className="absolute top-0 left-0 -mt-16 pointer-events-none" />
-          <div className="relative z-10">
-            <p className="text-ares-bronze uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4">
-              Operational Schedule & Timelines
-            </p>
-            <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading flex flex-wrap items-center gap-4">
-              Team <span className="bg-ares-red px-6 py-1 pb-3 ares-cut shadow-xl text-white font-bold">Calendar</span>
-              {isLoading ? (
-                <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">
-                  Loading schedule
-                </span>
-              ) : isLive ? (
-                <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze">
-                  Live schedule
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[8px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze">
-                  Schedule unavailable
-                </span>
-              )}
-            </h1>
-            <p className="text-marble/85 text-base md:text-lg max-w-2xl leading-relaxed">
-              Plan and coordinate lab practices, software calibration sprints, and Spark! museum exhibits. Click on days to inspect active event details.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 shrink-0 relative z-10">
-            {canEdit && (
-              <button
-                type="button"
-                onClick={() => handleOpenInlineCreate(selectedDate)}
-                className="px-4 py-2 bg-ares-red hover:bg-ares-bronze text-white text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                <Plus size={11} /> New Event
-              </button>
-            )}
-
-            <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5">
-              {(["all", "internal", "outreach"] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setFilter(cat)}
-                  className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer ${
-                    filter === cat
-                      ? "bg-ares-red text-white"
-                      : "text-marble/55 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {cat === "all" ? "All Events" : cat === "internal" ? "Practices" : "Outreach"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </header>
+        <CalendarHeader
+          canEdit={canEdit}
+          filter={filter}
+          isLoading={isLoading}
+          isLive={isLive}
+          eventCount={events.length}
+          onCreate={() => handleOpenInlineCreate(selectedDate)}
+          onFilterChange={setFilter}
+        />
 
         {/* ─── INTERACTIVE MONTH-GRID CALENDAR (Top Dashboard Section) ─── */}
         {loadError && (
@@ -312,7 +175,7 @@ export default function CalendarPage() {
               title="Unable to load the team calendar"
               message="The published schedule could not be reached. Check your connection and try again."
               diagnostic={loadError}
-              onRetry={() => window.location.reload()}
+              onRetry={() => void loadEvents()}
             />
           </div>
         )}
@@ -431,13 +294,26 @@ export default function CalendarPage() {
             <SyncSubscriptionPanel
               webcalUrl={webcalUrl}
               gcalUrl={gcalUrl}
-              copiedFeedUrl={copiedFeedUrl}
+              copyStatus={copyStatus}
               handleCopyFeedUrl={handleCopyFeedUrl}
             />
 
           </div>
 
         </div>
+
+        {nextCursor && (
+          <div className="mt-10 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void loadEvents(nextCursor, true)}
+              disabled={isLoading}
+              className="rounded border border-ares-gold/40 bg-ares-gold/10 px-5 py-3 text-xs font-black uppercase tracking-widest text-ares-gold transition-colors hover:bg-ares-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? "Loading events…" : "Load more events"}
+            </button>
+          </div>
+        )}
 
         {/* Elegant Section Divider */}
         <div className="relative py-12 flex items-center">
@@ -581,6 +457,7 @@ export default function CalendarPage() {
             setEditorAction(null);
             setEditorDate(undefined);
             setEditorEventId(null);
+            void loadEvents();
           }}
         />
       )}

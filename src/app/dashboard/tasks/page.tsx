@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";

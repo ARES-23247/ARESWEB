@@ -1,7 +1,9 @@
 "use client";
 
-import { CreditCard, ShoppingBag } from "lucide-react";
+import { ArrowRight, CreditCard, HandHeart, Mail, ShoppingBag, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
+import { siteConfig } from "@/lib/site-config";
 
 export default function StorePage() {
   return (
@@ -42,6 +44,61 @@ export default function StorePage() {
           <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded bg-ares-red px-5 py-3 font-bold text-white">
             <CreditCard aria-hidden="true" className="h-4 w-4" />
             Checkout unavailable
+          </div>
+        </section>
+
+        <section aria-labelledby="support-title" className="mt-10">
+          <div className="mb-6 max-w-2xl">
+            <h2 id="support-title" className="text-2xl font-black text-white md:text-3xl">
+              You can still support ARES
+            </h2>
+            <p className="mt-3 text-marble/85">
+              These options use our current team channels. They do not collect payment on this site.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <Link
+              to="/sponsors#sponsor-form-section"
+              className="hero-card group border border-ares-gold/40 bg-white/5 p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <HandHeart aria-hidden="true" className="mb-4 h-8 w-8 text-ares-gold" />
+              <h3 className="text-lg font-black text-white">Sponsor the team</h3>
+              <p className="mt-2 text-sm text-marble/80">
+                Ask about a verified team sponsorship or in-kind donation.
+              </p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-ares-gold">
+                View sponsor options <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </span>
+            </Link>
+
+            <Link
+              to="/join"
+              className="hero-card group border border-ares-cyan/40 bg-white/5 p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Users aria-hidden="true" className="mb-4 h-8 w-8 text-ares-cyan" />
+              <h3 className="text-lg font-black text-white">Join ARES</h3>
+              <p className="mt-2 text-sm text-marble/80">
+                Students and adult volunteers can learn how to get involved.
+              </p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-ares-cyan">
+                Visit the join page <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </span>
+            </Link>
+
+            <a
+              href={`mailto:${siteConfig.contact.email}?subject=${encodeURIComponent("Supporting ARES 23247")}`}
+              className="hero-card group border border-ares-bronze/40 bg-white/5 p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Mail aria-hidden="true" className="mb-4 h-8 w-8 text-ares-gold" />
+              <h3 className="text-lg font-black text-white">Contact the team</h3>
+              <p className="mt-2 text-sm text-marble/80">
+                Ask about events, outreach, partnerships, or other ways to help.
+              </p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-ares-gold">
+                Email ARES <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </span>
+            </a>
           </div>
         </section>
       </div>

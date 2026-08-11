@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, Info, Pencil, Clock, MapPin, Plus } from "lucide-react";
-import { TeamEvent } from "./mockEvents";
+import type { TeamEvent } from "@/types/event";
 
 interface SelectedEventPanelProps {
   selectedDate: Date;

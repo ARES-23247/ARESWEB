@@ -10,7 +10,6 @@ interface EventsCalendarViewProps {
   canEdit: boolean;
   canPublishDirectly: boolean;
   onRestore: (evt: TeamEvent) => void;
-  onPermanentDelete: (id: string) => void;
   onApprove: (evt: TeamEvent) => void;
   onEdit: (evt: TeamEvent) => void;
   onDelete: (evt: TeamEvent) => void;
@@ -25,7 +24,6 @@ export default function EventsCalendarView({
   canEdit,
   canPublishDirectly,
   onRestore,
-  onPermanentDelete,
   onApprove,
   onEdit,
   onDelete,
@@ -58,8 +56,8 @@ export default function EventsCalendarView({
             const isOutreach = evt.category === "outreach";
             const resolvedLocation =
               locations.find((l) => l.id === evt.locationId)?.name ||
-              (evt as any).location ||
-              "MARS Building";
+              evt.location ||
+              "Venue not set";
 
             return (
               <div
@@ -90,8 +88,8 @@ export default function EventsCalendarView({
                         {evt.category}
                       </span>
                       {evt.isDeleted === 1 && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-red/25 border-ares-red/35 text-ares-red-light rounded">
-                          Trash / Deleted
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-red border-ares-bronze text-white rounded">
+                          Archived
                         </span>
                       )}
                       {evt.status === "pending" && (
@@ -105,7 +103,7 @@ export default function EventsCalendarView({
                         </span>
                       )}
                       {evt.status === "published" && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-success/15 border-ares-success/30 text-ares-success rounded">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-gold/15 border-ares-gold/30 text-ares-gold rounded">
                           Published
                         </span>
                       )}
@@ -151,10 +149,10 @@ export default function EventsCalendarView({
                 <div className="flex gap-2 self-end md:self-auto shrink-0">
                   {canEdit ? (
                     evt.isDeleted === 1 ? (
-                      <>
+                      canPublishDirectly ? (
                         <button
                           onClick={() => onRestore(evt)}
-                          className="p-2 bg-ares-success/15 hover:bg-ares-success/30 text-ares-success border border-ares-success/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                          className="p-2 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
                           title="Restore Event"
                           aria-label={`Restore event ${evt.title}`}
                         >
@@ -163,26 +161,15 @@ export default function EventsCalendarView({
                             Restore
                           </span>
                         </button>
-                        {canPublishDirectly && (
-                          <button
-                            onClick={() => onPermanentDelete(evt.id)}
-                            className="p-2 bg-ares-red/15 hover:bg-ares-red/30 text-ares-red-light border border-ares-red/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
-                            title="Permanently Delete Event"
-                            aria-label={`Permanently delete event ${evt.title}`}
-                          >
-                            <Trash2 size={13} />
-                            <span className="text-[9px] font-black uppercase tracking-wider pr-1">
-                              Purge
-                            </span>
-                          </button>
-                        )}
-                      </>
+                      ) : (
+                        <span className="text-[9px] text-marble/40 uppercase font-black tracking-widest">Archived</span>
+                      )
                     ) : (
                       <>
                         {canPublishDirectly && evt.status === "pending" && (
                           <button
                             onClick={() => onApprove(evt)}
-                            className="p-2 bg-ares-success/15 hover:bg-ares-success/30 text-ares-success border border-ares-success/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                            className="p-2 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
                             title="Approve & Publish Event"
                             aria-label={`Approve and publish event ${evt.title}`}
                           >
@@ -200,14 +187,16 @@ export default function EventsCalendarView({
                         >
                           <Pencil size={13} />
                         </button>
-                        <button
-                          onClick={() => onDelete(evt)}
-                          className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                          title="Delete Event"
-                          aria-label={`Delete event ${evt.title}`}
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {canPublishDirectly && (
+                          <button
+                            onClick={() => onDelete(evt)}
+                            className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                            title="Archive Event"
+                            aria-label={`Archive event ${evt.title}`}
+                          >
+                            <Trash2 aria-hidden="true" size={13} />
+                          </button>
+                        )}
                       </>
                     )
                   ) : (

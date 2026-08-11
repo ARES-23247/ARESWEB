@@ -2,19 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { 
-  User, 
-  Save, 
-  Loader2, 
-  CheckCircle, 
-  AlertTriangle,
-  Info,
-  ChevronRight,
-  MessageSquare
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Save, Loader2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import AvatarEditor from "@/components/AvatarEditor";
 import IdentityTab from "./components/IdentityTab";
@@ -22,6 +10,57 @@ import SubteamsTab from "./components/SubteamsTab";
 import CareerTab, { College, Employer } from "./components/CareerTab";
 import PrivacyTab from "./components/PrivacyTab";
 import SafetyTab from "./components/SafetyTab";
+import {
+  ProfileAlerts,
+  ProfilePageHeader,
+  ProfileTabNavigation,
+  StudentPrivacyNotice,
+  type ProfileTab,
+} from "./components/ProfilePageChrome";
+
+interface ProfilePayload {
+  nickname: string;
+  firstName: string;
+  lastName: string;
+  pronouns: string;
+  avatar: string;
+  bio: string;
+  funFact: string;
+  favoriteFirstThing: string;
+  favoriteRobotMechanism: string;
+  preMatchSuperstition: string;
+  rookieYear: string;
+  leadershipRole: string;
+  subteams: string[];
+  tshirtSize: string;
+  dietaryRestrictions: string[];
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  phone: string;
+  contactEmail: string;
+  showEmail: boolean;
+  showPhone: boolean;
+  showOnAbout: boolean;
+  colleges: College[];
+  employers: Employer[];
+  memberType?: string;
+}
+
+interface ProfileResponse {
+  exists: boolean;
+  profile: ProfilePayload & { memberType: string };
+}
+
+async function responseError(response: Response, fallback: string): Promise<Error> {
+  let message = fallback;
+  try {
+    const data = await response.json() as { error?: string };
+    if (data.error) message = data.error;
+  } catch {
+    // Preserve the HTTP diagnostic when the upstream response has no JSON body.
+  }
+  return new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}. ${message}`);
+}
 
 export default function DashboardProfilePage() {
   const { user, authorizedUser } = useAuth();
@@ -30,7 +69,7 @@ export default function DashboardProfilePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [provisioningZulip, setProvisioningZulip] = useState(false);
-  const [activeTab, setActiveTab] = useState<"identity" | "subteams" | "career" | "privacy" | "safety">("identity");
+  const [activeTab, setActiveTab] = useState<ProfileTab>("identity");
 
   const handleSelfProvisionZulip = async () => {
     setProvisioningZulip(true);
@@ -86,7 +125,7 @@ export default function DashboardProfilePage() {
   const [contactEmail, setContactEmail] = useState("");
   const [showEmail, setShowEmail] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
-  const [showOnAbout, setShowOnAbout] = useState(true);
+  const [showOnAbout, setShowOnAbout] = useState(false);
 
   // College & Career
   const [colleges, setColleges] = useState<College[]>([]);
@@ -115,11 +154,12 @@ export default function DashboardProfilePage() {
     async function loadProfile() {
       if (!currentUser) return;
       try {
-        const docRef = doc(db, "user_profiles", currentUser.uid);
-        const docSnap = await getDoc(docRef);
+        const response = await authenticatedFetch("/api/profiles/me");
+        if (!response.ok) throw await responseError(response, "Could not retrieve profile details.");
+        const result = await response.json() as ProfileResponse;
+        const data = result.profile;
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        if (result.exists) {
           
           setNickname(data.nickname || "");
           setFirstName(data.firstName || "");
@@ -135,20 +175,8 @@ export default function DashboardProfilePage() {
           setLeadershipRole(data.leadershipRole || "");
           setMemberType(data.memberType || "student");
 
-          // Safe Array parses
-          const parsedSubteams = Array.isArray(data.subteams) 
-            ? data.subteams 
-            : typeof data.subteams === "string" 
-              ? JSON.parse(data.subteams || "[]") 
-              : [];
-          setSubteams(parsedSubteams);
-
-          const parsedDietary = Array.isArray(data.dietaryRestrictions)
-            ? data.dietaryRestrictions
-            : typeof data.dietaryRestrictions === "string"
-              ? JSON.parse(data.dietaryRestrictions || "[]")
-              : [];
-          setDietaryRestrictions(parsedDietary);
+          setSubteams(data.subteams);
+          setDietaryRestrictions(data.dietaryRestrictions);
 
           setTshirtSize(data.tshirtSize || "");
           setEmergencyContactName(data.emergencyContactName || "");
@@ -158,29 +186,18 @@ export default function DashboardProfilePage() {
           setContactEmail(data.contactEmail || "");
           setShowEmail(Boolean(data.showEmail));
           setShowPhone(Boolean(data.showPhone));
-          setShowOnAbout(data.showOnAbout !== undefined ? Boolean(data.showOnAbout) : true);
-
-          const parsedColleges = Array.isArray(data.colleges)
-            ? data.colleges
-            : typeof data.colleges === "string"
-              ? JSON.parse(data.colleges || "[]")
-              : [];
-          setColleges(parsedColleges);
-
-          const parsedEmployers = Array.isArray(data.employers)
-            ? data.employers
-            : typeof data.employers === "string"
-              ? JSON.parse(data.employers || "[]")
-              : [];
-          setEmployers(parsedEmployers);
+          setShowOnAbout(data.showOnAbout);
+          setColleges(data.colleges);
+          setEmployers(data.employers);
         } else {
           // Initialize defaults if profile document does not exist yet
-          setNickname(currentUser.displayName || "");
+          // OAuth display names may be legal names, so never use them as public nicknames.
+          setNickname("");
           setContactEmail(currentUser.email || "");
         }
       } catch (err) {
         console.error("Failed to load user profile details:", err);
-        setError("Could not retrieve profile from database.");
+        setError(err instanceof Error ? err.message : "Could not retrieve profile details.");
       } finally {
         setLoading(false);
       }
@@ -253,7 +270,13 @@ export default function DashboardProfilePage() {
     setSuccess(null);
     setError(null);
 
-    const profilePayload: Record<string, any> = {
+    if (showOnAbout && !nickname.trim()) {
+      setSaving(false);
+      setError("Choose a public nickname before displaying this profile on the public roster.");
+      return;
+    }
+
+    const profilePayload: ProfilePayload = {
       nickname: nickname.trim(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -273,12 +296,13 @@ export default function DashboardProfilePage() {
       emergencyContactPhone: emergencyContactPhone.trim(),
       phone: phone.trim(),
       contactEmail: contactEmail.trim(),
-      showEmail: showEmail ? 1 : 0,
-      showPhone: showPhone ? 1 : 0,
-      showOnAbout: showOnAbout ? 1 : 0,
+      // Student contact visibility is forced off at the serialization boundary,
+      // including when a legacy document still contains enabled flags.
+      showEmail: memberType === "student" ? false : showEmail,
+      showPhone: memberType === "student" ? false : showPhone,
+      showOnAbout,
       colleges,
       employers,
-      updatedAt: new Date().toISOString()
     };
 
     // SEC-F03: Do not write role/memberType updates unless the user is admin,
@@ -288,10 +312,18 @@ export default function DashboardProfilePage() {
     }
 
     try {
-      const docRef = doc(db, "user_profiles", user.uid);
-      await setDoc(docRef, profilePayload, { merge: true });
+      const response = await authenticatedFetch("/api/profiles/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profilePayload),
+      });
+      if (!response.ok) throw await responseError(response, "Failed to update profile settings.");
+      const result = await response.json() as ProfileResponse & { success: boolean };
+      setMemberType(result.profile.memberType);
+      setShowEmail(result.profile.showEmail);
+      setShowPhone(result.profile.showPhone);
       
-      setSuccess("Profile settings successfully synchronized and updated!");
+      setSuccess("Profile settings saved securely.");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       console.error("Failed to write user profile:", err);
@@ -314,104 +346,17 @@ export default function DashboardProfilePage() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <header className="border-b border-white/5 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <User size={12} /> User Settings
-          </p>
-          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading">
-            My Profile
-          </h1>
-          <p className="text-marble/70 text-sm mt-2">
-            Manage your personal profile details, subteam roles, career history, and public roster privacy options.
-          </p>
-        </div>
-        {userRole !== "unverified" && userRole !== "Pending Verification" && (
-          <div className="shrink-0">
-            <button
-              type="button"
-              onClick={handleSelfProvisionZulip}
-              disabled={provisioningZulip}
-              className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2"
-            >
-              {provisioningZulip ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Provisioning...</span>
-                </>
-              ) : (
-                <>
-                  <MessageSquare size={14} />
-                  <span>Provision Zulip Account</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </header>
-
-      {/* Alerts */}
-      <AnimatePresence>
-        {success && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0 }}
-            className="p-4 bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan ares-cut-sm flex items-center gap-3"
-          >
-            <CheckCircle size={18} className="shrink-0" />
-            <span className="text-xs font-semibold uppercase tracking-wider">{success}</span>
-          </motion.div>
-        )}
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0 }}
-            className="p-4 bg-ares-red/10 border border-ares-red/30 text-ares-red flex items-center gap-3 ares-cut-sm"
-          >
-            <AlertTriangle size={18} className="shrink-0" />
-            <span className="text-xs font-semibold uppercase tracking-wider">{error}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* YPP Safety Compliance Banner for Students */}
-      {memberType === "student" && (
-        <div className="p-4 bg-ares-gold/10 border border-ares-gold/20 ares-cut-sm flex items-start gap-3 text-ares-gold text-xs leading-normal mb-6">
-          <Info size={16} className="shrink-0 mt-0.5" />
-          <div>
-            <strong><i>FIRST</i>® Youth Protection Program Compliance Warning:</strong> Under the <i>FIRST</i>® Youth Protection Program (YPP) guidelines, your contact details (email and phone) are protected. They are only visible to team administrators and coaches, and are kept hidden from standard members and public directory outputs.
-          </div>
-        </div>
-      )}
+      <ProfilePageHeader
+        canProvisionZulip={userRole !== "unverified" && userRole !== "Pending Verification"}
+        isProvisioning={provisioningZulip}
+        onProvisionZulip={() => void handleSelfProvisionZulip()}
+      />
+      <ProfileAlerts success={success} error={error} />
+      {memberType === "student" && <StudentPrivacyNotice />}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* Navigation Tabs (Sidebar Layout) */}
-        <div className="lg:col-span-1 space-y-2">
-          {[
-            { id: "identity", label: "Identity & Bio" },
-            { id: "subteams", label: "Subteams & Roles" },
-            { id: "career", label: "Education & Career" },
-            { id: "privacy", label: "Contact & Privacy" },
-            { id: "safety", label: "Logistics & Safety" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`w-full text-left px-4 py-3 border ares-cut-sm transition-all text-xs font-bold uppercase tracking-wider flex items-center justify-between group cursor-pointer ${
-                activeTab === tab.id
-                  ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
-                  : "text-marble/60 border-transparent hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <span>{tab.label}</span>
-              <ChevronRight size={14} className={`opacity-0 group-hover:opacity-100 transition-opacity ${activeTab === tab.id ? "opacity-100 text-ares-gold" : "text-marble/45"}`} />
-            </button>
-          ))}
-        </div>
+        <ProfileTabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Form Area */}
         <form onSubmit={handleSubmit} className="lg:col-span-3 space-y-8">
@@ -523,15 +468,15 @@ export default function DashboardProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs tracking-wider uppercase inline-flex items-center justify-center gap-2 px-6 py-3 shadow-xl hover:shadow-[0_0_15px_rgba(192,0,0,0.15)] active:scale-95 cursor-pointer disabled:opacity-50"
+                className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-xs tracking-wider uppercase inline-flex items-center justify-center gap-2 px-6 py-3 shadow-xl active:scale-95 cursor-pointer disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Synchronizing...
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
                   </>
                 ) : (
                   <>
-                    <Save size={14} /> Synchronize Profile
+                    <Save size={14} /> Save Profile
                   </>
                 )}
               </button>

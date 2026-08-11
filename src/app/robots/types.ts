@@ -21,4 +21,7 @@ export interface RobotItem {
   primaryMechanism?: string;
   content?: string;
   versions?: RobotVersion[];
+  isDeleted?: 0 | 1;
 }
+
+export type RobotEditorRole = "admin" | "coach" | "mentor";

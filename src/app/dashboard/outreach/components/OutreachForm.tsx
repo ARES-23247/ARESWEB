@@ -67,7 +67,7 @@ export default function OutreachForm({
                 setCalcLogMessage(null);
               }}
               className="text-ares-gold hover:text-white transition-colors cursor-pointer"
-              title="Unlink from Calendar"
+              aria-label="Unlink this outreach log from the calendar event"
             >
               <X size={12} />
             </button>
@@ -86,7 +86,7 @@ export default function OutreachForm({
             placeholder="e.g. Morgantown Library STEM Day"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
           />
         </div>
 
@@ -101,7 +101,7 @@ export default function OutreachForm({
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-bold"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-bold"
           />
         </div>
 
@@ -116,7 +116,7 @@ export default function OutreachForm({
             placeholder="e.g. Westover, WV"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
           />
         </div>
 
@@ -136,7 +136,7 @@ export default function OutreachForm({
               placeholder="0"
               value={hours || ""}
               onChange={(e) => setHours(Math.max(0, parseFloat(e.target.value) || 0))}
-              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
             />
             {calcLogMessage && (
               <p className="text-[9px] text-ares-gold/90 font-medium leading-normal bg-ares-gold/5 border border-ares-gold/10 p-1.5 ares-cut-sm mt-1 font-mono">
@@ -158,7 +158,7 @@ export default function OutreachForm({
               placeholder="0"
               value={peopleReached || ""}
               onChange={(e) => setPeopleReached(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+              className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
             />
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function OutreachForm({
             rows={4}
             value={impactSummary}
             onChange={(e) => setImpactSummary(e.target.value)}
-            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold resize-none"
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold resize-none"
           />
         </div>
 

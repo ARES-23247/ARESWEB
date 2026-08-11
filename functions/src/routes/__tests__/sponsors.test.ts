@@ -104,6 +104,15 @@ describe("Sponsors Router Backend Endpoints", () => {
             isActive: true,
           }),
         },
+        {
+          id: "sp4",
+          data: () => ({
+            name: "Archived Partner",
+            tier: "Titanium",
+            isActive: true,
+            isDeleted: 1,
+          }),
+        },
       ];
 
       const mockCollection = adminDb.collection as any;
@@ -125,6 +134,9 @@ describe("Sponsors Router Backend Endpoints", () => {
           expect.objectContaining({ name: "In-Kind Partner", tier: "In-Kind" }),
         ],
       });
+      expect(res.json.mock.calls[0][0].sponsors).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: "Archived Partner" })]),
+      );
     });
   });
 
@@ -158,8 +170,8 @@ describe("Sponsors Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         sponsors: [
-          expect.objectContaining({ name: "Titanium Partner", tier: "Titanium", isActive: true }),
-          expect.objectContaining({ name: "Silver Partner", tier: "Silver", isActive: false }),
+          expect.objectContaining({ name: "Titanium Partner", tier: "Titanium", isActive: true, isDeleted: 0 }),
+          expect.objectContaining({ name: "Silver Partner", tier: "Silver", isActive: false, isDeleted: 0 }),
         ],
       });
     });
@@ -211,6 +223,7 @@ describe("Sponsors Router Backend Endpoints", () => {
           tier: "Bronze",
           websiteUrl: "https://new.org",
           isActive: true,
+          isDeleted: 0,
         })
       );
       expect(res.json).toHaveBeenCalledWith(
@@ -264,8 +277,8 @@ describe("Sponsors Router Backend Endpoints", () => {
     });
   });
 
-  describe("DELETE /api/sponsors/admin/:id - Hard delete sponsor", () => {
-    it("should delete the sponsor permanently", async () => {
+  describe("DELETE /api/sponsors/admin/:id - Archive sponsor", () => {
+    it("should soft archive the sponsor and make it inactive", async () => {
       req.params.id = "sp_delete";
 
       const mockDocRef = adminDb.collection("").doc("");
@@ -274,8 +287,14 @@ describe("Sponsors Router Backend Endpoints", () => {
       const handler = getHandler("/admin/:id", "delete", ["ensureAdmin"]);
       await handler(req, res, next);
 
-      expect(mockDocRef.delete).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Sponsor deleted successfully." });
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 1,
+        isActive: false,
+        archivedAt: expect.any(String),
+        updatedAt: expect.any(String),
+      }));
+      expect(mockDocRef.delete).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Sponsor archived successfully." });
     });
 
     it("should throw error if sponsor does not exist", async () => {
@@ -291,6 +310,40 @@ describe("Sponsors Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Sponsor not found.");
       expect(err.status).toBe(404);
+    });
+  });
+
+  describe("PATCH /api/sponsors/admin/:id/restore - Restore sponsor", () => {
+    it("should restore the sponsor as inactive", async () => {
+      req.params.id = "sp_restore";
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
+
+      const handler = getHandler("/admin/:id/restore", "patch", ["ensureAdmin"]);
+      await handler(req, res, next);
+
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 0,
+        isActive: false,
+        archivedAt: null,
+        updatedAt: expect.any(String),
+      }));
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        message: "Sponsor restored as inactive. Review it before publishing.",
+      });
+    });
+
+    it("should throw if the sponsor does not exist", async () => {
+      req.params.id = "sp_missing";
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
+
+      const handler = getHandler("/admin/:id/restore", "patch", ["ensureAdmin"]);
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
+      expect(mockDocRef.update).not.toHaveBeenCalled();
     });
   });
 });

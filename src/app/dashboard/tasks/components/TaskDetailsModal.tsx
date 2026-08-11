@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { doc, updateDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { useFocusTrap } from "@/lib/useFocusTrap";

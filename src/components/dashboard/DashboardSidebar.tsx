@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, Sparkles, BookOpen, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebaseFirestore";
+import { onSnapshot, collection, query, where } from "firebase/firestore";
+import { authenticatedFetch } from "@/lib/api";
 
 interface NavButtonProps {
   tab: string;
@@ -53,6 +54,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
   const { user, authorizedUser, logout } = useAuth();
   const [profileAvatar, setProfileAvatar] = useState<string>("");
   const [profileNickname, setProfileNickname] = useState<string>("");
+  const [profileError, setProfileError] = useState<string>("");
   const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean>(false);
 
   const userRole = authorizedUser?.role || "Pending Verification";
@@ -61,22 +63,28 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
     if (import.meta.env.MODE === "e2e") return;
     if (!user?.uid) return;
 
-    const docRef = doc(db, "user_profiles", user.uid);
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setProfileAvatar(data.avatar || "");
-          setProfileNickname(data.nickname || "");
+    const controller = new AbortController();
+    async function loadSafeProfile() {
+      try {
+        const response = await authenticatedFetch("/api/profiles/me", { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
         }
-      },
-      (error) => {
-        console.error("Error listening to user profile in sidebar:", error);
+        const result = await response.json() as {
+          profile?: { avatar?: string; nickname?: string };
+        };
+        setProfileAvatar(result.profile?.avatar || "");
+        setProfileNickname(result.profile?.nickname || "");
+        setProfileError("");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const diagnostic = error instanceof Error ? error.message : "Profile request failed";
+        console.error("Error loading the safe sidebar profile DTO:", error);
+        setProfileError(diagnostic);
       }
-    );
-
-    return () => unsubscribe();
+    }
+    void loadSafeProfile();
+    return () => controller.abort();
   }, [user?.uid]);
 
   useEffect(() => {
@@ -111,11 +119,13 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
       <div className="p-6 border-b border-white/5 flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="relative w-12 h-12 ares-cut overflow-hidden border border-white/10 shadow-lg shrink-0">
-            <img
-              src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${user?.uid}`}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {userImage ? (
+              <img src={userImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="w-full h-full flex items-center justify-center bg-white/5" aria-hidden="true">
+                <User size={22} className="text-marble/60" />
+              </span>
+            )}
             {hasPendingInquiries && (
               <span className="absolute top-0 right-0 flex h-2.5 w-2.5 z-10">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
@@ -127,6 +137,11 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <span className="text-white text-sm font-bold truncate tracking-tight">
               {displayName}
             </span>
+            {profileError && (
+              <span role="status" className="text-[9px] font-mono text-white bg-ares-red px-1.5 py-0.5 rounded" title={profileError}>
+                Profile unavailable
+              </span>
+            )}
             <div className="flex flex-col gap-1">
               <span className="text-ares-gold text-[10px] font-black uppercase tracking-widest truncate">
                 Role: {userRole}
@@ -174,7 +189,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
         </div>
 
         {/* Administrative */}
-        {((userRole === "admin" || userRole === "coach" || userRole === "mentor") || userRole === "admin") && (
+        {(userRole === "admin" || userRole === "coach" || userRole === "mentor") && (
           <div>
             <h4 className="text-[10px] uppercase font-black tracking-widest text-ares-gold mb-2.5 px-4 font-heading">
               Administrative
@@ -223,9 +238,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
             <Link
               to="/"
               onClick={onCloseMobile}
-              className="w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider text-ares-cyan hover:bg-ares-cyan/10 hover:text-white border border-transparent hover:border-ares-cyan/20"
+              className="w-full flex items-center gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider text-ares-gold hover:bg-ares-gold/10 hover:text-white border border-transparent hover:border-ares-gold/20 focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
-              <Globe size={16} className="text-ares-cyan/85" />
+              <Globe size={16} className="text-ares-gold" aria-hidden="true" />
               <span className="truncate">Public Portal</span>
             </Link>
           </div>
@@ -234,7 +249,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
         <div className="pt-4 border-t border-white/5">
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 hover:border-ares-danger/40 ares-cut transition-all text-xs font-black uppercase tracking-wider"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-ares-red hover:bg-ares-bronze text-white border border-ares-red ares-cut transition-all text-xs font-black uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             <LogOut size={14} /> Sign Out
           </button>

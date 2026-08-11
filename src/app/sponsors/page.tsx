@@ -1,41 +1,38 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db, getAppCheckHeader } from "@/lib/firebase";
+import React, { useCallback, useEffect, useState } from "react";
+import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 import { siteConfig } from "@/lib/site-config";
-import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight } from "lucide-react";
+import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight, RefreshCw } from "lucide-react";
 import SEO from "@/components/SEO";
+import { PublicDataState } from "@/components/PublicDataState";
+import { getRecaptchaToken } from "@/lib/recaptcha";
+
+type SponsorTier = "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
 
 interface Sponsor {
-  id: string;
+  key: string;
   name: string;
-  tier: "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
+  tier: SponsorTier;
   logoUrl?: string;
   websiteUrl?: string;
-  isActive: boolean;
 }
 
-declare global {
-  interface Window {
-    ARES_E2E_BYPASS?: boolean;
-    grecaptcha?: any;
-  }
-}
+const SPONSOR_TIERS: readonly SponsorTier[] = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
 
-const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; border: string; glow: string; text: string }> = {
+const TIER_STYLING: Record<SponsorTier, { icon: React.ReactNode; glass: string; border: string; glow: string; text: string }> = {
   Titanium: { 
     icon: <Gem className="text-ares-cyan" size={32} />, 
     glass: "bg-ares-cyan/5", 
     border: "border-ares-cyan/30", 
-    glow: "shadow-[0_0_30px_rgba(0,183,235,0.15)]",
+    glow: "shadow-xl",
     text: "text-ares-cyan"
   },
   Gold: { 
     icon: <Award className="text-ares-gold" size={28} />, 
     glass: "bg-ares-gold/5", 
     border: "border-ares-gold/30", 
-    glow: "shadow-[0_0_30px_rgba(255,191,0,0.1)]",
+    glow: "shadow-xl",
     text: "text-ares-gold"
   },
   Silver: { 
@@ -61,6 +58,32 @@ const TIER_STYLING: Record<string, { icon: React.ReactNode; glass: string; borde
   },
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function safeHttpsUrl(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseSponsor(value: unknown, index: number): Sponsor | null {
+  if (!isRecord(value) || typeof value.name !== "string" || !value.name.trim()) return null;
+  if (typeof value.tier !== "string" || !SPONSOR_TIERS.includes(value.tier as SponsorTier)) return null;
+  return {
+    key: `${value.tier}-${value.name.trim()}-${index}`,
+    name: value.name.trim(),
+    tier: value.tier as SponsorTier,
+    logoUrl: safeHttpsUrl(value.logoUrl),
+    websiteUrl: safeHttpsUrl(value.websiteUrl),
+  };
+}
+
 export default function SponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [name, setName] = useState("");
@@ -70,38 +93,36 @@ export default function SponsorsPage() {
   const [message, setMessage] = useState("");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoadingSponsors, setIsLoadingSponsors] = useState(true);
+  const [isRefreshingSponsors, setIsRefreshingSponsors] = useState(false);
+  const [sponsorLoadError, setSponsorLoadError] = useState<string | null>(null);
 
-  // 1. Fetch active sponsors from Firestore
-  useEffect(() => {
+  const loadSponsors = useCallback(async () => {
+    if (sponsors.length > 0) setIsRefreshingSponsors(true);
+    else setIsLoadingSponsors(true);
+
     try {
-      const sponsorsRef = collection(db, "sponsors");
-      const q = query(sponsorsRef, where("isActive", "==", true));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || "Sponsor",
-              tier: data.tier || "Bronze",
-              logoUrl: data.logoUrl || "",
-              websiteUrl: data.websiteUrl || "",
-              isActive: data.isActive !== false
-            } as Sponsor;
-          });
-          setSponsors(list);
-        } else {
-          setSponsors([]);
-        }
-      }, (err) => {
-        console.warn("Firestore error reading sponsors.", err.message);
-        setSponsors([]);
-      });
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Firestore offline.", e);
-      setSponsors([]);
+      const response = await fetch("/api/sponsors");
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const payload: unknown = await response.json();
+      if (!isRecord(payload) || !Array.isArray(payload.sponsors)) {
+        throw new Error("HTTP 502: Invalid sponsor response");
+      }
+      setSponsors(payload.sponsors.map(parseSponsor).filter((sponsor): sponsor is Sponsor => sponsor !== null));
+      setSponsorLoadError(null);
+    } catch (error) {
+      console.error("Failed to load sponsors from the public API:", error);
+      setSponsorLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsLoadingSponsors(false);
+      setIsRefreshingSponsors(false);
     }
+  }, [sponsors.length]);
+
+  useEffect(() => {
+    void loadSponsors();
+    // Initial request only. Retry uses the visible button below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Group sponsors by tier
@@ -112,7 +133,7 @@ export default function SponsorsPage() {
     return acc;
   }, {} as Record<string, Sponsor[]>);
 
-  const tiersOrdered = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
+  const tiersOrdered = SPONSOR_TIERS;
 
   // 2. Form Submission via server-side secure API Endpoint + Google reCAPTCHA
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,57 +143,12 @@ export default function SponsorsPage() {
     setSubmitStatus("sending");
 
     try {
-      const isDev = process.env.NODE_ENV === "development";
-      const isLocal = typeof window !== "undefined" && (
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname.startsWith("192.168.") ||
-        window.location.hostname.startsWith("10.") ||
-        window.location.hostname.endsWith(".local") ||
-        window.location.hostname.includes("aresfirst-portal--") ||
-        window.location.protocol === "http:"
-      );
-      const hasBypass = typeof window !== "undefined" && window.ARES_E2E_BYPASS;
-      const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
-        (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
-
-      // Handle local E2E test, dev bypass, or missing site key directly
-      if (!siteKey || ((isLocal && isDev) || hasBypass) && (typeof window === "undefined" || !window.grecaptcha)) {
-        await submitInquiry("test-bypass-token");
-        return;
-      }
-
-      if (typeof window === "undefined" || !window.grecaptcha) {
-        throw new Error("Security verification service (reCAPTCHA) is currently loading or blocked. Please refresh.");
-      }
-
-      const recaptcha = window.grecaptcha as unknown as {
-        ready: (cb: () => void) => void;
-        execute: (siteKey: string, options: { action: string }) => Promise<string>;
-      };
-
-      recaptcha.ready(() => {
-        try {
-          const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
-          recaptcha.execute(siteKey, { action: "submit" })
-            .then(async (token) => {
-              await submitInquiry(token);
-            })
-            .catch((err) => {
-              console.error("reCAPTCHA Token Generation Error:", err);
-              setSubmitStatus("error");
-              setErrorMessage("Security check execution failed. Please reload and try again.");
-            });
-        } catch (err: any) {
-          console.error("reCAPTCHA ready callback error:", err);
-          setSubmitStatus("error");
-          setErrorMessage(err.message || "Security check initialization failed. Please reload and try again.");
-        }
-      });
-    } catch (err: any) {
+      const token = await getRecaptchaToken();
+      await submitInquiry(token);
+    } catch (err: unknown) {
       console.error(err);
       setSubmitStatus("error");
-      setErrorMessage(err.message || "Verification check failed. Please refresh and try again.");
+      setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
     }
   };
 
@@ -198,9 +174,13 @@ export default function SponsorsPage() {
         })
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to submit request.");
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const detail = isRecord(data) && typeof data.error === "string" ? ` — ${data.error}` : "";
+        throw new Error(`HTTP ${res.status}: ${res.statusText}${detail}`);
+      }
+      if (!isRecord(data) || data.success !== true) {
+        throw new Error("HTTP 502: Invalid inquiry response");
       }
 
       setSubmitStatus("success");
@@ -209,10 +189,10 @@ export default function SponsorsPage() {
       setPhone("");
       setLevel("Interested in Details");
       setMessage("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setSubmitStatus("error");
-      setErrorMessage(err.message || "An unexpected error occurred. Please try again or email us directly.");
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred. Please try again or email us directly.");
     }
   };
 
@@ -227,7 +207,7 @@ export default function SponsorsPage() {
         {/* Header */}
         <header className="mb-20 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 ares-cut-sm bg-white/5 border border-white/10 text-ares-gold text-xs font-bold uppercase tracking-widest mb-6 select-none">
-            <Heart size={14} className="fill-ares-red text-ares-red" />
+            <Heart aria-hidden="true" size={14} className="fill-ares-gold text-ares-gold" />
             Support the Mission
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading leading-tight">
@@ -238,21 +218,50 @@ export default function SponsorsPage() {
           </p>
         </header>
 
-        {/* Sponsor Showcase empty state vs grid */}
-        {sponsors.length === 0 ? (
+        <div className="mb-8 flex justify-end">
+          <button
+            type="button"
+            onClick={() => void loadSponsors()}
+            disabled={isLoadingSponsors || isRefreshingSponsors}
+            className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <RefreshCw aria-hidden="true" size={14} />
+            Refresh partners
+          </button>
+        </div>
+
+        {/* Sponsor showcase */}
+        {isLoadingSponsors ? (
+          <p role="status" className="py-16 text-center text-sm font-bold text-ares-gold">
+            Loading published partners…
+          </p>
+        ) : (
+          <>
+            {sponsorLoadError && (
+              <div className="mb-10">
+                <PublicDataState
+                  title={sponsors.length > 0 ? "The partner list could not refresh" : "Unable to load our partner list"}
+                  message={sponsors.length > 0 ? "The last published partner list remains visible below." : "The public partner service could not be reached."}
+                  diagnostic={sponsorLoadError}
+                  onRetry={() => void loadSponsors()}
+                />
+              </div>
+            )}
+            {isRefreshingSponsors && <p role="status" className="mb-8 text-center text-sm text-ares-gold">Refreshing published partners…</p>}
+        {sponsors.length === 0 && !sponsorLoadError ? (
           <div className="glass-card hero-card max-w-xl mx-auto p-10 border border-white/10 text-center space-y-6 shadow-2xl">
-            <Gem className="text-ares-gold w-12 h-12 mx-auto animate-pulse" />
+            <Gem aria-hidden="true" className="text-ares-gold w-12 h-12 mx-auto" />
             <h3 className="text-xl font-extrabold text-white uppercase tracking-tight font-heading">
-              Partnership List Updating
+              No partners are published yet
             </h3>
             <p className="text-marble/70 text-xs leading-relaxed max-w-sm mx-auto font-semibold">
-              Our partner directories and corporate sponsors list is currently being updated for the active season. Want to help team ARES build the future of STEM?
+              This list will show organizations after the team reviews and publishes each partner record.
             </p>
             <button
               onClick={() => {
                 document.getElementById("sponsor-form-section")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="clipped-button bg-ares-red hover:bg-ares-red-dark text-white text-xs font-black uppercase tracking-wider py-2.5 px-6 transition-all cursor-pointer shadow-lg active:scale-95"
+              className="clipped-button bg-ares-red hover:bg-ares-bronze text-white text-xs font-black uppercase tracking-wider py-2.5 px-6 transition-all cursor-pointer shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               Become a Sponsor
             </button>
@@ -274,47 +283,67 @@ export default function SponsorsPage() {
                   </div>
 
                   <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                    {groupedSponsors[tier].map((s) => (
-                      <a
-                        key={s.id}
-                        href={s.websiteUrl || "#"}
-                        target={s.websiteUrl ? "_blank" : undefined}
-                        rel="noopener noreferrer"
-                        className={`
-                          ${TIER_STYLING[tier].glass} ${TIER_STYLING[tier].border} ${TIER_STYLING[tier].glow}
-                          p-8 ares-cut-lg border flex flex-col items-center justify-center text-center group transition-all duration-300
-                          min-h-[200px] hover:bg-white/[0.07] cursor-pointer
-                        `}
-                      >
-                        {s.logoUrl ? (
-                          <img 
-                            src={s.logoUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')} 
-                            alt={s.name} 
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.parentElement?.querySelector('.fallback-text')?.classList.remove('hidden');
-                            }}
-                            className="max-w-full max-h-20 object-contain mb-4 filter grayscale group-hover:grayscale-0 transition-all duration-500" 
-                          />
-                        ) : null}
-                        
-                        <div className={`fallback-text text-2xl font-black text-white/60 mb-2 font-heading ${s.logoUrl ? 'hidden' : ''}`}>
-                          {s.name}
-                        </div>
-                        
-                        {s.websiteUrl && (
-                          <div className="flex items-center gap-1.5 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Visit Website</span>
-                            <ExternalLink size={10} className="text-ares-gold" />
+                    {groupedSponsors[tier].map((s) => {
+                      const sponsorContent = (
+                        <>
+                          {s.logoUrl ? (
+                            <img
+                              src={s.logoUrl}
+                              alt={`${s.name} logo`}
+                              loading="lazy"
+                              decoding="async"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                                event.currentTarget.parentElement?.querySelector(".fallback-text")?.classList.remove("hidden");
+                              }}
+                              className="mb-4 max-h-20 max-w-full object-contain grayscale transition-all duration-500 group-hover:grayscale-0"
+                            />
+                          ) : null}
+                          <div className={`fallback-text mb-2 font-heading text-2xl font-black text-white/80 ${s.logoUrl ? "hidden" : ""}`}>
+                            {s.name}
                           </div>
-                        )}
-                      </a>
-                    ))}
+                          {s.websiteUrl && (
+                            <div className="mt-auto flex items-center gap-1.5 text-white">
+                              <span className="text-[10px] font-black uppercase tracking-widest">Visit website</span>
+                              <ExternalLink aria-hidden="true" size={10} className="text-ares-gold" />
+                            </div>
+                          )}
+                        </>
+                      );
+                      const cardClasses = `
+                        ${TIER_STYLING[tier].glass} ${TIER_STYLING[tier].border} ${TIER_STYLING[tier].glow}
+                        group flex min-h-[200px] flex-col items-center justify-center border p-8 text-center transition-colors hover:bg-white/10
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan
+                      `;
+
+                      return s.websiteUrl ? (
+                        <a
+                          key={s.key}
+                          href={s.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Visit ${s.name} website`}
+                          className={`ares-cut-lg ${cardClasses}`}
+                        >
+                          {sponsorContent}
+                        </a>
+                      ) : (
+                        <article
+                          key={s.key}
+                          aria-label={s.name}
+                          className={`ares-cut-lg ${cardClasses}`}
+                        >
+                          {sponsorContent}
+                        </article>
+                      );
+                    })}
                   </div>
                 </section>
               )
             ))}
           </div>
+        )}
+          </>
         )}
 
         {/* Form Footer */}
@@ -335,7 +364,7 @@ export default function SponsorsPage() {
               <a href={`mailto:${siteConfig.contact.sponsorship}`} className="text-xl font-extrabold text-white hover:text-ares-gold transition-colors flex items-center gap-3 w-fit group">
                 {siteConfig.contact.sponsorship} 
                 <span className="group-hover:translate-x-1 transition-transform">
-                  <ArrowRight size={18} className="text-ares-red" />
+                  <ArrowRight aria-hidden="true" size={18} className="text-ares-gold" />
                 </span>
               </a>
             </div>
@@ -343,17 +372,17 @@ export default function SponsorsPage() {
           
           <div className="flex-1 relative z-10 bg-obsidian p-8 ares-cut border border-white/5 shadow-2xl">
             <h4 className="text-lg font-black text-white mb-6 uppercase tracking-wider flex items-center gap-2 font-heading">
-              <Heart size={18} className="text-ares-red fill-ares-red/20" /> Become a Sponsor
+              <Heart aria-hidden="true" size={18} className="text-ares-gold fill-ares-gold/20" /> Become a Sponsor
             </h4>
 
             {submitStatus === "success" && (
-              <div className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-4 ares-cut-sm mb-6 text-xs font-bold flex items-center gap-2">
+              <div role="status" aria-live="polite" className="bg-ares-gold/10 border border-ares-gold/20 text-ares-gold p-4 ares-cut-sm mb-6 text-xs font-bold flex items-center gap-2">
                 <ShieldCheck size={14} /> Request sent successfully. We will follow up soon!
               </div>
             )}
             
             {submitStatus === "error" && (
-              <div className="bg-ares-red/10 border border-ares-red/20 text-ares-red p-4 ares-cut-sm mb-6 text-xs font-bold">
+              <div role="alert" aria-live="assertive" className="bg-ares-red/10 border border-ares-red/40 text-white p-4 ares-cut-sm mb-6 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
@@ -369,7 +398,7 @@ export default function SponsorsPage() {
                     onChange={e => setName(e.target.value)} 
                     required 
                     className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner" 
-                    placeholder="Stark Industries" 
+                    placeholder="Your organization"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,7 +411,7 @@ export default function SponsorsPage() {
                       onChange={e => setEmail(e.target.value)} 
                       required 
                       className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-3 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all shadow-inner" 
-                      placeholder="you@stark.com" 
+                    placeholder="you@example.org"
                     />
                   </div>
                   <div>
@@ -438,12 +467,13 @@ export default function SponsorsPage() {
                 <button 
                   type="submit" 
                   disabled={submitStatus === "sending"} 
-                  className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none cursor-pointer text-xs"
+                  aria-busy={submitStatus === "sending"}
+                  className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none cursor-pointer text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
                   {submitStatus === "sending" ? "Sending..." : "Submit Interest Request"}
                 </button>
-                <p className="text-center text-[9px] text-marble/45 font-mono uppercase tracking-tighter mt-4">
-                  {siteConfig.team.fullName} operates under a 501(c)(3) nonprofit umbrella. All donations are tax-deductible.
+                <p className="text-center text-[9px] text-marble/70 font-mono uppercase tracking-tighter mt-4">
+                  Ask our team for current donation and receipt details before you give.
                 </p>
               </div>
             </form>

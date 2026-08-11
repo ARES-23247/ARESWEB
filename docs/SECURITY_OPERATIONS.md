@@ -49,6 +49,16 @@ Two server integrations do not use Firebase App Check:
 - `POST /api/profiles/sync` uses `PROFILE_SYNC_SECRET`.
 - `POST /api/webhooks/zulip` uses `ZULIP_WEBHOOK_TOKEN`.
 
+The Zulip bot credential must come from `ZULIP_BOT_EMAIL` and `ZULIP_API_KEY`
+in Google Secret Manager. No source fallback is permitted. Rotate any key that
+has ever appeared in repository history before the next deployment, then verify
+the bot can only access the streams and actions it needs.
+
+The team media integrations use `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_PHOTOS_REFRESH_TOKEN`, and `YOUTUBE_API_KEY` from Google Secret Manager.
+Authorize the Google Photos refresh token while signed in to the team-owned
+Google account. Do not connect a student's or volunteer's personal account.
+
 Use this Cloud Logging filter to review custom API results:
 
 ```text
@@ -64,6 +74,11 @@ Do not enable enforcement until all of these checks pass:
 3. Confirm at least 99% verified traffic in Firebase App Check metrics.
 4. Find the cause of every `missing` or `invalid` API mutation.
 5. Confirm each protected route group has a recent `valid` result.
+
+After those checks pass, set the non-secret Functions environment variable
+`ENFORCE_APP_CHECK=true` and deploy Functions. Until that flag is present, the
+API continues to record App Check results without rejecting requests. Remove or
+set the flag to `false` to return to observation-only mode during an incident.
 
 Enable Storage first. Watch errors for 24 hours. Enable Firestore next, then
 watch for another 24 hours. Return a service to `UNENFORCED` at once if valid

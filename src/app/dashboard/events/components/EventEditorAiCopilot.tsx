@@ -95,7 +95,7 @@ export default function EventEditorAiCopilot({
     <div className="w-full lg:w-[32%] border-l border-white/10 p-5 bg-black/35 rounded-xl flex flex-col justify-between overflow-y-auto shrink-0 space-y-5 scrollbar-thin scrollbar-thumb-white/5 text-left">
       <div className="space-y-5">
         <div className="flex items-center gap-1.5">
-          <Sparkles size={16} className="text-ares-cyan" />
+          <Sparkles size={16} className="text-ares-gold" />
           <h4 className="text-xs font-black uppercase tracking-widest text-white">Gemini Operation Copilot</h4>
         </div>
 
@@ -164,7 +164,7 @@ export default function EventEditorAiCopilot({
               type="button"
               onClick={() => handleAiAssistant(aiPrompt)}
               disabled={aiLoading}
-              className="px-3.5 bg-ares-cyan text-black rounded-lg hover:brightness-110 font-black uppercase text-[10px] tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0"
+              className="px-3.5 bg-ares-gold text-black rounded-lg hover:bg-ares-bronze font-black uppercase text-[10px] tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0"
             >
               Ask
             </button>
@@ -174,10 +174,10 @@ export default function EventEditorAiCopilot({
         {/* AI Response Output */}
         {aiResponse && (
           <div className="space-y-1.5 animate-fade-in">
-            <span className="text-[8px] uppercase font-black tracking-widest text-ares-cyan block">
+            <span className="text-[8px] uppercase font-black tracking-widest text-ares-gold block">
               Copilot Output
             </span>
-            <div className="p-3 bg-black/45 border border-ares-cyan/10 rounded-lg text-xs leading-relaxed text-marble/90 font-medium font-mono max-h-[160px] overflow-y-auto scrollbar-thin whitespace-pre-wrap select-text">
+            <div className="p-3 bg-black/45 border border-ares-gold/20 rounded-lg text-xs leading-relaxed text-marble/90 font-medium font-mono max-h-[160px] overflow-y-auto scrollbar-thin whitespace-pre-wrap select-text">
               {aiResponse}
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function EventEditorAiCopilot({
               type="button"
               onClick={handleGrammarCheck}
               disabled={aiLoading}
-              className="px-2.5 py-1 border border-ares-cyan/35 hover:bg-ares-cyan/15 text-ares-cyan text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
+              className="px-2.5 py-1 border border-ares-gold/35 hover:bg-ares-gold/15 text-ares-gold text-[8px] uppercase font-black tracking-widest rounded transition-all cursor-pointer"
             >
               Run Spelling Audit
             </button>
@@ -210,7 +210,7 @@ export default function EventEditorAiCopilot({
                   {grammarEdits.map((ed, idx) => (
                     <div key={idx} className="p-2 bg-ares-red/10 border border-ares-red/25 rounded text-[9px] text-marble/85 font-mono">
                       <span className="text-ares-red line-through block">-{ed.original}</span>
-                      <span className="text-ares-success font-bold block">+{ed.corrected}</span>
+                      <span className="text-ares-gold font-bold block">+{ed.corrected}</span>
                       {ed.explanation && <p className="text-[8px] text-marble/45 mt-1 italic">{ed.explanation}</p>}
                     </div>
                   ))}
@@ -224,7 +224,7 @@ export default function EventEditorAiCopilot({
                   setGrammarEdits([]);
                   setRevertAlert("Spelling/grammar edits applied.");
                 }}
-                className="w-full py-1.5 bg-ares-cyan text-black font-black uppercase tracking-widest text-[9px] rounded hover:brightness-105 transition-all cursor-pointer shadow-md"
+                className="w-full py-1.5 bg-ares-gold text-black font-black uppercase tracking-widest text-[9px] rounded hover:bg-ares-bronze transition-all cursor-pointer shadow-md"
               >
                 Apply Corrections
               </button>

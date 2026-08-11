@@ -32,44 +32,40 @@ export default function PrivacyTab({
     <div className="space-y-6">
       {isStudent && (
         <div className="bg-ares-gold/10 border border-ares-gold/20 p-4 rounded-xl text-ares-gold text-xs leading-normal">
-          <strong><i>FIRST</i>® Youth Protection Program (YPP):</strong> As a student member, your contact details (email and phone number) are protected under YPP rules. They are kept securely hidden from public profiles and verified members, and are visible only to team administrators.
+          <strong><i>FIRST</i>® Youth Protection Program:</strong> Your contact details stay private. Only you and authorized coaches or administrators can view them.
         </div>
       )}
 
-      {!isStudent && (
-        <>
-          <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
-            <User size={14} /> Contact Information
-          </h3>
+      <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest border-b border-white/5 pb-2.5 flex items-center gap-2">
+        <User size={14} aria-hidden="true" /> Private Contact Information
+      </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="profile-contact-email" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Contact Email</label>
-              <input
-                id="profile-contact-email"
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
-                placeholder="e.g. contact@email.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="profile-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Phone Number</label>
-              <input
-                id="profile-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
-                placeholder="e.g. 304-555-0199"
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="profile-contact-email" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Contact Email</label>
+          <input
+            id="profile-contact-email"
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
+            placeholder="e.g. contact@email.com"
+          />
+        </div>
+        <div>
+          <label htmlFor="profile-phone" className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-2">Phone Number</label>
+          <input
+            id="profile-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
+            placeholder="e.g. 304-555-0199"
+          />
+        </div>
+      </div>
 
-          <div className="h-px bg-white/5 my-4" />
-        </>
-      )}
+      <div className="h-px bg-white/5 my-4" />
 
       <h3 className="text-sm font-black text-ares-gold uppercase tracking-widest pb-2.5 flex items-center gap-2">
         <Info size={14} /> Roster & Privacy Options

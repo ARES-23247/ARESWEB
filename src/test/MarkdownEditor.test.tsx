@@ -1,25 +1,33 @@
 import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import MarkdownEditor from "../components/MarkdownEditor";
 
-// Mock Firebase Storage
-vi.mock("@/lib/firebase", () => ({
-  storage: {}
-}));
-
-vi.mock("firebase/storage", () => ({
-  ref: vi.fn((_storage, path) => ({ path })),
-  uploadBytes: vi.fn((ref, _file) => Promise.resolve({ ref })),
-  getDownloadURL: vi.fn((ref) =>
-    Promise.resolve(`https://firebasestorage.googleapis.com/v0/b/mock/o/${encodeURIComponent(ref.path)}`)
-  )
+vi.mock("@/lib/image", () => ({
+  resizeAndCompressImage: vi.fn(() => Promise.resolve({
+    base64: "ZHVtbXkgY29udGVudA==",
+    mimeType: "image/png",
+  })),
 }));
 
 // Mock API endpoint for synced media gallery
 vi.mock("@/lib/api", () => ({
-  authenticatedFetch: vi.fn(() =>
-    Promise.resolve({
+  authenticatedFetch: vi.fn((input: string) => {
+    if (input === "/api/photos/upload-unified") {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          photo: {
+            id: "uploaded-photo",
+            publicUrl: "https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2Fintake.png",
+          },
+        }),
+      });
+    }
+    if (input === "/api/photos/albums") {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ albums: [] }) });
+    }
+    return Promise.resolve({
       ok: true,
       json: () =>
         Promise.resolve({
@@ -40,8 +48,8 @@ vi.mock("@/lib/api", () => ({
             }
           ]
         })
-    })
-  )
+    });
+  })
 }));
 
 // Simple wrapper to test state changes
@@ -196,9 +204,9 @@ This is **bold** text`} />);
       fireEvent.change(fileInput, { target: { files: [file] } });
     });
 
-    // Modal should close and markdown should embed the mock storage URL
-    expect(screen.queryByText("Embed Image")).not.toBeInTheDocument();
-    expect(textarea.value).toContain("Start ![Intake Mechanism](https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2F");
+    // Modal should close and markdown should embed the API-managed photo URL.
+    await waitFor(() => expect(screen.queryByText("Embed Image")).not.toBeInTheDocument());
+    expect(textarea.value).toBe("Start ![Intake Mechanism](https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2Fintake.png)");
   });
 
   it("fetches synced photos from the gallery and inserts the selected one", async () => {
@@ -238,5 +246,3 @@ This is **bold** text`} />);
     expect(textarea.value).toBe("Gallery: ![synced-photo-1](https://firebasestorage.googleapis.com/v0/b/mock/o/synced-photo-1.jpg)");
   });
 });
-
-

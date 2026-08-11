@@ -51,8 +51,8 @@ export default function SafetyTab({
         </div>
       </div>
 
-      <div className="bg-black/25 border border-white/5 p-4 rounded-xl">
-        <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Dietary Restrictions</label>
+      <fieldset className="bg-black/25 border border-white/5 p-4 rounded-xl">
+        <legend className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Dietary Restrictions</legend>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {availableDietary.map((item) => {
             const isSelected = dietaryRestrictions.includes(item);
@@ -60,6 +60,7 @@ export default function SafetyTab({
               <button
                 key={item}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleDietaryToggle(item)}
                 className={`px-4 py-3 ares-cut-sm border text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all ${
                   isSelected
@@ -72,7 +73,7 @@ export default function SafetyTab({
             );
           })}
         </div>
-      </div>
+      </fieldset>
 
       <div className="h-px bg-white/5 my-4" />
 

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import tournamentsRouter, {
   createTournamentSchema,
+  createTournamentMatchSchema,
   updateTournamentSchema,
+  updateTournamentMatchSchema,
   ensureAdminOrCoach
 } from "../tournaments";
 import { adminDb } from "../../lib/firebase-admin";
@@ -120,6 +122,26 @@ describe("Tournaments Router Backend Endpoints", () => {
       expect(next).toHaveBeenCalledWith();
     });
 
+    it("should deny the mentor role", async () => {
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "authorized_users") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({ role: "mentor" }),
+              }),
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      await ensureAdminOrCoach(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      expect(next.mock.calls[0][0]).toMatchObject({ status: 403 });
+    });
+
     it("should call next(ApiError 401) if user is not authenticated (req.user missing)", async () => {
       req.user = undefined;
       await ensureAdminOrCoach(req, res, next);
@@ -169,7 +191,7 @@ describe("Tournaments Router Backend Endpoints", () => {
       expect(next).toHaveBeenCalledWith(expect.any(ApiError));
       const err = next.mock.calls[0][0];
       expect(err.status).toBe(403);
-      expect(err.message).toContain("Forbidden: Insufficient privileges");
+      expect(err.message).toContain("admin or coach access");
     });
   });
 
@@ -184,9 +206,28 @@ describe("Tournaments Router Backend Endpoints", () => {
             challengeName: "FIRST Tech Challenge",
             date: "2024-03-10",
             location: "Detroit",
+            oprList: [
+              { teamNumber: "23247", teamName: "ARES", opr: 123.4, internalNote: "do not expose" },
+              { teamNumber: null, teamName: "Invalid", opr: 10 },
+            ],
+            scoutingDetails: {
+              autoPathNotes: "Reliable path",
+              driverFeedback: "Responsive",
+              robotSpecs: "Mecanum",
+              privateDraft: "do not expose",
+            },
             isDeleted: 0,
             createdAt: "2024-01-01T00:00:00.000Z",
             updatedAt: "2024-01-01T00:00:00.000Z",
+          }),
+        },
+        {
+          id: "tour2",
+          data: () => ({
+            name: "Worlds",
+            date: "2024-04-20",
+            location: "Houston",
+            isDeleted: 0,
           }),
         },
       ];
@@ -211,10 +252,19 @@ describe("Tournaments Router Backend Endpoints", () => {
         expect.objectContaining({
           success: true,
           tournaments: [
+            expect.objectContaining({ id: "tour2", name: "Worlds" }),
             expect.objectContaining({ id: "tour1", name: "States" }),
           ],
         })
       );
+      const payload = res.json.mock.calls[0][0];
+      const states = payload.tournaments.find((item: { id: string }) => item.id === "tour1");
+      expect(states.oprList).toEqual([{ teamNumber: "23247", teamName: "ARES", opr: 123.4 }]);
+      expect(states.scoutingDetails).toEqual({
+        autoPathNotes: "Reliable path",
+        driverFeedback: "Responsive",
+        robotSpecs: "Mecanum",
+      });
     });
 
     it("should handle startAfter cursor correctly if provided", async () => {
@@ -381,7 +431,6 @@ describe("Tournaments Router Backend Endpoints", () => {
 
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: "new_tour_id",
           name: "World Championship",
           isDeleted: 0,
         })
@@ -502,7 +551,7 @@ describe("Tournaments Router Backend Endpoints", () => {
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        message: "Tournament deleted successfully",
+        message: "Tournament archived successfully",
       });
     });
 
@@ -559,6 +608,216 @@ describe("Tournaments Router Backend Endpoints", () => {
       };
       const result = updateTournamentSchema.safeParse(partialBody);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("stale match protection", () => {
+    it("returns 404 for a missing match completion update and never recreates it", async () => {
+      req.params = { id: "tour1", matchId: "stale-match" };
+      req.body = { completed: true };
+      const set = vi.fn();
+      const update = vi.fn();
+
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournament_matches") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({ exists: false, data: () => undefined }),
+              set,
+              update,
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      const handler = getHandler("/:id/matches/:matchId/completion", "put");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 404,
+        code: "MATCH_NOT_FOUND",
+      }));
+      expect(set).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("match DTO and lifecycle endpoints", () => {
+    it("returns a bounded, active, naturally sorted match DTO list", async () => {
+      req.params = { id: "tour1" };
+      req.query = { limit: "999" };
+      const matchDocs = [
+        {
+          id: "qm10",
+          data: () => ({
+            tournamentId: "tour1",
+            matchNumber: "QM10",
+            alliance: "blue",
+            partner: "100",
+            opponents: ["200", 300, "400"],
+            scoreSelf: 15,
+            scoreOpponent: 20,
+            result: "lost",
+            completed: true,
+            isDeleted: 0,
+          }),
+        },
+        {
+          id: "qm2",
+          data: () => ({
+            tournamentId: "tour1",
+            matchNumber: "QM2",
+            alliance: "red",
+            partner: "101",
+            opponents: ["201"],
+            result: "upcoming",
+            completed: false,
+            isDeleted: 0,
+          }),
+        },
+        { id: "archived", data: () => ({ tournamentId: "tour1", isDeleted: 1 }) },
+      ];
+
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournaments") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({ exists: true, id: "tour1", data: () => ({ isDeleted: 0 }) }),
+            }),
+          } as any;
+        }
+        if (name === "tournament_matches") {
+          const queryMock: any = {
+            where: vi.fn().mockImplementation(() => queryMock),
+            limit: vi.fn().mockImplementation(() => queryMock),
+            get: vi.fn().mockResolvedValue({ docs: matchDocs }),
+          };
+          return queryMock;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches", "get")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        matches: [
+          expect.objectContaining({ id: "qm2", matchNumber: "QM2" }),
+          expect.objectContaining({ id: "qm10", opponents: ["200", "400"] }),
+        ],
+      });
+    });
+
+    it("creates a match only after confirming its tournament is active", async () => {
+      req.params = { id: "tour1" };
+      req.body = {
+        matchNumber: "QM1",
+        alliance: "red",
+        partner: "12345",
+        opponents: ["54321"],
+        result: "upcoming",
+        completed: false,
+      };
+      const set = vi.fn().mockResolvedValue(undefined);
+
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournaments") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({ exists: true, id: "tour1", data: () => ({ isDeleted: 0 }) }),
+            }),
+          } as any;
+        }
+        if (name === "tournament_matches") {
+          return { doc: vi.fn().mockReturnValue({ id: "new-match", set }) } as any;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches", "post")(req, res, next);
+
+      expect(set).toHaveBeenCalledWith(expect.objectContaining({ tournamentId: "tour1", isDeleted: 0 }));
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        match: expect.objectContaining({ id: "new-match", matchNumber: "QM1" }),
+      }));
+    });
+
+    it("updates an active match without replacing its identity", async () => {
+      req.params = { id: "tour1", matchId: "qm1" };
+      req.body = { result: "won", completed: true, scoreSelf: 42 };
+      const update = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournament_matches") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "qm1",
+                data: () => ({
+                  tournamentId: "tour1",
+                  matchNumber: "QM1",
+                  alliance: "red",
+                  partner: "12345",
+                  opponents: ["54321"],
+                  result: "upcoming",
+                  completed: false,
+                  isDeleted: 0,
+                }),
+              }),
+              update,
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches/:matchId", "put")(req, res, next);
+
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ result: "won", completed: true }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        match: expect.objectContaining({ id: "qm1", result: "won", completed: true }),
+      }));
+    });
+
+    it("soft-archives an active match", async () => {
+      req.params = { id: "tour1", matchId: "qm1" };
+      const update = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournament_matches") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "qm1",
+                data: () => ({ tournamentId: "tour1", isDeleted: 0 }),
+              }),
+              update,
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches/:matchId", "delete")(req, res, next);
+
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Match archived successfully" });
+    });
+
+    it("validates match create and update payloads", () => {
+      expect(createTournamentMatchSchema.safeParse({
+        matchNumber: "QM1",
+        alliance: "blue",
+        partner: "12345",
+        opponents: ["54321"],
+        result: "upcoming",
+        completed: false,
+      }).success).toBe(true);
+      expect(updateTournamentMatchSchema.safeParse({ result: "won" }).success).toBe(true);
+      expect(updateTournamentMatchSchema.safeParse({}).success).toBe(false);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
@@ -79,28 +79,6 @@ function AppLoading() {
 }
 
 export default function App() {
-  useEffect(() => {
-    // In production, do not load reCAPTCHA if NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not configured.
-    // In development/test environments, we can fall back to the public testing key.
-    const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
-      (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
-
-    if (!siteKey) {
-      console.warn("[reCAPTCHA] Site key is not configured. Security checks will be bypassed.");
-      return;
-    }
-
-    // Only load reCAPTCHA once
-    if (document.getElementById("recaptcha-script")) return;
-    
-    const script = document.createElement("script");
-    script.id = "recaptcha-script";
-    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>

@@ -14,7 +14,7 @@ describe("security-rule invariants", () => {
   });
 
   it("does not expose settings publicly", () => {
-    expect(firestoreRules).toMatch(/match \/settings\/\{settingId\}[\s\S]*?allow read: if isAuthorized\(\);/);
+    expect(firestoreRules).toMatch(/match \/settings\/\{settingId\}[\s\S]*?allow read, write: if false;/);
   });
 
   it("does not let every verified member publish arbitrary editor assets", () => {

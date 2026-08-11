@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, increment } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { MessageSquare } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 

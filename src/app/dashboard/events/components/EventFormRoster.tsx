@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { cleanUndefined } from "@/lib/utils";
 import { EventSignup } from "./EventEditorDrawer";
+import type { User } from "firebase/auth";
 
 interface EventFormRosterProps {
   editId: string;
@@ -13,7 +14,7 @@ interface EventFormRosterProps {
   isAdmin: boolean;
   formIsPotluck: number;
   formIsVolunteer: number;
-  user: any;
+  user: User | null;
   userNickname: string;
   teamMembers: { uid: string; nickname: string; avatar: string; }[];
   displayedMembers: { uid: string; nickname: string; avatar: string; }[];
@@ -39,6 +40,7 @@ export default function EventFormRoster({
   const [signupError, setSignupError] = useState<string | null>(null);
   const [submittingRsvp, setSubmittingRsvp] = useState(false);
   const [selectedMemberIdToCheckin, setSelectedMemberIdToCheckin] = useState("");
+  const [pendingRemoval, setPendingRemoval] = useState<{ userId: string; label: string; self: boolean } | null>(null);
 
   // Find if current user is signed up for active event
   const mySignup = useMemo(() => {
@@ -68,7 +70,7 @@ export default function EventFormRoster({
     try {
       const signupData: EventSignup = {
         userId: user.uid,
-        nickname: userNickname || user.displayName || "Anonymous Member",
+        nickname: userNickname || "ARES Member",
         bringing: formIsPotluck === 1 ? bringing.trim() : undefined,
         prepHours: formIsVolunteer === 1 ? prepHours : undefined,
         notes: notes.trim() || undefined,
@@ -76,26 +78,36 @@ export default function EventFormRoster({
       };
       await setDoc(doc(db, "events", editId, "signups", user.uid), cleanUndefined(signupData));
       setRevertAlert("RSVP updated successfully!");
-    } catch (err: any) {
-      setSignupError(err.message || "Failed to save RSVP.");
+    } catch (err: unknown) {
+      setSignupError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmittingRsvp(false);
     }
   };
 
   // Action: Cancel self-RSVP
-  const handleRsvpCancel = async () => {
+  const handleRsvpCancel = () => {
     if (!user || !editId) return;
+    setPendingRemoval({ userId: user.uid, label: "your RSVP", self: true });
+  };
+
+  const executeRsvpRemoval = async () => {
+    if (!pendingRemoval || !editId) return;
     setSubmittingRsvp(true);
     setSignupError(null);
     try {
-      await deleteDoc(doc(db, "events", editId, "signups", user.uid));
-      setBringing("");
-      setNotes("");
-      setPrepHours(0);
-      setRevertAlert("RSVP cancelled.");
-    } catch (err: any) {
-      setSignupError(err.message || "Failed to cancel RSVP.");
+      await deleteDoc(doc(db, "events", editId, "signups", pendingRemoval.userId));
+      if (pendingRemoval.self) {
+        setBringing("");
+        setNotes("");
+        setPrepHours(0);
+        setRevertAlert("Your RSVP was cancelled.");
+      } else {
+        setRevertAlert("RSVP removed by an admin or coach.");
+      }
+      setPendingRemoval(null);
+    } catch (err: unknown) {
+      setSignupError(`RSVP removal failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSubmittingRsvp(false);
     }
@@ -118,8 +130,9 @@ export default function EventFormRoster({
       await setDoc(doc(db, "events", editId, "signups", member.uid), checkinData, { merge: true });
       setSelectedMemberIdToCheckin("");
       setRevertAlert(`Successfully checked in ${member.nickname}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed admin check-in:", err);
+      setSignupError(`Check-in failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -132,21 +145,17 @@ export default function EventFormRoster({
         { attended: !currentAttendedStatus },
         { merge: true }
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to toggle attendance:", err);
+      setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
   // Action: Delete RSVP (Admin only)
   const handleDeleteRsvp = async (targetUserId: string) => {
     if (!editId || !isAdmin) return;
-    if (!confirm("Are you sure you want to remove this RSVP?")) return;
-    try {
-      await deleteDoc(doc(db, "events", editId, "signups", targetUserId));
-      setRevertAlert("RSVP removed by admin.");
-    } catch (err: any) {
-      console.error("Failed to remove RSVP:", err);
-    }
+    const signup = signups.find((candidate) => candidate.userId === targetUserId);
+    setPendingRemoval({ userId: targetUserId, label: `${signup?.nickname || "this member"}'s RSVP`, self: false });
   };
 
   return (
@@ -170,19 +179,22 @@ export default function EventFormRoster({
                   className="p-3 bg-white/5 border border-white/5 rounded-lg flex items-center justify-between gap-4 text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div
+                    <button
+                      type="button"
                       onClick={() => {
                         if (isAdmin) handleToggleAttendance(su.userId, !!su.attended);
                       }}
                       className={`cursor-pointer transition-colors p-1 rounded-full ${
                         su.attended
-                          ? "text-ares-success hover:text-ares-success/75"
+                          ? "text-ares-gold hover:text-white"
                           : "text-marble/35 hover:text-white"
                       }`}
                       title={isAdmin ? "Toggle Attendance status" : "RSVP Status"}
                     >
                       {su.attended ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                    </div>
+                      aria-label={isAdmin ? `Toggle attendance for ${su.nickname}` : `${su.nickname} RSVP status`}
+                      disabled={!isAdmin}
+                    </button>
                     <div className="text-left">
                       <p className="text-xs font-bold text-white uppercase tracking-tight">
                         {su.nickname}
@@ -197,7 +209,7 @@ export default function EventFormRoster({
                           <span className="text-ares-gold">🥪 Bringing: {su.bringing}</span>
                         )}
                         {su.prepHours !== undefined && (
-                          <span className="text-ares-cyan">⚙️ Prep: {su.prepHours} hrs</span>
+                          <span className="text-ares-gold">⚙️ Prep: {su.prepHours} hrs</span>
                         )}
                       </div>
                     </div>
@@ -208,6 +220,7 @@ export default function EventFormRoster({
                       onClick={() => handleDeleteRsvp(su.userId)}
                       className="p-1.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 text-marble/55 hover:text-white rounded transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                       title="Remove RSVP"
+                      aria-label={`Remove RSVP for ${su.nickname}`}
                     >
                       <Trash2 size={11} />
                     </button>
@@ -241,7 +254,7 @@ export default function EventFormRoster({
               </select>
               <button
                 type="submit"
-                className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-gold-soft rounded text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                className="px-4 py-2 bg-ares-gold text-black hover:bg-ares-bronze rounded text-[9px] font-black uppercase tracking-widest cursor-pointer transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
               >
                 Check In
               </button>
@@ -259,7 +272,7 @@ export default function EventFormRoster({
             </h4>
 
             {signupError && (
-              <p className="text-[9px] font-mono text-ares-red bg-ares-red/10 p-2 rounded border border-ares-red/20">
+              <p role="alert" className="text-[9px] font-mono text-white bg-ares-red/15 p-2 rounded border border-ares-red/40">
                 {signupError}
               </p>
             )}
@@ -322,7 +335,7 @@ export default function EventFormRoster({
             <button
               type="submit"
               disabled={submittingRsvp}
-              className="w-full py-2 bg-ares-cyan text-black hover:brightness-105 font-black uppercase text-[10px] tracking-widest rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-md focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+              className="w-full py-2 bg-ares-gold text-black hover:bg-ares-bronze font-black uppercase text-[10px] tracking-widest rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-md focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
             >
               {submittingRsvp ? "Updating..." : mySignup ? "Update RSVP" : "Confirm RSVP (Will Attend)"}
             </button>
@@ -338,6 +351,17 @@ export default function EventFormRoster({
               Cancel Attendance
             </button>
           )}
+        </div>
+      )}
+
+      {pendingRemoval && (
+        <div role="alertdialog" aria-label="Confirm RSVP removal" className="fixed inset-x-4 bottom-4 z-[170] mx-auto max-w-md rounded-lg border border-ares-red/40 bg-obsidian p-4 text-left text-white shadow-2xl">
+          <p className="text-sm font-bold">Remove {pendingRemoval.label}?</p>
+          <p className="mt-1 text-xs text-marble/70">This removes the attendance record. The member can RSVP again later.</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" onClick={() => setPendingRemoval(null)} disabled={submittingRsvp} className="rounded border border-white/15 px-3 py-2 text-xs font-bold focus-visible:ring-2 focus-visible:ring-ares-cyan">Keep RSVP</button>
+            <button type="button" autoFocus onClick={() => void executeRsvpRemoval()} disabled={submittingRsvp} className="rounded bg-ares-red px-3 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{submittingRsvp ? "Removing…" : "Remove RSVP"}</button>
+          </div>
         </div>
       )}
     </div>

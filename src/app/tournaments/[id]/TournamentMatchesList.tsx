@@ -28,6 +28,7 @@ export default function TournamentMatchesList({
   const [matchSearchQuery, setMatchSearchQuery] = useState("");
   const [showAddMatchForm, setShowAddMatchForm] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
 
   // New match fields
   const [newMatchNumber, setNewMatchNumber] = useState("");
@@ -82,17 +83,19 @@ export default function TournamentMatchesList({
 
   return (
     <section className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden backdrop-blur-sm shadow-xl text-left">
-      <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+      <div className="flex flex-col gap-4 border-b border-white/5 pb-4 mb-6 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-lg font-bold text-white uppercase tracking-tight font-heading flex items-center gap-2">
-            <Bookmark className="text-ares-red" size={18} />
+            <Bookmark className="text-ares-gold" size={18} aria-hidden="true" />
             Match Checklist
           </h2>
           <p className="text-[11px] text-marble/55 mt-0.5">Toggle match completion to track strategy checklists.</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label htmlFor="match-search" className="sr-only">Filter matches by number or team</label>
           <input
+            id="match-search"
             type="text"
             placeholder="Filter match..."
             value={matchSearchQuery}
@@ -101,7 +104,9 @@ export default function TournamentMatchesList({
           />
           {canEdit && (
             <button
+              type="button"
               onClick={() => setShowAddMatchForm(!showAddMatchForm)}
+              aria-expanded={showAddMatchForm}
               className="bg-ares-red/10 border border-ares-red/35 text-white hover:bg-ares-red hover:text-white transition-colors px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded flex items-center gap-1 cursor-pointer"
             >
               <Plus size={12} /> Add Match
@@ -190,7 +195,7 @@ export default function TournamentMatchesList({
                 <select
                   id="new-match-result"
                   value={newResult}
-                  onChange={(e) => setNewResult(e.target.value as any)}
+                  onChange={(e) => setNewResult(e.target.value as TournamentMatch["result"])}
                   className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white"
                 >
                   <option value="won" className="bg-obsidian">Won</option>
@@ -238,9 +243,13 @@ export default function TournamentMatchesList({
           <div className="w-6 h-6 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mr-3" />
           <span className="text-xs uppercase tracking-wider text-marble/55">Loading matches...</span>
         </div>
-      ) : filteredMatches.length === 0 ? (
+      ) : matches.length === 0 ? (
         <div className="text-center py-10 bg-black/20 border border-dashed border-white/10 rounded-xl">
           <p className="text-xs text-marble/55">No match records compiled yet.</p>
+        </div>
+      ) : filteredMatches.length === 0 ? (
+        <div className="text-center py-10 bg-black/20 border border-dashed border-white/10 rounded-xl">
+          <p className="text-xs text-marble/55">No matches fit this filter. Clear the search field to see all records.</p>
         </div>
       ) : (
         <div className="space-y-3.5">
@@ -263,6 +272,7 @@ export default function TournamentMatchesList({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase text-ares-gold">Edit Score: {m.matchNumber}</span>
                       <button
+                        type="button"
                         onClick={() => setEditingMatchId(null)}
                         className="text-[10px] text-marble/60 uppercase font-black hover:text-white"
                       >
@@ -271,7 +281,7 @@ export default function TournamentMatchesList({
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <label className="block text-[9px] uppercase font-bold text-marble/50">Our Score</label>
+                        <label htmlFor={`edit_self_${m.id}`} className="block text-[9px] uppercase font-bold text-marble/50">Our Score</label>
                         <input
                           type="number"
                           defaultValue={m.scoreSelf || 0}
@@ -280,7 +290,7 @@ export default function TournamentMatchesList({
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] uppercase font-bold text-marble/50">Opponent Score</label>
+                        <label htmlFor={`edit_opp_${m.id}`} className="block text-[9px] uppercase font-bold text-marble/50">Opponent Score</label>
                         <input
                           type="number"
                           defaultValue={m.scoreOpponent || 0}
@@ -289,7 +299,7 @@ export default function TournamentMatchesList({
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] uppercase font-bold text-marble/50">Outcome</label>
+                        <label htmlFor={`edit_res_${m.id}`} className="block text-[9px] uppercase font-bold text-marble/50">Outcome</label>
                         <select
                           defaultValue={m.result}
                           id={`edit_res_${m.id}`}
@@ -312,7 +322,7 @@ export default function TournamentMatchesList({
                               (document.getElementById(`edit_opp_${m.id}`) as HTMLInputElement)?.value || "0"
                             );
                             const resVal = (document.getElementById(`edit_res_${m.id}`) as HTMLSelectElement)
-                              ?.value as any;
+                              ?.value as TournamentMatch["result"];
 
                             onUpdateMatch({
                               id: m.id,
@@ -335,17 +345,28 @@ export default function TournamentMatchesList({
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       {/* Checkbox Trigger */}
-                      <button
-                        onClick={() => onToggleMatch(m.id, !m.completed)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
-                          m.completed
-                            ? "bg-ares-red border-ares-red text-white"
-                            : "border-white/20 hover:border-ares-gold bg-black/40 text-transparent"
-                        }`}
-                        aria-label={`Toggle completion for ${m.matchNumber}`}
-                      >
-                        <Check size={12} className={m.completed ? "opacity-100" : "opacity-0"} />
-                      </button>
+                      {canEdit ? (
+                        <button
+                          type="button"
+                          onClick={() => onToggleMatch(m.id, !m.completed)}
+                          className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                            m.completed
+                              ? "bg-ares-red border-ares-red text-white"
+                              : "border-white/20 hover:border-ares-gold bg-black/40 text-transparent"
+                          }`}
+                          aria-label={`${m.completed ? "Mark incomplete" : "Mark complete"}: ${m.matchNumber}`}
+                          aria-pressed={m.completed}
+                        >
+                          <Check size={12} className={m.completed ? "opacity-100" : "opacity-0"} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span
+                          className={`w-5 h-5 rounded border flex items-center justify-center ${m.completed ? "bg-ares-red border-ares-red text-white" : "border-white/20 bg-black/40"}`}
+                          aria-label={`${m.matchNumber} is ${m.completed ? "complete" : "incomplete"}`}
+                        >
+                          {m.completed && <Check size={12} aria-hidden="true" />}
+                        </span>
+                      )}
 
                       <div>
                         <div className="flex items-center gap-2">
@@ -353,7 +374,7 @@ export default function TournamentMatchesList({
                           <span
                             className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
                               isRedAlliance
-                                ? "bg-ares-red/15 text-ares-red border border-ares-red/35"
+                                ? "bg-ares-red text-white border border-ares-red"
                                 : "bg-ares-gold/15 text-ares-gold border border-ares-gold/35"
                             }`}
                           >
@@ -365,7 +386,7 @@ export default function TournamentMatchesList({
                                 m.result === "won"
                                   ? "text-ares-gold"
                                   : m.result === "lost"
-                                    ? "text-ares-red"
+                                    ? "rounded bg-ares-red px-1.5 py-0.5 text-white"
                                     : "text-marble/40"
                               }`}
                             >
@@ -396,25 +417,50 @@ export default function TournamentMatchesList({
                       {canEdit && (
                         <div className="flex items-center gap-1.5">
                           <button
+                            type="button"
                             onClick={() => setEditingMatchId(m.id)}
+                            aria-label={`Edit scoring values for ${m.matchNumber}`}
                             className="p-1.5 text-marble/50 hover:text-ares-gold hover:bg-white/5 rounded transition-all cursor-pointer"
                             title="Edit scoring values"
                           >
                             <Edit2 size={12} />
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm("Soft-delete this match record?")) {
-                                onDeleteMatch(m.id);
-                              }
-                            }}
-                            className="p-1.5 text-marble/50 hover:text-ares-red hover:bg-white/5 rounded transition-all cursor-pointer"
+                            type="button"
+                            onClick={() => setPendingArchiveId(m.id)}
+                            aria-label={`Archive ${m.matchNumber}`}
+                            className="p-1.5 text-marble/50 hover:text-ares-gold hover:bg-white/5 rounded transition-all cursor-pointer"
                             title="Archive match record"
                           >
                             <Trash2 size={12} />
                           </button>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {pendingArchiveId === m.id && (
+                  <div role="alertdialog" aria-labelledby={`archive-match-${m.id}`} className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ares-red/40 bg-ares-red/10 p-3">
+                    <p id={`archive-match-${m.id}`} className="text-xs text-white">Archive {m.matchNumber}? It will be hidden but kept in the record history.</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPendingArchiveId(null)}
+                        className="rounded border border-white/20 px-3 py-1 text-[10px] font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      >
+                        Keep Match
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDeleteMatch(m.id);
+                          setPendingArchiveId(null);
+                        }}
+                        className="rounded bg-ares-red px-3 py-1 text-[10px] font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      >
+                        Archive Match
+                      </button>
                     </div>
                   </div>
                 )}

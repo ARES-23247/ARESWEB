@@ -12,4 +12,7 @@ export interface TeamEvent {
   isVolunteer?: number; // 0 or 1
   isDeleted?: number; // 0 or 1 for Soft Delete
   status?: "published" | "pending" | "draft";
+  createdAt?: string;
+  updatedAt?: string;
+  archivedAt?: string;
 }

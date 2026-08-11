@@ -53,7 +53,7 @@ export default function EventsFilterPanel({
           if (isActive) {
             if (status === "deleted") colorClass = "border-ares-red/30 text-ares-red bg-ares-red/10";
             else if (status === "pending") colorClass = "border-ares-gold/30 text-ares-gold bg-ares-gold/10";
-            else if (status === "published") colorClass = "border-ares-success/30 text-ares-success bg-ares-success/10";
+            else if (status === "published") colorClass = "border-ares-gold/30 text-ares-gold bg-ares-gold/10";
             else colorClass = "border-ares-gold/35 text-white bg-white/5";
           }
 
@@ -159,7 +159,7 @@ export default function EventsFilterPanel({
           {hasActiveFilters && (
             <button
               onClick={handleClearFilters}
-              className="px-3 bg-white/5 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/20 rounded-lg text-marble/60 hover:text-ares-red-light transition-all flex items-center justify-center cursor-pointer shrink-0"
+              className="px-3 bg-white/5 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/20 rounded-lg text-marble/60 hover:text-white transition-all flex items-center justify-center cursor-pointer shrink-0"
               title="Reset Filters"
             >
               <RotateCcw size={13} />

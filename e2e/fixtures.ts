@@ -1,6 +1,12 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 
-export const test = base.extend({
+type MockRole = 'admin' | 'coach' | 'mentor' | 'member';
+
+interface AresFixtures {
+  loginAs: (role: MockRole, name?: string) => Promise<void>;
+}
+
+export const test = base.extend<AresFixtures>({
   page: async ({ page }, use) => {
     const pageErrors: Error[] = [];
 
@@ -21,6 +27,21 @@ export const test = base.extend({
       throw new Error(`Client-side page error(s) detected during test execution:\n\n${errorDetails}`);
     }
   },
+  loginAs: async ({ page }, use) => {
+    await use(async (role, name = `Playwright ${role}`) => {
+      await installMockSession(page, role, name);
+    });
+  },
 });
+
+async function installMockSession(page: Page, role: MockRole, name: string) {
+  await page.addInitScript(({ sessionRole, sessionName }) => {
+    window.sessionStorage.setItem('ares_mock_user', JSON.stringify({
+      email: `${sessionRole}@example.test`,
+      role: sessionRole,
+      name: sessionName,
+    }));
+  }, { sessionRole: role, sessionName: name });
+}
 
 export { expect };

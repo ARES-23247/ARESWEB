@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { adminDb, adminAuth } from "../../lib/firebase-admin";
+import { decrypt } from "../../lib/crypto";
 
 // Mock express-rate-limit
 vi.mock("express-rate-limit", () => {
@@ -37,7 +38,10 @@ vi.mock("../../lib/firebase-admin", () => {
   const mockCollection = vi.fn().mockReturnValue({
     doc: mockDoc,
     get: mockGet,
+    where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
   });
 
   const mockBatchSet = vi.fn();
@@ -95,6 +99,121 @@ describe("Inquiries Router Backend Endpoints", () => {
     const stack = routeLayer!.route!.stack;
     return stack[stack.length - 1].handle;
   };
+
+  describe("GET /api/inquiries/pending-exists", () => {
+    it("returns only a bounded boolean existence result", async () => {
+      const collection = adminDb.collection("inquiries") as any;
+      collection.get.mockResolvedValue({ empty: false });
+
+      await getHandler("/pending-exists", "get")(req, res, next);
+
+      expect(collection.where).toHaveBeenNthCalledWith(1, "status", "==", "pending");
+      expect(collection.where).toHaveBeenNthCalledWith(2, "isDeleted", "==", 0);
+      expect(collection.limit).toHaveBeenCalledWith(1);
+      expect(res.json).toHaveBeenCalledWith({ success: true, hasPending: true });
+      expect(JSON.stringify(res.json.mock.calls[0][0])).not.toMatch(/name|email|metadata/);
+    });
+
+    it("returns false for an empty bounded query", async () => {
+      const collection = adminDb.collection("inquiries") as any;
+      collection.get.mockResolvedValue({ empty: true });
+
+      await getHandler("/pending-exists", "get")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ success: true, hasPending: false });
+    });
+  });
+
+  describe("GET /api/inquiries", () => {
+    it("returns a bounded decrypted DTO and opaque pagination cursor", async () => {
+      req.query = { limit: "1" };
+      const collection = adminDb.collection("inquiries") as any;
+      collection.get.mockResolvedValue({
+        docs: [
+          {
+            id: "inquiry-1",
+            data: () => ({
+              type: "student",
+              name: "encrypted:Alice Applicant",
+              email: "encrypted:alice@example.com",
+              status: "pending",
+              metadata: 'encrypted:{"message":"Hello"}',
+              createdAt: "2026-08-01T00:00:00.000Z",
+              isDeleted: 0,
+              internalFlag: "must-not-leak",
+            }),
+          },
+          {
+            id: "inquiry-2",
+            data: () => ({ name: "encrypted:Hidden", email: "encrypted:hidden@example.com" }),
+          },
+        ],
+      });
+
+      await getHandler("/", "get")(req, res, next);
+
+      expect(collection.orderBy).toHaveBeenCalledWith("createdAt", "desc");
+      expect(collection.limit).toHaveBeenCalledWith(2);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        inquiries: [{
+          id: "inquiry-1",
+          type: "student",
+          name: "Alice Applicant",
+          email: "alice@example.com",
+          status: "pending",
+          metadata: { message: "Hello" },
+          createdAt: "2026-08-01T00:00:00.000Z",
+          isDeleted: false,
+          archivedAt: null,
+        }],
+        hasMore: true,
+        nextCursor: "inquiry-1",
+      });
+      expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("internalFlag");
+    });
+
+    it("starts after an existing cursor and marks decryption failures", async () => {
+      req.query = { limit: "500", cursor: "cursor-id" };
+      const collection = adminDb.collection("inquiries") as any;
+      const cursorSnapshot = { exists: true, id: "cursor-id" };
+      collection.get
+        .mockResolvedValueOnce(cursorSnapshot)
+        .mockResolvedValueOnce({
+        docs: [{
+          id: "inquiry-broken",
+          data: () => ({
+            type: "mentor",
+            name: "encrypted:Broken Name",
+            email: "encrypted:broken@example.com",
+            status: "pending",
+            metadata: "encrypted:not-json",
+            createdAt: "2026-08-02T00:00:00.000Z",
+            isDeleted: 1,
+            archivedAt: "2026-08-03T00:00:00.000Z",
+          }),
+        }],
+      });
+      vi.mocked(decrypt)
+        .mockRejectedValueOnce(new Error("name decrypt failed"))
+        .mockRejectedValueOnce(new Error("email decrypt failed"));
+
+      await getHandler("/", "get")(req, res, next);
+
+      expect(collection.limit).toHaveBeenCalledWith(101);
+      expect(collection.startAfter).toHaveBeenCalledWith(cursorSnapshot);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        inquiries: [expect.objectContaining({
+          name: "[Decryption Failed]",
+          email: "[Decryption Failed]",
+          metadata: {},
+          isDeleted: true,
+        })],
+        hasMore: false,
+        nextCursor: null,
+      }));
+    });
+  });
 
   describe("POST /api/inquiries/:id/approve-account", () => {
     it("should reject account creation for sponsor inquiry types", async () => {
@@ -171,6 +290,22 @@ describe("Inquiries Router Backend Endpoints", () => {
         name: "Alice Student",
       });
 
+      // Legal application names and emails must never become public profile
+      // identity or third-party avatar seeds.
+      const profileSetCall = batchInstance.set.mock.calls[1];
+      expect(profileSetCall[1]).toEqual(expect.objectContaining({
+        nickname: "ARES Member",
+        firstName: "Alice",
+        lastName: "Student",
+        contactEmail: "alice@student.com",
+        showOnAbout: false,
+      }));
+      expect(profileSetCall[1].avatar).toMatch(
+        /^https:\/\/api\.dicebear\.com\/9\.x\/bottts\/svg\?seed=[0-9a-f]{48}$/
+      );
+      expect(profileSetCall[1].avatar).not.toContain("alice@student.com");
+      expect(profileSetCall[1].avatar).not.toContain(targetId);
+
       // Check response
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -214,6 +349,91 @@ describe("Inquiries Router Backend Endpoints", () => {
         success: true,
         message: "Pre-authorized mentor account for Bob Mentor.",
       });
+    });
+
+    it("should fail visibly when Firebase Auth lookup fails unexpectedly", async () => {
+      const handler = getHandler("/:id/approve-account", "post");
+      req.params.id = "inq_auth_failure";
+
+      const mockDoc = adminDb.collection("inquiries").doc as any;
+      mockDoc().get.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          name: "encrypted:Alice Student",
+          email: "encrypted:alice@student.com",
+          type: "student",
+        }),
+      });
+      vi.mocked(adminAuth.getUserByEmail).mockRejectedValue({ code: "auth/internal-error" });
+
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 502,
+        message: "Could not verify the applicant's account status. Please try again.",
+      }));
+      expect(adminDb.batch).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Inquiry archive lifecycle", () => {
+    it("archives an inquiry without deleting encrypted history", async () => {
+      req.params = { id: "inquiry-1" };
+      req.user = { uid: "admin-uid" };
+      const mockDocRef = adminDb.collection("inquiries").doc("inquiry-1") as any;
+      mockDocRef.get.mockResolvedValue({ exists: true, data: () => ({ isDeleted: 0 }) });
+
+      await getHandler("/:id", "delete")(req, res, next);
+
+      expect(mockDocRef.delete).not.toHaveBeenCalled();
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 1,
+        archivedBy: "admin-uid",
+      }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, archived: true }));
+    });
+
+    it("restores an archived inquiry", async () => {
+      req.params = { id: "inquiry-1" };
+      req.user = { uid: "admin-uid" };
+      const mockDocRef = adminDb.collection("inquiries").doc("inquiry-1") as any;
+      mockDocRef.get.mockResolvedValue({ exists: true, data: () => ({ isDeleted: 1 }) });
+
+      await getHandler("/:id/restore", "patch")(req, res, next);
+
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 0,
+        restoredBy: "admin-uid",
+      }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, restored: true }));
+    });
+
+    it("rejects status updates for archived inquiries", async () => {
+      req.params = { id: "inquiry-1" };
+      req.body = { status: "approved" };
+      const mockDocRef = adminDb.collection("inquiries").doc("inquiry-1") as any;
+      mockDocRef.get.mockResolvedValue({ exists: true, data: () => ({ isDeleted: 1 }) });
+
+      await getHandler("/:id/status", "patch")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409 }));
+      expect(mockDocRef.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid statuses and missing inquiry records", async () => {
+      req.params = { id: "missing" };
+      req.body = { status: "invalid" };
+
+      await getHandler("/:id/status", "patch")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+
+      next.mockClear();
+      req.body = { status: "resolved" };
+      const mockDocRef = adminDb.collection("inquiries").doc("missing") as any;
+      mockDocRef.get.mockResolvedValue({ exists: false });
+      await getHandler("/:id/status", "patch")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
     });
   });
 
@@ -277,6 +497,34 @@ describe("Inquiries Router Backend Endpoints", () => {
         name: "encrypted:Security Test",
         email: "encrypted:security.test@example.com",
         metadata: 'encrypted:{"message":"Hello ARES"}',
+        isDeleted: 0,
+      }));
+    });
+
+    it("should persist attacker-controlled names and emails that resemble test data", async () => {
+      const originalEmulator = process.env.FUNCTIONS_EMULATOR;
+      process.env.FUNCTIONS_EMULATOR = "true";
+      req.body = {
+        type: "student",
+        name: "Playwright E2E Test",
+        email: "playwright.test@aresfirst.org",
+        metadata: { message: "This must not bypass persistence." },
+        recaptchaToken: "test-bypass-token",
+      };
+
+      const err = await runStack("/", "post", req, res);
+      if (originalEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
+      else process.env.FUNCTIONS_EMULATOR = originalEmulator;
+
+      expect(err).toBeNull();
+      const mockDoc = adminDb.collection("inquiries").doc as any;
+      expect(mockDoc().set).toHaveBeenCalledWith(expect.objectContaining({
+        name: "encrypted:Playwright E2E Test",
+        email: "encrypted:playwright.test@aresfirst.org",
+      }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        id: expect.stringMatching(/^inq_[0-9a-f-]{36}$/),
       }));
     });
 
@@ -312,6 +560,38 @@ describe("Inquiries Router Backend Endpoints", () => {
       expect(err).toBeDefined();
       expect(err.status).toBe(400);
       expect(err.message).toBe("App integrity check failed. Please refresh and try again.");
+    });
+
+    it("rejects low-score reCAPTCHA results before storing PII", async () => {
+      const originalEmulator = process.env.FUNCTIONS_EMULATOR;
+      const originalSecret = process.env.RECAPTCHA_SECRET_KEY;
+      delete process.env.FUNCTIONS_EMULATOR;
+      process.env.RECAPTCHA_SECRET_KEY = "recaptcha-test-secret";
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        json: vi.fn().mockResolvedValue({
+          success: true,
+          score: 0.2,
+          action: "submit",
+          hostname: "aresfirst.org",
+        }),
+      }));
+      req.body = {
+        type: "student",
+        name: "Protected Student",
+        email: "student@example.com",
+        metadata: {},
+        recaptchaToken: "recaptcha-token",
+      };
+
+      const err = await runStack("/", "post", req, res);
+
+      vi.unstubAllGlobals();
+      if (originalEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
+      else process.env.FUNCTIONS_EMULATOR = originalEmulator;
+      if (originalSecret === undefined) delete process.env.RECAPTCHA_SECRET_KEY;
+      else process.env.RECAPTCHA_SECRET_KEY = originalSecret;
+      expect(err).toEqual(expect.objectContaining({ status: 400 }));
+      expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
     });
   });
 });

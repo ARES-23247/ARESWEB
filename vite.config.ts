@@ -1,9 +1,61 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "prompt",
+      injectRegister: false,
+      includeAssets: ["favicon.svg", "favicon.webp", "robots.txt"],
+      manifest: {
+        id: "/",
+        name: "ARES 23247 Team Portal",
+        short_name: "ARES Portal",
+        description: "Team portal for ARES 23247, a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
+        theme_color: "#1A1A1A",
+        background_color: "#1A1A1A",
+        display: "standalone",
+        start_url: "/",
+        scope: "/",
+        icons: [
+          {
+            src: "/favicon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+          {
+            src: "/favicon.webp",
+            sizes: "1024x1024",
+            type: "image/webp",
+            purpose: "any",
+          },
+        ],
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: false,
+        skipWaiting: false,
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/sitemap\.xml$/],
+        globPatterns: ["**/*.{js,css,html,svg,png,webp,woff2}"],
+        globIgnores: [
+          "**/vendor-monaco-*.js",
+          "**/vendor-babel-*.js",
+          "**/vendor-prettier-*.js",
+        ],
+        // API and Firebase traffic must always reach the network. Only the
+        // versioned application shell is precached.
+        runtimeCaching: [],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
   envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   resolve: {
     alias: {
@@ -29,9 +81,6 @@ export default defineConfig({
             }
             if (normalizedId.includes("dompurify")) {
               return "vendor-dompurify";
-            }
-            if (normalizedId.includes("firebase")) {
-              return "vendor-firebase";
             }
             if (normalizedId.includes("@xyflow") || normalizedId.includes("reactflow")) {
               return "vendor-xyflow";
@@ -73,6 +122,32 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     exclude: ["**/node_modules/**", "**/dist/**", "functions/**", "e2e/**", "tests/rules/**"],
     coverage: {
+      // Explicitly instrument the current security, privacy, public-data, and
+      // administrative reliability surface. A listed module therefore reports
+      // 0% instead of disappearing when its importing test is removed.
+      include: [
+        "src/lib/api.ts",
+        "src/lib/security.ts",
+        "src/lib/tournamentApi.ts",
+        "src/store/useCartStore.ts",
+        "src/components/PublicDataState.tsx",
+        "src/components/SEO.tsx",
+        "src/app/dashboard/profile/page.tsx",
+        "src/app/dashboard/profile/components/*.tsx",
+        "src/app/dashboard/inquiries/page.tsx",
+        "src/app/dashboard/outreach/page.tsx",
+        "src/app/dashboard/sponsors/page.tsx",
+        "src/app/dashboard/users/page.tsx",
+        "src/app/dashboard/users/components/UserInviteForm.tsx",
+        "src/app/dashboard/users/components/UserRosterTable.tsx",
+        "src/app/finance/page.tsx",
+        "src/app/gallery/page.tsx",
+        "src/app/leaderboard/page.tsx",
+        "src/app/outreach/page.tsx",
+        "src/app/sponsors/page.tsx",
+        "src/app/robots/api.ts",
+        "src/app/robots/RobotEditorModal.tsx",
+      ],
       thresholds: {
         // Ratchet the measured legacy baseline while enforcing the project
         // standard on security-sensitive utilities and newly covered code.
@@ -83,6 +158,22 @@ export default defineConfig({
           functions: 100,
         },
         "src/store/useCartStore.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/tournamentApi.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/robots/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/users/components/UserInviteForm.tsx": {
           lines: 85,
           functions: 100,
         },

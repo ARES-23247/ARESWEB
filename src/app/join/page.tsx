@@ -3,18 +3,12 @@
 import { useState } from "react";
 import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
-
-declare global {
-  interface Window {
-    ARES_E2E_BYPASS?: boolean;
-    grecaptcha?: any;
-  }
-}
+import { getRecaptchaToken } from "@/lib/recaptcha";
 
 const INTEREST_OPTIONS = ["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"] as const;
 const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
 
-import { getAppCheckHeader } from "@/lib/firebase";
+import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 
 export default function JoinPage() {
   const [role, setRole] = useState<"student" | "mentor">("student");
@@ -60,57 +54,12 @@ export default function JoinPage() {
     setSubmitStatus("sending");
 
     try {
-      const isDev = process.env.NODE_ENV === "development";
-      const isLocal = typeof window !== "undefined" && (
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname.startsWith("192.168.") ||
-        window.location.hostname.startsWith("10.") ||
-        window.location.hostname.endsWith(".local") ||
-        window.location.hostname.includes("aresfirst-portal--") ||
-        window.location.protocol === "http:"
-      );
-      const hasBypass = typeof window !== "undefined" && window.ARES_E2E_BYPASS;
-      const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
-        (import.meta.env.DEV ? "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" : "");
-
-      // Handle E2E bypass, local dev, or missing site key directly
-      if (!siteKey || ((isLocal && isDev) || hasBypass) && (typeof window === "undefined" || !window.grecaptcha)) {
-        await submitApplication("test-bypass-token");
-        return;
-      }
-
-      if (typeof window === "undefined" || !window.grecaptcha) {
-        throw new Error("Security verification service (reCAPTCHA) is currently loading or blocked. Please refresh.");
-      }
-
-      const recaptcha = window.grecaptcha as unknown as {
-        ready: (cb: () => void) => void;
-        execute: (siteKey: string, options: { action: string }) => Promise<string>;
-      };
-
-      recaptcha.ready(() => {
-        try {
-          const siteKey = import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
-          recaptcha.execute(siteKey, { action: "submit" })
-            .then(async (token) => {
-              await submitApplication(token);
-            })
-            .catch((err) => {
-              console.error("reCAPTCHA Token Generation Error:", err);
-              setSubmitStatus("error");
-              setErrorMessage("Security check execution failed. Please reload and try again.");
-            });
-        } catch (err: any) {
-          console.error("reCAPTCHA ready callback error:", err);
-          setSubmitStatus("error");
-          setErrorMessage(err.message || "Security check initialization failed. Please reload and try again.");
-        }
-      });
-    } catch (err: any) {
+      const token = await getRecaptchaToken();
+      await submitApplication(token);
+    } catch (err: unknown) {
       console.error(err);
       setSubmitStatus("error");
-      setErrorMessage(err.message || "Verification check failed. Please refresh and try again.");
+      setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
     }
   };
 

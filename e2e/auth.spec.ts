@@ -1,31 +1,16 @@
 import { test, expect } from './fixtures';
 
 test.describe('Dashboard Authentication & Access Control E2E tests', () => {
-  test('should log in using developer bypass as admin and access dashboard', async ({ page }) => {
-    // Go to dashboard (which triggers login overlay)
+  test('should use the isolated admin auth fixture and access dashboard', async ({ page, loginAs }) => {
+    await loginAs('admin', 'Test Administrator');
     await page.goto('/dashboard');
-    
-    // Check that we see the developer bypass active text
-    await expect(page.locator('body')).toContainText('Developer Bypass Active');
-    
-    // Click the mock admin login button
-    const adminButton = page.locator('button', { hasText: 'David (Admin)' });
-    await expect(adminButton).toBeVisible();
-    await adminButton.click();
-    
-    // Verify that we are logged in and see the dashboard profile name
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('body')).not.toContainText('Developer Bypass Active');
   });
 
-  test('should log in as student member and receive access denied on admin routes', async ({ page }) => {
+  test('should deny the isolated member fixture on admin routes', async ({ page, loginAs }) => {
+    await loginAs('member', 'Test Member');
     await page.goto('/dashboard');
-    
-    // Click Member bypass button
-    const memberButton = page.locator('button', { hasText: 'Member' });
-    await expect(memberButton).toBeVisible();
-    await memberButton.click();
-    
-    // Check dashboard loads
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
     
     // Navigate to inquiries page
@@ -74,12 +59,9 @@ test.describe('Public Forms E2E tests', () => {
 });
 
 test.describe('WebGL & Simulations E2E tests', () => {
-  test('should load the dashboard simulations catalog without throwing page errors', async ({ page }) => {
+  test('should load the dashboard simulations catalog without throwing page errors', async ({ page, loginAs }) => {
+    await loginAs('admin');
     await page.goto('/dashboard');
-    
-    // Login as admin
-    const adminButton = page.locator('button', { hasText: 'David (Admin)' });
-    await adminButton.click();
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
     
     // Navigate to simulations catalog

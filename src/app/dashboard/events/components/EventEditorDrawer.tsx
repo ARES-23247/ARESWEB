@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import { 
   Trash2, 
   X, 
@@ -76,6 +78,8 @@ export default function EventEditorDrawer({
     photos,
     revisions,
     loadingRevisions,
+    operationError,
+    isSaving,
     uploadingImage,
     uploadError,
     selectedPhoto,
@@ -83,6 +87,7 @@ export default function EventEditorDrawer({
     isPhotoPickerOpen,
     setIsPhotoPickerOpen,
     userNickname,
+    currentUser,
     editId,
     canEdit,
     isAdmin,
@@ -91,7 +96,6 @@ export default function EventEditorDrawer({
     handleSaveEvent,
     handleDeleteEvent,
     handleRestoreEvent,
-    handlePermanentDeleteEvent,
     handleRevertToRevision,
     handleImageUpload,
     handleDeletePhoto,
@@ -105,13 +109,14 @@ export default function EventEditorDrawer({
   });
 
   const editorRef = useFocusTrap(isOpen, onClose);
+  const [pendingLifecycle, setPendingLifecycle] = useState<"archive" | "restore" | null>(null);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-end">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} />
+      <button type="button" className="absolute inset-0 h-full w-full bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} aria-label="Close event editor" />
 
       {/* Editor Drawer */}
       <div
@@ -120,7 +125,7 @@ export default function EventEditorDrawer({
         role="dialog"
         aria-modal="true"
         aria-label={editId ? `Edit Event: ${formTitle}` : "Schedule Team Operation"}
-        className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 ${
+        className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 motion-reduce:transition-none ${
           isFullScreen ? "w-full max-w-full" : "w-full max-w-5xl"
         }`}
       >
@@ -130,7 +135,7 @@ export default function EventEditorDrawer({
               {editId ? `Edit Event: ${formTitle}` : "Schedule Team Operation"}
             </h3>
             <p className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
-              Synchronizes with public roster grids
+              Published events appear on the public calendar
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -153,11 +158,13 @@ export default function EventEditorDrawer({
         </header>
 
         {/* Sub-Header: Tabs Switcher */}
-        <div className="px-6 border-b border-white/5 bg-black/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none text-left">
-          <div className="flex gap-4">
+        <div className="px-4 sm:px-6 border-b border-white/5 bg-black/10 flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none text-left">
+          <div className="flex gap-4 overflow-x-auto" role="tablist" aria-label="Event editor sections">
             <button
               type="button"
               onClick={() => setActiveTab("edit")}
+              role="tab"
+              aria-selected={activeTab === "edit"}
               className={`py-3 border-b-2 transition-all cursor-pointer ${
                 activeTab === "edit"
                   ? "border-ares-gold text-white"
@@ -171,6 +178,8 @@ export default function EventEditorDrawer({
                 <button
                   type="button"
                   onClick={() => setActiveTab("roster")}
+                  role="tab"
+                  aria-selected={activeTab === "roster"}
                   className={`py-3 border-b-2 transition-all cursor-pointer ${
                     activeTab === "roster"
                       ? "border-ares-gold text-white"
@@ -182,6 +191,8 @@ export default function EventEditorDrawer({
                 <button
                   type="button"
                   onClick={() => setActiveTab("photos")}
+                  role="tab"
+                  aria-selected={activeTab === "photos"}
                   className={`py-3 border-b-2 transition-all cursor-pointer ${
                     activeTab === "photos"
                       ? "border-ares-gold text-white"
@@ -193,6 +204,8 @@ export default function EventEditorDrawer({
                 <button
                   type="button"
                   onClick={() => setActiveTab("revisions")}
+                  role="tab"
+                  aria-selected={activeTab === "revisions"}
                   className={`py-3 border-b-2 transition-all cursor-pointer ${
                     activeTab === "revisions"
                       ? "border-ares-gold text-white"
@@ -211,7 +224,7 @@ export default function EventEditorDrawer({
               onClick={() => setShowAiSidebar(!showAiSidebar)}
               className={`py-1.5 px-3 border rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-[10px] ${
                 showAiSidebar
-                  ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan"
+                  ? "border-ares-gold/30 bg-ares-gold/10 text-ares-gold"
                   : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
               }`}
             >
@@ -234,6 +247,13 @@ export default function EventEditorDrawer({
             >
               Dismiss
             </button>
+          </div>
+        )}
+
+        {operationError && (
+          <div role="alert" className="border-b border-ares-red/45 bg-ares-red/15 px-6 py-3 text-white">
+            <p className="text-[10px] font-bold">The calendar operation was not completed.</p>
+            <p className="mt-1 break-words font-mono text-[9px] text-white/80">{operationError}</p>
           </div>
         )}
 
@@ -277,37 +297,25 @@ export default function EventEditorDrawer({
                 />
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
-                  <div className="flex gap-2">
-                    {editId && canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    {editId && canPublishDirectly && (
                       eventToEdit?.isDeleted === 1 ? (
-                        <>
-                          <button
+                        <button
                             type="button"
-                            onClick={handleRestoreEvent}
-                            className="px-5 py-3 border border-ares-success/35 hover:bg-ares-success/10 text-ares-success rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                            onClick={() => setPendingLifecycle("restore")}
+                            className="px-5 py-3 border border-ares-gold/35 hover:bg-ares-gold/10 text-ares-gold rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                           >
                             <RotateCcw size={14} />
                             Restore Event
                           </button>
-                          {canPublishDirectly && (
-                            <button
-                              type="button"
-                              onClick={handlePermanentDeleteEvent}
-                              className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
-                            >
-                              <Trash2 size={14} />
-                              Permanently Delete
-                            </button>
-                          )}
-                        </>
                       ) : (
                         <button
                           type="button"
-                          onClick={handleDeleteEvent}
-                          className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-ares-red-light rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2"
+                          onClick={() => setPendingLifecycle("archive")}
+                          className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-white rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                         >
                           <Trash2 size={14} />
-                          Delete Event
+                          Archive Event
                         </button>
                       )
                     )}
@@ -323,9 +331,10 @@ export default function EventEditorDrawer({
                     {canEdit && (
                       <button
                         type="submit"
-                        className="px-6 py-3 bg-ares-red text-white hover:bg-ares-red-dark font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer"
+                        disabled={isSaving || !formTitle.trim() || !formDateStart}
+                        className="px-6 py-3 bg-ares-red text-white hover:bg-ares-bronze font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {editId ? "Save Changes" : "Create Event"}
+                        {isSaving ? "Saving…" : editId ? "Save Changes" : "Create Event"}
                       </button>
                     )}
                   </div>
@@ -354,7 +363,7 @@ export default function EventEditorDrawer({
               isAdmin={isAdmin}
               formIsPotluck={formIsPotluck}
               formIsVolunteer={formIsVolunteer}
-              user={null}
+              user={currentUser}
               userNickname={userNickname}
               teamMembers={teamMembers}
               displayedMembers={displayedMembers}
@@ -428,6 +437,39 @@ export default function EventEditorDrawer({
         formLocationId={formLocationId}
         setFormLocationId={setFormLocationId}
       />
-    </div>
+
+      <Dialog.Root open={pendingLifecycle !== null} onOpenChange={(open) => !open && setPendingLifecycle(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[150] bg-black/85" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[151] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
+            <Dialog.Title className="text-lg font-black uppercase text-white">
+              {pendingLifecycle === "archive" ? "Archive this event?" : "Restore this event?"}
+            </Dialog.Title>
+            <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
+              {pendingLifecycle === "archive"
+                ? "The event will leave the public calendar. Managers can restore it later."
+                : "The event will return as a draft. Review it before publishing."}
+            </Dialog.Description>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Dialog.Close asChild>
+                <button type="button" className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase text-marble/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => {
+                  const action = pendingLifecycle === "archive" ? handleDeleteEvent : handleRestoreEvent;
+                  setPendingLifecycle(null);
+                  void action();
+                }}
+                className="rounded bg-ares-red px-4 py-2 text-xs font-black uppercase text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                {pendingLifecycle === "archive" ? "Archive event" : "Restore as draft"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>,
+    document.body,
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { logger } from "../utils/logger";
 import { toastApiError } from "../api/apiClient";
+import { authenticatedFetch } from "../lib/api";
 
 interface UseSimulationActionsProps {
   files: Record<string, string>;
@@ -26,7 +27,7 @@ export function useSimulationActions({
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
-      const res = await fetch("/api/simulations", {
+      const res = await authenticatedFetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -61,7 +62,7 @@ export function useSimulationActions({
   const handleShareGist = useCallback(async () => {
     setIsSharingGist(true);
     try {
-      const res = await fetch("/api/simulations/gist", {
+      const res = await authenticatedFetch("/api/simulations/gist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: simName, files }),

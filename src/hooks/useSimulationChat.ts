@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { logger } from "../utils/logger";
 import { validateIdParam } from "../utils/security";
 import { getSimChatKey } from "../utils/storageKeys";
+import { authenticatedFetch } from "../lib/api";
 import { 
   sanitizeUserInput, 
   sanitizeFilesForAI, 
@@ -165,7 +166,7 @@ USER REQUEST: ${msg}`;
         }
       }
 
-      const res = await fetch("/api/ai/sim-playground", {
+      const res = await authenticatedFetch("/api/ai/sim-playground", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ systemPrompt: systemContext, messages: normalizedMessages, imageUrl: attachedImage }),

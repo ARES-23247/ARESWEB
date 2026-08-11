@@ -5,6 +5,7 @@ import type { Position } from 'monaco-editor';
 import type { languages } from 'monaco-editor';
 import type { CancellationToken } from 'monaco-editor';
 import { logger } from '../utils/logger';
+import { authenticatedFetch } from '../lib/api';
 
 interface IVimMode {
   dispose(): void;
@@ -111,7 +112,7 @@ export function useMonacoEditor() {
         const offset = model.getOffsetAt(position);
 
         try {
-          const res = await fetch('/api/ai/sim-playground', {
+          const res = await authenticatedFetch('/api/ai/sim-playground', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

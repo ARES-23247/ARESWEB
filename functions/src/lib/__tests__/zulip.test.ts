@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { sendZulipMessage, sendZulipAlert, getZulipUsers, createZulipUser } from "../zulip";
+import { sendZulipMessage, sendZulipAlert, getZulipCredentials, getZulipUsers, createZulipUser } from "../zulip";
 
 describe("Zulip Integration Library", () => {
   const originalEnv = { ...process.env };
@@ -16,6 +16,20 @@ describe("Zulip Integration Library", () => {
   });
 
   describe("sendZulipMessage", () => {
+    it("fails closed when credentials are absent instead of using source defaults", async () => {
+      delete process.env.ZULIP_BOT_EMAIL;
+      delete process.env.ZULIP_API_KEY;
+
+      expect(getZulipCredentials()).toEqual({
+        url: "https://aresfirst.zulipchat.com",
+        email: "",
+        apiKey: "",
+      });
+
+      await expect(sendZulipMessage("general", "Testing", "Hello Zulip")).resolves.toBe(false);
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
     it("should return false and warning if credentials are missing", async () => {
       process.env.ZULIP_BOT_EMAIL = "none";
       process.env.ZULIP_API_KEY = "none";

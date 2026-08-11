@@ -1,348 +1,235 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import crypto from "crypto";
-import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { ensureAdmin } from "../middleware/auth";
-import { encrypt, getEncryptionSecret } from "../lib/crypto";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
+const MAX_PICKER_PAGES = 10;
 
-const limiter = rateLimit({
+router.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: "Too many requests, please try again later",
+  message: { error: "Too many photo connection requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
-});
-router.use(limiter);
-const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
-const PUBLIC_ORIGIN = "https://aresfirst.org";
+}));
 
-function getRequestOrigin(req: express.Request): string {
-  if (process.env.FUNCTIONS_EMULATOR === "true") {
-    return `${req.protocol}://${req.get("host")}`;
-  }
-  return PUBLIC_ORIGIN;
+interface PickerSessionResponse {
+  id?: string;
+  pickerUri?: string;
+  pickerUrl?: string;
+  mediaItemsSet?: boolean;
 }
 
-// GET /api/photos/auth/init
-// Handle deprecated GET request gracefully if browser cache is stale
-router.get("/auth/init", asyncHandler(async (req, res) => {
-  const origin = getRequestOrigin(req);
-  res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=Stale%20browser%20cache%20detected.%20Please%20refresh%20the%20page%20and%20try%20again.`);
-}));
+interface PickerMediaItem {
+  id?: string;
+  baseUrl?: string;
+  filename?: string;
+  mimeType?: string;
+  mediaFile?: {
+    baseUrl?: string;
+    filename?: string;
+    mimeType?: string;
+  };
+}
 
-// POST /api/photos/auth/init
-// Secure route to generate anti-CSRF token and return redirect URL
-router.post("/auth/init", ensureAdmin, asyncHandler(async (req, res) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    throw new ApiError(500, "Google OAuth credentials not configured.");
+interface PickerItemsResponse {
+  mediaItems?: PickerMediaItem[];
+  nextPageToken?: string;
+}
+
+function hasGooglePhotosSecrets(): boolean {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID
+    && process.env.GOOGLE_CLIENT_SECRET
+    && process.env.GOOGLE_PHOTOS_REFRESH_TOKEN,
+  );
+}
+
+function requireSessionId(value: string, invalidStatus = 400): string {
+  if (!/^[A-Za-z0-9_-]{1,200}$/.test(value)) {
+    throw new ApiError(invalidStatus, "Invalid picker session ID.");
   }
+  return value;
+}
 
-  const origin = getRequestOrigin(req);
-  const redirectUri = `${origin}/api/photos/auth`;
-
-  // Generate secure state token
-  const state = crypto.randomBytes(16).toString("hex");
-  
-  // Save to Firestore with a 10 minute expiration
-  await adminDb.collection("oauth_states").doc(state).set({
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
-  });
-
-  const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  googleAuthUrl.searchParams.set("client_id", clientId);
-  googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
-  googleAuthUrl.searchParams.set("response_type", "code");
-  googleAuthUrl.searchParams.set("scope", "https://www.googleapis.com/auth/photospicker.mediaitems.readonly https://www.googleapis.com/auth/photoslibrary.appendonly https://www.googleapis.com/auth/photoslibrary.readonly https://www.googleapis.com/auth/drive.readonly");
-  googleAuthUrl.searchParams.set("access_type", "offline");
-  googleAuthUrl.searchParams.set("prompt", "consent");
-  googleAuthUrl.searchParams.set("state", state);
-
-  res.json({ redirectUrl: googleAuthUrl.toString() });
-}));
-
-// GET /api/photos/auth (callback URL)
-router.get("/auth", asyncHandler(async (req, res) => {
-  const code = req.query.code as string | undefined;
-  const error = req.query.error as string | undefined;
-  const state = req.query.state as string | undefined;
-  const origin = getRequestOrigin(req);
-
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new ApiError(500, "Google OAuth credentials not configured.");
-  }
-
-  const redirectUri = `${origin}/api/photos/auth`;
-
-  if (error) {
-    logger.error("photos", "Google OAuth callback error", error);
-    res.redirect(`${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent(error)}`);
-    return;
-  }
-
-  // SEC-F01: Verify State Parameter against database to prevent CSRF hijacking
-  if (!state) {
-    throw new ApiError(400, "State parameter missing. Anti-CSRF check failed.");
-  }
-  const stateDocRef = adminDb.collection("oauth_states").doc(state);
-  const stateSnap = await stateDocRef.get();
-  if (!stateSnap.exists) {
-    throw new ApiError(400, "Invalid or expired state parameter. Anti-CSRF check failed.");
-  }
-  const stateData = stateSnap.data();
-  if (!stateData?.expiresAt || Date.parse(stateData.expiresAt) <= Date.now()) {
-    await stateDocRef.delete();
-    throw new ApiError(400, "Invalid or expired state parameter. Anti-CSRF check failed.");
-  }
-  
-  // Clean up state parameter
-  await stateDocRef.delete();
-
-  if (code) {
-    logger.info("photos", "Received auth code, exchanging for tokens");
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      const errorText = await tokenRes.text();
-      logger.error("photos", "Token exchange failed", errorText);
-      res.redirect(
-        `${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent("Token exchange failed")}`
-      );
-      return;
-    }
-
-    interface GoogleTokenResponse {
-      access_token: string;
-      expires_in: number;
-      refresh_token?: string;
-      scope: string;
-      token_type: string;
-    }
-    const tokens = (await tokenRes.json()) as GoogleTokenResponse;
-    const authRef = adminDb.collection("system_settings").doc("google_auth");
-    const existingDoc = await authRef.get();
-    const existingData = existingDoc.exists ? existingDoc.data() : null;
-    if (!tokens.refresh_token && !existingData?.refreshToken) {
-      res.redirect(
-        `${origin}/dashboard/photos?auth_status=error&error_msg=${encodeURIComponent("No refresh token received.")}`
-      );
-      return;
-    }
-
-    const secret = getEncryptionSecret();
-    const encryptedClientId = await encrypt(clientId, secret);
-    const encryptedClientSecret = await encrypt(clientSecret, secret);
-    const encryptedRefreshToken = tokens.refresh_token
-      ? await encrypt(tokens.refresh_token, secret)
-      : existingData!.refreshToken;
-
-    await authRef.set({
-      clientId: encryptedClientId,
-      clientSecret: encryptedClientSecret,
-      refreshToken: encryptedRefreshToken,
-      linkedAt: new Date().toISOString(),
-      scopes: tokens.scope.split(" "),
-      tokenType: tokens.token_type,
-    }, { merge: true });
-
-    res.redirect(`${origin}/dashboard/photos?auth_status=success`);
-    return;
-  }
-
-  throw new ApiError(400, "Invalid OAuth handshake requests.");
-}));
-
-// GET /api/photos/picker/media-proxy
-router.get("/picker/media-proxy", asyncHandler(async (req, res) => {
-  const url = req.query.url as string | undefined;
-  if (!url) {
-    throw new ApiError(400, "Missing 'url' query parameter");
-  }
-
-  if (!url.match(/^https:\/\/(lh3\.googleusercontent\.com|photospicker\.googleapis.com)\/.*$/)) {
-    throw new ApiError(400, "Forbidden: Target URL host is not authorized");
-  }
-
-  // Authenticate with a header only. Tokens in query strings leak into logs,
-  // browser history, analytics, and referrer headers.
-  let token: string | undefined;
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split("Bearer ")[1];
-  }
-
-  if (!token) {
-    throw new ApiError(401, "Unauthorized: Missing token");
-  }
-
+function safePickerUri(value: unknown): string {
+  if (typeof value !== "string") throw new ApiError(502, "Google Photos did not return a picker link.");
+  let url: URL;
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
-    if (!userDoc.exists) {
-      throw new ApiError(403, "Forbidden: User not authorized");
-    }
-    const userData = userDoc.data();
-    if (userData?.role !== "admin" && userData?.role !== "coach" && userData?.role !== "mentor") {
-      throw new ApiError(403, "Forbidden: Insufficient privileges");
-    }
-  } catch (authErr: any) {
-    if (authErr instanceof ApiError) throw authErr;
-    logger.error("photos", "Media proxy token verification failed", authErr.message);
-    throw new ApiError(401, "Unauthorized: Invalid token");
+    url = new URL(value);
+  } catch {
+    throw new ApiError(502, "Google Photos returned an invalid picker link.");
   }
-  let safeUrl: string;
-  try {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== "https:") {
-      throw new ApiError(400, "Invalid URL protocol");
-    }
-    let safeHost: string;
-    if (parsedUrl.hostname === "lh3.googleusercontent.com") {
-      safeHost = "lh3.googleusercontent.com";
-    } else if (parsedUrl.hostname === "photospicker.googleapis.com") {
-      safeHost = "photospicker.googleapis.com";
-    } else {
-      logger.error("photos", `Forbidden target host: '${parsedUrl.hostname}'`);
-      throw new ApiError(400, "Forbidden: Target URL host is not authorized");
-    }
-
-    // Strict segment validation to satisfy CodeQL SSRF taint trackers
-    if (parsedUrl.pathname.includes("..") || parsedUrl.pathname.includes("//")) {
-      throw new ApiError(400, "Invalid URL path sequence");
-    }
-    const validatedSegments = parsedUrl.pathname.split("/").map((segment) => {
-      if (!/^[a-zA-Z0-9\-\_\.\=\%]*$/.test(segment)) {
-        throw new ApiError(400, "Forbidden characters in URL path segment");
-      }
-      return segment;
-    });
-    const safePath = validatedSegments.join("/");
-    safeUrl = `https://${safeHost}${safePath}`;
-  } catch (err: any) {
-    if (err instanceof ApiError) throw err;
-    logger.error("photos", "Invalid URL format provided", err.message);
-    throw new ApiError(400, "Invalid URL format");
+  if (url.protocol !== "https:" || !["photos.google.com", "photospicker.googleapis.com"].includes(url.hostname)) {
+    throw new ApiError(502, "Google Photos returned an untrusted picker link.");
   }
+  return url.toString();
+}
 
+function safePickerItem(item: PickerMediaItem): PickerMediaItem | null {
+  const id = typeof item.id === "string" && /^[A-Za-z0-9_-]{1,300}$/.test(item.id) ? item.id : undefined;
+  const source = item.mediaFile ?? item;
+  const baseUrl = typeof source.baseUrl === "string" && source.baseUrl.startsWith("https://lh3.googleusercontent.com/")
+    ? source.baseUrl
+    : undefined;
+  if (!id || !baseUrl) return null;
+
+  const filename = typeof source.filename === "string" ? source.filename.slice(0, 180) : undefined;
+  const mimeType = typeof source.mimeType === "string" && source.mimeType.startsWith("image/")
+    ? source.mimeType
+    : undefined;
+  return { id, mediaFile: { baseUrl, filename, mimeType } };
+}
+
+async function pickerFetch(path: string, init?: RequestInit): Promise<globalThis.Response> {
   const googleToken = await getGooglePhotosAccessToken();
-  const response = await fetch(safeUrl, {
-    headers: { Authorization: `Bearer ${googleToken}` },
+  const response = await fetch(`${PICKER_API_BASE}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${googleToken}`,
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...init?.headers,
+    },
   });
-
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("photos", `Failed to fetch raw media from url: ${url}. Status: ${response.status}`, errorText);
-    throw new ApiError(response.status, `Failed to proxy media: ${errorText}`);
+    logger.error("photos", "Google Photos Picker request failed", {
+      path,
+      status: response.status,
+      statusText: response.statusText,
+    });
+    throw new ApiError(502, `Google Photos Picker returned HTTP ${response.status}.`);
+  }
+  return response;
+}
+
+// The team account is authorized out-of-band and stored in Secret Manager.
+// This DTO reports connection state without exposing account names, IDs,
+// scopes, tokens, or credential records.
+router.get("/auth/status", ensureAdmin, asyncHandler(async (_req, res) => {
+  const configured = hasGooglePhotosSecrets();
+  res.json({
+    provider: "google-photos",
+    accountOwner: "team",
+    configured,
+    credentialStorage: "secret-manager",
+    capabilities: configured ? ["picker-import", "team-library-upload"] : [],
+  });
+}));
+
+// Keep stale clients safe. Browser OAuth linking is intentionally disabled so
+// a refresh token can never pass through Firestore or a client-visible flow.
+router.get("/auth/init", asyncHandler(async (_req, res) => {
+  res.redirect("/dashboard/photos?auth_status=error&error_msg=Google%20Photos%20uses%20the%20team%20account%20configured%20by%20an%20operator.");
+}));
+
+router.post("/auth/init", ensureAdmin, asyncHandler(async (_req, res) => {
+  if (!hasGooglePhotosSecrets()) {
+    throw new ApiError(503, "Google Photos is not configured in Secret Manager.");
+  }
+  res.json({
+    provider: "google-photos",
+    accountOwner: "team",
+    configured: true,
+    credentialStorage: "secret-manager",
+    message: "The team Google Photos connection is ready.",
+  });
+}));
+
+router.get("/auth", asyncHandler(async (_req, res) => {
+  res.redirect("/dashboard/photos?auth_status=error&error_msg=Browser%20linking%20is%20disabled.%20Use%20the%20team%20Google%20account%20set%20up%20by%20an%20operator.");
+}));
+
+router.get("/picker/media-proxy", ensureAdmin, asyncHandler(async (req, res) => {
+  const rawUrl = typeof req.query.url === "string" ? req.query.url : "";
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    throw new ApiError(400, "A valid Google Photos media URL is required.");
+  }
+  if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "lh3.googleusercontent.com") {
+    throw new ApiError(400, "The media URL host is not allowed.");
+  }
+  if (parsedUrl.pathname.includes("..") || parsedUrl.pathname.includes("//")) {
+    throw new ApiError(400, "The media URL path is invalid.");
   }
 
+  const safeUrl = `https://lh3.googleusercontent.com${parsedUrl.pathname}${parsedUrl.search}`;
+  const googleToken = await getGooglePhotosAccessToken();
+  const response = await fetch(safeUrl, { headers: { Authorization: `Bearer ${googleToken}` } });
+  if (!response.ok) {
+    logger.error("photos", "Google Photos media proxy failed", { status: response.status });
+    throw new ApiError(502, `Google Photos media returned HTTP ${response.status}.`);
+  }
   const contentType = response.headers.get("Content-Type") || "image/jpeg";
+  if (!contentType.startsWith("image/")) throw new ApiError(502, "Google Photos returned a non-image file.");
   const buffer = await response.arrayBuffer();
-
+  if (buffer.byteLength > 15 * 1024 * 1024) throw new ApiError(413, "The selected image is too large to preview.");
   res.setHeader("Content-Type", contentType);
-  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.setHeader("Cache-Control", "private, max-age=300");
   res.send(Buffer.from(buffer));
 }));
 
-// GET /api/photos/picker/:sessionId/items
 router.get("/picker/:sessionId/items", ensureAdmin, asyncHandler(async (req, res) => {
-  const { sessionId } = req.params;
-  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
-    throw new ApiError(400, "Invalid session ID format");
-  }
-  const googleToken = await getGooglePhotosAccessToken();
-  const response = await fetch(`${PICKER_API_BASE}/mediaItems?sessionId=${sessionId}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${googleToken}` },
-  });
+  const sessionId = requireSessionId(req.params.sessionId);
+  const mediaItems: PickerMediaItem[] = [];
+  let nextPageToken: string | undefined;
+  let page = 0;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(response.status, `Picker API failed: ${errorText}`);
-  }
+  do {
+    const query = new URLSearchParams({ sessionId, pageSize: "100" });
+    if (nextPageToken) query.set("pageToken", nextPageToken);
+    const response = await pickerFetch(`/mediaItems?${query.toString()}`);
+    const data = await response.json() as PickerItemsResponse;
+    for (const item of Array.isArray(data.mediaItems) ? data.mediaItems : []) {
+      const safe = safePickerItem(item);
+      if (safe) mediaItems.push(safe);
+    }
+    nextPageToken = data.nextPageToken;
+    page += 1;
+  } while (nextPageToken && page < MAX_PICKER_PAGES);
 
-  const data = await response.json();
-  res.json(data);
+  if (nextPageToken) throw new ApiError(422, "The picker selection exceeds the 1,000-photo import limit.");
+  res.json({ mediaItems, count: mediaItems.length });
 }));
 
-// GET /api/photos/picker/:sessionId
 router.get("/picker/:sessionId", ensureAdmin, asyncHandler(async (req, res) => {
-  const { sessionId } = req.params;
-  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
-    throw new ApiError(400, "Invalid session ID format");
-  }
-  const googleToken = await getGooglePhotosAccessToken();
-  const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${googleToken}` },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(response.status, `Picker API failed: ${errorText}`);
-  }
-
-  const data = await response.json();
-  res.json(data);
+  const sessionId = requireSessionId(req.params.sessionId);
+  const response = await pickerFetch(`/sessions/${sessionId}`);
+  const data = await response.json() as PickerSessionResponse;
+  res.json({ mediaItemsSet: data.mediaItemsSet === true });
 }));
 
-// POST /api/photos/picker
-router.post("/picker", ensureAdmin, asyncHandler(async (req, res) => {
-  const googleToken = await getGooglePhotosAccessToken();
-  const response = await fetch(`${PICKER_API_BASE}/sessions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${googleToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({}),
+router.post("/picker", ensureAdmin, asyncHandler(async (_req, res) => {
+  if (!hasGooglePhotosSecrets()) throw new ApiError(503, "Google Photos is not configured in Secret Manager.");
+  const response = await pickerFetch("/sessions", { method: "POST", body: "{}" });
+  const data = await response.json() as PickerSessionResponse;
+  if (!data.id) throw new ApiError(502, "Google Photos did not return a picker session.");
+  res.json({
+    sessionId: requireSessionId(data.id, 502),
+    pickerUri: safePickerUri(data.pickerUri ?? data.pickerUrl),
+    mediaItemsSet: data.mediaItemsSet === true,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(response.status, `Picker API failed: ${errorText}`);
-  }
-
-  const data = await response.json();
-  res.json(data);
 }));
 
-// DELETE /api/photos/picker/:sessionId
+// Picker sessions are transient upstream state, so bounded cleanup is an
+// intentional hard delete and not a team-content deletion.
 router.delete("/picker/:sessionId", ensureAdmin, asyncHandler(async (req, res) => {
-  const { sessionId } = req.params;
-  if (!sessionId.match(/^[a-zA-Z0-9\-_]+$/)) {
-    throw new ApiError(400, "Invalid session ID format");
-  }
+  const sessionId = requireSessionId(req.params.sessionId);
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${googleToken}` },
   });
-
   if (!response.ok && response.status !== 404) {
-    logger.warn("photos", "Picker API delete session got unexpected status", response.status);
+    logger.warn("photos", "Google Photos picker cleanup failed", { status: response.status });
+    throw new ApiError(502, `Google Photos Picker returned HTTP ${response.status}.`);
   }
-
   res.json({ success: true });
 }));
 

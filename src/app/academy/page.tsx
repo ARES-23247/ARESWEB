@@ -17,7 +17,7 @@ const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/Autono
 import ZulipThread from "@/components/ZulipThread";
 import { ContributorStack } from "@/components/ui/ContributorStack";
 import TiptapRenderer from "@/components/TiptapRenderer";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { logger } from "@/utils/logger";
 
 const ACADEMY_SIDEBAR_ORDER = [

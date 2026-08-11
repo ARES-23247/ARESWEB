@@ -2,28 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
 import { authenticatedFetch } from "@/lib/api";
 import { 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
-  deleteDoc,
-  query,
-  limit 
-} from "firebase/firestore";
-import { 
   ShieldAlert, 
-  Search, 
   RefreshCw, 
-  AlertCircle, 
-  CheckCircle, 
-  UserCheck, 
   Shield
 } from "lucide-react";
 import UserRosterTable from "./components/UserRosterTable";
 import UserInviteForm from "./components/UserInviteForm";
+import {
+  UserDirectoryFilters,
+  UserDirectoryNotices,
+  UserRevocationDialog,
+} from "./components/UserDirectoryControls";
 
 
 interface UserAuth {
@@ -36,14 +27,52 @@ interface UserAuth {
   subteams: string[];
   memberType: string;
   profileExists: boolean;
-  zulipAccount: any | null;
+  zulipAccount: { full_name: string } | null;
   createdAt?: string;
+  isDeleted?: boolean;
+}
+
+interface AdminUserDirectoryItem {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  isRegistered: boolean;
+  avatar: string;
+  subteams: string[];
+  memberType: string;
+  profileExists: boolean;
+  zulipLinked: boolean;
+  createdAt: string;
+  isDeleted: boolean;
+}
+
+interface AdminUserDirectoryResponse {
+  users: AdminUserDirectoryItem[];
+  nextCursor: string | null;
+  integrations: {
+    zulip: {
+      available: boolean;
+      diagnostic: string | null;
+    };
+  };
+}
+
+interface ApiErrorBody {
+  error?: string;
+}
+
+async function readApiError(response: Response): Promise<string> {
+  const responseBody = await response.json().catch(() => ({})) as ApiErrorBody;
+  return `HTTP ${response.status}: ${responseBody.error || response.statusText}`;
 }
 
 export default function DashboardUsersPage() {
   const { user, authorizedUser } = useAuth();
   const [usersList, setUsersList] = useState<UserAuth[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -52,6 +81,7 @@ export default function DashboardUsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name_asc");
+  const [pendingRevocation, setPendingRevocation] = useState<UserAuth | null>(null);
 
 
 
@@ -67,188 +97,71 @@ export default function DashboardUsersPage() {
   const userRole = authorizedUser?.role || "Pending Verification";
   const isAdmin = userRole === "admin" || userRole === "coach";
 
-  const fetchUsersData = async () => {
+  const loadUsersPage = async (cursor: string | null, synchronize: boolean) => {
     if (!user || !isAdmin) return;
-    setIsLoading(true);
+    const isAdditionalPage = Boolean(cursor);
+    if (isAdditionalPage) setIsLoadingMore(true);
+    else setIsLoading(true);
     setError(null);
-    setZulipWarning(null);
+    if (!isAdditionalPage) setZulipWarning(null);
     try {
-      // 0. Trigger backend auto-sync for missing Firebase Auth user documents
-      try {
-        await authenticatedFetch("/api/profiles/admin/users");
-      } catch (syncErr) {
-        console.warn("Backend user sync skipped:", syncErr);
+      let synchronizationWarning: string | null = null;
+      if (synchronize) {
+        try {
+          const syncResponse = await authenticatedFetch("/api/profiles/admin/users", { method: "POST" });
+          if (!syncResponse.ok) {
+            synchronizationWarning = `User synchronization failed; the confirmed roster is still available. ${await readApiError(syncResponse)}`;
+          }
+        } catch (syncError: unknown) {
+          synchronizationWarning = `User synchronization failed; the confirmed roster is still available. ${syncError instanceof Error ? syncError.message : String(syncError)}`;
+        }
       }
 
-      // 1. Fetch authorized_users from Firestore (up to 500)
-      const authSnap = await getDocs(query(collection(db, "authorized_users"), limit(500)));
-      
-      // 2. Fetch user_profiles from Firestore (up to 500)
-      const profilesSnap = await getDocs(query(collection(db, "user_profiles"), limit(500)));
-      
-      // 3. Fetch Zulip users from Functions Backend
-      let zulipUsers: any[] = [];
-      try {
-        const res = await authenticatedFetch("/api/profiles/zulip/users");
-        if (res.ok) {
-          const data = await res.json();
-          zulipUsers = data.users || [];
-        } else {
-          const data = await res.json().catch(() => ({}));
-          console.warn("Zulip fetch not fully active:", data.error || res.status);
-          setZulipWarning(data.error || "Zulip integration is not active or configured incorrectly.");
-        }
-      } catch (zErr) {
-        console.error("Error fetching Zulip users:", zErr);
-        setZulipWarning("Could not query Zulip workspace members roster.");
+      const params = new URLSearchParams({ limit: "50" });
+      if (cursor) params.set("cursor", cursor);
+      const response = await authenticatedFetch(`/api/profiles/admin/users/list?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(await readApiError(response));
       }
+      const payload = await response.json() as AdminUserDirectoryResponse;
+      if (!Array.isArray(payload.users) || !payload.integrations?.zulip) {
+        throw new Error("HTTP 502: The user directory returned an invalid response.");
+      }
+      const pageUsers: UserAuth[] = payload.users.map(directoryUser => ({
+        ...directoryUser,
+        zulipAccount: directoryUser.zulipLinked ? { full_name: "Linked" } : null,
+      }));
 
-      // Map profiles by ID and by email for quick lookup
-      const profilesMap: Record<string, any> = {};
-      const profilesByEmail: Record<string, any> = {};
-      profilesSnap.forEach((doc) => {
-        const pData = doc.data();
-        const profileObj = { id: doc.id, ...pData };
-        profilesMap[doc.id] = profileObj;
-        
-        [pData.contactEmail, pData.email, pData.userEmail, pData.primaryEmail].forEach(e => {
-          if (e && typeof e === "string") {
-            profilesByEmail[e.toLowerCase().trim()] = profileObj;
-          }
-        });
+      setUsersList(previousUsers => {
+        if (!cursor) return pageUsers;
+        const combinedUsers = new Map(previousUsers.map(existingUser => [existingUser.id, existingUser]));
+        pageUsers.forEach(nextUser => combinedUsers.set(nextUser.id, nextUser));
+        return Array.from(combinedUsers.values());
       });
-
-      // Map Zulip users strictly by normalized email and delivery_email
-      const zulipMapByEmail: Record<string, any> = {};
-      zulipUsers.forEach((zUser: any) => {
-        if (zUser.email) {
-          zulipMapByEmail[zUser.email.toLowerCase().trim()] = zUser;
-        }
-        if (zUser.delivery_email) {
-          zulipMapByEmail[zUser.delivery_email.toLowerCase().trim()] = zUser;
-        }
-      });
-
-      const combined: Record<string, UserAuth> = {};
-      const linkedProfileIds = new Set<string>();
-
-      // Process authorized_users
-      authSnap.forEach((doc) => {
-        const data = doc.data();
-        const email = data.email || "";
-        const normEmail = email.toLowerCase().trim();
-
-        const profileByUid = profilesMap[doc.id];
-        const profileByEmail = normEmail ? profilesByEmail[normEmail] : null;
-        const profile = profileByUid || profileByEmail || {};
-        
-        if (profile.id) {
-          linkedProfileIds.add(profile.id);
-        }
-
-        const isRegistered = !!profileByUid || !!profileByEmail;
-
-        const nickname = profile.nickname || "";
-        const firstName = profile.firstName || "";
-        const lastName = profile.lastName || "";
-        
-        let displayName = data.name || profile.displayName || nickname || `${firstName} ${lastName}`.trim();
-        if (!displayName && email) {
-          displayName = email.split("@")[0];
-        }
-        if (!displayName) displayName = "ARES Member";
-
-        const rawRole = (data.role || "").toLowerCase().trim();
-        let normRole = rawRole || "member";
-        let derivedMemberType = profile.memberType || data.memberType || "";
-
-        if (rawRole === "coach") {
-          normRole = "admin";
-          if (!derivedMemberType) derivedMemberType = "mentor";
-        } else if (rawRole === "student") {
-          normRole = "member";
-          if (!derivedMemberType) derivedMemberType = "student";
-        } else if (rawRole === "parent") {
-          normRole = "member";
-          if (!derivedMemberType) derivedMemberType = "parent";
-        } else if (rawRole === "lead") {
-          normRole = "mentor";
-        }
-
-        const profileEmail = (profile.contactEmail || profile.email || "").toLowerCase().trim();
-        const zulipAccount = zulipMapByEmail[normEmail] || 
-                             (profileEmail ? zulipMapByEmail[profileEmail] : null) || 
-                             null;
-
-        combined[doc.id] = {
-          id: doc.id,
-          email: email,
-          role: normRole,
-          name: displayName,
-          isRegistered: isRegistered,
-          avatar: profile.avatar || "",
-          subteams: profile.subteams || [],
-          memberType: derivedMemberType,
-          profileExists: isRegistered,
-          zulipAccount: zulipAccount,
-          createdAt: data.createdAt || profile.createdAt || ""
-        };
-      });
-
-      // Process any profiles that don't have an auth doc (self-healing)
-      profilesSnap.forEach((doc) => {
-        if (!linkedProfileIds.has(doc.id) && !combined[doc.id]) {
-          const profile = doc.data();
-          const email = profile.contactEmail || profile.email || "";
-          const normEmail = email.toLowerCase().trim();
-          const nickname = profile.nickname || "";
-          const firstName = profile.firstName || "";
-          const lastName = profile.lastName || "";
-          
-          let displayName = nickname || `${firstName} ${lastName}`.trim();
-          if (!displayName && email) {
-            displayName = email.split("@")[0];
-          }
-          if (!displayName) displayName = "Unverified Member";
-
-          const zulipAccount = zulipMapByEmail[normEmail] || null;
-
-          combined[doc.id] = {
-            id: doc.id,
-            email: email,
-            role: profile.role || "unverified",
-            name: displayName,
-            isRegistered: true,
-            avatar: profile.avatar || "",
-            subteams: profile.subteams || [],
-            memberType: profile.memberType || "",
-            profileExists: true,
-            zulipAccount: zulipAccount,
-            createdAt: profile.createdAt || ""
-          };
-        }
-      });
-
-      const finalUsers = Object.values(combined);
-      setUsersList(finalUsers);
+      setNextCursor(payload.nextCursor);
+      setZulipWarning(payload.integrations.zulip.available ? null : payload.integrations.zulip.diagnostic);
+      if (synchronizationWarning) setError(synchronizationWarning);
 
       // Initialize edited roles & memberTypes states
       const initialRoles: Record<string, string> = {};
       const initialMemberTypes: Record<string, string> = {};
-      finalUsers.forEach(u => {
+      pageUsers.forEach(u => {
         initialRoles[u.id] = u.role;
         initialMemberTypes[u.id] = u.memberType || "";
       });
-      setEditedRoles(initialRoles);
-      setEditedMemberTypes(initialMemberTypes);
+      setEditedRoles(previous => cursor ? { ...previous, ...initialRoles } : initialRoles);
+      setEditedMemberTypes(previous => cursor ? { ...previous, ...initialMemberTypes } : initialMemberTypes);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching admin users:", err);
-      setError("Failed to query user collections from Firestore.");
+      setError(`Could not load the user directory. ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setIsLoading(false);
+      if (isAdditionalPage) setIsLoadingMore(false);
+      else setIsLoading(false);
     }
   };
+
+  const fetchUsersData = async () => loadUsersPage(null, true);
 
   useEffect(() => {
     fetchUsersData();
@@ -280,19 +193,14 @@ export default function DashboardUsersPage() {
     setError(null);
 
     try {
-      // Update Firestore authorized_users document
-      const authRef = doc(db, "authorized_users", userId);
-      await setDoc(authRef, {
-        role: targetRole,
-        memberType: targetMemberType
-      }, { merge: true });
-
-      // Also update user_profiles if profile exists
-      if (originalUser.isRegistered) {
-        const profileRef = doc(db, "user_profiles", userId);
-        await setDoc(profileRef, {
-          memberType: targetMemberType
-        }, { merge: true }).catch(() => {});
+      const response = await authenticatedFetch(`/api/profiles/admin/users/${encodeURIComponent(userId)}/permissions`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: targetRole, memberType: targetMemberType }),
+      });
+      const responseBody = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseBody.error || response.statusText}`);
       }
 
       setSuccess(`Updated permissions and member type for ${originalUser.name || originalUser.email}`);
@@ -325,20 +233,14 @@ export default function DashboardUsersPage() {
     setError(null);
 
     try {
-      const res = await authenticatedFetch("/api/profiles/zulip/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: targetUser.email,
-          fullName: targetUser.name
-        })
-      });
+      const res = await authenticatedFetch(
+        `/api/zulip/admin/users/${encodeURIComponent(userId)}/provision`,
+        { method: "POST" },
+      );
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({})) as ApiErrorBody;
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create Zulip account");
+        throw new Error(`HTTP ${res.status}: ${data.error || res.statusText}`);
       }
 
       setSuccess(`Zulip account provisioned successfully for ${targetUser.name}`);
@@ -350,7 +252,7 @@ export default function DashboardUsersPage() {
     } catch (err: any) {
       console.error("Error provisioning Zulip user:", err);
       if (err.message?.includes("bot requests") || err.message?.includes("administrator") || err.message?.includes("not accept")) {
-        setError("Zulip Cloud restricts bot invitations. Members can join directly via our Zulip Join Link: https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
+        setError("Zulip did not accept the automated invitation. Ask a team administrator for the current approved join link.");
       } else {
         setError(`Zulip account creation failed: ${err.message}`);
       }
@@ -359,33 +261,60 @@ export default function DashboardUsersPage() {
     }
   };
 
-  const handleRemoveUser = async (userId: string) => {
+  const handleRemoveUser = (userId: string) => {
     const targetUser = usersList.find(u => u.id === userId);
     if (!targetUser || !user) return;
+    setPendingRevocation(targetUser);
+  };
 
-    const confirmMsg = `WARNING: Are you sure you want to revoke access and delete all data for ${targetUser.name || targetUser.email}?\n\nThis will delete their authorized_users entry and delete their user profile permanently.`;
-    if (!window.confirm(confirmMsg)) return;
+  const confirmRemoveUser = async () => {
+    const targetUser = pendingRevocation;
+    if (!targetUser || !user) return;
 
     setIsLoading(true);
     setSuccess(null);
     setError(null);
 
     try {
-      // 1. Delete authorized_users
-      await deleteDoc(doc(db, "authorized_users", userId));
-
-      // 2. Delete user_profiles
-      if (targetUser.profileExists) {
-        await deleteDoc(doc(db, "user_profiles", userId));
+      const response = await authenticatedFetch(`/api/profiles/admin/users/${encodeURIComponent(targetUser.id)}`, {
+        method: "DELETE",
+      });
+      const responseBody = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseBody.error || response.statusText}`);
       }
 
-      setSuccess(`User ${targetUser.name || targetUser.email} has been completely removed.`);
+      setPendingRevocation(null);
+      setSuccess(`Access revoked for ${targetUser.name || targetUser.email}. Their profile was archived and can be restored.`);
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
       console.error("Error removing user:", err);
-      setError(`Failed to revoke user: ${err.message}`);
+      setError(`Failed to revoke user access: ${err.message}`);
       setIsLoading(false);
+    }
+  };
+
+  const handleRestoreUser = async (userId: string) => {
+    const targetUser = usersList.find(u => u.id === userId);
+    if (!targetUser || !user) return;
+    setSavingRoles(prev => ({ ...prev, [userId]: true }));
+    setSuccess(null);
+    setError(null);
+    try {
+      const response = await authenticatedFetch(`/api/profiles/admin/users/${encodeURIComponent(userId)}/restore`, {
+        method: "PATCH",
+      });
+      const responseBody = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseBody.error || response.statusText}`);
+      }
+      setSuccess(`Access restored for ${targetUser.name || targetUser.email}.`);
+      await fetchUsersData();
+    } catch (err: unknown) {
+      setError(`Failed to restore user access: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSavingRoles(prev => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -474,58 +403,23 @@ export default function DashboardUsersPage() {
           </p>
         </div>
         <button 
+          type="button"
           onClick={fetchUsersData}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold"
+          disabled={isLoading}
+          aria-busy={isLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
           <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh List
         </button>
       </header>
 
-      {/* Notifications */}
-      {success && (
-        <div className="p-4 bg-ares-success/10 border border-ares-success/30 text-white rounded flex items-center gap-3 text-sm font-semibold">
-          <CheckCircle size={18} className="text-ares-success shrink-0" />
-          <span>{success}</span>
-        </div>
-      )}
-      {error && (
-        <div className="p-4 bg-ares-danger/10 border border-ares-danger/30 text-white rounded flex items-center gap-3 text-sm font-semibold">
-          <AlertCircle size={18} className="text-ares-danger-soft shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-      {zulipWarning && (
-        <div className="p-4 bg-ares-gold/10 border border-ares-gold/30 text-white rounded flex items-center gap-3 text-sm font-semibold">
-          <AlertCircle size={18} className="text-ares-gold shrink-0" />
-          <div className="flex-1">
-            <span className="font-bold text-ares-gold uppercase tracking-wider text-xs block mb-1">Zulip API Notice</span>
-            <span className="text-marble/80 text-xs">{zulipWarning}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Unverified Signups Banner */}
-      {usersList.filter(u => u.role === "unverified").length > 0 && (
-        <div className="p-4 bg-ares-gold/15 border border-ares-gold/40 text-white rounded flex items-center justify-between gap-3 text-sm font-semibold animate-fade-in shadow-xl">
-          <div className="flex items-center gap-3">
-            <UserCheck size={22} className="text-ares-gold animate-pulse shrink-0" />
-            <div>
-              <span className="font-bold text-ares-gold uppercase tracking-wider text-xs block">
-                {usersList.filter(u => u.role === "unverified").length} User(s) Pending Role Verification
-              </span>
-              <span className="text-marble/80 text-xs">
-                Newly registered team members are awaiting role assignment (Admin, Mentor, or Member).
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setRoleFilter("unverified")}
-            className="px-3 py-1.5 bg-ares-gold/20 hover:bg-ares-gold text-ares-gold hover:text-black border border-ares-gold/50 rounded text-xs font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
-          >
-            View Pending ({usersList.filter(u => u.role === "unverified").length})
-          </button>
-        </div>
-      )}
+      <UserDirectoryNotices
+        success={success}
+        error={error}
+        zulipWarning={zulipWarning}
+        pendingCount={usersList.filter((directoryUser) => directoryUser.role === "unverified").length}
+        onViewPending={() => setRoleFilter("unverified")}
+      />
 
       {/* Grid Layout: Left Column = Users List; Right Column = Invite Form */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -533,60 +427,21 @@ export default function DashboardUsersPage() {
         {/* Main Users Area */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Filters Toolbar */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/5 p-4 ares-cut border border-white/5">
-            <div className="relative w-full md:w-56">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={14} />
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-9 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
-              />
-            </div>
-
-            <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
-              >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin / Coach</option>
-                <option value="mentor">Mentor / Lead</option>
-                <option value="member">Member</option>
-                <option value="unverified">Unverified</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
-              >
-                <option value="all">All Statuses</option>
-                <option value="registered">Registered Profile</option>
-                <option value="invited">Invited / Legacy</option>
-                <option value="unlinked_zulip">Unlinked Zulip</option>
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-obsidian border border-ares-gold/30 text-ares-gold ares-cut-sm px-3 py-2 text-xs cursor-pointer focus:outline-none font-black uppercase tracking-wider"
-              >
-                <option value="name_asc">Sort: Name (A-Z)</option>
-                <option value="name_desc">Sort: Name (Z-A)</option>
-                <option value="role">Sort: Role Hierarchy</option>
-                <option value="status">Sort: Registration</option>
-                <option value="newest">Sort: Newest Joined</option>
-                <option value="oldest">Sort: Oldest Joined</option>
-              </select>
-            </div>
-          </div>
+          <UserDirectoryFilters
+            searchQuery={searchQuery}
+            roleFilter={roleFilter}
+            statusFilter={statusFilter}
+            sortBy={sortBy}
+            onSearchChange={setSearchQuery}
+            onRoleChange={setRoleFilter}
+            onStatusChange={setStatusFilter}
+            onSortChange={setSortBy}
+          />
 
           {/* Users List Cards */}
           <UserRosterTable
             filteredUsers={sortedUsers}
-            isLoading={isLoading}
+            isLoading={isLoading && usersList.length === 0}
             editedRoles={editedRoles}
             editedMemberTypes={editedMemberTypes}
             savingRoles={savingRoles}
@@ -596,7 +451,23 @@ export default function DashboardUsersPage() {
             onSaveRole={handleSaveRole}
             onCreateZulip={handleCreateZulip}
             onRemoveUser={handleRemoveUser}
+            onRestoreUser={handleRestoreUser}
           />
+
+          {nextCursor && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => void loadUsersPage(nextCursor, false)}
+                disabled={isLoadingMore}
+                aria-busy={isLoadingMore}
+                className="inline-flex items-center gap-2 rounded border border-ares-gold/40 bg-ares-gold/10 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-ares-gold transition-colors hover:bg-ares-gold/20 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <RefreshCw aria-hidden="true" size={14} className={isLoadingMore ? "animate-spin" : ""} />
+                {isLoadingMore ? "Loading users..." : "Load more users"}
+              </button>
+            </div>
+          )}
 
         </div>
 
@@ -611,6 +482,12 @@ export default function DashboardUsersPage() {
         </div>
 
       </div>
+
+      <UserRevocationDialog
+        target={pendingRevocation}
+        onOpenChange={(open) => !open && setPendingRevocation(null)}
+        onConfirm={() => void confirmRemoveUser()}
+      />
     </div>
   );
 }

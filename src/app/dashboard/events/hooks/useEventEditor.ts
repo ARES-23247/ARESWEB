@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, doc, onSnapshot, setDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "@/lib/image";
@@ -8,6 +8,7 @@ import { cleanUndefined } from "@/lib/utils";
 import { logger } from "@/utils/logger";
 import { TeamEvent } from "@/types/event";
 import { TeamLocation } from "../components/LocationManagerModal";
+import { archiveEvent, createEvent, restoreEvent, updateEvent, type EventWriteInput } from "@/app/calendar/api";
 
 export interface EventRevision {
   id: string;
@@ -44,6 +45,12 @@ export interface EventPhoto {
   uploadedAt: string;
   filename: string;
   googleMediaItemId?: string;
+  isDeleted?: number;
+}
+
+interface EventEditorUserProfile {
+  nickname?: string;
+  avatar?: string;
 }
 
 interface UseEventEditorProps {
@@ -59,7 +66,7 @@ export function useEventEditor({
   isOpen,
   onClose,
   eventToEdit,
-  locations: _locations,
+  locations,
   setLocations: _setLocations,
   teamMembers
 }: UseEventEditorProps) {
@@ -95,9 +102,11 @@ export function useEventEditor({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<EventPhoto | null>(null);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // User Profile cache for revision logs
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<EventEditorUserProfile | null>(null);
   const [userNickname, setUserNickname] = useState("");
 
   const editId = eventToEdit?.id || null;
@@ -113,17 +122,28 @@ export function useEventEditor({
     if (!user) return;
     const fetchProfile = async () => {
       try {
-        const userProfileRef = doc(db, "user_profiles", user.uid);
-        const userProfileSnap = await getDoc(userProfileRef);
-        if (userProfileSnap.exists()) {
-          const profileData = userProfileSnap.data();
-          setUserProfile(profileData);
-          if (profileData.nickname) {
-            setUserNickname(profileData.nickname);
-          }
+        const response = await authenticatedFetch("/api/profiles/me");
+        const payload = await response.json().catch(() => ({})) as {
+          profile?: { nickname?: unknown; avatar?: unknown };
+          nickname?: unknown;
+          avatar?: unknown;
+          error?: unknown;
+        };
+        if (!response.ok) {
+          const message = typeof payload.error === "string" ? ` — ${payload.error}` : "";
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}${message}`);
         }
-      } catch (err) {
+        const source = payload.profile ?? payload;
+        const profileData: EventEditorUserProfile = {
+          nickname: typeof source.nickname === "string" ? source.nickname : undefined,
+          avatar: typeof source.avatar === "string" ? source.avatar : undefined,
+        };
+        setUserProfile(profileData);
+        setUserNickname(profileData.nickname || "ARES Member");
+      } catch (err: unknown) {
         logger.error("Failed to load user profile:", err);
+        setUserNickname("ARES Member");
+        setOperationError(`Profile details unavailable: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     fetchProfile();
@@ -136,7 +156,7 @@ export function useEventEditor({
         setFormTitle(eventToEdit.title);
         setFormDateStart(eventToEdit.dateStart ? eventToEdit.dateStart.slice(0, 16) : "");
         setFormDateEnd(eventToEdit.dateEnd ? eventToEdit.dateEnd.slice(0, 16) : "");
-        setFormLocationId(eventToEdit.locationId || "mars-building");
+        setFormLocationId(eventToEdit.locationId || "");
         setFormDescription(eventToEdit.description || "");
         setFormCategory(eventToEdit.category);
         setFormCoverImage(eventToEdit.coverImage || "");
@@ -148,7 +168,7 @@ export function useEventEditor({
         setFormTitle("");
         setFormDateStart(new Date().toISOString().slice(0, 16));
         setFormDateEnd(new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16));
-        setFormLocationId("mars-building");
+        setFormLocationId("");
         setFormDescription("");
         setFormCategory("internal");
         setFormCoverImage("");
@@ -165,6 +185,7 @@ export function useEventEditor({
       setSignups([]);
       setPhotos([]);
       setRevisions([]);
+      setOperationError(null);
     }
   }, [isOpen, eventToEdit, canPublishDirectly]);
 
@@ -200,10 +221,11 @@ export function useEventEditor({
           id: docSnap.id,
           ...docSnap.data()
         })) as EventPhoto[];
-        setPhotos(list);
+        setPhotos(list.filter((photo) => photo.isDeleted !== 1));
       },
       (err) => {
         console.warn("Unable to fetch event photos:", err);
+        setOperationError(`Event gallery unavailable: ${err.message}`);
       }
     );
     return () => unsubscribe();
@@ -220,7 +242,7 @@ export function useEventEditor({
     if (!editId) return;
     setLoadingRevisions(true);
     try {
-      const q = query(collection(db, "events", editId, "revisions"), orderBy("timestamp", "desc"));
+      const q = query(collection(db, "events", editId, "revisions"), orderBy("timestamp", "desc"), limit(50));
       const snap = await getDocs(q);
       const list = snap.docs.map((docSnap) => ({
         id: docSnap.id,
@@ -229,6 +251,7 @@ export function useEventEditor({
       setRevisions(list);
     } catch (err) {
       console.warn("Could not load revision logs:", err);
+      setOperationError(`Revision history unavailable: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoadingRevisions(false);
     }
@@ -239,12 +262,12 @@ export function useEventEditor({
     if (user && !list.some((m) => m.uid === user.uid)) {
       list.unshift({
         uid: user.uid,
-        nickname: userNickname || authorizedUser?.name || user.displayName || "ARES Member",
-        avatar: userProfile?.avatar || user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`
+        nickname: userNickname || "ARES Member",
+        avatar: userProfile?.avatar || ""
       });
     }
     return list;
-  }, [teamMembers, user, userNickname, userProfile, authorizedUser]);
+  }, [teamMembers, user, userNickname, userProfile]);
 
   // Action: Save Event
   const handleSaveEvent = async (e: React.FormEvent) => {
@@ -252,104 +275,58 @@ export function useEventEditor({
     if (!formTitle.trim() || !formDateStart) return;
     if (!canEdit) return;
 
-    const targetId = editId || `event_${Date.now()}`;
-    const newEvent: TeamEvent = {
-      id: targetId,
+    const selectedLocation = locations.find((location) => location.id === formLocationId);
+    const newEvent: EventWriteInput = {
       title: formTitle.trim(),
       dateStart: formDateStart,
       dateEnd: formDateEnd || undefined,
-      locationId: formLocationId || "mars-building",
+      locationId: formLocationId || undefined,
+      location: selectedLocation?.name,
       description: formDescription.trim() || undefined,
       category: formCategory,
       coverImage: formCoverImage || undefined,
-      isPotluck: formIsPotluck,
-      isVolunteer: formIsVolunteer,
-      isDeleted: eventToEdit?.isDeleted ?? 0,
+      isPotluck: formIsPotluck === 1 ? 1 : 0,
+      isVolunteer: formIsVolunteer === 1 ? 1 : 0,
       status: canPublishDirectly ? formStatus : "pending"
     };
 
+    setIsSaving(true);
+    setOperationError(null);
     try {
-      await setDoc(doc(db, "events", targetId), cleanUndefined(newEvent));
-
-      // Log audit revision if editing
-      if (editId) {
-        try {
-          const revId = `rev_${Date.now()}`;
-          const revision: EventRevision = {
-            ...newEvent,
-            editedBy: user?.uid || "unknown",
-            editedByName: userNickname || authorizedUser?.name || "ARES Member",
-            editedByAvatar:
-              userProfile?.avatar ||
-              user?.photoURL ||
-              `https://api.dicebear.com/9.x/bottts/svg?seed=${user?.uid}`,
-            timestamp: new Date().toISOString()
-          } as any;
-          await setDoc(doc(db, "events", editId, "revisions", revId), cleanUndefined(revision));
-        } catch (revErr) {
-          logger.warn("Could not log revision audit log:", revErr);
-        }
-      }
-
+      if (editId) await updateEvent(editId, newEvent);
+      else await createEvent(newEvent);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error saving event:", err);
-      alert("Failed to save event: " + err.message);
+      setOperationError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteEvent = async () => {
-    if (!canEdit || !editId) return;
-    if (!confirm("Are you sure you want to move this event to the Trash? (It will be hidden from the calendar, but visible to managers)")) return;
+    if (!canPublishDirectly || !editId) return;
 
+    setOperationError(null);
     try {
-      const docRef = doc(db, "events", editId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const currentData = docSnap.data();
-        await setDoc(docRef, cleanUndefined({
-          ...currentData,
-          isDeleted: 1
-        }));
-      }
+      await archiveEvent(editId);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error soft deleting event:", err);
-      alert("Failed to delete event: " + err.message);
+      setOperationError(err instanceof Error ? err.message : String(err));
     }
   };
 
   const handleRestoreEvent = async () => {
-    if (!canEdit || !editId) return;
-    if (!confirm("Are you sure you want to restore this event to the calendar?")) return;
-
-    try {
-      const docRef = doc(db, "events", editId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const currentData = docSnap.data();
-        await setDoc(docRef, cleanUndefined({
-          ...currentData,
-          isDeleted: 0
-        }));
-      }
-      onClose();
-    } catch (err: any) {
-      logger.error("Error restoring event:", err);
-      alert("Failed to restore event: " + err.message);
-    }
-  };
-
-  const handlePermanentDeleteEvent = async () => {
     if (!canPublishDirectly || !editId) return;
-    if (!confirm("WARNING: Are you sure you want to PERMANENTLY delete this event? This action cannot be undone and will delete all RSVPs and photos!")) return;
 
+    setOperationError(null);
     try {
-      await deleteDoc(doc(db, "events", editId));
+      await restoreEvent(editId);
       onClose();
-    } catch (err: any) {
-      logger.error("Error permanently deleting event:", err);
-      alert("Failed to permanently delete event: " + err.message);
+    } catch (err: unknown) {
+      logger.error("Error restoring event:", err);
+      setOperationError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -358,7 +335,7 @@ export function useEventEditor({
     setFormTitle(rev.title);
     setFormDateStart(rev.dateStart ? rev.dateStart.slice(0, 16) : "");
     setFormDateEnd(rev.dateEnd ? rev.dateEnd.slice(0, 16) : "");
-    setFormLocationId(rev.locationId || "mars-building");
+    setFormLocationId(rev.locationId || "");
     setFormDescription(rev.description || "");
     setFormCategory(rev.category);
     setFormCoverImage(rev.coverImage || "");
@@ -397,7 +374,7 @@ export function useEventEditor({
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(errText || "Backend unified upload failed");
+        throw new Error(`HTTP ${res.status}: ${res.statusText || "Request failed"}${errText ? ` — ${errText}` : ""}`);
       }
 
       const data = await res.json();
@@ -406,16 +383,16 @@ export function useEventEditor({
       const photoData: EventPhoto = {
         id: photoId,
         url: data.photo.publicUrl,
-        uploadedBy: userNickname || user.displayName || "Anonymous Member",
+        uploadedBy: userNickname || "ARES Member",
         uploadedAt: new Date().toISOString(),
         filename: file.name,
         googleMediaItemId: data.photo.googleMediaItemId || undefined
       };
 
       await setDoc(doc(db, "events", editId, "photos", photoId), cleanUndefined(photoData));
-      setRevertAlert("Photo uploaded to event gallery and synced to team Google Photos!");
-    } catch (err: any) {
-      setUploadError(err.message || "Failed to upload image.");
+      setRevertAlert("Photo uploaded to the event gallery. Google Photos sync runs when the team account is connected.");
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploadingImage(false);
     }
@@ -424,12 +401,16 @@ export function useEventEditor({
   // Action: Delete Photo
   const handleDeletePhoto = async (photoId: string) => {
     if (!editId || !canEdit) return;
-    if (!confirm("Are you sure you want to remove this photo from the event gallery?")) return;
     try {
-      await deleteDoc(doc(db, "events", editId, "photos", photoId));
-      setRevertAlert("Photo removed.");
-    } catch (err: any) {
+      await setDoc(
+        doc(db, "events", editId, "photos", photoId),
+        { isDeleted: 1, archivedAt: new Date().toISOString() },
+        { merge: true },
+      );
+      setRevertAlert("Photo archived from this event.");
+    } catch (err: unknown) {
       logger.error("Failed to delete photo:", err);
+      setOperationError(`Photo archive failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -468,6 +449,8 @@ export function useEventEditor({
     photos,
     revisions,
     loadingRevisions,
+    operationError,
+    isSaving,
     uploadingImage,
     uploadError,
     selectedPhoto,
@@ -475,6 +458,7 @@ export function useEventEditor({
     isPhotoPickerOpen,
     setIsPhotoPickerOpen,
     userNickname,
+    currentUser: user,
     editId,
     canEdit,
     isAdmin,
@@ -483,7 +467,6 @@ export function useEventEditor({
     handleSaveEvent,
     handleDeleteEvent,
     handleRestoreEvent,
-    handlePermanentDeleteEvent,
     handleRevertToRevision,
     handleImageUpload,
     handleDeletePhoto,

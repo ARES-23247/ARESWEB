@@ -32,8 +32,8 @@ export default function SubteamsTab({
         <User size={14} /> Subteam Assignments
       </h3>
 
-      <div className="bg-black/25 border border-white/5 p-4 rounded-xl">
-        <label className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Subteams (Select all that apply)</label>
+      <fieldset className="bg-black/25 border border-white/5 p-4 rounded-xl">
+        <legend className="block text-[10px] uppercase font-bold text-marble/60 tracking-wider mb-3">Subteams (Select all that apply)</legend>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {availableSubteams.map((team) => {
             const isSelected = subteams.includes(team);
@@ -41,6 +41,7 @@ export default function SubteamsTab({
               <button
                 key={team}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleSubteamToggle(team)}
                 className={`px-4 py-3 ares-cut-sm border text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all ${
                   isSelected
@@ -53,7 +54,7 @@ export default function SubteamsTab({
             );
           })}
         </div>
-      </div>
+      </fieldset>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
@@ -80,7 +81,7 @@ export default function SubteamsTab({
         </div>
         {isAdmin && (
           <div>
-            <label htmlFor="profile-member-type" className="block text-[10px] uppercase font-bold text-ares-red/80 tracking-wider mb-2">Member Type (Admin Only)</label>
+            <label htmlFor="profile-member-type" className="block text-[10px] uppercase font-bold text-ares-gold tracking-wider mb-2">Member Type (Admin Only)</label>
             <select
               id="profile-member-type"
               value={memberType}
@@ -90,7 +91,6 @@ export default function SubteamsTab({
               <option value="student">Student</option>
               <option value="alumni">Alumni</option>
               <option value="mentor">Mentor</option>
-              <option value="coach">Coach</option>
               <option value="parent">Parent</option>
             </select>
           </div>

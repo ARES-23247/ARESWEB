@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 
 export interface DocRecord {
