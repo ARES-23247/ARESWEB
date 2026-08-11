@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
@@ -63,8 +63,30 @@ export default function TaskDetailsModal({
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
-  const modalRef = useFocusTrap(true, onClose);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+
+  const cancelDeleteConfirmation = () => {
+    setDeleteConfirmationOpen(false);
+    queueMicrotask(() => deleteTriggerRef.current?.focus());
+  };
+
+  const modalRef = useFocusTrap(true, () => {
+    if (deleteConfirmationOpen) {
+      cancelDeleteConfirmation();
+      return;
+    }
+    onClose();
+  });
   const titleError = modalTitle.trim() ? null : "Enter a task title before saving.";
+
+  useEffect(() => {
+    if (deleteConfirmationOpen) deleteCancelRef.current?.focus();
+  }, [deleteConfirmationOpen]);
 
   useEffect(() => {
     if (task) {
@@ -211,6 +233,25 @@ export default function TaskDetailsModal({
     }
     setOperationError(null);
     setNewSubTitle("");
+  };
+
+  const handleDeleteTask = async () => {
+    if (!task || deleteSubmitting) return;
+    setDeleteSubmitting(true);
+    setOperationError(null);
+    try {
+      const error = await onDeleteTask(task.id);
+      setOperationError(error);
+      if (!error) {
+        setDeleteConfirmationOpen(false);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to delete task", error);
+      setOperationError(describeTaskError("delete task", error));
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   const renderInnerContent = () => (
@@ -495,20 +536,53 @@ export default function TaskDetailsModal({
         </div>
       </div>
 
+      {deleteConfirmationOpen && task && (
+        <section
+          role="alertdialog"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+          className="mx-6 mb-3 border border-ares-red bg-ares-red/10 p-4 text-sm text-white"
+        >
+          <h4 id={deleteTitleId} className="font-bold">Delete this task card?</h4>
+          <p id={deleteDescriptionId} className="mt-1 text-marble/80">
+            This removes <span className="font-semibold text-white">{task.title}</span> from the active board. A coach or administrator can recover archived task data.
+          </p>
+          <p className="mt-2 font-mono text-xs text-marble/80">Task ID: {task.id}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleDeleteTask}
+              disabled={deleteSubmitting}
+              className="rounded bg-ares-red px-3 py-2 text-xs font-bold text-white hover:bg-ares-bronze disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              {deleteSubmitting ? "Deleting…" : "Confirm delete"}
+            </button>
+            <button
+              ref={deleteCancelRef}
+              type="button"
+              onClick={cancelDeleteConfirmation}
+              disabled={deleteSubmitting}
+              className="rounded border border-marble/40 px-3 py-2 text-xs font-semibold text-marble hover:border-white hover:text-white disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Keep task
+            </button>
+          </div>
+        </section>
+      )}
+
       <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
         {canEdit && !isCreateMode && task ? (
           <button
+            ref={deleteTriggerRef}
             type="button"
-            onClick={async () => {
-              if (confirm("Are you sure you want to delete this task card?")) {
-                const error = await onDeleteTask(task.id);
-                setOperationError(error);
-                if (!error) onClose();
-              }
+            onClick={() => {
+              setOperationError(null);
+              setDeleteConfirmationOpen(true);
             }}
+            aria-expanded={deleteConfirmationOpen}
             className="px-3 py-2 border border-white/10 hover:border-ares-red hover:bg-ares-red text-marble/60 hover:text-white rounded font-black text-[10px] uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
-            <Trash2 size={12} /> Delete Card
+            <Trash2 aria-hidden="true" size={12} /> Delete Card
           </button>
         ) : (
           <div />
@@ -555,7 +629,10 @@ export default function TaskDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
+        onClick={deleteConfirmationOpen ? cancelDeleteConfirmation : onClose}
+      />
       
       {/* Editor Drawer container */}
       <div 

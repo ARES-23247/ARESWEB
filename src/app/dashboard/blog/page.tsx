@@ -47,6 +47,11 @@ export default function BlogManagementPage({
     handleApproveAndPublish,
     handleDelete,
     handleRestore,
+    handleCancelArchive,
+    handleConfirmArchive,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
   } = useDashboardDocController(
     "posts",
     (d) => d.isDeleted !== 1,
@@ -171,6 +176,11 @@ export default function BlogManagementPage({
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         onRestore={handleRestore}
+        pendingArchiveSlug={pendingArchiveSlug}
+        isArchiving={isArchiving}
+        archiveError={archiveError}
+        onConfirmArchive={handleConfirmArchive}
+        onCancelArchive={handleCancelArchive}
         connectionState={connectionState}
         error={listError}
         hasMore={hasMore}

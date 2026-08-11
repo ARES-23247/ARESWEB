@@ -37,7 +37,12 @@ export default function AreslibManagementPage() {
     handleCloseEditor,
     handleSave,
     handleDelete,
-    handleRestore
+    handleRestore,
+    handleCancelArchive,
+    handleConfirmArchive,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
   } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && d.displayInAreslib === 1);
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -93,6 +98,11 @@ export default function AreslibManagementPage() {
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         onRestore={handleRestore}
+        pendingArchiveSlug={pendingArchiveSlug}
+        isArchiving={isArchiving}
+        archiveError={archiveError}
+        onConfirmArchive={handleConfirmArchive}
+        onCancelArchive={handleCancelArchive}
         connectionState={connectionState}
         error={listError}
         hasMore={hasMore}

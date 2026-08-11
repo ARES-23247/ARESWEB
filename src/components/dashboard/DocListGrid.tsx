@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
@@ -13,6 +13,11 @@ interface DocListGridProps {
   onEdit: (item: DocRecord) => void;
   onDelete: (slug: string) => void;
   onRestore?: (slug: string) => void;
+  pendingArchiveSlug?: string | null;
+  isArchiving?: boolean;
+  archiveError?: string | null;
+  onConfirmArchive?: () => void;
+  onCancelArchive?: () => void;
   connectionState?: DocumentConnectionState;
   error?: string | null;
   hasMore?: boolean;
@@ -31,6 +36,11 @@ export default function DocListGrid({
   onEdit,
   onDelete,
   onRestore,
+  pendingArchiveSlug = null,
+  isArchiving = false,
+  archiveError = null,
+  onConfirmArchive,
+  onCancelArchive,
   connectionState = "connected",
   error = null,
   hasMore = false,
@@ -40,6 +50,7 @@ export default function DocListGrid({
 }: DocListGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<"updated" | "title" | "category">("updated");
+  const archiveCancelRef = useRef<HTMLButtonElement>(null);
 
   const filteredItems = useMemo(() => {
     const queryStr = searchQuery.toLowerCase().trim();
@@ -54,6 +65,12 @@ export default function DocListGrid({
       return (right.updatedAt || right.createdAt || "").localeCompare(left.updatedAt || left.createdAt || "");
     });
   }, [items, searchQuery, sortMode]);
+
+  const pendingArchiveItem = items.find((item) => item.slug === pendingArchiveSlug);
+
+  useEffect(() => {
+    if (pendingArchiveSlug) archiveCancelRef.current?.focus();
+  }, [pendingArchiveSlug]);
 
   return (
     <div className="glass-card border border-white/10 ares-cut-lg overflow-hidden shadow-xl">
@@ -346,6 +363,45 @@ export default function DocListGrid({
           </tbody>
         </table>
       </div>
+      {pendingArchiveSlug && onConfirmArchive && onCancelArchive && (
+        <div
+          role="alertdialog"
+          aria-labelledby="document-archive-confirmation-title"
+          aria-describedby="document-archive-confirmation-description"
+          className="border-t border-ares-red/45 bg-ares-red/15 px-6 py-4 text-white"
+        >
+          <p id="document-archive-confirmation-title" className="text-sm font-bold">
+            Archive {pendingArchiveItem?.title || "this record"}?
+          </p>
+          <p id="document-archive-confirmation-description" className="mt-1 text-xs text-white/80">
+            It will leave active lists but remain available in Archived records for restoration.
+          </p>
+          {archiveError && (
+            <p role="alert" className="mt-2 break-words font-mono text-[10px] text-white/80">
+              Archive failed: {archiveError}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              ref={archiveCancelRef}
+              type="button"
+              onClick={onCancelArchive}
+              disabled={isArchiving}
+              className="rounded border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase text-white disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Keep Record
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmArchive}
+              disabled={isArchiving}
+              className="rounded bg-ares-red px-3 py-1.5 text-[10px] font-bold uppercase text-white disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              {isArchiving ? "Archiving…" : "Archive Record"}
+            </button>
+          </div>
+        </div>
+      )}
       {hasMore && onLoadMore && (
         <div className="border-t border-white/10 bg-black/20 p-4 text-center">
           <button

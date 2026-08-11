@@ -7,7 +7,6 @@
   --font-spartan: "League Spartan", sans-serif;
   --ares-red: #c00000;
   --ares-red-light: var(--ares-red);
-  --ares-red-dark: var(--ares-bronze);
   --ares-bronze: #cd7f32;
   --ares-bronze-light: var(--ares-bronze);
   --ares-bronze-dark: var(--ares-bronze);
@@ -35,7 +34,6 @@
   /* Authorized ARES Palette Mappings */
   --color-ares-red: var(--ares-red);
   --color-ares-red-light: var(--ares-red-light);
-  --color-ares-red-dark: var(--ares-red-dark);
   --color-ares-danger: var(--ares-danger);
   --color-ares-danger-soft: var(--ares-danger-soft);
   --color-ares-bronze: var(--ares-bronze);

@@ -40,7 +40,12 @@ export default function AcademyManagementPage() {
     handleCloseEditor,
     handleSave,
     handleDelete,
-    handleRestore
+    handleRestore,
+    handleCancelArchive,
+    handleConfirmArchive,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
   } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && (d.displayInMathCorner === 1 || d.displayInScienceCorner === 1));
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -96,6 +101,11 @@ export default function AcademyManagementPage() {
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         onRestore={handleRestore}
+        pendingArchiveSlug={pendingArchiveSlug}
+        isArchiving={isArchiving}
+        archiveError={archiveError}
+        onConfirmArchive={handleConfirmArchive}
+        onCancelArchive={handleCancelArchive}
         connectionState={connectionState}
         error={listError}
         hasMore={hasMore}

@@ -62,7 +62,7 @@
 }
 
 .upload-button:hover {
-  background: var(--ares-red-dark);
+  background: var(--ares-bronze);
 }
 
 .upload-button:disabled {

@@ -85,18 +85,22 @@ test.describe('Markdown Editor & Blog Post Creator E2E tests', () => {
     await expect(editor).toBeVisible();
     await expect(closeEditor).toBeInViewport();
 
-    page.once('dialog', async (dialog) => {
-      expect(dialog.type()).toBe('confirm');
-      await dialog.dismiss();
-    });
     await closeEditor.click();
+    const dirtyClosePrompt = page.getByRole('alertdialog', { name: 'Close with unsaved changes?' });
+    await expect(dirtyClosePrompt).toBeVisible();
+    await expect(dirtyClosePrompt.getByRole('button', { name: 'Keep Editing' })).toBeFocused();
+    await dirtyClosePrompt.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(editor).toBeVisible();
+    await expect(dirtyClosePrompt).toBeHidden();
 
-    page.once('dialog', async (dialog) => {
-      expect(dialog.type()).toBe('confirm');
-      await dialog.accept();
-    });
     await closeEditor.click();
+    await dirtyClosePrompt.getByRole('button', { name: 'Close and Keep Draft' }).click();
     await expect(editor).toBeHidden();
+
+    await newPostBtn.click();
+    const recoveryPrompt = page.getByRole('alertdialog', { name: 'Local recovery draft available' });
+    await expect(recoveryPrompt).toBeVisible();
+    await recoveryPrompt.getByRole('button', { name: 'Restore Draft' }).click();
+    await expect(page.locator('form textarea').first()).toHaveValue('This is a test blog post for ARES.');
   });
 });

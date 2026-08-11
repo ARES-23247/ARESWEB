@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  
             <button
               onClick={loginWithGoogle}
-              className="w-full clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl hover:shadow-[0_0_20px_rgba(192,0,0,0.3)] active:scale-95 cursor-pointer"
+              className="w-full clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl hover:shadow-[0_0_20px_rgba(192,0,0,0.3)] active:scale-95 cursor-pointer"
             >
               <LogIn size={16} /> Sign In with Google
             </button>

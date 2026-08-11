@@ -33,6 +33,11 @@ export default function DocumentsManagementPage() {
     handleSave,
     handleDelete,
     handleRestore,
+    handleCancelArchive,
+    handleConfirmArchive,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
   } = useDashboardDocController("documents", (d) => d.isDeleted !== 1);
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -180,6 +185,11 @@ export default function DocumentsManagementPage() {
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         onRestore={handleRestore}
+        pendingArchiveSlug={pendingArchiveSlug}
+        isArchiving={isArchiving}
+        archiveError={archiveError}
+        onConfirmArchive={handleConfirmArchive}
+        onCancelArchive={handleCancelArchive}
         connectionState={connectionState}
         error={listError}
         hasMore={hasMore}

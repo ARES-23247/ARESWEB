@@ -20,6 +20,9 @@ export function useDashboardDocController(
 
   const [selectedDoc, setSelectedDoc] = useState<DocRecord | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [pendingArchiveSlug, setPendingArchiveSlug] = useState<string | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const isApprover = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "mentor" || authorizedUser.role === "coach"));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
@@ -131,8 +134,30 @@ export function useDashboardDocController(
 
   const handleDelete = async (slug: string) => {
     if (!canEdit) return;
-    if (!confirm("Archive this record? You can restore it later.")) return;
-    await deleteDoc(slug);
+    setArchiveError(null);
+    setPendingArchiveSlug(slug);
+  };
+
+  const handleCancelArchive = () => {
+    if (isArchiving) return;
+    setPendingArchiveSlug(null);
+    setArchiveError(null);
+  };
+
+  const handleConfirmArchive = async () => {
+    if (!canEdit || !pendingArchiveSlug || isArchiving) return;
+    setIsArchiving(true);
+    setArchiveError(null);
+    try {
+      await deleteDoc(pendingArchiveSlug);
+      setPendingArchiveSlug(null);
+    } catch (error) {
+      const diagnostic = error instanceof Error ? error.message : String(error);
+      console.error("Document archive failed", error);
+      setArchiveError(diagnostic);
+    } finally {
+      setIsArchiving(false);
+    }
   };
 
   const handleRestore = async (slug: string) => {
@@ -169,7 +194,12 @@ export function useDashboardDocController(
     handleSave,
     handleApproveAndPublish,
     handleDelete,
+    handleCancelArchive,
+    handleConfirmArchive,
     handleRestore,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
     userNickname,
     userAvatar
   };

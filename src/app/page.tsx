@@ -71,7 +71,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex gap-4">
-                  <Link to="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
+                  <Link to="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-xs uppercase tracking-wider">
                     Go to Portal
                   </Link>
                   <button
@@ -86,7 +86,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
                 <button
                   onClick={loginWithGoogle}
-                  className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all shadow-xl text-white font-bold inline-flex items-center gap-2"
+                  className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all shadow-xl text-white font-bold inline-flex items-center gap-2"
                 >
                   <LogIn size={16} /> Team Member Sign In
                 </button>

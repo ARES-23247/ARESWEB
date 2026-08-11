@@ -72,9 +72,9 @@ describe("DocFormDrawer", () => {
     expect(backgroundContainer).not.toHaveAttribute("aria-hidden");
   });
 
-  it("guards dirty close and persists a complete local recovery draft", async () => {
+  it("uses an accessible inline choice for dirty close and preserves a complete recovery draft", async () => {
     vi.useFakeTimers();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const confirmSpy = vi.spyOn(window, "confirm");
     const onClose = vi.fn();
     render(<DocFormDrawer {...baseProps} onClose={onClose} onSave={vi.fn(() => Promise.resolve())} />);
 
@@ -83,12 +83,51 @@ describe("DocFormDrawer", () => {
     expect(window.localStorage.getItem("ares-editor-draft:documents:new")).toContain("Recovered manual");
 
     fireEvent.click(screen.getByRole("button", { name: "Close editor" }));
-    expect(confirmSpy).toHaveBeenCalled();
+    const closePrompt = screen.getByRole("alertdialog", { name: "Close with unsaved changes?" });
+    expect(closePrompt).toBeVisible();
+    expect(screen.getByRole("button", { name: "Keep Editing" })).toHaveFocus();
+    expect(confirmSpy).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
 
-    confirmSpy.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Keep Editing" }));
+    expect(screen.queryByRole("alertdialog", { name: "Close with unsaved changes?" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close editor" })).toHaveFocus();
+
     fireEvent.click(screen.getByRole("button", { name: "Close editor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close and Keep Draft" }));
     expect(onClose).toHaveBeenCalledOnce();
+    expect(window.localStorage.getItem("ares-editor-draft:documents:new")).toContain("Recovered manual");
+  });
+
+  it("offers keyboard-focused recovery choices before applying a local draft", async () => {
+    window.localStorage.setItem("ares-editor-draft:documents:new", JSON.stringify({
+      title: "Recovered inspection guide",
+      slug: "recovered-inspection-guide",
+      content: "Unsaved inspection notes",
+    }));
+    const onClose = vi.fn();
+    render(<DocFormDrawer {...baseProps} onClose={onClose} onSave={vi.fn(() => Promise.resolve())} />);
+
+    const recoveryPrompt = await screen.findByRole("alertdialog", { name: "Local recovery draft available" });
+    expect(recoveryPrompt).toBeVisible();
+    expect(screen.getByLabelText("Title")).toHaveValue("");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Restore Draft" })).toHaveFocus());
+
+    fireEvent.click(screen.getByRole("button", { name: "Restore Draft" }));
+    expect(screen.getByLabelText("Title")).toHaveValue("Recovered inspection guide");
+    expect(screen.getByText(/Recovered an unsaved local draft/)).toBeVisible();
+    expect(screen.queryByRole("alertdialog", { name: "Local recovery draft available" })).not.toBeInTheDocument();
+  });
+
+  it("discards a recovery draft only after the explicit inline choice", async () => {
+    window.localStorage.setItem("ares-editor-draft:documents:new", JSON.stringify({ title: "Old draft" }));
+    render(<DocFormDrawer {...baseProps} onClose={vi.fn()} onSave={vi.fn(() => Promise.resolve())} />);
+
+    await screen.findByRole("alertdialog", { name: "Local recovery draft available" });
+    fireEvent.click(screen.getByRole("button", { name: "Discard Draft" }));
+
+    expect(window.localStorage.getItem("ares-editor-draft:documents:new")).toBeNull();
+    expect(screen.queryByRole("alertdialog", { name: "Local recovery draft available" })).not.toBeInTheDocument();
   });
 
   it("locks submission while a save is in progress", async () => {
