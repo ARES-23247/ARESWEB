@@ -5,8 +5,11 @@ const { getIdToken, getAppCheckHeader } = vi.hoisted(() => ({
   getAppCheckHeader: vi.fn(),
 }));
 
-vi.mock("@/lib/firebase", () => ({
+vi.mock("@/lib/firebaseAuth", () => ({
   auth: { currentUser: { getIdToken } },
+}));
+
+vi.mock("@/lib/firebaseAppCheck", () => ({
   getAppCheckHeader,
 }));
 
@@ -32,5 +35,25 @@ describe("simulation authenticated requests", () => {
     expect(headers.get("Authorization")).toBe("Bearer firebase-id-token");
     expect(headers.get("X-Firebase-AppCheck")).toBe("app-check-token");
     expect(headers.get("Content-Type")).toBe("application/json");
+  });
+
+  it("still sends the request when valid token providers return no tokens", async () => {
+    getIdToken.mockResolvedValueOnce(undefined);
+    getAppCheckHeader.mockResolvedValueOnce({});
+
+    await authenticatedFetch("/api/simulations/gist", { method: "GET" });
+
+    expect(fetch).toHaveBeenCalledOnce();
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const headers = new Headers(init?.headers);
+    expect(headers.has("Authorization")).toBe(false);
+    expect(headers.has("X-Firebase-AppCheck")).toBe(false);
+  });
+
+  it("does not fake a network request when App Check retrieval rejects", async () => {
+    getAppCheckHeader.mockRejectedValueOnce(new Error("App Check unavailable"));
+
+    await expect(authenticatedFetch("/api/simulations/gist")).rejects.toThrow("App Check unavailable");
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
