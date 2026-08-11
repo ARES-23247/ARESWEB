@@ -51,6 +51,14 @@ describe("media management pages", () => {
     expect(screen.getByRole("button", { name: "Play Robot reveal" })).toBeInTheDocument();
   });
 
+  it("reports an invalid public video response without inventing an empty library", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response("<!doctype html>", { status: 200, statusText: "OK" }));
+    render(<VideosPage />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("HTTP 200 OK: The video API returned invalid JSON.");
+    expect(screen.queryByText("No videos match this filter.")).not.toBeInTheDocument();
+  });
+
   it("archives a managed video through an accessible confirmation and keeps deletion reversible", async () => {
     vi.mocked(authenticatedFetch)
       .mockResolvedValueOnce(response({ videos: [video], hasMore: false, nextCursor: null }))

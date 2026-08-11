@@ -45,6 +45,7 @@ vi.mock("@/app/dashboard/tasks/components/TaskBoardColumn", () => ({
     col: { id: string };
     colTasks: Array<{ id: string; title: string }>;
     onDrop: (event: React.DragEvent, status: "review") => void;
+    onMoveStatus: (taskId: string, status: "review") => Promise<unknown>;
     onArchiveTask: (taskId: string, archived: boolean) => Promise<unknown>;
     onArchiveAllCompleted: () => Promise<unknown>;
     onEditTask: (taskId: string) => void;
@@ -55,10 +56,7 @@ vi.mock("@/app/dashboard/tasks/components/TaskBoardColumn", () => ({
         <>
           <button
             type="button"
-            onClick={() => props.onDrop({
-              preventDefault: vi.fn(),
-              dataTransfer: { getData: () => "task-1" },
-            } as unknown as React.DragEvent, "review")}
+            onClick={() => void props.onMoveStatus("task-1", "review")}
           >Move task</button>
           <button type="button" onClick={() => void props.onArchiveTask("task-1", true)}>Archive task</button>
           <button type="button" onClick={() => props.onEditTask("task-1")}>Edit task</button>

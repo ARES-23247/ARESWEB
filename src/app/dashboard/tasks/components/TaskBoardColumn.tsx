@@ -12,6 +12,7 @@ interface TaskBoardColumnProps {
   draggingTaskId: string | null;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
   onDragEnd: () => void;
+  onMoveStatus: (taskId: string, status: TaskItem["status"]) => Promise<unknown> | void;
   onEditTask: (taskId: string) => void;
   onArchiveTask: (taskId: string, archive: boolean) => void;
   teamProfiles: MemberProfile[];
@@ -28,6 +29,7 @@ export default function TaskBoardColumn({
   draggingTaskId,
   onDragStart,
   onDragEnd,
+  onMoveStatus,
   onEditTask,
   onArchiveTask,
   teamProfiles,
@@ -75,6 +77,7 @@ export default function TaskBoardColumn({
             draggingTaskId={draggingTaskId}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onMoveStatus={onMoveStatus}
             onEditTask={onEditTask}
             onArchiveTask={onArchiveTask}
             teamProfiles={teamProfiles}

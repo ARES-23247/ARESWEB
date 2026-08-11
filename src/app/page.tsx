@@ -125,7 +125,7 @@ export default function Home() {
                     Team Blog & Specs
                   </h3>
                   <p className="text-marble/70 text-base leading-relaxed mb-8">
-                    Explore tournament recaps, open-source software updates, and technical calibration logs. Built with <strong>Incremental Static Regeneration (ISR)</strong> for sub-50ms loads.
+                    Explore tournament recaps, open-source software updates, and technical calibration logs in the team&apos;s searchable knowledge library.
                   </p>
                 </div>
                 <div className="mt-auto">
@@ -147,7 +147,7 @@ export default function Home() {
                     Interactive Schedule
                   </h3>
                   <p className="text-marble/70 text-base leading-relaxed mb-8">
-                    Check division practices and outreach workshops. Subscribed to Firestore <strong>real-time collection listeners</strong> for instant synchronization across displays.
+                    Check division practices and outreach workshops through a bounded calendar feed with clear refresh and subscription options.
                   </p>
                 </div>
                 <div className="mt-auto">

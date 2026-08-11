@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
-test.describe('Kanban Task Board E2E Drag and Drop tests', () => {
-  test('should log in as admin, go to tasks, and drag a task card to In Progress', async ({ page, isMobile, loginAs }) => {
+test.describe('Kanban Task Board status movement tests', () => {
+  test('should log in as admin, go to tasks, and move a task card to In Progress', async ({ page, loginAs }) => {
     await loginAs('admin');
     // 1. Navigate to tasks board
     await page.goto('/dashboard/tasks');
@@ -9,22 +9,16 @@ test.describe('Kanban Task Board E2E Drag and Drop tests', () => {
     await expect(page.getByRole('heading', { name: 'Kanban Tasks' })).toBeVisible({ timeout: 15000 });
 
     // 3. Locate task card on board
-    const taskCard = page.locator('[role="button"][aria-label^="Task:"]').first();
+    const taskCard = page.getByRole('article', { name: /^Task:/ }).first();
     await expect(taskCard).toBeVisible();
     const taskLabel = await taskCard.getAttribute('aria-label');
 
     const inProgressColumn = page.getByLabel('In Progress task column');
 
-    if (isMobile) {
-      await expect(inProgressColumn).toBeVisible();
-      return;
-    }
-
-    // 4. Perform the drag-and-drop
-    await taskCard.dragTo(inProgressColumn);
-    
-    // Settle animation/state update
-    await page.waitForTimeout(500);
+    // 4. Use the deterministic keyboard-accessible status control. Native
+    // HTML drag remains available as a pointer enhancement, but its synthetic
+    // dataTransfer behavior differs across browser engines.
+    await taskCard.getByRole('combobox', { name: /Move .* to another status/ }).selectOption('in_progress');
 
     await expect(inProgressColumn.locator(`[aria-label="${taskLabel}"]`)).toBeVisible();
   });

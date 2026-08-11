@@ -5,9 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ExternalLink, Film, Loader2, Play, X } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
-import { apiFailure, ManagedVideo } from "@/lib/media";
-
-interface PublicVideoPage { videos: ManagedVideo[]; hasMore: boolean; nextCursor: string | null }
+import { apiFailure, ManagedVideo, parsePublicVideoPage } from "@/lib/media";
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<ManagedVideo[]>([]);
@@ -27,7 +25,10 @@ export default function VideosPage() {
       if (append && cursor) params.set("cursor", cursor);
       const response = await fetch(`/api/videos/public?${params.toString()}`);
       if (!response.ok) throw await apiFailure(response, "Published videos could not load.");
-      const page = await response.json() as PublicVideoPage;
+      const payload = await response.json().catch(() => {
+        throw new Error(`HTTP ${response.status} ${response.statusText || "OK"}: The video API returned invalid JSON.`);
+      });
+      const page = parsePublicVideoPage(payload);
       setVideos((current) => append
         ? [...new Map([...current, ...page.videos].map((video) => [video.id, video])).values()]
         : page.videos);
@@ -69,7 +70,7 @@ export default function VideosPage() {
         </div>
 
         {error && <div role="alert" className="mb-8 border border-ares-red bg-ares-red/15 p-4 text-white"><p className="font-bold">We could not load the video library.</p><p className="mt-1 font-mono text-xs text-white/80">{error}</p><button type="button" onClick={() => void loadVideos(false)} className="mt-3 text-xs font-bold uppercase underline focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button></div>}
-        {loading && videos.length === 0 ? <div role="status" className="flex justify-center py-24 text-ares-gold"><Loader2 className="motion-safe:animate-spin" aria-hidden="true" /><span className="sr-only">Loading videos</span></div> : visibleVideos.length === 0 ? <div className="border border-white/10 p-16 text-center"><Film className="mx-auto mb-3 text-marble/30" aria-hidden="true" /><p className="text-sm text-marble/60">No videos match this filter.</p></div> : <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {loading && videos.length === 0 ? <div role="status" className="flex justify-center py-24 text-ares-gold"><Loader2 className="motion-safe:animate-spin" aria-hidden="true" /><span className="sr-only">Loading videos</span></div> : error && videos.length === 0 ? null : visibleVideos.length === 0 ? <div className="border border-white/10 p-16 text-center"><Film className="mx-auto mb-3 text-marble/30" aria-hidden="true" /><p className="text-sm text-marble/60">No videos match this filter.</p></div> : <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {visibleVideos.map((video) => <article key={video.id} className="overflow-hidden border border-white/10 bg-black/30">
             <button type="button" onClick={() => setSelected(video)} className="group relative block aspect-video w-full overflow-hidden bg-black focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label={`Play ${video.title}`}>
               {video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-80 motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-[1.02]" />}

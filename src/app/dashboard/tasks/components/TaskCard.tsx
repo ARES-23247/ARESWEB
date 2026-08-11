@@ -10,6 +10,7 @@ interface TaskCardProps {
   draggingTaskId: string | null;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
   onDragEnd: () => void;
+  onMoveStatus: (taskId: string, status: TaskItem["status"]) => Promise<unknown> | void;
   onEditTask: (taskId: string) => void;
   onArchiveTask: (taskId: string, archive: boolean) => void;
   teamProfiles: MemberProfile[];
@@ -21,6 +22,7 @@ export default function TaskCard({
   draggingTaskId,
   onDragStart,
   onDragEnd,
+  onMoveStatus,
   onEditTask,
   onArchiveTask,
   teamProfiles,
@@ -31,19 +33,11 @@ export default function TaskCard({
   const commentsCount = task.commentsCount ?? (task.comments?.length || 0);
 
   return (
-    <div
+    <article
       draggable={canEdit}
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
-      tabIndex={0}
-      role="button"
       aria-label={`Task: ${task.title}`}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onEditTask(task.id);
-        }
-      }}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (
@@ -82,10 +76,11 @@ export default function TaskCard({
                   e.stopPropagation();
                   onArchiveTask(task.id, !task.archived);
                 }}
+                aria-label={`${task.archived ? "Restore" : "Archive"} task ${task.title}`}
                 title={task.archived ? "Restore Task" : "Archive Task"}
-                className="text-marble/55 hover:text-ares-gold transition-colors p-1 cursor-pointer bg-white/5 hover:bg-white/10 rounded border border-white/10 hover:border-ares-gold/30 flex items-center justify-center shrink-0"
+                className="text-marble/55 hover:text-ares-gold transition-colors p-1 cursor-pointer bg-white/5 hover:bg-white/10 rounded border border-white/10 hover:border-ares-gold/30 flex items-center justify-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
-                <Archive size={10} />
+                <Archive aria-hidden="true" size={10} />
               </button>
             )}
             <span
@@ -102,8 +97,18 @@ export default function TaskCard({
           </div>
         </div>
 
-        <h4 className="font-bold text-white leading-snug mb-2 font-heading text-sm hover:text-ares-gold transition-colors">
-          {task.title}
+        <h4 className="mb-2 font-heading text-sm font-bold leading-snug text-white">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEditTask(task.id);
+            }}
+            className="rounded text-left transition-colors hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            aria-label={`Open task: ${task.title}`}
+          >
+            {task.title}
+          </button>
         </h4>
         <p className="text-marble/60 text-[11px] leading-relaxed mb-4 line-clamp-3">
           {task.description || "No description provided."}
@@ -155,6 +160,27 @@ export default function TaskCard({
           )}
         </div>
 
+        {canEdit && (
+          <div className="min-w-0 flex-1">
+            <label htmlFor={`move-task-${task.id}`} className="sr-only">Move {task.title} to another status</label>
+            <select
+              id={`move-task-${task.id}`}
+              value={task.status}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => {
+                event.stopPropagation();
+                void onMoveStatus(task.id, event.target.value as TaskItem["status"]);
+              }}
+              className="w-full rounded border border-white/10 bg-obsidian px-2 py-1 text-[10px] font-semibold text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="review">In Review</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        )}
+
         {/* Comments count indicator */}
         {commentsCount > 0 && (
           <span className="flex items-center gap-1.5 text-[10px] font-black text-marble/45 uppercase tracking-wider">
@@ -162,6 +188,6 @@ export default function TaskCard({
           </span>
         )}
       </div>
-    </div>
+    </article>
   );
 }

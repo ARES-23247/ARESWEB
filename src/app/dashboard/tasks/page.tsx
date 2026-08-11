@@ -70,6 +70,7 @@ export default function KanbanPage() {
 
   const [draggedOverCol, setDraggedOverCol] = useState<TaskItem["status"] | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   // Operational state extensions
@@ -199,6 +200,7 @@ export default function KanbanPage() {
     const task = tasks.find((t) => t.id === taskId);
     if (import.meta.env.MODE === "e2e") {
       setTasks((current) => current.map((item) => (item.id === taskId ? { ...item, status: newStatus } : item)));
+      setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
       return null;
     }
     const performMove = async () => {
@@ -219,7 +221,9 @@ export default function KanbanPage() {
         runZulipSync(syncPromise);
       }
     };
-    return executeTaskOperation("move task", performMove, () => handleMoveStatus(taskId, newStatus));
+    const error = await executeTaskOperation("move task", performMove, () => handleMoveStatus(taskId, newStatus));
+    if (!error) setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
+    return error;
   };
 
   const handleArchiveTask = async (
@@ -443,6 +447,8 @@ export default function KanbanPage() {
         />
       )}
 
+      <p role="status" aria-live="polite" className="sr-only">{moveAnnouncement}</p>
+
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {columns.map((col) => {
@@ -475,6 +481,7 @@ export default function KanbanPage() {
               draggingTaskId={draggingTaskId}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
+              onMoveStatus={handleMoveStatus}
               onEditTask={setEditingTaskId}
               onArchiveTask={handleArchiveTask}
               teamProfiles={teamProfiles}

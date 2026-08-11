@@ -336,7 +336,10 @@ export default function CalendarPage() {
             
             {upcomingEvents.length === 0 ? (
               <div className="bg-black/20 border border-white/10 ares-cut-lg p-12 text-center text-marble/50 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
-                <Info size={16} className="text-ares-bronze" /> No upcoming events scheduled.
+                <Info size={16} className="text-ares-bronze" />
+                {loadError && events.length === 0
+                  ? "Upcoming schedule unavailable until the calendar reconnects."
+                  : "No upcoming events scheduled."}
               </div>
             ) : (
               <div className="space-y-6">
@@ -398,7 +401,9 @@ export default function CalendarPage() {
             <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-2xl space-y-6">
               {pastEvents.length === 0 ? (
                 <div className="p-8 text-center text-marble/30 text-xs font-bold uppercase tracking-wider border border-dashed border-white/5 rounded">
-                  No past events recorded.
+                  {loadError && events.length === 0
+                    ? "Past event history unavailable until the calendar reconnects."
+                    : "No past events recorded."}
                 </div>
               ) : (
                 <div className="relative border-l border-white/10 pl-4 ml-1 space-y-6">

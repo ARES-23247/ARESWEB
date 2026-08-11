@@ -15,6 +15,12 @@ export interface ManagedVideo {
   archivedAt?: string;
 }
 
+export interface PublicVideoPage {
+  videos: ManagedVideo[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
 export interface ManagedPhoto {
   id: string;
   publicUrl: string;
@@ -63,9 +69,51 @@ export async function apiFailure(response: Response, fallback: string): Promise<
     if (typeof payload.error === "string") detail = payload.error;
     else if (typeof payload.message === "string") detail = payload.message;
   } catch {
-    detail = (await response.text().catch(() => "")).slice(0, 500);
+    try {
+      detail = (await response.text()).slice(0, 500);
+    } catch {
+      detail = "";
+    }
   }
   return new Error(`HTTP ${response.status} ${response.statusText}: ${detail || fallback}`);
+}
+
+export function parsePublicVideoPage(value: unknown): PublicVideoPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("The video API returned an invalid response.");
+  }
+
+  const record = value as Record<string, unknown>;
+  if (!Array.isArray(record.videos) || typeof record.hasMore !== "boolean") {
+    throw new Error("The video API returned an invalid response.");
+  }
+  if (record.nextCursor !== null && typeof record.nextCursor !== "string") {
+    throw new Error("The video API returned an invalid response.");
+  }
+
+  const videos = record.videos.filter((candidate): candidate is ManagedVideo => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return false;
+    const video = candidate as Record<string, unknown>;
+    const videoId = typeof video.videoId === "string" ? video.videoId : "";
+    return typeof video.id === "string"
+      && typeof video.title === "string"
+      && typeof video.description === "string"
+      && video.platform === "youtube"
+      && /^[A-Za-z0-9_-]{11}$/.test(videoId)
+      && typeof video.thumbnailUrl === "string"
+      && video.watchUrl === `https://www.youtube.com/watch?v=${videoId}`
+      && video.embedUrl === `https://www.youtube-nocookie.com/embed/${videoId}`
+      && (video.type === "video" || video.type === "short")
+      && video.status === "published"
+      && typeof video.createdAt === "string"
+      && video.isArchived === false;
+  });
+
+  return {
+    videos,
+    hasMore: record.hasMore,
+    nextCursor: record.nextCursor as string | null,
+  };
 }
 
 export function parseYouTubeVideoId(value: string): string | null {
