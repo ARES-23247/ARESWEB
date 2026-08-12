@@ -12,6 +12,7 @@ import { validate } from "../middleware/validation";
 import { FieldPath, type QueryDocumentSnapshot } from "firebase-admin/firestore";
 import type { UserRecord } from "firebase-admin/auth";
 import profileSelfRouter, { encryptedPrivateUpdates, encryptedTextFields, profileUpdateSchema } from "./profileSelf";
+import profileEmailRosterRouter from "./profileEmailRoster";
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ const limiter = rateLimit({
 });
 router.use(limiter);
 router.use(profileSelfRouter);
+router.use(profileEmailRosterRouter);
 
 interface DeduplicatedRosterMember {
   identifier: string;

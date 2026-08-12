@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import UserRosterTable from "./components/UserRosterTable";
 import UserInviteForm from "./components/UserInviteForm";
+import UserEmailRosterPanel from "./components/UserEmailRosterPanel";
 import {
   UserDirectoryFilters,
   UserDirectoryNotices,
@@ -479,6 +480,7 @@ export default function DashboardUsersPage() {
             setSuccess={setSuccess}
             setError={setError}
           />
+          <UserEmailRosterPanel />
         </div>
 
       </div>

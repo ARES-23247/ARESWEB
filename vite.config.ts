@@ -140,6 +140,8 @@ export default defineConfig({
         "src/app/dashboard/users/page.tsx",
         "src/app/dashboard/users/components/UserInviteForm.tsx",
         "src/app/dashboard/users/components/UserRosterTable.tsx",
+        "src/app/dashboard/users/components/UserEmailRosterPanel.tsx",
+        "src/app/dashboard/users/emailRoster.ts",
         "src/app/finance/page.tsx",
         "src/app/gallery/page.tsx",
         "src/app/leaderboard/page.tsx",
@@ -174,6 +176,14 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/dashboard/users/components/UserInviteForm.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/users/emailRoster.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/users/components/UserEmailRosterPanel.tsx": {
           lines: 85,
           functions: 100,
         },
