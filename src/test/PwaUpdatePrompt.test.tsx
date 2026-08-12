@@ -21,6 +21,7 @@ describe("PwaUpdatePrompt", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -45,12 +46,34 @@ describe("PwaUpdatePrompt", () => {
     expect(screen.queryByText("Ready for offline use")).not.toBeInTheDocument();
   });
 
-  it("exposes registration failures while leaving online browsing available", () => {
+  it("recovers from a transient registration failure without showing an alert", () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    render(<PwaUpdatePrompt enabled />);
+    const firstCallbacks = registerSWMock.mock.calls[0][0];
+
+    act(() => firstCallbacks.onRegisterError(new Error("temporary network fault")));
+    expect(screen.queryByText("Offline support unavailable")).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1_500));
+    expect(registerSWMock).toHaveBeenCalledTimes(2);
+    const retryCallbacks = registerSWMock.mock.calls[1][0];
+    act(() => retryCallbacks.onRegisteredSW("/sw.js", { update: vi.fn() }));
+    expect(screen.queryByText("Offline support unavailable")).not.toBeInTheDocument();
+  });
+
+  it("exposes repeated registration failures while leaving online browsing available", () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     render(<PwaUpdatePrompt enabled />);
-    const callbacks = registerSWMock.mock.calls[0][0];
 
-    act(() => callbacks.onRegisterError(new Error("registration denied")));
+    act(() => registerSWMock.mock.calls[0][0].onRegisterError(new Error("registration denied")));
+    act(() => vi.advanceTimersByTime(1_500));
+    act(() => registerSWMock.mock.calls[1][0].onRegisterError(new Error("registration denied")));
+    act(() => vi.advanceTimersByTime(1_500));
+    act(() => registerSWMock.mock.calls[2][0].onRegisterError(new Error("registration denied")));
+
     expect(screen.getByText("Offline support unavailable")).toBeVisible();
     expect(screen.getByText(/registration denied/)).toHaveClass("font-mono");
   });
