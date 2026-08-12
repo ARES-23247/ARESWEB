@@ -96,11 +96,11 @@ users receive new 401, 403, or permission errors.
 
 ## Coordinated deployment
 
-Deploy Functions and Firebase rules together so the public DTO endpoints and
-their restrictive direct-read rules become active at the same time:
+Deploy Functions, indexes, and Firebase rules together. This keeps API queries
+and their access rules in sync:
 
 ```text
-firebase deploy --only firestore:rules,storage,functions,hosting
+firebase deploy --only firestore:rules,firestore:indexes,storage,functions,hosting
 ```
 
 Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
@@ -111,6 +111,8 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 4. Drive configuration/import/sync rejects non-admin accounts.
 5. Simulation editing works with the Secret Manager token and no Firestore token.
 6. App Check succeeds from production without repeated 403/throttle warnings.
+7. The Robots page loads through `/api/robots` without an index error.
+8. The Video Hub loads through `/api/videos/public` without an index error.
 
 ## GitHub Actions deployment controls
 
