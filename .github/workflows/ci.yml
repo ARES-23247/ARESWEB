@@ -266,11 +266,11 @@ jobs:
           cleanup_credentials: true
 
       - name: Deploy verified release to Firebase
-        run: pnpm exec firebase deploy --only hosting,functions,firestore:rules,storage --project aresfirst-portal --non-interactive
+        run: pnpm exec firebase deploy --only hosting,functions,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
 
       - name: Verify production health
         run: |
-          for url in https://aresfirst-portal.web.app/ https://aresfirst-portal.web.app/api/simulations https://aresfirst-portal.web.app/api/finance?limit=1; do
+          for url in https://aresfirst-portal.web.app/ https://aresfirst-portal.web.app/api/simulations https://aresfirst-portal.web.app/api/finance?limit=1 https://aresfirst-portal.web.app/api/robots?limit=1 https://aresfirst-portal.web.app/api/videos/public?limit=1; do
             healthy=false
             for attempt in 1 2 3 4 5; do
               if curl --fail --silent --show-error --max-time 20 "$url" > /dev/null; then

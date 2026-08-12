@@ -27,44 +27,49 @@ export function maskEmail(email: string | null | undefined): string {
  */
 export function cleanThumbnailUrl(url?: string): string {
   if (!url) return "";
-  if (!url.includes("/api/media/")) {
-    return url;
-  }
+
+  let cleanedUrl = url;
   try {
     // Decode any percent-encoding in the URL first (e.g., %3A%2F%2F -> ://)
-    let decoded = decodeURIComponent(url);
+    const decoded = decodeURIComponent(url);
     
     // Find if it has /api/media/ followed by http
     const match = decoded.match(/\/api\/media\/(https?:\/.*)/i);
     if (match) {
-      let rawUrl = match[1];
+      cleanedUrl = match[1];
       // Normalize single slashes if they were stripped or malformed (https:/ -> https://)
-      if (rawUrl.startsWith("https:/") && !rawUrl.startsWith("https://")) {
-        rawUrl = rawUrl.replace("https:/", "https://");
-      } else if (rawUrl.startsWith("http:/") && !rawUrl.startsWith("http://")) {
-        rawUrl = rawUrl.replace("http:/", "http://");
+      if (cleanedUrl.startsWith("https:/") && !cleanedUrl.startsWith("https://")) {
+        cleanedUrl = cleanedUrl.replace("https:/", "https://");
+      } else if (cleanedUrl.startsWith("http:/") && !cleanedUrl.startsWith("http://")) {
+        cleanedUrl = cleanedUrl.replace("http:/", "http://");
       }
-      return rawUrl;
+    } else {
+      cleanedUrl = decoded;
     }
-    return decoded;
   } catch {
     // Fallback if decodeURIComponent fails
     const match = url.match(/\/api\/media\/(https?:\/.*)/i);
     if (match) {
-      let rawUrl = match[1];
-      if (rawUrl.startsWith("https:/") && !rawUrl.startsWith("https://")) {
-        rawUrl = rawUrl.replace("https:/", "https://");
-      } else if (rawUrl.startsWith("http:/") && !rawUrl.startsWith("http://")) {
-        rawUrl = rawUrl.replace("http:/", "http://");
-      }
-      try {
-        return decodeURIComponent(rawUrl);
-      } catch {
-        return rawUrl;
+      cleanedUrl = match[1];
+      if (cleanedUrl.startsWith("https:/") && !cleanedUrl.startsWith("https://")) {
+        cleanedUrl = cleanedUrl.replace("https:/", "https://");
+      } else if (cleanedUrl.startsWith("http:/") && !cleanedUrl.startsWith("http://")) {
+        cleanedUrl = cleanedUrl.replace("http:/", "http://");
       }
     }
-    return url;
   }
+
+  try {
+    const parsed = new URL(cleanedUrl);
+    const videoId = parsed.pathname.match(/^\/vi\/([A-Za-z0-9_-]{11})(?:\/|$)/)?.[1];
+    if (videoId && /^(?:i\d?|img)\.ytimg\.com$|^img\.youtube\.com$/i.test(parsed.hostname)) {
+      return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  } catch {
+    // Return the cleaned input. Rendering code still applies the site's CSP.
+  }
+
+  return cleanedUrl;
 }
 
 /**
@@ -86,4 +91,3 @@ export function cleanUndefined<T extends Record<string, any>>(obj: T): T {
   });
   return active as T;
 }
-
