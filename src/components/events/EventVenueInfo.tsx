@@ -9,8 +9,6 @@ interface EventVenueInfoProps {
 }
 
 export default function EventVenueInfo({ event, locations }: EventVenueInfoProps) {
-  if (!event.locationId && !event.location) return null;
-
   const { venueName, address, gmapsUrl, description } = useMemo(() => {
     const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
     const name = selected ? selected.name : event.location || "MARS Building";
@@ -24,6 +22,8 @@ export default function EventVenueInfo({ event, locations }: EventVenueInfoProps
 
     return { venueName: name, address: addr, gmapsUrl: url, description: desc };
   }, [event, locations]);
+
+  if (!event.locationId && !event.location) return null;
 
   return (
     <div className="glass-card border border-white/10 p-6 rounded-2xl bg-black/20 space-y-4 text-left animate-fade-in">

@@ -163,7 +163,11 @@ async function privateProfileValues(data: Record<string, unknown>, secret: strin
   return { ...values, dietaryRestrictions };
 }
 
-export async function encryptedPrivateUpdates(input: ProfileUpdate, authEmail: string): Promise<Record<string, unknown>> {
+export async function encryptedPrivateUpdates(
+  input: ProfileUpdate,
+  authEmail: string,
+  options: { encryptContactEmail?: boolean } = {},
+): Promise<Record<string, unknown>> {
   const hasPrivateInput = encryptedTextFields.some(field => input[field] !== undefined)
     || input.dietaryRestrictions !== undefined || input.contactEmail !== undefined;
   if (!hasPrivateInput) return {};
@@ -178,7 +182,7 @@ export async function encryptedPrivateUpdates(input: ProfileUpdate, authEmail: s
   }
   if (input.contactEmail !== undefined) {
     const normalizedEmail = input.contactEmail.toLowerCase();
-    updates.contactEmail = !normalizedEmail || normalizedEmail === authEmail
+    updates.contactEmail = !normalizedEmail || (!options.encryptContactEmail && normalizedEmail === authEmail)
       ? normalizedEmail
       : await encrypt(normalizedEmail, secret);
   }

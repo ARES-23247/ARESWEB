@@ -1,12 +1,8 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { DecodedIdToken } from "firebase-admin/auth";
-import { adminDb } from "../lib/firebase-admin";
-import { ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
+import { ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
-import { exec } from "child_process";
-import path from "path";
 import { logger } from "../lib/logger";
 
 const router = express.Router();
@@ -21,7 +17,6 @@ const limiter = rateLimit({
 router.use(limiter);
 
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
-const SIM_FILENAME_PATTERN = /^[a-zA-Z0-9_.-]+\.(tsx?|jsx?|json|css)$/;
 
 // GitHub Repository Configuration
 function getGitHubConfig() {
@@ -35,60 +30,6 @@ function getGitHubConfig() {
 // from Firestore, where a rules regression could expose them to client SDKs.
 function getGitHubPat(): string | undefined {
   return process.env.GITHUB_PAT;
-}
-
-// Helper: Check if user owns a simulation or is admin
-async function canModifySimulation(sessionUser: DecodedIdToken | undefined, simId: string): Promise<boolean> {
-  if (!sessionUser) return false;
-  
-  // Admins, coaches, and mentors can modify any simulation
-  const userDoc = await adminDb.collection("authorized_users").doc(sessionUser.uid).get();
-  if (userDoc.exists) {
-    const userData = userDoc.data();
-    if (userData?.role === "admin" || userData?.role === "coach" || userData?.role === "mentor") {
-      return true;
-    }
-  }
-
-  try {
-    const ghConfig = getGitHubConfig();
-    const pat = await getGitHubPat();
-    if (!pat) return false;
-
-    const headers: Record<string, string> = {
-      "User-Agent": "ARES-Firebase-Functions",
-      "Authorization": `Bearer ${pat}`,
-      "Accept": "application/vnd.github.v3+json"
-    };
-
-    const filePath = `src/sims/${simId}.tsx`;
-    const url = `${ghConfig.apiBase}/commits?path=${filePath}&per_page=1`;
-
-    const res = await fetch(url, { headers });
-    if (res.status === 404) {
-      return true; // New simulation file, creation is authorized for verified team members
-    }
-    if (!res.ok) return false;
-
-    interface GitHubCommitResponse {
-      commit?: {
-        author?: {
-          email?: string;
-        };
-      };
-    }
-
-    const commits = (await res.json()) as GitHubCommitResponse[];
-    if (!commits || commits.length === 0) {
-      return true; // No commit history, authorized to create
-    }
-
-    const authorEmail = commits[0].commit?.author?.email;
-    return authorEmail === sessionUser.email;
-  } catch (err) {
-    logger.error("simulations", "Ownership verification error:", err);
-    return false;
-  }
 }
 
 // GET /api/simulations - List all simulations from GitHub
@@ -203,7 +144,7 @@ router.get("/:id", asyncHandler(async (req, res) => {
   };
   if (pat) headers["Authorization"] = `Bearer ${pat}`;
   
-  let ghRes = await fetch(`${ghConfig.apiBase}/contents/${filePath}`, { headers });
+  const ghRes = await fetch(`${ghConfig.apiBase}/contents/${filePath}`, { headers });
   
   if (!ghRes.ok) {
     const legacyPath = `src/sims/${simId}.tsx`;
@@ -245,137 +186,13 @@ router.get("/:id", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/simulations - Save simulation to GitHub
-router.post("/", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { files } = req.body as { files: Record<string, string> };
-  if (!files || Object.keys(files).length === 0) {
-    throw new ApiError(400, "No files provided");
-  }
-
-  // Security: Limit total payload size to 2MB to prevent DoS
-  const totalSize = JSON.stringify(files).length;
-  if (totalSize > 2 * 1024 * 1024) {
-    throw new ApiError(400, "Payload exceeds 2MB limit");
-  }
-
-  const rawFilename = Object.keys(files)[0];
-  if (!SIM_FILENAME_PATTERN.test(rawFilename)) {
-    throw new ApiError(400, "Invalid filename characters or extension");
-  }
-
-  const filename = rawFilename;
-  const simIdStr = filename.replace(/\.tsx?$/, "");
-
-  const ghConfig = getGitHubConfig();
-  const pat = await getGitHubPat();
-
-  if (!pat) {
-    throw new ApiError(500, "GitHub PAT not configured");
-  }
-
-  const headers: Record<string, string> = {
-    "User-Agent": "ARES-Firebase-Functions",
-    "Authorization": `Bearer ${pat}`,
-    "Accept": "application/vnd.github.v3+json",
-    "Content-Type": "application/json"
-  };
-
-  const content = String(files[rawFilename]);
-  const base64Content = Buffer.from(content, "utf-8").toString("base64");
-
-  const path = `src/sims/${filename}`;
-  const url = `${ghConfig.apiBase}/contents/${path}`;
-
-  let sha: string | undefined;
-  const getRes = await fetch(url, { headers });
-  if (getRes.ok) {
-    const getJson = (await getRes.json()) as { sha: string };
-    sha = getJson.sha;
-  }
-
-  // Check ownership/authorization for all saves (creates and updates)
-  const canModify = await canModifySimulation(req.user, simIdStr);
-  if (!canModify) {
-    throw new ApiError(403, "You are not authorized to save this simulation");
-  }
-
-  const commitAuthor = {
-    name: req.user?.name || req.user?.email?.split("@")[0] || "ARES Member",
-    email: req.user?.email || "anonymous@aresfirst.org"
-  };
-
-  const putRes = await fetch(url, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify({
-      message: sha ? `feat(sims): update ${filename} via Simulation Playground` : `feat(sims): create ${filename} via Simulation Playground`,
-      content: base64Content,
-      sha,
-      author: commitAuthor,
-      committer: commitAuthor
-    })
-  });
-
-  if (!putRes.ok) {
-    throw new ApiError(500, "Failed to upload to GitHub");
-  }
-
-  res.json({ id: `github:${simIdStr}` });
+router.post("/", ensureTeamMember, asyncHandler(async (_req: AuthenticatedRequest, _res) => {
+  throw new ApiError(410, "Direct repository publishing has been retired. Save a local draft or create a reviewed Gist share instead.");
 }));
 
 // DELETE /api/simulations/:id - Delete simulation from GitHub
-router.delete("/:id", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { id } = req.params;
-  if (!id || !id.startsWith("github:")) {
-    throw new ApiError(404, "Simulation not found");
-  }
-
-  const simIdStr = id.replace("github:", "");
-  if (!SIM_ID_PATTERN.test(simIdStr)) {
-    throw new ApiError(400, "Invalid simulation ID");
-  }
-
-  const filename = `${simIdStr}.tsx`;
-  const ghConfig = getGitHubConfig();
-  const pat = await getGitHubPat();
-
-  if (!pat) {
-    throw new ApiError(500, "GitHub PAT not configured");
-  }
-
-  const headers: Record<string, string> = {
-    "User-Agent": "ARES-Firebase-Functions",
-    "Authorization": `Bearer ${pat}`,
-    "Accept": "application/vnd.github.v3+json",
-    "Content-Type": "application/json"
-  };
-
-  const path = `src/sims/${filename}`;
-  const url = `${ghConfig.apiBase}/contents/${path}`;
-
-  let sha: string | undefined;
-  const getRes = await fetch(url, { headers });
-  if (getRes.ok) {
-    const getJson = (await getRes.json()) as { sha: string };
-    sha = getJson.sha;
-  }
-
-  if (sha) {
-    const canModify = await canModifySimulation(req.user, simIdStr);
-    if (!canModify) {
-      throw new ApiError(403, "You can only delete your own simulations");
-    }
-
-    await fetch(url, {
-      method: "DELETE",
-      headers,
-      body: JSON.stringify({
-        message: `feat(sims): delete ${filename} via Simulation Playground`,
-        sha
-      })
-    });
-  }
-
-  res.json({ success: true });
+router.delete("/:id", ensureTeamMember, asyncHandler(async (_req: AuthenticatedRequest, _res) => {
+  throw new ApiError(410, "Direct repository deletion has been retired.");
 }));
 
 // POST /api/simulations/gist - Create a new GitHub Gist for a simulation
@@ -418,33 +235,6 @@ router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
 
   const gistResponse = await ghRes.json() as { id: string; html_url: string };
   res.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url });
-}));
-
-// POST /api/simulations/admin/generate-registry - Admin endpoint to regenerate registry
-router.post("/admin/generate-registry", ensureAdmin, asyncHandler(async (req, res, next) => {
-  if (process.env.FUNCTIONS_EMULATOR === "true" || process.env.NODE_ENV === "development") {
-    const scriptPath = path.resolve(__dirname, "../../../scripts/generate-sim-registry.ts");
-    exec(`npx ts-node "${scriptPath}"`, (err, stdout, stderr) => {
-      if (err) {
-        logger.error("simulations", "Failed to run generate-sim-registry:", err);
-        next(new ApiError(500, `Failed to generate registry: ${err.message}`));
-        return;
-      }
-      res.json({ success: true, message: "Registry regenerated successfully!" });
-    });
-  } else {
-    throw new ApiError(403, "Regeneration is not supported in production environment.");
-  }
-}));
-
-// GET /api/simulations/field-config/:id - Get a field configuration by ID
-router.get("/field-config/:id", asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const docSnap = await adminDb.collection("field_configs").doc(id).get();
-  if (!docSnap.exists) {
-    throw new ApiError(404, "Field configuration not found");
-  }
-  res.json(docSnap.data());
 }));
 
 export default router;

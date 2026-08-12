@@ -1,115 +1,37 @@
 ---
 name: aresweb-comprehensive-audit
-description: Enforces a championship-grade codebase audit protocol covering 12 pillars of excellence. This high-fidelity protocol combines rigorous technical checklists with executive-level reporting standards.
+description: Audit the complete ARESWEB repository for security, privacy, correctness, accessibility, performance, SEO, tests, maintainability, documentation, CI/CD, dead code, and feature truthfulness. Use for broad audits, technical-debt reviews, or orphan-code investigations.
 ---
 
-# ARESWEB High-Fidelity Audit Protocol
+# ARESWEB audit protocol
 
-You are the **Lead Code Reviewer for Team ARES 23247**. When asked to audit a file, component, or system, you MUST evaluate it against these 12 pillars. Do not blindly approve code; search for discrepancies and enforce championship-grade engineering standards.
+Record the commit, branch, worktree state, date, runtime versions, and commands
+used. Derive architecture and behavior from active source and configuration.
 
-## 🏗️ Current Architecture Reference
+## Method
 
-- **Frontend**: Vite + React 19 + TypeScript, Tailwind CSS, Zustand state management
-- **Backend**: Firebase Cloud Functions (2nd gen) + Express routers
-- **Database**: Cloud Firestore with `firestore.rules` security rules
-- **Auth**: Firebase Auth with ID token verification via `ensureAuth`/`ensureAdmin`/`ensureTeamMember` middleware
-- **Error Handling**: `asyncHandler` wrapper + `throw ApiError(status, message)` pattern → `globalErrorHandler`
-- **Logging**: `logger.info/warn/error(tag, message, data?)` from `functions/src/lib/logger.ts`
-- **Auth Type**: `AuthenticatedRequest.user` typed as `DecodedIdToken` (from `firebase-admin/auth`)
-- **Testing**: Vitest (frontend + backend) and Playwright E2E
-- **Hosting**: Firebase Hosting with Cloud Functions for API routes at `/api/*`
+1. Inventory entry points, routes, rules, workflows, registries, scripts, tests,
+   public assets, and documentation.
+2. Trace trust boundaries and primary user journeys before reviewing details.
+3. Review security/privacy, correctness, accessibility, performance/assets,
+   SEO/crawl behavior, test fidelity, maintainability, UX truthfulness, and
+   delivery controls.
+4. Run applicable static checks and focused tests. Distinguish executed evidence
+   from inspection and inference.
+5. Reconcile duplicate or contradictory findings and publish one report under
+   `docs/audits/`. Use `scratch/` only for temporary working notes.
 
-### Key Backend Patterns
-```
-functions/src/
-├── index.ts              # Express app and /api/* router composition root
-├── middleware/
-│   ├── auth.ts           # ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest
-│   └── errorHandler.ts   # ApiError class, globalErrorHandler
-├── lib/
-│   ├── logger.ts         # Structured logging utility (replaces raw console.log)
-│   ├── utils.ts          # asyncHandler wrapper
-│   ├── firebase-admin.ts # adminAuth, adminDb, adminStorage exports
-│   └── ...
-└── routes/               # Express router files + __tests__/
-```
+## Evidence contract
 
-## 📋 The 12 Pillars of Excellence
+For each finding include severity, confidence, exact file and line evidence,
+affected behavior, impact, remediation, and an acceptance test. Separate confirmed
+defects from risks requiring reproduction. Do not claim total security, WCAG
+conformance, or zero violations from partial evidence.
 
-### 1. Security 🔒
-- **Authentication & Authorization:** Are protected API routes secured with `ensureAuth` or `ensureAdmin`? Are direct client requests to Firestore protected by strict validation in `firestore.rules`?
-- **Injection Prevention:** Are database queries using standard Firestore/BigQuery query builders rather than template string concatenation?
-- **Validation:** Are incoming payloads validated with TypeScript type guards and `AuthenticatedRequest` typing before execution? Is `user` typed as `DecodedIdToken` (never `any`)?
-- **DoS Hardening:** Verify Google reCAPTCHA v3 or Firebase App Check on public forms, write rate limits on Express endpoints, and caching to minimize database reads.
-- **Fail-Closed Logic:** Ensure verification utilities (like reCAPTCHA verify) return `false` on network errors, never `true`.
-- **Firestore Rules Integrity:** No duplicate `match` blocks for the same collection. Admin-only collections use `hasRole('admin')`, not `isAuthorized()`.
-- **Browser Sandboxing:** Never combine `allow-scripts` and `allow-same-origin` for user-authored code. Validate `postMessage` sources and payloads.
-- **Secret Isolation:** Credentials belong in Secret Manager, never Firestore, URLs, source files, or logs. Encryption keys must not double as authentication secrets.
+Before calling code or an asset orphaned, check static and dynamic imports, lazy
+registries, routes, Firebase configuration, scripts, CI, tests, generated files,
+URL construction, and documentation. Confirm deletions with builds and tests.
 
-### 2. Privacy & Youth Protection 🛡️
-- **YPP & COPPA Compliance:** (Reference `aresweb-youth-data-protection`). Does the code leak student PII (email, phone, address, full name)? Ensure emails are never used as document keys in Firestore paths.
-- **Cryptography:** Are sensitive fields encrypted before database insertion and successfully decrypted before retrieval?
-- **Payload Minimization:** Is the API returning unnecessary database fields? Use DTOs or clean maps to enforce strict payload boundaries.
-- **Failure Honesty:** Never translate permission, upstream, or network failures into an empty collection, zero balance, or other plausible fake success.
-
-### 3. Web Accessibility (WCAG) ♿
-- **Compliance:** Audit for WCAG 2.1 AA (Reference `aresweb-web-accessibility`). Check for 4.5:1 contrast ratios and keyboard navigability.
-- **Semantic HTML:** Ensure buttons are `<button>`, links are `<a>`. Use proper ARIA attributes on interactive canvas components.
-- **SkipLink:** Verify `<main id="main-content">` exists in layout wrappers and the `SkipLink` component targets it.
-
-### 4. Style & Brand 🎨
-- **Aesthetic Enforcement:** (Reference `aresweb-brand-enforcement`). Adhere strictly to the ARES color palette (`ares-red`, `ares-gold`).
-- **Typography:** Ensure `League Spartan` and `Inter` are used via established utility classes.
-
-### 5. Code Efficiency ⚡
-- **Query Optimization:** Can Firestore reads be minimized using `.limit()`, `.where()` server-side filtering, or caching? Flag any unbounded `.get()` calls without `.limit()`.
-- **Body Parsing:** Authenticate and rate-limit large request bodies before parsing or buffering them.
-- **Render Cycles:** Use `react-hook-form` for complex editors. Use virtualization for long lists.
-- **State Management:** Use **Zustand** (`useUIStore`) for global UI state.
-
-### 6. Refactoring Needs ♻️
-- **Component Bloat:** Any `.tsx` file over 500 lines should be decomposed into focused sub-components and custom hooks. Flag files exceeding this threshold.
-- **DRY Violations:** Use shared utilities and standard API wrappers.
-
-### 7. Code Portability 🚢
-- **Path Resolution:** APIs should use relative routing and environment variables.
-- **Boundary Integrity:** Prevent backend files from importing from `src/` (frontend) and vice-versa.
-
-### 8. Functionality ⚙️
-- **Error Handling Architecture:** All route handlers MUST use `asyncHandler` wrapper + `throw ApiError(status, message)`. Manual `try/catch` with `res.status().json()` is NOT acceptable — errors must bubble to `globalErrorHandler`.
-- **Failure Exposure:** Are exceptions properly surfaced to admins but masked for users? (Reference `aresweb-failure-exposure`).
-- **Logging:** All backend logging MUST use the `logger.*` utility from `lib/logger.ts`. Raw `console.log` is NOT acceptable in production routes.
-
-### 9. Testing Coverage 🧪
-- **Vital Pathways:** Have essential DOM trees been proven through Playwright E2E suites?
-- **Unit Assurances:** Do helper functions/routes include Vitest coverage? Backend routes should have test files in `routes/__tests__/`.
-- **Mocking Integrity:** Are tests using proper mocks for Firebase Admin SDK and authentication states?
-
-### 10. Architecture 🏗️
-- **Middleware Flow:** Are global middlewares (CORS, Auth, Rate Limit) executing in the correct sequence in `index.ts`?
-- **Router Registration:** All API routes should be mounted in `index.ts` under `/api/*` with appropriate auth middleware.
-
-### 11. DevOps & Hygiene 🧹
-- **Cleanliness:** Ensure no scratch/temp files are in the production path. No legacy audit reports at the repo root.
-- **Log Noise:** No raw `console.log` statements in production code — use `logger.*` exclusively.
-- **Type Safety:** `AuthenticatedRequest.user` must be typed as `DecodedIdToken`, never `any`. Route handlers should use `AuthenticatedRequest`, not `req: any`.
-
-### 12. Scalability & Resilience 📈
-- **Async Execution:** Ensure long-running tasks (image imports, AI generation) do not block primary user requests. Use background Cloud Functions or `res.json()` before heavy processing.
-- **Pagination:** Bulk read endpoints should use Firestore `.limit()` and cursor-based pagination.
-- **Cleanup Batches:** Scheduled deletion must page in batches below Firestore's 500-write batch limit.
-
-***
-
-# 📝 Execution & Formatting Rules
-
-Every audit MUST include:
-
-1.  **Header:** Date, Auditor Name, Scope (File or Platform).
-2.  **Summary Scorecard Table:** Column 1: Pillar | Column 2: Grade (A-F) | Column 3: Critical Item summary.
-3.  **Sectioned Detail:** Use `✅ Strengths` and `⚠️ Findings` for EACH pillar.
-4.  **Findings Table:** For pillars with issues, provide a table:
-    | ID | Severity | Finding | Location |
-    | :--- | :--- | :--- | :--- |
-    | TAG-F01 | [HIGH] | Detailed description of the flaw | filename:line |
-5.  **Roadmap to Compliance:** A prioritized list of `🔴 Must Fix`, `🟡 Should Fix`, and `🟢 Backlog`.
+Use parallel specialists only when the user asks for delegation and the scopes
+are independent. The lead agent owns deduplication and final conclusions. Never
+deploy or change production state as part of an audit without separate approval.

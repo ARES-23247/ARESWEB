@@ -10,8 +10,6 @@ import photosRouter from "./routes/photos";
 import inquiriesRouter from "./routes/inquiries";
 import tasksRouter from "./routes/tasks";
 import webhooksRouter from "./routes/webhooks";
-import uploadRouter from "./routes/upload";
-import replayRouter from "./routes/replay";
 import profilesRouter from "./routes/profiles";
 import aiRouter from "./routes/ai";
 import calendarRouter from "./routes/calendar";
@@ -27,8 +25,8 @@ import zulipRouter from "./routes/zulip";
 import driveRouter from "./routes/drive";
 import financeRouter from "./routes/finance";
 import { globalErrorHandler } from "./middleware/errorHandler";
-import { ensureTeamMember } from "./middleware/auth";
 import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
+import { ensureTeamMember } from "./middleware/auth";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -81,7 +79,7 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-// Throttle and authenticate large uploads before allocating their bodies.
+// Apply a bounded global API rate limit before parsing request bodies.
 app.use("/api", rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -91,25 +89,16 @@ app.use("/api", rateLimit({
 }));
 app.use(observeAppCheck);
 app.use(enforceAppCheck);
-app.use("/api/upload", ensureTeamMember);
-app.use("/api/photos/upload-unified", ensureTeamMember);
-
-// Use raw body parsing for the upload endpoints, and json for everything else
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/upload")) {
-    express.raw({ type: "*/*", limit: "50mb" })(req, res, next);
-  } else {
-    express.json({ limit: "10mb" })(req, res, next);
-  }
-});
+// Authenticate the only large JSON upload before allocating/parsing its body.
+// Base64 adds roughly one third to the validated 8 MB binary image limit.
+app.use("/api/photos/upload-unified", ensureTeamMember, express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "1mb" }));
 
 // Mount Sub-Routers
 app.use("/api/photos", photosRouter);
 app.use("/api/inquiries", inquiriesRouter);
 app.use("/api/tasks", tasksRouter);
 app.use("/api/webhooks", webhooksRouter);
-app.use("/api/upload", uploadRouter);
-app.use("/api/replay", replayRouter);
 app.use("/api/profiles", profilesRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/calendar", calendarRouter);
@@ -183,7 +172,7 @@ export const cleanupOldInquiries = onSchedule({
   schedule: "0 0 * * *", // Runs daily at midnight
   maxInstances: 1,
   secrets: ["ENCRYPTION_SECRET"],
-}, async (event) => {
+}, async (_event) => {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - 180);
   const cutoffIso = cutoffDate.toISOString();

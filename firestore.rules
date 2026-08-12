@@ -12,17 +12,30 @@ service cloud.firestore {
       return (request.auth != null && request.auth.token != null && request.auth.token.email != null) ? request.auth.token.email.lower() : null;
     }
     
-    // Helper function to check if the user exists in the authorized_users collection and is verified
+    function authorizationData() {
+      return get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data;
+    }
+
+    function isActiveRole(role) {
+      // student, parent, and lead are temporary compatibility roles. All new
+      // writes use member or mentor, and the server normalizes these values.
+      return role in ['admin', 'coach', 'mentor', 'member', 'student', 'parent', 'lead'];
+    }
+
+    // Require a known role and an active authorization record. Unknown values
+    // fail closed instead of becoming members by accident.
     function isAuthorized() {
       return isAuthenticated() && 
         exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
+        isActiveRole(authorizationData().role) &&
+        authorizationData().get('isDeleted', false) != true &&
+        authorizationData().get('isDeleted', 0) != 1;
     }
     
     // Helper function to check if the user has a specific role (e.g. 'admin')
     function hasRole(role) {
       return isAuthorized() && 
-        get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role == role;
+        authorizationData().role == role;
     }
 
     // Rules for the authorized_users collection
@@ -99,12 +112,19 @@ service cloud.firestore {
       }
     }
 
-    // Secure team collections (Kanban tasks, AI chat sessions, telemetry runs)
+    // Secure team collections (Kanban tasks and AI chat sessions)
     match /tasks/{taskId} {
       allow read, write: if isAuthorized();
 
       match /comments/{commentId} {
-        allow read, write: if isAuthorized();
+        allow read: if isAuthorized();
+        allow create: if isAuthorized() &&
+          request.resource.data.authorUid == request.auth.uid &&
+          request.resource.data.source == "web" &&
+          request.resource.data.content is string &&
+          request.resource.data.content.size() > 0 &&
+          request.resource.data.content.size() <= 4000;
+        allow update, delete: if isAuthorized() && resource.data.authorUid == request.auth.uid;
       }
     }
 
@@ -123,10 +143,6 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    match /telemetry_runs/{runId} {
-      allow read, write: if isAuthorized();
     }
 
     // Public partners / sponsors
@@ -187,10 +203,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // field_configs
+    // Retired simulation field configuration. Historical records remain
+    // server-inaccessible until a reviewed DTO API is introduced.
     match /field_configs/{configId} {
-      allow read: if true;
-      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read, write: if false;
     }
 
     // documents

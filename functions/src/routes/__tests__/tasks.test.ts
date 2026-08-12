@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import tasksRouter from "../tasks";
+import { sendZulipMessage } from "../../lib/zulip";
+
+vi.mock("../../middleware/auth", () => ({
+  ensureTeamMember: (_req: unknown, _res: unknown, next: () => unknown) => next(),
+}));
 
 // Mock Zulip API Helpers
 vi.mock("../../lib/zulip", () => ({
@@ -27,26 +32,46 @@ describe("Tasks Router Backend Endpoints", () => {
     next = vi.fn();
   });
 
-  const getHandler = (path: string, method: string) => {
+  const invokeRoute = async (path: string, method: string) => {
     const routeLayer = tasksRouter.stack.find(
       (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
     );
     expect(routeLayer).toBeDefined();
-    const stack = routeLayer!.route!.stack;
-    return stack[stack.length - 1].handle;
+    const handlers = routeLayer!.route!.stack.map((layer) => layer.handle);
+    const dispatch = async (index: number): Promise<void> => {
+      const handler = handlers[index];
+      if (!handler) return;
+      await handler(req, res, (error?: unknown) => {
+        if (error) {
+          next(error);
+          return;
+        }
+        return dispatch(index + 1);
+      });
+    };
+    await dispatch(0);
   };
 
   describe("POST /api/tasks/comment - Comment forward to Zulip", () => {
     it("should forward a comment successfully if fields are valid", async () => {
       req.body = {
         taskId: "123",
-        author: "Robot Builder",
+        author: "Spoofed Administrator",
         content: "We should change the slides setup."
       };
 
-      const handler = getHandler("/comment", "post");
-      await handler(req, res, next);
+      await invokeRoute("/comment", "post");
 
+      expect(sendZulipMessage).toHaveBeenCalledWith(
+        "kanban",
+        "Task-123",
+        expect.stringContaining("ARES Team Member"),
+      );
+      expect(sendZulipMessage).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.stringContaining("Spoofed Administrator"),
+      );
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
@@ -58,16 +83,24 @@ describe("Tasks Router Backend Endpoints", () => {
     it("should fail validation if fields are missing", async () => {
       req.body = {
         taskId: "123",
-        author: "Robot Builder"
       };
 
-      const handler = getHandler("/comment", "post");
-      await handler(req, res, next);
+      await invokeRoute("/comment", "post");
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Missing required fields.");
+      expect(err.message).toBe("Enter a valid task comment.");
       expect(err.status).toBe(400);
+    });
+
+    it("returns an upstream error when Zulip rejects the comment", async () => {
+      vi.mocked(sendZulipMessage).mockResolvedValueOnce(false);
+      req.body = { taskId: "123", content: "Ready for review" };
+
+      await invokeRoute("/comment", "post");
+
+      expect(res.json).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 502 }));
     });
   });
 
@@ -79,8 +112,7 @@ describe("Tasks Router Backend Endpoints", () => {
         title: "Fix intake slide calibrations"
       };
 
-      const handler = getHandler("/notify", "post");
-      await handler(req, res, next);
+      await invokeRoute("/notify", "post");
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -96,13 +128,22 @@ describe("Tasks Router Backend Endpoints", () => {
         title: "Fix intake slide calibrations"
       };
 
-      const handler = getHandler("/notify", "post");
-      await handler(req, res, next);
+      await invokeRoute("/notify", "post");
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Missing required fields.");
+      expect(err.message).toBe("Enter valid task notification details.");
       expect(err.status).toBe(400);
+    });
+
+    it("returns an upstream error when Zulip rejects the notification", async () => {
+      vi.mocked(sendZulipMessage).mockResolvedValueOnce(false);
+      req.body = { taskId: "123", action: "move", title: "Drive task", status: "done" };
+
+      await invokeRoute("/notify", "post");
+
+      expect(res.json).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 502 }));
     });
   });
 });

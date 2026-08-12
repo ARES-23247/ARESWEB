@@ -154,7 +154,7 @@ router.post(
       { merge: true }
     );
 
-    logger.info("drive", `Updated team Google Drive folderId to: ${cleanFolderId}`);
+    logger.info("drive", "Updated the team Google Drive folder configuration");
     res.json({ success: true, folderId: cleanFolderId });
   })
 );
@@ -181,8 +181,7 @@ router.post(
     });
 
     if (!driveRes.ok) {
-      const errorText = await driveRes.text();
-      logger.error("drive", `Drive API error for file ${targetId}`, errorText);
+      logger.error("drive", "Drive API file request failed", { status: driveRes.status });
       throw new ApiError(driveRes.status, `Google Drive API error: ${driveRes.statusText}`);
     }
 
@@ -249,8 +248,7 @@ router.post(
     });
 
     if (!driveRes.ok) {
-      const errorText = await driveRes.text();
-      logger.error("drive", `Drive API folder sync error for folder ${cleanFolderId}`, errorText);
+      logger.error("drive", "Drive API folder sync failed", { status: driveRes.status });
       throw new ApiError(driveRes.status, `Google Drive API sync error: ${driveRes.statusText}`);
     }
 

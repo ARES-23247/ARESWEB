@@ -1,124 +1,46 @@
-"use client";
-
-import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookOpen, Key, ShieldAlert } from "lucide-react";
-
+import { ArrowLeft, BookOpen, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
+
+const publicEndpoints = [
+  ["GET", "/api/calendar/events", "Published calendar events"],
+  ["GET", "/api/calendar/events/:id", "One published event"],
+  ["GET", "/api/calendar/feed", "Public iCalendar feed"],
+  ["GET", "/api/photos/public", "Published gallery photos"],
+  ["GET", "/api/videos/public", "Published videos"],
+  ["GET", "/api/robots", "Published robot records"],
+  ["GET", "/api/sponsors", "Published sponsors"],
+  ["GET", "/api/outreach", "Published outreach summaries"],
+] as const;
 
 export default function DeveloperApiPage() {
   return (
-    <div className="min-h-screen bg-ares-black text-ares-white">
-      <SEO
-        title="Developer API - ARES 23247"
-        description="Interactive API documentation for the ARESWEB backend."
-      />
-      
-      {/* Header */}
-      <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-ares-darker">
-        <Link to="/dashboard" className="text-ares-gold hover:text-ares-gold/80 flex items-center gap-2 mb-4 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+    <main className="min-h-screen bg-obsidian px-4 pb-16 pt-24 text-white">
+      <SEO title="API Reference" description="A limited reference for supported ARESWEB public endpoints." noindex />
+      <div className="mx-auto max-w-5xl">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan">
+          <ArrowLeft aria-hidden="true" size={16} /> Back to the website
         </Link>
-        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-ares-gold to-ares-red mb-4">
-          Developer API
-        </h1>
-        <p className="text-lg text-marble/90 max-w-3xl">
-          Welcome to the ARES 23247 developer portal. Explore our REST API, test endpoints interactively, and integrate our data into your own applications.
+        <h1 className="mt-6 font-heading text-4xl font-black uppercase">API Reference</h1>
+        <p className="mt-3 max-w-3xl leading-relaxed text-marble/80">
+          ARESWEB does not offer personal access tokens or a public interactive explorer. Team-only endpoints accept Firebase ID tokens from the signed-in portal and enforce roles on the server.
         </p>
+
+        <section className="mt-10 border border-white/10 bg-white/5 p-6" aria-labelledby="public-api-heading">
+          <h2 id="public-api-heading" className="flex items-center gap-2 text-2xl font-bold"><BookOpen aria-hidden="true" className="text-ares-gold" /> Supported public reads</h2>
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr className="border-b border-white/15 text-marble/60"><th className="p-3">Method</th><th className="p-3">Path</th><th className="p-3">Purpose</th></tr></thead>
+              <tbody>{publicEndpoints.map(([method, path, purpose]) => <tr key={path} className="border-b border-white/10"><td className="p-3 font-mono text-ares-gold">{method}</td><td className="p-3 font-mono">{path}</td><td className="p-3 text-marble/80">{purpose}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-6 border border-ares-gold/30 bg-ares-gold/10 p-6">
+          <h2 className="flex items-center gap-2 text-xl font-bold"><ShieldCheck aria-hidden="true" className="text-ares-gold" /> Integration expectations</h2>
+          <p className="mt-3 text-sm leading-relaxed text-marble/85">Responses are bounded and may use cursor pagination. Clients must handle non-2xx responses and rate limits. Contact the team before building a production dependency because this is not a versioned public platform.</p>
+        </section>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Instructions */}
-        <div className="lg:col-span-1 space-y-8">
-          <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Key className="w-24 h-24 text-ares-gold" />
-            </div>
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-              <Key className="text-ares-gold w-6 h-6" /> Authentication
-            </h2>
-            <p className="text-marble/85 mb-4">
-              Most endpoints require a valid Bearer token. To authenticate your requests:
-            </p>
-            <ol className="list-decimal list-inside space-y-2 text-white font-mono text-sm">
-              <li>Log in to your ARESWEB account.</li>
-              <li>Navigate to your Profile settings.</li>
-              <li>Generate a new Personal Access Token.</li>
-              <li>Include the token in your request headers.</li>
-            </ol>
-            <div className="mt-4 bg-ares-black p-3 rounded font-mono text-xs text-ares-gold border border-ares-gold/30 overflow-x-auto">
-              Authorization: Bearer {'<your_token>'}
-            </div>
-          </div>
-
-          <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl">
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-              <ShieldAlert className="text-ares-red w-6 h-6" /> Rate Limiting
-            </h2>
-            <p className="text-marble/85">
-              To ensure stability during competitions, the API enforces strict rate limits.
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-white">
-              <li className="flex justify-between border-b border-white/10 pb-2">
-                <span>Public Routes</span>
-                <span className="font-mono text-ares-gold">100 / min</span>
-              </li>
-              <li className="flex justify-between border-b border-white/10 pb-2">
-                <span>TBA Proxy</span>
-                <span className="font-mono text-ares-gold">30 / min</span>
-              </li>
-              <li className="flex justify-between pt-2">
-                <span>Authentication</span>
-                <span className="font-mono text-ares-gold">5 / min</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-ares-dark rounded-xl border border-ares-darker p-6 shadow-xl text-center">
-            <BookOpen className="w-12 h-12 text-ares-gold mx-auto mb-4" />
-            <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-            <p className="text-sm text-marble/85 mb-4">
-              Join the #engineering stream on Zulip to ask questions about API usage or request new endpoints.
-            </p>
-            <a
-              href="https://aresfirst.zulipchat.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block w-full py-2 bg-ares-gold text-ares-black font-bold uppercase rounded hover:bg-ares-gold/80 transition-colors"
-            >
-              Open Zulip
-            </a>
-          </div>
-        </div>
-
-        {/* Right Column: Interactive Explorer */}
-        <div className="lg:col-span-2">
-          <div className="bg-ares-dark rounded-xl border border-ares-darker overflow-hidden shadow-2xl h-[800px] flex flex-col">
-            <div className="bg-black/40 border-b border-ares-darker p-4 flex items-center justify-between">
-              <h2 className="font-bold font-mono text-ares-gold flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-ares-cyan animate-pulse"></span>
-                Interactive API Explorer
-              </h2>
-              <a
-                href="/api/reference"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-mono text-marble/90 hover:text-white transition-colors"
-              >
-                Open Fullscreen ↗
-              </a>
-            </div>
-            <iframe 
-              src="/api/reference" 
-              title="ARES API Reference"
-              className="w-full flex-1 bg-white"
-              sandbox=""
-            />
-          </div>
-        </div>
-
-      </div>
-    </div>
+    </main>
   );
 }

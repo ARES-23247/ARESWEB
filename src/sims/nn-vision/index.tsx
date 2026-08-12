@@ -176,7 +176,7 @@ function NetworkGraph({
   });
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ maxHeight: '420px' }}>
+    <svg aria-hidden="true" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ maxHeight: '420px' }}>
       {/* Background */}
       <rect width={W} height={H} fill="transparent" />
 
@@ -419,12 +419,22 @@ export default function NnVisionSim() {
             }}
           >
             {pixels.map((p, i) => (
-              <div
+              <button
+                type="button"
                 key={i}
                 data-index={i}
+                aria-label={`Row ${Math.floor(i / 8) + 1}, column ${(i % 8) + 1}: ${p ? 'filled' : 'empty'}`}
+                aria-pressed={p === 1}
+                onClick={(event) => {
+                  // Pointer drawing is handled by the parent grid. Keyboard and
+                  // assistive-technology activation produces detail === 0.
+                  if (event.detail === 0) updatePixel(i, p ? 0 : 1);
+                }}
                 style={{
                   width: '28px', height: '28px',
                   background: p ? '#fff' : '#0a0a0a',
+                  border: 0,
+                  padding: 0,
                   cursor: 'crosshair',
                   transition: 'background 0.08s',
                 }}
@@ -433,7 +443,7 @@ export default function NnVisionSim() {
           </div>
 
           <div style={{ fontSize: '11px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <MousePointerSquareDashed style={{ width: '14px', height: '14px' }} /> Draw or click
+            <MousePointerSquareDashed aria-hidden="true" style={{ width: '14px', height: '14px' }} /> Draw with a pointer, or tab to a cell and press Space
           </div>
 
           {/* Quick-load template buttons */}

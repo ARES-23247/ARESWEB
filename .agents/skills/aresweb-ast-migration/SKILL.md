@@ -1,57 +1,30 @@
 ---
 name: aresweb-ast-migration
-description: Reusable pipeline and standards for safely converting standard Markdown strings into Firestore-compatible Tiptap ProseMirror Abstract Syntax Trees (AST). Use this anytime there are malformed legacy documents or large-scale document imports.
+description: Design or execute safe migrations from Markdown or malformed legacy content to ARESWEB Tiptap/ProseMirror JSON documents. Use for document imports, AST repair, schema migrations, or Firestore content backfills.
 ---
 
-# ARESWEB Tiptap AST Migration Skill
+# Tiptap AST migration
 
-The ARES 23247 CMS publisher suite natively relies on the Tiptap/ProseMirror Abstract Syntax Tree (AST) JSON format to display technical documentation, blog posts, and interactive simulators. Because the legacy framework previously utilized Astro with standard string Markdown, raw imports directly into the Firestore `docs` collection will result in unrenderable pages and `"Untitled"` dashboard names. 
+Represent editor content as a ProseMirror document with `type: "doc"` and a
+validated `content` array. Preserve semantic blocks, marks, links, lists, code,
+and hard breaks; do not store HTML as a shortcut.
 
-Whenever you are tasked with importing, auditing, or repairing documentation in Firestore, you **MUST** follow this AST conversion protocol.
+## Workflow
 
-## 1. Local Auditing and Scripting Protocol
+1. Read the current editor extensions and persisted document types before
+   defining the target schema.
+2. Build a pure converter and validator first. Cover empty input, malformed
+   Markdown, nested lists, links, code blocks, and already-migrated documents.
+3. Run fixtures locally and inspect representative output in the actual editor.
+4. Create an idempotent migration with a schema version and deterministic
+   result. Skip valid current records.
+5. Dry-run against exported or emulator data. Report counts for scanned,
+   convertible, skipped, and failed records without printing document content.
+6. Use bounded batches, checkpoints, and a reversible backup/export plan.
+7. Obtain explicit user approval immediately before changing production data.
+8. Re-read a sample after migration and verify rendering, counts, and versions.
 
-To diagnose and batch-update Firestore documents, write a temporary Node.js script in the `scratch/` directory that initializes the `firebase-admin` SDK to read and update collection documents.
-
-Never attempt to print large JSON representations directly to the console or CLI as they will truncate. Always write them to a JSON file first.
-
----
-
-## 2. Missing Title Heuristic
-
-If a database entry shows `Untitled` (often because a legacy markdown header was stripped), implement a heuristic fallback utilizing RegEx to extract the `# Heading1` string directly from the markdown representation and update the document's `title` field.
-
----
-
-## 3. Tiptap AST Translation Standards
-
-Never attempt to manually structure JSON objects yourself for large files. Create a discrete sub-pipeline strictly leveraging `@tiptap/html` and `marked`. 
-
-```javascript
-import { marked } from 'marked';
-import { generateJSON } from '@tiptap/html';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
-
-// First resolve raw markdown string to standard HTML layout
-const html = marked.parse(markdownContent);
-
-// Translate directly into Tiptap's schema utilizing equivalent extensions setup
-const jsonAst = generateJSON(html, [
-  StarterKit,
-  Image,
-  Link,
-]);
-
-const finalContent = JSON.stringify(jsonAst);
-```
-
----
-
-## 4. Firestore Execution
-
-To perform bulk updates:
-1. Write a script utilizing `adminDb.collection("docs").doc(slug).update({ content: finalContent, title: extractedTitle })`.
-2. Run it locally using environment credentials.
-3. Conclude the workflow by deleting the temporary script from the repository workspace.
+Never place service-account credentials in a migration script or repository.
+Use Application Default Credentials only in an approved operational environment.
+Keep one-record failures isolated and produce identifiers safe for administrator
+review rather than logging student-authored content or PII.

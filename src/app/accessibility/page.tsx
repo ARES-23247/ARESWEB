@@ -15,7 +15,7 @@ export default function AccessibilityPage() {
       <div className="max-w-5xl mx-auto px-6 lg:px-8">
         
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-3xl mb-16"
@@ -48,7 +48,7 @@ export default function AccessibilityPage() {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">AI-Powered ARIA</h2>
               <p className="text-marble leading-relaxed">
-                We leverage Gemini models on Google Vertex AI in Cloud Functions. When authors upload media, AI autonomously evaluates the image and injects deeply descriptive screen-reader tags (ALT) before it ever hits the live database.
+                Authors provide meaningful alternative text and captions for published media. We are improving upload guidance and review tools so descriptions stay useful, accurate, and respectful.
               </p>
             </div>
           </motion.div>
@@ -64,7 +64,7 @@ export default function AccessibilityPage() {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white">WAVE AA Compliance</h2>
               <p className="text-marble leading-relaxed">
-                Our DOM tree maintains a perfect 10.0 AIM score and 0 technical errors across WAVE and pa11y enterprise scanners. We enforce strict WCAG 2.1 AA contrast constraints natively in our Tailwind theme configurations.
+                We work toward WCAG 2.2 AA with keyboard review, screen-reader checks, automated tests, and accessible design tokens. Accessibility is ongoing work, and reported barriers are treated as high-priority defects.
               </p>
             </div>
           </motion.div>
@@ -112,20 +112,8 @@ export default function AccessibilityPage() {
           transition={{ delay: 0.5 }}
           className="text-center p-8 hero-card border border-dashed border-white/10"
         >
-          <div className="flex gap-6 justify-center items-center mb-6 border-b border-white/5 pb-4 max-w-sm mx-auto">
-            <span className="font-mono text-sm tracking-widest text-white mr-2">SCANNED BY</span>
-            <a href="https://pa11y.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-cyan transition-colors flex items-center font-bold text-sm gap-1.5" title="pa11y CI Integrated">
-              <svg className="w-5 h-5 text-ares-cyan" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
-              </svg>
-              <span>pa11y</span>
-            </a>
-            <a href="https://wave.webaim.org/" target="_blank" rel="noopener noreferrer" className="opacity-70 hover:opacity-100 transition-opacity" title="Validated by WAVE Web Accessibility Evaluation Tool">
-              <img src="https://wave.webaim.org/img/wavelogo.svg" alt="WAVE Logo" className="h-4" />
-            </a>
-          </div>
           <p className="text-white text-sm max-w-lg mx-auto">
-            If you encounter an accessibility hurdle on the ARES Web Portal, please contact us immediately on GitHub or via our Mentors. We treat accessibility defect patches with identical severity to hard system crashes.
+            Automated tests cover keyboard interaction and core semantics, but they do not replace manual keyboard, zoom, and assistive-technology review. If you encounter an accessibility hurdle on the ARES Web Portal, please contact us on GitHub or through our mentors.
           </p>
         </motion.div>
 

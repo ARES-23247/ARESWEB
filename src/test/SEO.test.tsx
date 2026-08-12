@@ -78,6 +78,21 @@ describe("SEO", () => {
     );
   });
 
+  it("normalizes trailing slashes and uses a large social card for supplied media", async () => {
+    renderWithHelmet(<SEO title="Event" url="/events/demo///" image="https://aresfirst.org/event-card.webp" />);
+
+    await waitFor(() => {
+      expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute(
+        "href",
+        "https://aresfirst.org/events/demo"
+      );
+    });
+    expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute(
+      "content",
+      "summary_large_image"
+    );
+  });
+
   it("does not invent article publication or modification dates", async () => {
     const article = createAdditionalSchema({
       type: "article",

@@ -12,11 +12,12 @@ import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 const projectId = "aresweb-ci";
 let testEnvironment: RulesTestEnvironment;
 
-async function seedAuthorizedUser(uid: string, role: string) {
+async function seedAuthorizedUser(uid: string, role: string, isDeleted?: boolean | number) {
   await testEnvironment.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), "authorized_users", uid), {
       role,
       email: `${uid}@example.test`,
+      ...(isDeleted === undefined ? {} : { isDeleted }),
     });
   });
 }
@@ -86,6 +87,45 @@ describe("Firestore zero-trust rules", () => {
 
     await assertSucceeds(getDoc(doc(memberDb, "tasks", "team-task")));
     await assertFails(getDoc(doc(unknownDb, "tasks", "team-task")));
+  });
+
+  it("binds web task comments to the authenticated author", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("other-user", "member");
+    await seedDocument("tasks", "team-task", { title: "Build robot" });
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const ownComment = doc(memberDb, "tasks", "team-task", "comments", "comment-1");
+
+    await assertSucceeds(setDoc(ownComment, {
+      authorUid: "member-user",
+      author: "Display label",
+      content: "Ready for review",
+      source: "web",
+      createdAt: "2026-08-12T12:00:00.000Z",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-2"), {
+      authorUid: "other-user",
+      author: "Spoofed label",
+      content: "Forged",
+      source: "web",
+      createdAt: "2026-08-12T12:00:00.000Z",
+    }));
+  });
+
+  it("fails closed for unknown roles and archived authorization records", async () => {
+    await seedAuthorizedUser("unknown-role", "superuser");
+    await seedAuthorizedUser("archived-boolean", "member", true);
+    await seedAuthorizedUser("archived-number", "mentor", 1);
+    await seedDocument("tasks", "private-task", { title: "Private" });
+
+    for (const uid of ["unknown-role", "archived-boolean", "archived-number"]) {
+      const context = testEnvironment.authenticatedContext(uid);
+      await assertFails(getDoc(doc(context.firestore(), "tasks", "private-task")));
+      await assertFails(uploadBytes(
+        ref(context.storage(), `blog/${uid}.txt`),
+        new Blob(["private"], { type: "text/plain" }),
+      ));
+    }
   });
 
   it("routes public calendar reads and all event or venue writes through server DTO APIs", async () => {
@@ -300,12 +340,12 @@ describe("Storage zero-trust rules", () => {
     );
   });
 
-  it("allows bounded image uploads for authorized members", async () => {
+  it("requires gallery uploads to use the validated server route", async () => {
     await seedAuthorizedUser("member-user", "member");
     const memberStorage = testEnvironment.authenticatedContext("member-user").storage();
     const image = new Uint8Array([137, 80, 78, 71]);
 
-    await assertSucceeds(
+    await assertFails(
       uploadBytes(ref(memberStorage, "gallery/member-upload.png"), image, {
         contentType: "image/png",
       }),
@@ -317,7 +357,7 @@ describe("Storage zero-trust rules", () => {
     );
   });
 
-  it("limits CAD uploads to content managers", async () => {
+  it("rejects retired direct CAD uploads for every role", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("mentor-user", "mentor");
     const memberStorage = testEnvironment.authenticatedContext("member-user").storage();
@@ -325,6 +365,6 @@ describe("Storage zero-trust rules", () => {
     const cadBytes = new Uint8Array([1, 2, 3, 4]);
 
     await assertFails(uploadBytes(ref(memberStorage, "cad/member.step"), cadBytes));
-    await assertSucceeds(uploadBytes(ref(mentorStorage, "cad/mentor.step"), cadBytes));
+    await assertFails(uploadBytes(ref(mentorStorage, "cad/mentor.step"), cadBytes));
   });
 });

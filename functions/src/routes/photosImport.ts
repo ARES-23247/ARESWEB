@@ -144,7 +144,7 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
 
           const buffer = await downloadRes.arrayBuffer();
 
-          const validation = validateImageMagicBytes(buffer);
+          const validation = validateImageMagicBytes(buffer, 8 * 1024 * 1024, ["jpg", "png", "webp"]);
           if (!validation.valid) {
             throw new Error(validation.error ?? "File did not pass magic bytes verification");
           }
@@ -198,7 +198,7 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
 
           successCount++;
         } catch (err: any) {
-          logger.error("photos", `Import item error - ID: ${item.id}, Filename: ${filename}`, err);
+          logger.error("photos", "A Google Photos import item failed", err);
           results.push({
             mediaItemId: item.id,
             status: "failed",

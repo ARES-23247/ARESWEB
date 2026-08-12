@@ -66,6 +66,7 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof TaskDetailsM
     tasks: [existingTask],
     teamProfiles: [],
     canEdit: true,
+    canUseAi: true,
     user,
     onClose: vi.fn(),
     onToggleSubtask: vi.fn(async () => null),

@@ -18,7 +18,8 @@ export default function VideosPage() {
   const [selected, setSelected] = useState<ManagedVideo | null>(null);
 
   const loadVideos = useCallback(async (append = false) => {
-    append ? setLoadingMore(true) : setLoading(true);
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ limit: "24" });

@@ -7,6 +7,7 @@ export default function SotmSim() {
   const [botHeading, setBotHeading] = useState<number>(0);
   const [shotSpeed, setShotSpeed] = useState<number>(15);
   const [solverLogs, setSolverLogs] = useState<string>("Drag your mouse on the canvas to move the robot.");
+  const [robotPosition, setRobotPosition] = useState({ x: 400, y: 320 });
   const robotPosRef = useRef({ x: 400, y: 320 });
   const isDraggingRef = useRef(false);
 
@@ -119,6 +120,7 @@ export default function SotmSim() {
         x: (e.clientX - rect.left) * scaleX,
         y: (e.clientY - rect.top) * scaleY
       };
+      setRobotPosition({ x: Math.round(robotPosRef.current.x), y: Math.round(robotPosRef.current.y) });
     };
 
     const handleMouseDown = (e: MouseEvent) => { isDraggingRef.current = true; updateRobotPos(e); };
@@ -148,7 +150,7 @@ export default function SotmSim() {
         </div>
       </div>
       
-      <canvas role="img" aria-label="Interactive Physics Simulation Environment" 
+      <canvas aria-hidden="true"
         ref={canvasRef}
         width={800} 
         height={400} 
@@ -156,6 +158,14 @@ export default function SotmSim() {
       />
       
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <label style={{ color: 'var(--ares-gray)', fontSize: '0.9rem' }}>Robot X: <span style={{ color: 'var(--ares-cyan)' }}>{robotPosition.x}</span></label>
+          <input aria-label="Robot X coordinate" type="range" min="0" max="800" step="10" value={robotPosition.x} onChange={(e) => { const x = Number(e.target.value); robotPosRef.current.x = x; setRobotPosition(previous => ({ ...previous, x })); }} style={{ width: '100%' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <label style={{ color: 'var(--ares-gray)', fontSize: '0.9rem' }}>Robot Y: <span style={{ color: 'var(--ares-cyan)' }}>{robotPosition.y}</span></label>
+          <input aria-label="Robot Y coordinate" type="range" min="0" max="400" step="10" value={robotPosition.y} onChange={(e) => { const y = Number(e.target.value); robotPosRef.current.y = y; setRobotPosition(previous => ({ ...previous, y })); }} style={{ width: '100%' }} />
+        </div>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <label style={{ color: 'var(--ares-gray)', fontSize: '0.9rem' }}>Robot Velocity: <span style={{ color: 'var(--ares-cyan)' }}>{botVelocity.toFixed(1)} m/s</span></label>
           <input aria-label="Robot velocity in meters per second" type="range" min="0" max="8" value={botVelocity} step="0.1" onChange={(e) => setBotVelocity(parseFloat(e.target.value))} style={{ width: '100%' }} />
@@ -170,7 +180,7 @@ export default function SotmSim() {
         </div>
       </div>
       
-      <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', color: 'var(--ares-gray)', whiteSpace: 'pre-line' }}>
+      <div role="status" aria-live="polite" style={{ marginTop: '15px', padding: '10px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', color: 'var(--ares-gray)', whiteSpace: 'pre-line' }}>
         {solverLogs}
       </div>
     </div>

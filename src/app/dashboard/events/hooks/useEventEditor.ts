@@ -9,6 +9,7 @@ import { logger } from "@/utils/logger";
 import { TeamEvent } from "@/types/event";
 import { TeamLocation } from "../components/LocationManagerModal";
 import { archiveEvent, createEvent, restoreEvent, updateEvent, type EventWriteInput } from "@/app/calendar/api";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 
 export interface EventRevision {
   id: string;
@@ -105,49 +106,28 @@ export function useEventEditor({
   const [operationError, setOperationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // User Profile cache for revision logs
-  const [userProfile, setUserProfile] = useState<EventEditorUserProfile | null>(null);
-  const [userNickname, setUserNickname] = useState("");
-
   const editId = eventToEdit?.id || null;
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
+  const profileQuery = useCurrentProfile(user?.uid);
+  const userProfile = useMemo<EventEditorUserProfile | null>(() => profileQuery.data
+    ? {
+        nickname: profileQuery.data.profile.nickname,
+        avatar: profileQuery.data.profile.avatar,
+      }
+    : null, [profileQuery.data]);
+  const userNickname = userProfile?.nickname || "ARES Member";
   
   const canPublishDirectly = useMemo(() => {
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);
 
-  // Fetch user profile for nickname and avatar (used in revision logging)
+  // Preserve an explicit editor error when the shared profile DTO is unavailable.
   useEffect(() => {
-    if (!user) return;
-    const fetchProfile = async () => {
-      try {
-        const response = await authenticatedFetch("/api/profiles/me");
-        const payload = await response.json().catch(() => ({})) as {
-          profile?: { nickname?: unknown; avatar?: unknown };
-          nickname?: unknown;
-          avatar?: unknown;
-          error?: unknown;
-        };
-        if (!response.ok) {
-          const message = typeof payload.error === "string" ? ` — ${payload.error}` : "";
-          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}${message}`);
-        }
-        const source = payload.profile ?? payload;
-        const profileData: EventEditorUserProfile = {
-          nickname: typeof source.nickname === "string" ? source.nickname : undefined,
-          avatar: typeof source.avatar === "string" ? source.avatar : undefined,
-        };
-        setUserProfile(profileData);
-        setUserNickname(profileData.nickname || "ARES Member");
-      } catch (err: unknown) {
-        logger.error("Failed to load user profile:", err);
-        setUserNickname("ARES Member");
-        setOperationError(`Profile details unavailable: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    };
-    fetchProfile();
-  }, [user]);
+    if (!profileQuery.error) return;
+    logger.error("Failed to load user profile:", profileQuery.error);
+    setOperationError(`Profile details unavailable: ${profileQuery.error instanceof Error ? profileQuery.error.message : String(profileQuery.error)}`);
+  }, [profileQuery.error]);
 
   // Sync state with eventToEdit when it changes
   useEffect(() => {

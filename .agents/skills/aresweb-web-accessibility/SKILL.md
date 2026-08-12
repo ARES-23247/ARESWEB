@@ -1,38 +1,38 @@
 ---
 name: aresweb-web-accessibility
-description: Audits, tests, and enforces web accessibility standards (WCAG 2.1 AA) on the ARESWEB Next.js website and frontend code. Use this when building or reviewing UI components, HTML, CSS, or frameworks to ensure they achieve a perfect 10.0 AIM score and maintain compliance for screen readers and keyboard navigation.
+description: Build or review ARESWEB React UI for WCAG 2.2 AA accessibility, responsive interaction, truthful user-facing copy, design-token use, and brand consistency. Use for components, pages, dialogs, forms, simulations, visual styling, or accessibility claims.
 ---
 
-# ARESWEB Web Accessibility Enforcement Strategy
-You are an expert accessibility engineer enforcing the championship-grade standards of the ARES 23247 ecosystem. Our commitment to **Inclusion** ensures that every student has the same opportunity for **Discovery**. When working on frontend code or UI components:
+# ARESWEB frontend quality
 
-## Core Directives
-* **Semantic HTML First:** Always prefer native elements (`<button>`, `<dialog>`, `<nav>`, `<fieldset>`) over `<div>` or `<span>` tags with ARIA roles attached. Never skip heading hierarchies (e.g., `<h1>` down to `<h2>` without skipping to `<h4>`).
-* **Accessible Data Grids:** Use **@tanstack/react-table** for all complex data displays. It provides the "Headless UI" brain required to manage ARIA roles, sorting announcements, and keyboard navigation automatically while maintaining the custom ARES aesthetic.
-* **Keyboard Navigability:** Ensure all interactive elements are reachable via the `Tab` key. Focus states (`:focus-visible`) must be explicitly handled and visible. Do not use `outline: none` without providing a standard fallback focus state.
-* **Screen Reader Context (ARIA):**
-  * Use `aria-hidden="true"` on purely decorative icons or background graphical flourishes.
-  * Ensure functional icons without text have descriptive `aria-label`s or visually hidden Tailwind `.sr-only` text.
-  * Explicitly denote interactive graphical simulations (like robot odometry `<canvas>`) with `<canvas role="img" aria-label="Interactive simulation of...">`.
-* **Color Contrast Validation:** Text and interactive elements must have a minimum contrast ratio of **4.5:1** against their background for standard text. Default to high-contrast cyan (`text-ares-cyan`) for dark-theme text accents. 
-  * **CRITICAL:** `ares-red` (`#C00000`) text on an `obsidian` (`#1A1A1A`) background yields a contrast ratio of only **2.69:1** and strictly fails WCAG AA required 4.5:1. 
-  * **Resolution (The Red Badge Pattern):** When you need to feature ARES Red on a dark background, you MUST invert it. Wrap the text in a solid red badge (`bg-ares-red`) and use white text (`text-white`) which yields a comfortably passing **6.48:1** contrast ratio.
-* **Forms & DOM Hygiene:** Every `<input>`, `<textarea>`, and `<select>` MUST have an explicitly associated `<label>` using the `htmlFor`/`id` pattern in React.
+The frontend is Vite, React 19, React Router, and Tailwind CSS. Inspect the live
+design tokens and components before changing styling; do not assume Next.js.
 
-## Testing Protocol
-1. Fix "Orphaned form labels" or "Unlabeled form controls" immediately.
-2. **Hierarchy Traversal:** Whenever rendering dynamic pages or complex layouts, ensure a visually-hidden `Skip to content` link exists in the header layout to allow keyboard users to bypass the Navigation bar.
+## Interaction
 
+- Use semantic HTML and native controls before ARIA.
+- Preserve visible focus, logical tab order, skip navigation, route announcements,
+  and keyboard access for every pointer action.
+- Give dialogs correct labels, initial focus, focus containment, Escape behavior,
+  and focus restoration. Coordinate nested dialogs instead of stacking traps.
+- Keep hidden mobile or collapsed content out of the accessibility tree and tab
+  order with appropriate unmounting or `inert` behavior.
+- Keep file inputs keyboard accessible. Associate every input with a label and
+  expose validation and async status programmatically.
+- Provide non-canvas alternatives for essential simulation state and controls.
+- Respect reduced motion and meet WCAG AA contrast at actual rendered sizes.
 
-## React Theming Fixes
-Because ARESWEB uses a futuristic dark theme via Tailwind CSS:
-1. Ensure focus rings match the aesthetic (e.g. `focus-visible:ring-ares-cyan`).
-2. Do not use hardcoded black text on dark components unless visually separated by glassmorphic boundaries.
-3. Injected inline elements or custom React interactive dashboards must map properly to transparent custom fallbacks rather than hardcoded colors.
+## Content and visual system
 
-## Remediation: Axe / Pa11y Background Calculation Errors
-When text overlays a visually complex background (such as absolute gradients, `blur-3xl` glow effects, radial-gradients, or transparency layers), automation tools like Axe regularly trigger non-deterministic "needsFurtherReview" color contrast false positives because they cannot compute the blended mathematical matrix.
+- Use established semantic brand tokens; do not add arbitrary color values or
+  generic cyan decoration.
+- Write concise user-facing instructions understandable by students and families.
+- Describe actual product behavior. Do not promise unavailable AI, offline,
+  privacy, API, or storage features.
+- Do not hide text in pseudo-elements, alter semantics, or disable checks to make
+  an automated scanner pass.
 
-**To resolve zero-box gradient contrast false-positives and achieve a 0-error `pa11y-ci` state:**
-1. **The Pseudo-Element Branding Bypass:** For highly targeted brand-colored typography (e.g. `ares-gold` or `ares-red` text) that triggers strict contrast algorithms but whose visual identity is mandatory, inject the text via Tailwind pseudo-elements. Example: `<span aria-hidden="true" className="text-ares-red before:content-['ARES.']"></span>`. To guarantee total screen reader compatibility, follow the span immediately with `<span className="sr-only">ARES.</span>`. Since Axe does not run contrast physics against CSS-injected `content` variables on empty nodes, this perfectly circumvents the auditor without sacrificing visual design or structural hierarchy.
-2. **Strict Verification:** Never ignore `color-contrast` in `.pa11yci` globally. If a false positive is truly unresolvable via CSS, use the pseudo-element pattern above to maintain a 10.0 AIM score.
+Automated Axe/Pa11y-style checks are supporting evidence only. Test keyboard,
+screen-reader semantics, zoom/reflow, contrast, touch targets, and error recovery
+manually for changed flows. Never publish a perfect score or compliance claim
+without a dated scope and reproducible evidence.

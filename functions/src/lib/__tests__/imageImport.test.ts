@@ -33,36 +33,14 @@ describe("Image Import Pipeline Utilities", () => {
       const result = validateImageMagicBytes(buffer);
       expect(result.valid).toBe(false);
       expect(result.format).toBe("unknown");
-      expect(result.error).toBe("Invalid image format (must be JPG, PNG, WEBP, GIF, SVG, BMP, or ICO)");
+      expect(result.error).toBe("Invalid image format (must be JPG, PNG, or WEBP)");
     });
 
-    it("should accept valid GIF files", () => {
+    it("should reject active and unsupported image formats", () => {
       const buffer = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]).buffer;
       const result = validateImageMagicBytes(buffer);
-      expect(result.valid).toBe(true);
-      expect(result.format).toBe("gif");
-    });
-
-    it("should accept valid SVG files", () => {
-      const svgText = "<svg xmlns='http://www.w3.org/2000/svg'><path d='M0 0h10v10H0z'/></svg>";
-      const buffer = new TextEncoder().encode(svgText).buffer;
-      const result = validateImageMagicBytes(buffer);
-      expect(result.valid).toBe(true);
-      expect(result.format).toBe("svg");
-    });
-
-    it("should accept valid BMP files", () => {
-      const buffer = new Uint8Array([0x42, 0x4D, 0x00, 0x00, 0x00, 0x00]).buffer;
-      const result = validateImageMagicBytes(buffer);
-      expect(result.valid).toBe(true);
-      expect(result.format).toBe("bmp");
-    });
-
-    it("should accept valid ICO files", () => {
-      const buffer = new Uint8Array([0x00, 0x00, 0x01, 0x00, 0x00, 0x00]).buffer;
-      const result = validateImageMagicBytes(buffer);
-      expect(result.valid).toBe(true);
-      expect(result.format).toBe("ico");
+      expect(result.valid).toBe(false);
+      expect(validateImageMagicBytes(new TextEncoder().encode("<svg></svg>").buffer).valid).toBe(false);
     });
 
     it("should reject files exceeding the maximum size limit", () => {
@@ -70,6 +48,11 @@ describe("Image Import Pipeline Utilities", () => {
       const result = validateImageMagicBytes(buffer, 50); // limit 50 bytes
       expect(result.valid).toBe(false);
       expect(result.error).toBe("File size exceeds 0MB limit");
+    });
+
+    it("honors a caller-provided format allowlist", () => {
+      const buffer = new Uint8Array([0x89, 0x50, 0x4E, 0x47]).buffer;
+      expect(validateImageMagicBytes(buffer, 100, ["jpg"])).toMatchObject({ valid: false, format: "png" });
     });
   });
 

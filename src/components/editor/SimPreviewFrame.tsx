@@ -156,10 +156,6 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- html2canvas with Subresource Integrity - generate SRI with: openssl dgst -sha384 -binary FILE | openssl base64 -A -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-          integrity="sha384-u/KoVFLnMiHwA4ANW0l7jN5JqdV7XFsEZx5G1Semv5f5fZ+kJPbYg/jAvQPsKWwj"
-          crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -286,21 +282,18 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
     }
   </script>
   <script src="${simulationPreviewRuntimeUrl}"></script>
-  <!-- DOMPurify for XSS protection -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.2/dist/purify.min.js"
-          integrity="sha384-pg0npeAS8wMoOhkAn3+6V/pdCY24eN7SUoLvHh6x5Z9JgAjMMfgP8u8vUxKY+fN9"
-          crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="root"><div class="sim-loading">Loading Environment...</div></div>
   <script>
     window.onerror = function(msg, source, line, col, error) {
       window.parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
-      // Sanitize error message before setting innerHTML to prevent XSS
-      const sanitizedMsg = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(msg)) : String(msg).replace(/[<>&"']/g, function(m) {
-        return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
-      });
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + sanitizedMsg + '</div>';
+      const root = document.getElementById('root');
+      root.textContent = '';
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'sim-error';
+      errorMessage.textContent = String(msg);
+      root.appendChild(errorMessage);
       return true;
     };
     
@@ -385,27 +378,14 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       }
     } catch(e) {
       window.parent.postMessage({ type: 'sim-error', message: e.message }, '*');
-      // Sanitize error message before setting innerHTML to prevent XSS
-      const sanitizedError = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(String(e.message)) : String(e.message).replace(/[<>&"']/g, function(m) {
-        return {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;'}[m];
-      });
-      document.getElementById('root').innerHTML = '<div class="sim-error">' + sanitizedError + '</div>';
+      const root = document.getElementById('root');
+      root.textContent = '';
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'sim-error';
+      errorMessage.textContent = String(e.message);
+      root.appendChild(errorMessage);
     }
 
-    // Listen for screenshot requests
-    window.addEventListener('message', async (e) => {
-      // Validate origin - only accept messages from parent window
-      if (e.origin !== '${window.location.origin}') return;
-
-      if (e.data?.type === 'ARES_REQUEST_SCREENSHOT' && window.html2canvas) {
-        try {
-          const canvas = await window.html2canvas(document.body, { useCORS: true, logging: false });
-          window.parent.postMessage({ type: 'ARES_SCREENSHOT', dataUrl: canvas.toDataURL('image/png') }, '*');
-        } catch(err) {
-          console.error("Screenshot failed inside sandbox:", err);
-        }
-      }
-    });
     // FPS counter
     (function() {
       let frames = 0;

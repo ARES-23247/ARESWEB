@@ -41,11 +41,15 @@ export default defineConfig({
         skipWaiting: false,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/sitemap\.xml$/],
-        globPatterns: ["**/*.{js,css,html,svg,png,webp,woff2}"],
-        globIgnores: [
-          "**/vendor-monaco-*.js",
-          "**/vendor-babel-*.js",
-          "**/vendor-prettier-*.js",
+        globPatterns: [
+          "index.html",
+          "manifest.webmanifest",
+          "favicon.{svg,webp}",
+          "assets/index-*.{js,css}",
+          "assets/index.esm-*.js",
+          "assets/rolldown-runtime-*.js",
+          "assets/firebaseCore-*.js",
+          "assets/vendor-{framer,radix,lucide}-*.js",
         ],
         // API and Firebase traffic must always reach the network. Only the
         // versioned application shell is precached.
@@ -59,7 +63,7 @@ export default defineConfig({
   envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -68,7 +72,6 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ["monaco-editor"],
       output: {
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, "/");
@@ -84,9 +87,6 @@ export default defineConfig({
             }
             if (normalizedId.includes("@xyflow") || normalizedId.includes("reactflow")) {
               return "vendor-xyflow";
-            }
-            if (normalizedId.includes("monaco-editor")) {
-              return "vendor-monaco";
             }
             if (normalizedId.includes("@babel")) {
               return "vendor-babel";
@@ -128,8 +128,8 @@ export default defineConfig({
       include: [
         "src/lib/api.ts",
         "src/lib/security.ts",
+        "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
-        "src/store/useCartStore.ts",
         "src/components/PublicDataState.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
@@ -159,15 +159,15 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
-        "src/store/useCartStore.ts": {
-          lines: 85,
-          functions: 100,
-        },
         "src/lib/api.ts": {
           lines: 85,
           functions: 100,
         },
         "src/lib/tournamentApi.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/simulationDrafts.ts": {
           lines: 85,
           functions: 100,
         },

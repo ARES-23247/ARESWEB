@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import SEO from "@/components/SEO";
 
 // Create TanStack Query Client
 const queryClient = new QueryClient({
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 const Home = lazy(() => import("@/app/page"));
 const AboutPage = lazy(() => import("@/app/about/page"));
 const AcademyPage = lazy(() => import("@/app/academy/page"));
+const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
@@ -69,11 +71,22 @@ const DashboardTournamentsPage = lazy(() => import("@/app/dashboard/tournaments/
 // Premium fallback loader with ARES branding
 function AppLoading() {
   return (
-    <div className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
-      <div className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
+    <div role="status" aria-live="polite" aria-label="Loading page" className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
+      <div aria-hidden="true" className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
       <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 animate-pulse font-heading">
         Synchronizing Systems...
       </p>
+    </div>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
+      <SEO title="Page Not Found" description="This ARES 23247 page does not exist." noindex />
+      <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
+      <p className="text-marble/60 text-sm mb-8">Page not found.</p>
+      <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
     </div>
   );
 }
@@ -92,6 +105,7 @@ export default function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/academy/playground" element={<AcademyPlaygroundPage />} />
                   <Route path="/academy/:slug" element={<AcademyPage />} />
                   <Route path="/docs" element={<AcademyPage />} />
                   <Route path="/docs/:slug" element={<AcademyPage />} />
@@ -142,13 +156,7 @@ export default function App() {
                   </Route>
                   
                   {/* 404 Route */}
-                  <Route path="*" element={
-                    <div className="flex flex-col justify-center items-center min-h-[70vh] bg-obsidian text-marble p-6">
-                      <h1 className="text-5xl font-black uppercase text-white tracking-widest font-heading mb-4">404</h1>
-                      <p className="text-marble/60 text-sm mb-8">Page not found.</p>
-                      <Link to="/" className="clipped-button bg-ares-red text-white uppercase text-xs">Go Home</Link>
-                    </div>
-                  } />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </ErrorBoundary>

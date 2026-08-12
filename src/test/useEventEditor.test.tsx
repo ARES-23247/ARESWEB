@@ -32,6 +32,13 @@ vi.mock("@/lib/api", () => ({
   authenticatedFetch: vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })),
 }));
 
+vi.mock("@/hooks/useCurrentProfile", () => ({
+  useCurrentProfile: () => ({
+    data: { profile: { nickname: "Member Nickname", avatar: "" } },
+    error: null,
+  }),
+}));
+
 vi.mock("@/app/calendar/api", () => ({
   archiveEvent: vi.fn(),
   createEvent: vi.fn(),

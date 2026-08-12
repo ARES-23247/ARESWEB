@@ -61,10 +61,16 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
 
   // Validate image magic bytes
   const validation = validateImageMagicBytes(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+    8 * 1024 * 1024,
+    ["jpg", "png", "webp"],
   );
   if (!validation.valid) {
     throw new ApiError(400, validation.error || "File did not pass magic bytes verification.");
+  }
+  const declaredFormat = mimeType === "image/jpeg" ? "jpg" : mimeType.slice("image/".length);
+  if (validation.format !== declaredFormat) {
+    throw new ApiError(400, "The declared image type does not match the file contents.");
   }
 
   // Calculate SHA-256 hash of the image buffer

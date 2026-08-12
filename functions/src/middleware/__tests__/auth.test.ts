@@ -179,6 +179,22 @@ describe("Auth Middleware", () => {
       expect(err.status).toBe(403);
       expect(err.message).toBe("Forbidden: Insufficient privileges");
     });
+
+    it("denies archived administrators", async () => {
+      req.headers!.authorization = "Bearer admin-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "admin123" } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "admin", isDeleted: true }),
+      } as any);
+
+      await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
+
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(req.user).toBeUndefined();
+    });
   });
 
   describe("ensureTeamMember extra coverage", () => {
@@ -229,7 +245,7 @@ describe("Auth Middleware", () => {
       expect(err.message).toBe("Forbidden: Account is unverified");
     });
 
-    it("should attach user and call next() on verified student success", async () => {
+    it("normalizes a known legacy student role to member", async () => {
       req.headers!.authorization = "Bearer member-token";
       const mockDecoded = { uid: "member123" };
       vi.mocked(adminAuth.verifyIdToken).mockResolvedValue(mockDecoded as any);
@@ -241,7 +257,40 @@ describe("Auth Middleware", () => {
 
       await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
       expect(req.user).toEqual(mockDecoded);
+      expect(req.authorizationRole).toBe("member");
       expect(next).toHaveBeenCalled();
+    });
+
+    it("denies an unknown role instead of treating it as a member", async () => {
+      req.headers!.authorization = "Bearer member-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "member123" } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "superuser" }),
+      } as any);
+
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(req.user).toBeUndefined();
+    });
+
+    it.each([true, 1])("denies an archived account marked with %s", async (isDeleted) => {
+      req.headers!.authorization = "Bearer member-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "member123" } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "member", isDeleted }),
+      } as any);
+
+      await ensureTeamMember(req as AuthenticatedRequest, res as Response, next);
+
+      const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+      expect(err.status).toBe(403);
+      expect(err.message).toBe("Forbidden: Account is archived");
     });
   });
 });

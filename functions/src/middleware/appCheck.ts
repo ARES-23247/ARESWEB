@@ -108,9 +108,11 @@ export function enforceAppCheck(
   _res: Response,
   next: NextFunction
 ): void {
-  // Production enablement is an explicit operational step after the monitoring
-  // checks in docs/SECURITY_OPERATIONS.md have passed.
-  if (process.env.ENFORCE_APP_CHECK !== "true" || !shouldObserveAppCheck(req)) {
+  const enforcementDisabled = process.env.ENFORCE_APP_CHECK === "false";
+  const nonProductionRuntime = process.env.FUNCTIONS_EMULATOR === "true" || process.env.NODE_ENV === "test";
+  const enforcementEnabled = process.env.ENFORCE_APP_CHECK === "true" ||
+    (!enforcementDisabled && !nonProductionRuntime);
+  if (!enforcementEnabled || !shouldObserveAppCheck(req)) {
     next();
     return;
   }

@@ -1,49 +1,42 @@
 ---
 name: aresweb-zero-trust-security
-description: Enforces Firebase Zero Trust security protocols across ARESWEB including Firebase Auth ID token verification, Firestore role-based access control, App Check, and secure database rule designs.
+description: Secure ARESWEB authentication, authorization, App Check, Firestore and Storage rules, secrets, uploads, youth data, inquiry PII, public DTOs, and external integrations. Use for any trust-boundary, identity, privacy, or security-sensitive change.
 ---
 
-# ARES Zero Trust Security Standards (Firebase)
+# ARESWEB security and youth privacy
 
-## Mandatory Requirements
+Treat clients, Firebase tokens until verified, Firestore documents, Storage
+objects, webhook payloads, and third-party responses as untrusted.
 
-### 1. Always Verify Identity Tokens Server-Side
-**CRITICAL:** Never trust user identities declared by client-side headers. All protected endpoints must call `adminAuth.verifyIdToken(token)` via the auth middleware:
+## Authorization
 
-```typescript
-// ✅ CORRECT: Verify token with Firebase Admin Auth
-const token = authHeader.split("Bearer ")[1];
-const decodedToken = await adminAuth.verifyIdToken(token);
-req.user = decodedToken; // req.user.uid is verified
-```
+- Verify Firebase ID tokens server-side and authorize from the current
+  `authorized_users/{uid}` record.
+- Use an explicit role allowlist. Reject missing, unknown, unverified, and
+  archived records. Never infer access from a UI state or email address.
+- Enforce equivalent rules in Cloud Functions, Firestore rules, and Storage
+  rules. Test allow and deny cases with emulators.
+- Enforce App Check on browser-originated sensitive or abuse-prone endpoints.
+  Document any temporary exception and fail closed in production.
 
----
+## Data protection
 
-### 2. Role-Based Access Control (RBAC) via Firestore
-User roles must be fetched and validated directly from the secure `authorized_users` collection in Firestore. Do not save role labels in the client's JWT payload if those roles grant write permissions:
+- Encrypt inquiry names and contact details before the first Firestore write.
+- Restrict private youth data to the minimum admin/coach workflow. Public minor
+  identity is limited to an approved nickname and avatar.
+- Return explicit public DTOs; never return raw documents, contact fields,
+  internal UIDs, receipts, encryption metadata, or operational fields.
+- Prevent active-content execution from user uploads. Validate authenticated
+  uploads before buffering, bound file sizes, and use safe response headers.
+- Keep secrets only in Google Secret Manager/Firebase Functions secret bindings.
+  Never put them in source, Firestore, logs, URLs, browser storage, or GitHub.
 
-```typescript
-const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
-if (!userDoc.exists) {
-  res.status(403).json({ error: "Forbidden" });
-  return;
-}
-const userData = userDoc.data();
-if (userData?.role !== "admin") {
-  res.status(403).json({ error: "Forbidden" });
-  return;
-}
-```
+## Failure and verification
 
----
+Rate-limit public and costly operations before expensive work. Authenticate
+webhook authors and derive task/comment authors from the verified identity, not
+request fields. Do not return fake-success responses for failed upstream writes.
 
-### 3. Firebase App Check
-To protect APIs (e.g., mail dispatch or inquiries submission) from automated bot abuse, enforce **Firebase App Check** tokens for all client requests. Reject requests lacking valid App Check headers.
-
----
-
-### 4. Firestore Security Rules
-All direct client reads/writes to Firestore must be constrained by `firestore.rules`.
-- Private data must check authentication: `request.auth != null`.
-- Role checks must check `get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role`.
-- Never use user emails as paths or keys.
+Log only redacted operational context through shared loggers. Add abuse, replay,
+cross-role, archived-user, malformed-input, and data-minimization tests. Obtain
+explicit approval before rotating secrets or changing production data or rules.

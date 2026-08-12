@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from "express";
  * Express wrapper helper to automatically catch promise rejections and forward them to the global error middleware.
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
 ) => (req: Request, res: Response, next: NextFunction) => {
   return Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -27,4 +27,3 @@ export function maskEmail(email: string): string {
   if (emailParts.length !== 2) return emailVal;
   return emailParts[0].charAt(0) + "***@" + emailParts[1];
 }
-

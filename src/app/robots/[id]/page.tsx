@@ -47,6 +47,7 @@ export default function RobotDetailPage() {
     }
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
+        <SEO title="Robot Not Found" description="This ARES 23247 robot record does not exist or is no longer published." noindex />
         <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Robot Not Found</h2>
         <p className="text-marble/60 text-sm mb-8">The robot record you are looking for does not exist or has been removed.</p>
         <Link to="/robots" className="clipped-button bg-ares-red text-white uppercase text-xs">

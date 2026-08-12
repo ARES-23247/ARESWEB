@@ -17,14 +17,11 @@ vi.mock("@/utils/logger", () => ({
 describe("useSimulationActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     window.history.replaceState({}, "", "/academy/playground");
   });
 
-  it("uses the authenticated request path when saving", async () => {
-    vi.mocked(authenticatedFetch).mockResolvedValue(new Response(
-      JSON.stringify({ id: "github:drive-sim" }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    ));
+  it("saves a named draft locally without publishing repository code", async () => {
     const setSimId = vi.fn();
     const { result } = renderHook(() => useSimulationActions({
       files: { "drive-sim.tsx": "export default function Sim() { return null; }" },
@@ -37,10 +34,9 @@ describe("useSimulationActions", () => {
 
     await act(async () => result.current.handleSave());
 
-    expect(authenticatedFetch).toHaveBeenCalledWith("/api/simulations", expect.objectContaining({
-      method: "POST",
-    }));
-    expect(setSimId).toHaveBeenCalledWith("github:drive-sim");
+    expect(authenticatedFetch).not.toHaveBeenCalled();
+    expect(setSimId).toHaveBeenCalledWith(expect.stringMatching(/^local:/));
+    expect(window.localStorage.getItem("ares_simulation_drafts_v1")).toContain("Drive Sim");
   });
 
   it("exposes the HTTP status and diagnostic code when sharing fails", async () => {

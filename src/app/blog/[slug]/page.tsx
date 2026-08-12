@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
@@ -23,65 +23,6 @@ interface BlogPostDetails {
   authorAvatar?: string;
   content: string;
 }
-
-export const MOCK_DETAILS: Record<string, BlogPostDetails> = {
-  "championship-2026-recap": {
-    slug: "championship-2026-recap",
-    title: "Championship 2026: Team ARES Wins Big!",
-    date: "May 20, 2026",
-    snippet: "A comprehensive recap of our journey, triumphs, and scores at the 2026 *FIRST*® World Championship.",
-    author: "David Coach",
-    thumbnail: "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=1000&auto=format&fit=crop&q=80",
-    content: `We are absolutely thrilled to report that ARES 23247 has achieved a championship-grade finish at the 2026 *FIRST*® World Championship! 
-
-Our mecanum-drivetrain powered robot, utilizing **ARESLib** EKF localizations, performed with ultimate precision on the playfield. We scored a record-breaking number of autonomous delivery cones and secured victory in our divisional finals!
-
-### The Engineering Behind the Success
-The core differentiator of this season's robot was our integration of the GoBilda Pinpoint Odometry module combined with our custom Extended Kalman Filter (EKF) algorithm. By calibrating our motor friction feedforward coefficient ($kS$) to exactly **0.05**, we overcame motor deadbands at low speeds. This resulted in near-zero autonomous pathing error throughout the entire tournament.
-
-### Key Event Highlights
-* **Autonomous Runs**: We secured a 100% success rate on our multi-cone autonomous path, yielding a massive lead in each qualification match.
-* **TeleOp Coordination**: Our drive team executed field-centric Mecanum maneuvers flawlessly, navigating tight defense with swift pivot turns.
-* **Community Connection**: We shared our open-source software libraries and pathing tools with dozens of visiting international teams in the pit areas, promoting *FIRST*® Core Values of Coopertition and Gracious Professionalism.
-
-We want to express our deepest gratitude to our students, mentors, parents, and sponsors who supported us. The 2025-2026 season has been an unforgettable milestones, and we are already looking forward to next year's engineering challenge!`
-  },
-  "drivetrain-ekf-calibration": {
-    slug: "drivetrain-ekf-calibration",
-    title: "ARESLib Drivetrain & EKF Odometry Calibrations",
-    date: "May 15, 2026",
-    snippet: "Deep technical insight into tuning mecanum kS feedforward and GoBilda Pinpoint EKF odometry values.",
-    author: "Lead Student",
-    thumbnail: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1000&auto=format&fit=crop&q=80",
-    content: `In modern *FIRST*® Tech Challenge robotics, precise autonomous navigation is the foundation of high scores. In this article, we share the engineering methodology behind the localization system in **ARESLib**.
-
-### 1. Calibrating Static Friction Feedforward (kS)
-Every DC motor has an internal deadband caused by static friction. To overcome this, **ARESLib** implements a feedforward model where:
-$$\\text{Voltage} = kS \\cdot \\text{sign}(\\text{Velocity}) + kV \\cdot \\text{Velocity} + kA \\cdot \\text{Acceleration}$$
-
-During field tests, we noticed low-speed motor stalling. By performing a systematic sweep, we calibrated $kS$ to **0.05**. This small voltage offset instantly kicks in to overcome friction, allowing our Mecanum wheels to execute micro-adjustments perfectly.
-
-### 2. Tuning the GoBilda Pinpoint Odometry EKF
-The GoBilda Pinpoint system provides high-speed hardware-accelerated odometry ticks. However, wheel slippage can accumulate error. **ARESLib** addresses this by blending mechanical encoder counts with IMU gyro heading coordinates inside an Extended Kalman Filter (EKF).
-
-This sensor fusion guarantees that even if a defense robot shoves us sideways, our estimated field coordinate remains accurate within **0.8 cm**, ensuring our auto-scoring path is never derailed.
-
-### Summary Code Sample
-For field-centric driving, stick vectors are rotated by the current gyro heading:
-\`\`\`kotlin
-fun driveFieldCentric(y: Double, x: Double, rx: Double, heading: Double) {
-    val rotX = x * Math.cos(-heading) - y * Math.sin(-heading)
-    val rotY = x * Math.sin(-heading) + y * Math.cos(-heading)
-    
-    // Apply power to mecanum motors with static friction compensation
-    leftFront.power = rotY + rotX + rx + (0.05 * Math.signum(rotY + rotX + rx))
-    // Repeat for other motors...
-}
-\`\`\`
-
-If you have questions about implementing this on your robot, feel free to reach out to us at aresfirst.org or ask in our Zulip server!`
-  }
-};
 
 export default function BlogPostPage() {
   const { user, authorizedUser } = useAuth();
@@ -174,6 +115,7 @@ export default function BlogPostPage() {
     }
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
+        <SEO title="Post Not Found" description="This ARES 23247 blog article does not exist or is no longer published." noindex />
         <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Post Not Found</h2>
         <p className="text-marble/60 text-sm mb-8">The blog article you are looking for does not exist or has been removed.</p>
         <Link to="/blog" className="clipped-button bg-ares-red text-white uppercase text-xs">

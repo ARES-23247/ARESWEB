@@ -4,21 +4,17 @@
  * Lazy-loaded Monaco Editor wrapper with ARES-branded loading UX and error handling.
  * Implements 3-second timeout with friendly messaging and retry logic.
  *
- * SECURITY: Version pinned to 0.52.2 for supply chain stability.
- * MITIGATION: CSP restricts script sources to cdn.jsdelivr.net.
+ * Monaco is bundled from the lockfile rather than fetched from a runtime CDN.
  */
 
 import { lazy, Suspense, useState, useEffect, ReactNode } from "react";
 import { AlertCircle, RotateCw } from "lucide-react";
 import { loader } from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 import { logger } from "../../utils/logger";
 import EditorSkeleton from "./EditorSkeleton";
 
-// Monaco Editor CDN Configuration
-const MONACO_VERSION = "0.52.2";
-loader.config({
-  paths: { vs: `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs` }
-});
+loader.config({ monaco });
 
 // Lazy import Monaco Editor
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));

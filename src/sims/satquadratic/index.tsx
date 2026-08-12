@@ -1,6 +1,12 @@
 /** @sim {"name": "Quadratics & Parabolas", "requiresContext": false} */
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, CheckCircle2, XCircle, Info, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Info,
+  ChevronRight,
+} from "lucide-react";
 
 interface Question {
   id: number;
@@ -8,7 +14,16 @@ interface Question {
   options: string[];
   correctIdx: number;
   explanation: string;
-  setupParams: { form: 'vertex' | 'factored' | 'standard'; a: number; h: number; k: number; r1?: number; r2?: number; b?: number; c?: number };
+  setupParams: {
+    form: "vertex" | "factored" | "standard";
+    a: number;
+    h: number;
+    k: number;
+    r1?: number;
+    r2?: number;
+    b?: number;
+    c?: number;
+  };
 }
 
 const QUIZ_QUESTIONS: Question[] = [
@@ -17,29 +32,39 @@ const QUIZ_QUESTIONS: Question[] = [
     text: "The graph of y = (x - 3)² - 4 is a parabola in the xy-plane. What are the coordinates of the vertex of this parabola?",
     options: ["(3, 4)", "(3, -4)", "(-3, -4)", "(3, 2)"],
     correctIdx: 1,
-    explanation: "The vertex form of a quadratic equation is y = a(x - h)² + k, where the vertex is located at (h, k). In this equation, h = 3 and k = -4. Therefore, the vertex of the parabola is (3, -4).",
-    setupParams: { form: 'vertex', a: 1, h: 3, k: -4 }
+    explanation:
+      "The vertex form of a quadratic equation is y = a(x - h)² + k, where the vertex is located at (h, k). In this equation, h = 3 and k = -4. Therefore, the vertex of the parabola is (3, -4).",
+    setupParams: { form: "vertex", a: 1, h: 3, k: -4 },
   },
   {
     id: 2,
     text: "For what value of c does the quadratic equation y = x² - 6x + c intersect the x-axis at exactly one point?",
     options: ["c = 0", "c = 3", "c = 9", "c = -9"],
     correctIdx: 2,
-    explanation: "A parabola intersects the x-axis at exactly one point when its discriminant (b² - 4ac) is exactly equal to 0. In the equation y = x² - 6x + c, a = 1 and b = -6. Setting the discriminant to 0: (-6)² - 4(1)(c) = 0 => 36 - 4c = 0 => 4c = 36 => c = 9. In this state, the parabola is y = (x - 3)², resting its vertex at (3, 0).",
-    setupParams: { form: 'standard', a: 1, h: 3, k: 0, b: -6, c: 9 }
+    explanation:
+      "A parabola intersects the x-axis at exactly one point when its discriminant (b² - 4ac) is exactly equal to 0. In the equation y = x² - 6x + c, a = 1 and b = -6. Setting the discriminant to 0: (-6)² - 4(1)(c) = 0 => 36 - 4c = 0 => 4c = 36 => c = 9. In this state, the parabola is y = (x - 3)², resting its vertex at (3, 0).",
+    setupParams: { form: "standard", a: 1, h: 3, k: 0, b: -6, c: 9 },
   },
   {
     id: 3,
     text: "The equation of a parabola is y = -(x + 2)(x - 4). What are the x-intercepts (roots) of this parabola?",
-    options: ["(-2, 0) and (4, 0)", "(2, 0) and (-4, 0)", "(2, 0) and (4, 0)", "(-2, 0) and (-4, 0)"],
+    options: [
+      "(-2, 0) and (4, 0)",
+      "(2, 0) and (-4, 0)",
+      "(2, 0) and (4, 0)",
+      "(-2, 0) and (-4, 0)",
+    ],
     correctIdx: 0,
-    explanation: "The factored form of a parabola is y = a(x - r1)(x - r2), where the roots (x-intercepts) occur at (r1, 0) and (r2, 0). Here, the terms are (x + 2), which implies r1 = -2, and (x - 4), which implies r2 = 4. Thus, the x-intercepts are (-2, 0) and (4, 0). The vertex lies at the midpoint x = 1.",
-    setupParams: { form: 'factored', a: -1, h: 1, k: 9, r1: -2, r2: 4 }
-  }
+    explanation:
+      "The factored form of a parabola is y = a(x - r1)(x - r2), where the roots (x-intercepts) occur at (r1, 0) and (r2, 0). Here, the terms are (x + 2), which implies r1 = -2, and (x - 4), which implies r2 = 4. Thus, the x-intercepts are (-2, 0) and (4, 0). The vertex lies at the midpoint x = 1.",
+    setupParams: { form: "factored", a: -1, h: 1, k: 9, r1: -2, r2: 4 },
+  },
 ];
 
 export default function QuadraticsSim() {
-  const [activeForm, setActiveForm] = useState<'vertex' | 'factored' | 'standard'>('vertex');
+  const [activeForm, setActiveForm] = useState<
+    "vertex" | "factored" | "standard"
+  >("vertex");
 
   // Coefficients & parameters
   const [coeffA, setCoeffA] = useState<number>(1); // stretch
@@ -53,7 +78,9 @@ export default function QuadraticsSim() {
   const [stdC, setStdC] = useState<number>(1); // standard c
 
   // Drag handles X & Y grid target active states
-  const [activeDrag, setActiveDrag] = useState<'vertex' | 'root1' | 'root2' | null>(null);
+  const [activeDrag, setActiveDrag] = useState<
+    "vertex" | "root1" | "root2" | null
+  >(null);
 
   // Practice quiz states
   const [currentQIdx, setCurrentQIdx] = useState<number>(0);
@@ -75,9 +102,15 @@ export default function QuadraticsSim() {
 
   // Sync representations depending on active form
   const getDerivedEquations = useCallback(() => {
-    let a: number, h: number, k: number, r1: number, r2: number, b: number, c: number;
+    let a: number,
+      h: number,
+      k: number,
+      r1: number,
+      r2: number,
+      b: number,
+      c: number;
 
-    if (activeForm === 'vertex') {
+    if (activeForm === "vertex") {
       a = coeffA;
       h = vH;
       k = vK;
@@ -93,7 +126,7 @@ export default function QuadraticsSim() {
         r1 = NaN;
         r2 = NaN;
       }
-    } else if (activeForm === 'factored') {
+    } else if (activeForm === "factored") {
       a = coeffA;
       r1 = root1;
       r2 = root2;
@@ -127,40 +160,43 @@ export default function QuadraticsSim() {
   const derived = getDerivedEquations();
 
   // Pointer dragging handler
-  const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!activeDrag) return;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      if (!activeDrag) return;
 
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const clientY = e.clientY - rect.top;
+      const svg = e.currentTarget;
+      const rect = svg.getBoundingClientRect();
+      const clientX = e.clientX - rect.left;
+      const clientY = e.clientY - rect.top;
 
-    const viewX = (clientX / rect.width) * canvasWidth;
-    const viewY = (clientY / rect.height) * canvasHeight;
+      const viewX = (clientX / rect.width) * canvasWidth;
+      const viewY = (clientY / rect.height) * canvasHeight;
 
-    let gx = Math.round(toGridX(viewX));
-    let gy = Math.round(toGridY(viewY));
+      let gx = Math.round(toGridX(viewX));
+      let gy = Math.round(toGridY(viewY));
 
-    // Clamps
-    gx = Math.max(-10, Math.min(10, gx));
-    gy = Math.max(-10, Math.min(10, gy));
+      // Clamps
+      gx = Math.max(-10, Math.min(10, gx));
+      gy = Math.max(-10, Math.min(10, gy));
 
-    if (activeDrag === 'vertex') {
-      setVH(gx);
-      setVK(gy);
-    } else if (activeDrag === 'root1') {
-      setRoot1(gx);
-    } else if (activeDrag === 'root2') {
-      setRoot2(gx);
-    }
-  }, [activeDrag]);
+      if (activeDrag === "vertex") {
+        setVH(gx);
+        setVK(gy);
+      } else if (activeDrag === "root1") {
+        setRoot1(gx);
+      } else if (activeDrag === "root2") {
+        setRoot2(gx);
+      }
+    },
+    [activeDrag],
+  );
 
   useEffect(() => {
     const handleGlobalPointerUp = () => {
       setActiveDrag(null);
     };
-    window.addEventListener('pointerup', handleGlobalPointerUp);
-    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener("pointerup", handleGlobalPointerUp);
+    return () => window.removeEventListener("pointerup", handleGlobalPointerUp);
   }, []);
 
   const handleReset = () => {
@@ -175,7 +211,7 @@ export default function QuadraticsSim() {
     setIsAnswered(false);
   };
 
-  const handleFormChange = (form: 'vertex' | 'factored' | 'standard') => {
+  const handleFormChange = (form: "vertex" | "factored" | "standard") => {
     setActiveForm(form);
     setSelectedOpt(null);
     setIsAnswered(false);
@@ -184,10 +220,10 @@ export default function QuadraticsSim() {
   const applyQuestionSetup = (q: Question) => {
     setActiveForm(q.setupParams.form);
     setCoeffA(q.setupParams.a);
-    if (q.setupParams.form === 'vertex') {
+    if (q.setupParams.form === "vertex") {
       setVH(q.setupParams.h);
       setVK(q.setupParams.k);
-    } else if (q.setupParams.form === 'factored') {
+    } else if (q.setupParams.form === "factored") {
       setRoot1(q.setupParams.r1 ?? -2);
       setRoot2(q.setupParams.r2 ?? 4);
     } else {
@@ -216,7 +252,8 @@ export default function QuadraticsSim() {
     const step = 0.2;
     for (let xVal = -11; xVal <= 11; xVal += step) {
       // y = a*(x-h)^2 + k
-      const yVal = derived.a * (xVal - derived.h) * (xVal - derived.h) + derived.k;
+      const yVal =
+        derived.a * (xVal - derived.h) * (xVal - derived.h) + derived.k;
       // Scale coordinates to viewport grid
       const px = toCanvasX(xVal);
       const py = toCanvasY(yVal);
@@ -225,8 +262,8 @@ export default function QuadraticsSim() {
         points.push(`${px.toFixed(1)},${py.toFixed(1)}`);
       }
     }
-    if (points.length === 0) return '';
-    return `M ${points.join(' L ')}`;
+    if (points.length === 0) return "";
+    return `M ${points.join(" L ")}`;
   };
 
   // Compute Discriminant
@@ -234,44 +271,45 @@ export default function QuadraticsSim() {
 
   return (
     <div className="sim-container flex flex-col gap-6 p-4 sm:p-6 text-ares-offwhite bg-ares-gray-deep/40 rounded-xl border border-white/5 max-w-2xl mx-auto w-full">
-      
       {/* Header Selector */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/5 pb-4">
         <div>
           <span className="font-heading font-black text-ares-gold uppercase tracking-wider text-xs block mb-1">
             ARES Academy Math Prep
           </span>
-          <h2 className="text-xl font-bold font-heading text-white">Parabolas & Quadratic Forms</h2>
+          <h2 className="text-xl font-bold font-heading text-white">
+            Parabolas & Quadratic Forms
+          </h2>
         </div>
-        
+
         {/* Form Selector Tabs */}
         <div className="flex gap-1 bg-obsidian-darker p-1 rounded-lg border border-white/5 w-full sm:w-auto">
           <button
-            onClick={() => handleFormChange('vertex')}
+            onClick={() => handleFormChange("vertex")}
             className={`flex-1 sm:flex-none text-xs font-bold px-3 py-1.5 rounded transition-all ${
-              activeForm === 'vertex'
-                ? 'bg-ares-red text-white'
-                : 'text-ares-muted hover:text-white hover:bg-white/5'
+              activeForm === "vertex"
+                ? "bg-ares-red text-white"
+                : "text-ares-muted hover:text-white hover:bg-white/5"
             }`}
           >
             Vertex Form
           </button>
           <button
-            onClick={() => handleFormChange('factored')}
+            onClick={() => handleFormChange("factored")}
             className={`flex-1 sm:flex-none text-xs font-bold px-3 py-1.5 rounded transition-all ${
-              activeForm === 'factored'
-                ? 'bg-ares-red text-white'
-                : 'text-ares-muted hover:text-white hover:bg-white/5'
+              activeForm === "factored"
+                ? "bg-ares-red text-white"
+                : "text-ares-muted hover:text-white hover:bg-white/5"
             }`}
           >
             Factored Form
           </button>
           <button
-            onClick={() => handleFormChange('standard')}
+            onClick={() => handleFormChange("standard")}
             className={`flex-1 sm:flex-none text-xs font-bold px-3 py-1.5 rounded transition-all ${
-              activeForm === 'standard'
-                ? 'bg-ares-red text-white'
-                : 'text-ares-muted hover:text-white hover:bg-white/5'
+              activeForm === "standard"
+                ? "bg-ares-red text-white"
+                : "text-ares-muted hover:text-white hover:bg-white/5"
             }`}
           >
             Standard Form
@@ -285,11 +323,11 @@ export default function QuadraticsSim() {
           <div className="flex items-center gap-1.5">
             <Info size={12} className="text-ares-gold" />
             <span>
-              {activeForm === 'vertex'
-                ? 'Drag vertex coordinates directly on the grid'
-                : activeForm === 'factored'
-                ? 'Drag the root markers along the X-axis'
-                : 'Adjust coefficients standard form inputs below'}
+              {activeForm === "vertex"
+                ? "Drag vertex coordinates directly on the grid"
+                : activeForm === "factored"
+                  ? "Drag the root markers along the X-axis"
+                  : "Adjust coefficients standard form inputs below"}
             </span>
           </div>
           <button
@@ -306,34 +344,109 @@ export default function QuadraticsSim() {
             width="360"
             height="360"
             viewBox="0 0 360 360"
+            aria-hidden="true"
             onPointerMove={handlePointerMove}
             className="w-full max-w-[360px] h-auto select-none touch-none"
           >
             {/* Grid Line increments (every 2 units) */}
-            {[-8, -6, -4, -2, 2, 4, 6, 8].map(gVal => {
+            {[-8, -6, -4, -2, 2, 4, 6, 8].map((gVal) => {
               const px = toCanvasX(gVal);
               const py = toCanvasY(gVal);
               return (
                 <g key={gVal} opacity="0.12">
-                  <line x1={px} y1="0" x2={px} y2={canvasHeight} stroke="#ffffff" strokeWidth="0.8" />
-                  <line x1="0" y1={py} x2={canvasWidth} y2={py} stroke="#ffffff" strokeWidth="0.8" />
+                  <line
+                    x1={px}
+                    y1="0"
+                    x2={px}
+                    y2={canvasHeight}
+                    stroke="#ffffff"
+                    strokeWidth="0.8"
+                  />
+                  <line
+                    x1="0"
+                    y1={py}
+                    x2={canvasWidth}
+                    y2={py}
+                    stroke="#ffffff"
+                    strokeWidth="0.8"
+                  />
                 </g>
               );
             })}
 
             {/* Central X & Y Axis */}
-            <line x1="0" y1={cy} x2={canvasWidth} y2={cy} stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-            <line x1={cx} y1="0" x2={cx} y2={canvasHeight} stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+            <line
+              x1="0"
+              y1={cy}
+              x2={canvasWidth}
+              y2={cy}
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="1.5"
+            />
+            <line
+              x1={cx}
+              y1="0"
+              x2={cx}
+              y2={canvasHeight}
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="1.5"
+            />
 
             {/* Axis Arrows */}
-            <text x="352" y={cy - 4} fill="rgba(255,255,255,0.5)" fontSize="9" fontFamily="monospace">x</text>
-            <text x={cx + 6} y="14" fill="rgba(255,255,255,0.5)" fontSize="9" fontFamily="monospace">y</text>
+            <text
+              x="352"
+              y={cy - 4}
+              fill="rgba(255,255,255,0.5)"
+              fontSize="9"
+              fontFamily="monospace"
+            >
+              x
+            </text>
+            <text
+              x={cx + 6}
+              y="14"
+              fill="rgba(255,255,255,0.5)"
+              fontSize="9"
+              fontFamily="monospace"
+            >
+              y
+            </text>
 
             {/* Axis Numeric markers */}
-            <text x={toCanvasX(5)} y={cy + 12} fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle">5</text>
-            <text x={toCanvasX(-5)} y={cy + 12} fill="rgba(255,255,255,0.3)" fontSize="8" textAnchor="middle">-5</text>
-            <text x={cx + 6} y={toCanvasY(5) + 3} fill="rgba(255,255,255,0.3)" fontSize="8">5</text>
-            <text x={cx + 6} y={toCanvasY(-5) + 3} fill="rgba(255,255,255,0.3)" fontSize="8">-5</text>
+            <text
+              x={toCanvasX(5)}
+              y={cy + 12}
+              fill="rgba(255,255,255,0.3)"
+              fontSize="8"
+              textAnchor="middle"
+            >
+              5
+            </text>
+            <text
+              x={toCanvasX(-5)}
+              y={cy + 12}
+              fill="rgba(255,255,255,0.3)"
+              fontSize="8"
+              textAnchor="middle"
+            >
+              -5
+            </text>
+            <text
+              x={cx + 6}
+              y={toCanvasY(5) + 3}
+              fill="rgba(255,255,255,0.3)"
+              fontSize="8"
+            >
+              5
+            </text>
+            <text
+              x={cx + 6}
+              y={toCanvasY(-5) + 3}
+              fill="rgba(255,255,255,0.3)"
+              fontSize="8"
+            >
+              -5
+            </text>
 
             {/* Parabola Curve Outline (Glowing gold) */}
             <path
@@ -345,7 +458,7 @@ export default function QuadraticsSim() {
             />
 
             {/* Axis of Symmetry (Bronze dashed line) */}
-            {activeForm !== 'factored' && (
+            {activeForm !== "factored" && (
               <line
                 x1={toCanvasX(derived.h)}
                 y1="0"
@@ -359,7 +472,7 @@ export default function QuadraticsSim() {
             )}
 
             {/* Render Draggable Handles based on mode */}
-            {activeForm === 'vertex' && (
+            {activeForm === "vertex" && (
               <>
                 {/* Vertex Handle */}
                 <circle
@@ -368,9 +481,15 @@ export default function QuadraticsSim() {
                   r="8"
                   fill="#C00000"
                   className="cursor-move hover:fill-white transition-colors"
-                  onPointerDown={() => setActiveDrag('vertex')}
+                  onPointerDown={() => setActiveDrag("vertex")}
                 />
-                <circle cx={toCanvasX(derived.h)} cy={toCanvasY(derived.k)} r="3" fill="#1b1c1e" pointerEvents="none" />
+                <circle
+                  cx={toCanvasX(derived.h)}
+                  cy={toCanvasY(derived.k)}
+                  r="3"
+                  fill="#1b1c1e"
+                  pointerEvents="none"
+                />
                 <text
                   x={toCanvasX(derived.h)}
                   y={toCanvasY(derived.k) - 14}
@@ -386,7 +505,7 @@ export default function QuadraticsSim() {
               </>
             )}
 
-            {activeForm === 'factored' && (
+            {activeForm === "factored" && (
               <>
                 {/* Root 1 Marker */}
                 <circle
@@ -395,10 +514,25 @@ export default function QuadraticsSim() {
                   r="7"
                   fill="#C00000"
                   className="cursor-ew-resize hover:fill-white transition-colors"
-                  onPointerDown={() => setActiveDrag('root1')}
+                  onPointerDown={() => setActiveDrag("root1")}
                 />
-                <circle cx={toCanvasX(root1)} cy={cy} r="2.5" fill="#1b1c1e" pointerEvents="none" />
-                <text x={toCanvasX(root1)} y={cy - 12} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">r1={root1}</text>
+                <circle
+                  cx={toCanvasX(root1)}
+                  cy={cy}
+                  r="2.5"
+                  fill="#1b1c1e"
+                  pointerEvents="none"
+                />
+                <text
+                  x={toCanvasX(root1)}
+                  y={cy - 12}
+                  fill="#ffffff"
+                  fontSize="9"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  r1={root1}
+                </text>
 
                 {/* Root 2 Marker */}
                 <circle
@@ -407,10 +541,25 @@ export default function QuadraticsSim() {
                   r="7"
                   fill="#C00000"
                   className="cursor-ew-resize hover:fill-white transition-colors"
-                  onPointerDown={() => setActiveDrag('root2')}
+                  onPointerDown={() => setActiveDrag("root2")}
                 />
-                <circle cx={toCanvasX(root2)} cy={cy} r="2.5" fill="#1b1c1e" pointerEvents="none" />
-                <text x={toCanvasX(root2)} y={cy - 12} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">r2={root2}</text>
+                <circle
+                  cx={toCanvasX(root2)}
+                  cy={cy}
+                  r="2.5"
+                  fill="#1b1c1e"
+                  pointerEvents="none"
+                />
+                <text
+                  x={toCanvasX(root2)}
+                  y={cy - 12}
+                  fill="#ffffff"
+                  fontSize="9"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  r2={root2}
+                </text>
               </>
             )}
           </svg>
@@ -418,7 +567,6 @@ export default function QuadraticsSim() {
 
         {/* Sliders and Equation Display */}
         <div className="w-full flex flex-col gap-4">
-          
           {/* Sliders Container */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-obsidian-surface/60 p-4 rounded-lg border border-white/5 text-xs">
             {/* Stretching Slider A (Always active) */}
@@ -428,12 +576,13 @@ export default function QuadraticsSim() {
                 <span className="text-white">{coeffA.toFixed(1)}</span>
               </div>
               <input
+                aria-label="Scaling factor a"
                 type="range"
                 min="-3.0"
                 max="3.0"
                 step="0.1"
                 value={coeffA}
-                onChange={e => {
+                onChange={(e) => {
                   const val = parseFloat(e.target.value);
                   setCoeffA(val === 0 ? 0.1 : val);
                 }}
@@ -441,8 +590,66 @@ export default function QuadraticsSim() {
               />
             </div>
 
+            {activeForm === "vertex" && (
+              <>
+                <label className="flex flex-col gap-1.5 font-bold text-ares-gold">
+                  Vertex X (h): <span className="text-white">{vH}</span>
+                  <input
+                    type="range"
+                    min="-10"
+                    max="10"
+                    step="1"
+                    value={vH}
+                    onChange={(event) => setVH(Number(event.target.value))}
+                    className="w-full accent-ares-red"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 font-bold text-ares-gold">
+                  Vertex Y (k): <span className="text-white">{vK}</span>
+                  <input
+                    type="range"
+                    min="-10"
+                    max="10"
+                    step="1"
+                    value={vK}
+                    onChange={(event) => setVK(Number(event.target.value))}
+                    className="w-full accent-ares-red"
+                  />
+                </label>
+              </>
+            )}
+
+            {activeForm === "factored" && (
+              <>
+                <label className="flex flex-col gap-1.5 font-bold text-ares-gold">
+                  First root: <span className="text-white">{root1}</span>
+                  <input
+                    type="range"
+                    min="-10"
+                    max="10"
+                    step="1"
+                    value={root1}
+                    onChange={(event) => setRoot1(Number(event.target.value))}
+                    className="w-full accent-ares-red"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 font-bold text-ares-gold">
+                  Second root: <span className="text-white">{root2}</span>
+                  <input
+                    type="range"
+                    min="-10"
+                    max="10"
+                    step="1"
+                    value={root2}
+                    onChange={(event) => setRoot2(Number(event.target.value))}
+                    className="w-full accent-ares-red"
+                  />
+                </label>
+              </>
+            )}
+
             {/* Standard Form Sliders B & C */}
-            {activeForm === 'standard' && (
+            {activeForm === "standard" && (
               <>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between font-bold">
@@ -450,12 +657,13 @@ export default function QuadraticsSim() {
                     <span className="text-white">{stdB}</span>
                   </div>
                   <input
+                    aria-label="Coefficient b"
                     type="range"
                     min="-8"
                     max="8"
                     step="1"
                     value={stdB}
-                    onChange={e => setStdB(parseInt(e.target.value))}
+                    onChange={(e) => setStdB(parseInt(e.target.value))}
                     className="w-full accent-ares-red"
                   />
                 </div>
@@ -465,12 +673,13 @@ export default function QuadraticsSim() {
                     <span className="text-white">{stdC}</span>
                   </div>
                   <input
+                    aria-label="Constant c"
                     type="range"
                     min="-8"
                     max="8"
                     step="1"
                     value={stdC}
-                    onChange={e => setStdC(parseInt(e.target.value))}
+                    onChange={(e) => setStdC(parseInt(e.target.value))}
                     className="w-full accent-ares-red"
                   />
                 </div>
@@ -479,26 +688,39 @@ export default function QuadraticsSim() {
           </div>
 
           {/* Equation Display Box */}
-          <div className="bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold">
+          <div
+            role="status"
+            aria-live="polite"
+            className="bg-obsidian-darker/60 border border-white/10 p-3 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold"
+          >
             <div className="flex flex-col gap-1">
-              <span className="text-ares-muted text-[10px] uppercase font-bold tracking-wider">Current Equation</span>
+              <span className="text-ares-muted text-[10px] uppercase font-bold tracking-wider">
+                Current Equation
+              </span>
               <span className="text-sm font-heading font-black text-white">
-                {activeForm === 'vertex' && `y = ${derived.a.toFixed(1)}(x - ${derived.h})² + (${derived.k})`}
-                {activeForm === 'factored' && `y = ${derived.a.toFixed(1)}(x - ${derived.r1.toFixed(1)})(x - ${derived.r2.toFixed(1)})`}
-                {activeForm === 'standard' && `y = ${derived.a.toFixed(1)}x² + (${derived.b.toFixed(1)})x + (${derived.c.toFixed(1)})`}
+                {activeForm === "vertex" &&
+                  `y = ${derived.a.toFixed(1)}(x - ${derived.h})² + (${derived.k})`}
+                {activeForm === "factored" &&
+                  `y = ${derived.a.toFixed(1)}(x - ${derived.r1.toFixed(1)})(x - ${derived.r2.toFixed(1)})`}
+                {activeForm === "standard" &&
+                  `y = ${derived.a.toFixed(1)}x² + (${derived.b.toFixed(1)})x + (${derived.c.toFixed(1)})`}
               </span>
             </div>
-            
+
             {/* Discriminant Display */}
             <div className="bg-obsidian-surface border border-white/5 px-3 py-1.5 rounded text-right flex flex-col">
-              <span className="text-ares-muted text-[9px] uppercase font-bold tracking-wider">Discriminant (b²-4ac)</span>
-              <span className={`text-sm font-monospace font-black ${discriminant >= 0 ? 'text-ares-gold' : 'text-white'}`}>
+              <span className="text-ares-muted text-[9px] uppercase font-bold tracking-wider">
+                Discriminant (b²-4ac)
+              </span>
+              <span
+                className={`text-sm font-monospace font-black ${discriminant >= 0 ? "text-ares-gold" : "text-white"}`}
+              >
                 {discriminant.toFixed(1)}
               </span>
               <span className="text-[9px] text-marble/60">
-                {discriminant > 0 && '2 Real Roots'}
-                {discriminant === 0 && '1 Real Root'}
-                {discriminant < 0 && '0 Real Roots'}
+                {discriminant > 0 && "2 Real Roots"}
+                {discriminant === 0 && "1 Real Root"}
+                {discriminant < 0 && "0 Real Roots"}
               </span>
             </div>
           </div>
@@ -526,17 +748,20 @@ export default function QuadraticsSim() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUIZ_QUESTIONS[currentQIdx].options.map((opt, idx) => {
                 const isSelected = selectedOpt === idx;
-                const isCorrect = idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
+                const isCorrect =
+                  idx === QUIZ_QUESTIONS[currentQIdx].correctIdx;
 
-                let optClass = 'border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40';
+                let optClass =
+                  "border-white/5 hover:border-white/20 text-ares-muted bg-obsidian-darker/40";
                 if (isAnswered) {
                   if (isCorrect) {
-                    optClass = 'border-ares-gold/50 bg-ares-gold/10 text-ares-gold';
+                    optClass =
+                      "border-ares-gold/50 bg-ares-gold/10 text-ares-gold";
                   } else if (isSelected) {
-                    optClass = 'border-ares-red/50 bg-ares-red text-white';
+                    optClass = "border-ares-red/50 bg-ares-red text-white";
                   }
                 } else if (isSelected) {
-                  optClass = 'border-ares-gold bg-ares-gold/10 text-white';
+                  optClass = "border-ares-gold bg-ares-gold/10 text-white";
                 }
 
                 return (
@@ -547,8 +772,12 @@ export default function QuadraticsSim() {
                     className={`text-left p-3 rounded-lg border text-xs font-semibold flex justify-between items-center transition-all ${optClass}`}
                   >
                     <span>{opt}</span>
-                    {isAnswered && isCorrect && <CheckCircle2 size={14} className="text-ares-gold" />}
-                    {isAnswered && !isCorrect && isSelected && <XCircle size={14} className="text-white" />}
+                    {isAnswered && isCorrect && (
+                      <CheckCircle2 size={14} className="text-ares-gold" />
+                    )}
+                    {isAnswered && !isCorrect && isSelected && (
+                      <XCircle size={14} className="text-white" />
+                    )}
                   </button>
                 );
               })}
@@ -575,7 +804,6 @@ export default function QuadraticsSim() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

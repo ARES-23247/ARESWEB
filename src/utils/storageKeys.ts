@@ -43,6 +43,7 @@ export const STORAGE_KEYS = {
 
   // Simulation playground storage
   SIM_STORAGE_PREFIX: "sim_chat_v2_",
+  SIM_DRAFTS: "ares_simulation_drafts_v1",
 } as const;
 
 // Helper function for building full storage keys

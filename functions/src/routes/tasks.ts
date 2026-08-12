@@ -4,6 +4,8 @@ import { ensureTeamMember } from "../middleware/auth";
 import { sendZulipMessage } from "../lib/zulip";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import type { AuthenticatedRequest } from "../middleware/auth";
+import { z } from "zod";
 
 const router = express.Router();
 
@@ -16,45 +18,48 @@ const limiter = rateLimit({
 });
 router.use(limiter);
 
-// POST /api/tasks/comment
-router.post("/comment", ensureTeamMember, asyncHandler(async (req, res) => {
-  const { taskId, author, content } = req.body as {
-    taskId: string;
-    author: string;
-    content: string;
-  };
+const commentSchema = z.object({
+  taskId: z.string().trim().min(1).max(160).regex(/^[A-Za-z0-9_-]+$/),
+  content: z.string().trim().min(1).max(4000),
+});
 
-  if (!taskId || !author || !content) {
-    throw new ApiError(400, "Missing required fields.");
-  }
+const notificationSchema = z.object({
+  taskId: z.string().trim().min(1).max(160).regex(/^[A-Za-z0-9_-]+$/),
+  action: z.enum(["create", "move"]),
+  title: z.string().trim().min(1).max(240),
+  status: z.string().trim().max(80).optional(),
+  description: z.string().trim().max(2000).optional(),
+  subteam: z.string().trim().max(80).optional(),
+  priority: z.string().trim().max(80).optional(),
+}).strict();
+
+function safeAuthorLabel(req: AuthenticatedRequest): string {
+  const claimedName = typeof req.user?.name === "string" ? req.user.name.trim() : "";
+  const normalized = claimedName.replace(/[\r\n*_`<>]/g, "").slice(0, 80);
+  return normalized || "ARES Team Member";
+}
+
+// POST /api/tasks/comment
+router.post("/comment", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const parsed = commentSchema.safeParse(req.body);
+  if (!parsed.success) throw new ApiError(400, "Enter a valid task comment.");
+  const { taskId, content } = parsed.data;
+  const author = safeAuthorLabel(req);
 
   const streamName = process.env.ZULIP_KANBAN_STREAM || "kanban";
   const topic = `Task-${taskId}`;
   const messageContent = `💬 **${author}** (via Web):\n\n${content}`;
 
   const success = await sendZulipMessage(streamName, topic, messageContent);
-
-  res.json({
-    success,
-    message: success ? "Comment forwarded to Zulip." : "Zulip integration is not active or failed.",
-  });
+  if (!success) throw new ApiError(502, "Zulip did not accept the task comment.");
+  res.json({ success: true, message: "Comment forwarded to Zulip." });
 }));
 
 // POST /api/tasks/notify
 router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
-  const { taskId, action, title, status, description, subteam, priority } = req.body as {
-    taskId: string;
-    action: "create" | "move";
-    title: string;
-    status?: string;
-    description?: string;
-    subteam?: string;
-    priority?: string;
-  };
-
-  if (!taskId || !action || !title) {
-    throw new ApiError(400, "Missing required fields.");
-  }
+  const parsed = notificationSchema.safeParse(req.body);
+  if (!parsed.success) throw new ApiError(400, "Enter valid task notification details.");
+  const { taskId, action, title, status, description, subteam, priority } = parsed.data;
 
   const streamName = process.env.ZULIP_KANBAN_STREAM || "kanban";
   const topic = `Task-${taskId}`;
@@ -75,11 +80,8 @@ router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
   }
 
   const success = await sendZulipMessage(streamName, topic, content);
-
-  res.json({
-    success,
-    message: success ? "Notification sent to Zulip." : "Zulip integration is not active or failed.",
-  });
+  if (!success) throw new ApiError(502, "Zulip did not accept the task notification.");
+  res.json({ success: true, message: "Notification sent to Zulip." });
 }));
 
 export default router;

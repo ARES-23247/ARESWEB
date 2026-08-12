@@ -21,7 +21,7 @@ interface OutreachTotals {
 export function OutreachHero() {
   return (
     <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/favicon.ico')" }} />
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/favicon.svg')" }} />
       <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
         <div className="inline-flex items-center gap-1.5 px-4 py-1.5 ares-cut-sm bg-ares-red border border-ares-red text-white text-[10px] font-black uppercase tracking-widest mb-6">
           <Activity aria-hidden="true" size={10} />

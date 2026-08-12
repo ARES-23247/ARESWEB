@@ -1,72 +1,43 @@
 ---
 name: aresweb-api-reference
-description: Provides a comprehensive reference for the ARESWEB Firebase API, including standardized routing, Firebase authentication, Express middlewares, and core resource endpoints. Use this when interacting with the backend or documenting API behavior.
+description: Implement or review ARESWEB Cloud Functions, Express routes, Firestore access, Storage access, API DTOs, authorization middleware, and backend error handling. Use for changes under functions/src, API documentation, or server-side data contracts.
 ---
 
-# ARESWEB API Reference Skill
+# ARESWEB backend and data
 
-You are the Lead Backend Architect for Team ARES 23247. When interacting with the ARESWEB Express API running on Firebase Cloud Functions:
+Derive the active route inventory from `functions/src/index.ts` and the routers in
+`functions/src/routes/`. Do not copy endpoint lists from planning archives or old
+documentation.
 
-## 1. Core Routing Architecture
+## Request pipeline
 
-The backend is structured as an Express application mounted as a single Firebase Cloud Function called `api` at `/api`. Each resource domain has its own sub-router in `functions/src/routes/`.
+- Mount every handler through the shared Express application.
+- Apply authentication, authorization, App Check when required, rate limiting,
+  and validation before expensive parsing or external calls.
+- Use `AuthenticatedRequest` and the middleware in
+  `functions/src/middleware/auth.ts`.
+- Treat `admin`, `coach`, `mentor`, and `member` as the canonical active roles.
+  Legacy-role normalization is a migration bridge, not permission to add roles.
+- Reject missing, unknown, unverified, or archived authorizations.
+- Wrap async handlers with `asyncHandler`; throw `ApiError`; let
+  `globalErrorHandler` produce the response.
 
-### Mount Points (in `functions/src/index.ts`)
-| Prefix | Sub-Router | Primary Purpose |
-|---|---|---|
-| `/api/photos` | `photosRouter` | Google Photos sync, album CRUD, and asset metadata |
-| `/api/inquiries` | `inquiriesRouter` | Team signups, sponsorship applications, and status updates |
-| `/api/tasks` | `tasksRouter` | Kanban card alerts and comment proxying to Zulip |
-| `/api/analytics` | `analyticsRouter` | Onshape synced robot configurations, match analyses, and telemetry logs |
-| `/api/webhooks` | `webhooksRouter` | Receivers for GitHub and Zulip webhooks |
-| `/api/upload` | `uploadRouter` | Secure file and log uploads to Firebase Storage |
-| `/api/profiles` | `profilesRouter` | Member profiles, roles, and roster listings |
-| `/api/ai` | `aiRouter` | Grammar checks and content assistant powered by Vertex AI (Gemini) |
-| `/api/calendar` | `calendarRouter` | Calendar event fetching and synchronization |
+## Data contracts
 
----
+- Validate path, query, and body values at the boundary, preferably with Zod.
+- Return explicit DTOs. Never spread raw Firestore documents into responses.
+- Exclude student PII, internal IDs, receipt or storage URLs, encryption fields,
+  audit metadata, and secret configuration unless the endpoint explicitly and
+  safely requires a field.
+- Use bounded queries, stable ordering, cursor pagination, and bounded batches.
+- Filter public records to published and non-deleted states on the server.
+- Keep Firestore and Storage rules at least as restrictive as API authorization.
 
-## 2. Authentication & Authorization
+## Diagnostics and tests
 
-Protected API routes use Express middlewares defined in `functions/src/middleware/auth.ts`:
-
-- **`ensureAuth`**: Verifies the Firebase ID token in the `Authorization: Bearer <token>` header. Populates `req.user` with the decoded token.
-- **`ensureTeamMember`**: Verifies the Firebase ID token and checks if the user's UID exists in the `authorized_users` Firestore collection.
-- **`ensureAdmin`**: Verifies the Firebase ID token and checks if the user's role is `admin`, `coach`, or `mentor` in the `authorized_users` collection.
-
-### Role Hierarchy (stored in `authorized_users`)
-1. `admin`: Full platform control.
-2. `coach` / `mentor`: Coach/mentor level access with admin privileges.
-3. `student` / `member`: Standard authenticated team member.
-4. `parent`: Access to logistics and private rosters.
-5. `unverified`: Registered but restricted until manual approval.
-
----
-
-## 3. Data Models (Cloud Firestore)
-
-Common Firestore collections and their main structures:
-
-### `authorized_users`
-- Documents keyed by Firebase UID.
-- Fields: `email`, `name`, `role`, `member_type`, `subteams`.
-
-### `inquiries`
-- Documents keyed by inquiry ID (UUID).
-- Fields: `type` (join/sponsor), `name`, `email`, `status` (pending/approved), `createdAt`.
-
-### `imported_photos` & `albums`
-- Images synced from Google Photos or uploaded directly.
-- Sub-collections/documents tracking photo URLs, ALT tags, and relationship to albums.
-
-### `events`
-- Team events, dates, and sign-ups.
-
----
-
-## 4. Development Standards
-
-- **Async Wrappers**: All asynchronous route handlers MUST be wrapped using `asyncHandler` (from `lib/utils`) to automatically forward thrown errors to the global error middleware.
-- **Error Handling**: Throw `ApiError` from `middleware/errorHandler` to signal failures (e.g. `throw new ApiError(404, "Member not found")`). The global handler will serialize it cleanly.
-- **Audit Logging**: Sensitive administrative actions (role changes, entry deletions) should be logged in the Firestore audit trail.
-- **Security Checklists**: Public endpoints like `inquiries` must verify reCAPTCHA tokens (`recaptchaToken` from Google reCAPTCHA v3) before processing.
+- Use `functions/src/lib/logger.ts`; never use request bodies or personal data as
+  diagnostic context.
+- Test the complete middleware chain, not only the final route handler.
+- Add emulator rule tests for every changed Firestore or Storage permission.
+- Verify successful, unauthenticated, unauthorized, invalid, archived, rate
+  limited, and upstream-failure paths.

@@ -1,17 +1,18 @@
 /**
- * Next.js Image Import Pipeline Utilities
- * Handles magic bytes verification and album name path sanitization.
+ * Image import pipeline utilities.
+ * Handles magic-byte verification and album-name path sanitization.
  */
 
 
 
 /**
- * Validate image magic bytes and file size
- * Checks for JPG, PNG, WEBP, GIF, BMP, ICO, and SVG signatures. Size limit 50MB.
+ * Validate image magic bytes and file size. Callers must provide the narrowest
+ * format allowlist appropriate to the upload destination.
  */
 export function validateImageMagicBytes(
   buffer: ArrayBuffer,
-  maxSizeBytes: number = 50 * 1024 * 1024
+  maxSizeBytes: number = 8 * 1024 * 1024,
+  allowedFormats: readonly string[] = ["jpg", "png", "webp"],
 ): { valid: boolean; format: string; error?: string } {
   if (buffer.byteLength > maxSizeBytes) {
     return {
@@ -23,9 +24,11 @@ export function validateImageMagicBytes(
 
   const bytes = new Uint8Array(buffer);
 
+  const accepts = (format: string) => allowedFormats.includes(format);
+
   // JPG: FF D8 FF
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
-    return { valid: true, format: "jpg" };
+    return accepts("jpg") ? { valid: true, format: "jpg" } : { valid: false, format: "jpg", error: "Image format is not allowed" };
   }
 
   // PNG: 89 50 4E 47
@@ -35,7 +38,7 @@ export function validateImageMagicBytes(
     bytes[2] === 0x4E &&
     bytes[3] === 0x47
   ) {
-    return { valid: true, format: "png" };
+    return accepts("png") ? { valid: true, format: "png" } : { valid: false, format: "png", error: "Image format is not allowed" };
   }
 
   // WEBP: RIFF...WEBP
@@ -49,39 +52,10 @@ export function validateImageMagicBytes(
     bytes[10] === 0x42 && // 'B'
     bytes[11] === 0x50 // 'P'
   ) {
-    return { valid: true, format: "webp" };
+    return accepts("webp") ? { valid: true, format: "webp" } : { valid: false, format: "webp", error: "Image format is not allowed" };
   }
 
-  // GIF: 'G' 'I' 'F' (47 49 46)
-  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
-    return { valid: true, format: "gif" };
-  }
-
-  // BMP: 'B' 'M' (42 4D)
-  if (bytes[0] === 0x42 && bytes[1] === 0x4D) {
-    return { valid: true, format: "bmp" };
-  }
-
-  // ICO: 00 00 01 00
-  if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x01 && bytes[3] === 0x00) {
-    return { valid: true, format: "ico" };
-  }
-
-  // SVG detection: check for XML/SVG tag signatures
-  try {
-    const textSample = new TextDecoder("utf-8").decode(bytes.slice(0, 1000)).trim().toLowerCase();
-    if (
-      textSample.includes("<svg") || 
-      textSample.includes("xmlns=\"http://www.w3.org/2000/svg\"") || 
-      textSample.includes("xmlns='http://www.w3.org/2000/svg'")
-    ) {
-      return { valid: true, format: "svg" };
-    }
-  } catch (e) {
-    // Decoding failed, not a text SVG
-  }
-
-  return { valid: false, format: "unknown", error: "Invalid image format (must be JPG, PNG, WEBP, GIF, SVG, BMP, or ICO)" };
+  return { valid: false, format: "unknown", error: "Invalid image format (must be JPG, PNG, or WEBP)" };
 }
 
 /**

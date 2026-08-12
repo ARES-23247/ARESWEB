@@ -189,8 +189,8 @@ describe("App Check monitoring middleware", () => {
     expect(next).toHaveBeenNthCalledWith(2);
   });
 
-  it("keeps enforcement disabled until the operational rollout flag is enabled", () => {
-    delete process.env.ENFORCE_APP_CHECK;
+  it("allows an explicit observation-only emergency override", () => {
+    process.env.ENFORCE_APP_CHECK = "false";
     const req = createRequest("POST", "/api/store/checkout");
     req.appCheckObservation = { status: "missing" };
 
@@ -198,5 +198,22 @@ describe("App Check monitoring middleware", () => {
 
     expect(next).toHaveBeenCalledOnce();
     expect(next).toHaveBeenCalledWith();
+  });
+
+  it("fails closed by default in production", () => {
+    delete process.env.ENFORCE_APP_CHECK;
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    const req = createRequest("POST", "/api/store/checkout");
+    req.appCheckObservation = { status: "missing" };
+
+    enforceAppCheck(req, {} as Response, next);
+
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      status: 401,
+      code: "APP_CHECK_REQUIRED",
+    }));
   });
 });

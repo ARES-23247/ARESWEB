@@ -69,7 +69,7 @@ describe("security-rule invariants", () => {
     expect(firebaseAppCheck).toContain('import.meta.env.VITE_USE_EMULATOR === "true"');
     expect(firebaseAppCheck).toContain('import.meta.env.NEXT_PUBLIC_USE_EMULATOR === "true"');
     expect(firebaseAppCheck).toContain("useDebugToken");
-    expect(firebaseAppCheck).toContain("&&\n        isLocalHost");
+    expect(firebaseAppCheck).toMatch(/&&\s*isLocalHost/);
     expect(firebaseAppCheck).not.toMatch(/FIREBASE_APPCHECK_DEBUG_TOKEN\s*=\s*true[\s\S]*?else/);
   });
 

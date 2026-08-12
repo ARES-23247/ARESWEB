@@ -7,6 +7,7 @@ export interface SubTask {
 export interface TaskComment {
   id: string;
   author: string;
+  authorUid?: string;
   content: string;
   createdAt: string;
   source: "web" | "zulip";

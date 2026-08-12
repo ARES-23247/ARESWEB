@@ -2,15 +2,25 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
+    function authorizationData() {
+      return firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data;
+    }
+
+    function isActiveRole(role) {
+      return role in ['admin', 'coach', 'mentor', 'member', 'student', 'parent', 'lead'];
+    }
+
     function isAuthorized() {
-      return request.auth != null && 
+      return request.auth != null &&
         firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.uid)) &&
-        firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data.role != 'unverified';
+        isActiveRole(authorizationData().role) &&
+        authorizationData().get('isDeleted', false) != true &&
+        authorizationData().get('isDeleted', 0) != 1;
     }
 
     function hasRole(role) {
       return isAuthorized() &&
-        firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data.role == role;
+        authorizationData().role == role;
     }
 
     function isContentManager() {
@@ -19,44 +29,38 @@ service firebase.storage {
 
     match /events/{eventId}/photos/{photoId} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      // Event media is validated, normalized, and written by the Admin SDK route.
+      allow write: if false;
     }
 
     match /blog/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow write: if false;
     }
 
     match /gallery/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthorized() && request.resource.size < 20 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      // Gallery media is validated, normalized, and written by the Admin SDK route.
+      allow write: if false;
     }
 
     match /cad/{allPaths=**} {
-      allow read: if true;
-      allow write: if isContentManager() && request.resource.size < 100 * 1024 * 1024;
-    }
-
-    match /telemetry_runs/{allPaths=**} {
-      allow read: if isAuthorized();
-      allow write: if isAuthorized() && request.resource.size < 10 * 1024 * 1024;
+      allow read, write: if false;
     }
 
     match /editor/uploads/{allPaths=**} {
       allow read: if true;
       allow write: if isContentManager() &&
         request.resource.size < 5 * 1024 * 1024 &&
-        request.resource.contentType.matches('(image/.*|text/.*|application/json|application/javascript|application/zip)');
+        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
     }
 
     match /field/{allPaths=**} {
-      allow read: if true;
-      allow write: if isContentManager() && request.resource.size < 10 * 1024 * 1024;
+      allow read, write: if false;
     }
 
     match /fields/{allPaths=**} {
-      allow read: if true;
-      allow write: if isContentManager() && request.resource.size < 10 * 1024 * 1024;
+      allow read, write: if false;
     }
   }
 }

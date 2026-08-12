@@ -20,6 +20,7 @@ import LocationManagerModal, { TeamLocation } from "./LocationManagerModal";
 import ShiftScheduleEditor from "./ShiftScheduleEditor";
 import EventFormRoster from "./EventFormRoster";
 import EventEditorAiCopilot from "./EventEditorAiCopilot";
+import AccessibleTabs, { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
 
 import { TeamEvent } from "@/types/event";
 import { useEventEditor, EventRevision, EventSignup, EventPhoto } from "../hooks/useEventEditor";
@@ -108,8 +109,17 @@ export default function EventEditorDrawer({
     teamMembers
   });
 
-  const editorRef = useFocusTrap(isOpen, onClose);
   const [pendingLifecycle, setPendingLifecycle] = useState<"archive" | "restore" | null>(null);
+  const hasNestedDialog = selectedPhoto !== null || isPhotoPickerOpen || isLocationModalOpen || pendingLifecycle !== null;
+  const editorRef = useFocusTrap(isOpen && !hasNestedDialog, onClose);
+  const eventTabs = editId
+    ? ([
+        { value: "edit", label: "✏️ Edit Event" },
+        { value: "roster", label: "👥 Roster & RSVPs" },
+        { value: "photos", label: "🖼️ Gallery" },
+        { value: "revisions", label: "📜 Revisions" },
+      ] as const)
+    : ([{ value: "edit", label: "✏️ Edit Event" }] as const);
 
   if (!isOpen) return null;
 
@@ -159,66 +169,17 @@ export default function EventEditorDrawer({
 
         {/* Sub-Header: Tabs Switcher */}
         <div className="px-4 sm:px-6 border-b border-white/5 bg-black/10 flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none text-left">
-          <div className="flex gap-4 overflow-x-auto" role="tablist" aria-label="Event editor sections">
-            <button
-              type="button"
-              onClick={() => setActiveTab("edit")}
-              role="tab"
-              aria-selected={activeTab === "edit"}
-              className={`py-3 border-b-2 transition-all cursor-pointer ${
-                activeTab === "edit"
-                  ? "border-ares-gold text-white"
-                  : "border-transparent text-marble/40 hover:text-white"
-              }`}
-            >
-              ✏️ Edit Event
-            </button>
-            {editId && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("roster")}
-                  role="tab"
-                  aria-selected={activeTab === "roster"}
-                  className={`py-3 border-b-2 transition-all cursor-pointer ${
-                    activeTab === "roster"
-                      ? "border-ares-gold text-white"
-                      : "border-transparent text-marble/40 hover:text-white"
-                  }`}
-                >
-                  👥 Roster & RSVPs
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("photos")}
-                  role="tab"
-                  aria-selected={activeTab === "photos"}
-                  className={`py-3 border-b-2 transition-all cursor-pointer ${
-                    activeTab === "photos"
-                      ? "border-ares-gold text-white"
-                      : "border-transparent text-marble/40 hover:text-white"
-                  }`}
-                >
-                  🖼️ Gallery
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("revisions")}
-                  role="tab"
-                  aria-selected={activeTab === "revisions"}
-                  className={`py-3 border-b-2 transition-all cursor-pointer ${
-                    activeTab === "revisions"
-                      ? "border-ares-gold text-white"
-                      : "border-transparent text-marble/40 hover:text-white"
-                  }`}
-                >
-                  📜 Revisions
-                </button>
-              </>
-            )}
-          </div>
+          <AccessibleTabs
+            id="event-editor"
+            label="Event editor sections"
+            tabs={eventTabs}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            className="flex gap-4 overflow-x-auto"
+            tabClassName={(_value, active) => `py-3 border-b-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"}`}
+          />
 
-          {activeTab === "edit" && (
+          {activeTab === "edit" && isAdmin && (
             <button
               type="button"
               onClick={() => setShowAiSidebar(!showAiSidebar)}
@@ -261,7 +222,7 @@ export default function EventEditorDrawer({
         <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
           {/* Tab 1: EDIT FORM */}
           {activeTab === "edit" && (
-            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
+            <div id={tabPanelId("event-editor", "edit")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "edit")} tabIndex={0} className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <form
                 onSubmit={handleSaveEvent}
                 className={`space-y-6 flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 transition-all duration-300 ${
@@ -342,7 +303,7 @@ export default function EventEditorDrawer({
               </form>
 
               {/* SIDE AI PANEL */}
-              {showAiSidebar && (
+              {showAiSidebar && isAdmin && (
                 <EventEditorAiCopilot
                   formTitle={formTitle}
                   formDescription={formDescription}
@@ -357,53 +318,68 @@ export default function EventEditorDrawer({
 
           {/* Tab 2: ROSTER & RSVPS */}
           {activeTab === "roster" && editId && (
-            <EventFormRoster
-              editId={editId}
-              signups={signups}
-              isAdmin={isAdmin}
-              formIsPotluck={formIsPotluck}
-              formIsVolunteer={formIsVolunteer}
-              user={currentUser}
-              userNickname={userNickname}
-              teamMembers={teamMembers}
-              displayedMembers={displayedMembers}
-              setRevertAlert={setRevertAlert}
-            />
+            <div id={tabPanelId("event-editor", "roster")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "roster")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <EventFormRoster
+                editId={editId}
+                signups={signups}
+                isAdmin={isAdmin}
+                formIsPotluck={formIsPotluck}
+                formIsVolunteer={formIsVolunteer}
+                user={currentUser}
+                userNickname={userNickname}
+                teamMembers={teamMembers}
+                displayedMembers={displayedMembers}
+                setRevertAlert={setRevertAlert}
+              />
+            </div>
           )}
 
           {/* Tab 3: GALLERY */}
           {activeTab === "photos" && editId && (
-            <EventGalleryTab
-              photos={photos}
-              canEdit={canEdit}
-              uploadingImage={uploadingImage}
-              uploadError={uploadError}
-              handleImageUpload={handleImageUpload}
-              handleDeletePhoto={handleDeletePhoto}
-              setSelectedPhoto={setSelectedPhoto}
-            />
+            <div id={tabPanelId("event-editor", "photos")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "photos")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <EventGalleryTab
+                photos={photos}
+                canEdit={canEdit}
+                uploadingImage={uploadingImage}
+                uploadError={uploadError}
+                handleImageUpload={handleImageUpload}
+                handleDeletePhoto={handleDeletePhoto}
+                setSelectedPhoto={setSelectedPhoto}
+              />
+            </div>
           )}
 
           {/* Tab 4: REVISIONS */}
           {activeTab === "revisions" && editId && (
-            <EventRevisionsTab
-              revisions={revisions}
-              loadingRevisions={loadingRevisions}
-              handleRevertToRevision={handleRevertToRevision}
-            />
+            <div id={tabPanelId("event-editor", "revisions")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "revisions")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <EventRevisionsTab
+                revisions={revisions}
+                loadingRevisions={loadingRevisions}
+                handleRevertToRevision={handleRevertToRevision}
+              />
+            </div>
           )}
         </div>
       </div>
 
       {/* Lightbox / Selected Photo Modal overlay */}
       {selectedPhoto && (
-        <div className="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-photo-title"
+          onKeyDown={(event) => event.key === "Escape" && setSelectedPhoto(null)}
+          className="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center p-4"
+        >
+          <h4 id="event-photo-title" className="sr-only">Event photo: {selectedPhoto.filename}</h4>
           <button
+            type="button"
+            autoFocus
             onClick={() => setSelectedPhoto(null)}
             className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full transition-colors cursor-pointer"
             aria-label="Close Lightbox"
           >
-            <X size={18} />
+            <X aria-hidden="true" size={18} />
           </button>
           <div className="max-w-4xl max-h-[85vh] flex flex-col gap-3">
             <img

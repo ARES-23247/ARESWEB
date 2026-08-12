@@ -75,7 +75,15 @@ export async function sendZulipAlert(
   return sendZulipMessage(adminStream, topic, content);
 }
 
-export async function getZulipUsers(): Promise<any[] | null> {
+export interface ZulipUser {
+  user_id?: number;
+  email?: string;
+  full_name?: string;
+  is_active?: boolean;
+  [key: string]: unknown;
+}
+
+export async function getZulipUsers(): Promise<ZulipUser[] | null> {
   const { url, email, apiKey } = getZulipCredentials();
 
   if (!email || !apiKey) {
@@ -100,7 +108,7 @@ export async function getZulipUsers(): Promise<any[] | null> {
       return null;
     }
 
-    const data = await res.json();
+    const data = await res.json() as { members?: ZulipUser[] };
     return data.members || [];
   } catch (err) {
     logger.error("zulip", "Exception fetching users", { error: err });

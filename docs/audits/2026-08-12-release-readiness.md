@@ -2,7 +2,7 @@
 
 - Date: August 12, 2026
 - Auditor: Codex
-- Scope: 263 changed files across the frontend, API, Firebase rules, tests, CI, and docs
+- Scope: the consolidated audit-remediation branch across the frontend, API, Firebase rules, tests, CI, and docs
 - Baseline: deployed `master` commit `430cb836`
 - Result: ready for pull-request review and the protected production pipeline
 
@@ -27,7 +27,12 @@ file has no defect. No critical or high-risk release blocker remains open.
 | Scalability and resilience | B+ | Work is bounded, but instance-local rate limits remain. |
 
 Overall grade: **A-**. The branch is ready for the protected merge process.
-App Check must remain in observation mode during the 72-hour review period.
+App Check now fails closed by default for production browser mutations. Continue
+reviewing observation metrics, and use `ENFORCE_APP_CHECK=false` only as a
+time-limited incident override while a supported client path is repaired.
+
+This is release-readiness evidence, not a claim of complete security or WCAG
+conformance. Remaining architectural and manual-review items are listed below.
 
 ## 1. Security
 
@@ -82,8 +87,9 @@ App Check must remain in observation mode during the 72-hour review period.
 
 ### Findings
 
-No release-blocking finding remains. Canvas and editor flows still benefit from
-periodic manual screen-reader and zoom checks.
+No release-blocking finding remains in the automated scope. Repository-wide
+contrast review, stack-aware nested focus-trap migration, and a manual
+keyboard/NVDA/VoiceOver/reflow pass remain required before any conformance claim.
 
 ## 4. Style and brand
 
@@ -158,10 +164,10 @@ No release-blocking finding remains.
 
 ### Strengths
 
-- Frontend: 62 files and 357 tests passed.
-- Cloud Functions: 37 files and 465 tests passed.
-- Firebase rules: 15 tests passed.
-- Playwright: 52 tests passed across four browser projects.
+- Frontend: 67 files and 372 tests passed with coverage.
+- Cloud Functions: 35 files and 463 tests passed with coverage.
+- Firebase rules: 17 emulator-backed tests passed.
+- Playwright: all 52 scenarios passed across four browser projects after the route-status locator was made explicit.
 - The Firefox roster test now waits for the API response, not a timing guess.
 
 ### Findings
@@ -190,7 +196,7 @@ No release-blocking finding remains.
 - The release uses a tested, immutable build artifact.
 - The build stops when either public browser security key is missing.
 - Production dependencies have no known vulnerabilities.
-- CI audits and builds the standalone MCP server lockfile.
+- Retired MCP and Cloudflare-era code is no longer part of the release surface.
 - Git whitespace checks pass.
 
 ### Findings
@@ -198,7 +204,7 @@ No release-blocking finding remains.
 | ID | Severity | Finding | Status |
 | --- | --- | --- | --- |
 | DEVOPS-01 | High | CI could build without the required browser security keys. | Fixed |
-| DEVOPS-02 | High | The MCP server npm lockfile was outside the pnpm audit gate. | Fixed |
+| DEVOPS-02 | High | Retired MCP and Cloudflare-era artifacts remained executable and outside current verification. | Fixed |
 
 ## 12. Scalability and resilience
 
@@ -229,7 +235,7 @@ No release-blocking finding remains.
 2. Test one Google photo flow and one YouTube sync.
 3. Test one Zulip task comment and bot action.
 4. Watch App Check results for at least 72 hours.
-5. Keep enforcement off until verified traffic reaches the required level.
+5. Confirm App Check remains enforced; use the documented explicit false override only during a time-limited incident.
 
 ### Backlog
 
@@ -237,18 +243,22 @@ No release-blocking finding remains.
 2. Split the largest page and modal components.
 3. Plan distributed quotas for expensive API routes.
 4. Reduce large editor chunks when the budget starts to tighten.
+5. Add thumbnail/medium derivatives and backfill existing gallery originals.
+6. Add prerendering or SSR if crawler-visible metadata and real HTTP 404 status
+   codes become a product requirement.
+7. Split the monolithic Functions API if secret blast radius or cold-start
+   coupling becomes material.
 
 ## Verification record
 
 - Frozen install: passed
 - ESLint: passed
 - TypeScript: passed
-- Frontend coverage: passed
+- Frontend coverage: 67 files / 372 tests passed (72.03% lines, 67.53% functions)
 - Cloud Functions build: passed
-- Cloud Functions coverage: passed
-- Firebase rules tests: passed
+- Cloud Functions coverage: 35 files / 463 tests passed (93.50% lines, 98.52% functions)
+- Firebase rules tests: 17 passed
 - Production frontend build: passed
 - Bundle budgets: passed
-- Playwright: 52 passed
+- Playwright: 52 passed across Chromium, mobile Chromium, Firefox, and WebKit
 - Production dependency audit: no known vulnerabilities
-- MCP server dependency audit: no known vulnerabilities

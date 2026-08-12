@@ -57,7 +57,8 @@ test("an administrator can prepare and copy a private BCC roster", async ({ page
     page.getByRole("button", { name: "Prepare email list" }).click(),
   ]);
 
-  await expect(page.getByRole("status")).toContainText("Prepared 2 active roster email addresses", { timeout: 10_000 });
+  await expect(page.getByRole("status").filter({ hasText: "Prepared 2 active roster email addresses" }))
+    .toContainText("Prepared 2 active roster email addresses", { timeout: 10_000 });
   await expect(page.locator("body")).not.toContainText("student@example.org");
   expect(exportBody).toEqual({ audience: "students", subteam: "Programming" });
 

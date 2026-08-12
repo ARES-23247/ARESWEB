@@ -250,6 +250,7 @@ export default function CirclesSim() {
             width="360"
             height="360"
             viewBox="0 0 360 360"
+            aria-hidden="true"
             onPointerMove={handlePointerMove}
             className="w-full max-w-[360px] h-auto select-none touch-none"
           >
@@ -379,6 +380,20 @@ export default function CirclesSim() {
 
         {/* Dynamic Controls based on tab */}
         <div className="w-full flex flex-col gap-4">
+          {activeTab !== 'practice' && (
+            <fieldset className="grid grid-cols-1 gap-3 bg-obsidian-surface/60 p-4 rounded-lg border border-white/5 text-xs sm:grid-cols-3">
+              <legend className="px-1 font-bold text-ares-gold">Circle controls</legend>
+              <label className="flex flex-col gap-1 font-bold text-marble">Center X: {vH}
+                <input type="range" min="-10" max="10" step="1" value={vH} onChange={event => setVH(Number(event.target.value))} className="w-full accent-ares-red" />
+              </label>
+              <label className="flex flex-col gap-1 font-bold text-marble">Center Y: {vK}
+                <input type="range" min="-10" max="10" step="1" value={vK} onChange={event => setVK(Number(event.target.value))} className="w-full accent-ares-red" />
+              </label>
+              <label className="flex flex-col gap-1 font-bold text-marble">Radius: {radius}
+                <input type="range" min="1" max="8" step="1" value={radius} onChange={event => setRadius(Number(event.target.value))} className="w-full accent-ares-red" />
+              </label>
+            </fieldset>
+          )}
           
           {/* Angle Slider (Sectors Tab) */}
           {activeTab === 'sectors' && (
@@ -388,6 +403,7 @@ export default function CirclesSim() {
                 <span className="text-white">{theta}° ({(theta * Math.PI / 180).toFixed(2)} rad)</span>
               </div>
               <input
+                aria-label="Central angle in degrees"
                 type="range"
                 min="10"
                 max="350"
@@ -401,7 +417,7 @@ export default function CirclesSim() {
 
           {/* Formulas Display Block */}
           {activeTab === 'equations' && (
-            <div className="bg-obsidian-darker/60 border border-white/10 p-4 rounded-lg flex flex-col gap-2 text-xs leading-relaxed">
+            <div role="status" aria-live="polite" className="bg-obsidian-darker/60 border border-white/10 p-4 rounded-lg flex flex-col gap-2 text-xs leading-relaxed">
               <span className="text-ares-muted text-[10px] uppercase font-bold tracking-wider mb-1">Standard Equation Form</span>
               <p className="text-sm font-heading font-black text-white">
                 (x - h)² + (y - k)² = r²

@@ -41,7 +41,7 @@ export default function EventGalleryTab({
                   accept="image/*"
                   onChange={handleImageUpload}
                   disabled={uploadingImage}
-                  className="hidden"
+                  className="sr-only"
                 />
               </label>
             </div>

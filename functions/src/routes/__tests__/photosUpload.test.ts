@@ -89,7 +89,7 @@ describe("Photos upload route", () => {
     mockSubDelete.mockResolvedValue(undefined);
     mockBatchCommit.mockResolvedValue(undefined);
     mockSave.mockResolvedValue(undefined);
-    vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true });
+    vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true, format: "jpg" });
     vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"] });
     vi.mocked(getGooglePhotosAccessToken).mockResolvedValue("team-token");
     vi.stubGlobal("fetch", vi.fn());
@@ -129,6 +129,14 @@ describe("Photos upload route", () => {
 
     vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: false, error: "Signature mismatch" });
     await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({ status: 400, message: "Signature mismatch" });
+  });
+
+  it("rejects a declared MIME type that does not match the file signature", async () => {
+    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: true, format: "png" });
+    await expect(handler()({ body: imageBody({ mimeType: "image/jpeg" }) }, response())).rejects.toMatchObject({
+      status: 400,
+      message: "The declared image type does not match the file contents.",
+    });
   });
 
   it("returns an active cached photo without exposing storage metadata", async () => {

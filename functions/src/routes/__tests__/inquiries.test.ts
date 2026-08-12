@@ -286,7 +286,7 @@ describe("Inquiries Router Backend Endpoints", () => {
       const firstSetCall = batchInstance.set.mock.calls[0];
       expect(firstSetCall[1]).toEqual({
         email: "alice@student.com",
-        role: "student",
+        role: "member",
         name: "Alice Student",
       });
 
@@ -295,9 +295,10 @@ describe("Inquiries Router Backend Endpoints", () => {
       const profileSetCall = batchInstance.set.mock.calls[1];
       expect(profileSetCall[1]).toEqual(expect.objectContaining({
         nickname: "ARES Member",
-        firstName: "Alice",
-        lastName: "Student",
-        contactEmail: "alice@student.com",
+        firstName: "encrypted:Alice",
+        lastName: "encrypted:Student",
+        contactEmail: "encrypted:alice@student.com",
+        sensitiveFieldsVersion: 1,
         showOnAbout: false,
       }));
       expect(profileSetCall[1].avatar).toMatch(

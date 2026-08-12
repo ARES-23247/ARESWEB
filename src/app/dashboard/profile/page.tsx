@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { Save, Loader2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -17,39 +18,12 @@ import {
   StudentPrivacyNotice,
   type ProfileTab,
 } from "./components/ProfilePageChrome";
-
-interface ProfilePayload {
-  nickname: string;
-  firstName: string;
-  lastName: string;
-  pronouns: string;
-  avatar: string;
-  bio: string;
-  funFact: string;
-  favoriteFirstThing: string;
-  favoriteRobotMechanism: string;
-  preMatchSuperstition: string;
-  rookieYear: string;
-  leadershipRole: string;
-  subteams: string[];
-  tshirtSize: string;
-  dietaryRestrictions: string[];
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  phone: string;
-  contactEmail: string;
-  showEmail: boolean;
-  showPhone: boolean;
-  showOnAbout: boolean;
-  colleges: College[];
-  employers: Employer[];
-  memberType?: string;
-}
-
-interface ProfileResponse {
-  exists: boolean;
-  profile: ProfilePayload & { memberType: string };
-}
+import {
+  currentProfileQueryKey,
+  useCurrentProfile,
+  type CurrentProfilePayload as ProfilePayload,
+  type CurrentProfileResponse as ProfileResponse,
+} from "@/hooks/useCurrentProfile";
 
 async function responseError(response: Response, fallback: string): Promise<Error> {
   let message = fallback;
@@ -64,7 +38,9 @@ async function responseError(response: Response, fallback: string): Promise<Erro
 
 export default function DashboardProfilePage() {
   const { user, authorizedUser } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const profileQuery = useCurrentProfile(user?.uid);
+  const initializedProfileUid = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,16 +126,17 @@ export default function DashboardProfilePage() {
   useEffect(() => {
     const currentUser = user;
     if (!currentUser) return;
+    if (profileQuery.error) {
+      console.error("Failed to load user profile details:", profileQuery.error);
+      setError(profileQuery.error instanceof Error ? profileQuery.error.message : "Could not retrieve profile details.");
+      return;
+    }
+    if (!profileQuery.data || initializedProfileUid.current === currentUser.uid) return;
 
-    async function loadProfile() {
-      if (!currentUser) return;
-      try {
-        const response = await authenticatedFetch("/api/profiles/me");
-        if (!response.ok) throw await responseError(response, "Could not retrieve profile details.");
-        const result = await response.json() as ProfileResponse;
-        const data = result.profile;
+    const result = profileQuery.data;
+    const data = result.profile;
 
-        if (result.exists) {
+    if (result.exists) {
           
           setNickname(data.nickname || "");
           setFirstName(data.firstName || "");
@@ -189,22 +166,14 @@ export default function DashboardProfilePage() {
           setShowOnAbout(data.showOnAbout);
           setColleges(data.colleges);
           setEmployers(data.employers);
-        } else {
-          // Initialize defaults if profile document does not exist yet
-          // OAuth display names may be legal names, so never use them as public nicknames.
-          setNickname("");
-          setContactEmail(currentUser.email || "");
-        }
-      } catch (err) {
-        console.error("Failed to load user profile details:", err);
-        setError(err instanceof Error ? err.message : "Could not retrieve profile details.");
-      } finally {
-        setLoading(false);
-      }
+    } else {
+      // Initialize defaults if profile document does not exist yet.
+      // OAuth display names may be legal names, so never use them as public nicknames.
+      setNickname("");
+      setContactEmail(currentUser.email || "");
     }
-
-    loadProfile();
-  }, [user]);
+    initializedProfileUid.current = currentUser.uid;
+  }, [profileQuery.data, profileQuery.error, user]);
 
   const handleSubteamToggle = (team: string) => {
     setSubteams(prev => 
@@ -276,7 +245,7 @@ export default function DashboardProfilePage() {
       return;
     }
 
-    const profilePayload: ProfilePayload = {
+    const profilePayload: Omit<ProfilePayload, "memberType"> & { memberType?: string } = {
       nickname: nickname.trim(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -319,6 +288,7 @@ export default function DashboardProfilePage() {
       });
       if (!response.ok) throw await responseError(response, "Failed to update profile settings.");
       const result = await response.json() as ProfileResponse & { success: boolean };
+      queryClient.setQueryData(currentProfileQueryKey(user.uid), result);
       setMemberType(result.profile.memberType);
       setShowEmail(result.profile.showEmail);
       setShowPhone(result.profile.showPhone);
@@ -332,6 +302,9 @@ export default function DashboardProfilePage() {
       setSaving(false);
     }
   };
+
+  const loading = Boolean(user)
+    && (profileQuery.isPending || (!profileQuery.error && initializedProfileUid.current !== user?.uid));
 
   if (loading) {
     return (

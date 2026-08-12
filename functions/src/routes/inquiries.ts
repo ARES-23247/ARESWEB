@@ -11,6 +11,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import { validate } from "../middleware/validation";
 import type { AppCheckObservedRequest } from "../middleware/appCheck";
+import { encryptedPrivateUpdates } from "./profileSelf";
 
 const router = express.Router();
 
@@ -326,7 +327,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     throw new ApiError(400, "Account creation is only supported for student and mentor inquiries.");
   }
 
-  const role = type === "mentor" ? "mentor" : "student";
+  const role = type === "mentor" ? "mentor" : "member";
   const memberType = type === "mentor" ? "mentor" : "student";
 
   // Check if Firebase Auth user already exists for this email
@@ -365,11 +366,14 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
 
   const profileRef = adminDb.collection("user_profiles").doc(targetId);
   const avatarSeed = crypto.randomBytes(24).toString("hex");
-  batch.set(profileRef, {
-    nickname: "ARES Member",
+  const protectedProfile = await encryptedPrivateUpdates({
     firstName,
     lastName,
     contactEmail: cleanEmail,
+  }, cleanEmail, { encryptContactEmail: true });
+  batch.set(profileRef, {
+    nickname: "ARES Member",
+    ...protectedProfile,
     memberType,
     avatar: `https://api.dicebear.com/9.x/bottts/svg?seed=${avatarSeed}`,
     showEmail: false,

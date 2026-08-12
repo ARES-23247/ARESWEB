@@ -11,10 +11,40 @@
 
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 
+const REDACTED = "[REDACTED]";
+const SENSITIVE_KEYS = new Set([
+  "actoruid", "authorization", "body", "cookie", "email", "encrypted",
+  "firstname", "iv", "lastname", "name", "password", "phone", "requestbody",
+  "secret", "tag", "targetuid", "token", "uid", "userid",
+]);
+
+function redactText(value: string): string {
+  return value
+    .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, `Bearer ${REDACTED}`)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, REDACTED)
+    .replace(/github_pat_[A-Za-z0-9_]+/g, REDACTED)
+    .replace(/AIza[A-Za-z0-9_-]{20,}/g, REDACTED);
+}
+
+function safeLogValue(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === "string") return redactText(value);
+  if (value instanceof Error) return { type: value.name, message: redactText(value.message) };
+  if (Array.isArray(value)) return value.map((item) => safeLogValue(item, seen));
+  if (typeof value !== "object" || value === null) return value;
+  if (seen.has(value)) return "[CIRCULAR]";
+  seen.add(value);
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    SENSITIVE_KEYS.has(key.toLowerCase().replace(/[^a-z0-9]/g, ""))
+      ? REDACTED
+      : safeLogValue(item, seen),
+  ]));
+}
+
 function formatMessage(level: LogLevel, tag: string, message: string, data?: unknown): string {
   const timestamp = new Date().toISOString();
-  const base = `[${timestamp}] [${level}] [${tag}] ${message}`;
-  return data !== undefined ? `${base} ${JSON.stringify(data)}` : base;
+  const base = `[${timestamp}] [${level}] [${tag}] ${redactText(message)}`;
+  return data !== undefined ? `${base} ${JSON.stringify(safeLogValue(data))}` : base;
 }
 
 export const logger = {

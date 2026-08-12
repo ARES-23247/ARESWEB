@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import sitemapRouter, { normalizeLastModified } from "../sitemap";
+import sitemapRouter, { isSitemapRecordIndexable, normalizeLastModified } from "../sitemap";
 
 const mocks = vi.hoisted(() => ({
   documents: {
@@ -7,7 +7,12 @@ const mocks = vi.hoisted(() => ({
       {
         id: "blog & post",
         data: () => ({ updatedAt: "2026-08-01T12:30:00.000Z" })
-      }
+      },
+      { id: "test-blog-post", data: () => ({}) },
+      { id: "system-error-wip", data: () => ({}) },
+      { id: "screen-recording-2026-04-07", data: () => ({}) },
+      { id: "contest-strategy", data: () => ({}) },
+      { id: "approved-story", data: () => ({ searchIndexable: false }) }
     ],
     robots: [
       {
@@ -18,7 +23,8 @@ const mocks = vi.hoisted(() => ({
       }
     ],
     academy: [
-      { id: "tutorial-1", data: () => ({ updatedAt: "not-a-date" }) }
+      { id: "tutorial-1", data: () => ({ updatedAt: "not-a-date" }) },
+      { id: "e2e-test-quick-start", data: () => ({}) }
     ],
     docs: [
       {
@@ -35,7 +41,9 @@ const mocks = vi.hoisted(() => ({
       }
     ],
     events: [
-      { id: "event-1", data: () => ({}) }
+      { id: "event-1", data: () => ({}) },
+      { id: "event_1781817293896", data: () => ({}) },
+      { id: "test-event-1", data: () => ({}) }
     ]
   } as Record<string, Array<{ id: string; data: () => Record<string, unknown> }>>,
   queries: new Map<string, {
@@ -108,7 +116,8 @@ describe("sitemap route", () => {
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
     expect(xml).toContain("<loc>https://aresfirst.org/</loc>");
-    expect(xml).toContain("<loc>https://aresfirst.org/tournaments</loc>");
+    expect(xml).toContain("<loc>https://aresfirst.org/docs</loc>");
+    expect(xml).not.toContain("<loc>https://aresfirst.org/tournaments</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/blog/blog%20%26%20post</loc>");
     expect(xml).toContain("<lastmod>2026-08-01T12:30:00.000Z</lastmod>");
     expect(xml).toContain("<loc>https://aresfirst.org/robots/robot-1</loc>");
@@ -118,6 +127,14 @@ describe("sitemap route", () => {
     expect(xml).toContain("<loc>https://aresfirst.org/docs/areslib-doc</loc>");
     expect(xml).not.toContain("hidden-doc");
     expect(xml).toContain("<loc>https://aresfirst.org/events/event-1</loc>");
+    expect(xml).toContain("<loc>https://aresfirst.org/blog/contest-strategy</loc>");
+    expect(xml).not.toContain("test-blog-post");
+    expect(xml).not.toContain("system-error-wip");
+    expect(xml).not.toContain("screen-recording-2026-04-07");
+    expect(xml).not.toContain("approved-story");
+    expect(xml).not.toContain("e2e-test-quick-start");
+    expect(xml).not.toContain("event_1781817293896");
+    expect(xml).not.toContain("test-event-1");
     expect(xml).toContain("</urlset>");
 
     expect(mocks.queries.size).toBe(5);
@@ -137,6 +154,36 @@ describe("sitemap route", () => {
       code: "SITEMAP_QUERY_FAILED",
       message: "Sitemap is temporarily unavailable."
     }));
+  });
+});
+
+describe("isSitemapRecordIndexable", () => {
+  it.each([
+    "test",
+    "test1",
+    "test-blog-post",
+    "video-embed-test",
+    "e2e-valid-slug-123",
+    "fixture_event",
+    "system-error-wip",
+    "event_1781817293896",
+    "screen-recording-2026-04-07-110546",
+  ])("rejects the non-production identifier %s", (id) => {
+    expect(isSitemapRecordIndexable(id)).toBe(false);
+  });
+
+  it.each([
+    "contest-strategy",
+    "latest-news",
+    "testing-robot-code",
+    "event-2026-championship",
+  ])("does not reject the legitimate identifier %s", (id) => {
+    expect(isSitemapRecordIndexable(id)).toBe(true);
+  });
+
+  it("honors an explicit record-level search opt-out", () => {
+    expect(isSitemapRecordIndexable("published-story", { searchIndexable: false })).toBe(false);
+    expect(isSitemapRecordIndexable("published-story", { searchIndexable: true })).toBe(true);
   });
 });
 

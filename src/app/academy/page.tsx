@@ -46,7 +46,11 @@ export default function AcademyPage() {
 
   const [allDocs, setAllDocs] = useState<DocRecord[]>([]);
   const [currentDoc, setCurrentDoc] = useState<DocRecord | null>(null);
-  const [docLoading, setDocLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+  const [docLoading, setDocLoading] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
@@ -86,6 +90,8 @@ export default function AcademyPage() {
   // Fetch all documents
   useEffect(() => {
     const fetchAllDocs = async () => {
+      setListLoading(true);
+      setListError(null);
       try {
         const q = isAresLib
           ? query(
@@ -113,16 +119,21 @@ export default function AcademyPage() {
         setAllDocs(docsList);
       } catch (err) {
         logger.error("Error loading all docs:", err);
+        setListError("The lesson library could not be reached. Check your connection and try again.");
+      } finally {
+        setListLoading(false);
       }
     };
-    fetchAllDocs();
-  }, [isAresLib]);
+    void fetchAllDocs();
+  }, [isAresLib, reloadToken]);
 
   // Fetch current document details when slug changes
   useEffect(() => {
     if (!slug) return;
     const fetchCurrentDoc = async () => {
       setDocLoading(true);
+      setDocError(null);
+      setCurrentDoc(null);
       try {
         const docRef = doc(db, "docs", slug);
         const docSnap = await getDoc(docRef);
@@ -136,12 +147,13 @@ export default function AcademyPage() {
         }
       } catch (err) {
         logger.error("Error loading doc:", err);
+        setDocError("This lesson could not be loaded. Check your connection and try again.");
       } finally {
         setDocLoading(false);
       }
     };
-    fetchCurrentDoc();
-  }, [slug]);
+    void fetchCurrentDoc();
+  }, [slug, reloadToken]);
 
   // Client-side quick search over documents
   const searchResults = useMemo(() => {
@@ -203,10 +215,10 @@ export default function AcademyPage() {
 
   // Redirect to first available document if raw route is opened
   useEffect(() => {
-    if (!slug && allDocs.length > 0) {
+    if (!slug && !listLoading && !listError && allDocs.length > 0) {
       navigate(`${basePath}/${allDocs[0].slug}`, { replace: true });
     }
-  }, [slug, allDocs, navigate, basePath]);
+  }, [slug, allDocs, listLoading, listError, navigate, basePath]);
 
   const handleFeedback = async (isHelpful: boolean, comment: string = "") => {
     if (!slug || isSubmittingFeedback) return;
@@ -386,7 +398,32 @@ export default function AcademyPage() {
               </div>
             )}
 
-            {!slug && !docLoading && allDocs.length === 0 && (
+            {listError && (
+              <div role="alert" className="border border-ares-red/40 bg-ares-red/15 p-6 text-white">
+                <h2 className="text-xl font-bold">Lesson library unavailable</h2>
+                <p className="mt-2 text-sm text-marble/80">{listError}</p>
+                <button type="button" onClick={() => setReloadToken((value) => value + 1)} className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button>
+              </div>
+            )}
+
+            {docError && !listError && (
+              <div role="alert" className="border border-ares-red/40 bg-ares-red/15 p-6 text-white">
+                <h2 className="text-xl font-bold">Lesson unavailable</h2>
+                <p className="mt-2 text-sm text-marble/80">{docError}</p>
+                <button type="button" onClick={() => setReloadToken((value) => value + 1)} className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button>
+              </div>
+            )}
+
+            {slug && !docLoading && !docError && !currentDoc && !listError && (
+              <div className="border border-white/10 bg-white/5 p-8 text-center">
+                <BookOpen aria-hidden="true" size={48} className="mx-auto mb-4 text-white/20" />
+                <h1 className="text-2xl font-bold text-white">Lesson not found</h1>
+                <p className="mt-2 text-sm text-marble/70">This lesson may have moved, been archived, or never existed.</p>
+                <Link to={basePath} className="mt-5 inline-block bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Browse lessons</Link>
+              </div>
+            )}
+
+            {!slug && !listLoading && !listError && allDocs.length === 0 && (
               <div className="text-center py-20">
                 <BookOpen size={48} className="text-white/20 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-white mb-2">No Lessons Yet</h2>
