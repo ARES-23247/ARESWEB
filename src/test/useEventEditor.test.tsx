@@ -1,11 +1,12 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useEventEditor } from "../app/dashboard/events/hooks/useEventEditor";
 import { useAuth } from "../context/AuthContext";
-import { doc, setDoc, onSnapshot, getDocs } from "firebase/firestore";
+import { setDoc, onSnapshot, getDocs } from "firebase/firestore";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "../lib/image";
 import { archiveEvent, createEvent, restoreEvent, updateEvent } from "@/app/calendar/api";
+import type { User } from "firebase/auth";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => ({
@@ -48,7 +49,7 @@ vi.mock("@/app/calendar/api", () => ({
 
 // Mock utils
 vi.mock("@/lib/utils", () => ({
-  cleanUndefined: (obj: any) => obj,
+  cleanUndefined: <T extends object>(obj: T) => obj,
 }));
 
 // Mock image compression
@@ -66,6 +67,7 @@ vi.mock("../utils/logger", () => ({
 }));
 
 describe("useEventEditor custom hook", () => {
+  const testUser = { uid: "test-uid", displayName: "Test User", email: "test@example.com" } as unknown as User;
   const mockLocations = [
     { id: "mars-building", name: "Mars Building", address: "123 Mars Way" }
   ];
@@ -78,14 +80,15 @@ describe("useEventEditor custom hook", () => {
     vi.clearAllMocks();
     
     // Set Auth mock
-    (useAuth as any).mockReturnValue({
-      user: { uid: "test-uid", displayName: "Test User", email: "test@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser,
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 
     // Set Firestore mock implementations (avoids issues with vitest mockReset: true)
-    (onSnapshot as any).mockImplementation((ref: any, callback: any) => {
+    (onSnapshot as unknown as ReturnType<typeof vi.fn>).mockImplementation((_ref: unknown, callback: unknown) => {
       if (typeof callback === "function") {
         setTimeout(() => {
           callback({
@@ -96,24 +99,24 @@ describe("useEventEditor custom hook", () => {
       return () => {}; // return unsub function
     });
 
-    (setDoc as any).mockResolvedValue(undefined);
-    (archiveEvent as any).mockResolvedValue(undefined);
-    (createEvent as any).mockResolvedValue({ id: "new-event" });
-    (restoreEvent as any).mockResolvedValue(undefined);
-    (updateEvent as any).mockResolvedValue({ id: "event-123" });
+    vi.mocked(setDoc).mockResolvedValue(undefined);
+    vi.mocked(archiveEvent).mockResolvedValue(undefined);
+    vi.mocked(createEvent).mockResolvedValue({ id: "new-event", title: "New Event", dateStart: "2026-01-01", category: "internal" });
+    vi.mocked(restoreEvent).mockResolvedValue(undefined);
+    vi.mocked(updateEvent).mockResolvedValue({ id: "event-123", title: "Updated Event", dateStart: "2026-01-01", category: "internal" });
     
-    (getDocs as any).mockResolvedValue({
+    vi.mocked(getDocs).mockResolvedValue({
       docs: []
-    });
+    } as unknown as Awaited<ReturnType<typeof getDocs>>);
 
     // Set utility and fetch mock implementations
-    (resizeAndCompressImage as any).mockResolvedValue({
+    vi.mocked(resizeAndCompressImage).mockResolvedValue({
       base64: "mockbase64",
       mimeType: "image/jpeg"
     });
 
-    (authenticatedFetch as any).mockImplementation(async (path: string) => path === "/api/profiles/me"
-      ? { ok: true, status: 200, statusText: "OK", json: async () => ({ profile: { nickname: "Member Nickname", avatar: "" } }) }
+    vi.mocked(authenticatedFetch).mockImplementation(async (path) => String(path) === "/api/profiles/me"
+      ? { ok: true, status: 200, statusText: "OK", json: async () => ({ profile: { nickname: "Member Nickname", avatar: "" } }) } as Response
       : {
         ok: true,
         status: 200,
@@ -126,7 +129,7 @@ describe("useEventEditor custom hook", () => {
             googleMediaItemId: "g-1"
           }
         })
-      });
+      } as Response);
   });
 
   it("initializes hook states for Create Mode when eventToEdit is null", () => {
@@ -204,7 +207,7 @@ describe("useEventEditor custom hook", () => {
     );
 
     await act(async () => {
-      const e = { preventDefault: vi.fn() } as any;
+      const e = { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>;
       await result.current.handleSaveEvent(e);
     });
 
@@ -255,7 +258,7 @@ describe("useEventEditor custom hook", () => {
       category: "internal" as const,
     };
 
-    (getDocs as any).mockResolvedValueOnce({
+    vi.mocked(getDocs).mockResolvedValueOnce({
       docs: [
         {
           id: "rev-1",
@@ -266,7 +269,7 @@ describe("useEventEditor custom hook", () => {
           }),
         },
       ],
-    });
+    } as unknown as Awaited<ReturnType<typeof getDocs>>);
 
     const { result } = renderHook(
       (props) => useEventEditor(props),
@@ -319,7 +322,7 @@ describe("useEventEditor custom hook", () => {
       target: {
         files: [mockFile]
       }
-    } as any;
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
 
     await act(async () => {
       await result.current.handleImageUpload(mockEventArg);

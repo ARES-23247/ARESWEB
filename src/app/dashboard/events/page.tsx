@@ -229,7 +229,7 @@ export default function EventsManagementPage({
         try {
           const yr = new Date(evt.dateStart).getFullYear().toString();
           years.add(yr);
-        } catch (e) {
+        } catch {
           // invalid date
         }
       }
@@ -288,7 +288,7 @@ export default function EventsManagementPage({
         try {
           const m = new Date(evt.dateStart).getMonth().toString();
           if (m !== filterMonth) return false;
-        } catch (e) {
+        } catch {
           return false;
         }
       }
@@ -299,7 +299,7 @@ export default function EventsManagementPage({
         try {
           const y = new Date(evt.dateStart).getFullYear().toString();
           if (y !== filterYear) return false;
-        } catch (e) {
+        } catch {
           return false;
         }
       }

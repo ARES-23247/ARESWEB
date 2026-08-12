@@ -103,10 +103,10 @@ export default function JoinPage() {
       setOccupation("");
       setSelectedInterests([]);
       setAdditional("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setSubmitStatus("error");
-      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
     }
   };
 

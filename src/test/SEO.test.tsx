@@ -111,7 +111,7 @@ describe("SEO", () => {
     });
   });
 
-  it("only publishes event facts supplied by the event record", async () => {
+  it("does not publish ineligible Event markup without a public venue", async () => {
     const event = createAdditionalSchema({
       type: "event",
       title: "Robot Demonstration",
@@ -122,10 +122,36 @@ describe("SEO", () => {
       schemaData: { startDate: "2026-09-12T14:00:00.000Z" }
     });
 
-    expect(event).not.toHaveProperty("endDate");
-    expect(event).not.toHaveProperty("eventStatus");
-    expect(event).not.toHaveProperty("offers");
-    expect(event).not.toHaveProperty("location");
+    expect(event).toBeNull();
+  });
+
+  it("uses an explicitly public venue as a PostalAddress for an eligible event", () => {
+    const event = createAdditionalSchema({
+      type: "event",
+      title: "Community Robot Demonstration",
+      description: "A public robot demonstration.",
+      keywords: "robotics",
+      image: "https://aresfirst.org/event.webp",
+      canonicalUrl: "https://aresfirst.org/events/demo",
+      schemaData: {
+        startDate: "2026-09-12T14:00:00-04:00",
+        locationName: "Public Library",
+        locationAddress: "321 Main Street, Morgantown, WV 26505, US",
+      },
+    });
+
+    expect(event).toMatchObject({
+      "@type": "Event",
+      "url": "https://aresfirst.org/events/demo",
+      "location": {
+        "@type": "Place",
+        "name": "Public Library",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "321 Main Street, Morgantown, WV 26505, US",
+        },
+      },
+    });
   });
 
   it("omits additional structured data when the required record facts are missing", () => {

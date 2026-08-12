@@ -8,12 +8,12 @@ This is the central web platform and team portal for **ARES 23247** (Appalachian
 
 The platform uses a modern serverless architecture tailored for hosting and scalability:
 
-- **Frontend**: Single Page Application (SPA) built with **Vite**, **React 18**, **TypeScript**, and **Tailwind CSS**.
+- **Frontend**: Single Page Application (SPA) built with **Vite**, **React 19**, **TypeScript**, and **Tailwind CSS**.
 - **Backend API**: Node.js **Express.js** application hosted on **Firebase Cloud Functions (2nd Gen)** under `/api/*`.
 - **Database**: Cloud **Firestore** for real-time document synchronization. Direct client connections are secured via `firestore.rules`.
 - **Storage**: **Firebase Cloud Storage** for media, photos, and CAD exports, gated via `storage.rules`.
 - **Auth**: **Firebase Auth** with role-based access control (RBAC) managed via the `authorized_users` collection in Firestore.
-- **State Management**: **Zustand** (`src/store/uiStore.ts`) for global UI configurations and seasonal settings.
+- **State Management**: **Zustand** (`src/store/sidebarStore.ts`) for persisted dashboard navigation state; feature state otherwise stays close to its React owner.
 - **State Sync**: Real-time listeners (`onSnapshot`) for event signs, roster management, and photo streams.
 
 ---
@@ -28,9 +28,9 @@ ARESWEB/
 │   ├── src/
 │   │   ├── lib/        # Shared wrappers (admin, logger, utils)
 │   │   ├── middleware/ # ensureAuth, errorHandler middlewares
-│   │   └── routes/     # 12 Express sub-routers (AI, events, blog, telemetry)
+│   │   └── routes/     # Current Express API sub-routers
 ├── src/                # Frontend React application
-│   ├── app/            # Next-style routing and page views
+│   ├── app/            # Page views mounted by React Router in src/App.tsx
 │   ├── components/     # UI elements (ShareButtons, TiptapRenderer, etc.)
 │   ├── context/        # React Contexts (AuthContext)
 │   ├── lib/            # Frontend API client and utilities

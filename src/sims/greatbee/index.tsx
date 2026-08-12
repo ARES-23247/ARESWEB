@@ -1,3 +1,4 @@
+/** @sim {"name": "The Great Bee Adventure", "requiresContext": false} */
 import React, { useState } from "react";
 
 interface Choice {

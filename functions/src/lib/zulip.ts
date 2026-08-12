@@ -83,6 +83,15 @@ export interface ZulipUser {
   [key: string]: unknown;
 }
 
+function getZulipErrorMessage(value: unknown): string {
+  if (!value || typeof value !== "object" || !("msg" in value)) return "";
+  return typeof value.msg === "string" ? value.msg : "";
+}
+
+function describeError(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export async function getZulipUsers(): Promise<ZulipUser[] | null> {
   const { url, email, apiKey } = getZulipCredentials();
 
@@ -153,13 +162,13 @@ export async function createZulipUser(
       return { success: true, message: `Zulip account created for ${cleanEmail}` };
     }
 
-    const errorData = await res.json().catch(() => ({}));
-    const msg = (errorData.msg || "").toLowerCase();
+    const errorData: unknown = await res.json().catch(() => ({}));
+    const msg = getZulipErrorMessage(errorData).toLowerCase();
     if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
       return { success: true, message: `${cleanEmail} is already registered on Zulip.` };
     }
     logger.warn("zulip", "Direct user creation failed, attempting invitation fallback", { status: res.status, error: errorData });
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.warn("zulip", "Exception in direct user creation", { error: err });
   }
 
@@ -182,18 +191,18 @@ export async function createZulipUser(
       return { success: true, message: `Zulip invitation email sent to ${cleanEmail}` };
     }
 
-    const inviteError = await inviteRes.json().catch(() => ({}));
-    const msg = (inviteError.msg || "").toLowerCase();
+    const inviteError: unknown = await inviteRes.json().catch(() => ({}));
+    const msg = getZulipErrorMessage(inviteError).toLowerCase();
     if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
       return { success: true, message: `${cleanEmail} is already a member of the Zulip workspace.` };
     }
 
-    const errorMsg = inviteError.msg || `Zulip invite failed with status ${inviteRes.status}`;
+    const errorMsg = getZulipErrorMessage(inviteError) || `Zulip invite failed with status ${inviteRes.status}`;
     logger.error("zulip", "Failed to invite user via Zulip API", { status: inviteRes.status, error: inviteError });
     return { success: false, error: errorMsg };
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error("zulip", "Exception in Zulip user invitation", { error: err });
-    return { success: false, error: err.message || "Internal server error inviting user." };
+    return { success: false, error: describeError(err, "Internal server error inviting user.") };
   }
 }
 

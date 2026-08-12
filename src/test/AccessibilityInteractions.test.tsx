@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { useState } from "react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
@@ -134,6 +134,7 @@ describe("simulation keyboard alternatives", () => {
     const simsRoot = join(process.cwd(), "src", "sims");
     const pointerSimulations = readdirSync(simsRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
+      .filter((entry) => existsSync(join(simsRoot, entry.name, "index.tsx")))
       .map((entry) => ({
         name: entry.name,
         source: readFileSync(join(simsRoot, entry.name, "index.tsx"), "utf8"),

@@ -54,20 +54,20 @@ describe("PhotoPickerModal", () => {
   });
 
   it("fetches albums and photos and filters by album ID in gallery tab", async () => {
-    (authenticatedFetch as any).mockImplementation((url: string) => {
+    vi.mocked(authenticatedFetch).mockImplementation(async (url) => {
       if (url === "/api/photos") {
-        return Promise.resolve({
+        return {
           ok: true,
           json: () => Promise.resolve({ photos: mockPhotos })
-        });
+        } as Response;
       }
       if (url === "/api/photos/albums") {
-        return Promise.resolve({
+        return {
           ok: true,
           json: () => Promise.resolve({ albums: mockAlbums })
-        });
+        } as Response;
       }
-      return Promise.reject(new Error("Unknown endpoint"));
+      throw new Error("Unknown endpoint");
     });
 
     await act(async () => {
@@ -106,14 +106,14 @@ describe("PhotoPickerModal", () => {
 
   it("renders the Albums tab and supports selecting/inserting an entire album", async () => {
     const mockOnSelect = vi.fn();
-    (authenticatedFetch as any).mockImplementation((url: string) => {
+    vi.mocked(authenticatedFetch).mockImplementation(async (url) => {
       if (url === "/api/photos/albums") {
-        return Promise.resolve({
+        return {
           ok: true,
           json: () => Promise.resolve({ albums: mockAlbums })
-        });
+        } as Response;
       }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ photos: [] }) });
+      return { ok: true, json: () => Promise.resolve({ photos: [] }) } as Response;
     });
 
     await act(async () => {

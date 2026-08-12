@@ -4,6 +4,7 @@ export interface TeamLocation {
   address: string;
   description?: string;
   gmapsUrl?: string;
+  isAddressPublic?: number;
   isDeleted?: number;
   createdAt?: string;
   updatedAt?: string;

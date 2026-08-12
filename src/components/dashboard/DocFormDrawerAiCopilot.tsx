@@ -11,6 +11,21 @@ interface DocFormDrawerAiCopilotProps {
   setRevertAlert: (msg: string) => void;
 }
 
+interface GrammarEdit {
+  original: string;
+  corrected: string;
+  explanation?: string;
+}
+
+interface AssistantResponse {
+  response?: string;
+}
+
+interface GrammarResponse {
+  correctedText?: string;
+  edits?: GrammarEdit[];
+}
+
 export default function DocFormDrawerAiCopilot({
   formContent,
   formTitle,
@@ -22,13 +37,15 @@ export default function DocFormDrawerAiCopilot({
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
+  const [grammarEdits, setGrammarEdits] = useState<GrammarEdit[]>([]);
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const handleAiAssistant = async (prompt: string, presetName = "") => {
     if (!prompt.trim()) return;
     setAiLoading(true);
     setAiResponse("");
+    setAiError(null);
     try {
       const res = await authenticatedFetch("/api/ai/assistant", {
         method: "POST",
@@ -41,10 +58,11 @@ export default function DocFormDrawerAiCopilot({
       });
 
       if (!res.ok) throw new Error("AI Assistant service error.");
-      const data = await res.json();
+      const data = await res.json() as AssistantResponse;
       setAiResponse(data.response || "");
-    } catch (err: any) {
-      setAiResponse(`Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`);
+    } catch (err: unknown) {
+      console.warn("Gemini assistant request failed", err);
+      setAiError("Gemini is temporarily unavailable. Your document was not changed.");
     } finally {
       setAiLoading(false);
     }
@@ -55,6 +73,7 @@ export default function DocFormDrawerAiCopilot({
     setAiLoading(true);
     setGrammarEdits([]);
     setSuggestedCorrection("");
+    setAiError(null);
     try {
       const res = await authenticatedFetch("/api/ai/grammar", {
         method: "POST",
@@ -63,13 +82,12 @@ export default function DocFormDrawerAiCopilot({
       });
 
       if (!res.ok) throw new Error("AI Grammar check service error.");
-      const data = await res.json();
+      const data = await res.json() as GrammarResponse;
       setSuggestedCorrection(data.correctedText || "");
       setGrammarEdits(data.edits || []);
-    } catch (err: any) {
-      console.warn(err);
-      setSuggestedCorrection(formContent);
-      setGrammarEdits([{ original: "offline check", corrected: "online check", explanation: "Connect to live sync to get full Gemini spelling check." }]);
+    } catch (err: unknown) {
+      console.warn("Gemini grammar request failed", err);
+      setAiError("Grammar checking is temporarily unavailable. Your document was not changed.");
     } finally {
       setAiLoading(false);
     }
@@ -78,6 +96,11 @@ export default function DocFormDrawerAiCopilot({
   return (
     <div className="hidden lg:flex lg:w-[30%] bg-black/30 border border-white/15 rounded-xl p-4 flex-col gap-4 overflow-y-auto shrink-0 select-none scrollbar-thin scrollbar-thumb-white/5">
       <div className="space-y-4">
+        {aiError && (
+          <p role="alert" className="rounded border border-ares-danger-soft/40 bg-ares-red/10 p-2 text-[10px] text-ares-danger-soft">
+            {aiError}
+          </p>
+        )}
         <div className="bg-black/20 border border-white/5 p-3.5 rounded-lg">
           <h4 className="text-[10px] font-black uppercase tracking-wider text-ares-gold flex items-center gap-2 mb-1.5">
             <Sparkles size={11} /> Spelling & Tone

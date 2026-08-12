@@ -188,7 +188,7 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
       if (name && name.includes(":")) {
         name = await decrypt(name, secret);
       }
-    } catch (e) {
+    } catch {
       name = "[Decryption Failed]";
     }
 
@@ -196,7 +196,7 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
       if (email && email.includes(":")) {
         email = await decrypt(email, secret);
       }
-    } catch (e) {
+    } catch {
       email = "[Decryption Failed]";
     }
 
@@ -307,7 +307,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     if (name && name.includes(":")) {
       name = await decrypt(name, secret);
     }
-  } catch (e) {
+  } catch {
     throw new ApiError(500, "Failed to decrypt applicant name.");
   }
 
@@ -315,7 +315,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     if (email && email.includes(":")) {
       email = await decrypt(email, secret);
     }
-  } catch (e) {
+  } catch {
     throw new ApiError(500, "Failed to decrypt applicant email.");
   }
 

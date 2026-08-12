@@ -12,7 +12,7 @@ interface UserAuth {
   subteams: string[];
   memberType: string;
   profileExists: boolean;
-  zulipAccount: any | null;
+  zulipAccount: { full_name?: string } | null;
 }
 
 interface UserInviteFormProps {
@@ -90,9 +90,9 @@ export default function UserInviteForm({
           } else {
             zulipMsg = " and their Zulip account has been provisioned";
           }
-        } catch (zErr: any) {
+        } catch (zErr: unknown) {
           console.error("Error inviting Zulip account:", zErr);
-          zulipMsg = ` (However, Zulip account creation failed: ${zErr.message || "network error"})`;
+          zulipMsg = ` (However, Zulip account creation failed: ${zErr instanceof Error ? zErr.message : "network error"})`;
         }
       }
 
@@ -103,9 +103,9 @@ export default function UserInviteForm({
       
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error inviting user:", err);
-      setError(err.message || "Failed to authorize user.");
+      setError(err instanceof Error ? err.message : "Failed to authorize user.");
     } finally {
       setInviting(false);
     }
@@ -146,7 +146,7 @@ export default function UserInviteForm({
           <input
             id="inviteName"
             type="text"
-            placeholder="e.g. Coach David"
+            placeholder="e.g. Team Mentor"
             value={inviteName}
             onChange={(e) => setInviteName(e.target.value)}
             className="w-full bg-obsidian border border-white/10 ares-cut-sm px-4 py-2.5 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"

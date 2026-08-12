@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Activity, Archive, ExternalLink, Filter, Loader2, Pencil, Play, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
+import { Activity, Archive, ExternalLink, Loader2, Pencil, Play, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { apiFailure, ManagedVideo, parseYouTubeVideoId } from "@/lib/media";

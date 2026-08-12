@@ -38,7 +38,7 @@ export default function EventGallery({
             <div className="relative">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               id="photo-upload-input"
               className="sr-only"
               onChange={handleImageUpload}
@@ -116,10 +116,11 @@ export default function EventGallery({
               className="aspect-square relative overflow-hidden group cursor-pointer ares-cut border border-white/10 bg-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <img
-                src={item.url}
+                src={item.thumbnailUrl ?? item.url}
                 alt={item.filename}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103 opacity-80 group-hover:opacity-100"
                 loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-left">
                 <span className="text-[7px] text-white/55 font-bold uppercase truncate">{item.filename}</span>

@@ -1,15 +1,16 @@
 import React, { Suspense, lazy } from "react";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
+import type { TestResult } from "./editor/SimConsole";
 
 const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
 
 interface SimulationPlaygroundPreviewProps {
-  compileError: any;
+  compileError: string | null;
   fps: number | null;
-  compiledFiles: any;
+  compiledFiles: Record<string, string>;
   handleFixWithAI: (err: string) => void;
-  handleTestResult: (result: any) => void;
-  telemetry: any;
+  handleTestResult: (result: TestResult) => void;
+  telemetry: Record<string, Array<{ time: number; value: number }>>;
   canUseAi: boolean;
 }
 

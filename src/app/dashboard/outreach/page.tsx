@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { Sparkles, RefreshCw } from "lucide-react";
@@ -82,7 +82,7 @@ export default function OutreachManagerPage() {
   const [isCalculatingHours, setIsCalculatingHours] = useState<string | null>(null);
   const [calcLogMessage, setCalcLogMessage] = useState<string | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     setError("");
@@ -101,7 +101,7 @@ export default function OutreachManagerPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   // Listen for locations
   useEffect(() => {
@@ -162,8 +162,8 @@ export default function OutreachManagerPage() {
   }, []);
 
   useEffect(() => {
-    fetchLogs();
-  }, [user]);
+    void fetchLogs();
+  }, [fetchLogs]);
 
   // Derived memo states
   const loggedEventIds = useMemo(() => {

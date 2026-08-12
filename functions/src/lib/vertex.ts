@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import os from "os";
 import path from "path";
 import fs from "fs";
+import { z } from "zod";
 import { ApiError } from "../middleware/errorHandler";
 const useVertex = process.env.USE_VERTEX_AI !== "false" && (
   process.env.USE_VERTEX_AI === "true" ||
@@ -12,7 +13,7 @@ const useVertex = process.env.USE_VERTEX_AI !== "false" && (
 );
 
 // Local Firebase emulator compatibility: the emulator environment sanitizes standard user environment variables,
-// which prevents the Google GenAI SDK from resolving the path to David's local Application Default Credentials (ADC).
+// which can prevent the Google GenAI SDK from resolving local Application Default Credentials (ADC).
 // Explicitly inject the path if we are running in the emulator and the credentials env variable is not set.
 if (process.env.FUNCTIONS_EMULATOR === "true" && useVertex) {
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -25,14 +26,14 @@ if (process.env.FUNCTIONS_EMULATOR === "true" && useVertex) {
     }
     if (fs.existsSync(credentialsPath)) {
       process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
-      logger.info("vertex", `Injected GOOGLE_APPLICATION_CREDENTIALS path: ${credentialsPath}`);
+      logger.info("vertex", "Configured local Application Default Credentials for the emulator.");
     } else {
-      logger.warn("vertex", `Google Application Credentials file not found at: ${credentialsPath}`);
+      logger.warn("vertex", "Local Application Default Credentials were not found for the emulator.");
     }
   }
 }
 
-const clientConfig: any = {};
+const clientConfig: ConstructorParameters<typeof GoogleGenAI>[0] = {};
 if (useVertex) {
   clientConfig.vertexai = true;
   clientConfig.project = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || "aresfirst-portal";
@@ -49,6 +50,25 @@ export interface GrammarCheckResult {
     corrected: string;
     explanation: string;
   }>;
+}
+
+const grammarCheckSchema = z.object({
+  correctedText: z.string().max(30_000),
+  edits: z.array(z.object({
+    original: z.string().max(5_000),
+    corrected: z.string().max(5_000),
+    explanation: z.string().max(5_000),
+  })).max(500),
+});
+
+const photoAnalysisSchema = z.object({
+  caption: z.string().trim().min(1).max(1_000),
+  labels: z.array(z.string().trim().min(1).max(100)).min(1).max(12),
+});
+
+function upstreamAiError(operation: string, error: unknown): ApiError {
+  logger.error("vertex", `${operation} failed`, error);
+  return new ApiError(502, "The AI service is temporarily unavailable.", "AI_UPSTREAM_ERROR");
 }
 
 /**
@@ -96,22 +116,9 @@ Do not wrap the JSON response in any markdown code blocks.`;
     const resultText = response.text || "";
     if (!resultText) throw new Error("Empty response from Gemini.");
     
-    return JSON.parse(resultText) as GrammarCheckResult;
+    return grammarCheckSchema.parse(JSON.parse(resultText));
   } catch (err) {
-    logger.warn("vertex", `Grammar check failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
-    const edits: Array<{ original: string; corrected: string; explanation: string }> = [];
-    let correctedText = text;
-    
-    if (text.includes("grammer")) {
-      correctedText = correctedText.replace(/grammer/g, "grammar");
-      edits.push({ original: "grammer", corrected: "grammar", explanation: "Corrected spelling of 'grammar'." });
-    }
-    if (text.includes("recieve")) {
-      correctedText = correctedText.replace(/recieve/g, "receive");
-      edits.push({ original: "recieve", corrected: "receive", explanation: "Corrected spelling of 'receive'." });
-    }
-    
-    return { correctedText, edits };
+    throw upstreamAiError("Grammar check", err);
   }
 }
 
@@ -157,8 +164,7 @@ Always use professional technical language, preserve Markdown formatting, and ad
     
     return assistanceText;
   } catch (err) {
-    logger.warn("vertex", `AI assistance failed/offline: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
-    return `[Local AI Fallback] Your request: "${prompt}".\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`;
+    throw upstreamAiError("AI assistance", err);
   }
 }
 
@@ -212,13 +218,9 @@ Do not wrap the JSON response in any markdown code blocks.`;
     const resultText = response.text || "";
     if (!resultText) throw new Error("Empty response from Gemini.");
     
-    return JSON.parse(resultText) as { caption: string; labels: string[] };
+    return photoAnalysisSchema.parse(JSON.parse(resultText));
   } catch (err) {
-    logger.warn("vertex", `Photo analysis failed: ${err instanceof Error ? err.message : String(err)}. Using fallback.`);
-    return {
-      caption: "ARES robotics team members working on robot assemblies.",
-      labels: ["robot", "ares-team", "workspace"]
-    };
+    throw upstreamAiError("Photo analysis", err);
   }
 }
 
@@ -247,7 +249,8 @@ export async function getSimulationPlaygroundStream(
       ? [{ role: "user", parts: [{ text: `[Simulation System Persona & Context]: ${systemPrompt.trim().slice(0, 8000)}` }] }]
       : [];
 
-    const contents = [
+    type SimulationPart = { text: string } | { inlineData: { data: string; mimeType: string } };
+    const contents: Array<{ role: string; parts: SimulationPart[] }> = [
       ...userPromptMessage,
       ...messages.map(msg => ({
         role: msg.role === "assistant" ? "model" : "user",
@@ -265,7 +268,7 @@ export async function getSimulationPlaygroundStream(
             data: base64,
             mimeType: mimeType
           }
-        } as any);
+        });
       }
     }
 

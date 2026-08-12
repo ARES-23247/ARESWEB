@@ -61,9 +61,9 @@ export default function DashboardProfilePage() {
       }
       setSuccess("Zulip account provisioned successfully! Log into aresfirst.zulipchat.com with your Google account.");
       setTimeout(() => setSuccess(null), 6000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Zulip self-provision error:", err);
-      setError(err.message || "Failed to provision Zulip account.");
+      setError(err instanceof Error ? err.message : "Failed to provision Zulip account.");
     } finally {
       setProvisioningZulip(false);
     }
@@ -295,9 +295,9 @@ export default function DashboardProfilePage() {
       
       setSuccess("Profile settings saved securely.");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to write user profile:", err);
-      setError(err.message || "Failed to update profile settings.");
+      setError(err instanceof Error ? err.message : "Failed to update profile settings.");
     } finally {
       setSaving(false);
     }

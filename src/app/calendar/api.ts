@@ -44,6 +44,7 @@ export interface LocationWriteInput {
   address: string;
   description?: string;
   gmapsUrl?: string;
+  isAddressPublic?: 0 | 1;
 }
 
 export class CalendarApiError extends Error {
@@ -76,6 +77,11 @@ function normalizeEvent(value: unknown): TeamEvent {
   const status = record.status === "published" || record.status === "pending" || record.status === "draft"
     ? record.status
     : undefined;
+  const publicVenueRecord = record.publicVenue && typeof record.publicVenue === "object"
+    ? record.publicVenue as Record<string, unknown>
+    : null;
+  const publicVenueName = publicVenueRecord ? optionalString(publicVenueRecord, "name") : undefined;
+  const publicVenueAddress = publicVenueRecord ? optionalString(publicVenueRecord, "address") : undefined;
   return {
     id: requiredString(record, "id"),
     title: requiredString(record, "title"),
@@ -83,6 +89,9 @@ function normalizeEvent(value: unknown): TeamEvent {
     dateEnd: optionalString(record, "dateEnd"),
     locationId: optionalString(record, "locationId"),
     location: optionalString(record, "location"),
+    publicVenue: publicVenueName && publicVenueAddress
+      ? { name: publicVenueName, address: publicVenueAddress }
+      : undefined,
     description: optionalString(record, "description"),
     category,
     coverImage: optionalString(record, "coverImage"),
@@ -105,6 +114,7 @@ function normalizeLocation(value: unknown): TeamLocation {
     address: requiredString(record, "address"),
     description: optionalString(record, "description"),
     gmapsUrl: optionalString(record, "gmapsUrl"),
+    isAddressPublic: record.isAddressPublic === 1 ? 1 : 0,
     isDeleted: record.isDeleted === 1 ? 1 : 0,
     createdAt: optionalString(record, "createdAt"),
     updatedAt: optionalString(record, "updatedAt"),

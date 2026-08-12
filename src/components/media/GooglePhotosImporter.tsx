@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { authenticatedFetch } from "@/lib/api";
 
 interface GooglePhotosImporterProps {
@@ -6,6 +6,16 @@ interface GooglePhotosImporterProps {
   setLoading: (l: boolean) => void;
   setError: (e: string | null) => void;
   onSelectPhotoToCrop: (src: string, filename: string) => void;
+}
+
+interface GooglePickerItem {
+  id: string;
+  filename?: string;
+  baseUrl?: string;
+  mediaFile?: {
+    filename?: string;
+    baseUrl?: string;
+  };
 }
 
 export default function GooglePhotosImporter({
@@ -16,7 +26,7 @@ export default function GooglePhotosImporter({
 }: GooglePhotosImporterProps) {
   const [isPolling, setIsPolling] = useState(false);
   const [pickerSessionId, setPickerSessionId] = useState<string | null>(null);
-  const [googlePhotos, setGooglePhotos] = useState<any[]>([]);
+  const [googlePhotos, setGooglePhotos] = useState<GooglePickerItem[]>([]);
   const [importStatus, setImportStatus] = useState("");
 
   // Start Google Photos Picker session
@@ -39,7 +49,7 @@ export default function GooglePhotosImporter({
       if (!res.ok) {
         throw new Error("Failed to initialize Google Photos session.");
       }
-      const data = await res.json();
+      const data = await res.json() as { id: string; pickerUri: string };
       setPickerSessionId(data.id);
 
       // Redirect the synchronous popup
@@ -49,14 +59,28 @@ export default function GooglePhotosImporter({
 
       setIsPolling(true);
       setImportStatus("Session active. Select photos in the opened tab...");
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (popup) {
         popup.close();
       }
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to initialize Google Photos session.");
       setLoading(false);
     }
   };
+
+  const fetchGooglePhotosItems = useCallback(async (sessionId: string) => {
+    try {
+      const res = await authenticatedFetch(`/api/photos/picker/${sessionId}/items`);
+      if (!res.ok) throw new Error("Failed to read selected photos.");
+      const data = await res.json() as { mediaItems?: GooglePickerItem[] };
+      setGooglePhotos(data.mediaItems || []);
+      setLoading(false);
+      setImportStatus(`Successfully fetched ${data.mediaItems?.length || 0} Google Photos!`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to read selected photos.");
+      setLoading(false);
+    }
+  }, [setError, setLoading]);
 
   // Poll Google Photos Picker session status
   useEffect(() => {
@@ -67,7 +91,7 @@ export default function GooglePhotosImporter({
         const res = await authenticatedFetch(`/api/photos/picker/${pickerSessionId}`);
         if (!res.ok) return;
 
-        const data = await res.json();
+        const data = await res.json() as { mediaItemsSet?: boolean };
         if (data.mediaItemsSet) {
           clearInterval(intervalId);
           setIsPolling(false);
@@ -80,23 +104,9 @@ export default function GooglePhotosImporter({
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [isPolling, pickerSessionId]);
+  }, [fetchGooglePhotosItems, isPolling, pickerSessionId]);
 
-  const fetchGooglePhotosItems = async (sessionId: string) => {
-    try {
-      const res = await authenticatedFetch(`/api/photos/picker/${sessionId}/items`);
-      if (!res.ok) throw new Error("Failed to read selected photos.");
-      const data = await res.json();
-      setGooglePhotos(data.mediaItems || []);
-      setLoading(false);
-      setImportStatus(`Successfully fetched ${data.mediaItems?.length || 0} Google Photos!`);
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
-
-  const handleSelectGooglePhoto = async (item: any) => {
+  const handleSelectGooglePhoto = async (item: GooglePickerItem) => {
     setLoading(true);
     setError(null);
     try {
@@ -117,8 +127,8 @@ export default function GooglePhotosImporter({
         setLoading(false);
       };
       reader.readAsDataURL(blob);
-    } catch (err: any) {
-      setError(`Failed to retrieve Google Photo: ${err.message}`);
+    } catch (err: unknown) {
+      setError(`Failed to retrieve Google Photo: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
   };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   collection,
   doc,
@@ -187,7 +187,7 @@ export const useDocumentSync = (
     return unsubscribe;
   }, [collectionName, listLimit]);
 
-  const fetchRevisions = async (slug: string) => {
+  const fetchRevisions = useCallback(async (slug: string) => {
     if (!slug) return;
     setLoadingRevisions(true);
     setRevisionError(null);
@@ -211,7 +211,7 @@ export const useDocumentSync = (
     } finally {
       setLoadingRevisions(false);
     }
-  };
+  }, [collectionName]);
 
   const saveDoc = async (
     slug: string,

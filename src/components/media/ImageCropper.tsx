@@ -112,8 +112,8 @@ export default function ImageCropper({
         "image/jpeg",
         0.85
       );
-    } catch (err: any) {
-      onError(`Cropping failed: ${err.message}`);
+    } catch (err: unknown) {
+      onError(`Cropping failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 

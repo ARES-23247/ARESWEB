@@ -25,7 +25,7 @@ test.describe('Kanban Task Board status movement tests', () => {
 
   test('blocks creating a task until a title is provided', async ({ page }) => {
     await page.goto('/dashboard/tasks');
-    await page.locator('button', { hasText: 'David (Admin)' }).click();
+    await page.getByRole('button', { name: 'Admin' }).click();
     await expect(page.getByRole('heading', { name: 'Kanban Tasks' })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole('button', { name: 'Create Task' }).click();

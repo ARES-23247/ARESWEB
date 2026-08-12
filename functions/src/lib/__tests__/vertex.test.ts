@@ -47,12 +47,12 @@ describe("Vertex AI / Gemini library", () => {
       await expect(checkGrammarAndSpelling(longText)).rejects.toThrow("exceeds maximum allowed character limit");
     });
 
-    it("should use local fallbacks if API returns empty text or fails", async () => {
+    it("fails explicitly if the API is unavailable", async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error("API offline"));
-      const res = await checkGrammarAndSpelling("I will recieve the package.");
-      expect(res.correctedText).toBe("I will receive the package.");
-      expect(res.edits).toHaveLength(1);
-      expect(res.edits[0].original).toBe("recieve");
+      await expect(checkGrammarAndSpelling("I will recieve the package.")).rejects.toMatchObject({
+        status: 502,
+        code: "AI_UPSTREAM_ERROR",
+      });
     });
   });
 
@@ -66,10 +66,12 @@ describe("Vertex AI / Gemini library", () => {
       expect(res).toBe("Sure, let's write code for FIRST.");
     });
 
-    it("should use local fallback if API fails", async () => {
+    it("fails explicitly if the API is unavailable", async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error("API error"));
-      const res = await getAIAssistance("help me write about robot structure");
-      expect(res).toContain("[Local AI Fallback]");
+      await expect(getAIAssistance("help me write about robot structure")).rejects.toMatchObject({
+        status: 502,
+        code: "AI_UPSTREAM_ERROR",
+      });
     });
   });
 
@@ -87,11 +89,11 @@ describe("Vertex AI / Gemini library", () => {
       expect(res.labels).toContain("robot");
     });
 
-    it("should return local fallbacks if photo analysis fails", async () => {
+    it("fails explicitly if photo analysis is unavailable", async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error("Analysis failed"));
-      const res = await generatePhotoCaptionAndLabels(Buffer.from("dummy-image"), "image/png");
-      expect(res.caption).toBe("ARES robotics team members working on robot assemblies.");
-      expect(res.labels).toContain("ares-team");
+      await expect(
+        generatePhotoCaptionAndLabels(Buffer.from("dummy-image"), "image/png"),
+      ).rejects.toMatchObject({ status: 502, code: "AI_UPSTREAM_ERROR" });
     });
   });
 

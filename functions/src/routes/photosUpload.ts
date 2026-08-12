@@ -9,6 +9,12 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
+import {
+  deleteStoredPhotoAssets,
+  generatePhotoDerivatives,
+  photoDerivativeDtoFields,
+  storePhotoAssets,
+} from "../lib/photoDerivatives";
 
 const router = express.Router();
 
@@ -128,6 +134,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
         importedAt: existingPhotoData.importedAt || "",
         isSynced: Boolean(existingPhotoData.googleMediaItemId),
         isArchived: false,
+        ...photoDerivativeDtoFields(existingPhotoData),
       },
       cached: true
     });
@@ -140,29 +147,33 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
   const docId = `photo-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`;
   const storageKey = `gallery/uploads/${dateStr}/${docId}-${sanitizedFilename}`;
   const bucket = adminStorage.bucket();
-  const storageFile = bucket.file(storageKey);
-
-  await storageFile.save(buffer, {
-    metadata: {
-      contentType: mimeType,
-      metadata: {
-        importedBy: "ARES Unified Uploader",
-      },
+  let derivatives;
+  try {
+    derivatives = await generatePhotoDerivatives(buffer);
+  } catch (error) {
+    logger.warn("photos", "A validated upload could not be decoded for responsive image generation", error);
+    throw new ApiError(400, "The image could not be decoded safely.");
+  }
+  const storedAssets = await storePhotoAssets(
+    bucket,
+    {
+      path: storageKey,
+      mimeType,
+      metadata: { importedBy: "ARES Unified Uploader" },
     },
-    resumable: false,
-  });
-
-  const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storageKey)}?alt=media`;
+    `gallery/derivatives/${dateStr}/${docId}`,
+    derivatives,
+  );
 
   // AI auto-labeling and caption
   let caption = "";
   let labels: string[] = [];
   if (runAiLabeling) {
     try {
-      const aiResult = await generatePhotoCaptionAndLabels(buffer, mimeType);
+      const aiResult = await generatePhotoCaptionAndLabels(derivatives.original.buffer, mimeType);
       caption = aiResult.caption;
       labels = aiResult.labels;
-    } catch (aiErr: any) {
+    } catch (aiErr: unknown) {
       logger.warn("photos", "AI labeling failed during upload", aiErr);
     }
   }
@@ -174,7 +185,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     try {
       const googleToken = await getGooglePhotosAccessToken();
       
-      // 1. Upload raw bytes
+      // 1. Upload full-resolution bytes after camera metadata removal.
       const uploadRes = await fetch("https://photoslibrary.googleapis.com/v1/uploads", {
         method: "POST",
         headers: {
@@ -183,7 +194,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
           "X-Goog-Upload-File-Name": filename,
           "X-Goog-Upload-Protocol": "raw"
         },
-        body: buffer
+        body: new Uint8Array(derivatives.original.buffer)
       });
 
       if (!uploadRes.ok) {
@@ -228,14 +239,19 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
         throw new Error(`Google batch create failed with HTTP ${batchRes.status}: ${batchRes.statusText}`);
       }
 
-      const batchData = await batchRes.json();
+      const batchData = await batchRes.json() as {
+        newMediaItemResults?: Array<{
+          status?: { message?: string };
+          mediaItem?: { id?: string };
+        }>;
+      };
       const creationResult = batchData.newMediaItemResults?.[0];
       if (creationResult?.status?.message && creationResult.status.message !== "Success") {
         throw new Error(`Google creation status not success: ${creationResult.status.message}`);
       }
       googleMediaItemId = creationResult?.mediaItem?.id || null;
-    } catch (gErr: any) {
-      logger.warn("photos", "Google Photos sync upload error", gErr.message || gErr);
+    } catch (gErr: unknown) {
+      logger.warn("photos", "Google Photos sync upload error", gErr);
       googleSyncWarning = "The image was saved to the team site, but Google Photos sync failed.";
     }
   }
@@ -243,11 +259,10 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
   // Save metadata in Firestore imported_photos
   const photoMeta = {
     id: docId,
-    storagePath: storageKey,
-    publicUrl,
+    ...storedAssets,
     originalFilename: filename,
     mimeType,
-    fileSize: buffer.byteLength,
+    fileSize: derivatives.original.fileSize,
     importedAt: new Date().toISOString(),
     albumId: albumId || null,
     caption,
@@ -258,31 +273,41 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     updatedAt: new Date().toISOString(),
   };
 
-  await adminDb.collection("imported_photos").doc(docId).set(photoMeta);
+  try {
+    const batch = adminDb.batch();
+    batch.set(adminDb.collection("imported_photos").doc(docId), photoMeta);
 
-  // If album is specified, link and increment count
-  if (albumId) {
-    await updateAlbumMediaCount(albumId, 1);
-    const albumRef = adminDb.collection("albums").doc(albumId);
-    
-    // Save inside album's photos subcollection for compatibility
-    await albumRef.collection("photos").doc(docId).set(photoMeta);
+    // Commit metadata, the album link, and its count atomically so a failed
+    // database write cannot leave an orphaned record or inflated count.
+    if (albumId) {
+      const albumRef = adminDb.collection("albums").doc(albumId);
+      batch.update(albumRef, {
+        mediaCount: admin.firestore.FieldValue.increment(1),
+        updatedAt: new Date().toISOString(),
+      });
+      batch.set(albumRef.collection("photos").doc(docId), photoMeta);
+    }
+    await batch.commit();
+  } catch (error) {
+    await deleteStoredPhotoAssets(bucket, storedAssets);
+    throw error;
   }
 
   res.status(201).json({
     success: true,
     photo: {
       id: docId,
-      publicUrl,
+      publicUrl: storedAssets.publicUrl,
       caption,
       altText: "",
       labels,
       albumId: albumId || null,
       mimeType,
-      fileSize: buffer.byteLength,
+      fileSize: derivatives.original.fileSize,
       importedAt: photoMeta.importedAt,
       isSynced: Boolean(googleMediaItemId),
       isArchived: false,
+      ...photoDerivativeDtoFields(storedAssets),
     },
     googleSync: {
       requested: uploadToGoogle === true,

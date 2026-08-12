@@ -48,6 +48,8 @@ const mocks = vi.hoisted(() => ({
   } as Record<string, Array<{ id: string; data: () => Record<string, unknown> }>>,
   queries: new Map<string, {
     where: ReturnType<typeof vi.fn>;
+    orderBy: ReturnType<typeof vi.fn>;
+    startAfter: ReturnType<typeof vi.fn>;
     limit: ReturnType<typeof vi.fn>;
     get: ReturnType<typeof vi.fn>;
   }>(),
@@ -57,22 +59,32 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../lib/firebase-admin", () => ({
   adminDb: {
     collection: vi.fn((collectionName: string) => {
+      let cursorId: string | null = null;
+      let requestedLimit = 250;
       const query = {
         where: vi.fn(),
-        limit: vi.fn(),
+        orderBy: vi.fn(),
+        startAfter: vi.fn((document: { id: string }) => {
+          cursorId = document.id;
+          return query;
+        }),
+        limit: vi.fn((value: number) => {
+          requestedLimit = value;
+          return query;
+        }),
         get: vi.fn(async () => {
           if (mocks.failCollection === collectionName) {
             throw new Error("Firestore unavailable");
           }
-          return {
-            forEach: (callback: (doc: { id: string; data: () => Record<string, unknown> }) => void) => {
-              mocks.documents[collectionName]?.forEach(callback);
-            }
-          };
+          const documents = mocks.documents[collectionName] ?? [];
+          const cursorIndex = cursorId === null
+            ? -1
+            : documents.findIndex((document) => document.id === cursorId);
+          return { docs: documents.slice(cursorIndex + 1, cursorIndex + 1 + requestedLimit) };
         })
       };
       query.where.mockReturnValue(query);
-      query.limit.mockReturnValue(query);
+      query.orderBy.mockReturnValue(query);
       mocks.queries.set(collectionName, query);
       return query;
     })
@@ -116,6 +128,8 @@ describe("sitemap route", () => {
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
     expect(xml).toContain("<loc>https://aresfirst.org/</loc>");
+    expect(xml).toContain("<loc>https://aresfirst.org/leaderboard</loc>");
+    expect(xml).toContain("<loc>https://aresfirst.org/store</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/docs</loc>");
     expect(xml).not.toContain("<loc>https://aresfirst.org/tournaments</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/blog/blog%20%26%20post</loc>");
@@ -139,7 +153,56 @@ describe("sitemap route", () => {
 
     expect(mocks.queries.size).toBe(5);
     for (const query of mocks.queries.values()) {
-      expect(query.limit).toHaveBeenCalledWith(500);
+      expect(query.orderBy).toHaveBeenCalledWith(expect.anything(), "asc");
+      expect(query.limit).toHaveBeenCalledWith(250);
+    }
+  });
+
+  it("reads deterministic query pages beyond the former 500-record ceiling", async () => {
+    const originalPosts = mocks.documents.posts;
+    mocks.documents.posts = Array.from({ length: 501 }, (_, index) => ({
+      id: `published-post-${String(index).padStart(3, "0")}`,
+      data: () => ({ updatedAt: "2026-08-01T12:30:00.000Z" }),
+    }));
+
+    try {
+      await getHandler()({}, res, next);
+
+      const xml = res.send.mock.calls[0][0] as string;
+      expect(xml).toContain("/blog/published-post-500</loc>");
+      const postsQuery = mocks.queries.get("posts")!;
+      expect(postsQuery.get).toHaveBeenCalledTimes(3);
+      expect(postsQuery.startAfter).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ id: "published-post-249" }),
+      );
+      expect(postsQuery.startAfter).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ id: "published-post-499" }),
+      );
+    } finally {
+      mocks.documents.posts = originalPosts;
+    }
+  });
+
+  it("stops at the per-collection safety cap before the sitemap protocol limit", async () => {
+    const originalPosts = mocks.documents.posts;
+    mocks.documents.posts = Array.from({ length: 5_001 }, (_, index) => ({
+      id: `bounded-post-${String(index).padStart(4, "0")}`,
+      data: () => ({}),
+    }));
+
+    try {
+      await getHandler()({}, res, next);
+
+      const xml = res.send.mock.calls[0][0] as string;
+      expect(xml).toContain("/blog/bounded-post-4999</loc>");
+      expect(xml).not.toContain("/blog/bounded-post-5000</loc>");
+      const postsQuery = mocks.queries.get("posts")!;
+      expect(postsQuery.get).toHaveBeenCalledTimes(21);
+      expect(postsQuery.limit).toHaveBeenLastCalledWith(1);
+    } finally {
+      mocks.documents.posts = originalPosts;
     }
   });
 

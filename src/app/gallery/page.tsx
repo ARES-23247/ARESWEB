@@ -20,6 +20,9 @@ interface GalleryPhoto {
   location?: string;
   description?: string;
   imageUrl?: string;
+  thumbnailUrl?: string;
+  thumbnailWidth?: number;
+  thumbnailHeight?: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -62,6 +65,9 @@ function parsePhoto(value: unknown, index: number): GalleryPhoto | null {
     location: readText(value, "location"),
     description: readText(value, "description"),
     imageUrl: safeImageUrl(readText(value, "publicUrl")),
+    thumbnailUrl: safeImageUrl(readText(value, "thumbnailUrl")),
+    thumbnailWidth: typeof value.thumbnailWidth === "number" && value.thumbnailWidth > 0 ? value.thumbnailWidth : undefined,
+    thumbnailHeight: typeof value.thumbnailHeight === "number" && value.thumbnailHeight > 0 ? value.thumbnailHeight : undefined,
   };
 }
 
@@ -218,13 +224,13 @@ export default function GalleryPage() {
                         <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/45">
                           {photo.imageUrl ? (
                             <img
-                              src={photo.imageUrl}
+                              src={photo.thumbnailUrl ?? photo.imageUrl}
                               alt={imageAlt}
                               loading="lazy"
                               decoding="async"
                               fetchPriority="low"
-                              width={4}
-                              height={3}
+                              width={photo.thumbnailWidth ?? 4}
+                              height={photo.thumbnailHeight ?? 3}
                               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           ) : (

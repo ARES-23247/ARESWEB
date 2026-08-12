@@ -14,6 +14,21 @@ interface EventEditorAiCopilotProps {
   setRevertAlert: (msg: string | null) => void;
 }
 
+interface GrammarEdit {
+  original: string;
+  corrected: string;
+  explanation?: string;
+}
+
+interface AssistantResponse {
+  response?: string;
+}
+
+interface GrammarResponse {
+  correctedText?: string;
+  edits?: GrammarEdit[];
+}
+
 export default function EventEditorAiCopilot({
   formTitle,
   formDescription,
@@ -26,14 +41,16 @@ export default function EventEditorAiCopilot({
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [grammarEdits, setGrammarEdits] = useState<any[]>([]);
+  const [grammarEdits, setGrammarEdits] = useState<GrammarEdit[]>([]);
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // AI Copilot: Assistant prompt
   const handleAiAssistant = async (prompt: string, presetName = "") => {
     if (!prompt.trim()) return;
     setAiLoading(true);
     setAiResponse("");
+    setAiError(null);
     try {
       const res = await authenticatedFetch("/api/ai/assistant", {
         method: "POST",
@@ -48,12 +65,11 @@ export default function EventEditorAiCopilot({
       });
 
       if (!res.ok) throw new Error("AI Assistant service error.");
-      const data = await res.json();
+      const data = await res.json() as AssistantResponse;
       setAiResponse(data.response || "");
-    } catch (err: any) {
-      setAiResponse(
-        `Failed to contact Gemini co-pilot: ${err.message}. Using offline fallback.\n\nOur team is committed to implementing robust code structures inside *FIRST*® programs. By using ARESLib, we maintain clean state machines and accurate sensor integrations.`
-      );
+    } catch (err: unknown) {
+      console.warn("Gemini assistant request failed", err);
+      setAiError("Gemini is temporarily unavailable. Your event description was not changed.");
     } finally {
       setAiLoading(false);
     }
@@ -65,6 +81,7 @@ export default function EventEditorAiCopilot({
     setAiLoading(true);
     setGrammarEdits([]);
     setSuggestedCorrection("");
+    setAiError(null);
     try {
       const res = await authenticatedFetch("/api/ai/grammar", {
         method: "POST",
@@ -73,19 +90,12 @@ export default function EventEditorAiCopilot({
       });
 
       if (!res.ok) throw new Error("AI Grammar check service error.");
-      const data = await res.json();
+      const data = await res.json() as GrammarResponse;
       setSuggestedCorrection(data.correctedText || "");
       setGrammarEdits(data.edits || []);
-    } catch (err: any) {
-      console.warn(err);
-      setSuggestedCorrection(formDescription);
-      setGrammarEdits([
-        {
-          original: "offline check",
-          corrected: "online check",
-          explanation: "Connect to live sync to get full Gemini spelling check."
-        }
-      ]);
+    } catch (err: unknown) {
+      console.warn("Gemini grammar request failed", err);
+      setAiError("Grammar checking is temporarily unavailable. Your event description was not changed.");
     } finally {
       setAiLoading(false);
     }
@@ -98,6 +108,12 @@ export default function EventEditorAiCopilot({
           <Sparkles size={16} className="text-ares-gold" />
           <h4 className="text-xs font-black uppercase tracking-widest text-white">Gemini Operation Copilot</h4>
         </div>
+
+        {aiError && (
+          <p role="alert" className="rounded border border-ares-danger-soft/40 bg-ares-red/10 p-2 text-[10px] text-ares-danger-soft">
+            {aiError}
+          </p>
+        )}
 
         <div className="space-y-2.5">
           <span className="text-[9px] uppercase font-black tracking-widest text-marble/45 block">
@@ -234,7 +250,7 @@ export default function EventEditorAiCopilot({
       </div>
 
       <p className="text-[8.5px] font-mono text-marble/35 uppercase leading-normal tracking-wide mt-5">
-        Powered by Google Gemini 1.5 Pro. Logs auto-reconciled with ARESLib rules.
+        Powered by Google Gemini. Generated content should be reviewed before publishing.
       </p>
     </div>
   );

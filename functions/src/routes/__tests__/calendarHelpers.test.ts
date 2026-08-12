@@ -13,6 +13,7 @@ import {
   parseBody,
   parseId,
   parseLimit,
+  publicVenueDto,
   readString,
 } from "../calendarHelpers";
 
@@ -37,6 +38,11 @@ describe("calendar route helpers", () => {
       address: "Morgantown, WV",
       gmapsUrl: "http://example.com",
     })).toThrow("URL must use HTTPS");
+    expect(parseBody(locationWriteSchema, {
+      name: "Public Library",
+      address: "321 Main Street, Morgantown, WV 26505, US",
+      isAddressPublic: 1,
+    })).toMatchObject({ isAddressPublic: 1 });
   });
 
   it("builds explicit DTOs without copying unknown operational fields", () => {
@@ -52,15 +58,29 @@ describe("calendar route helpers", () => {
     expect(publicDto).toMatchObject({ id: "event-1", category: "outreach" });
     expect(publicDto).not.toHaveProperty("status");
     expect(publicDto).not.toHaveProperty("createdBy");
+    expect(publicDto).not.toHaveProperty("location");
+    expect(publicDto).not.toHaveProperty("locationId");
 
     expect(eventDto("event-2", { status: "invalid", isDeleted: 1 }, true)).toMatchObject({
       status: "draft",
       isDeleted: 1,
     });
-    expect(locationDto("venue-1", { name: 123, address: "WV", isDeleted: 1 })).toMatchObject({
+    expect(locationDto("venue-1", { name: 123, address: "WV", isDeleted: 1, isAddressPublic: 1 })).toMatchObject({
       name: "Unnamed venue",
       isDeleted: 1,
+      isAddressPublic: 1,
     });
+    expect(publicVenueDto({
+      name: " Public Library ",
+      address: " 321 Main Street, Morgantown, WV 26505, US ",
+      isAddressPublic: 1,
+      internalNotes: "private",
+    } as never)).toEqual({
+      name: "Public Library",
+      address: "321 Main Street, Morgantown, WV 26505, US",
+    });
+    expect(publicVenueDto({ name: "Private home", address: "private", isAddressPublic: 0 })).toBeNull();
+    expect(publicVenueDto({ name: "Archived", address: "public", isAddressPublic: 1, isDeleted: 1 })).toBeNull();
 
     expect(eventPhotoDto("photo-1", {
       url: "https://images.example.test/practice.jpg",
@@ -72,6 +92,8 @@ describe("calendar route helpers", () => {
       id: "photo-1",
       url: "https://images.example.test/practice.jpg",
       filename: "Practice.jpg",
+      thumbnailUrl: null,
+      mediumUrl: null,
     });
     expect(eventPhotoDto("photo-fallback", {
       url: "https://images.example.test/photo.jpg",

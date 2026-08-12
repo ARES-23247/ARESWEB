@@ -49,6 +49,18 @@ describe("AI Router Backend Endpoints", () => {
     return stack[stack.length - 1].handle;
   };
 
+  it.each(["/grammar", "/assistant", "/sim-playground"])(
+    "authorizes and applies the shared generation quota before %s",
+    (path) => {
+      const layer = aiRouter.stack.find((entry) => entry.route?.path === path);
+      expect(layer?.route?.stack.map((entry) => entry.name)).toEqual([
+        "ensureAdmin",
+        "enforceDistributedQuota",
+        expect.any(String),
+      ]);
+    },
+  );
+
   describe("POST /api/ai/grammar - Grammar checking", () => {
     it("should check grammar successfully if text is provided", async () => {
       req.body = { text: "Some bad grammer text" };
@@ -150,6 +162,37 @@ describe("AI Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Missing required 'systemPrompt' or 'messages' fields.");
       expect(err.status).toBe(400);
+    });
+
+    it("rejects malformed conversation entries", async () => {
+      req.body = {
+        systemPrompt: "You are a path planner",
+        messages: [{ role: "system", content: 42 }],
+      };
+
+      const handler = getHandler("/sim-playground", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+      expect(res.flushHeaders).not.toHaveBeenCalled();
+    });
+
+    it("streams a generic error event without exposing provider details", async () => {
+      const { getSimulationPlaygroundStream } = await import("../../lib/vertex");
+      vi.mocked(getSimulationPlaygroundStream).mockRejectedValueOnce(
+        new Error("provider credential project-private-secret"),
+      );
+      req.body = {
+        systemPrompt: "You are a path planner",
+        messages: [{ role: "user", content: "Hello" }],
+      };
+
+      const handler = getHandler("/sim-playground", "post");
+      await handler(req, res, next);
+
+      expect(res.write).toHaveBeenCalledWith(expect.stringContaining("AI_UPSTREAM_ERROR"));
+      expect(res.write).not.toHaveBeenCalledWith(expect.stringContaining("project-private-secret"));
+      expect(res.end).toHaveBeenCalled();
     });
 
     it("should fail validation if imageUrl is not a string", async () => {

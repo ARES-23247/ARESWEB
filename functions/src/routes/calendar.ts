@@ -21,6 +21,7 @@ import {
   parseBody,
   parseId,
   parseLimit,
+  publicVenueDto,
   readString,
 } from "./calendarHelpers";
 
@@ -101,7 +102,18 @@ router.get("/events", asyncHandler(async (req, res) => {
 
 router.get("/events/:id", asyncHandler(async (req, res) => {
   const { id, data } = await getEvent(req.params.id, false);
-  res.json({ success: true, event: eventDto(id, data, false) });
+  const locationId = readString(data.locationId);
+  let publicVenue = null;
+  if (locationId && /^[A-Za-z0-9_-]{1,128}$/.test(locationId)) {
+    const locationSnapshot = await adminDb.collection("locations").doc(locationId).get();
+    if (locationSnapshot.exists) {
+      publicVenue = publicVenueDto(locationSnapshot.data() as LocationDocument);
+    }
+  }
+  res.json({
+    success: true,
+    event: { ...eventDto(id, data, false), publicVenue },
+  });
 }));
 
 // Public event media is a bounded explicit DTO. Uploader identity, timestamps,

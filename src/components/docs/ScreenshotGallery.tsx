@@ -17,11 +17,17 @@ export default function ScreenshotGallery() {
       try {
         const res = await authenticatedFetch("/api/photos");
         if (res.ok) {
-          const data = await res.json();
-          if (data.photos && data.photos.length > 0) {
+          const data = await res.json() as {
+            photos?: Array<{
+              publicUrl?: unknown;
+              mediumUrl?: unknown;
+              thumbnailUrl?: unknown;
+            }>;
+          };
+          if (Array.isArray(data.photos) && data.photos.length > 0) {
             const urls = data.photos
-              .map((p: any) => p.publicUrl)
-              .filter(Boolean);
+              .map((photo) => photo.mediumUrl || photo.thumbnailUrl || photo.publicUrl)
+              .filter((url): url is string => typeof url === "string" && url.length > 0);
             if (urls.length > 0) {
               setImages(urls);
             }

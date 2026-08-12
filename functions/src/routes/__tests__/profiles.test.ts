@@ -653,7 +653,7 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(documentRef.set).toHaveBeenCalledWith({
         email: "test@aresfirst.org",
         role: "admin",
-        name: "Coach David",
+        name: "Bootstrap Administrator",
       });
       expect(res.json).toHaveBeenCalledWith({
         authorizedUser: expect.objectContaining({ role: "admin" }),

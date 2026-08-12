@@ -174,6 +174,17 @@ describe("Google Drive Utilities & Express Router", () => {
   });
 
   describe("POST /api/drive/sync", () => {
+    it("authorizes and applies the shared quota before Drive sync", () => {
+      const layer = (driveRouter as any).stack.find(
+        (entry: any) => entry.route?.path === "/sync" && entry.route.methods.post,
+      );
+      expect(layer.route.stack.map((entry: any) => entry.name)).toEqual([
+        "ensureAdmin",
+        "enforceDistributedQuota",
+        expect.any(String),
+      ]);
+    });
+
     it("should scan Drive folder and batch upsert files into Firestore documents collection", async () => {
       req.body = { folderId: "1DRIVE_FOLDER_123456789" };
 
@@ -195,7 +206,7 @@ describe("Google Drive Utilities & Express Router", () => {
 
       const handler = (driveRouter as any).stack.find(
         (s: any) => s.route && s.route.path === "/sync" && s.route.methods.post
-      ).route.stack[1].handle;
+      ).route.stack.at(-1).handle;
 
       await handler(req, res);
 

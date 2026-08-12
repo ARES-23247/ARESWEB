@@ -102,7 +102,7 @@ export default function TermsPage() {
 
         <div className="mt-16 text-center text-marble text-sm">
           <p>Last updated: {new Date().toLocaleDateString()}</p>
-          <p>For legal inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} className="text-marble hover:text-ares-red transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
+          <p>For legal inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
         </div>
       </div>
     </motion.div>

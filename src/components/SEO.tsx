@@ -146,14 +146,20 @@ export function createAdditionalSchema({
     });
   }
 
-  if (type === "event" && schemaData?.startDate) {
-    const location = schemaData.locationName || schemaData.locationAddress
-      ? compactObject({
-          "@type": "Place",
-          "name": schemaData.locationName,
-          "address": schemaData.locationAddress
-        })
-      : undefined;
+  if (
+    type === "event" &&
+    schemaData?.startDate &&
+    schemaData.locationName &&
+    schemaData.locationAddress
+  ) {
+    const location = {
+      "@type": "Place",
+      "name": schemaData.locationName,
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": schemaData.locationAddress,
+      },
+    };
 
     return compactObject({
       "@context": "https://schema.org",
@@ -163,6 +169,7 @@ export function createAdditionalSchema({
       "endDate": schemaData.endDate,
       "eventAttendanceMode": schemaData.eventAttendanceMode,
       "location": location,
+      "url": canonicalUrl,
       "image": image,
       "description": description,
       "organizer": {

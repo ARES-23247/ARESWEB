@@ -168,7 +168,7 @@ export default function DashboardHome() {
                 Pending Developer Verification
               </h3>
               <p className="text-marble/75 text-xs mt-1 max-w-xl">
-                Your account is currently registered as <strong className="text-white">Unverified Guest</strong>. You have read-only permissions across task managers and system controls. Please contact David or the lead programmer to elevate your security clearance.
+                Your account is currently registered as <strong className="text-white">Unverified Guest</strong>. You have read-only permissions across task managers and system controls. Please contact a team administrator to request access.
               </p>
             </div>
           </div>

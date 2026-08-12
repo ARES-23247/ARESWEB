@@ -5,6 +5,10 @@ export interface EventItem {
   dateEnd?: string;
   location?: string;
   locationId?: string;
+  publicVenue?: {
+    name: string;
+    address: string;
+  };
   description?: string;
   category: "internal" | "outreach";
   coverImage?: string;
@@ -27,6 +31,8 @@ export interface EventSignup {
 export interface EventPhoto {
   id: string;
   url: string;
+  thumbnailUrl?: string | null;
+  mediumUrl?: string | null;
   uploadedBy?: string;
   uploadedAt?: string;
   filename: string;

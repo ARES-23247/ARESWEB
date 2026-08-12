@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { collection, doc, onSnapshot, setDoc, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
@@ -42,6 +42,8 @@ export interface EventSignup {
 export interface EventPhoto {
   id: string;
   url: string;
+  thumbnailUrl?: string | null;
+  mediumUrl?: string | null;
   uploadedBy: string;
   uploadedAt: string;
   filename: string;
@@ -211,14 +213,7 @@ export function useEventEditor({
     return () => unsubscribe();
   }, [editId, isOpen]);
 
-  // Fetch event revisions list when tab shifts
-  useEffect(() => {
-    if (activeTab === "revisions" && editId && isOpen) {
-      fetchRevisionsList();
-    }
-  }, [activeTab, editId, isOpen]);
-
-  const fetchRevisionsList = async () => {
+  const fetchRevisionsList = useCallback(async () => {
     if (!editId) return;
     setLoadingRevisions(true);
     try {
@@ -235,7 +230,14 @@ export function useEventEditor({
     } finally {
       setLoadingRevisions(false);
     }
-  };
+  }, [editId]);
+
+  // Fetch event revisions list when tab shifts
+  useEffect(() => {
+    if (activeTab === "revisions" && editId && isOpen) {
+      void fetchRevisionsList();
+    }
+  }, [activeTab, editId, fetchRevisionsList, isOpen]);
 
   const displayedMembers = useMemo(() => {
     const list = [...teamMembers];
@@ -333,6 +335,10 @@ export function useEventEditor({
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editId || !user) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setUploadError("Upload a JPEG, PNG, or WebP image.");
+      return;
+    }
     setUploadingImage(true);
     setUploadError(null);
     try {
@@ -363,13 +369,15 @@ export function useEventEditor({
       const photoData: EventPhoto = {
         id: photoId,
         url: data.photo.publicUrl,
+        thumbnailUrl: typeof data.photo.thumbnailUrl === "string" ? data.photo.thumbnailUrl : null,
+        mediumUrl: typeof data.photo.mediumUrl === "string" ? data.photo.mediumUrl : null,
         uploadedBy: userNickname || "ARES Member",
         uploadedAt: new Date().toISOString(),
         filename: file.name,
         googleMediaItemId: data.photo.googleMediaItemId || undefined
       };
 
-      await setDoc(doc(db, "events", editId, "photos", photoId), cleanUndefined(photoData));
+      await setDoc(doc(db, "events", editId, "photos", photoId), cleanUndefined({ ...photoData }));
       setRevertAlert("Photo uploaded to the event gallery. Google Photos sync runs when the team account is connected.");
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : String(err));

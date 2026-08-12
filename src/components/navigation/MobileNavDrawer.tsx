@@ -77,6 +77,7 @@ export function MobileNavDrawer({
       (element): element is HTMLElement => element instanceof HTMLElement && element !== portal,
     );
     const previousBodyOverflow = document.body.style.overflow;
+    const returnFocusTarget = returnFocusRef?.current;
     const previousStates = siblings.map((element) => ({
       element,
       inert: element.inert,
@@ -96,7 +97,7 @@ export function MobileNavDrawer({
         if (ariaHidden === null) element.removeAttribute("aria-hidden");
         else element.setAttribute("aria-hidden", ariaHidden);
       }
-      queueMicrotask(() => returnFocusRef?.current?.focus());
+      queueMicrotask(() => returnFocusTarget?.focus());
     };
   }, [isOpen, returnFocusRef]);
 

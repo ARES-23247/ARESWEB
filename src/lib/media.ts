@@ -24,6 +24,14 @@ export interface PublicVideoPage {
 export interface ManagedPhoto {
   id: string;
   publicUrl: string;
+  thumbnailUrl?: string | null;
+  thumbnailWidth?: number | null;
+  thumbnailHeight?: number | null;
+  mediumUrl?: string | null;
+  mediumWidth?: number | null;
+  mediumHeight?: number | null;
+  width?: number | null;
+  height?: number | null;
   caption: string;
   altText: string;
   labels: string[];

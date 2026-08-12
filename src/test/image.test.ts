@@ -53,9 +53,9 @@ describe("image utilities", () => {
       };
       
       const originalImage = global.Image;
-      global.Image = function() {
+      global.Image = function MockImage() {
         return mockImage;
-      } as any;
+      } as unknown as typeof Image;
 
       // Mock canvas methods
       const mockCanvas = {
@@ -68,9 +68,9 @@ describe("image utilities", () => {
       };
       const originalCreateElement = document.createElement;
       document.createElement = vi.fn((tag) => {
-        if (tag === "canvas") return mockCanvas as any;
+        if (tag === "canvas") return mockCanvas as unknown as HTMLCanvasElement;
         return originalCreateElement.call(document, tag);
-      });
+      }) as unknown as typeof document.createElement;
 
       const result = await resizeAndCompressImage(file, 2048, 2048);
       expect(result.mimeType).toBe("image/jpeg");
@@ -97,9 +97,9 @@ describe("image utilities", () => {
       };
 
       const originalImage = global.Image;
-      global.Image = function() {
+      global.Image = function MockImage() {
         return mockImage;
-      } as any;
+      } as unknown as typeof Image;
 
       const result = await resizeAndCompressImage(file);
       expect(result.mimeType).toBe("image/png");

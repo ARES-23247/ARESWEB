@@ -170,7 +170,13 @@ export default function EventDetailPage() {
         if (typeof record.id !== "string" || typeof record.url !== "string" || typeof record.filename !== "string") {
           throw new Error("Event photo response contains invalid fields.");
         }
-        return { id: record.id, url: record.url, filename: record.filename };
+        const thumbnailUrl = typeof record.thumbnailUrl === "string" && record.thumbnailUrl.startsWith("https://")
+          ? record.thumbnailUrl
+          : null;
+        const mediumUrl = typeof record.mediumUrl === "string" && record.mediumUrl.startsWith("https://")
+          ? record.mediumUrl
+          : null;
+        return { id: record.id, url: record.url, thumbnailUrl, mediumUrl, filename: record.filename };
       });
       setPhotos(safePhotos);
       setPhotoLoadError(null);
@@ -285,8 +291,8 @@ export default function EventDetailPage() {
     const file = e.target.files?.[0];
     if (!file || !id || !user || !isVerified) return;
     
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Only image files are permitted.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setUploadError("Upload a JPEG, PNG, or WebP image.");
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
@@ -314,12 +320,16 @@ export default function EventDetailPage() {
         const detail = await response.text();
         throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}${detail ? ` — ${detail}` : ""}`);
       }
-      const payload = await response.json() as { photo?: { id?: string; publicUrl?: string } };
+      const payload = await response.json() as {
+        photo?: { id?: string; publicUrl?: string; thumbnailUrl?: string | null; mediumUrl?: string | null };
+      };
       if (!payload.photo?.id || !payload.photo.publicUrl) throw new Error("Upload response did not contain a photo.");
 
       const photoId = payload.photo.id;
       await setDoc(doc(db, "events", id, "photos", photoId), {
         url: payload.photo.publicUrl,
+        thumbnailUrl: payload.photo.thumbnailUrl ?? null,
+        mediumUrl: payload.photo.mediumUrl ?? null,
         uploadedBy: profileNickname,
         uploadedAt: new Date().toISOString(),
         filename: file.name,
@@ -354,7 +364,9 @@ export default function EventDetailPage() {
       `DTSTART:${startStr}`,
       `DTEND:${endStr}`,
       `SUMMARY:${event.title}`,
-      ...(event.location ? [`LOCATION:${event.location}`] : []),
+      ...(event.publicVenue
+        ? [`LOCATION:${event.publicVenue.name}, ${event.publicVenue.address}`]
+        : []),
       "END:VEVENT",
       "END:VCALENDAR"
     ].join("\r\n");
@@ -409,7 +421,10 @@ export default function EventDetailPage() {
         plainTextDescription = getPlainText(parsedAst);
       }
 
-      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(plainTextDescription)}&location=${encodeURIComponent(event.location || "")}`;
+      const publicLocation = event.publicVenue
+        ? `${event.publicVenue.name}, ${event.publicVenue.address}`
+        : "";
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(plainTextDescription)}&location=${encodeURIComponent(publicLocation)}`;
     } catch {
       return "";
     }
@@ -459,15 +474,12 @@ export default function EventDetailPage() {
         title={event.title} 
         description={event.description || `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`}
         image={event.coverImage}
-        type="event"
+        type={event.category === "outreach" && event.publicVenue ? "event" : "website"}
         schemaData={{
           startDate: event.dateStart,
           endDate: event.dateEnd,
-          locationName: event.location,
-          locationAddress: (() => {
-            const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
-            return selected?.address || event.location || "";
-          })()
+          locationName: event.publicVenue?.name,
+          locationAddress: event.publicVenue?.address,
         }}
       />
 

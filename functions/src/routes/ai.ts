@@ -4,6 +4,7 @@ import { checkGrammarAndSpelling, getAIAssistance, getSimulationPlaygroundStream
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import rateLimit from "express-rate-limit";
+import { distributedQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 
@@ -15,9 +16,14 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 router.use(limiter);
+const generationQuota = distributedQuota({
+  scope: "ai-generation",
+  limit: 30,
+  windowMs: 15 * 60 * 1000,
+});
 
 // POST /api/ai/grammar - Check spelling & grammar
-router.post("/grammar", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/grammar", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
   const { text } = req.body as { text: string };
   if (typeof text !== "string") {
     throw new ApiError(400, "Missing required 'text' field.");
@@ -31,7 +37,7 @@ router.post("/grammar", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/ai/assistant - Get general AI assistant help
-router.post("/assistant", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/assistant", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
   const { prompt, text, context } = req.body as {
     prompt: string;
     text?: string;
@@ -56,20 +62,28 @@ router.post("/assistant", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/ai/sim-playground - Stream simulation playground responses
-router.post("/sim-playground", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/sim-playground", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
   const { systemPrompt, messages, imageUrl } = req.body as {
     systemPrompt: string;
     messages: Array<{ role: string; content: string }>;
     imageUrl?: string;
   };
 
-  if (!systemPrompt || !Array.isArray(messages)) {
+  if (typeof systemPrompt !== "string" || !systemPrompt.trim() || !Array.isArray(messages)) {
     throw new ApiError(400, "Missing required 'systemPrompt' or 'messages' fields.");
   }
   if (systemPrompt.length > 5000) {
     throw new ApiError(400, "System prompt exceeds maximum allowed character limit (5,000).");
   }
-  const totalLength = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
+  if (messages.length > 100 || messages.some((message) => (
+    !message
+    || typeof message !== "object"
+    || !["user", "assistant"].includes(message.role)
+    || typeof message.content !== "string"
+  ))) {
+    throw new ApiError(400, "Messages must be a valid user/assistant conversation.");
+  }
+  const totalLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
   if (totalLength > 40000) {
     throw new ApiError(400, "Conversation history exceeds maximum allowed character limit (40,000).");
   }
@@ -91,8 +105,11 @@ router.post("/sim-playground", ensureAdmin, asyncHandler(async (req, res) => {
       res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
     });
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    res.write(`data: ${JSON.stringify({ chunk: `\n[AI Streaming Error: ${errMsg}]` })}\n\n`);
+    const code = err instanceof ApiError ? err.code : "AI_UPSTREAM_ERROR";
+    res.write(`event: error\ndata: ${JSON.stringify({
+      error: "The AI service is temporarily unavailable.",
+      code,
+    })}\n\n`);
   } finally {
     res.end();
   }

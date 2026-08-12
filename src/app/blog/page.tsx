@@ -159,7 +159,7 @@ export default function BlogFeedPage() {
                   </div>
                   <div className="p-6 flex-grow flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red transition-colors">
+                      <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red-light transition-colors">
                         {post.title}
                       </h4>
                       <p className="text-sm text-white/60 line-clamp-3 mb-4">

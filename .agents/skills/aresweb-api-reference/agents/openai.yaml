@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB API"
+  short_description: "Build and review secure ARESWEB APIs"
+  default_prompt: "Use $aresweb-api-reference to review this ARESWEB backend change."

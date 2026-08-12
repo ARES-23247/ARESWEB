@@ -15,23 +15,23 @@ The project is structured as a pnpm monorepo:
 ## 🛠️ Getting Started
 
 ### Prerequisites
-Make sure you have **Node.js (v18+)** and **pnpm** installed globally.
+Use **Node.js 22.13 or newer in the Node 22 line**, **pnpm 11.21.0**, and
+**Java 21 or newer** for Firebase emulators.
 
 ### 1. Installation
 Install all monorepo dependencies from the workspace root:
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
-### 2. Development Servers
-To run both the frontend dev server and the backend Firebase emulator concurrently:
+### 2. Development servers
+Start the Vite frontend:
 ```bash
-# Run local dev environment
 pnpm dev
 ```
 
 The frontend will be available at `http://localhost:5173`.
-The Firebase emulator UI will be available at `http://localhost:4000`.
+Start Firebase emulators separately when a backend/rules task needs them.
 
 ---
 
@@ -50,7 +50,10 @@ pnpm test
 ```
 
 ### End-to-End Tests (Playwright)
-To execute the remote E2E suite against the deployed staging site:
+Run the isolated local browser suite:
 ```bash
-PREVIEW_URL=https://aresfirst-portal.web.app npm run test:e2e:remote
+pnpm run test:e2e
 ```
+
+See `AGENTS.md` for the complete handoff gate. Production deploys occur only
+through the protected GitHub Actions workflow after merge to `master`.

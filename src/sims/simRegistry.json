@@ -86,7 +86,7 @@
     },
     {
       "id": "greatbee",
-      "name": "Greatbee",
+      "name": "The Great Bee Adventure",
       "path": "./greatbee",
       "requiresContext": false
     },
@@ -301,12 +301,6 @@
       "requiresContext": true
     },
     {
-      "id": "untitled",
-      "name": "Untitled",
-      "path": "./untitled",
-      "requiresContext": false
-    },
-    {
       "id": "vision",
       "name": "PhotonVision Pose Estimator",
       "path": "./vision",
@@ -318,6 +312,5 @@
       "path": "./zeroallocation",
       "requiresContext": true
     }
-  ],
-  "_generated": "2026-06-18T16:23:33.413Z"
+  ]
 }

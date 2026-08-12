@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </h2>
             
             <p className="text-marble/70 text-sm leading-relaxed mb-8 max-w-sm">
-              Access to telemetry commands, the Kanban task boards, and workspace analytics is restricted to authenticated ARES team engineers.
+              Access to team operations, task boards, and workspace analytics is restricted to authenticated ARES team members.
             </p>
  
             <button
@@ -96,11 +96,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => loginWithMockUser("coach.david@gmail.com", "admin", "Coach David")}
+                    onClick={() => loginWithMockUser("local.admin@example.test", "admin", "Local Administrator")}
                     className="w-full py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/30 text-white font-black text-[9px] uppercase tracking-wider ares-cut-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] text-center truncate"
-                    title="Coach David"
+                    title="Local administrator"
                   >
-                    David (Admin)
+                    Admin
                   </button>
                   <button
                     type="button"

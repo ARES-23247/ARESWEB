@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { authenticatedFetch } from "../lib/api";
 import * as LucideIcons from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { User } from "firebase/auth";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => {
@@ -30,6 +31,10 @@ const emptyProfile = {
 
 function apiResponse(body: unknown, ok = true, status = 200, statusText = "OK") {
   return { ok, status, statusText, json: async () => body } as Response;
+}
+
+function testUser(uid: string, displayName: string, email: string): User {
+  return { uid, displayName, email } as unknown as User;
 }
 
 function mockProfileApi(profile: Record<string, unknown> = {}, exists = true) {
@@ -76,17 +81,18 @@ describe("DashboardProfilePage imports", () => {
     ];
     
     requiredIcons.forEach(iconName => {
-      const Icon = (LucideIcons as any)[iconName];
+      const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
       expect(Icon).toBeDefined();
       expect(typeof Icon).not.toBe("undefined");
     });
   });
 
   it("renders profile page successfully with loaded profile", async () => {
-    (useAuth as any).mockReturnValue({
-      user: { uid: "test-uid", displayName: "Test User", email: "test@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser("test-uid", "Test User", "test@example.com"),
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 
     const mockDocData = {
@@ -132,10 +138,11 @@ describe("DashboardProfilePage imports", () => {
   });
 
   it("keeps a new profile private and does not copy the Google legal name into nickname", async () => {
-    (useAuth as any).mockReturnValue({
-      user: { uid: "new-uid", displayName: "Student Legal Name", email: "student@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser("new-uid", "Student Legal Name", "student@example.com"),
       authorizedUser: { email: "student@example.com", role: "member" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({}, false);
 
@@ -149,10 +156,11 @@ describe("DashboardProfilePage imports", () => {
   });
 
   it("forces legacy student contact visibility flags off when saving", async () => {
-    (useAuth as any).mockReturnValue({
-      user: { uid: "student-uid", displayName: "Protected Student", email: "student@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser("student-uid", "Protected Student", "student@example.com"),
       authorizedUser: { email: "student@example.com", role: "member" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({
         nickname: "Student Nickname",
@@ -187,10 +195,11 @@ describe("DashboardProfilePage imports", () => {
   });
 
   it("keeps profile edits visible and reports the write error when saving fails", async () => {
-    (useAuth as any).mockReturnValue({
-      user: { uid: "member-uid", displayName: "Member", email: "member@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser("member-uid", "Member", "member@example.com"),
       authorizedUser: { email: "member@example.com", role: "member" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({ nickname: "Original", memberType: "student" });
     vi.mocked(authenticatedFetch).mockImplementation(async (_input, init) => init?.method === "PATCH"
@@ -207,10 +216,11 @@ describe("DashboardProfilePage imports", () => {
   });
 
   it("exercises all profile tabs, input fields, and submits successfully", async () => {
-    (useAuth as any).mockReturnValue({
-      user: { uid: "test-uid", displayName: "Test User", email: "test@example.com" },
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser("test-uid", "Test User", "test@example.com"),
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 
     const mockDocData = {

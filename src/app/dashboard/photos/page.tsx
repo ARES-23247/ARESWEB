@@ -838,7 +838,7 @@ export default function DashboardPhotosPage() {
                     aria-label={`Open ${photo.caption || "team photo"} details`}
                   >
                     <img
-                      src={photo.publicUrl}
+                      src={photo.thumbnailUrl || photo.publicUrl}
                       alt={photo.altText || "Team photo; alt text needed"}
                       loading="lazy"
                       decoding="async"
@@ -1220,7 +1220,7 @@ export default function DashboardPhotosPage() {
                 className="mt-6 space-y-4"
               >
                 <img
-                  src={photoEditor.publicUrl}
+                  src={photoEditor.mediumUrl || photoEditor.publicUrl}
                   alt=""
                   className="max-h-64 w-full object-contain bg-black"
                 />

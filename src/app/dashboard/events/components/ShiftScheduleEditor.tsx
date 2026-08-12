@@ -44,7 +44,7 @@ const getSafeImageUrl = (url: string) => {
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
       return parsed.href;
     }
-  } catch (e) {
+  } catch {
     if (trimmed.startsWith("/")) {
       return trimmed;
     }
@@ -364,7 +364,7 @@ export default function ShiftScheduleEditor({
           {canPublishDirectly ? (
             <select
               value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as any)}
+              onChange={(e) => setFormStatus(e.target.value as "published" | "pending" | "draft")}
               disabled={!canEdit}
               className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan font-bold"
             >

@@ -96,7 +96,7 @@ export default function TechStackPage() {
                 desc: "Kanban boards sync with Zulip Standard threads, generating Zulip topic alerts on task shifts and logging inquiries into dedicated STEM workspaces.",
                 cost: "Sponsored"
               }
-            ].map((tech, idx) => (
+            ].map((tech) => (
               <div
                 key={tech.title}
                 className="bg-white/5 border border-white/10 p-8 rounded-2xl hero-card hover:border-white/20 hover:shadow-[0_10px_30px_rgba(255,255,255,0.02)] transition-all flex flex-col justify-between group"

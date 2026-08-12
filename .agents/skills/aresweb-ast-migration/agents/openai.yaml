@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB AST Migration"
+  short_description: "Migrate legacy content into safe Tiptap ASTs"
+  default_prompt: "Use $aresweb-ast-migration to design this ARESWEB content migration."

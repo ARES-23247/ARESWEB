@@ -1,6 +1,6 @@
-# Web Accessibility (WCAG 2.1 AA)
+# Web Accessibility (WCAG 2.2 AA)
 
-> Enforces WCAG 2.1 AA compliance. Read before building UI components, HTML, or CSS.
+> Targets WCAG 2.2 AA. Read before building UI components, HTML, or CSS.
 
 ## Core Rules
 
@@ -14,13 +14,16 @@
 
 - `aria-hidden="true"` on decorative icons
 - Functional icons need `aria-label` or `.sr-only` text
-- Canvas elements: `<canvas role="img" aria-label="...">`
+- Canvas elements: provide native keyboard controls and a text/state equivalent;
+  hide the canvas with `aria-hidden="true"` once the equivalent is complete
 
 ## Color Contrast (4.5:1 minimum)
 
 **CRITICAL:** `ares-red` on `obsidian` = 2.69:1 ❌
 
-**Fix:** Red Badge Pattern — `bg-ares-red text-white` (6.48:1 ✅)
+**Fix:** Use `text-ares-red-light` on dark surfaces (6.27:1), or the Red Badge
+Pattern — `bg-ares-red text-white` (6.48:1). Use brand `text-ares-red` only on
+verified light surfaces.
 
 ## Data Grids
 
@@ -30,11 +33,9 @@ Use `@tanstack/react-table` for complex tables — handles ARIA, sorting, keyboa
 
 Visually-hidden "Skip to content" link in header for keyboard users bypassing nav.
 
-## Pseudo-Element Bypass (for unavoidable contrast failures)
+## Automated Checks
 
-```html
-<span aria-hidden="true" className="text-ares-gold before:content-['ARES.']"></span>
-<span className="sr-only">ARES.</span>
-```
-
-Axe doesn't scan CSS-injected content, bypassing false positives while keeping screen reader compatibility.
+Never hide content, inject replacement text through CSS, or exclude real UI to
+evade a scanner. Fix the rendered contrast and interaction. Treat Axe/pa11y as
+supporting evidence and complete keyboard, screen-reader, zoom, reflow, and
+high-contrast manual checks for changed flows.
