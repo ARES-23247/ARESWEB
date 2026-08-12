@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, LogIn, LogOut, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
+import { ArrowRight, LogIn, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
 import { maskEmail } from "@/lib/utils";
