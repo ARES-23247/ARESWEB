@@ -134,6 +134,9 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
   `aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com`. This
   service account must have no user-managed keys and no permission to read
   Secret Manager values.
+- Grant that service account `roles/datastore.indexAdmin` so CI can deploy the
+  source-controlled Firestore indexes. This role manages index definitions. It
+  does not grant access to read or change Firestore documents.
 - Keep `id-token: write` limited to the production deploy job. Do not create
   `FIREBASE_SERVICE_ACCOUNT_KEY`, `FIREBASE_TOKEN`, or equivalent long-lived
   repository secrets.

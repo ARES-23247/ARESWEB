@@ -3,6 +3,8 @@ import { RefreshCw, WifiOff, X } from "lucide-react";
 import { registerSW } from "virtual:pwa-register";
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const REGISTRATION_RETRY_DELAY_MS = 1_500;
+const MAX_REGISTRATION_ATTEMPTS = 3;
 
 interface PwaUpdatePromptProps {
   enabled?: boolean;
@@ -25,6 +27,10 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     if (!enabled || typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
 
     let registration: ServiceWorkerRegistration | undefined;
+    let registrationAttempts = 0;
+    let retryTimer: number | undefined;
+    let isDisposed = false;
+
     const checkForUpdate = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine || !registration) return;
       void registration.update().catch((updateError: unknown) => {
@@ -33,27 +39,74 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
       });
     };
 
-    updateServiceWorker.current = registerSW({
+    const handleRegistrationError = (registrationError: unknown) => {
+      if (isDisposed) return;
+      registrationAttempts += 1;
+      if (registrationAttempts < MAX_REGISTRATION_ATTEMPTS && navigator.onLine) {
+        console.warn("PWA registration failed; retrying:", registrationError);
+        retryTimer = window.setTimeout(registerServiceWorker, REGISTRATION_RETRY_DELAY_MS);
+        return;
+      }
+
+      console.error("PWA registration failed:", registrationError);
+      setError(`Offline access could not be enabled: ${diagnosticMessage(registrationError)}`);
+    };
+
+    const registrationOptions = () => ({
       immediate: true,
-      onNeedRefresh: () => setUpdateAvailable(true),
-      onOfflineReady: () => setOfflineReady(true),
-      onRegisteredSW: (_serviceWorkerUrl, currentRegistration) => {
+      onNeedRefresh: () => {
+        setError(null);
+        setUpdateAvailable(true);
+      },
+      onOfflineReady: () => {
+        registrationAttempts = 0;
+        setError(null);
+        setOfflineReady(true);
+      },
+      onRegisteredSW: (_serviceWorkerUrl: string, currentRegistration?: ServiceWorkerRegistration) => {
+        if (!currentRegistration) return;
         registration = currentRegistration;
+        registrationAttempts = 0;
+        setError(null);
       },
-      onRegisterError: (registrationError: unknown) => {
-        console.error("PWA registration failed:", registrationError);
-        setError(`Offline access could not be enabled: ${diagnosticMessage(registrationError)}`);
-      },
+      onRegisterError: handleRegistrationError,
     });
+
+    function registerServiceWorker() {
+      if (isDisposed) return;
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
+      try {
+        updateServiceWorker.current = registerSW(registrationOptions());
+      } catch (registrationError) {
+        handleRegistrationError(registrationError);
+      }
+    }
+
+    const handleOnline = () => {
+      if (registration) {
+        checkForUpdate();
+        return;
+      }
+      registrationAttempts = 0;
+      setError(null);
+      registerServiceWorker();
+    };
+
+    registerServiceWorker();
 
     const intervalId = window.setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
     document.addEventListener("visibilitychange", checkForUpdate);
-    window.addEventListener("online", checkForUpdate);
+    window.addEventListener("online", handleOnline);
 
     return () => {
+      isDisposed = true;
       window.clearInterval(intervalId);
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
       document.removeEventListener("visibilitychange", checkForUpdate);
-      window.removeEventListener("online", checkForUpdate);
+      window.removeEventListener("online", handleOnline);
     };
   }, [enabled]);
 
