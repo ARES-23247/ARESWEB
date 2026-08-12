@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import calendarRouter, { ensureCalendarPublisher } from "../calendar";
 import { adminDb } from "../../lib/firebase-admin";
-import { ApiError } from "../../middleware/errorHandler";
 
 vi.mock("../../lib/firebase-admin", () => {
   const query = {

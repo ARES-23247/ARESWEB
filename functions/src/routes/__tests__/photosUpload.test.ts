@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
-  mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockDoc, mockCollection,
+  mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
 } = vi.hoisted(() => {
   const mockGet = vi.fn();
   const mockSet = vi.fn();
@@ -29,7 +29,7 @@ const {
   const mockCollection = vi.fn(() => ({ ...mockQuery, doc: mockDoc }));
   return {
     mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
-    mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockDoc, mockCollection,
+    mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
   };
 });
 

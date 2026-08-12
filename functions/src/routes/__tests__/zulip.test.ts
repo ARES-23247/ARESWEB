@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { adminDb } from "../../lib/firebase-admin";
 import {
   createZulipUser,
   getZulipCredentials,
