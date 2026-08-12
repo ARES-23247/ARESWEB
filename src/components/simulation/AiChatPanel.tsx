@@ -25,7 +25,7 @@ export function AiChatPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Chat messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-ares-gray-dark">
+      <div role="log" aria-label="AI assistant conversation" aria-live="polite" className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-ares-gray-dark">
         {chatMessages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -37,7 +37,7 @@ export function AiChatPanel({
             >
               {msg.role === "assistant" && (
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Bot className="w-3.5 h-3.5 text-ares-gold" />
+                  <Bot aria-hidden="true" className="w-3.5 h-3.5 text-ares-gold" />
                   <span className="text-[10px] font-bold text-ares-gold uppercase tracking-widest">
                     z.AI
                   </span>
@@ -48,10 +48,10 @@ export function AiChatPanel({
           </div>
         ))}
         {isChatLoading && (
-          <div className="flex justify-start">
+          <div role="status" className="flex justify-start">
             <div className="bg-ares-gray-dark border border-white/5 px-3 py-2 rounded-xl">
               <div className="flex items-center gap-2 text-sm text-marble/70">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-ares-gold" />
+                <Loader2 aria-hidden="true" className="w-3.5 h-3.5 animate-spin text-ares-gold" />
                 Thinking...
               </div>
             </div>
@@ -64,13 +64,14 @@ export function AiChatPanel({
       <div className="p-2 border-t border-white/10 bg-obsidian-dark shrink-0">
         <div className="flex items-end gap-2">
           <textarea
+            aria-label="Message the AI assistant"
             ref={chatInputRef}
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={handleChatKeyDown}
             placeholder="Describe what to build or fix..."
             rows={1}
-            className="flex-1 bg-ares-gray-deep/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-marble/30 resize-none focus:outline-none focus:border-ares-red/50 transition-colors"
+            className="flex-1 bg-ares-gray-deep/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-marble/30 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
           />
           <button
             onClick={() => handleChatSend()}
@@ -78,7 +79,7 @@ export function AiChatPanel({
             className="p-2 bg-ares-red hover:bg-ares-bronze disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors shrink-0"
             aria-label="Send message"
           >
-            <Send className="w-4 h-4 text-white" />
+            <Send aria-hidden="true" className="w-4 h-4 text-white" />
           </button>
         </div>
       </div>

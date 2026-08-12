@@ -41,6 +41,7 @@ export default function TaskCommentsSection({
           return {
             id: commentDoc.id,
             author: data.author || "Team Member",
+            authorUid: typeof data.authorUid === "string" ? data.authorUid : undefined,
             content: data.content || "",
             createdAt: data.createdAt || new Date().toISOString(),
             source: data.source || "web",
@@ -59,20 +60,17 @@ export default function TaskCommentsSection({
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || submitting || !canEdit) return;
+    if (!newComment.trim() || submitting || !canEdit || !user) return;
 
     setSubmitting(true);
-    const myProfile = teamProfiles.find(
-      (p) =>
-        p.uid === user?.uid ||
-        (user?.email && p.email && p.email.toLowerCase() === user.email.toLowerCase())
-    );
+    const myProfile = teamProfiles.find((p) => p.uid === user?.uid);
     const authorNickname = myProfile?.nickname || "Team Member";
 
     const commentId = `comment_${Date.now()}`;
     const commentPayload = {
       id: commentId,
       author: authorNickname,
+      authorUid: user.uid,
       content: newComment.trim(),
       createdAt: new Date().toISOString(),
       source: "web" as const,
@@ -95,8 +93,6 @@ export default function TaskCommentsSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           taskId: task.id,
-          title: task.title,
-          author: commentPayload.author,
           content: commentPayload.content,
         }),
       }).then((res) => {
@@ -149,7 +145,9 @@ export default function TaskCommentsSection({
                 <div key={comment.id} className="text-[11px] bg-black/45 p-2.5 rounded-lg border border-white/5">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="font-extrabold text-white">
-                      {comment.author?.includes("@") ? "Team Member" : comment.author || "Team Member"}
+                      {comment.authorUid
+                        ? teamProfiles.find((profile) => profile.uid === comment.authorUid)?.nickname || "Team Member"
+                        : comment.author?.includes("@") ? "Team Member" : comment.author || "Team Member"}
                     </span>
                     <span className="text-marble/30 text-[9px] flex items-center gap-1">
                       {comment.source === "zulip" && (

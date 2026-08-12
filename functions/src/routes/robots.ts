@@ -8,7 +8,6 @@ import { validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
 
 const router = express.Router();
-const ROBOT_EDITOR_ROLES = new Set(["admin", "coach", "mentor"]);
 const ROBOT_PAGE_LIMIT = 100;
 const ROBOT_TEXT_LIMIT = 20_000;
 
@@ -132,8 +131,10 @@ export async function ensureRobotEditor(req: AuthenticatedRequest, _res: Respons
     if (!req.user) throw new ApiError(401, "Unauthorized: User not authenticated");
     const userDoc = await adminDb.collection("authorized_users").doc(req.user.uid).get();
     if (!userDoc.exists) throw new ApiError(403, "Forbidden: User not authorized");
-    const role = String(userDoc.data()?.role || "");
-    if (!ROBOT_EDITOR_ROLES.has(role)) {
+    const userData = userDoc.data();
+    const role = userData?.role;
+    if (userData?.isDeleted === true || userData?.isDeleted === 1 ||
+        (role !== "admin" && role !== "coach" && role !== "mentor")) {
       throw new ApiError(403, "Forbidden: Requires admin, coach, or mentor role");
     }
     req.authorizationRole = role;

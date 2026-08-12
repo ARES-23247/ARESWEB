@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { logger } from "../utils/logger";
 import { ApiError } from "../api/apiClient";
 import { authenticatedFetch } from "../lib/api";
-import { validateIdParam } from "../utils/security";
+import { validateIdParam } from "../lib/security";
 import { getSimChatKey } from "../utils/storageKeys";
 import { 
   sanitizeUserInput, 

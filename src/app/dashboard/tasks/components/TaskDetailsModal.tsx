@@ -17,6 +17,7 @@ interface TaskDetailsModalProps {
   tasks: TaskItem[];
   teamProfiles: MemberProfile[];
   canEdit: boolean;
+  canUseAi: boolean;
   user: User | null;
   onClose: () => void;
   onToggleSubtask: (taskId: string, subtaskId: string) => Promise<TaskOperationError | null>;
@@ -34,6 +35,7 @@ export default function TaskDetailsModal({
   tasks,
   teamProfiles,
   canEdit,
+  canUseAi,
   user,
   onClose,
   onToggleSubtask,
@@ -47,8 +49,6 @@ export default function TaskDetailsModal({
 }: TaskDetailsModalProps) {
   const task = taskId ? tasks.find((t) => t.id === taskId) : null;
   const isCreateMode = !taskId;
-
-  if (taskId && !task) return null;
 
   const [modalTitle, setModalTitle] = useState(task?.title || "");
   const [modalDesc, setModalDesc] = useState(task?.description || "");
@@ -105,6 +105,8 @@ export default function TaskDetailsModal({
       setModalAssignees([]);
     }
   }, [task?.id, task?.title, task?.description, task?.priority, task?.subteam, task?.status, task?.assignees]);
+
+  if (taskId && !task) return null;
 
   const handleSave = async () => {
     if (!canEdit || submitting) return;
@@ -186,7 +188,7 @@ export default function TaskDetailsModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             taskId: task.id,
-            action: "update",
+            action: "move",
             title: modalTitle.trim(),
             priority: modalPriority,
             subteam: modalSubteam,
@@ -268,7 +270,7 @@ export default function TaskDetailsModal({
 
         <div className="flex items-center gap-2">
           {/* AI Copilot Toggle */}
-          {!isCreateMode && (
+          {!isCreateMode && canUseAi && (
             <button
               type="button"
               onClick={() => setShowAiSidebar(!showAiSidebar)}
@@ -523,7 +525,7 @@ export default function TaskDetailsModal({
         )}
           </div>
 
-          {!isCreateMode && showAiSidebar && (
+          {!isCreateMode && canUseAi && showAiSidebar && (
             <TaskEditorAiCopilot
               modalTitle={modalTitle}
               modalSubteam={modalSubteam}

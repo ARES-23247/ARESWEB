@@ -82,6 +82,7 @@ export default function KanbanPage() {
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+  const canUseAi = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
 
   const executeTaskOperation = async (
     action: string,
@@ -497,6 +498,7 @@ export default function KanbanPage() {
           tasks={tasks}
           teamProfiles={teamProfiles}
           canEdit={canEdit}
+          canUseAi={canUseAi}
           user={user}
           onClose={() => setEditingTaskId(null)}
           onToggleSubtask={handleToggleSubtask}
@@ -519,6 +521,7 @@ export default function KanbanPage() {
           tasks={tasks}
           teamProfiles={teamProfiles}
           canEdit={canEdit}
+          canUseAi={canUseAi}
           user={user}
           onClose={() => setIsCreateOpen(false)}
           onToggleSubtask={handleToggleSubtask}

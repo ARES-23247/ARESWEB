@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { siteConfig } from "@/lib/site-config";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -39,36 +39,45 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
   const toggleDocs = useSidebarStore((s) => s.toggleDocs);
   const toggleDocsCategory = useSidebarStore((s) => s.toggleDocsCategory);
   const setDocsExpandedCategories = useSidebarStore((s) => s.setDocsExpandedCategories);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
+  useEffect(() => {
+    const query = window.matchMedia?.("(min-width: 1024px)");
+    if (!query) return;
+    const update = () => setIsDesktop(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
-
-
-  // Auto-expand all categories on first load
-  const initializeCategories = useCallback(() => {
-    if (groupedDocs.length > 0 && docsExpandedCategories.size === 0) {
-      setDocsExpandedCategories(new Set(groupedDocs.map(([cat]) => cat)));
+  useEffect(() => {
+    const expanded = new Set(docsExpandedCategories);
+    if (expanded.size === 0) groupedDocs.forEach(([category]) => expanded.add(category));
+    if (currentSlug) {
+      groupedDocs.forEach(([category, docs]) => {
+        if (docs.some((doc) => doc.slug === currentSlug)) expanded.add(category);
+      });
     }
-  }, [groupedDocs, docsExpandedCategories.size, setDocsExpandedCategories]);
+    if (expanded.size !== docsExpandedCategories.size) setDocsExpandedCategories(expanded);
+  }, [currentSlug, docsExpandedCategories, groupedDocs, setDocsExpandedCategories]);
 
-  // Initialize categories if needed
-  if (groupedDocs.length > 0 && docsExpandedCategories.size === 0) {
-    initializeCategories();
-  }
+  useEffect(() => {
+    if (docsOpen && !isDesktop) searchRef.current?.focus();
+    if (!docsOpen && wasOpen.current && !isDesktop) triggerRef.current?.focus();
+    wasOpen.current = docsOpen;
+  }, [docsOpen, isDesktop]);
 
-  // Auto-expand category containing current doc
-  if (currentSlug) {
-    const newCats = new Set(docsExpandedCategories);
-    let changed = false;
-    for (const [cat, docs] of groupedDocs) {
-      if (docs.some(d => d.slug === currentSlug) && !newCats.has(cat)) {
-        newCats.add(cat);
-        changed = true;
-      }
-    }
-    if (changed) setDocsExpandedCategories(newCats);
-  }
-
-  const docsDriveUrl = null;
+  useEffect(() => {
+    if (!docsOpen || isDesktop) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") toggleDocs();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [docsOpen, isDesktop, toggleDocs]);
 
   const toggleCat = useCallback((cat: string) => {
     toggleDocsCategory(cat);
@@ -77,16 +86,21 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
   return (
     <>
       <button
+        ref={triggerRef}
         className="fixed bottom-6 right-6 z-40 lg:hidden bg-ares-red text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg font-bold"
         onClick={toggleDocs}
-        aria-label="Toggle sidebar"
+        aria-label={docsOpen ? "Close documentation navigation" : "Open documentation navigation"}
+        aria-expanded={docsOpen}
+        aria-controls="documentation-sidebar"
       >
         {docsOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       <AnimatePresence>
         {docsOpen && (
-          <motion.div
+          <motion.button
+            type="button"
+            aria-label="Close documentation navigation"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -96,7 +110,14 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         )}
       </AnimatePresence>
 
-      <aside className={`
+      <aside
+        id="documentation-sidebar"
+        aria-label="Documentation navigation"
+        aria-hidden={!isDesktop && !docsOpen}
+        inert={!isDesktop && !docsOpen ? true : undefined}
+        role={!isDesktop ? "dialog" : undefined}
+        aria-modal={!isDesktop ? true : undefined}
+        className={`
         fixed lg:sticky top-0 left-0 z-30 h-screen w-72 shrink-0
         bg-obsidian border-r border-white/8
         overflow-y-auto overscroll-contain
@@ -114,6 +135,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         </div>
 
         <button
+          ref={searchRef}
           onClick={onSearchOpen}
           className="w-full flex items-center gap-2 px-3 py-2 mb-6 ares-cut-sm bg-white/5 border border-white/10 text-white text-sm hover:border-ares-red/40 transition-colors"
         >
@@ -127,6 +149,8 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
             <div key={category}>
               <button
                 onClick={() => toggleCat(category)}
+                aria-expanded={docsExpandedCategories.has(category)}
+                aria-controls={`docs-category-${category.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold uppercase tracking-widest text-white hover:text-ares-gold transition-colors"
               >
                 {docsExpandedCategories.has(category) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -135,6 +159,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
               <AnimatePresence>
                 {docsExpandedCategories.has(category) && (
                   <motion.div
+                    id={`docs-category-${category.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -150,6 +175,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                             ? "bg-ares-red text-white font-bold"
                             : "text-white/60 hover:text-white hover:bg-white/5"
                         }`}
+                        aria-current={currentSlug === doc.slug ? "page" : undefined}
                         onClick={() => {
                           // Close sidebar on mobile after navigation
                           if (window.innerWidth < 1024) {
@@ -168,17 +194,6 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         </nav>
 
         <div className="mt-8 px-2 border-t border-white/8 pt-4 space-y-3">
-          {docsDriveUrl && (
-            <a
-              href={docsDriveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-white font-bold hover:text-ares-cyan transition-colors"
-            >
-              <ExternalLink size={14} />
-              Community Docs Drive
-            </a>
-          )}
           <a
             href={`https://${siteConfig.urls.githubOrg}.github.io/ARESLib/javadoc/index.html`}
             target="_blank"

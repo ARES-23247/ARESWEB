@@ -5,6 +5,7 @@ import DashboardProfilePage from "../app/dashboard/profile/page";
 import { useAuth } from "../context/AuthContext";
 import { authenticatedFetch } from "../lib/api";
 import * as LucideIcons from "lucide-react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => {
@@ -38,6 +39,17 @@ function mockProfileApi(profile: Record<string, unknown> = {}, exists = true) {
       ? apiResponse({ success: true, exists: true, profile: dto })
       : apiResponse({ exists, profile: dto });
   });
+}
+
+function renderProfilePage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <DashboardProfilePage />
+    </QueryClientProvider>,
+  );
 }
 
 describe("DashboardProfilePage imports", () => {
@@ -91,11 +103,11 @@ describe("DashboardProfilePage imports", () => {
     mockProfileApi(mockDocData);
 
     await act(async () => {
-      render(<DashboardProfilePage />);
+      renderProfilePage();
     });
 
+    expect(await screen.findByText(/User Settings/i)).toBeInTheDocument();
     expect(screen.queryByText(/Loading Settings Panel.../i)).not.toBeInTheDocument();
-    expect(screen.getByText(/User Settings/i)).toBeInTheDocument();
 
     // Verify avatar preview and button exist
     const customizeButton = screen.getByRole("button", { name: /Customize Avatar/i });
@@ -127,7 +139,7 @@ describe("DashboardProfilePage imports", () => {
     });
     mockProfileApi({}, false);
 
-    render(<DashboardProfilePage />);
+    renderProfilePage();
 
     await waitFor(() => expect(screen.queryByText(/Loading Settings Panel/i)).not.toBeInTheDocument());
     expect(screen.getByLabelText(/Nickname \*/i)).toHaveValue("");
@@ -151,7 +163,7 @@ describe("DashboardProfilePage imports", () => {
         showPhone: true,
     });
 
-    render(<DashboardProfilePage />);
+    renderProfilePage();
     await waitFor(() => expect(screen.queryByText(/Loading Settings Panel/i)).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /Save Profile/i }));
 
@@ -185,7 +197,7 @@ describe("DashboardProfilePage imports", () => {
       ? apiResponse({ error: "Profile save rejected" }, false, 403, "Forbidden")
       : apiResponse({ exists: true, profile: { ...emptyProfile, nickname: "Original" } }));
 
-    render(<DashboardProfilePage />);
+    renderProfilePage();
     const nickname = await screen.findByLabelText(/Nickname \*/i);
     fireEvent.change(nickname, { target: { value: "Unsaved Nickname" } });
     fireEvent.click(screen.getByRole("button", { name: /Save Profile/i }));
@@ -215,12 +227,12 @@ describe("DashboardProfilePage imports", () => {
     mockProfileApi(mockDocData);
 
     await act(async () => {
-      render(<DashboardProfilePage />);
+      renderProfilePage();
     });
 
     // --- Tab 1: Identity & Bio (Default) ---
     // Change nickname
-    const nicknameInput = screen.getByLabelText(/Nickname \*/i);
+    const nicknameInput = await screen.findByLabelText(/Nickname \*/i);
     fireEvent.change(nicknameInput, { target: { value: "NewNickname" } });
 
     // Change biography

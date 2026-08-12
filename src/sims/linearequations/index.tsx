@@ -377,6 +377,7 @@ export default function SimComponent() {
             width="440"
             height="440"
             viewBox="0 0 440 440"
+            aria-hidden="true"
             onPointerMove={handlePointerMove}
             className="w-full max-w-[440px] h-auto select-none touch-none"
           >

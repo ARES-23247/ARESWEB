@@ -5,7 +5,7 @@ import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from 
 import crypto from "crypto";
 import { getZulipUsers, createZulipUser } from "../lib/zulip";
 import { logger } from "../lib/logger";
-import { asyncHandler, maskEmail } from "../lib/utils";
+import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { z } from "zod";
 import { validate } from "../middleware/validation";
@@ -299,12 +299,12 @@ router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) 
     try {
       const authUser = await adminAuth.getUserByEmail(cleanEmail);
       targetUid = authUser.uid;
-      logger.info("profiles", `Found Firebase Auth user for ${maskEmail(cleanEmail)}. Routing sync to Firebase UID: ${targetUid}`);
+      logger.info("profiles", "Found Firebase Auth user; routing the profile sync to the verified account");
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
-        logger.info("profiles", `No Firebase Auth user found for ${maskEmail(cleanEmail)}. Routing sync to legacy UUID: ${targetUid}`);
+        logger.info("profiles", "No Firebase Auth user found; retaining the legacy profile target");
       } else {
-        logger.error("profiles", `Error checking Firebase Auth for ${maskEmail(cleanEmail)}`, err);
+        logger.error("profiles", "Firebase Auth lookup failed during profile sync", err);
       }
     }
   }
@@ -356,9 +356,9 @@ router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) 
     try {
       await adminDb.collection("user_profiles").doc(userId).delete();
       await adminDb.collection("authorized_users").doc(userId).delete();
-      logger.info("profiles", `Cleaned up legacy documents for ${userId} after migrating to ${targetUid}`);
+      logger.info("profiles", "Cleaned up legacy documents after profile migration");
     } catch (deleteErr) {
-      logger.warn("profiles", `Could not delete legacy documents for ${userId}`, deleteErr);
+      logger.warn("profiles", "Could not delete legacy documents after profile migration", deleteErr);
     }
   }
 
@@ -368,14 +368,14 @@ router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) 
       try {
         await adminDb.collection("user_profiles").doc(cleanEmail).delete();
         await adminDb.collection("authorized_users").doc(cleanEmail).delete();
-        logger.info("profiles", `Cleaned up email-based documents for ${cleanEmail} after migrating to ${targetUid}`);
+        logger.info("profiles", "Cleaned up email-keyed documents after profile migration");
       } catch (deleteErr) {
-        logger.warn("profiles", `Could not delete email-based documents for ${cleanEmail}`, deleteErr);
+        logger.warn("profiles", "Could not delete email-keyed documents after profile migration", deleteErr);
       }
     }
   }
 
-  logger.info("profiles", `Synced profile and credentials for user: ${targetUid}`);
+  logger.info("profiles", "Synced profile and authorization records");
   res.json({ success: true });
 }));
 
@@ -436,7 +436,7 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
       const legacyUid = legacyDoc.id;
       const legacyData = legacyDoc.data();
 
-      logger.info("profiles", `Found legacy authorized_user for ${cleanEmail} (legacy ID: ${legacyUid}). Migrating to Firebase UID: ${uid}`);
+      logger.info("profiles", "Found a legacy authorization record; migrating it to the verified account");
 
       const batch = adminDb.batch();
 

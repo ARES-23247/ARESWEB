@@ -38,8 +38,8 @@ following before handing off a code change:
 
 ```text
 pnpm install --frozen-lockfile
-npm ci --prefix mcp-server --ignore-scripts
 pnpm run lint
+pnpm --filter functions lint
 pnpm exec tsc --noEmit
 pnpm run test:coverage
 pnpm --filter functions build
@@ -49,8 +49,6 @@ pnpm run build
 node scripts/check-bundle-size.mjs
 pnpm run test:e2e
 pnpm audit --prod --audit-level=high
-npm audit --prefix mcp-server --omit=dev --audit-level=high
-npm run build --prefix mcp-server
 ```
 
 Coverage floors are ratchets, not targets. New utilities and API routes must meet
@@ -58,3 +56,24 @@ Coverage floors are ratchets, not targets. New utilities and API routes must mee
 Firebase Emulator Suite tests for Firestore or Storage rule behavior.
 
 See `docs/SECURITY_OPERATIONS.md` for required secret and deployment controls.
+
+## Agent and audit quality
+
+- Derive the current architecture, routes, roles, and data boundaries from live
+  source and configuration. Planning archives and generated output are not
+  authoritative.
+- Audit findings must include severity, confidence, exact file/line evidence,
+  impact, remediation, and an acceptance test. Separate confirmed defects from
+  inference and record the audited commit and worktree state.
+- Do not label code or public assets orphaned from a filename search alone.
+  Check imports, lazy registries, scripts, CI, tests, Firebase configuration,
+  dynamic URL construction, and documentation.
+- Parallel audits must respect the available concurrency limit and use staged,
+  non-overlapping scopes. The lead agent reconciles contradictions and writes
+  one deduplicated report under `docs/audits/`.
+- Never hide DOM nodes, disable pseudo-elements, weaken contrast checks, lower
+  coverage, or broaden authorization merely to make a quality gate pass.
+- Diagnostics use shared redacting loggers. Never log secrets, request bodies,
+  student names, email addresses, phone numbers, raw user IDs, or encrypted PII.
+- Do not claim WCAG conformance, a perfect score, zero violations, or complete
+  security without a dated scope and reproducible automated and manual evidence.

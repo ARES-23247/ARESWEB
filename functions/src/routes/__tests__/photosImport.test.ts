@@ -55,7 +55,7 @@ vi.mock("../../lib/googleAuth", () => ({
 }));
 
 vi.mock("../../lib/imageImport", () => ({
-  validateImageMagicBytes: vi.fn().mockReturnValue({ valid: true }),
+  validateImageMagicBytes: vi.fn().mockReturnValue({ valid: true, format: "jpg" }),
   sanitizeAlbumName: vi.fn().mockReturnValue("sanitized-album"),
 }));
 

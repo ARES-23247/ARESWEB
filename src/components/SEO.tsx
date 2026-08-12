@@ -47,7 +47,8 @@ export function getCanonicalUrl(url?: string): string {
 
   try {
     const parsed = new URL(requestedPath, siteConfig.urls.base);
-    return new URL(`${parsed.pathname || "/"}`, siteConfig.urls.base).toString();
+    const normalizedPath = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/+$/, "");
+    return new URL(normalizedPath || "/", siteConfig.urls.base).toString();
   } catch {
     return `${siteConfig.urls.base}/`;
   }
@@ -224,7 +225,7 @@ export default function SEO({
       <meta property="og:site_name" content="ARES 23247" />
       <meta property="og:locale" content="en_US" />
 
-      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
       <meta name="twitter:url" content={currentUrl} />
       <meta name="twitter:title" content={siteTitle} />
       <meta name="twitter:description" content={description} />

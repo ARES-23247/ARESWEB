@@ -6,11 +6,11 @@ import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, 
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebaseFirestore";
 import { onSnapshot, collection, query, where } from "firebase/firestore";
-import { authenticatedFetch } from "@/lib/api";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 
 interface NavButtonProps {
   tab: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; className?: string; "aria-hidden"?: React.AriaAttributes["aria-hidden"] }>;
   label: string;
   currentPath: string;
   hasAlert?: boolean;
@@ -29,6 +29,7 @@ const NavButton: React.FC<NavButtonProps> = ({
   return (
     <Link
       to={targetPath}
+      aria-current={isActive ? "page" : undefined}
       className={`w-full flex items-center justify-between gap-3 px-4 py-3 ares-cut-sm transition-all font-semibold text-left text-xs uppercase tracking-wider border relative ${
         isActive
           ? "bg-ares-red/15 text-white border-ares-red/45 shadow-[0_0_15px_rgba(192,0,0,0.1)]"
@@ -36,14 +37,17 @@ const NavButton: React.FC<NavButtonProps> = ({
       }`}
     >
       <div className="flex items-center gap-3 truncate">
-        <Icon size={16} className={isActive ? "text-white animate-pulse" : "text-marble/55"} />
+        <Icon aria-hidden="true" size={16} className={isActive ? "text-white animate-pulse" : "text-marble/55"} />
         <span className="truncate">{label}</span>
       </div>
       {hasAlert && (
-        <span className="flex h-2.5 w-2.5 shrink-0 relative mr-1">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
-        </span>
+        <>
+          <span aria-hidden="true" className="flex h-2.5 w-2.5 shrink-0 relative mr-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
+          </span>
+          <span className="sr-only">Pending inquiries</span>
+        </>
       )}
     </Link>
   );
@@ -52,40 +56,17 @@ const NavButton: React.FC<NavButtonProps> = ({
 export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const { pathname } = useLocation();
   const { user, authorizedUser, logout } = useAuth();
-  const [profileAvatar, setProfileAvatar] = useState<string>("");
-  const [profileNickname, setProfileNickname] = useState<string>("");
-  const [profileError, setProfileError] = useState<string>("");
   const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean>(false);
 
   const userRole = authorizedUser?.role || "Pending Verification";
-
-  useEffect(() => {
-    if (import.meta.env.MODE === "e2e") return;
-    if (!user?.uid) return;
-
-    const controller = new AbortController();
-    async function loadSafeProfile() {
-      try {
-        const response = await authenticatedFetch("/api/profiles/me", { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
-        }
-        const result = await response.json() as {
-          profile?: { avatar?: string; nickname?: string };
-        };
-        setProfileAvatar(result.profile?.avatar || "");
-        setProfileNickname(result.profile?.nickname || "");
-        setProfileError("");
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        const diagnostic = error instanceof Error ? error.message : "Profile request failed";
-        console.error("Error loading the safe sidebar profile DTO:", error);
-        setProfileError(diagnostic);
-      }
-    }
-    void loadSafeProfile();
-    return () => controller.abort();
-  }, [user?.uid]);
+  const profileQuery = useCurrentProfile(user?.uid, import.meta.env.MODE !== "e2e");
+  const profileAvatar = profileQuery.data?.profile.avatar || "";
+  const profileNickname = profileQuery.data?.profile.nickname || "";
+  const profileError = profileQuery.error instanceof Error
+    ? profileQuery.error.message
+    : profileQuery.error
+      ? "Profile request failed"
+      : "";
 
   useEffect(() => {
     if (import.meta.env.MODE === "e2e") return;

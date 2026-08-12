@@ -19,6 +19,7 @@ interface SimulationPlaygroundConsoleTabsProps {
   handleChatSend: () => void;
   chatEndRef: React.RefObject<HTMLDivElement | null>;
   chatInputRef: React.RefObject<HTMLTextAreaElement | null>;
+  canUseAi: boolean;
 }
 
 export default function SimulationPlaygroundConsoleTabs({
@@ -36,7 +37,8 @@ export default function SimulationPlaygroundConsoleTabs({
   handleChatKeyDown,
   handleChatSend,
   chatEndRef,
-  chatInputRef
+  chatInputRef,
+  canUseAi,
 }: SimulationPlaygroundConsoleTabsProps) {
   return (
     <div className="flex flex-col h-full">
@@ -52,7 +54,7 @@ export default function SimulationPlaygroundConsoleTabs({
         >
           Console
         </button>
-        <button
+        {canUseAi && <button
           onClick={() => setBottomRightTab('ai')}
           className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
             bottomRightTab === 'ai'
@@ -61,7 +63,7 @@ export default function SimulationPlaygroundConsoleTabs({
           }`}
         >
           <Sparkles className="w-3 h-3" /> AI Chat
-        </button>
+        </button>}
       </div>
 
       {/* Tab content */}
@@ -74,9 +76,9 @@ export default function SimulationPlaygroundConsoleTabs({
               setConsoleLogs([]);
               setTestResults([]);
             }}
-            onFixWithAI={() => handleFixWithAI("")}
+            onFixWithAI={canUseAi ? () => handleFixWithAI("") : undefined}
           />
-        ) : (
+        ) : canUseAi ? (
           <AiChatPanel
             chatMessages={chatMessages}
             isChatLoading={isChatLoading}
@@ -87,6 +89,8 @@ export default function SimulationPlaygroundConsoleTabs({
             chatEndRef={chatEndRef}
             chatInputRef={chatInputRef}
           />
+        ) : (
+          <p role="status" className="p-4 text-sm text-marble/70">AI tools are available to administrators and coaches.</p>
         )}
       </div>
     </div>

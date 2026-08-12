@@ -10,6 +10,7 @@ export default function VisionSim() {
   const [yawRate, setYawRate] = useState<number>(0);
   const [tiltVal, setTiltVal] = useState<number>(0);
   const [solverLog, setSolverLog] = useState<{ text: string, color: string }>({ text: "Drag your robot across the field grid.", color: "var(--ares-muted)" });
+  const [robotPosition, setRobotPosition] = useState({ x: 200, y: 200 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -119,6 +120,7 @@ export default function VisionSim() {
         x: (e.clientX - rect.left) * scaleX,
         y: (e.clientY - rect.top) * scaleY
       };
+      setRobotPosition({ x: Math.round(robotPosRef.current.x), y: Math.round(robotPosRef.current.y) });
     };
 
     const handleMouseDown = (e: MouseEvent) => { isDraggingRef.current = true; updateRobotPos(e); };
@@ -148,7 +150,7 @@ export default function VisionSim() {
         </div>
       </div>
       
-      <canvas role="img" aria-label="Interactive Physics Simulation Environment" 
+      <canvas aria-hidden="true"
         ref={canvasRef}
         width={800} 
         height={400} 
@@ -156,6 +158,14 @@ export default function VisionSim() {
       />
       
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1, minWidth: '180px' }}>
+          <label style={{ color: 'var(--ifm-color-emphasis-600)', fontSize: '0.9rem' }}>Robot X: <span style={{ color: 'var(--ares-cyan)' }}>{robotPosition.x}</span></label>
+          <input aria-label="Robot X coordinate" type="range" min="0" max="750" step="10" value={robotPosition.x} onChange={(e) => { const x = Number(e.target.value); robotPosRef.current.x = x; setRobotPosition(previous => ({ ...previous, x })); }} style={{ width: '100%' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: '180px' }}>
+          <label style={{ color: 'var(--ifm-color-emphasis-600)', fontSize: '0.9rem' }}>Robot Y: <span style={{ color: 'var(--ares-cyan)' }}>{robotPosition.y}</span></label>
+          <input aria-label="Robot Y coordinate" type="range" min="0" max="400" step="10" value={robotPosition.y} onChange={(e) => { const y = Number(e.target.value); robotPosRef.current.y = y; setRobotPosition(previous => ({ ...previous, y })); }} style={{ width: '100%' }} />
+        </div>
         <div style={{ flex: 1, minWidth: '180px' }}>
           <label style={{ color: 'var(--ifm-color-emphasis-600)', fontSize: '0.9rem', fontFamily: '"Orbitron", sans-serif' }}>Tags Visible: <span style={{ color: 'var(--ares-cyan)' }}>{tagCount === 1 ? "1 Tag" : "2 Tags (MegaTagBoost)"}</span></label>
           <input aria-label="Number of AprilTags visible" type="range" min="1" max="2" value={tagCount} step="1" onChange={(e) => setTagCount(parseInt(e.target.value, 10))} style={{ width: '100%' }} />
@@ -170,7 +180,7 @@ export default function VisionSim() {
         </div>
       </div>
       
-      <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', color: solverLog.color, border: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'pre-line' }}>
+      <div role="status" aria-live="polite" style={{ marginTop: '15px', padding: '10px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', color: solverLog.color, border: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'pre-line' }}>
         {solverLog.text}
       </div>
     </div>

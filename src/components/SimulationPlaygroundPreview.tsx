@@ -10,6 +10,7 @@ interface SimulationPlaygroundPreviewProps {
   handleFixWithAI: (err: string) => void;
   handleTestResult: (result: any) => void;
   telemetry: any;
+  canUseAi: boolean;
 }
 
 export default function SimulationPlaygroundPreview({
@@ -18,7 +19,8 @@ export default function SimulationPlaygroundPreview({
   compiledFiles,
   handleFixWithAI,
   handleTestResult,
-  telemetry
+  telemetry,
+  canUseAi,
 }: SimulationPlaygroundPreviewProps) {
   return (
     <div className="flex flex-col h-full w-full">
@@ -37,7 +39,7 @@ export default function SimulationPlaygroundPreview({
             <SimPreviewFrame
               compiledFiles={compiledFiles}
               compileError={compileError}
-              onFixWithAI={() => handleFixWithAI("")}
+              onFixWithAI={canUseAi ? () => handleFixWithAI("") : undefined}
               onTestResult={handleTestResult}
             />
           </Suspense>

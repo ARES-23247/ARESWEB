@@ -77,7 +77,7 @@ resource.labels.service_name="api"
 textPayload:"[app-check] App Check observation"
 ```
 
-Do not enable enforcement until all of these checks pass:
+Verify all of these checks before each release:
 
 1. Collect at least 72 hours of production data.
 2. Test inquiry, admin edit, upload, simulation, and checkout flows.
@@ -85,10 +85,10 @@ Do not enable enforcement until all of these checks pass:
 4. Find the cause of every `missing` or `invalid` API mutation.
 5. Confirm each protected route group has a recent `valid` result.
 
-After those checks pass, set the non-secret Functions environment variable
-`ENFORCE_APP_CHECK=true` and deploy Functions. Until that flag is present, the
-API continues to record App Check results without rejecting requests. Remove or
-set the flag to `false` to return to observation-only mode during an incident.
+Production enforcement is the default. Set the non-secret Functions environment
+variable `ENFORCE_APP_CHECK=false` only as a temporary incident override. While
+that override exists, the API records observations without rejecting requests.
+Remove the override as soon as the supported browser flow is repaired.
 
 Enable Storage first. Watch errors for 24 hours. Enable Firestore next, then
 watch for another 24 hours. Return a service to `UNENFORCED` at once if valid

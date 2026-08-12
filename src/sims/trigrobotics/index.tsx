@@ -235,6 +235,7 @@ export default function TrigRoboticsSim() {
             width="400"
             height="400"
             viewBox="0 0 400 400"
+            aria-hidden="true"
             onPointerMove={handlePointerMove}
             className="w-full max-w-[400px] h-auto select-none touch-none"
           >

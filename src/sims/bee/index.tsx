@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
 interface Flower {
   id: number;
   x: number;
   y: number;
-  type: 'rose' | 'daisy' | 'tulip' | 'sunflower' | 'lily';
+  type: "rose" | "daisy" | "tulip" | "sunflower" | "lily";
   color: string;
   pollenColor: string;
   hasPollen: boolean;
@@ -42,11 +42,36 @@ interface PollinatedCount {
 }
 
 const FLOWER_TYPES = [
-  { type: 'rose' as const, color: '#e11d48', pollenColor: '#fbbf24', name: 'Rose' },
-  { type: 'daisy' as const, color: '#f0f0f0', pollenColor: '#facc15', name: 'Daisy' },
-  { type: 'tulip' as const, color: '#a855f7', pollenColor: '#fde68a', name: 'Tulip' },
-  { type: 'sunflower' as const, color: '#eab308', pollenColor: '#92400e', name: 'Sunflower' },
-  { type: 'lily' as const, color: '#f472b6', pollenColor: '#fcd34d', name: 'Lily' },
+  {
+    type: "rose" as const,
+    color: "#e11d48",
+    pollenColor: "#fbbf24",
+    name: "Rose",
+  },
+  {
+    type: "daisy" as const,
+    color: "#f0f0f0",
+    pollenColor: "#facc15",
+    name: "Daisy",
+  },
+  {
+    type: "tulip" as const,
+    color: "#a855f7",
+    pollenColor: "#fde68a",
+    name: "Tulip",
+  },
+  {
+    type: "sunflower" as const,
+    color: "#eab308",
+    pollenColor: "#92400e",
+    name: "Sunflower",
+  },
+  {
+    type: "lily" as const,
+    color: "#f472b6",
+    pollenColor: "#fcd34d",
+    name: "Lily",
+  },
 ];
 
 const CANVAS_W = 800;
@@ -61,7 +86,7 @@ function dist(x1: number, y1: number, x2: number, y2: number): number {
 }
 
 function lightenColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
+  const num = parseInt(hex.replace("#", ""), 16);
   const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(255 * amount));
   const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * amount));
   const b = Math.min(255, (num & 0xff) + Math.round(255 * amount));
@@ -72,7 +97,8 @@ function generateFlowers(count: number): Flower[] {
   const flowers: Flower[] = [];
   const margin = 60;
   for (let i = 0; i < count; i++) {
-    const typeDef = FLOWER_TYPES[Math.floor(Math.random() * FLOWER_TYPES.length)];
+    const typeDef =
+      FLOWER_TYPES[Math.floor(Math.random() * FLOWER_TYPES.length)];
     flowers.push({
       id: i,
       x: rand(margin, CANVAS_W - margin),
@@ -92,7 +118,10 @@ function generateFlowers(count: number): Flower[] {
       for (let j = i + 1; j < flowers.length; j++) {
         const d = dist(flowers[i].x, flowers[i].y, flowers[j].x, flowers[j].y);
         if (d < 60) {
-          const angle = Math.atan2(flowers[j].y - flowers[i].y, flowers[j].x - flowers[i].x);
+          const angle = Math.atan2(
+            flowers[j].y - flowers[i].y,
+            flowers[j].x - flowers[i].x,
+          );
           const push = (60 - d) / 2 + 1;
           flowers[i].x -= Math.cos(angle) * push;
           flowers[i].y -= Math.sin(angle) * push;
@@ -111,26 +140,56 @@ function generateFlowers(count: number): Flower[] {
   return flowers;
 }
 
-function drawFlower(ctx: CanvasRenderingContext2D, flower: Flower, time: number): void {
-  const { x, y, color, pollenColor, size, isPollinated, hasPollen, bloomPhase } = flower;
+function drawFlower(
+  ctx: CanvasRenderingContext2D,
+  flower: Flower,
+  time: number,
+): void {
+  const {
+    x,
+    y,
+    color,
+    pollenColor,
+    size,
+    isPollinated,
+    hasPollen,
+    bloomPhase,
+  } = flower;
   const sway = Math.sin(time * 0.002 + bloomPhase) * 3;
 
-  ctx.strokeStyle = '#2d7a1e';
+  ctx.strokeStyle = "#2d7a1e";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, y + size);
   ctx.quadraticCurveTo(x + sway, y + size + 20, x + sway * 0.5, y + size + 40);
   ctx.stroke();
 
-  ctx.fillStyle = '#3a8a28';
+  ctx.fillStyle = "#3a8a28";
   ctx.beginPath();
-  ctx.ellipse(x + sway * 0.3 + 6, y + size + 20, 8, 4, Math.PI / 4, 0, Math.PI * 2);
+  ctx.ellipse(
+    x + sway * 0.3 + 6,
+    y + size + 20,
+    8,
+    4,
+    Math.PI / 4,
+    0,
+    Math.PI * 2,
+  );
   ctx.fill();
 
-  const petalCount = flower.type === 'daisy' ? 12 : flower.type === 'sunflower' ? 16 : flower.type === 'tulip' ? 3 : 5;
+  const petalCount =
+    flower.type === "daisy"
+      ? 12
+      : flower.type === "sunflower"
+        ? 16
+        : flower.type === "tulip"
+          ? 3
+          : 5;
   ctx.fillStyle = isPollinated ? lightenColor(color, 0.3) : color;
   for (let i = 0; i < petalCount; i++) {
-    const angle = (i / petalCount) * Math.PI * 2 + Math.sin(time * 0.001 + bloomPhase) * 0.05;
+    const angle =
+      (i / petalCount) * Math.PI * 2 +
+      Math.sin(time * 0.001 + bloomPhase) * 0.05;
     const px = x + Math.cos(angle) * size * 0.5 + sway * 0.3;
     const py = y + Math.sin(angle) * size * 0.5;
     ctx.beginPath();
@@ -138,7 +197,7 @@ function drawFlower(ctx: CanvasRenderingContext2D, flower: Flower, time: number)
     ctx.fill();
   }
 
-  ctx.fillStyle = isPollinated ? '#4ade80' : pollenColor;
+  ctx.fillStyle = isPollinated ? "#4ade80" : pollenColor;
   ctx.beginPath();
   ctx.arc(x + sway * 0.3, y, size * 0.25, 0, Math.PI * 2);
   ctx.fill();
@@ -152,7 +211,9 @@ function drawFlower(ctx: CanvasRenderingContext2D, flower: Flower, time: number)
       ctx.arc(
         x + sway * 0.3 + Math.cos(angle) * pr,
         y + Math.sin(angle) * pr,
-        2, 0, Math.PI * 2
+        2,
+        0,
+        Math.PI * 2,
       );
       ctx.fill();
     }
@@ -161,12 +222,12 @@ function drawFlower(ctx: CanvasRenderingContext2D, flower: Flower, time: number)
   if (isPollinated) {
     const sparkleAlpha = 0.5 + Math.sin(time * 0.005 + bloomPhase) * 0.3;
     ctx.globalAlpha = sparkleAlpha;
-    ctx.fillStyle = '#4ade80';
+    ctx.fillStyle = "#4ade80";
     ctx.font = `${size * 0.6}px serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText('✓', x + sway * 0.3, y + size * 0.15);
+    ctx.textAlign = "center";
+    ctx.fillText("✓", x + sway * 0.3, y + size * 0.15);
     ctx.globalAlpha = 1;
-    ctx.textAlign = 'left';
+    ctx.textAlign = "left";
   }
 }
 
@@ -174,39 +235,55 @@ function drawBee(ctx: CanvasRenderingContext2D, bee: Bee, time: number): void {
   const { x, y, carryingPollen, wingPhase } = bee;
 
   const wingFlap = Math.sin(wingPhase * 2) * 0.4;
-  ctx.fillStyle = 'rgba(200,220,255,0.5)';
+  ctx.fillStyle = "rgba(200,220,255,0.5)";
   ctx.beginPath();
-  ctx.ellipse(x - 4, y - 8 + wingFlap * 5, 8, 5, -0.3 + wingFlap, 0, Math.PI * 2);
+  ctx.ellipse(
+    x - 4,
+    y - 8 + wingFlap * 5,
+    8,
+    5,
+    -0.3 + wingFlap,
+    0,
+    Math.PI * 2,
+  );
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(x + 4, y - 8 + wingFlap * 5, 8, 5, 0.3 - wingFlap, 0, Math.PI * 2);
+  ctx.ellipse(
+    x + 4,
+    y - 8 + wingFlap * 5,
+    8,
+    5,
+    0.3 - wingFlap,
+    0,
+    Math.PI * 2,
+  );
   ctx.fill();
 
-  ctx.fillStyle = '#fbbf24';
+  ctx.fillStyle = "#fbbf24";
   ctx.beginPath();
   ctx.ellipse(x, y, 10, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Stripes
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   for (let i = -1; i <= 1; i++) {
     ctx.fillRect(x + i * 5 - 1, y - 6, 2, 12);
   }
 
   // Head
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   ctx.beginPath();
   ctx.arc(x + 9, y, 4, 0, Math.PI * 2);
   ctx.fill();
 
   // Eyes
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(x + 10.5, y - 1.5, 1.5, 0, Math.PI * 2);
   ctx.fill();
 
   // Antennae
-  ctx.strokeStyle = '#1a1a1a';
+  ctx.strokeStyle = "#1a1a1a";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(x + 10, y - 4);
@@ -217,18 +294,18 @@ function drawBee(ctx: CanvasRenderingContext2D, bee: Bee, time: number): void {
 
   // Pollen indicator
   if (carryingPollen) {
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = "#fbbf24";
     ctx.beginPath();
     ctx.arc(x - 6, y + 2, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fde68a';
+    ctx.fillStyle = "#fde68a";
     ctx.beginPath();
     ctx.arc(x - 6, y + 2, 2, 0, Math.PI * 2);
     ctx.fill();
 
     // Glow
     ctx.globalAlpha = 0.3 + Math.sin(time * 0.008) * 0.15;
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = "#fbbf24";
     ctx.beginPath();
     ctx.arc(x, y, 14, 0, Math.PI * 2);
     ctx.fill();
@@ -244,13 +321,14 @@ export default function SimComponent() {
   const [particles, setParticles] = useState<PollenParticle[]>([]);
   const [score, setScore] = useState(0);
   const [_totalPollinated, setTotalPollinated] = useState(0);
-  const [mode, setMode] = useState<'idle' | 'playing' | 'won'>('idle');
+  const [mode, setMode] = useState<"idle" | "playing" | "won">("idle");
   const [beeCount, setBeeCount] = useState(3);
   const [flowerCount, setFlowerCount] = useState(12);
   const [speed, setSpeed] = useState(1);
   const [pollinatedByType, setPollinatedByType] = useState<PollinatedCount>({});
   const [showInfo, setShowInfo] = useState(false);
   const [dragBee, setDragBee] = useState<number | null>(null);
+  const [selectedBee, setSelectedBee] = useState(0);
 
   const flowersRef = useRef(flowers);
   const beesRef = useRef(bees);
@@ -259,31 +337,47 @@ export default function SimComponent() {
   const modeRef = useRef(mode);
   const speedRef = useRef(speed);
 
-  useEffect(() => { flowersRef.current = flowers; }, [flowers]);
-  useEffect(() => { beesRef.current = bees; }, [bees]);
-  useEffect(() => { particlesRef.current = particles; }, [particles]);
-  useEffect(() => { scoreRef.current = score; }, [score]);
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-  useEffect(() => { speedRef.current = speed; }, [speed]);
+  useEffect(() => {
+    flowersRef.current = flowers;
+  }, [flowers]);
+  useEffect(() => {
+    beesRef.current = bees;
+  }, [bees]);
+  useEffect(() => {
+    particlesRef.current = particles;
+  }, [particles]);
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
-  const spawnParticles = useCallback((x: number, y: number, color: string, count: number) => {
-    const newParticles: PollenParticle[] = [];
-    for (let i = 0; i < count; i++) {
-      const angle = rand(0, Math.PI * 2);
-      const spd = rand(0.5, 2.5);
-      newParticles.push({
-        id: Date.now() + i + Math.random(),
-        x, y,
-        vx: Math.cos(angle) * spd,
-        vy: Math.sin(angle) * spd,
-        life: rand(30, 60),
-        maxLife: 60,
-        color,
-        size: rand(2, 5),
-      });
-    }
-    setParticles(prev => [...prev, ...newParticles]);
-  }, []);
+  const spawnParticles = useCallback(
+    (x: number, y: number, color: string, count: number) => {
+      const newParticles: PollenParticle[] = [];
+      for (let i = 0; i < count; i++) {
+        const angle = rand(0, Math.PI * 2);
+        const spd = rand(0.5, 2.5);
+        newParticles.push({
+          id: Date.now() + i + Math.random(),
+          x,
+          y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: rand(30, 60),
+          maxLife: 60,
+          color,
+          size: rand(2, 5),
+        });
+      }
+      setParticles((prev) => [...prev, ...newParticles]);
+    },
+    [],
+  );
 
   const startGame = useCallback(() => {
     const newFlowers = generateFlowers(flowerCount);
@@ -307,17 +401,18 @@ export default function SimComponent() {
     setScore(0);
     setTotalPollinated(0);
     setPollinatedByType({});
-    setMode('playing');
+    setMode("playing");
     setDragBee(null);
+    setSelectedBee(0);
   }, [flowerCount, beeCount]);
 
   // Main game loop
   useEffect(() => {
-    if (mode !== 'playing') return;
+    if (mode !== "playing") return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let lastTime = performance.now();
@@ -330,8 +425,9 @@ export default function SimComponent() {
       const currentFlowers = flowersRef.current;
       const currentParticles = particlesRef.current;
 
-      const newBees = currentBees.map(bee => {
-        if (dragBee === bee.id) return { ...bee, wingPhase: bee.wingPhase + 0.3 * dt };
+      const newBees = currentBees.map((bee) => {
+        if (dragBee === bee.id)
+          return { ...bee, wingPhase: bee.wingPhase + 0.3 * dt };
 
         const b = { ...bee };
         b.wingPhase += 0.3 * dt;
@@ -341,7 +437,7 @@ export default function SimComponent() {
         const d = Math.sqrt(dx * dx + dy * dy);
 
         if (d < 5) {
-          const nearbyFlowers = currentFlowers.filter(f => {
+          const nearbyFlowers = currentFlowers.filter((f) => {
             const fd = dist(f.x, f.y, b.x, b.y);
             return fd < 300;
           });
@@ -349,15 +445,23 @@ export default function SimComponent() {
           if (nearbyFlowers.length > 0 && Math.random() > 0.3) {
             let target: Flower;
             if (b.carryingPollen) {
-              const compatible = nearbyFlowers.filter(f => f.type !== b.pollenSource && !f.isPollinated);
-              target = compatible.length > 0
-                ? compatible[Math.floor(Math.random() * compatible.length)]
-                : nearbyFlowers[Math.floor(Math.random() * nearbyFlowers.length)];
+              const compatible = nearbyFlowers.filter(
+                (f) => f.type !== b.pollenSource && !f.isPollinated,
+              );
+              target =
+                compatible.length > 0
+                  ? compatible[Math.floor(Math.random() * compatible.length)]
+                  : nearbyFlowers[
+                      Math.floor(Math.random() * nearbyFlowers.length)
+                    ];
             } else {
-              const withPollen = nearbyFlowers.filter(f => f.hasPollen);
-              target = withPollen.length > 0
-                ? withPollen[Math.floor(Math.random() * withPollen.length)]
-                : nearbyFlowers[Math.floor(Math.random() * nearbyFlowers.length)];
+              const withPollen = nearbyFlowers.filter((f) => f.hasPollen);
+              target =
+                withPollen.length > 0
+                  ? withPollen[Math.floor(Math.random() * withPollen.length)]
+                  : nearbyFlowers[
+                      Math.floor(Math.random() * nearbyFlowers.length)
+                    ];
             }
             b.targetX = target.x + rand(-10, 10);
             b.targetY = target.y + rand(-10, 10);
@@ -379,7 +483,7 @@ export default function SimComponent() {
         return b;
       });
 
-      const newFlowers = currentFlowers.map(f => ({ ...f }));
+      const newFlowers = currentFlowers.map((f) => ({ ...f }));
       let newScore = scoreRef.current;
       const newPollinatedByType: PollinatedCount = {};
 
@@ -392,12 +496,16 @@ export default function SimComponent() {
               bee.pollenSource = flower.type;
               flower.hasPollen = false;
               spawnParticles(flower.x, flower.y, flower.pollenColor, 8);
-            } else if (bee.carryingPollen && bee.pollenSource !== flower.type && !flower.isPollinated) {
+            } else if (
+              bee.carryingPollen &&
+              bee.pollenSource !== flower.type &&
+              !flower.isPollinated
+            ) {
               flower.isPollinated = true;
               bee.carryingPollen = false;
               bee.pollenSource = null;
               newScore += 10;
-              spawnParticles(flower.x, flower.y, '#4ade80', 15);
+              spawnParticles(flower.x, flower.y, "#4ade80", 15);
               spawnParticles(flower.x, flower.y, flower.pollenColor, 10);
             }
           }
@@ -413,23 +521,23 @@ export default function SimComponent() {
       }
 
       if (newScore !== scoreRef.current) setScore(newScore);
-      if (totalPoll !== currentFlowers.filter(f => f.isPollinated).length) {
+      if (totalPoll !== currentFlowers.filter((f) => f.isPollinated).length) {
         setTotalPollinated(totalPoll);
         setPollinatedByType(newPollinatedByType);
       }
-      if (totalPoll >= currentFlowers.length && modeRef.current === 'playing') {
-        setMode('won');
+      if (totalPoll >= currentFlowers.length && modeRef.current === "playing") {
+        setMode("won");
       }
 
       const updatedParticles = currentParticles
-        .map(p => ({
+        .map((p) => ({
           ...p,
           x: p.x + p.vx * dt,
           y: p.y + p.vy * dt,
           vy: p.vy + 0.02 * dt,
           life: p.life - dt,
         }))
-        .filter(p => p.life > 0);
+        .filter((p) => p.life > 0);
 
       setBees(newBees);
       setFlowers(newFlowers);
@@ -439,26 +547,36 @@ export default function SimComponent() {
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
       const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-      skyGrad.addColorStop(0, '#1a3a5c');
-      skyGrad.addColorStop(0.6, '#2a5a3a');
-      skyGrad.addColorStop(1, '#1a3a2a');
+      skyGrad.addColorStop(0, "#1a3a5c");
+      skyGrad.addColorStop(0.6, "#2a5a3a");
+      skyGrad.addColorStop(1, "#1a3a2a");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-      const groundGrad = ctx.createLinearGradient(0, CANVAS_H - 80, 0, CANVAS_H);
-      groundGrad.addColorStop(0, '#2d5a1e');
-      groundGrad.addColorStop(1, '#1a3a12');
+      const groundGrad = ctx.createLinearGradient(
+        0,
+        CANVAS_H - 80,
+        0,
+        CANVAS_H,
+      );
+      groundGrad.addColorStop(0, "#2d5a1e");
+      groundGrad.addColorStop(1, "#1a3a12");
       ctx.fillStyle = groundGrad;
       ctx.fillRect(0, CANVAS_H - 80, CANVAS_W, 80);
 
-      ctx.strokeStyle = '#3a7a28';
+      ctx.strokeStyle = "#3a7a28";
       ctx.lineWidth = 1;
       for (let i = 0; i < CANVAS_W; i += 8) {
         const h = rand(10, 30);
         const sw = Math.sin(time * 0.002 + i * 0.1) * 3;
         ctx.beginPath();
         ctx.moveTo(i, CANVAS_H - 80);
-        ctx.quadraticCurveTo(i + sw, CANVAS_H - 80 - h / 2, i + sw * 1.5, CANVAS_H - 80 - h);
+        ctx.quadraticCurveTo(
+          i + sw,
+          CANVAS_H - 80 - h / 2,
+          i + sw * 1.5,
+          CANVAS_H - 80 - h,
+        );
         ctx.stroke();
       }
 
@@ -481,27 +599,28 @@ export default function SimComponent() {
       }
 
       // HUD
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(10, 10, 220, 36);
-      ctx.strokeStyle = 'rgba(0,200,255,0.3)';
+      ctx.strokeStyle = "rgba(0,200,255,0.3)";
       ctx.strokeRect(10, 10, 220, 36);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'left';
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 14px monospace";
+      ctx.textAlign = "left";
       ctx.fillText(`🌸 Pollinated: ${totalPoll}/${newFlowers.length}`, 20, 33);
 
-      const progress = newFlowers.length > 0 ? totalPoll / newFlowers.length : 0;
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      const progress =
+        newFlowers.length > 0 ? totalPoll / newFlowers.length : 0;
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(CANVAS_W - 210, 10, 200, 20);
-      ctx.fillStyle = 'rgba(74,222,128,0.3)';
+      ctx.fillStyle = "rgba(74,222,128,0.3)";
       ctx.fillRect(CANVAS_W - 210, 10, 200 * progress, 20);
-      ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+      ctx.strokeStyle = "rgba(74,222,128,0.5)";
       ctx.strokeRect(CANVAS_W - 210, 10, 200, 20);
-      ctx.fillStyle = '#4ade80';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = "#4ade80";
+      ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center";
       ctx.fillText(`${Math.round(progress * 100)}%`, CANVAS_W - 110, 24);
-      ctx.textAlign = 'left';
+      ctx.textAlign = "left";
 
       animRef.current = requestAnimationFrame(loop);
     };
@@ -512,32 +631,37 @@ export default function SimComponent() {
 
   // Idle / Won screen
   useEffect(() => {
-    if (mode !== 'idle' && mode !== 'won') return;
+    if (mode !== "idle" && mode !== "won") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const drawStatic = (time: number) => {
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
       const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-      skyGrad.addColorStop(0, '#1a3a5c');
-      skyGrad.addColorStop(0.6, '#2a5a3a');
-      skyGrad.addColorStop(1, '#1a3a2a');
+      skyGrad.addColorStop(0, "#1a3a5c");
+      skyGrad.addColorStop(0.6, "#2a5a3a");
+      skyGrad.addColorStop(1, "#1a3a2a");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-      const groundGrad = ctx.createLinearGradient(0, CANVAS_H - 80, 0, CANVAS_H);
-      groundGrad.addColorStop(0, '#2d5a1e');
-      groundGrad.addColorStop(1, '#1a3a12');
+      const groundGrad = ctx.createLinearGradient(
+        0,
+        CANVAS_H - 80,
+        0,
+        CANVAS_H,
+      );
+      groundGrad.addColorStop(0, "#2d5a1e");
+      groundGrad.addColorStop(1, "#1a3a12");
       ctx.fillStyle = groundGrad;
       ctx.fillRect(0, CANVAS_H - 80, CANVAS_W, 80);
 
       for (let i = 0; i < 15; i++) {
         const f: Flower = {
           id: i,
-          x: 50 + (i * 53) % CANVAS_W,
+          x: 50 + ((i * 53) % CANVAS_W),
           y: CANVAS_H - 90 + Math.sin(i * 2) * 30,
           type: FLOWER_TYPES[i % 5].type,
           color: FLOWER_TYPES[i % 5].color,
@@ -550,30 +674,38 @@ export default function SimComponent() {
         drawFlower(ctx, f, time);
       }
 
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
       ctx.fillRect(CANVAS_W / 2 - 180, CANVAS_H / 2 - 60, 360, 120);
-      ctx.strokeStyle = 'rgba(0,200,255,0.4)';
+      ctx.strokeStyle = "rgba(0,200,255,0.4)";
       ctx.lineWidth = 2;
       ctx.strokeRect(CANVAS_W / 2 - 180, CANVAS_H / 2 - 60, 360, 120);
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('🐝 POLLINATION', CANVAS_W / 2, CANVAS_H / 2 - 15);
+      ctx.fillStyle = "#fbbf24";
+      ctx.font = "bold 28px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("🐝 POLLINATION", CANVAS_W / 2, CANVAS_H / 2 - 15);
 
-      if (mode === 'won') {
-        ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 18px monospace';
-        ctx.fillText('🎉 ALL FLOWERS POLLINATED!', CANVAS_W / 2, CANVAS_H / 2 + 15);
-        ctx.fillStyle = '#fff';
-        ctx.font = '14px monospace';
+      if (mode === "won") {
+        ctx.fillStyle = "#4ade80";
+        ctx.font = "bold 18px monospace";
+        ctx.fillText(
+          "🎉 ALL FLOWERS POLLINATED!",
+          CANVAS_W / 2,
+          CANVAS_H / 2 + 15,
+        );
+        ctx.fillStyle = "#fff";
+        ctx.font = "14px monospace";
         ctx.fillText(`Score: ${score}`, CANVAS_W / 2, CANVAS_H / 2 + 40);
       } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = '14px monospace';
-        ctx.fillText('Configure & press START to begin!', CANVAS_W / 2, CANVAS_H / 2 + 20);
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.font = "14px monospace";
+        ctx.fillText(
+          "Configure & press START to begin!",
+          CANVAS_W / 2,
+          CANVAS_H / 2 + 20,
+        );
       }
-      ctx.textAlign = 'left';
+      ctx.textAlign = "left";
 
       animRef.current = requestAnimationFrame(drawStatic);
     };
@@ -583,63 +715,116 @@ export default function SimComponent() {
   }, [mode, score]);
 
   // Mouse handlers for dragging bees
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (mode !== 'playing') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (mode !== "playing") return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_W / rect.width;
+      const scaleY = CANVAS_H / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
 
-    for (const bee of beesRef.current) {
-      if (dist(mx, my, bee.x, bee.y) < 20) {
-        setDragBee(bee.id);
-        return;
+      for (const bee of beesRef.current) {
+        if (dist(mx, my, bee.x, bee.y) < 20) {
+          setDragBee(bee.id);
+          return;
+        }
       }
-    }
-  }, [mode]);
+    },
+    [mode],
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (dragBee === null || mode !== 'playing') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (dragBee === null || mode !== "playing") return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_W / rect.width;
+      const scaleY = CANVAS_H / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
 
-    setBees(prev => prev.map(b =>
-      b.id === dragBee
-        ? { ...b, x: mx, y: my, targetX: mx + rand(-50, 50), targetY: my + rand(-50, 50) }
-        : b
-    ));
-  }, [dragBee, mode]);
+      setBees((prev) =>
+        prev.map((b) =>
+          b.id === dragBee
+            ? {
+                ...b,
+                x: mx,
+                y: my,
+                targetX: mx + rand(-50, 50),
+                targetY: my + rand(-50, 50),
+              }
+            : b,
+        ),
+      );
+    },
+    [dragBee, mode],
+  );
 
   const handleMouseUp = useCallback(() => {
     setDragBee(null);
   }, []);
 
+  const guideBeeToFlower = (flower: Flower) => {
+    setDragBee(null);
+    setBees((previous) =>
+      previous.map((bee) =>
+        bee.id === selectedBee
+          ? { ...bee, targetX: flower.x, targetY: flower.y }
+          : bee,
+      ),
+    );
+  };
+
   return (
-    <div className="sim-container" style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '20px',
-      gap: '14px',
-      overflow: 'auto',
-      color: 'var(--ares-offwhite)',
-    }}>
+    <div
+      className="sim-container"
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        padding: "20px",
+        gap: "14px",
+        overflow: "auto",
+        color: "var(--ares-offwhite)",
+      }}
+    >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-        <span className="sim-title" style={{ margin: 0, fontSize: '22px' }}>🐝 POLLINATION GAME</span>
-        <span style={{ fontSize: '12px', color: 'var(--ares-muted)', fontFamily: 'monospace' }}>
-          {mode === 'idle' ? 'SETUP' : mode === 'playing' ? 'PLAYING' : 'COMPLETE!'}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <span className="sim-title" style={{ margin: 0, fontSize: "22px" }}>
+          🐝 POLLINATION GAME
         </span>
-        {mode === 'playing' && (
-          <span style={{ fontSize: '12px', color: '#fbbf24', fontFamily: 'monospace' }}>
+        <span
+          style={{
+            fontSize: "12px",
+            color: "var(--ares-muted)",
+            fontFamily: "monospace",
+          }}
+        >
+          {mode === "idle"
+            ? "SETUP"
+            : mode === "playing"
+              ? "PLAYING"
+              : "COMPLETE!"}
+        </span>
+        {mode === "playing" && (
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#fbbf24",
+              fontFamily: "monospace",
+            }}
+          >
             Score: {score}
           </span>
         )}
@@ -647,33 +832,45 @@ export default function SimComponent() {
 
       {/* Info */}
       {showInfo && (
-        <div style={{
-          background: 'rgba(0,200,255,0.05)',
-          border: '1px solid rgba(0,200,255,0.15)',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          fontSize: '13px',
-          lineHeight: '1.6',
-          color: 'rgba(255,255,255,0.7)',
-        }}>
-          <strong style={{ color: '#fbbf24' }}>🌻 How Pollination Works:</strong> Bees visit flowers to collect nectar and pollen.
-          Pollen grains stick to their fuzzy bodies. When the bee visits <em>another flower of a different type</em>,
-          some of that pollen transfers to the new flower&apos;s stigma, cross-pollinating it so it can produce seeds and fruit.
-          <br /><br />
-          <strong style={{ color: 'var(--ares-cyan)' }}>🎮 How to Play:</strong> Bees automatically fly between flowers.
-          They pick up pollen (yellow particles) from flowers, then pollinate different-type flowers they visit next.
-          <strong>Drag bees</strong> with your mouse to guide them! Pollinate all flowers to win.
+        <div
+          style={{
+            background: "rgba(0,200,255,0.05)",
+            border: "1px solid rgba(0,200,255,0.15)",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            fontSize: "13px",
+            lineHeight: "1.6",
+            color: "rgba(255,255,255,0.7)",
+          }}
+        >
+          <strong style={{ color: "#fbbf24" }}>
+            🌻 How Pollination Works:
+          </strong>{" "}
+          Bees visit flowers to collect nectar and pollen. Pollen grains stick
+          to their fuzzy bodies. When the bee visits{" "}
+          <em>another flower of a different type</em>, some of that pollen
+          transfers to the new flower&apos;s stigma, cross-pollinating it so it
+          can produce seeds and fruit.
+          <br />
+          <br />
+          <strong style={{ color: "var(--ares-cyan)" }}>
+            🎮 How to Play:
+          </strong>{" "}
+          Bees automatically fly between flowers. They pick up pollen (yellow
+          particles) from flowers, then pollinate different-type flowers they
+          visit next. Drag bees with a pointer or use the keyboard-operable bee
+          and flower controls below to guide them. Pollinate all flowers to win.
           <button
             onClick={() => setShowInfo(false)}
             style={{
-              marginLeft: '8px',
-              background: 'transparent',
-              border: '1px solid var(--ares-gray-dark)',
-              color: 'var(--ares-muted)',
-              padding: '2px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px',
+              marginLeft: "8px",
+              background: "transparent",
+              border: "1px solid var(--ares-gray-dark)",
+              color: "var(--ares-muted)",
+              padding: "2px 8px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "11px",
             }}
           >
             Close
@@ -685,15 +882,15 @@ export default function SimComponent() {
         <button
           onClick={() => setShowInfo(true)}
           style={{
-            alignSelf: 'flex-start',
-            background: 'transparent',
-            border: '1px solid rgba(0,200,255,0.3)',
-            color: 'var(--ares-cyan)',
-            padding: '4px 12px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '11px',
-            fontFamily: 'monospace',
+            alignSelf: "flex-start",
+            background: "transparent",
+            border: "1px solid rgba(0,200,255,0.3)",
+            color: "var(--ares-cyan)",
+            padding: "4px 12px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "11px",
+            fontFamily: "monospace",
           }}
         >
           ℹ️ How to Play
@@ -701,16 +898,19 @@ export default function SimComponent() {
       )}
 
       {/* Canvas */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        border: '1px solid var(--ares-gray-dark)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        background: '#0a1a0a',
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          border: "1px solid var(--ares-gray-dark)",
+          borderRadius: "12px",
+          overflow: "hidden",
+          background: "#0a1a0a",
+        }}
+      >
         <canvas
           ref={canvasRef}
+          aria-hidden="true"
           width={CANVAS_W}
           height={CANVAS_H}
           onMouseDown={handleMouseDown}
@@ -718,32 +918,129 @@ export default function SimComponent() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           style={{
-            width: '100%',
+            width: "100%",
             maxWidth: `${CANVAS_W}px`,
-            height: 'auto',
-            cursor: dragBee !== null ? 'grabbing' : mode === 'playing' ? 'crosshair' : 'default',
+            height: "auto",
+            cursor:
+              dragBee !== null
+                ? "grabbing"
+                : mode === "playing"
+                  ? "crosshair"
+                  : "default",
           }}
         />
       </div>
 
+      {mode === "playing" && bees.length > 0 && flowers.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gap: "8px",
+            padding: "12px",
+            border: "1px solid var(--ares-gray-dark)",
+            borderRadius: "8px",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              fontFamily: "monospace",
+              fontSize: "12px",
+            }}
+          >
+            Bee to guide
+            <select
+              value={selectedBee}
+              onChange={(event) => setSelectedBee(Number(event.target.value))}
+              style={{
+                background: "var(--obsidian)",
+                color: "var(--marble)",
+                border: "1px solid var(--ares-gray-dark)",
+                padding: "6px",
+              }}
+            >
+              {bees.map((bee) => (
+                <option key={bee.id} value={bee.id}>
+                  Bee {bee.id + 1}
+                  {bee.carryingPollen
+                    ? `, carrying ${bee.pollenSource} pollen`
+                    : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p
+            style={{ margin: 0, fontSize: "12px", color: "var(--ares-muted)" }}
+          >
+            Choose a destination flower. The selected bee will fly to it.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {flowers.map((flower) => (
+              <button
+                key={flower.id}
+                type="button"
+                onClick={() => guideBeeToFlower(flower)}
+                aria-label={`Guide bee ${selectedBee + 1} to ${flower.type} flower ${flower.id + 1}${flower.isPollinated ? ", already pollinated" : ""}`}
+                style={{
+                  background: "transparent",
+                  color: flower.isPollinated ? "#4ade80" : "var(--marble)",
+                  border: `1px solid ${flower.color}`,
+                  borderRadius: "4px",
+                  padding: "6px 8px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                }}
+              >
+                {flower.type} {flower.id + 1}
+                {flower.isPollinated ? " ✓" : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
-      {mode === 'playing' && (
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          padding: '8px',
-          background: 'rgba(0,0,0,0.2)',
-          borderRadius: '8px',
-          border: '1px solid var(--ares-gray-dark)',
-        }}>
-          {FLOWER_TYPES.map(ft => (
-            <div key={ft.type} style={{ textAlign: 'center', minWidth: '60px' }}>
-              <div style={{ fontSize: '9px', fontFamily: 'monospace', color: ft.color, marginBottom: '2px' }}>
+      {mode === "playing" && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label={`Pollination score ${score}`}
+          style={{
+            display: "flex",
+            gap: "16px",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            padding: "8px",
+            background: "rgba(0,0,0,0.2)",
+            borderRadius: "8px",
+            border: "1px solid var(--ares-gray-dark)",
+          }}
+        >
+          {FLOWER_TYPES.map((ft) => (
+            <div
+              key={ft.type}
+              style={{ textAlign: "center", minWidth: "60px" }}
+            >
+              <div
+                style={{
+                  fontSize: "9px",
+                  fontFamily: "monospace",
+                  color: ft.color,
+                  marginBottom: "2px",
+                }}
+              >
                 {ft.name.toUpperCase()}
               </div>
-              <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#4ade80' }}>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontFamily: "monospace",
+                  color: "#4ade80",
+                }}
+              >
                 {pollinatedByType[ft.type] || 0}
               </div>
             </div>
@@ -752,75 +1049,140 @@ export default function SimComponent() {
       )}
 
       {/* Controls */}
-      <div style={{
-        display: 'flex',
-        gap: '20px',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--ares-muted)' }}>🐝 Bees:</span>
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          justifyContent: "center",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "11px",
+              color: "var(--ares-muted)",
+            }}
+          >
+            🐝 Bees:
+          </span>
           <input
             type="range"
             min={1}
             max={8}
             value={beeCount}
-            onChange={e => setBeeCount(parseInt(e.target.value, 10))}
-            disabled={mode === 'playing'}
+            onChange={(e) => setBeeCount(parseInt(e.target.value, 10))}
+            disabled={mode === "playing"}
             aria-label="Number of bees in simulation"
-            style={{ width: '80px' }}
+            style={{ width: "80px" }}
           />
-          <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 'bold', color: 'var(--ares-cyan)' }}>{beeCount}</span>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "var(--ares-cyan)",
+            }}
+          >
+            {beeCount}
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--ares-muted)' }}>🌸 Flowers:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "11px",
+              color: "var(--ares-muted)",
+            }}
+          >
+            🌸 Flowers:
+          </span>
           <input
             type="range"
             min={6}
             max={30}
             value={flowerCount}
-            onChange={e => setFlowerCount(parseInt(e.target.value, 10))}
-            disabled={mode === 'playing'}
+            onChange={(e) => setFlowerCount(parseInt(e.target.value, 10))}
+            disabled={mode === "playing"}
             aria-label="Number of flowers in simulation"
-            style={{ width: '80px' }}
+            style={{ width: "80px" }}
           />
-          <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 'bold', color: 'var(--ares-cyan)' }}>{flowerCount}</span>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "var(--ares-cyan)",
+            }}
+          >
+            {flowerCount}
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--ares-muted)' }}>⚡ Speed:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "11px",
+              color: "var(--ares-muted)",
+            }}
+          >
+            ⚡ Speed:
+          </span>
           <input
             type="range"
             min={0.5}
             max={3}
             step={0.25}
             value={speed}
-            onChange={e => setSpeed(parseFloat(e.target.value))}
+            onChange={(e) => setSpeed(parseFloat(e.target.value))}
             aria-label="Simulation speed multiplier"
-            style={{ width: '80px' }}
+            style={{ width: "80px" }}
           />
-          <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 'bold', color: 'var(--ares-cyan)' }}>{speed}x</span>
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "var(--ares-cyan)",
+            }}
+          >
+            {speed}x
+          </span>
         </div>
 
         <button
-          onClick={mode === 'playing' ? () => { setMode('idle'); cancelAnimationFrame(animRef.current); } : startGame}
+          onClick={
+            mode === "playing"
+              ? () => {
+                  setMode("idle");
+                  cancelAnimationFrame(animRef.current);
+                }
+              : startGame
+          }
           style={{
-            padding: '10px 24px',
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            fontWeight: 'bold',
-            background: mode === 'playing'
-              ? 'rgba(239,68,68,0.15)'
-              : 'rgba(74,222,128,0.15)',
-            border: `1px solid ${mode === 'playing' ? '#ef4444' : '#4ade80'}`,
-            color: mode === 'playing' ? '#ef4444' : '#4ade80',
-            borderRadius: '6px',
-            cursor: 'pointer',
+            padding: "10px 24px",
+            fontFamily: "monospace",
+            fontSize: "13px",
+            fontWeight: "bold",
+            background:
+              mode === "playing"
+                ? "rgba(239,68,68,0.15)"
+                : "rgba(74,222,128,0.15)",
+            border: `1px solid ${mode === "playing" ? "#ef4444" : "#4ade80"}`,
+            color: mode === "playing" ? "#ef4444" : "#4ade80",
+            borderRadius: "6px",
+            cursor: "pointer",
           }}
         >
-          {mode === 'playing' ? '⏹ STOP' : mode === 'won' ? '🔄 RESTART' : '▶ START'}
+          {mode === "playing"
+            ? "⏹ STOP"
+            : mode === "won"
+              ? "🔄 RESTART"
+              : "▶ START"}
         </button>
       </div>
     </div>

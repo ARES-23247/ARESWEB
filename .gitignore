@@ -31,6 +31,7 @@ yarn-error.log*
 .env
 .env.local
 .env.test
+.env.production.local
 .dev.vars
 
 .firebase/
@@ -88,4 +89,3 @@ gha-creds-*.json
 # Explicitly track files we want
 !eslint.config.js
 !eslint.config.mjs
-!.pa11yci.cjs

@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const config = JSON.parse(
-  readFileSync(".planning/codebase/BUNDLE-BASELINE.json", "utf-8"),
+  readFileSync("config/bundle-budgets.json", "utf-8"),
 );
 const distDir = join(process.cwd(), "dist");
 const assetsDir = join(distDir, "assets");
@@ -37,8 +37,11 @@ try {
   const lazyJs = readdirSync(assetsDir).filter(
     (file) => file.endsWith(".js") && !initialAssets.has(file),
   );
+  const editorRuntimePattern = /^(?:ts|css|html|json)\.worker-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
+  const routeLazyJs = lazyJs.filter((file) => !editorRuntimePattern.test(file));
+  const editorRuntimeJs = lazyJs.filter((file) => editorRuntimePattern.test(file));
 
-  const largestLazy = lazyJs
+  const largestLazy = routeLazyJs
     .map((file) => ({ file, ...assetSize(file) }))
     .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
 
@@ -46,6 +49,8 @@ try {
     initialJs: sumAssets(initialJs),
     initialCss: sumAssets(initialCss),
     largestLazyJs: largestLazy,
+    totalRouteJs: sumAssets([...initialJs, ...routeLazyJs]),
+    editorRuntimeJs: sumAssets(editorRuntimeJs),
   };
 
   let exceeded = false;

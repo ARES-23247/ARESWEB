@@ -53,14 +53,14 @@ export function SimulationLibraryOverlay({
         {/* Saved Simulations */}
         <div className="mb-8">
           <h3 className="text-sm font-bold text-ares-gold uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Your Saved Simulations
+            <Clock className="w-4 h-4" /> Drafts saved in this browser
           </h3>
           {isLoadingSims ? (
             <div className="flex items-center gap-2 text-marble/60 text-sm py-4">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading...
             </div>
           ) : savedSims.length === 0 ? (
-            <p className="text-marble/40 text-sm py-4">No saved simulations yet. Create one and hit Save!</p>
+            <p className="text-marble/60 text-sm py-4">No local drafts yet. Drafts stay on this device and are not published to GitHub.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {savedSims.map((sim) => (

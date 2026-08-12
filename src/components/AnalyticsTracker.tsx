@@ -3,8 +3,8 @@ import { useLocation } from "react-router-dom";
 
 declare global {
   interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
+    dataLayer: unknown[];
+    gtag: (...args: unknown[]) => void;
   }
 }
 
@@ -23,7 +23,7 @@ function getOrCreateClientId(): string {
       localStorage.setItem(STORAGE_KEY, cid);
     }
     return cid;
-  } catch (e) {
+  } catch {
     // Fallback for private tabs/browsers where localStorage is blocked
     return "session_" + Math.random().toString(36).substring(2, 15);
   }
@@ -47,8 +47,8 @@ export default function AnalyticsTracker() {
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      window.gtag = function gtag() {
-        window.dataLayer.push(arguments);
+      window.gtag = (...args: unknown[]) => {
+        window.dataLayer.push(args);
       };
       
       window.gtag("js", new Date());

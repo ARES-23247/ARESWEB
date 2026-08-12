@@ -183,8 +183,6 @@ describe("photos routes", () => {
           }),
           photo("unsafe", { albumId: "album", publicUrl: "http://example.com/no.jpg" }),
           photo("archived", { albumId: "album", publicUrl: "https://example.com/old.jpg", isDeleted: 1 }),
-          photo("private", { albumId: "private", publicUrl: "https://example.com/private.jpg" }),
-          photo("wrong-album-type", { albumId: 12, publicUrl: "https://example.com/no.jpg" }),
         ] });
 
       await handler("/public", "get")({ query: { limit: "1" } }, res, next);
@@ -204,17 +202,20 @@ describe("photos routes", () => {
         hasMore: true,
         nextCursor: "active",
       });
+      expect(query.where).toHaveBeenCalledWith("albumId", "in", ["album", "album-no-category"]);
+      expect(query.limit).toHaveBeenCalledWith(2);
       expect(JSON.stringify(payload)).not.toContain("hidden");
     });
 
-    it("handles cursor paging, malformed optional text, and a full scan window", async () => {
+    it("handles cursor paging, malformed optional text, and bounded candidate reads", async () => {
       const cursorSnapshot = { exists: true, id: "cursor" };
       docGet.mockResolvedValueOnce(cursorSnapshot);
       queryGet
         .mockResolvedValueOnce({ docs: [photo("album", { category: "", isDeleted: 0 })] })
-        .mockResolvedValueOnce({ docs: Array.from({ length: 250 }, (_, index) => photo(`p-${index}`, {
-          albumId: index === 0 ? "album" : "private",
-          publicUrl: index === 0 ? "https://example.com/photo.jpg" : "https://example.com/private.jpg",
+        .mockResolvedValueOnce({ docs: Array.from({ length: 25 }, (_, index) => photo(`p-${index}`, {
+          albumId: "album",
+          publicUrl: `https://example.com/photo-${index}.jpg`,
+          importedAt: `2026-01-${String(25 - index).padStart(2, "0")}`,
           caption: 12,
           altText: null,
           capturedAt: 5,
@@ -225,10 +226,11 @@ describe("photos routes", () => {
       await handler("/public", "get")({ query: { cursor: "cursor", limit: "not-a-number" } }, res, next);
 
       expect(query.startAfter).toHaveBeenCalledWith(cursorSnapshot);
+      expect(query.limit).toHaveBeenCalledWith(25);
       expect(res.json).toHaveBeenCalledWith({
-        photos: [expect.objectContaining({ id: "p-0", category: undefined })],
+        photos: expect.arrayContaining([expect.objectContaining({ id: "p-0", category: undefined })]),
         hasMore: true,
-        nextCursor: "p-0",
+        nextCursor: "p-23",
       });
     });
   });

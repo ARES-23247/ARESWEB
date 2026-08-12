@@ -52,6 +52,12 @@ describe("public truth and reliability pages", () => {
     expect(screen.queryByText("MARS Laboratory")).not.toBeInTheDocument();
     expect(screen.queryByText(/Google Photos synced/i)).not.toBeInTheDocument();
     expect(screen.queryByText("internal-photo-id")).not.toBeInTheDocument();
+    const cardImage = screen.getByRole("img", { name: /Published team photo; description not provided/i });
+    expect(cardImage).toHaveAttribute("loading", "lazy");
+    expect(cardImage).toHaveAttribute("decoding", "async");
+    expect(cardImage).toHaveAttribute("fetchpriority", "low");
+    expect(cardImage).toHaveAttribute("width", "4");
+    expect(cardImage).toHaveAttribute("height", "3");
   });
 
   it("keeps the last gallery data visible when refresh fails", async () => {

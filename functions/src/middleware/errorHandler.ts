@@ -18,15 +18,13 @@ export const globalErrorHandler = (
   err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   // Log the full stack trace on the server for diagnostics
   const error = err instanceof Error ? err : new Error("Unknown thrown value");
-  const requestUser = (req as Request & { user?: { uid?: string } }).user;
   logger.error("errorHandler", "[Global Error Handler] Caught Exception:", {
     path: req.path,
     method: req.method,
-    uid: requestUser?.uid,
     error,
   });
 

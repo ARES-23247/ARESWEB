@@ -341,6 +341,11 @@ describe("TournamentDetailPage", () => {
     }]);
 
     renderWithProviders(<TournamentDetailPage />, queryClient);
+    const galleryImage = screen.getByRole("img", { name: "Robot on the field" });
+    expect(galleryImage).toHaveAttribute("loading", "lazy");
+    expect(galleryImage).toHaveAttribute("decoding", "async");
+    expect(galleryImage).toHaveAttribute("width", "16");
+    expect(galleryImage).toHaveAttribute("height", "9");
     fireEvent.click(await screen.findByRole("button", { name: "Open photo: Robot on the field" }));
 
     expect(screen.getByRole("dialog", { name: "Robot on the field" })).toBeInTheDocument();

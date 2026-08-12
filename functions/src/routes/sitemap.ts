@@ -8,6 +8,12 @@ const router = express.Router();
 const BASE_URL = "https://aresfirst.org";
 const MAX_DOCUMENTS_PER_COLLECTION = 500;
 const CACHE_CONTROL = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
+const NON_PRODUCTION_RECORD_PATTERNS = [
+  /(^|[-_])(e2e|fixture|wip)(?:$|[-_\d])/i,
+  /(^|[-_])test(?:\d+)?(?:$|[-_])/i,
+  /^event[-_]\d{13,}$/i,
+  /^screen[-_]recording(?:$|[-_])/i,
+] as const;
 
 const STATIC_URLS = [
   { loc: `${BASE_URL}/`, changefreq: "daily", priority: "1.00" },
@@ -16,22 +22,19 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/accessibility`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/blog`, changefreq: "daily", priority: "0.80" },
   { loc: `${BASE_URL}/calendar`, changefreq: "weekly", priority: "0.70" },
-  { loc: `${BASE_URL}/developer-api`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/docs`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/finance`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/gallery`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/videos`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/join`, changefreq: "monthly", priority: "0.90" },
-  { loc: `${BASE_URL}/leaderboard`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/location-morgantown`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/outreach`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/robots`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/seasons`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/sponsors`, changefreq: "monthly", priority: "0.80" },
-  { loc: `${BASE_URL}/store`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/tech-stack`, changefreq: "monthly", priority: "0.50" },
-  { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.50" },
-  { loc: `${BASE_URL}/tournaments`, changefreq: "weekly", priority: "0.70" }
+  { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.50" }
 ] as const;
 
 interface SitemapEntry {
@@ -43,6 +46,14 @@ interface SitemapEntry {
 
 interface FirestoreTimestampLike {
   toDate: () => Date;
+}
+
+export function isSitemapRecordIndexable(
+  id: string,
+  data: Record<string, unknown> = {},
+): boolean {
+  if (!id || data.searchIndexable === false) return false;
+  return !NON_PRODUCTION_RECORD_PATTERNS.some((pattern) => pattern.test(id));
 }
 
 function escapeXml(value: string): string {
@@ -133,6 +144,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   postsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
+    if (!isSitemapRecordIndexable(doc.id, data)) return;
     addEntry({
       loc: `${BASE_URL}/blog/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
@@ -143,6 +155,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   robotsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
+    if (!isSitemapRecordIndexable(doc.id, data)) return;
     addEntry({
       loc: `${BASE_URL}/robots/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
@@ -153,6 +166,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   academySnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
+    if (!isSitemapRecordIndexable(doc.id, data)) return;
     addEntry({
       loc: `${BASE_URL}/academy/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
@@ -163,6 +177,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   docsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
+    if (!isSitemapRecordIndexable(doc.id, data)) return;
     const path = data.displayInMathCorner === 1 || data.displayInScienceCorner === 1
       ? "academy"
       : data.displayInAreslib === 1
@@ -181,6 +196,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   eventsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
+    if (!isSitemapRecordIndexable(doc.id, data)) return;
     addEntry({
       loc: `${BASE_URL}/events/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",

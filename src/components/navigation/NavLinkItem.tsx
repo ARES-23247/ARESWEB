@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { NavItemConfig } from "./navItems";
 
 interface NavLinkItemProps {
@@ -10,6 +10,8 @@ interface NavLinkItemProps {
 
 export function NavLinkItem({ item, variant, onClick }: NavLinkItemProps) {
   const { to, href, icon: Icon, iconColor, label, isAresLib } = item;
+  const { pathname } = useLocation();
+  const isCurrent = Boolean(to && (pathname === to || (to !== "/" && pathname.startsWith(`${to}/`))));
 
   const className =
     variant === "desktop-dropdown"
@@ -18,7 +20,7 @@ export function NavLinkItem({ item, variant, onClick }: NavLinkItemProps) {
 
   const content = (
     <>
-      <Icon size={12} className={iconColor} />
+      <Icon aria-hidden="true" size={12} className={iconColor} />
       {isAresLib ? (
         <span>
           <span className="text-ares-red">ARES</span>Lib
@@ -31,7 +33,7 @@ export function NavLinkItem({ item, variant, onClick }: NavLinkItemProps) {
 
   if (to) {
     return (
-      <Link to={to} onClick={onClick} className={className}>
+      <Link to={to} onClick={onClick} className={className} aria-current={isCurrent ? "page" : undefined}>
         {content}
       </Link>
     );

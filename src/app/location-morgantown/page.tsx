@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight, MapPin, Users, Calendar, Trophy, GraduationCap } from "lucide-react";
 
 import SEO from "@/components/SEO";
-import FAQSchema, { LOCAL_ROBOTICS_FAQS } from "@/components/FAQSchema";
 import BreadcrumbSchema from "@/components/BreadcrumbSchema";
 
 const breadcrumbs = [
@@ -20,7 +19,6 @@ export default function LocationMorgantownPage() {
         title="Robotics in Morgantown, West Virginia | ARES 23247"
         description="Meet ARES 23247, a FIRST® Tech Challenge robotics team based in Morgantown, West Virginia. Learn about the team, events, and ways to join."
       />
-      <FAQSchema faqs={LOCAL_ROBOTICS_FAQS} />
       <BreadcrumbSchema breadcrumbs={breadcrumbs} />
 
       {/* Hero Section */}

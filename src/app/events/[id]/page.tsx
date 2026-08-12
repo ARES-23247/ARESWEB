@@ -29,7 +29,7 @@ import PhotoLightbox from "@/components/events/PhotoLightbox";
 import { EventItem, EventSignup, EventPhoto } from "@/components/events/types";
 
 import { TeamLocation } from "@/types/location";
-import { fetchLocations, fetchPublicEvent } from "@/app/calendar/api";
+import { CalendarApiError, fetchLocations, fetchPublicEvent } from "@/app/calendar/api";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "@/lib/image";
 
@@ -80,13 +80,20 @@ export default function EventDetailPage() {
   const loadEvent = useCallback(async () => {
     if (!id) return;
     setLoadingEvent(true);
+    setEvent(null);
     try {
       const result = await fetchPublicEvent(id);
       setEvent(result as EventItem);
       setEventLoadError(null);
     } catch (error) {
       console.error("Error fetching event details:", error);
-      setEventLoadError(error instanceof Error ? error.message : String(error));
+      setEventLoadError(
+        error instanceof CalendarApiError && error.status === 404
+          ? null
+          : error instanceof Error
+            ? error.message
+            : String(error),
+      );
     } finally {
       setLoadingEvent(false);
     }
@@ -433,6 +440,7 @@ export default function EventDetailPage() {
     }
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble flex flex-col items-center justify-center p-6 text-center">
+        <SEO title="Event Not Found" description="This ARES 23247 calendar event does not exist or is no longer published." noindex />
         <h1 className="text-3xl font-black font-heading text-white uppercase mb-4">Event Record Lost</h1>
         <p className="text-marble/60 text-sm max-w-sm mb-6">This schedule item does not exist or has been removed from the calendar system.</p>
         <Link to="/calendar" className="clipped-button bg-ares-red text-white py-3 px-6 text-xs font-black uppercase tracking-widest">

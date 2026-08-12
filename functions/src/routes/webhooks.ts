@@ -57,7 +57,7 @@ router.post("/zulip", asyncHandler(async (req, res) => {
   const taskSnap = await taskRef.get();
 
   if (!taskSnap.exists) {
-    logger.warn("webhooks", `Task "${taskId}" does not exist in Firestore`);
+    logger.warn("webhooks", "The Zulip webhook referenced a missing task");
     res.json({ content: "Task card not found." });
     return;
   }
@@ -84,7 +84,7 @@ router.post("/zulip", asyncHandler(async (req, res) => {
   });
   await batch.commit();
 
-  logger.info("webhooks", `Synced comment from Zulip to Task "${taskId}"`);
+  logger.info("webhooks", "Synced a verified Zulip comment to its task");
   res.json({ content: "" });
 }));
 

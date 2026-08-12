@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { logger } from "../utils/logger";
 import { ApiError, toastApiError } from "../api/apiClient";
 import { authenticatedFetch } from "../lib/api";
+import { saveSimulationDraft } from "../lib/simulationDrafts";
 
 interface ApiErrorBody {
   error?: string;
@@ -43,24 +44,14 @@ export function useSimulationActions({
     if (!simName.trim()) return;
     setIsSaving(true);
     try {
-      const res = await authenticatedFetch("/api/simulations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: simName, files: files, ...(simId ? { id: simId } : {}) }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { id?: string };
-        if (data.id && !simId) {
-          setSimId(data.id);
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("simId", data.id.toString());
-          window.history.replaceState({}, "", newUrl.toString());
-        }
-        const { toast } = await import("sonner");
-        toast.success("Saved simulation!");
-      } else {
-        throw await createResponseError(res, "The simulation could not be saved.");
-      }
+      const draft = saveSimulationDraft({ id: simId, name: simName, files });
+      setSimId(`local:${draft.id}`);
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("gist");
+      newUrl.searchParams.set("simId", `local:${draft.id}`);
+      window.history.replaceState({}, "", newUrl.toString());
+      const { toast } = await import("sonner");
+      toast.success("Draft saved in this browser.");
     } catch (e) {
       logger.error("[SimPlayground] Save failed:", e);
       toastApiError(e, "Network error while saving simulation");

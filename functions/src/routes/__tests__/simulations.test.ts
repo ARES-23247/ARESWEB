@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import simulationsRouter from "../simulations";
-import { adminDb } from "../../lib/firebase-admin";
 
 // Mock Firebase Admin
 vi.mock("../../lib/firebase-admin", () => {
@@ -144,8 +143,8 @@ describe("Simulations Router Backend Endpoints", () => {
     });
   });
 
-  describe("POST /api/simulations - Save simulation", () => {
-    it("should upload simulation index.tsx to GitHub repository", async () => {
+  describe("POST /api/simulations - Retired direct publishing", () => {
+    it("should direct authors to the repository contribution workflow", async () => {
       req.body = {
         name: "My Custom Sim",
         files: {
@@ -153,31 +152,17 @@ describe("Simulations Router Backend Endpoints", () => {
         },
       };
 
-      const mockGet = adminDb.collection("").doc("").get;
-      vi.mocked(mockGet).mockResolvedValue({
-        exists: true,
-        data: () => ({ role: "mentor" }),
-      } as any);
-
-      // Mock GET sha check (doesn't exist)
-      fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
-      // Mock PUT save
-      fetchMock.mockResolvedValueOnce({ ok: true });
-
       const handler = getHandler("/", "post");
       await handler(req, res, next);
 
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        "https://api.github.com/repos/ARES-23247/ARESWEB/contents/src/sims/climbingCenterOfMass.tsx",
-        expect.objectContaining({
-          method: "PUT",
-          body: expect.stringContaining(Buffer.from("const test = 1;").toString("base64")),
-        })
-      );
-      expect(res.json).toHaveBeenCalledWith({ id: "github:climbingCenterOfMass" });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(410);
+      expect(err.message).toContain("Direct repository publishing has been retired");
     });
 
-    it("should reject save payloads exceeding 2MB", async () => {
+    it("should not parse or forward oversized legacy payloads", async () => {
       const hugeCode = "a".repeat(2.5 * 1024 * 1024);
       req.body = {
         name: "Bloated Sim",
@@ -191,8 +176,8 @@ describe("Simulations Router Backend Endpoints", () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.status).toBe(400);
-      expect(err.message).toBe("Payload exceeds 2MB limit");
+      expect(err.status).toBe(410);
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 

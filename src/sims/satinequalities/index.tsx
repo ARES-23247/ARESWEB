@@ -316,6 +316,7 @@ export default function InequalitiesSim() {
         {/* SVG Graphing Area */}
         <div className="relative bg-obsidian-darker p-3 rounded-xl border border-white/10 shadow-2xl shrink-0">
           <svg
+            aria-hidden="true"
             ref={svgRef}
             width={width}
             height={height}
@@ -484,6 +485,15 @@ export default function InequalitiesSim() {
 
         {/* Dynamic Parameter Sliders & Details */}
         <div className="w-full flex flex-col gap-4">
+          <fieldset className="grid grid-cols-1 gap-3 bg-obsidian-surface/50 border border-white/5 p-3 rounded-lg text-xs sm:grid-cols-2">
+            <legend className="px-1 font-bold text-ares-gold">Test point coordinates</legend>
+            <label className="flex flex-col gap-1 text-marble">X: {tester.x.toFixed(1)}
+              <input type="range" min="-10" max="10" step="0.5" value={tester.x} onChange={event => setTester(previous => ({ ...previous, x: Number(event.target.value) }))} className="w-full accent-ares-gold" />
+            </label>
+            <label className="flex flex-col gap-1 text-marble">Y: {tester.y.toFixed(1)}
+              <input type="range" min="-10" max="10" step="0.5" value={tester.y} onChange={event => setTester(previous => ({ ...previous, y: Number(event.target.value) }))} className="w-full accent-ares-gold" />
+            </label>
+          </fieldset>
           
           {/* Inequality 1 Sliders */}
           <div className="bg-obsidian-surface/50 border border-white/5 p-3 rounded-lg flex flex-col gap-2">
@@ -611,7 +621,7 @@ export default function InequalitiesSim() {
       </div>
 
       {/* Live validation summary */}
-      <div className={`w-full border p-3.5 rounded-lg text-xs leading-relaxed flex flex-col gap-1.5 transition-all ${
+      <div role="status" aria-live="polite" className={`w-full border p-3.5 rounded-lg text-xs leading-relaxed flex flex-col gap-1.5 transition-all ${
         satisfiesSystem
           ? 'bg-ares-gold/10 border-ares-gold/20 text-ares-gold'
           : 'bg-ares-red border-ares-red text-white'

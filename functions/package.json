@@ -1,7 +1,7 @@
 {
   "name": "functions",
   "scripts": {
-    "lint": "eslint",
+    "lint": "eslint src --max-warnings=16",
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
@@ -15,8 +15,6 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@emnapi/core": "^1.11.1",
-    "@emnapi/runtime": "^1.11.1",
     "@google/genai": "^2.7.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",

@@ -15,6 +15,7 @@ import { useSimulationSnapshots } from "../hooks/useSimulationSnapshots";
 import { useSimulationShortcuts } from "../hooks/useSimulationShortcuts";
 import { useSimulationTelemetry } from "../hooks/useSimulationTelemetry";
 import { useSimulationActions } from "../hooks/useSimulationActions";
+import { useAuth } from "../context/AuthContext";
 
 // Sub-components
 import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
@@ -51,6 +52,8 @@ interface GithubSim {
 */
 
 export default function SimulationPlayground() {
+  const { authorizedUser } = useAuth();
+  const canUseAi = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
   // Local editor state must exist before URL/library loading is initialized.
   const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Blank Canvas"]);
   const [activeFile, setActiveFile] = useState("SimComponent.tsx");
@@ -432,6 +435,7 @@ export default function SimulationPlayground() {
                   fps={fps}
                   compiledFiles={compiledFiles}
                   handleFixWithAI={handleFixWithAI}
+                  canUseAi={canUseAi}
                   handleTestResult={handleTestResult}
                   telemetry={telemetry}
                 />
@@ -453,6 +457,7 @@ export default function SimulationPlayground() {
                   testResults={testResults}
                   setTestResults={setTestResults}
                   handleFixWithAI={handleFixWithAI}
+                  canUseAi={canUseAi}
                   chatMessages={chatMessages}
                   isChatLoading={isChatLoading}
                   chatInput={chatInput}

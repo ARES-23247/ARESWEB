@@ -124,14 +124,31 @@ router.get("/public", asyncHandler(async (req, res) => {
     return;
   }
 
-  let query: FirebaseFirestore.Query = adminDb.collection("imported_photos").orderBy("importedAt", "desc");
-  query = await withCursor(query, req.query.cursor);
-  const snapshot = await query.limit(250).get();
-  const visible = snapshot.docs.filter((doc) => {
-    const data = doc.data();
-    return data.isDeleted !== 1 && typeof data.albumId === "string" && publicAlbums.has(data.albumId);
-  });
-  const page = visible.slice(0, limit);
+  const cursor = typeof req.query.cursor === "string" && req.query.cursor
+    ? await adminDb.collection("imported_photos").doc(safeId(req.query.cursor, "photo cursor")).get()
+    : null;
+  if (cursor && !cursor.exists) throw new ApiError(400, "Photo cursor was not found.");
+
+  const albumIds = [...publicAlbums.keys()];
+  const albumChunks = Array.from(
+    { length: Math.ceil(albumIds.length / 30) },
+    (_, index) => albumIds.slice(index * 30, index * 30 + 30),
+  );
+  const snapshots = await Promise.all(albumChunks.map(async (ids) => {
+    let query: FirebaseFirestore.Query = adminDb.collection("imported_photos")
+      .where("albumId", "in", ids)
+      .orderBy("importedAt", "desc");
+    if (cursor) query = query.startAfter(cursor);
+    return query.limit(limit + 1).get();
+  }));
+  const candidates = snapshots.flatMap((snapshot) => snapshot.docs)
+    .filter((doc) => doc.data().isDeleted !== 1 && Boolean(safeHttpsUrl(doc.data().publicUrl)))
+    .sort((left, right) => {
+      const leftDate = typeof left.data().importedAt === "string" ? left.data().importedAt : "";
+      const rightDate = typeof right.data().importedAt === "string" ? right.data().importedAt : "";
+      return rightDate.localeCompare(leftDate) || right.id.localeCompare(left.id);
+    });
+  const page = candidates.slice(0, limit);
   const photos = page.map((doc) => {
     const data = doc.data();
     return {
@@ -147,7 +164,7 @@ router.get("/public", asyncHandler(async (req, res) => {
   }).filter((photo) => photo.publicUrl);
   res.json({
     photos,
-    hasMore: visible.length > limit || snapshot.docs.length === 250,
+    hasMore: candidates.length > limit || snapshots.some((snapshot) => snapshot.docs.length > limit),
     nextCursor: page.length ? page[page.length - 1].id : null,
   });
 }));

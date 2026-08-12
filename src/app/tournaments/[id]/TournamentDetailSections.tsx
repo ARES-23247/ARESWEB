@@ -106,7 +106,15 @@ export function TournamentPhotosSection({ hasAlbum, photos, isError, error, onRe
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {photos.map((photo, index) => (
               <button type="button" key={`${photo.src}-${index}`} onClick={() => onOpenPhoto(photo)} aria-label={`Open photo: ${photo.caption}`} className="group cursor-pointer aspect-video relative overflow-hidden border border-white/10 rounded-xl bg-black/60 focus-visible:ring-2 focus-visible:ring-ares-cyan">
-                <img src={photo.src} alt={photo.caption} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
+                <img
+                  src={photo.src}
+                  alt={photo.caption}
+                  loading="lazy"
+                  decoding="async"
+                  width={16}
+                  height={9}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex items-end">
                   <p className="text-[9px] text-white uppercase font-black tracking-wider truncate w-full">{photo.caption}</p>
                 </div>

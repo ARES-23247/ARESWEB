@@ -56,15 +56,15 @@ publish or hard-code a Zulip join link.
   administrator reads or saves the profile. Do not run an unreviewed bulk data
   rewrite.
 
-## 4. Stage App Check enforcement
+## 4. Verify App Check enforcement
 
-Keep App Check in observation mode until the checks in
-`docs/SECURITY_OPERATIONS.md` pass. Review at least 72 hours of results and
-resolve every missing or invalid token from a supported browser flow.
+App Check fails closed for protected production browser mutations. Confirm valid
+tokens for inquiry, task, admin editing, photo, simulation, and checkout flows.
+The two secret-authenticated server integrations remain narrowly exempt.
 
-Only then set the Functions environment flag `ENFORCE_APP_CHECK=true` and deploy
-Functions. Roll the flag back to `false` if valid users receive new 401, 403, or
-permission errors.
+Use `ENFORCE_APP_CHECK=false` only as a time-limited incident response override.
+Record why it was needed, monitor affected traffic, fix the client path, and
+remove the override before closing the incident.
 
 ## 5. Run the release gate
 

@@ -3,15 +3,9 @@ import { logger } from '../utils/logger';
 import { GITHUB_REPO } from '../utils/constants';
 import { ApiError, toastApiError } from '../api/apiClient';
 import { authenticatedFetch } from '../lib/api';
+import { getSimulationDraft, listSimulationDrafts, type SimulationDraft } from '../lib/simulationDrafts';
 
-export interface SavedSim {
-  id: string;
-  name: string;
-  author_id: string;
-  createdAt: string;
-  updatedAt: string;
-  type?: string;
-}
+export type SavedSim = SimulationDraft;
 
 export interface GithubSim {
   id: string;
@@ -81,10 +75,7 @@ export function useSimulationFiles(
   const fetchSavedSims = useCallback(async () => {
     setIsLoadingSims(true);
     try {
-      const res = await authenticatedFetch('/api/simulations');
-      if (!res.ok) throw await createResponseError(res, 'The simulation library could not be loaded.');
-      const data = await res.json() as { simulations?: SavedSim[] };
-      setSavedSims(data.simulations || []);
+      setSavedSims(listSimulationDrafts());
     } catch (e) {
       logger.error('[SimPlayground] Failed to fetch sims:', e);
       toastApiError(e, 'Simulation library failed to load');
@@ -114,24 +105,18 @@ export function useSimulationFiles(
     setActiveFile: SetActiveFile = setEditorActiveFile,
   ) => {
     try {
-      const res = await authenticatedFetch(`/api/simulations/${encodeURIComponent(id)}`);
-      if (!res.ok) throw await createResponseError(res, 'The simulation could not be loaded.');
-      const data = await res.json() as SimulationResponse;
-      const sim = data.simulation;
-      let parsedFiles = parseSimulationFiles(sim.files, `${sim.id}.tsx`);
-
-      if (Object.keys(parsedFiles).length === 0) {
-        parsedFiles = { 'SimComponent.jsx': '' };
-      }
+      const sim = getSimulationDraft(id);
+      if (!sim) throw new ApiError(404, 'The local simulation draft was not found.');
+      const parsedFiles = sim.files;
 
       setFiles(parsedFiles);
       setActiveFile(Object.keys(parsedFiles)[0]);
       setSimName(sim.name);
-      setSimId(sim.id);
+      setSimId(`local:${sim.id}`);
       await compileCode(parsedFiles);
 
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('simId', sim.id.toString());
+      newUrl.searchParams.set('simId', `local:${sim.id}`);
       window.history.replaceState({}, '', newUrl.toString());
 
       const { toast } = await import('sonner');

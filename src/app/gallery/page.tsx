@@ -217,7 +217,16 @@ export default function GalleryPage() {
                       >
                         <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/45">
                           {photo.imageUrl ? (
-                            <img src={photo.imageUrl} alt={imageAlt} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            <img
+                              src={photo.imageUrl}
+                              alt={imageAlt}
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority="low"
+                              width={4}
+                              height={3}
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
                           ) : (
                             <div className="flex h-full items-center justify-center p-6 text-center text-sm text-marble/70">Image URL not provided</div>
                           )}
