@@ -55,5 +55,7 @@ Run the isolated local browser suite:
 pnpm run test:e2e
 ```
 
-See `AGENTS.md` for the complete handoff gate. Production deploys occur only
-through the protected GitHub Actions workflow after merge to `master`.
+See `AGENTS.md` for the complete handoff gate. Repository skills live once under
+`.agents/skills/` and are discovered there by Codex, Gemini CLI, and Google
+Antigravity. Production deploys occur only through the protected GitHub Actions
+workflow after merge to `master`.

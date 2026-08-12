@@ -4,6 +4,11 @@ This repository is a Vite + React 19 frontend with Firebase Hosting, Firestore,
 Storage, and second-generation Cloud Functions. Read the relevant skill under
 `.agents/skills/` before changing a protected area.
 
+The same `.agents/skills/` tree is the canonical workspace skill source for
+Codex, Gemini CLI, and Google Antigravity. `GEMINI.md` and the Antigravity rule
+under `.agents/rules/` import this guide; do not duplicate skill contents into
+vendor-specific directories.
+
 ## Required engineering boundaries
 
 - Treat every client and every Firestore document as untrusted. Authorization
@@ -38,6 +43,7 @@ following before handing off a code change:
 
 ```text
 pnpm install --frozen-lockfile
+pnpm run validate:agents
 pnpm run lint
 pnpm --filter functions lint
 pnpm exec tsc --noEmit
