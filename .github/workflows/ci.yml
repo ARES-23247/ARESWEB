@@ -161,9 +161,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
+      - name: Install Playwright system dependencies
+        run: pnpm exec playwright install-deps chromium firefox webkit
+
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium firefox webkit
+        run: pnpm exec playwright install chromium firefox webkit
 
       - name: Run local E2E suite
         run: pnpm run test:e2e
