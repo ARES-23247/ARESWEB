@@ -182,6 +182,7 @@ router.get("/public", asyncHandler(async (req, res) => {
   const limit = parseLimit(req.query.limit, 24, 50);
   let query: FirebaseFirestore.Query = adminDb.collection("videos")
     .where("status", "==", "published")
+    .where("isDeleted", "==", 0)
     .orderBy("createdAt", "desc");
   query = await applyCursor(query, req.query.cursor);
   const snapshot = await query.limit(limit + 1).get();

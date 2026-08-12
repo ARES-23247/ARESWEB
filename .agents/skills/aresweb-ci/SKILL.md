@@ -12,9 +12,9 @@ and Java 21+ for Firebase Emulator Suite tests.
 
 The required test gate contains three independent jobs:
 
-1. `Verify, Test & Build` runs lint, TypeScript, the production dependency
-   audit, frontend and Functions coverage, both production builds, and bundle
-   budgets. It publishes one commit-addressed release artifact.
+1. `Verify, Test & Build` runs lint, TypeScript, production dependency audits
+   for both lockfiles, frontend and Functions coverage, all production builds,
+   and bundle budgets. It publishes one commit-addressed release artifact.
 2. `Firebase Rules Emulator Tests` runs real Firestore and Storage allow/deny
    behavior tests. Static rule-string assertions do not replace this gate.
 3. `Playwright E2E Tests` builds locally in Vite `e2e` mode. Mock authentication
@@ -33,12 +33,14 @@ tokens or service-account JSON keys must not be reintroduced.
 ## Mandatory rules
 
 - Use `pnpm install --frozen-lockfile`; never let CI rewrite the lockfile.
+- Use `npm ci --prefix mcp-server --ignore-scripts` for the standalone MCP
+  package. Audit its npm lockfile separately from the pnpm workspace.
 - Run `pnpm run lint` and `pnpm exec tsc --noEmit` before committing.
 - Run frontend and Functions tests with coverage. Existing global floors are
   ratchets; new utilities and routes require 85% line and 100% function coverage.
 - Run `pnpm run test:rules` whenever Firestore or Storage access behavior changes.
 - Run `pnpm run test:e2e` for major UI, authentication, or navigation changes.
-- Build both the frontend and Functions, then enforce bundle budgets.
+- Build the frontend, Functions, and MCP server, then enforce bundle budgets.
 - Pin every external GitHub Action to a full commit SHA with its release tag in a
   comment. Do not use movable action tags as executable references.
 - Give workflows explicit least-privilege `permissions`, job timeouts, and

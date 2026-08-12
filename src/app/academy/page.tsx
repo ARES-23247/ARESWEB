@@ -15,7 +15,6 @@ import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
 const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/AutonomousLogicDiagram"));
 import ZulipThread from "@/components/ZulipThread";
-import { ContributorStack } from "@/components/ui/ContributorStack";
 import TiptapRenderer from "@/components/TiptapRenderer";
 import { db } from "@/lib/firebaseFirestore";
 import { logger } from "@/utils/logger";
@@ -571,13 +570,6 @@ export default function AcademyPage() {
                         </div>
                       </div>
 
-                      <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
-                      <div className="flex flex-col">
-                        <span className="text-xs uppercase font-bold text-ares-cyan/80 tracking-wider mb-1">
-                          Contributors
-                        </span>
-                        <ContributorStack roomId={`doc_${currentDoc.slug}`} />
-                      </div>
                     </div>
                   </div>
                 )}
